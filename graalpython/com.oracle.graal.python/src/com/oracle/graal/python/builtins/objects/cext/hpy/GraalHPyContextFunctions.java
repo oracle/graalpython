@@ -2576,4 +2576,108 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyFieldStore extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object ownerObject = asPythonObjectNode.execute(context, arguments[1]);
+                Object hpyFieldPtr = arguments[2];
+                Object referent = asPythonObjectNode.execute(context, arguments[3]);
+                Object hpyFieldObject = lib.readArrayElement(hpyFieldPtr, 0);
+
+                if (!(ownerObject instanceof PythonObject)) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                PythonObject owner = (PythonObject) ownerObject;
+
+                int idx;
+                if (hpyFieldObject instanceof Long) {
+                    idx = PInt.intValueExact((Long) hpyFieldObject);
+                } else if (hpyFieldObject instanceof GraalHPyField) {
+                    idx = ((GraalHPyField) hpyFieldObject).getId();
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                idx = assign(owner, referent, idx);
+                lib.writeArrayElement(hpyFieldPtr, 0, new GraalHPyField(context, owner, referent, idx));
+                return 0;
+            } catch (InteropException | OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        private int assign(PythonObject owner, Object referent, int location) {
+            Object[] hpyFields = owner.getHpyFields();
+            if (location != 0) {
+                assert hpyFields != null;
+                hpyFields[location] = referent;
+                return location;
+            } else {
+                int newLocation;
+                if (hpyFields == null) {
+                    newLocation = 1;
+                    hpyFields = new Object[]{referent};
+                } else {
+                    newLocation = hpyFields.length + 1;
+                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation);
+                    hpyFields[newLocation - 1] = referent;
+                }
+                owner.setHpyFields(hpyFields);
+                return newLocation;
+            }
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyFieldLoad extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached("createClassProfile()") ValueProfile fieldTypeProfile,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object hpyFieldObject = fieldTypeProfile.profile(arguments[2]);
+                Object referent;
+                if (hpyFieldObject instanceof Long) {
+                    Object owner = asPythonObjectNode.execute(context, arguments[1]);
+                    try {
+                        int idx = PInt.intValueExact((Long) hpyFieldObject);
+                        if (owner instanceof PythonObject) {
+                            referent = ((PythonObject) owner).getHpyFields()[idx];
+                        } else {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                    } catch (OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else if (hpyFieldObject instanceof GraalHPyField) {
+                    referent = ((GraalHPyField) hpyFieldObject).getDelegate();
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                return asHandleNode.execute(context, referent);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
 }

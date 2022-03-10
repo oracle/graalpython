@@ -109,6 +109,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrRaisePredefined;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFatalError;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldLoad;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFieldStore;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatAsDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatFromDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFromPyObject;
@@ -644,6 +646,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_TRACKER_ADD("ctx_Tracker_Add", signature(Int, HPyTracker, HPy)),
         CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
         CTX_TRACKER_CLOSE("ctx_Tracker_Close", signature(Void, HPyTracker)),
+        CTX_FIELD_STORE("ctx_Field_Store"),
+        CTX_FIELD_LOAD("ctx_Field_Load"),
         CTX_DUMP("ctx_Dump");
 
         final String name;
@@ -749,6 +753,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     /** the native type ID of C struct 'HPy' */
     @CompilationFinal private Object hpyNativeTypeID;
+    @CompilationFinal private Object hpyFieldNativeTypeID;
     @CompilationFinal private Object hpyArrayNativeTypeID;
     @CompilationFinal private long wcharSize = -1;
 
@@ -1043,6 +1048,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final Object getHPyNativeType() {
         assert this.hpyNativeTypeID != null : "HPy native type ID not available";
         return hpyNativeTypeID;
+    }
+
+    public final Object getHPyFieldNativeType() {
+        return hpyFieldNativeTypeID;
+    }
+
+    public final void setHPyFieldNativeType(Object hpyFieldNativeTypeID) {
+        this.hpyFieldNativeTypeID = hpyFieldNativeTypeID;
     }
 
     final void setHPyArrayNativeType(Object hpyArrayNativeTypeID) {
@@ -2031,6 +2044,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerForgetAll();
         members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup();
 
+        members[HPyContextMember.CTX_FIELD_STORE.ordinal()] = new GraalHPyFieldStore();
+        members[HPyContextMember.CTX_FIELD_LOAD.ordinal()] = new GraalHPyFieldLoad();
         members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
 
         if (TRACE) {

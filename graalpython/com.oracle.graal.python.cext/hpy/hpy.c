@@ -56,6 +56,7 @@ static HPyContext *g_debug_ctx;
 typedef HPyDef* HPyDefPtr;
 
 POLYGLOT_DECLARE_TYPE(HPy)
+POLYGLOT_DECLARE_TYPE(HPyField)
 POLYGLOT_DECLARE_TYPE(HPyContext)
 POLYGLOT_DECLARE_TYPE(HPyThreadState)
 POLYGLOT_DECLARE_TYPE(HPyDef)
@@ -83,6 +84,7 @@ int graal_hpy_init(HPyContext *context, void *initObject) {
 	// register the native type of HPy
 	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot_HPyContext_typeid());
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
+	polyglot_invoke(initObject, "setHPyFieldNativeType", polyglot_HPyField_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 
 	// register size of wchar_t

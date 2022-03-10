@@ -64,6 +64,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         trackConstants();
         setHPyContextNativeType(context.getNativeType());
         setHPyNativeType(context.getHPyNativeType());
+        setHPyFieldNativeType(context.getHPyFieldNativeType());
         setHPyArrayNativeType(context.getHPyArrayNativeType());
         setWcharSize(context.getWcharSize());
     }
