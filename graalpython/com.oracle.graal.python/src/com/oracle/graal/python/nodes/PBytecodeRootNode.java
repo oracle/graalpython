@@ -1889,13 +1889,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             defaults = (Object[]) frame.getObject(stackTop);
         }
         String[] parameterNames = Arrays.copyOf(newCode.varnames, newCode.argCount);
-        int kwOnlyOffset = newCode.argCount + (newCode.takesVarArgs() ? 1 : 0);
-        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, kwOnlyOffset, kwOnlyOffset + newCode.kwOnlyArgCount);
+        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, newCode.argCount, newCode.argCount + newCode.kwOnlyArgCount);
         int varArgsIndex = newCode.takesVarArgs() ? newCode.argCount : -1;
         Signature newSignature = new Signature(newCode.positionalOnlyArgCount - 1,
                         newCode.takesVarKeywordArgs(),
                         varArgsIndex,
-                        false,
+                        newCode.takesVarArgs(),
                         parameterNames,
                         kwOnlyNames);
         PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
