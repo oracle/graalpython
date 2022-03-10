@@ -393,6 +393,7 @@ def known_packages():
             scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
 
         # install dependencies
+        numpy(**kwargs)
         scipy(**kwargs)
 
         install_from_pypi("scikit-learn==0.20.0", env=scikit_learn_build_env, **kwargs)
