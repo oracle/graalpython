@@ -244,7 +244,8 @@ public final class CodeUnit {
                     line[5] = names[arg];
                     break;
                 case CALL_METHOD: {
-                    line[5] = String.format("%d %s", arg >>> 8, names[arg & 0xFF]);
+                    line[4] = String.format("% 2d", arg >>> 8);
+                    line[5] = names[arg & 0xFF];
                     break;
                 }
                 case COLLECTION_FROM_STACK:
