@@ -421,6 +421,50 @@ class TestAbstractWithNative(object):
         tester = TestSequenceSize()
         assert tester.callSize(tester) == 10
         
+    def test_sequence_size_err(self):
+        TestSequenceSizeErr = CPyExtType("TestSequenceSizeErr",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestSequenceSizeErr()        
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False
+            
+    def test_sequence_size_err2(self):
+        TestSequenceSizeErr2 = CPyExtType("TestSequenceSizeErr2",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -2;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestSequenceSizeErr2()        
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False            
+        
     def test_mapping_check(self):
         TestMappingCheck = CPyExtType("TestMappingCheck",
                              """
@@ -454,6 +498,28 @@ class TestAbstractWithNative(object):
         tester = TestMappingSize()
         assert tester.callSize(tester) == 11
         
+    def test_mapping_size_err(self):
+        TestMappingSizeErr = CPyExtType("TestMappingSizeErr",
+                             """
+                             Py_ssize_t test_mp_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyMapping_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_mp_length",
+        )
+        tester = TestMappingSizeErr()   
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False
+        
     def test_object_size_sq(self):
         TestObjectSizeSQ = CPyExtType("TestObjectSizeSQ",
                              """
@@ -485,6 +551,28 @@ class TestAbstractWithNative(object):
         )
         tester = TestObjectSizeMP()
         assert tester.callSize(tester) == 13            
+        
+    def test_object_size_err(self):
+        TestObjectSizeErr = CPyExtType("TestObjectSizeErr",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_sq_length",
+        )
+        tester = TestObjectSizeErr()
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False         
         
 class TestAbstract(CPyExtTestCase):
 

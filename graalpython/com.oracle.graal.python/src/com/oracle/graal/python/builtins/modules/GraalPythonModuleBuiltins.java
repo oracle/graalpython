@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -133,7 +134,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -561,6 +561,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tdebug", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class DebugNode extends PythonBuiltinNode {
+
+        public abstract Object execute(Object[] args);
+
         @Specialization
         @TruffleBoundary
         public Object doIt(Object[] args) {
@@ -570,6 +573,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             stdout.flush();
             return PNone.NONE;
+        }
+
+        public static DebugNode create() {
+            return DebugNodeFactory.create(null);
         }
     }
 
@@ -776,7 +783,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doIt(Object value) {
+        Object doIt(Object value,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
@@ -787,21 +795,19 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
 
             Env env = getContext().getEnv();
-            if (!isType(value, env)) {
+            if (!isType(value, env, lib)) {
                 throw raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
             }
 
-            final Class<?>[] types = new Class<?>[1];
-            types[0] = (Class<?>) env.asHostObject(value);
             try {
-                return env.createHostAdapterClass(types);
+                return env.createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
                 throw raise(TypeError, ex.getMessage(), ex);
             }
         }
 
-        protected static boolean isType(Object obj, TruffleLanguage.Env env) {
-            return env.isHostObject(obj) && env.asHostObject(obj) instanceof Class<?>;
+        protected static boolean isType(Object obj, Env env, InteropLibrary lib) {
+            return env.isHostObject(obj) && (env.isHostSymbol(obj) || lib.isMetaObject(obj));
         }
 
     }

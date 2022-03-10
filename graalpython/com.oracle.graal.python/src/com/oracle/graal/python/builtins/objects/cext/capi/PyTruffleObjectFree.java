@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
@@ -92,7 +93,7 @@ public class PyTruffleObjectFree implements TruffleObject {
 
         public abstract int execute(Object pointerObject);
 
-        @Specialization(limit = "3")
+        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)", limit = "3")
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
@@ -110,10 +111,21 @@ public class PyTruffleObjectFree implements TruffleObject {
             return 1;
         }
 
+        @Specialization
+        static int arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
+            // It's a pointer to a managed object but doesn't need special handling, so we just
+            // ignore it.
+            return 1;
+        }
+
         @Specialization(guards = "!isNativeWrapper(object)")
         static int doOther(@SuppressWarnings("unused") Object object) {
             // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
             return 0;
+        }
+
+        protected static boolean isCArrayWrapper(Object obj) {
+            return obj instanceof CArrayWrapper;
         }
     }
 

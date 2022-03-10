@@ -45,8 +45,10 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -91,6 +93,15 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
         public static Object slice(VirtualFrame frame, Object start, Object stop, Object step,
                         @Cached SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, start, stop, step);
+        }
+    }
+
+    @Builtin(name = "Py_Ellipsis")
+    @GenerateNodeFactory
+    public abstract static class PyEllipsisNode extends PythonBuiltinNode {
+        @Specialization
+        static Object run() {
+            return PEllipsis.INSTANCE;
         }
     }
 }

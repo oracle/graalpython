@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,7 +109,7 @@ public abstract class MaterializeFrameNode extends Node {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
         assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
         Node callNode = info.getCallNode();
-        return execute(frame, callNode, markAsEscaped, forceSync, frameToMaterialize);
+        return execute(frame, callNode, markAsEscaped, forceSync, false, frameToMaterialize);
     }
 
     public final PFrame execute(VirtualFrame frame, boolean markAsEscaped) {
@@ -117,13 +117,22 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public final PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync) {
-        return execute(frame, location, markAsEscaped, forceSync, frame);
+        return execute(frame, location, markAsEscaped, forceSync, false);
     }
 
-    public abstract PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
+    public final PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing) {
+        return execute(frame, location, markAsEscaped, forceSync, updateLocationIfMissing, frame);
+    }
+
+    public final PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
+        return execute(frame, location, markAsEscaped, forceSync, false, frameToMaterialize);
+    }
+
+    public abstract PFrame execute(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize);
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
-    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
+                    @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize));
         PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
@@ -133,7 +142,8 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
-    static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+    static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
+                    @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
                     @Cached("frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
@@ -143,7 +153,8 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
-    static PFrame freshPFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
+    static PFrame freshPFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, @SuppressWarnings("unused") boolean updateLocationIfMissing,
+                    Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
@@ -159,7 +170,7 @@ public abstract class MaterializeFrameNode extends Node {
      * @see PFrame#isIncomplete
      **/
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "!getPFrame(frameToMaterialize).isAssociated()"})
-    static PFrame incompleteFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame incompleteFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         Object locals = getPFrame(frameToMaterialize).getLocalsDict();
@@ -188,7 +199,7 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"})
-    static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
@@ -198,29 +209,31 @@ public abstract class MaterializeFrameNode extends Node {
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
         }
-        // update the location so the line number is correct
-        pyFrame.setLocation(location);
+        if (!updateLocationIfMissing || pyFrame.getLocation() == null) {
+            // update the location so the line number is correct
+            pyFrame.setLocation(location);
+        }
         processBytecodeFrame(frameToMaterialize, pyFrame);
         return pyFrame;
     }
 
     @Specialization(replaces = {"freshPFrame", "alreadyEscapedFrame", "incompleteFrame"})
-    static PFrame generic(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame generic(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, boolean updateLocationIfMissing, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (pyFrame != null) {
             if (pyFrame.isAssociated()) {
-                return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, syncValuesNode, syncProfile);
+                return alreadyEscapedFrame(frame, location, markAsEscaped, forceSync, updateLocationIfMissing, frameToMaterialize, syncValuesNode, syncProfile);
             } else {
-                return incompleteFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+                return incompleteFrame(frame, location, markAsEscaped, forceSync, updateLocationIfMissing, frameToMaterialize, factory, syncValuesNode);
             }
         } else {
             if (isGeneratorFrame(frameToMaterialize)) {
-                return freshPFrameForGenerator(location, markAsEscaped, forceSync, frameToMaterialize, factory);
+                return freshPFrameForGenerator(location, markAsEscaped, forceSync, updateLocationIfMissing, frameToMaterialize, factory);
             } else {
-                return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
+                return freshPFrame(frame, location, markAsEscaped, forceSync, updateLocationIfMissing, frameToMaterialize, factory, syncValuesNode);
             }
         }
     }

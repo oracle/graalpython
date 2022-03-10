@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -111,6 +111,14 @@ public class StringUtilsTests extends ParserTestBase {
         checkUnknownChar("CJK Unified Ideograph-4DFF");
         checkUnknownChar("CJK Unified Ideograph-33FF");
         checkUnknownChar("CJK Unified Ideograph-2A6E0");
+    }
+
+    @Test
+    public void controlCharacters() {
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FORM FEED}"));
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FF}"));
+        Assert.assertEquals("\u0096", StringUtils.unescapeJavaString(errorCallback, "\\N{START OF GUARDED AREA}"));
+        Assert.assertEquals("\udb40\udd57", StringUtils.unescapeJavaString(errorCallback, "\\N{VS104}"));
     }
 
     @Test

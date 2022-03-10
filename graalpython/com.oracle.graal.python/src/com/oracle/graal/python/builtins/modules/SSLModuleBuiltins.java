@@ -60,6 +60,7 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import org.bouncycastle.util.encoders.DecoderException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -369,21 +370,17 @@ public class SSLModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object decode(TruffleFile file) throws PException {
-            List<Object> l = new ArrayList<>();
             try (BufferedReader r = file.newBufferedReader()) {
-                CertUtils.LoadCertError result = CertUtils.getCertificates(r, l);
-                if (result != CertUtils.LoadCertError.NO_ERROR) {
-                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, result);
-                }
-                if (l.isEmpty()) {
+                List<Object> certs = CertUtils.getCertificates(r);
+                if (certs.isEmpty()) {
                     throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE);
                 }
-                Object cert = l.get(0);
+                Object cert = certs.get(0);
                 if (!(cert instanceof X509Certificate)) {
                     throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) l.get(0));
-            } catch (IOException ex) {
+                return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certs.get(0));
+            } catch (IOException | DecoderException ex) {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, ex.toString());

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,26 +37,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-_enabled = True
+import os
+import subprocess
+import sys
 
+from textwrap import dedent
 
-@__graalpython__.builtin
-def enable(file=None, all_threads=True):
-    global _enabled
-    _enabled = True
-
-
-@__graalpython__.builtin
-def disable():
-    global _enabled
-    _enabled = False
-
-
-@__graalpython__.builtin
-def is_enabled():
-    return _enabled
-
-
-@__graalpython__.builtin
-def cancel_dump_traceback_later():
-    pass
+if sys.implementation.name == "graalpython" and not __graalpython__.is_native:
+    def test_load_default_verify_keystore():
+        # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
+        # the JKS keystore:
+        # - contains one trusted certificate, the same as in tests/ssldata/signing_ca.pem
+        # - password is testssl
+        curdir = os.path.abspath(os.path.dirname(__file__))
+        src = dedent(f"""\
+            import ssl, sys, os
+            sys.path.append('{curdir}')
+            from test_ssl import data_file, check_handshake
+            server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            server_context.load_cert_chain(data_file('signed_cert.pem'))
+            client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+            client_context.load_default_certs()
+            check_handshake(server_context, client_context)
+        """)
+        env = os.environ.copy()
+        env['JAVA_TOOL_OPTIONS'] = f"-Djavax.net.ssl.trustStore={curdir}/ssldata/signing_keystore.jks"
+        subprocess.run([sys.executable, '-c', src], env=env, check=True)

@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -117,7 +116,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -945,11 +943,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static Object doNative(VirtualFrame frame, Object object,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction,
-                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object));
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK.getName(), result);
-            return result;
+            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object));
         }
     }
 
@@ -1004,13 +999,10 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object doNative(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction,
-                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             Object state = IndirectCallContext.enter(frame, this);
             try {
-                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
-                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE.getName(), result);
-                return result;
+                return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE, toSulongNode.execute(obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -1079,13 +1071,10 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached ToSulongNode toSulongNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
-                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             Object state = IndirectCallContext.enter(frame, this);
             try {
-                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
-                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_OBJECT_SIZE.getName(), result);
-                return result;
+                return callCapiFunction.call(FUN_PY_TRUFFLE_PY_OBJECT_SIZE, toSulongNode.execute(obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -1213,11 +1202,8 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static Object doNative(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction,
-                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_MAPPING_CHECK.getName(), result);
-            return result;
+            return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
         }
     }
 
@@ -1247,12 +1233,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         static Object doNative(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PCallCapiFunction callCapiFunction,
-                        @Cached CheckPrimitiveFunctionResultNode checkFunctionResultNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
-                checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_PY_MAPPING_SIZE.getName(), result);
-                return result;
+                return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_SIZE, toSulongNode.execute(obj));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;

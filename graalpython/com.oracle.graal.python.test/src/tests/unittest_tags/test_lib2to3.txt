@@ -433,6 +433,12 @@
 *lib2to3.tests.test_fixers.Test_unicode.test_unicode_literal_3
 *lib2to3.tests.test_fixers.Test_unicode.test_unicode_literal_escape_u
 *lib2to3.tests.test_fixers.Test_unicode.test_whitespace
+*lib2to3.tests.test_fixers.Test_urllib.test_import_from
+*lib2to3.tests.test_fixers.Test_urllib.test_import_from_as
+*lib2to3.tests.test_fixers.Test_urllib.test_import_module
+*lib2to3.tests.test_fixers.Test_urllib.test_import_module_as
+*lib2to3.tests.test_fixers.Test_urllib.test_import_module_usage
+*lib2to3.tests.test_fixers.Test_urllib.test_indented
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_pickle
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess
 *lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_txt_file

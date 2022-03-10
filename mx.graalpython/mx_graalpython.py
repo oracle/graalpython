@@ -302,6 +302,7 @@ def retag_unittests(args):
     parser.add_argument('--upload-results-to')
     parser.add_argument('--inspect', action='store_true')
     parser.add_argument('-debug-java', action='store_true')
+    parser.add_argument('--jvm', action='store_true')
     parsed_args, remaining_args = parser.parse_known_args(args)
     env = os.environ.copy()
     env.update(
@@ -320,7 +321,8 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
-    mx.run([python_svm()] + args + remaining_args, env=env)
+    vm = python_svm() if not parsed_args.jvm else python_gvm_with_assertions()
+    mx.run([vm] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -433,7 +435,7 @@ def update_unittest_tags(args):
         mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
-AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py"]
+AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
 
 class GraalPythonTags(object):
@@ -1159,7 +1161,7 @@ def update_import_cmd(args):
             exec(f.read(), d, d) # pylint: disable=exec-used;
         for suite in d["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
-            if suite.get("version") and import_name not in local_names:
+            if suite.get("version") and import_name not in local_names and import_name != 'library-tester':
                 imports_to_update.add(import_name)
 
     revisions = {}
@@ -1184,12 +1186,12 @@ def update_import_cmd(args):
     # update vm-tests.json vm version
     with open(join(overlaydir, "python", "graal-common.json"), 'r') as fp:
         d = json.load(fp)
-        oraclejdk8_ver = d['jdks']['oraclejdk8']['version']
+        oraclejdk17_ver = d['jdks']['oraclejdk17']['version']
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
         d = json.load(fp)
         for job in d:
-            job['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
+            job['downloads']['JAVA_HOME']['version'] = oraclejdk17_ver
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
@@ -1523,6 +1525,9 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     },
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:BOUNCYCASTLE-PROVIDER',
+        'graalpython:BOUNCYCASTLE-PKIX',
+        'graalpython:XZ-1.8',
     ],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',

@@ -41,8 +41,7 @@ import unittest
 import ssl
 import os
 import json
-import sys
-import subprocess
+
 
 def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
@@ -164,9 +163,9 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="broken_cert_double_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_only_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_no_end.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data_at_begin.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="broken_cert_data_at_end.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE] bad base64 decode")
+        self.check_load_cert_chain_error(certfile="broken_cert_data.pem")
+        self.check_load_cert_chain_error(certfile="broken_cert_data_at_begin.pem")
+        self.check_load_cert_chain_error(certfile="broken_cert_data_at_end.pem")
 
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="empty.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="empty_pk.pem", errno=9, strerror="[SSL] PEM lib")
@@ -254,26 +253,6 @@ class CertTests(unittest.TestCase):
                 env["SSL_CERT_DIR"] = certDir
             else:
                 del env["SSL_CERT_DIR"]
-
-    @unittest.skipIf(sys.implementation.name == 'cpython', "graalpython specific")
-    def test_load_default_verify_keystore(self):
-        # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
-        # the JKS keystore:
-        # - contains one trusted certificate, the same as in tests/ssldata/signing_ca.pem
-        # - password is testssl
-        curdir = os.path.abspath(os.path.dirname(__file__))
-        src = "import ssl, sys, os\n" \
-               "sys.path.append('" + curdir + "')\n" \
-               "from test_ssl import data_file, check_handshake\n" \
-               "server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)\n" \
-               "server_context.load_cert_chain(data_file('signed_cert.pem'))\n" \
-               "client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)\n" \
-               "check_handshake(server_context, client_context, ssl.SSLCertVerificationError)\n" \
-               "client_context.load_default_certs()\n" \
-               "check_handshake(server_context, client_context)\n"
-        env = os.environ.copy()
-        env['JAVA_TOOL_OPTIONS'] = "-Djavax.net.ssl.trustStore=" + curdir + "/ssldata/signing_keystore.jks"
-        subprocess.run([sys.executable, '-c', src], env=env)
 
     def test_verify_mode(self):
         signed_cert = data_file("signed_cert.pem")
@@ -389,6 +368,25 @@ class CertTests(unittest.TestCase):
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.load_cert_chain(signed_cert2)
         check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+
+    def check_keypair(self, signed_cert, signing_ca, password=None):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file(signed_cert), password=password)
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.load_verify_locations(data_file(signing_ca))
+        check_handshake(server_context, client_context)
+
+    def test_private_key_pkcs8(self):
+        self.check_keypair("signed_cert.pem", "signing_ca.pem")
+
+    def test_private_key_pkcs8_password(self):
+        self.check_keypair("signed_cert_password.pem", "signing_ca.pem", password="password")
+
+    def test_private_key_pkcs1(self):
+        self.check_keypair("signed_cert_pkcs1.pem", "signing_ca.pem")
+
+    def test_private_key_pkcs1_password(self):
+        self.check_keypair("signed_cert_pkcs1_password.pem", "signing_ca.pem", password="password")
 
     def test_alpn(self):
         signed_cert = data_file("signed_cert.pem")

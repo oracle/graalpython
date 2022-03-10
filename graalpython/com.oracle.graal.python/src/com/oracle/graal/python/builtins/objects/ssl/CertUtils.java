@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,18 +57,16 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_OCSP;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Security;
+import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateEncodingException;
@@ -76,29 +74,31 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.DSAPrivateKey;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import javax.crypto.interfaces.DHPrivateKey;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.cert.X509CRLHolder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+import org.bouncycastle.pkcs.PKCSException;
+import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -113,15 +114,27 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.Frame;
 
 public final class CertUtils {
+    public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
 
-    private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
-    private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
-    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
-    private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
-    private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
-    private static final String BEGIN_X509_CRL = "-----BEGIN X509 CRL-----";
-    private static final String END_X509_CRL = "-----END X509 CRL-----";
+    static {
+        Security.addProvider(BOUNCYCASTLE_PROVIDER);
+    }
+
+    public static class NoCertificateFoundException extends Exception {
+        private static final long serialVersionUID = 5489472143646552420L;
+
+        public NoCertificateFoundException() {
+            super("No certificate found");
+        }
+    }
+
+    public static class NeedsPasswordException extends Exception {
+        private static final long serialVersionUID = -5153912585672596522L;
+
+        public NeedsPasswordException() {
+            super("Needs password to decrypt private key");
+        }
+    }
 
     /**
      * openssl v3_purp.c#check_ca
@@ -557,17 +570,8 @@ public final class CertUtils {
         }
     }
 
-    public enum LoadCertError {
-        NO_ERROR,
-        NO_CERT_DATA,
-        EMPTY_CERT,
-        BEGIN_CERTIFICATE_WITHOUT_END,
-        SOME_BAD_BASE64_DECODE,
-        BAD_BASE64_DECODE
-    }
-
     @TruffleBoundary
-    public static LoadCertError loadVerifyLocations(TruffleFile file, TruffleFile path, List<Object> certificates) throws IOException, CertificateException, CRLException {
+    public static List<Object> loadVerifyLocations(TruffleFile file, TruffleFile path) throws IOException, CertificateException, CRLException, NoCertificateFoundException {
         Collection<TruffleFile> files = new ArrayList<>();
         if (file != null) {
             files.add(file);
@@ -577,198 +581,118 @@ public final class CertUtils {
             // if capath is a directory, cpython loads certificates on demand
             files.addAll(path.list());
         }
-        List<Object> l = new ArrayList<>();
+        List<Object> result = new ArrayList<>();
         for (TruffleFile f : files) {
             try (BufferedReader r = f.newBufferedReader()) {
-                LoadCertError result = getCertificates(r, l);
-                if (result != LoadCertError.NO_ERROR) {
-                    return result;
+                List<Object> certificates = getCertificates(r);
+                if (certificates.isEmpty()) {
+                    throw new NoCertificateFoundException();
                 }
+                result.addAll(certificates);
             }
         }
-        certificates.addAll(l);
-        return LoadCertError.NO_ERROR;
+        return result;
     }
 
     @TruffleBoundary
-    public static LoadCertError getCertificates(BufferedReader r, List<Object> result) throws IOException, CertificateException, CRLException {
-        return getCertificates(r, result, false);
+    public static List<Object> getCertificates(BufferedReader r) throws IOException, CertificateException, CRLException {
+        return getCertificates(r, false);
     }
 
     @TruffleBoundary
-    public static LoadCertError getCertificates(BufferedReader r, List<Object> result, boolean onlyCertificates) throws IOException, CertificateException, CRLException {
-        boolean sawBegin = false;
-        boolean sawBeginCrl = false;
-        StringBuilder certBuilder = new StringBuilder(2000);
-        StringBuilder crlBuilder = new StringBuilder(2000);
-        List<String> data = new ArrayList<>();
-        List<String> dataCrl = new ArrayList<>();
-        String line;
-        while ((line = r.readLine()) != null) {
-            if (sawBegin || sawBeginCrl) {
-                if (line.contains(BEGIN_CERTIFICATE) || line.contains(BEGIN_X509_CRL)) {
-                    break;
-                }
-                if (line.contains(END_CERTIFICATE)) {
-                    sawBegin = false;
-                    data.add(certBuilder.toString());
-                } else if (line.contains(END_X509_CRL)) {
-                    sawBeginCrl = false;
-                    dataCrl.add(crlBuilder.toString());
-                } else if (sawBegin) {
-                    certBuilder.append(line);
-                } else if (sawBeginCrl) {
-                    crlBuilder.append(line);
-                }
-            } else if (line.contains(BEGIN_CERTIFICATE)) {
-                sawBegin = true;
-                certBuilder.setLength(0);
-            } else if (line.contains(BEGIN_X509_CRL)) {
-                sawBeginCrl = true;
-                crlBuilder.setLength(0);
-            }
-        }
-        if (sawBegin || sawBeginCrl) {
-            return LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
-        }
-        Base64.Decoder decoder = Base64.getDecoder();
-        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+    public static List<Object> getCertificates(BufferedReader r, boolean onlyCertificates) throws IOException, CertificateException, CRLException {
         List<Object> l = new ArrayList<>();
-        LoadCertError res = add(data, l, decoder, factory::generateCertificate);
-        if (res != LoadCertError.NO_ERROR) {
-            return res;
-        }
-        if (!onlyCertificates) {
-            res = add(dataCrl, l, decoder, factory::generateCRL);
-            if (res != LoadCertError.NO_ERROR) {
-                return res;
+        PEMParser pemParser = new PEMParser(r);
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        Object object;
+        while ((object = pemParser.readObject()) != null) {
+            if (object instanceof X509CertificateHolder) {
+                // TODO use the X509CertificateHolder directly without conversion
+                l.add(factory.generateCertificate(new ByteArrayInputStream(((X509CertificateHolder) object).getEncoded())));
+            }
+            if (!onlyCertificates && object instanceof X509CRLHolder) {
+                // TODO use the X509CRLHolder directly without conversion
+                l.add(factory.generateCRL(new ByteArrayInputStream(((X509CRLHolder) object).getEncoded())));
             }
         }
-        if (l.isEmpty()) {
-            return LoadCertError.NO_CERT_DATA;
-        }
-        result.addAll(l);
-        return res;
+        return l;
     }
 
-    @FunctionalInterface
-    private interface F {
-        Object generate(ByteArrayInputStream t) throws CertificateException, CRLException;
-    }
-
-    private static LoadCertError add(List<String> data, List<Object> result, Base64.Decoder decoder, F f) throws CertificateException, CRLException {
-        for (String s : data) {
-            if (!s.isEmpty()) {
-                byte[] der;
-                try {
-                    der = decoder.decode(s);
-                } catch (IllegalArgumentException e) {
-                    if (result.isEmpty()) {
-                        return LoadCertError.BAD_BASE64_DECODE;
-                    } else {
-                        return LoadCertError.SOME_BAD_BASE64_DECODE;
-                    }
-                }
-                result.add(f.generate(new ByteArrayInputStream(der)));
-            } else {
-                return LoadCertError.EMPTY_CERT;
-            }
-        }
-        return LoadCertError.NO_ERROR;
-    }
-
-    /**
-     * Returns the first private key found
-     */
     @TruffleBoundary
-    static byte[] getEncodedPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader r) throws IOException {
-        boolean begin = false;
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = r.readLine()) != null) {
-            if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
-                begin = true;
-            } else if (begin) {
-                if (line.contains(END_PRIVATE_KEY)) {
-                    begin = false;
-                    // get first private key found
-                    break;
-                }
-                sb.append(line);
-            }
-        }
-        if (begin || sb.length() == 0) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-        }
-
+    static PrivateKey getPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader reader, char[] password, X509Certificate cert)
+                    throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NeedsPasswordException {
+        PEMParser pemParser = new PEMParser(reader);
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+        converter.setProvider(BOUNCYCASTLE_PROVIDER);
+        PrivateKey privateKey = null;
         try {
-            return Base64.getDecoder().decode(sb.toString());
-        } catch (IllegalArgumentException e) {
+            Object object;
+            while ((object = pemParser.readObject()) != null) {
+                PrivateKeyInfo pkInfo;
+                if (object instanceof PEMKeyPair) {
+                    pkInfo = ((PEMKeyPair) object).getPrivateKeyInfo();
+                } else if (object instanceof PEMEncryptedKeyPair) {
+                    if (password == null) {
+                        throw new NeedsPasswordException();
+                    }
+                    JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder();
+                    decryptor.setProvider(BOUNCYCASTLE_PROVIDER);
+                    PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
+                    pkInfo = keyPair.getPrivateKeyInfo();
+                } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
+                    if (password == null) {
+                        throw new NeedsPasswordException();
+                    }
+                    JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder();
+                    decryptor.setProvider(BOUNCYCASTLE_PROVIDER);
+                    pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
+                } else if (object instanceof PrivateKeyInfo) {
+                    pkInfo = (PrivateKeyInfo) object;
+                } else {
+                    continue;
+                }
+                privateKey = converter.getPrivateKey(pkInfo);
+                break;
+            }
+        } catch (IOException | DecoderException | OperatorCreationException | PKCSException e) {
             throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
-    }
-
-    @TruffleBoundary
-    static PrivateKey createPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, byte[] bytes, X509Certificate cert) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        if (privateKey == null) {
+            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+        }
         PublicKey publicKey = cert.getPublicKey();
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
-        KeyFactory factory = KeyFactory.getInstance(publicKey.getAlgorithm());
-        PrivateKey privateKey = factory.generatePrivate(spec);
         checkPrivateKey(frame, constructAndRaiseNode, privateKey, publicKey);
         return privateKey;
     }
 
     private static void checkPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PrivateKey privateKey, PublicKey publicKey) {
-        if (privateKey instanceof RSAPrivateKey) {
-            RSAPrivateKey privKey = (RSAPrivateKey) privateKey;
-            RSAPublicKey pubKey = (RSAPublicKey) publicKey;
-            if (!privKey.getModulus().equals(pubKey.getModulus())) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+        /*
+         * Check that the private key matches the public key by signing and verifying a short piece
+         * of data.
+         */
+        try {
+            Signature sign;
+            try {
+                sign = Signature.getInstance(String.format("SHA256with%s", privateKey.getAlgorithm()));
+            } catch (NoSuchAlgorithmException e) {
+                sign = Signature.getInstance(String.format("SHA1with%s", privateKey.getAlgorithm()));
             }
-        } else if (privateKey instanceof DSAPrivateKey) {
-            DSAPrivateKey privKey = (DSAPrivateKey) privateKey;
-            DSAPublicKey pubKey = (DSAPublicKey) publicKey;
-            if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+            sign.initSign(privateKey);
+            byte[] data = new byte[128];
+            PythonContext.get(constructAndRaiseNode).getSecureRandom().nextBytes(data);
+            sign.update(data);
+            byte[] signature = sign.sign();
+            sign.initVerify(publicKey);
+            sign.update(data);
+            if (sign.verify(signature)) {
+                return;
             }
-        } else if (privateKey instanceof ECPrivateKey) {
-            ECPrivateKey privKey = (ECPrivateKey) privateKey;
-            ECPublicKey pubKey = (ECPublicKey) publicKey;
-            if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-            }
-        } else if (privateKey instanceof DHPrivateKey) {
-            DHPrivateKey privKey = (DHPrivateKey) privateKey;
-            DHPublicKey pubKey = (DHPublicKey) publicKey;
-            if (!privKey.getParams().equals(pubKey.getParams())) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-            }
+        } catch (NoSuchAlgorithmException e) {
+            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
+        } catch (SignatureException | InvalidKeyException e) {
+            // fallthrough
         }
-    }
-
-    @TruffleBoundary
-    static DHParameterSpec getDHParameters(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
-        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
-            String line;
-            boolean begin = false;
-            StringBuilder sb = new StringBuilder();
-            while ((line = r.readLine()) != null) {
-                if (line.contains(BEGIN_DH_PARAMETERS)) {
-                    begin = true;
-                } else if (begin) {
-                    if (line.contains(END_DH_PARAMETERS)) {
-                        break;
-                    }
-                    sb.append(line.trim());
-                }
-            }
-            if (!begin) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
-            }
-            AlgorithmParameters ap = AlgorithmParameters.getInstance("DH");
-            ap.init(Base64.getDecoder().decode(sb.toString()));
-            return ap.getParameterSpec(DHParameterSpec.class);
-        }
+        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
     }
 
     @TruffleBoundary

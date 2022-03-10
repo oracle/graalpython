@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_ITER;
@@ -366,6 +367,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SyntaxWarning("SyntaxWarning", BUILTINS, Flags.EXCEPTION),
     UnicodeWarning("UnicodeWarning", BUILTINS, Flags.EXCEPTION),
     UserWarning("UserWarning", BUILTINS, Flags.EXCEPTION),
+
+    // contextvars
+    ContextVarsToken("Token", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVarsContext("Context", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVar("ContextVar", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
 
     // A marker for @Builtin that is not a class. Must always come last.
     nil(null);

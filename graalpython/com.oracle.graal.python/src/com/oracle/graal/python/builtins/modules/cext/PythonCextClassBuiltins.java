@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -75,6 +76,17 @@ public final class PythonCextClassBuiltins extends PythonBuiltins {
             PDecoratedMethod res = factory().createInstancemethod(PythonBuiltinClassType.PInstancemethod);
             res.setCallable(func);
             return res;
+        }
+    }
+
+    @Builtin(name = "PyMethod_New", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyMethodNew extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object methodNew(Object func, Object self) {
+            // Note: CPython also constructs the object directly, without running the constructor or
+            // checking the inputs
+            return factory().createMethod(self, func);
         }
     }
 }
