@@ -1888,10 +1888,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             frame.setObject(stackTop--, null);
             defaults = (Object[]) frame.getObject(stackTop);
         }
-        String[] parameterNames = Arrays.copyOf(newCode.varnames, newCode.argCount);
-        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, newCode.argCount, newCode.argCount + newCode.kwOnlyArgCount);
-        int varArgsIndex = newCode.takesVarArgs() ? newCode.argCount : -1;
-        Signature newSignature = new Signature(newCode.positionalOnlyArgCount - 1,
+        int posArgCount = newCode.argCount + newCode.positionalOnlyArgCount;
+        String[] parameterNames = Arrays.copyOf(newCode.varnames, posArgCount);
+        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, posArgCount, posArgCount + newCode.kwOnlyArgCount);
+        int varArgsIndex = newCode.takesVarArgs() ? posArgCount : -1;
+        Signature newSignature = new Signature(newCode.positionalOnlyArgCount,
                         newCode.takesVarKeywordArgs(),
                         varArgsIndex,
                         newCode.positionalOnlyArgCount > 0,
