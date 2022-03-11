@@ -507,6 +507,11 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
+GINSTALL_GATE_PACKAGES = [
+    "numpy",
+    "scipy",
+    "scikit_learn",
+]
 
 class GraalPythonTags(object):
     junit = 'python-junit'
@@ -518,6 +523,7 @@ class GraalPythonTags(object):
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
+    ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
@@ -789,6 +795,39 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
 
 
+def get_venv_env(env_dir):
+    env = os.environ.copy()
+    path = os.environ.get("PATH", '')
+    env.update(**{
+        'VIRTUAL_ENV': env_dir,
+        'PATH': ":".join([os.path.join(env_dir, 'bin'), path]),
+    })
+    if 'PYTHONHOME' in env:
+        del env['PYTHONHOME']
+    return env
+
+
+def run_ginstall(python_binary):
+    env_dir = os.path.realpath(tempfile.mkdtemp())
+    mx.log("using graalpython venv: {}".format(env_dir))
+    mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
+    mx.run(["graalpython", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+
+
+def is_bash_launcher(launcher_path):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        return re.match(r'^#!.*bash', launcher.readline())
+
+
+def patch_batch_launcher(launcher_path, jvm_args):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        lines = launcher.readlines()
+    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
+    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
+    with open(launcher_path, 'w') as launcher:
+        launcher.writelines(lines)
+
+
 def run_hpy_unittests(python_binary, args=None, include_native=True):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
@@ -902,6 +941,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
             run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True)
+
+    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
+        if task:
+            run_ginstall(python_gvm_with_assertions())
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
