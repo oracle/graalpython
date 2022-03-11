@@ -50,7 +50,7 @@ class Constants {
     static final int POP_EFFECT = 0xcaffee04;
     static final int REDUCE_EFFECT = 0xcaffee05;
     static final int POP_OR_JUMP_EFFECT = 0xcaffee06;
-    static final int PUSH_OR_JUMP_EFFECT = 0xcaffee07;
+    static final int FOR_ITER_EFFECT = 0xcaffee07;
     static final int POP_EFFECT5 = 0xcaffee08;
     static final int REDUCE_EFFECT5 = 0xcaffee09;
 }
@@ -155,8 +155,8 @@ public enum OpCodes {
     UNPACK_SEQUENCE_LARGE(     2,    Constants.UNPACK_EFFECT),
 
     // jumps
-    FOR_ITER(                  1,    Constants.PUSH_OR_JUMP_EFFECT),
-    FOR_ITER_FAR(              2,    Constants.PUSH_OR_JUMP_EFFECT),
+    FOR_ITER(                  1,    Constants.FOR_ITER_EFFECT),
+    FOR_ITER_FAR(              2,    Constants.FOR_ITER_EFFECT),
     JUMP_FORWARD(              1,    0),
     JUMP_FORWARD_FAR(          2,    0),
     JUMP_BACKWARD(             1,    0),
@@ -275,8 +275,8 @@ public enum OpCodes {
                 }
             case Constants.POP_OR_JUMP_EFFECT:
                 return withJump ? 0 : -1;
-            case Constants.PUSH_OR_JUMP_EFFECT:
-                return withJump ? 0 : 1;
+            case Constants.FOR_ITER_EFFECT:
+                return withJump ? -1 : 1;
             default:
                 return stackEffect;
         }
