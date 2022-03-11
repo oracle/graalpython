@@ -297,6 +297,12 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testSetComprehension() {
+        String source = "{x * 2 for x in range(10) if x % 2 == 0}";
+        doTest(source);
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +

@@ -156,8 +156,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object add(VirtualFrame frame, PSet self, Object o,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self, o, PNone.NONE);
+                        @Cached SetNodes.AddNode addNode) {
+            addNode.execute(frame, self, o);
             return PNone.NONE;
         }
     }

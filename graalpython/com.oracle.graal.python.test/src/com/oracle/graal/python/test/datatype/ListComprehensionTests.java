@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.test.datatype;
 
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class ListComprehensionTests {
 
@@ -71,6 +71,15 @@ public class ListComprehensionTests {
                         "print(foo())\n";
 
         assertPrints("[0, 1, 2, 1, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6]\n", source);
+    }
+
+    @Test
+    public void setComp() {
+        String source = "def foo():\n" +
+                        "    v = 10\n" +
+                        "    return {x - v for x in range(15) if x > v}\n" +
+                        "print(foo())";
+        assertPrints("{1, 2, 3, 4}\n", source);
     }
 
     @Test

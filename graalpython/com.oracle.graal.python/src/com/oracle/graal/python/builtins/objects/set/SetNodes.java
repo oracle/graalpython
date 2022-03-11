@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -63,8 +64,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -143,6 +146,25 @@ public abstract class SetNodes {
 
         public static ConstructSetNode create() {
             return SetNodesFactory.ConstructSetNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AddNode extends PNodeWithContext {
+        public abstract void execute(Frame frame, PSet self, Object o);
+
+        @Specialization
+        public static void add(VirtualFrame frame, PSet self, Object o,
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode) {
+            setItemNode.execute(frame, self, o, PNone.NONE);
+        }
+
+        public static AddNode create() {
+            return SetNodesFactory.AddNodeGen.create();
+        }
+
+        public static AddNode getUncached() {
+            return SetNodesFactory.AddNodeGen.getUncached();
         }
     }
 

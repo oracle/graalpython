@@ -1027,12 +1027,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.SetComp node) {
-        int savedOffset = setLocation(node);
-        try {
-            throw new UnsupportedOperationException("Not supported yet.");
-        } finally {
-            setLocation(savedOffset);
-        }
+        return visitComprehension(node, "<setcomp>", node.generators, node.element, ComprehensionType.SET);
     }
 
     @Override
