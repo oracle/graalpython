@@ -54,9 +54,20 @@ final class Instruction {
         this.srcOffset = srcOffset;
         assert arg >= 0;
         assert opcode.argLength == -1 ||
-            opcode.argLength == 0 && arg == 0 ||
-            opcode.argLength == 1 && arg <= 0xff ||
-            opcode.argLength == 2 && arg <= 0xffff;
+                        opcode.argLength == 0 && arg == 0 ||
+                        opcode.argLength == 1 && arg <= 0xff ||
+                        opcode.argLength == 2 && arg <= 0xffff;
+    }
+
+    @Override
+    public String toString() {
+        if (target != null) {
+            return String.format("%s %s", opcode, target);
+        }
+        if (opcode.hasArg()) {
+            return String.format("%s %s", opcode, arg);
+        }
+        return opcode.toString();
     }
 
     Block getTarget() {

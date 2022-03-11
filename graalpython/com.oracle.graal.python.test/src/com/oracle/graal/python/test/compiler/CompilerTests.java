@@ -122,7 +122,7 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testVarKwargs() {
         String source = "def foo(**kwargs):\n" +
-                "  print(**kwargs)\n";
+                        "  print(**kwargs)\n";
         doTest(source);
     }
 
@@ -287,6 +287,12 @@ public class CompilerTests extends PythonTests {
                         "class Bar(Foo):\n" +
                         "    def boo(self):\n" +
                         "        super().boo()\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testListComprehension() {
+        String source = "[str(x) for y in [[1, 2, 3], [4, 5, 6]] for x in y if x < 5]";
         doTest(source);
     }
 

@@ -47,7 +47,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Stack;
 
-import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
@@ -512,8 +511,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(ComprehensionTy aThis) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public Void visit(ComprehensionTy node) {
+        throw new IllegalStateException("Should not be visited");
     }
 
     @Override
@@ -906,14 +905,92 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    private enum ComprehensionType {
+        LIST(CollectionBits.LIST),
+        SET(CollectionBits.SET),
+        DICT(CollectionBits.DICT),
+        GENEXPR(-1);
+
+        public final int typeBits;
+
+        ComprehensionType(int typeBits) {
+            this.typeBits = typeBits;
+        }
+    }
+
     @Override
     public Void visit(ExprTy.ListComp node) {
+        return visitComprehension(node, "<listcomp>", node.generators, node.element, ComprehensionType.LIST);
+    }
+
+    private Void visitComprehension(ExprTy node, String name, ComprehensionTy[] generators, ExprTy element, ComprehensionType type) {
+        /*
+         * Create an inner anonymous function to run the comprehension. It takes the outermost
+         * iterator as an argument and returns the accumulated sequence
+         */
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false);
+            if (type != ComprehensionType.GENEXPR) {
+                // The result accumulator, empty at the beginning
+                addOp(COLLECTION_FROM_STACK, type.typeBits);
+            }
+            visitComprehensionGenerator(generators, 0, element, type);
+            if (type != ComprehensionType.GENEXPR) {
+                addOp(RETURN_VALUE);
+            }
+            CodeUnit code = unit.assemble(filename, 0);
+            exitScope();
+            makeClosure(code, 0, 0);
+            generators[0].iter.accept(this);
+            addOp(GET_ITER);
+            addOp(CALL_FUNCTION, 1);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
+    }
+
+    private void visitComprehensionGenerator(ComprehensionTy[] generators, int i, ExprTy element, ComprehensionType type) {
+        ComprehensionTy gen = generators[i];
+        if (i == 0) {
+            /* The iterator is the function argument for the outermost generator */
+            addOp(LOAD_FAST, 0);
+        } else {
+            /* Create the iterator for nested iteration */
+            gen.iter.accept(this);
+            addOp(GET_ITER);
+        }
+        Block start = new Block();
+        Block ifCleanup = new Block();
+        Block anchor = new Block();
+        unit.useNextBlock(start);
+        addOp(FOR_ITER, anchor);
+        gen.target.accept(this);
+        for (ExprTy ifExpr : gen.ifs) {
+            jumpIf(ifExpr, ifCleanup, false);
+        }
+        if (i + 1 < generators.length) {
+            visitComprehensionGenerator(generators, i + 1, element, type);
+        }
+        if (i == generators.length - 1) {
+            /* The last generator produces the resulting element to be appended/yielded */
+            element.accept(this);
+            if (type == ComprehensionType.GENEXPR) {
+                // TODO yield and pop
+                throw new IllegalStateException("Not supported yet.");
+            } else {
+                /*
+                 * There is an iterator for every generator on the stack. We need to append to the
+                 * collection that's below them
+                 */
+                assert generators.length < CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                addOp(ADD_TO_COLLECTION, (generators.length + 1) | type.typeBits);
+            }
+        }
+        unit.useNextBlock(ifCleanup);
+        addOp(JUMP_BACKWARD, start);
+        unit.useNextBlock(anchor);
     }
 
     @Override
@@ -1103,8 +1180,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Assert node) {
         setLocation(node);
         Block end = new Block();
-        node.test.accept(this);
-        addOp(POP_AND_JUMP_IF_TRUE, end);
+        jumpIf(node.test, end, true);
         addOp(LOAD_ASSERTION_ERROR);
         if (node.msg != null) {
             node.msg.accept(this);
@@ -1401,12 +1477,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.If node) {
         setLocation(node);
-        node.test.accept(this);
         Block then = new Block();
         Block end = new Block();
         Block alt = node.orElse != null && node.orElse.length > 0 ? new Block() : end;
-
-        addOp(POP_AND_JUMP_IF_FALSE, alt);
+        jumpIf(node.test, alt, false);
         unit.useNextBlock(then);
         visitSequence(node.body);
         if (alt != end) {
@@ -1416,6 +1490,17 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         unit.useNextBlock(end);
         return null;
+    }
+
+    private void jumpIf(ExprTy test, Block next, boolean jumpIfTrue) {
+        // TODO Optimize for various test types, such as short-circuit operators
+        // See compiler_jump_if in CPython
+        test.accept(this);
+        if (jumpIfTrue) {
+            addOp(POP_AND_JUMP_IF_TRUE, next);
+        } else {
+            addOp(POP_AND_JUMP_IF_FALSE, next);
+        }
     }
 
     @Override
@@ -1662,8 +1747,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block end = new Block();
         Block orelse = node.orElse != null ? new Block() : end;
         unit.useNextBlock(test);
-        node.test.accept(this);
-        addOp(POP_AND_JUMP_IF_FALSE, orelse);
+        jumpIf(node.test, orelse, false);
         unit.useNextBlock(body);
         unit.blockInfoStack.push(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
         try {

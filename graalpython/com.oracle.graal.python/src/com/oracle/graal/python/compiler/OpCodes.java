@@ -180,6 +180,7 @@ public enum OpCodes {
     COLLECTION_FROM_STACK(     1,    Constants.REDUCE_EFFECT5), // build a collection from arg elements on stack
     COLLECTION_ADD_COLLECTION( 1,   -1), // add the collection on top of stack to the collection underneath
     COLLECTION_FROM_COLLECTION(1,    0), // replace the collection on top of stack with a collection of another type
+    ADD_TO_COLLECTION(         1,   -1), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
     KWARGS_DICT_MERGE(         0,   -1), // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
     MAKE_KEYWORD(              1,    0),
 
