@@ -86,6 +86,26 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testGetItem() {
+        doTest("a[3]");
+    }
+
+    @Test
+    public void testSetItem() {
+        doTest("a[3] = 1");
+    }
+
+    @Test
+    public void testSlice() {
+        doTest("a[3:9]");
+    }
+
+    @Test
+    public void testSliceStep() {
+        doTest("a[3:9:2]");
+    }
+
+    @Test
     public void testCall() {
         doTest("range(num)");
     }

@@ -123,6 +123,7 @@ public enum OpCodes {
     STORE_DEREF(               1,   -1),
     DELETE_DEREF(              1,    0),
     LOAD_CLASSDEREF(           1,    1),
+    BUILD_SLICE(               1,    Constants.REDUCE_EFFECT),
 
     IMPORT_NAME(               1,   -1),
     IMPORT_FROM(               1,    1),

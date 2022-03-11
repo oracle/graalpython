@@ -69,6 +69,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
@@ -251,6 +253,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
     private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
     private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
+    private static final SliceNodes.CreateSliceNode UNCACHED_CREATE_SLICE = SliceNodes.CreateSliceNode.getUncached();
+    private static final NodeSupplier<SliceNodes.CreateSliceNode> NODE_CREATE_SLICE = SliceNodes.CreateSliceNode::create;
     private static final ListNodes.AppendNode UNCACHED_LIST_APPEND = ListNodes.AppendNode.getUncached();
     private static final NodeSupplier<ListNodes.AppendNode> NODE_LIST_APPEND = ListNodes.AppendNode::create;
     private static final SetNodes.AddNode UNCACHED_SET_ADD = SetNodes.AddNode.getUncached();
@@ -810,6 +814,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         String key = (String) localConsts[oparg];
                         Object value = frame.getObject(stackTop);
                         frame.setObject(stackTop, new PKeyword(key, value));
+                        break;
+                    }
+                    case BUILD_SLICE: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        Object step;
+                        if (oparg == 3) {
+                            step = frame.getObject(stackTop);
+                            frame.setObject(stackTop--, null);
+                        } else {
+                            assert oparg == 2;
+                            step = PNone.NONE;
+                        }
+                        Object stop = frame.getObject(stackTop);
+                        frame.setObject(stackTop--, null);
+                        Object start = frame.getObject(stackTop);
+                        SliceNodes.CreateSliceNode sliceNode = insertChildNode(localNodes[bci], UNCACHED_CREATE_SLICE, NODE_CREATE_SLICE, bci);
+                        PSlice slice = sliceNode.execute(start, stop, step);
+                        frame.setObject(stackTop, slice);
                         break;
                     }
                     case COLLECTION_FROM_COLLECTION: {

@@ -1034,7 +1034,23 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Slice node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            int n = 2;
+            if (node.lower != null) {
+                node.lower.accept(this);
+            } else {
+                addOp(LOAD_NONE);
+            }
+            if (node.upper != null) {
+                node.upper.accept(this);
+            } else {
+                addOp(LOAD_NONE);
+            }
+            if (node.step != null) {
+                node.step.accept(this);
+                n++;
+            }
+            addOp(BUILD_SLICE, n);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
