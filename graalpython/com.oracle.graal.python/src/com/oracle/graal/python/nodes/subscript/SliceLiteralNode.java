@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,8 +75,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class SliceLiteralNode extends ExpressionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
-    public abstract PSlice execute(VirtualFrame frame, Object start, Object stop, Object step);
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {

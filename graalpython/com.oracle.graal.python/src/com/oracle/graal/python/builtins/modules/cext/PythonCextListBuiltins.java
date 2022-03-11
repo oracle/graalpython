@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -269,15 +269,15 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         @Specialization
         Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached BranchProfile isIntRangeProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
                     isIntRangeProfile.enter();
-                    return getItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE));
+                    return getItemNode.execute(frame, list, sliceNode.execute((int) iLow, (int) iHigh, PNone.NONE));
                 }
-                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return getItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -287,10 +287,10 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         @Specialization
         Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return getItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -327,15 +327,15 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         @Specialization
         static Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached BranchProfile isIntRangeProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
                     isIntRangeProfile.enter();
-                    setItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE), s);
+                    setItemNode.execute(frame, list, sliceNode.execute((int) iLow, (int) iHigh, PNone.NONE), s);
                 }
-                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
+                setItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE), s);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -346,10 +346,10 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
         @Specialization
         static Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
+                setItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE), s);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

@@ -197,6 +197,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -238,7 +239,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -3244,26 +3244,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // slice(start, stop[, step])
     @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
-    public abstract static class CreateSliceNode extends PythonBuiltinNode {
-
-        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
+    abstract static class SliceNode extends PythonQuaternaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(second)"})
         @SuppressWarnings("unused")
-        static Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
+        static Object singleArg(Object cls, Object first, Object second, Object third,
+                        @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(PNone.NONE, first, PNone.NONE);
         }
 
-        @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
+        @Specialization(guards = {"!isNoValue(stop)", "isNoValue(step)"})
         @SuppressWarnings("unused")
-        static Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, PNone.NONE);
+        static Object twoArgs(Object cls, Object start, Object stop, Object step,
+                        @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(start, stop, PNone.NONE);
         }
 
-        @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
-        static Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, third);
+        @Fallback
+        static Object threeArgs(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+                        @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(start, stop, step);
         }
     }
 
