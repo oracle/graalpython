@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.compiler.OpCodesConstants.*;
-
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
@@ -65,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -82,6 +82,7 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -248,6 +249,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
     private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
     private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
+    private static final ListNodes.AppendNode UNCACHED_LIST_APPEND = ListNodes.AppendNode.getUncached();
+    private static final NodeSupplier<ListNodes.AppendNode> NODE_LIST_APPEND = ListNodes.AppendNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -833,6 +836,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         int type = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
                         stackTop = bytecodeCollectionFromStack(frame, type, count, stackTop, localNodes, bci - 1);
                         stackTop = bytecodeCollectionAddCollection(frame, type, stackTop, localNodes, bci);
+                        break;
+                    }
+                    case ADD_TO_COLLECTION: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        int depth = oparg & OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int type = oparg & ~OpCodes.CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        Object collection = frame.getObject(stackTop - depth);
+                        Object item = frame.getObject(stackTop);
+                        switch (type) {
+                            case OpCodes.CollectionBits.LIST: {
+                                ListNodes.AppendNode appendNode = insertChildNode(localNodes[bci], UNCACHED_LIST_APPEND, NODE_LIST_APPEND, bci);
+                                appendNode.execute((PList) collection, item);
+                                break;
+                            }
+                        }
+                        frame.setObject(stackTop--, null);
                         break;
                     }
                     case NOP:
