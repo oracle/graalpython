@@ -164,6 +164,7 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -239,7 +240,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -3250,26 +3250,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // slice(start, stop[, step])
     @Builtin(name = "slice", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
-    public abstract static class CreateSliceNode extends PythonBuiltinNode {
-
-        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
+    abstract static class SliceNode extends PythonQuaternaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(second)"})
         @SuppressWarnings("unused")
-        static Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
+        static Object singleArg(Object cls, Object first, Object second, Object third,
+                        @Cached SliceNodes.CreateSliceNode sliceNode) {
+            return sliceNode.execute(PNone.NONE, first, PNone.NONE);
         }
 
-        @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
-        @SuppressWarnings("unused")
-        static Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, PNone.NONE);
-        }
-
-        @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
-        static Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, first, second, third);
+        @Fallback
+        static Object moreArgs(Object cls, Object start, Object stop, Object step,
+                        @Cached SliceNodes.CreateSliceNode sliceNode) {
+            return sliceNode.execute(start, stop, step);
         }
     }
 

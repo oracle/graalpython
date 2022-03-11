@@ -76,8 +76,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public abstract class SliceLiteralNode extends ExpressionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public abstract PSlice execute(VirtualFrame frame, Object start, Object stop, Object step);
-
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
         return factory.createIntSlice(start, stop, step);

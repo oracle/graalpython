@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -77,7 +78,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -202,15 +202,15 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         @Specialization
         Object getSlice(VirtualFrame frame, PTuple tuple, long iLow, long iHigh,
                         @Cached GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached BranchProfile isIntRangeProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
                     isIntRangeProfile.enter();
-                    return getItemNode.execute(frame, tuple, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE));
+                    return getItemNode.execute(frame, tuple, sliceNode.execute((int) iLow, (int) iHigh, PNone.NONE));
                 }
-                return getItemNode.execute(frame, tuple, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return getItemNode.execute(frame, tuple, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -220,10 +220,10 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         @Specialization
         Object getSlice(VirtualFrame frame, PTuple tuple, Object iLow, Object iHigh,
                         @Cached GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getItemNode.execute(frame, tuple, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return getItemNode.execute(frame, tuple, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -617,9 +618,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         public PNone clear(VirtualFrame frame, PByteArray byteArray,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached SliceLiteralNode slice) {
+                        @Cached SliceNodes.CreateSliceNode sliceNode) {
             byteArray.checkCanResize(this);
-            deleteNode.execute(frame, byteArray.getSequenceStorage(), slice.execute(frame, PNone.NONE, PNone.NONE, 1));
+            deleteNode.execute(frame, byteArray.getSequenceStorage(), sliceNode.execute(PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
         }
     }

@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
@@ -100,7 +101,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -406,14 +406,14 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isString(s) || isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object s, long start, long end,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, s, __GETITEM__);
-                return callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+                return callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -507,7 +507,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction > 0"})
         public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached CallNode callNode,
                         @Cached EndsWithNode endsWith,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -515,7 +515,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
-                Object slice = callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+                Object slice = callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
                 return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -526,7 +526,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
         public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached CallNode callNode,
                         @Cached StartsWithNode endsWith,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -534,7 +534,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, string, __GETITEM__);
-                Object slice = callNode.execute(getItemCallable, sliceNode.execute(frame, start, end, PNone.NONE));
+                Object slice = callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
                 return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

@@ -40,24 +40,24 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -79,20 +79,20 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {
         @Specialization
-        public static Object slice(VirtualFrame frame, long start, long stop, Object step,
-                        @Cached SliceLiteralNode sliceNode,
+        public static Object slice(long start, long stop, Object step,
+                        @Cached SliceNodes.CreateSliceNode sliceNode,
                         @Cached BranchProfile isIntRangeProfile) {
             if (PInt.isIntRange(start) && PInt.isIntRange(stop)) {
                 isIntRangeProfile.enter();
-                return sliceNode.execute(frame, (int) start, (int) stop, step);
+                return sliceNode.execute((int) start, (int) stop, step);
             }
-            return sliceNode.execute(frame, start, stop, step);
+            return sliceNode.execute(start, stop, step);
         }
 
         @Specialization(guards = {"!isInteger(start) || !isInteger(stop)"})
-        public static Object slice(VirtualFrame frame, Object start, Object stop, Object step,
-                        @Cached SliceLiteralNode sliceNode) {
-            return sliceNode.execute(frame, start, stop, step);
+        public static Object slice(Object start, Object stop, Object step,
+                        @Cached SliceNodes.CreateSliceNode sliceNode) {
+            return sliceNode.execute(start, stop, step);
         }
     }
 
