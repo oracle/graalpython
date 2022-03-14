@@ -74,9 +74,11 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -210,9 +212,10 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
+    @GenerateUncached
     public abstract static class UpdateSingleNode extends Node {
 
-        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, Object other);
+        public abstract HashingStorage execute(Frame frame, HashingStorage storage, Object other);
 
         @Specialization
         static HashingStorage update(HashingStorage storage, PHashingCollection other,
@@ -270,6 +273,14 @@ public final class SetBuiltins extends PythonBuiltins {
                 }
                 curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
             }
+        }
+
+        public static UpdateSingleNode create() {
+            return SetBuiltinsFactory.UpdateSingleNodeGen.create();
+        }
+
+        public static UpdateSingleNode getUncached() {
+            return SetBuiltinsFactory.UpdateSingleNodeGen.getUncached();
         }
     }
 
