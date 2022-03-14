@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,6 +43,10 @@
 #define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})
 #define UNWRAP_TRACKER(_h) ((_h)._i)
 #define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})
+#define UNWRAP_THREADSTATE(_ts) ((_ts)._i)
+#define WRAP_THREADSTATE(_ptr) ((HPyThreadState){(_ptr)})
+#define UNWRAP_FIELD(_h) ((_h)._i)
+#define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})
 #else
 #define UNWRAP(_h) _h
 #define WRAP(_ptr) _ptr
@@ -52,6 +56,10 @@
 #define WRAP_LIST_BUILDER(_ptr) _ptr
 #define UNWRAP_TRACKER(_h) _h
 #define WRAP_TRACKER(_ptr) _ptr
+#define UNWRAP_THREADSTATE(_ts) _ts
+#define WRAP_THREADSTATE(_data) _data
+#define UNWRAP_FIELD(_h) _h
+#define WRAP_FIELD(_ptr) _ptr
 #endif
 
 HPyAPI_FUNC HPy HPyModule_Create(HPyContext *ctx, HPyModuleDef *def) {
@@ -287,35 +295,37 @@ HPyAPI_FUNC HPy HPy_CallTupleDict(HPyContext *ctx, HPy callable, HPy args, HPy k
 }
 
 HPyAPI_FUNC HPy HPyErr_SetString(HPyContext *ctx, HPy h_type, const char *message) {
-     ctx->ctx_Err_SetString ( ctx, h_type, message ); return HPy_NULL; 
+     ctx->ctx_Err_SetString ( ctx, UNWRAP(h_type), message ); return HPy_NULL; 
 }
 
 HPyAPI_FUNC HPy HPyErr_SetObject(HPyContext *ctx, HPy h_type, HPy h_value) {
-     ctx->ctx_Err_SetObject ( ctx, h_type, h_value ); return HPy_NULL; 
+     ctx->ctx_Err_SetObject ( ctx, UNWRAP(h_type), UNWRAP(h_value) ); return HPy_NULL; 
 }
 
 HPyAPI_FUNC HPy HPyErr_SetFromErrnoWithFilename(HPyContext *ctx, HPy h_type, const char *filename_fsencoded) {
-     return ctx->ctx_Err_SetFromErrnoWithFilename ( ctx, h_type, filename_fsencoded ); 
+     return WRAP(ctx->ctx_Err_SetFromErrnoWithFilename ( ctx, UNWRAP(h_type), filename_fsencoded )); 
 }
 
 HPyAPI_FUNC HPy HPyErr_SetFromErrnoWithFilenameObjects(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2) {
-     ctx->ctx_Err_SetFromErrnoWithFilenameObjects ( ctx, h_type, filename1, filename2 ); return HPy_NULL; 
+    ctx->ctx_Err_SetFromErrnoWithFilenameObjects ( ctx, UNWRAP(h_type), UNWRAP(filename1), UNWRAP(filename2) ); 
+    return HPy_NULL;
 }
 
 HPyAPI_FUNC int HPyErr_Occurred(HPyContext *ctx) {
-     return ctx->ctx_Err_Occurred ( ctx );
+     return ctx->ctx_Err_Occurred ( ctx ); 
 }
 
 HPyAPI_FUNC int HPyErr_ExceptionMatches(HPyContext *ctx, HPy exc) {
-     return ctx->ctx_Err_ExceptionMatches ( ctx, exc ); 
+     return ctx->ctx_Err_ExceptionMatches ( ctx, UNWRAP(exc) ); 
 }
 
 HPyAPI_FUNC HPy HPyErr_NoMemory(HPyContext *ctx) {
-     ctx->ctx_Err_NoMemory ( ctx ); return HPy_NULL; 
+    ctx->ctx_Err_NoMemory ( ctx );
+    return HPy_NULL;
 }
 
 HPyAPI_FUNC void HPyErr_Clear(HPyContext *ctx) {
-     ctx->ctx_Err_Clear ( ctx );
+     ctx->ctx_Err_Clear ( ctx ); 
 }
 
 HPyAPI_FUNC HPy HPyErr_NewException(HPyContext *ctx, const char *name, HPy base, HPy dict) {
@@ -327,7 +337,7 @@ HPyAPI_FUNC HPy HPyErr_NewExceptionWithDoc(HPyContext *ctx, const char *name, co
 }
 
 HPyAPI_FUNC int HPyErr_WarnEx(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level) {
-     return ctx->ctx_Err_WarnEx ( ctx, category, message, stack_level ); 
+     return ctx->ctx_Err_WarnEx ( ctx, UNWRAP(category), message, stack_level ); 
 }
 
 HPyAPI_FUNC int HPy_IsTrue(HPyContext *ctx, HPy h) {
@@ -379,7 +389,7 @@ HPyAPI_FUNC HPy HPy_GetItem_s(HPyContext *ctx, HPy obj, const char *key) {
 }
 
 HPyAPI_FUNC int HPy_Contains(HPyContext *ctx, HPy container, HPy key) {
-     return ctx->ctx_Contains ( ctx, container, key ); 
+     return ctx->ctx_Contains ( ctx, UNWRAP(container), UNWRAP(key) ); 
 }
 
 HPyAPI_FUNC int HPy_SetItem(HPyContext *ctx, HPy obj, HPy key, HPy value) {
@@ -479,11 +489,11 @@ HPyAPI_FUNC int HPyUnicode_Check(HPyContext *ctx, HPy h) {
 }
 
 HPyAPI_FUNC HPy HPyUnicode_AsASCIIString(HPyContext *ctx, HPy h) {
-     return ctx->ctx_Unicode_AsASCIIString ( ctx, h ); 
+     return WRAP(ctx->ctx_Unicode_AsASCIIString ( ctx, UNWRAP(h) )); 
 }
 
 HPyAPI_FUNC HPy HPyUnicode_AsLatin1String(HPyContext *ctx, HPy h) {
-     return ctx->ctx_Unicode_AsLatin1String ( ctx, h ); 
+     return WRAP(ctx->ctx_Unicode_AsLatin1String ( ctx, UNWRAP(h) )); 
 }
 
 HPyAPI_FUNC HPy HPyUnicode_AsUTF8String(HPyContext *ctx, HPy h) {
@@ -503,23 +513,23 @@ HPyAPI_FUNC HPy HPyUnicode_DecodeFSDefault(HPyContext *ctx, const char *v) {
 }
 
 HPyAPI_FUNC HPy HPyUnicode_DecodeFSDefaultAndSize(HPyContext *ctx, const char *v, HPy_ssize_t size) {
-     return ctx->ctx_Unicode_DecodeFSDefaultAndSize ( ctx, v, size ); 
+     return WRAP(ctx->ctx_Unicode_DecodeFSDefaultAndSize ( ctx, v, size )); 
 }
 
 HPyAPI_FUNC HPy HPyUnicode_EncodeFSDefault(HPyContext *ctx, HPy h) {
-     return ctx->ctx_Unicode_EncodeFSDefault ( ctx, h ); 
+     return WRAP(ctx->ctx_Unicode_EncodeFSDefault ( ctx, UNWRAP(h) )); 
 }
 
 HPyAPI_FUNC HPy_UCS4 HPyUnicode_ReadChar(HPyContext *ctx, HPy h, HPy_ssize_t index) {
-     return ctx->ctx_Unicode_ReadChar ( ctx, h, index ); 
+     return ctx->ctx_Unicode_ReadChar ( ctx, UNWRAP(h), index ); 
 }
 
 HPyAPI_FUNC HPy HPyUnicode_DecodeASCII(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors) {
-     return ctx->ctx_Unicode_DecodeASCII ( ctx, s, size, errors ); 
+     return WRAP(ctx->ctx_Unicode_DecodeASCII ( ctx, s, size, errors )); 
 }
 
 HPyAPI_FUNC HPy HPyUnicode_DecodeLatin1(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors) {
-     return ctx->ctx_Unicode_DecodeLatin1 ( ctx, s, size, errors ); 
+     return WRAP(ctx->ctx_Unicode_DecodeLatin1 ( ctx, s, size, errors )); 
 }
 
 HPyAPI_FUNC int HPyList_Check(HPyContext *ctx, HPy h) {
@@ -615,19 +625,19 @@ HPyAPI_FUNC void HPyTracker_Close(HPyContext *ctx, HPyTracker ht) {
 }
 
 HPyAPI_FUNC void HPyField_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
-     ctx->ctx_Field_Store ( ctx, target_object, target_field, h ); 
+     ctx->ctx_Field_Store ( ctx, UNWRAP(target_object), target_field, UNWRAP(h) ); 
 }
 
 HPyAPI_FUNC HPy HPyField_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
-     return ctx->ctx_Field_Load ( ctx, source_object, source_field ); 
+     return WRAP(ctx->ctx_Field_Load ( ctx, UNWRAP(source_object), UNWRAP_FIELD(source_field) )); 
 }
 
 HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx) {
-     return ctx->ctx_LeavePythonExecution ( ctx ); 
+     return WRAP_THREADSTATE(ctx->ctx_LeavePythonExecution ( ctx )); 
 }
 
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state) {
-     ctx->ctx_ReenterPythonExecution ( ctx, state ); 
+     ctx->ctx_ReenterPythonExecution ( ctx, UNWRAP_THREADSTATE(state) ); 
 }
 
 HPyAPI_FUNC void _HPy_Dump(HPyContext *ctx, HPy h) {

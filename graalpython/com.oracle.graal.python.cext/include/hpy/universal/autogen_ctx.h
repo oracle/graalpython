@@ -35,6 +35,7 @@
 */
 
 typedef HPy* _HPyPtr;
+typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
 
 #ifdef GRAALVM_PYTHON_LLVM
@@ -42,6 +43,8 @@ typedef HPy _HPyConst;
 #define HPyListBuilder void*
 #define HPyTupleBuilder void*
 #define HPyTracker void*
+#define HPyField void*
+#define HPyThreadState void*
 #endif
 
 
@@ -268,7 +271,7 @@ struct _HPyContext_s {
     int (*ctx_Tracker_Add)(HPyContext *ctx, HPyTracker ht, HPy h);
     void (*ctx_Tracker_ForgetAll)(HPyContext *ctx, HPyTracker ht);
     void (*ctx_Tracker_Close)(HPyContext *ctx, HPyTracker ht);
-    void (*ctx_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
+    void (*ctx_Field_Store)(HPyContext *ctx, HPy target_object, _HPyFieldPtr target_field, HPy h);
     HPy (*ctx_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
     HPyThreadState (*ctx_LeavePythonExecution)(HPyContext *ctx);
     void (*ctx_ReenterPythonExecution)(HPyContext *ctx, HPyThreadState state);
@@ -280,4 +283,6 @@ struct _HPyContext_s {
 #undef HPyListBuilder
 #undef HPyTupleBuilder
 #undef HPyTracker
+#undef HPyField
+#undef HPyThreadState
 #endif
