@@ -311,6 +311,24 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testListLiteral() {
+        String source = "[1, 2, 3, *a, 5]";
+        doTest(source);
+    }
+
+    @Test
+    public void testSetLiteral() {
+        String source = "{1, 2, 3, *a, 5}";
+        doTest(source);
+    }
+
+    @Test
+    public void testDictLiteral() {
+        String source = "{'a': 'b', 1: 2, **a, None: True}";
+        doTest(source);
+    }
+
+    @Test
     public void testListComprehension() {
         String source = "[str(x) for y in [[1, 2, 3], [4, 5, 6]] for x in y if x < 5]";
         doTest(source);

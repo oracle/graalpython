@@ -316,50 +316,128 @@ public class Compiler implements SSTreeVisitor<Void> {
         return setLocation(node.getStartOffset());
     }
 
-    private void collectIntoArray(ExprTy[] nodes, int bits, int alreadyOnStack) {
-        boolean collectionOnStack = false;
-        int stackItems = alreadyOnStack;
-        for (ExprTy e : nodes) {
-            if (e instanceof ExprTy.Starred) {
-                // splat
-                if (stackItems > 0) {
-                    collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
-                    collectionOnStack = true;
-                    stackItems = 0;
-                }
-                e.accept(this);
-                if (collectionOnStack) {
-                    addOp(COLLECTION_ADD_COLLECTION, bits);
-                } else {
-                    addOp(COLLECTION_FROM_COLLECTION, bits);
-                }
-                collectionOnStack = true;
-            } else {
-                e.accept(this);
-                stackItems++;
-            }
-            if (stackItems >= CollectionBits.MAX_STACK_ELEMENT_COUNT) {
-                collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
-                collectionOnStack = true;
-                stackItems = 0;
+    private class Collector {
+        protected final int typeBits;
+        protected final int stackItemsPerItem;
+        protected int stackItems = 0;
+        protected boolean collectionOnStack = false;
+
+        public Collector(int typeBits) {
+            this.typeBits = typeBits;
+            stackItemsPerItem = typeBits == CollectionBits.DICT ? 2 : 1;
+        }
+
+        public Collector(int typeBits, int stackItems) {
+            this(typeBits);
+            this.stackItems = stackItems;
+        }
+
+        public void appendItem() {
+            stackItems += stackItemsPerItem;
+            if (stackItems + stackItemsPerItem > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                doFlushStack();
             }
         }
-        if (stackItems > 0 || !collectionOnStack) {
-            collectIntoArrayFromStack(bits, collectionOnStack, stackItems);
+
+        public void flushStackIfNecessary() {
+            if (stackItems > 0) {
+                doFlushStack();
+            }
+        }
+
+        protected void doFlushStack() {
+            assert stackItems <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
+            if (collectionOnStack) {
+                addOp(COLLECTION_ADD_STACK, typeBits | stackItems);
+            } else {
+                addOp(COLLECTION_FROM_STACK, typeBits | stackItems);
+            }
+            collectionOnStack = true;
+            stackItems = 0;
+        }
+
+        public void appendCollection() {
+            assert stackItems == 0;
+            if (collectionOnStack) {
+                addOp(COLLECTION_ADD_COLLECTION, typeBits);
+            } else {
+                addOp(COLLECTION_FROM_COLLECTION, typeBits);
+            }
+            collectionOnStack = true;
+        }
+
+        public void finishCollection() {
+            if (stackItems > 0 || !collectionOnStack) {
+                doFlushStack();
+            }
         }
     }
 
-    private void collectIntoArrayFromStack(int bits, boolean collectionOnStack, int stackItems) {
-        assert stackItems <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
-        if (collectionOnStack) {
-            addOp(COLLECTION_ADD_STACK, bits | stackItems);
-        } else {
-            addOp(COLLECTION_FROM_STACK, bits | stackItems);
+    private class KwargsMergingDictCollector extends Collector {
+        public KwargsMergingDictCollector() {
+            super(CollectionBits.DICT);
         }
+
+        @Override
+        protected void doFlushStack() {
+            addOp(COLLECTION_FROM_STACK, typeBits | stackItems);
+            if (collectionOnStack) {
+                addOp(KWARGS_DICT_MERGE);
+            }
+            collectionOnStack = true;
+            stackItems = 0;
+        }
+
+        @Override
+        public void appendCollection() {
+            assert stackItems == 0;
+            if (collectionOnStack) {
+                addOp(KWARGS_DICT_MERGE);
+            } else {
+                addOp(COLLECTION_FROM_COLLECTION, typeBits);
+            }
+            collectionOnStack = true;
+        }
+    }
+
+    private void collectIntoArray(ExprTy[] nodes, int bits, int alreadyOnStack) {
+        Collector collector = new Collector(bits, alreadyOnStack);
+        for (ExprTy e : nodes) {
+            if (e instanceof ExprTy.Starred) {
+                // splat
+                collector.flushStackIfNecessary();
+                e.accept(this);
+                collector.appendCollection();
+            } else {
+                e.accept(this);
+                collector.appendItem();
+            }
+        }
+        collector.finishCollection();
     }
 
     private void collectIntoArray(ExprTy[] nodes, int bits) {
         collectIntoArray(nodes, bits, 0);
+    }
+
+    private void collectIntoDict(ExprTy[] keys, ExprTy[] values) {
+        assert keys.length == values.length;
+        Collector collector = new Collector(CollectionBits.DICT);
+        for (int i = 0; i < keys.length; i++) {
+            ExprTy key = keys[i];
+            ExprTy value = values[i];
+            if (key == null) {
+                // splat
+                collector.flushStackIfNecessary();
+                value.accept(this);
+                collector.appendCollection();
+            } else {
+                key.accept(this);
+                value.accept(this);
+                collector.appendItem();
+            }
+        }
+        collector.finishCollection();
     }
 
     private void collectKeywords(KeywordTy[] keywords) {
@@ -371,18 +449,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
         if (!hasSplat) {
-            int stackItems = 0;
-            boolean collectionOnStack = false;
+            Collector collector = new Collector(CollectionBits.KWORDS);
             for (KeywordTy k : keywords) {
                 k.accept(this);
-                stackItems++;
-                if (stackItems >= CollectionBits.MAX_STACK_ELEMENT_COUNT) {
-                    collectIntoArrayFromStack(CollectionBits.KWORDS, collectionOnStack, stackItems);
-                    collectionOnStack = true;
-                    stackItems = 0;
-                }
+                collector.appendItem();
             }
-            collectIntoArrayFromStack(CollectionBits.KWORDS, collectionOnStack, stackItems);
+            collector.finishCollection();
         } else if (keywords.length == 1) {
             // Just one splat, no need for merging
             keywords[0].value.accept(this);
@@ -392,29 +464,20 @@ public class Compiler implements SSTreeVisitor<Void> {
              * We need to emit bytecodes for proper keywords merging with checking for duplicate
              * keys. We accumulate them in an intermediate dict.
              */
-            int pairs = 0;
-            boolean collectionOnStack = false;
+            Collector collector = new KwargsMergingDictCollector();
             for (KeywordTy k : keywords) {
                 if (k.arg == null) {
                     // splat
-                    if (!collectionOnStack) {
-                        // may be empty
-                        addOp(COLLECTION_FROM_STACK, CollectionBits.DICT | pairs);
-                        collectionOnStack = true;
-                    }
+                    collector.flushStackIfNecessary();
                     k.value.accept(this);
-                    addOp(KWARGS_DICT_MERGE);
+                    collector.appendCollection();
                 } else {
                     addOp(LOAD_CONST, addObject(unit.constants, k.arg));
                     k.value.accept(this);
-                    pairs++;
-                }
-                if (pairs >= CollectionBits.MAX_STACK_ELEMENT_COUNT) {
-                    collectIntoArrayFromStack(CollectionBits.DICT, collectionOnStack, pairs);
-                    collectionOnStack = true;
-                    pairs = 0;
+                    collector.appendItem();
                 }
             }
+            collector.finishCollection();
             addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KWORDS);
         }
     }
@@ -778,7 +841,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Dict node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            collectIntoDict(node.keys, node.values);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
