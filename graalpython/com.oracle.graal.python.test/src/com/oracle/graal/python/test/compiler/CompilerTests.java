@@ -311,21 +311,43 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testTupleLiteral() {
+        doTest("(1, 2, 3)");
+    }
+
+    @Test
+    public void testTupleLiteralExpand() {
+        doTest("(1, 2, 3, *a, 5)");
+    }
+
+    @Test
     public void testListLiteral() {
-        String source = "[1, 2, 3, *a, 5]";
-        doTest(source);
+        doTest("[1, 2, 3]");
+    }
+
+    @Test
+    public void testListLiteralExpand() {
+        doTest("[1, 2, 3, *a, 5]");
     }
 
     @Test
     public void testSetLiteral() {
-        String source = "{1, 2, 3, *a, 5}";
-        doTest(source);
+        doTest("{1, 2, 3}");
+    }
+
+    @Test
+    public void testSetLiteralExpand() {
+        doTest("{1, 2, 3, *a, 5}");
     }
 
     @Test
     public void testDictLiteral() {
-        String source = "{'a': 'b', 1: 2, **a, None: True}";
-        doTest(source);
+        doTest("{'a': 'b', 1: 2}");
+    }
+
+    @Test
+    public void testDictLiteralExpand() {
+        doTest("{'a': 'b', 1: 2, **a, None: True}");
     }
 
     @Test

@@ -128,4 +128,26 @@ public class DictTests {
                         "print(d.items())\n";
         assertPrints("dict_items([(1, 1), (2, {1: 1, 2: {...}})])\n", source);
     }
+
+    @Test
+    public void dictLiteral1() {
+        String source = "print({'a': 'b', 'c': 'd'})\n";
+        assertPrints("{'a': 'b', 'c': 'd'}\n", source);
+    }
+
+    @Test
+    public void dictLiteral2() {
+        String source = "d1 = {'a': 'b', 'c': 'd'}\n" +
+                        "d2 = {**d1, 'e': 'f'}\n" +
+                        "print(d2)\n";
+        assertPrints("{'a': 'b', 'c': 'd', 'e': 'f'}\n", source);
+    }
+
+    @Test
+    public void dictLiteral3() {
+        String source = "d1 = {'c': 'd', 'e': 'f'}\n" +
+                        "d2 = {'a': 'b', **d1, 'g': 'g'}\n" +
+                        "print(d2)\n";
+        assertPrints("{'a': 'b', 'c': 'd', 'e': 'f', 'g': 'g'}\n", source);
+    }
 }

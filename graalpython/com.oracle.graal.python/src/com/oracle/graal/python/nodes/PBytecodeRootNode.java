@@ -58,16 +58,20 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
@@ -87,6 +91,7 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -255,6 +260,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
     private static final SliceNodes.CreateSliceNode UNCACHED_CREATE_SLICE = SliceNodes.CreateSliceNode.getUncached();
     private static final NodeSupplier<SliceNodes.CreateSliceNode> NODE_CREATE_SLICE = SliceNodes.CreateSliceNode::create;
+    private static final ListNodes.ConstructListNode UNCACHED_CONSTRUCT_LIST = ListNodes.ConstructListNode.getUncached();
+    private static final NodeSupplier<ListNodes.ConstructListNode> NODE_CONSTRUCT_LIST = ListNodes.ConstructListNode::create;
+    private static final TupleNodes.ConstructTupleNode UNCACHED_CONSTRUCT_TUPLE = TupleNodes.ConstructTupleNode.getUncached();
+    private static final NodeSupplier<TupleNodes.ConstructTupleNode> NODE_CONSTRUCT_TUPLE = TupleNodes.ConstructTupleNode::create;
+    private static final SetNodes.ConstructSetNode UNCACHED_CONSTRUCT_SET = SetNodes.ConstructSetNode.getUncached();
+    private static final NodeSupplier<SetNodes.ConstructSetNode> NODE_CONSTRUCT_SET = SetNodes.ConstructSetNode::create;
+    private static final NodeSupplier<HashingStorage.InitNode> NODE_HASHING_STORAGE_INIT = HashingStorage.InitNode::create;
+    private static final NodeSupplier<ListBuiltins.ListExtendNode> NODE_LIST_EXTEND = ListBuiltins.ListExtendNode::create;
+    private static final SetBuiltins.UpdateSingleNode UNCACHED_SET_UPDATE = SetBuiltins.UpdateSingleNode.getUncached();
+    private static final NodeSupplier<DictNodes.UpdateNode> NODE_DICT_UPDATE = DictNodes.UpdateNode::create;
+    private static final NodeSupplier<SetBuiltins.UpdateSingleNode> NODE_SET_UPDATE = SetBuiltins.UpdateSingleNode::create;
     private static final ListNodes.AppendNode UNCACHED_LIST_APPEND = ListNodes.AppendNode.getUncached();
     private static final NodeSupplier<ListNodes.AppendNode> NODE_LIST_APPEND = ListNodes.AppendNode::create;
     private static final SetNodes.AddNode UNCACHED_SET_ADD = SetNodes.AddNode.getUncached();
@@ -1975,7 +1991,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case CollectionBits.SET: {
                 PSet set = factory.createSet();
                 HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[nodeIndex], UNCACHED_SET_ITEM, NODE_SET_ITEM, nodeIndex);
-                for (int i = stackTop; i > stackTop - count; i--) {
+                for (int i = stackTop - count + 1; i <= stackTop; i++) {
                     newNode.execute(frame, set, frame.getObject(i), PNone.NONE);
                     frame.setObject(i, null);
                 }
@@ -1983,7 +1999,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.DICT: {
-                throw insertChildNode(localNodes[nodeIndex], NODE_RAISE, nodeIndex).raise(SystemError, "dict build");
+                PDict dict = factory.createDict();
+                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes[nodeIndex], UNCACHED_SET_ITEM, NODE_SET_ITEM, nodeIndex);
+                assert count % 2 == 0;
+                for (int i = stackTop - count + 1; i <= stackTop; i += 2) {
+                    setItem.execute(frame, dict, frame.getObject(i), frame.getObject(i + 1));
+                    frame.setObject(i, null);
+                    frame.setObject(i + 1, null);
+                }
+                res = dict;
+                break;
             }
             case CollectionBits.KWORDS: {
                 PKeyword[] kwds = new PKeyword[count];
@@ -2007,6 +2032,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object sourceCollection = frame.getObject(stackTop);
         Object result;
         switch (type) {
+            case CollectionBits.LIST: {
+                ListNodes.ConstructListNode constructNode = insertChildNode(localNodes[nodeIndex], UNCACHED_CONSTRUCT_LIST, NODE_CONSTRUCT_LIST, nodeIndex);
+                result = constructNode.execute(frame, sourceCollection);
+                break;
+            }
+            case CollectionBits.TUPLE: {
+                TupleNodes.ConstructTupleNode constructNode = insertChildNode(localNodes[nodeIndex], UNCACHED_CONSTRUCT_TUPLE, NODE_CONSTRUCT_TUPLE, nodeIndex);
+                result = constructNode.execute(frame, sourceCollection);
+                break;
+            }
+            case CollectionBits.SET: {
+                SetNodes.ConstructSetNode constructNode = insertChildNode(localNodes[nodeIndex], UNCACHED_CONSTRUCT_SET, NODE_CONSTRUCT_SET, nodeIndex);
+                result = constructNode.executeWith(frame, sourceCollection);
+                break;
+            }
+            case CollectionBits.DICT: {
+                // TODO create uncached node
+                HashingStorage.InitNode initNode = insertChildNode(localNodes[nodeIndex], NODE_HASHING_STORAGE_INIT, nodeIndex);
+                HashingStorage storage = initNode.execute(frame, sourceCollection, PKeyword.EMPTY_KEYWORDS);
+                result = factory.createDict(storage);
+                break;
+            }
             case CollectionBits.OBJECT: {
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, nodeIndex);
                 result = executeStarargsNode.executeWith(frame, sourceCollection);
@@ -2018,7 +2065,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             default:
-                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
+                throw CompilerDirectives.shouldNotReachHere("Unexpected collection type");
         }
         frame.setObject(stackTop, result);
     }
@@ -2029,6 +2076,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object collection2 = frame.getObject(stackTop);
         Object result;
         switch (type) {
+            case CollectionBits.LIST: {
+                // TODO uncached node
+                ListBuiltins.ListExtendNode extendNode = insertChildNode(localNodes[nodeIndex], NODE_LIST_EXTEND, nodeIndex);
+                extendNode.execute(frame, (PList) collection1, collection2);
+                result = collection1;
+                break;
+            }
+            case CollectionBits.SET: {
+                SetBuiltins.UpdateSingleNode updateNode = insertChildNode(localNodes[nodeIndex], UNCACHED_SET_UPDATE, NODE_SET_UPDATE, nodeIndex);
+                PSet set = (PSet) collection1;
+                set.setDictStorage(updateNode.execute(frame, set.getDictStorage(), collection2));
+                result = set;
+                break;
+            }
+            case CollectionBits.DICT: {
+                // TODO uncached node
+                DictNodes.UpdateNode updateNode = insertChildNode(localNodes[nodeIndex], NODE_DICT_UPDATE, nodeIndex);
+                updateNode.execute(frame, (PDict) collection1, collection2);
+                result = collection1;
+                break;
+            }
+            // Note: we don't allow this operation for tuple
             case CollectionBits.OBJECT: {
                 Object[] array1 = (Object[]) collection1;
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes[nodeIndex], UNCACHED_EXECUTE_STARARGS, NODE_EXECUTE_STARARGS, nodeIndex);
@@ -2050,7 +2119,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             default:
-                throw CompilerDirectives.shouldNotReachHere("Not supported yet");
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.getUncached().raise(SystemError, "Invalid type for COLLECTION_ADD_COLLECTION");
         }
         frame.setObject(stackTop--, null);
         frame.setObject(stackTop, result);

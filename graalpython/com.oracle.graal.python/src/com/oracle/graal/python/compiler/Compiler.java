@@ -1160,7 +1160,28 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case Store:
                     return unpackInto(node.elements);
                 case Load:
-                    collectIntoArray(node.elements, CollectionBits.TUPLE);
+                    /*
+                     * We don't have mutation operations for tuples, so if we cannot construct the
+                     * tuple within a single instruction, we construct a list and convert it to a
+                     * tuple.
+                     */
+                    boolean useList = node.elements.length > CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                    if (!useList) {
+                        for (ExprTy e : node.elements) {
+                            if (e instanceof ExprTy.Starred) {
+                                useList = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!useList) {
+                        collectIntoArray(node.elements, CollectionBits.TUPLE);
+                    } else {
+                        collectIntoArray(node.elements, CollectionBits.LIST);
+                        // FIXME this operation copies the underlying storage, we should make a
+                        // separate instruction for shallow conversion
+                        addOp(COLLECTION_FROM_COLLECTION, CollectionBits.TUPLE);
+                    }
                     return null;
                 case Delete:
                 default:
