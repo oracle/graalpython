@@ -5,9 +5,10 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 22.1.0
 * String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
-* Improved compatibility with PyPI packages `lxml`, `pytz`, `Pillow`, `urllib3`, `setuptools`
+* Improved compatibility with PyPI packages `lxml`, `pytz`, `Pillow`, `urllib3`, `setuptools`, `pytest`, `twine`, `jinja2`, and `six`
 * Introduced dependency on bouncycastle
 * Added support for more private key formats (PKCS#1, password protected) in ssl module
+* Added support for module freezing, which makes start to the Python REPL 30% faster and with 40% less memory usage.
 
 ## Version 22.0.0
 * Added support for `pyexpat` module.
