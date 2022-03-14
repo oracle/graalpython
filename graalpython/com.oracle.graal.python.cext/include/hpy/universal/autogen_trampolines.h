@@ -130,6 +130,14 @@ HPyAPI_FUNC HPy_ssize_t HPyLong_AsSsize_t(HPyContext *ctx, HPy h) {
      return ctx->ctx_Long_AsSsize_t ( ctx, UNWRAP(h) );
 }
 
+HPyAPI_FUNC void *HPyLong_AsVoidPtr(HPyContext *ctx, HPy h) {
+     return ctx->ctx_Long_AsVoidPtr ( ctx, UNWRAP(h) ); 
+}
+
+HPyAPI_FUNC double HPyLong_AsDouble(HPyContext *ctx, HPy h) {
+     return ctx->ctx_Long_AsDouble ( ctx, UNWRAP(h) ); 
+}
+
 HPyAPI_FUNC HPy HPyFloat_FromDouble(HPyContext *ctx, double v) {
      return WRAP(ctx->ctx_Float_FromDouble ( ctx, v ));
 }
@@ -338,6 +346,10 @@ HPyAPI_FUNC HPy HPyErr_NewExceptionWithDoc(HPyContext *ctx, const char *name, co
 
 HPyAPI_FUNC int HPyErr_WarnEx(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level) {
      return ctx->ctx_Err_WarnEx ( ctx, UNWRAP(category), message, stack_level ); 
+}
+
+HPyAPI_FUNC void HPyErr_WriteUnraisable(HPyContext *ctx, HPy obj) {
+     ctx->ctx_Err_WriteUnraisable ( ctx, UNWRAP(obj) ); 
 }
 
 HPyAPI_FUNC int HPy_IsTrue(HPyContext *ctx, HPy h) {
