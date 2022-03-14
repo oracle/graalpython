@@ -260,6 +260,8 @@ public abstract class GraalHPyDef {
         DESCR_SET(LLVMType.HPyFunc_descrsetfunc),
         DESCR_DELETE(LLVMType.HPyFunc_descrsetfunc),
         DESTROYFUNC(LLVMType.HPyFunc_destroyfunc),
+        TRAVERSE(LLVMType.HPyFunc_traverseproc),
+        DESTRUCTOR(LLVMType.HPyFunc_destructor),
         GETBUFFER(LLVMType.HPyFunc_getbufferproc),
         RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc);
 
@@ -360,8 +362,10 @@ public abstract class GraalHPyDef {
         HPY_TP_NEW(65, HPySlotWrapper.NULL, __NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, __REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__)),
+        HPY_TP_TRAVERSE(71, HPySlotWrapper.TRAVERSE),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, __MATMUL__, HPySlotWrapper.BINARYFUNC_R, __RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, __IMATMUL__),
+        HPY_TP_FINALIZE(80, HPySlotWrapper.DESTRUCTOR),
         HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC);
 
         /** The corresponding C enum value. */
@@ -395,9 +399,7 @@ public abstract class GraalHPyDef {
             this.attributeKeys = attributeKeys;
             if (attributeKeys.length > 0) {
                 this.signatures = new HPySlotWrapper[attributeKeys.length];
-                for (int i = 0; i < this.signatures.length; i++) {
-                    this.signatures[i] = signature;
-                }
+                Arrays.fill(this.signatures, signature);
             } else {
                 this.signatures = new HPySlotWrapper[]{signature};
             }

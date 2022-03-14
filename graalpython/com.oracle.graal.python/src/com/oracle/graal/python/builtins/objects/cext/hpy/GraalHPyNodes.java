@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
@@ -99,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -110,6 +112,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -122,8 +126,12 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -159,7 +167,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -2378,6 +2388,105 @@ public class GraalHPyNodes {
                     return JNIFunctionSignature.DESTROYFUNC;
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    protected static Object callBuiltinFunction(GraalHPyContext graalHPyContext, String func, Object[] pythonArguments,
+                    ReadAttributeFromObjectNode readAttr,
+                    CallNode callNode) {
+        Object builtinFunction = readAttr.execute(graalHPyContext.getContext().getBuiltins(), func);
+        return callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public static abstract class RecursiveExceptionMatches extends Node {
+        abstract int execute(GraalHPyContext context, Object err, Object exc);
+
+        @Specialization
+        int tuple(GraalHPyContext context, Object err, PTuple exc,
+                        @Cached RecursiveExceptionMatches recExcMatch,
+                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached LoopConditionProfile loopProfile) {
+            int len = SequenceStorageNodes.LenNode.getUncached().execute(exc.getSequenceStorage());
+            for (int i = 0; loopProfile.profile(i < len); i++) {
+                Object e = getItemNode.execute(exc, i);
+                if (recExcMatch.execute(context, err, e) != 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        int subtuple(GraalHPyContext context, Object err, Object exc,
+                        @Cached RecursiveExceptionMatches recExcMatch,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttr,
+                        @Cached CallNode callNode,
+                        @Cached CastToJavaIntExactNode cast,
+                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached LoopConditionProfile loopProfile) {
+            int len = cast.execute(callBuiltinFunction(context, BuiltinNames.LEN, new Object[]{exc}, readAttr, callNode));
+            for (int i = 0; loopProfile.profile(i < len); i++) {
+                Object e = getItemNode.execute(exc, i);
+                if (recExcMatch.execute(context, err, e) != 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        int execute(GraalHPyContext context, Object err, Object exc,
+                        @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttr,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached IsNode isNode,
+                        @Cached BranchProfile isBaseExceptionProfile,
+                        @Cached ConditionProfile isExceptionProfile) {
+            Object isInstance = callBuiltinFunction(context,
+                            BuiltinNames.ISINSTANCE,
+                            new Object[]{err, PythonBuiltinClassType.PBaseException},
+                            readAttr, callNode);
+            Object e = err;
+            if (isTrueNode.execute(null, isInstance)) {
+                isBaseExceptionProfile.enter();
+                e = getClassNode.execute(err);
+            }
+            if (isExceptionProfile.profile(
+                            isExceptionClass(context, e, isTypeNode, readAttr, callNode, isTrueNode) &&
+                                            isExceptionClass(context, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
+                return isSubClass(context, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
+            } else {
+                return isNode.execute(exc, e) ? 1 : 0;
+            }
+        }
+
+        protected boolean isTupleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+        }
+
+        static boolean isSubClass(GraalHPyContext graalHPyContext, Object derived, Object cls,
+                        ReadAttributeFromObjectNode readAttr,
+                        CallNode callNode,
+                        PyObjectIsTrueNode isTrueNode) {
+            return isTrueNode.execute(null, callBuiltinFunction(graalHPyContext,
+                            BuiltinNames.ISSUBCLASS,
+                            new Object[]{derived, cls}, readAttr, callNode));
+
+        }
+
+        private static boolean isExceptionClass(GraalHPyContext nativeContext, Object obj,
+                        IsTypeNode isTypeNode,
+                        ReadAttributeFromObjectNode readAttr,
+                        CallNode callNode,
+                        PyObjectIsTrueNode isTrueNode) {
+            return isTypeNode.execute(obj) && isSubClass(nativeContext, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
         }
     }
 }

@@ -41,12 +41,14 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF;
@@ -57,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
@@ -65,6 +68,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
@@ -81,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandl
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -104,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -132,15 +138,19 @@ import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -154,6 +164,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
@@ -174,6 +185,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -283,10 +295,9 @@ public abstract class GraalHPyContextFunctions {
      *
      * <pre>
      * typedef struct {
-     *     void *dummy;
-     *     const char* m_name;
-     *     const char* m_doc;
-     *     HPy_ssize_t m_size;
+     *     const char* name;
+     *     const char* doc;
+     *     HPy_ssize_t size;
      *     cpy_PyMethodDef *legacy_methods;
      *     HPyDef **defines;
      * } HPyModuleDef;
@@ -327,11 +338,11 @@ public abstract class GraalHPyContextFunctions {
                     String mName;
                     Object mDoc;
                     try {
-                        mName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_name")));
+                        mName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "name")));
 
                         // do not eagerly read the doc string; this turned out to be unnecessarily
                         // expensive
-                        mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_doc"));
+                        mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "doc"));
                     } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
@@ -420,7 +431,7 @@ public abstract class GraalHPyContextFunctions {
 
         @TruffleBoundary
         private static boolean checkLayout(Object moduleDef) {
-            String[] members = new String[]{"m_name", "m_doc", "m_size", "legacy_methods", "defines"};
+            String[] members = new String[]{"name", "doc", "size", "legacy_methods", "defines"};
             InteropLibrary lib = InteropLibrary.getUncached(moduleDef);
             for (String member : members) {
                 if (!lib.isMemberReadable(moduleDef, member)) {
@@ -518,6 +529,20 @@ public abstract class GraalHPyContextFunctions {
             } finally {
                 gil.release(mustRelease);
             }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyLongAsDouble extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PyLongAsDoubleNode asDoubleNode) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            return asDoubleNode.execute(asPythonObjectNode.execute(context, arguments[1]));
         }
     }
 
@@ -978,6 +1003,75 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrSetFromErrnoWithFilenameObjects extends GraalHPyContextFunction {
+
+        private final boolean withObjects;
+
+        public GraalHPyErrSetFromErrnoWithFilenameObjects(boolean withObjects) {
+            this.withObjects = withObjects;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached CallNode callExceptionConstructorNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, withObjects ? 4 : 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
+                Object i = callFromStringNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_ERRNO);
+                Object message = callFromStringNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_STRERROR, i);
+                try {
+                    if (!isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException)) {
+                        return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
+                    }
+                    Object exception = null;
+                    if (!withObjects) {
+                        if (!lib.isNull(arguments[2])) {
+                            Object filename_fsencoded = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[2], "utf-8");
+                            exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filename_fsencoded);
+                        }
+                    } else {
+                        Object filenameObject = asPythonObjectNode.execute(context, arguments[2]);
+                        if (filenameObject != NULL_HANDLE_DELEGATE) {
+                            Object filenameObject2 = asPythonObjectNode.execute(context, arguments[3]);
+                            if (filenameObject2 != NULL_HANDLE_DELEGATE) {
+                                exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filenameObject, 0, filenameObject2);
+                            } else {
+                                exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filenameObject);
+                            }
+                        }
+                    }
+
+                    if (exception == null) {
+                        exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
+                    }
+
+                    if (PGuards.isPBaseException(exception)) {
+                        throw raiseNode.raiseExceptionObject((PBaseException) exception);
+                    }
+                    // This should really not happen since we did a type check above but in theory,
+                    // the constructor could be broken.
+                    throw CompilerDirectives.shouldNotReachHere();
+                } catch (PException p) {
+                    transformExceptionToNativeNode.execute(context, p);
+                    return 0;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyFatalError extends GraalHPyContextFunction {
         @ExportMessage
         Object execute(Object[] arguments,
@@ -1015,6 +1109,29 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrExceptionMatches extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached RecursiveExceptionMatches exceptionMatches) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object err = getThreadStateNode.getCurrentException(context.getContext());
+            if (err == null) {
+                return 0;
+            }
+            Object exc = asPythonObjectNode.execute(context, arguments[1]);
+            if (exc == NULL_HANDLE_DELEGATE) {
+                return 0;
+            }
+            return exceptionMatches.execute(context, err, exc);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyErrClear extends GraalHPyContextFunction {
 
         @ExportMessage
@@ -1029,7 +1146,67 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeAsUTF8String extends GraalHPyContextFunction {
+    public static final class GraalHPyErrWarnEx extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Cached WarnNode warnNode,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib) throws ArityException {
+            checkArity(arguments, 4);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object category;
+            if (interopLib.isNull(arguments[1])) {
+                category = RuntimeWarning;
+            } else {
+                category = asPythonObjectNode.execute(context, arguments[1]);
+            }
+            Object valueObj = fromCharPointerNode.execute(arguments[2]);
+            String message = "";
+            if (!interopLib.isNull(valueObj)) {
+                try {
+                    message = castToJavaStringNode.execute(valueObj);
+                } catch (CannotCastException e) {
+                    // ignore
+                }
+            }
+            int stackLevel = castToJavaIntNode.execute(arguments[3]);
+            warnNode.warnEx(null, category, message, stackLevel);
+            return 0;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrWriteUnraisable extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached WriteUnraisableNode writeUnraisableNode) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            PException exception = getThreadStateNode.getCurrentException(context.getContext());
+            getThreadStateNode.setCurrentException(context.getContext(), null);
+            Object object = asPythonObjectNode.execute(context, arguments[1]);
+            writeUnraisableNode.execute(null, exception.getUnreifiedException(), null, (object instanceof PNone) ? PNone.NONE : object);
+            return 0; // void
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeAsCharsetString extends GraalHPyContextFunction {
+
+        private final Charset charset;
+
+        private GraalHPyUnicodeAsCharsetString(Charset charset) {
+            this.charset = charset;
+        }
 
         @ExportMessage
         Object execute(Object[] arguments,
@@ -1040,13 +1217,14 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
+            Charset encoding = charset != null ? charset : CharsetMapping.getCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
                 try {
-                    byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, CodecsModuleBuiltins.STRICT);
+                    byte[] result = encodeNativeStringNode.execute(encoding, unicodeObject, CodecsModuleBuiltins.STRICT);
                     return resultAsHandleNode.execute(context, factory.createBytes(result));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
@@ -1055,6 +1233,23 @@ public abstract class GraalHPyContextFunctions {
             } finally {
                 gil.release(mustRelease);
             }
+        }
+
+        public static GraalHPyUnicodeAsCharsetString asUTF8() {
+            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.UTF_8);
+        }
+
+        public static GraalHPyUnicodeAsCharsetString asASCII() {
+            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.US_ASCII);
+        }
+
+        public static GraalHPyUnicodeAsCharsetString asLatin1() {
+            return new GraalHPyUnicodeAsCharsetString(StandardCharsets.ISO_8859_1);
+        }
+
+        @TruffleBoundary
+        public static GraalHPyUnicodeAsCharsetString asFSDefault() {
+            return new GraalHPyUnicodeAsCharsetString(null);
         }
     }
 
@@ -1156,21 +1351,102 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyUnicodeDecodeFSDefault extends GraalHPyContextFunction {
+    public static final class GraalHPyUnicodeDecodeCharset extends GraalHPyContextFunction {
+
+        private final String charset;
+
+        public GraalHPyUnicodeDecodeCharset(String charset) {
+            this.charset = charset;
+        }
 
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached PCallHPyFunction callHPyFunction,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
-                String fileSystemEncoding = GetFileSystemEncodingNode.getFileSystemEncoding();
-                Object result = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], fileSystemEncoding);
+                Object result = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], charset);
                 return asHandleNode.execute(context, result);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
+            return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
+        }
+
+        public static GraalHPyUnicodeDecodeCharset decodeASCII() {
+            return new GraalHPyUnicodeDecodeCharset("ASCII");
+        }
+
+        public static GraalHPyUnicodeDecodeCharset decodeLatin1() {
+            return new GraalHPyUnicodeDecodeCharset("ISO-8859-1");
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeDecodeCharsetAndSize extends GraalHPyContextFunction {
+
+        private final String charset;
+
+        public GraalHPyUnicodeDecodeCharsetAndSize(String charset) {
+            this.charset = charset;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PCallHPyFunction callHPyFunction,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached GetLLVMType getLLVMType,
+                        @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object result = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], charset);
+                Object sizePtr = arguments[2];
+                if (!ptrLib.isNull(sizePtr)) {
+                    sizePtr = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_TYPED, sizePtr, getLLVMType.execute(LLVMType.Py_ssize_ptr_t));
+                    try {
+                        ptrLib.writeArrayElement(sizePtr, 0, ptrLib.getArraySize(result));
+                    } catch (InteropException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                }
+                return asHandleNode.execute(context, result);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
+            return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeReadChar extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
+                        @Cached PyUnicodeReadCharNode unicodeReadChar,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                long index = castToJavaLongNode.execute(arguments[2]);
+                return unicodeReadChar.execute(asPythonObjectNode.execute(context, arguments[1]), index);
             } finally {
                 gil.release(mustRelease);
             }
@@ -2659,11 +2935,13 @@ public abstract class GraalHPyContextFunctions {
             try {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object hpyFieldObject = fieldTypeProfile.profile(arguments[2]);
-                if (lib.isNull(hpyFieldObject)) { // fast track in case field is not initialized.
+                if (lib.isNull(hpyFieldObject)) { // fast track in case field is not
+                                                  // initialized.
                     return GraalHPyHandle.NULL_HANDLE;
                 }
                 Object referent;
-                if (hpyFieldObject instanceof GraalHPyField) { // avoid `asPointer` message dispatch
+                if (hpyFieldObject instanceof GraalHPyField) { // avoid `asPointer` message
+                                                               // dispatch
                     referent = ((GraalHPyField) hpyFieldObject).getDelegate();
                 } else { // in case of transition to native
                     try {
@@ -2684,4 +2962,86 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyLeavePythonExecution extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 1);
+            PythonContext context = asContextNode.execute(arguments[0]).getContext();
+            PThreadState threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            gil.release(context, true);
+            return threadState;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyReenterPythonExecution extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 2);
+            PythonContext context = asContextNode.execute(arguments[0]).getContext();
+            // nothing to do with PThreadState in arguments[1]
+            gil.acquire(context);
+            return 0;
+        }
+    }
+
+    @ImportStatic(SpecialMethodSlot.class)
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyContains extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupAttrNode,
+                        @Cached CallBinaryMethodNode callAttrNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached ConditionProfile profile,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object container = asPythonObjectNode.execute(context, arguments[1]);
+                Object key = asPythonObjectNode.execute(context, arguments[2]);
+                Object containsAttr = lookupAttrNode.execute(container, SpecialMethodNames.__CONTAINS__);
+                if (profile.profile(containsAttr != PNone.NO_VALUE)) {
+                    try {
+                        callAttrNode.executeObject(null, containsAttr, container, key);
+                    } catch (PException e) {
+                        transformExceptionToNativeNode.execute(context, e);
+                        return -1;
+                    }
+                } else {
+                    Object iterAttr = lookupAttrNode.execute(container, SpecialMethodNames.__ITER__);
+                    if (profile.profile(iterAttr != PNone.NO_VALUE)) {
+                        while (true) {
+                            try {
+                                if (eqNode.execute(null, GetNextNode.getUncached().execute(iterAttr), key)) {
+                                    return true;
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(isBuiltinClassProfile);
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return 0;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
 }

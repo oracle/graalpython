@@ -77,7 +77,7 @@ public final class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPYFIELD_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE, SET_WCHAR_SIZE});
+        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPYFIELD_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_WCHAR_SIZE});
     }
 
     @ExportMessage
