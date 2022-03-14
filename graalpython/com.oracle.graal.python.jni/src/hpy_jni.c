@@ -40,6 +40,8 @@
  */
 
 #include <hpy.h>
+#include <wchar.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>

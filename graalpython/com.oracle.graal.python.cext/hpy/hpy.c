@@ -57,6 +57,7 @@ typedef HPyDef* HPyDefPtr;
 
 POLYGLOT_DECLARE_TYPE(HPy)
 POLYGLOT_DECLARE_TYPE(HPyContext)
+POLYGLOT_DECLARE_TYPE(HPyThreadState)
 POLYGLOT_DECLARE_TYPE(HPyDef)
 POLYGLOT_DECLARE_TYPE(HPyDef_Kind)
 POLYGLOT_DECLARE_TYPE(HPyDefPtr)
@@ -142,11 +143,11 @@ void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 }
 
 void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
-	return polyglot_from_string(moduleDef->m_name, SRC_CS);
+	return polyglot_from_string(moduleDef->name, SRC_CS);
 }
 
 void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
-	const char *m_doc = moduleDef->m_doc;
+	const char *m_doc = moduleDef->doc;
 	if (m_doc) {
 		return polyglot_from_string(m_doc, SRC_CS);
 	}
@@ -295,6 +296,17 @@ void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
 
 void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
+}
+
+int graal_hpy_get_errno() {
+	return errno;
+}
+
+void* graal_hpy_get_strerror(int i) {
+	if (i != 0) {
+		return polyglot_from_string(strerror(i), SRC_CS);
+	}
+	return polyglot_from_string("Error", SRC_CS);
 }
 
 uint64_t graal_hpy_strlen(const char *ptr) {
@@ -630,6 +642,8 @@ typedef HPy _HPyConst;
 #define HPyListBuilder void*
 #define HPyTupleBuilder void*
 #define HPyTracker void*
+#define HPyField void*
+#define HPyThreadState void*
 
 #define SELECT_CTX(__ctx__) ((__ctx__) == g_universal_ctx ? g_universal_ctx : g_debug_ctx)
 
@@ -726,6 +740,14 @@ HPyAPI_STORAGE size_t _HPy_IMPL_NAME(Long_AsSize_t)(HPyContext *ctx, HPy h)
 HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME(Long_AsSsize_t)(HPyContext *ctx, HPy h)
 {
 	return (HPy_ssize_t) UPCALL_I64(ctx_Long_AsSsize_t, ctx, h);
+}
+
+HPyAPI_STORAGE void* _HPy_IMPL_NAME(Long_AsVoidPtr)(HPyContext *ctx, HPy h) {
+     return (void *) UPCALL_I64(ctx_Long_AsVoidPtr, ctx, h); 
+}
+
+HPyAPI_STORAGE double _HPy_IMPL_NAME(Long_AsDouble)(HPyContext *ctx, HPy h) {
+     return UPCALL_DOUBLE(ctx_Long_AsDouble, ctx, h); 
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Float_FromDouble)(HPyContext *ctx, double v)
@@ -943,9 +965,21 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetObject)(HPyContext *ctx, HPy h_type, H
 	UPCALL_VOID(ctx_Err_SetObject, ctx, h_type, h_value);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilename)(HPyContext *ctx, HPy h_type, const char *filename_fsencoded) {
+     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilename, ctx, h_type, filename_fsencoded); 
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilenameObjects)(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2) {
+     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilenameObjects, ctx, h_type, filename1, filename2); 
+}
+
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_Occurred)(HPyContext *ctx)
 {
     return (int) polyglot_as_i32(UPCALL_HPY0(ctx_Err_Occurred, ctx));
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_ExceptionMatches)(HPyContext *ctx, HPy exc) {
+     return (int) UPCALL_I32(ctx_Err_ExceptionMatches, ctx, exc); 
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NoMemory)(HPyContext *ctx)
@@ -964,6 +998,14 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NewException)(HPyContext *ctx, const char 
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NewExceptionWithDoc)(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict) {
     return UPCALL_HPY(ctx_Err_NewExceptionWithDoc, ctx, name, doc, base, dict);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_WarnEx)(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level) {
+     return (int) UPCALL_I32(ctx_Err_WarnEx, ctx, category, message, stack_level); 
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_WriteUnraisable)(HPyContext *ctx, HPy obj) {
+     UPCALL_VOID(ctx_Err_WriteUnraisable, ctx, obj); 
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(IsTrue)(HPyContext *ctx, HPy h)
@@ -1024,6 +1066,10 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem_i)(HPyContext *ctx, HPy obj, 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem_s)(HPyContext *ctx, HPy obj, const char *key)
 {
 	return UPCALL_HPY(ctx_GetItem_s, ctx, obj, key);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(Contains)(HPyContext *ctx, HPy container, HPy key) {
+     return (int) UPCALL_I32(ctx_Contains, ctx, container, key); 
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetItem)(HPyContext *ctx, HPy obj, HPy key, HPy value)
@@ -1151,6 +1197,10 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Unicode_Check)(HPyContext *ctx, HPy h)
 	return (int) UPCALL_I32(ctx_Unicode_Check, ctx, h);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsASCIIString)(HPyContext *ctx, HPy h) {
+     return UPCALL_HPY(ctx_Unicode_AsASCIIString, ctx, h); 
+}
+
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsUTF8String)(HPyContext *ctx, HPy h)
 {
 	return UPCALL_HPY(ctx_Unicode_AsUTF8String, ctx, h);
@@ -1168,6 +1218,22 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_FromWideChar)(HPyContext *ctx, const w
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeFSDefault)(HPyContext *ctx, const char *v)
 {
 	return UPCALL_HPY(ctx_Unicode_DecodeFSDefault, ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeFSDefaultAndSize)(HPyContext *ctx, const char *v, HPy_ssize_t size) {
+     return UPCALL_HPY(ctx_Unicode_DecodeFSDefaultAndSize, ctx, v, size); 
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_EncodeFSDefault)(HPyContext *ctx, HPy h) {
+     return UPCALL_HPY(ctx_Unicode_EncodeFSDefault, ctx, h); 
+}
+
+HPyAPI_STORAGE uint32_t _HPy_IMPL_NAME(Unicode_ReadChar)(HPyContext *ctx, HPy h, HPy_ssize_t index) {
+     return (uint32_t) UPCALL_I32(ctx_Unicode_ReadChar, ctx, h, index);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeLatin1)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors) {
+     return UPCALL_HPY(ctx_Unicode_DecodeLatin1, ctx, s, size, errors ); 
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(List_Check)(HPyContext *ctx, HPy h)
@@ -1271,6 +1337,22 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Tracker_Close)(HPyContext *ctx, HPyTracker ht
 	UPCALL_VOID(ctx_Tracker_Close, ctx, ht);
 }
 
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Field_Store)(HPyContext *ctx, HPy target_object, _HPyFieldPtr target_field, HPy h) {
+	UPCALL_VOID(ctx_Field_Store, ctx, target_object, target_field, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field) {
+	return UPCALL_HPY(ctx_Field_Load, ctx, source_object, source_field);
+}
+
+HPyAPI_STORAGE HPyThreadState _HPy_IMPL_NAME(LeavePythonExecution)(HPyContext *ctx) {
+	return UPCALL_HPY0(ctx_LeavePythonExecution, ctx);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(ReenterPythonExecution)(HPyContext *ctx, HPyThreadState state) {
+	UPCALL_VOID(ctx_ReenterPythonExecution, ctx, state);
+}
+
 HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 	UPCALL_VOID(ctx_Dump, ctx, h);
 }
@@ -1279,6 +1361,8 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 #undef HPyListBuilder
 #undef HPyTupleBuilder
 #undef HPyTracker
+#undef HPyField
+#undef HPyThreadState
 
 #undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME
@@ -1365,7 +1449,9 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     COPY(h_ResourceWarning);
     COPY(h_BaseObjectType);
     COPY(h_TypeType);
+    COPY(h_BoolType);
     COPY(h_LongType);
+    COPY(h_FloatType);
     COPY(h_UnicodeType);
     COPY(h_TupleType);
     COPY(h_ListType);
@@ -1500,7 +1586,24 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Tracker_Add);
     HPY_CTX_UPCALL(ctx_Tracker_ForgetAll);
     HPY_CTX_UPCALL(ctx_Tracker_Close);
+    HPY_CTX_UPCALL(ctx_Field_Store);
+    HPY_CTX_UPCALL(ctx_Field_Load);
+    HPY_CTX_UPCALL(ctx_LeavePythonExecution);
+    HPY_CTX_UPCALL(ctx_ReenterPythonExecution);
     HPY_CTX_UPCALL(ctx_Dump);
+	HPY_CTX_UPCALL(ctx_Long_AsVoidPtr);
+	HPY_CTX_UPCALL(ctx_Long_AsDouble);
+	HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilename);
+	HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilenameObjects);
+	HPY_CTX_UPCALL(ctx_Err_ExceptionMatches);
+	HPY_CTX_UPCALL(ctx_Err_WarnEx);
+	HPY_CTX_UPCALL(ctx_Err_WriteUnraisable);
+	HPY_CTX_UPCALL(ctx_Unicode_AsASCIIString);
+	HPY_CTX_UPCALL(ctx_Unicode_DecodeFSDefaultAndSize);
+	HPY_CTX_UPCALL(ctx_Unicode_EncodeFSDefault);
+	HPY_CTX_UPCALL(ctx_Unicode_ReadChar);
+	HPY_CTX_UPCALL(ctx_Unicode_DecodeLatin1);
+
 #undef HPY_CTX_UPCALL
 
 	return native_context;
