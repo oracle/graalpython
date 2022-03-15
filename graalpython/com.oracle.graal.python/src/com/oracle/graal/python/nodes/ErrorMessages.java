@@ -756,6 +756,7 @@ public abstract class ErrorMessages {
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
     public static final String RES_O_O_RANGE = "%s result out of range";
     public static final String FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = "float too large to pack with %s format";
+    public static final String CANNOT_UNPACK_NON_ITERABLE = "cannot unpack non-iterable %p object";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
