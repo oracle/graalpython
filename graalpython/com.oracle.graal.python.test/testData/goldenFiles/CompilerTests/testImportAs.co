@@ -1,0 +1,12 @@
+Disassembly of <module>:
+000000         0 LOAD_BYTE                         0
+000000         2 LOAD_NONE
+000000         3 IMPORT_NAME                       0    (a.b.c)
+000000         5 IMPORT_FROM                       1    (b)
+000000         7 ROT_TWO
+000000         8 POP_TOP
+000000         9 IMPORT_FROM                       2    (c)
+000000        11 STORE_NAME                        3    (d)
+000000        13 POP_TOP
+000000        14 LOAD_NONE
+000000        15 RETURN_VALUE

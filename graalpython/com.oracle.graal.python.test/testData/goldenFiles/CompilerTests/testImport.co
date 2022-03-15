@@ -5,7 +5,7 @@ Disassembly of <module>:
 000000         6 POP_AND_JUMP_IF_FALSE             115   (to 121)
 000031         8 LOAD_BYTE                         0
 000031        10 LOAD_NONE
-000031        11 IMPORT_NAME                       1
+000031        11 IMPORT_NAME                       1    (sys)
 000031        13 STORE_NAME                        1    (sys)
 000054        15 LOAD_NAME                         2    (len)
 000058        17 LOAD_NAME                         1    (sys)
@@ -26,7 +26,7 @@ Disassembly of <module>:
 000046        44 POP_AND_JUMP_IF_FALSE             77   (to 121)
 000125        46 LOAD_BYTE                         0
 000125        48 LOAD_NONE
-000125        49 IMPORT_NAME                       4
+000125        49 IMPORT_NAME                       4    (time)
 000125        51 STORE_NAME                        4    (time)
 000153        53 LOAD_NAME                         4    (time)
 000153        55 CALL_METHOD                       0    (time)

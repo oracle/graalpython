@@ -234,6 +234,8 @@ public final class CodeUnit {
                 case LOAD_NAME:
                 case STORE_NAME:
                 case DELETE_NAME:
+                case IMPORT_NAME:
+                case IMPORT_FROM:
                 case LOAD_GLOBAL:
                 case STORE_GLOBAL:
                 case DELETE_GLOBAL:

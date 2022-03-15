@@ -537,13 +537,13 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(LOAD_NONE);
         addOpName(IMPORT_NAME, unit.names, node.name);
         if (node.asName != null) {
-            int dotIdx = node.asName.indexOf('.');
+            int dotIdx = node.name.indexOf('.');
             if (dotIdx >= 0) {
                 while (true) {
                     int pos = dotIdx + 1;
-                    dotIdx = node.asName.indexOf('.', pos);
-                    int end = dotIdx >= 0 ? dotIdx : node.asName.length();
-                    String attr = node.asName.substring(pos, end);
+                    dotIdx = node.name.indexOf('.', pos);
+                    int end = dotIdx >= 0 ? dotIdx : node.name.length();
+                    String attr = node.name.substring(pos, end);
                     addOpObject(IMPORT_FROM, unit.names, attr);
                     if (dotIdx < 0) {
                         break;
