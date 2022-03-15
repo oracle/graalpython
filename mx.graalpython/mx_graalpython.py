@@ -114,6 +114,12 @@ def _extract_graalpython_internal_options(args):
     return non_internal, additional_dists
 
 
+def delete_bad_env_keys(env):
+    for k in ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]:
+        if k in env:
+            del env[k]
+
+
 def check_vm(vm_warning=True, must_be_jvmci=False):
     if not SUITE_COMPILER:
         if must_be_jvmci:
@@ -156,6 +162,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if not env:
         env = os.environ.copy()
     env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
+    delete_bad_env_keys(env)
 
     check_vm_env = env.get('GRAALPYTHON_MUST_USE_GRAAL', False)
     if check_vm_env:
@@ -297,10 +304,12 @@ def run_cpython_test(args):
     for g in globs:
         testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
     interp_args.insert(0, "--python.CAPI=%s" % _get_capi_home())
+    env = os.environ.copy()
+    delete_bad_env_keys(env)
     with _dev_pythonhome_context():
         mx.run([python_gvm_with_assertions()] + interp_args + [
             os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-        ] + test_args + testfiles)
+        ] + test_args + testfiles, env=env)
 
 
 def retag_unittests(args):
@@ -316,6 +325,7 @@ def retag_unittests(args):
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
     )
+    delete_bad_env_keys(env)
     args = [
         '--experimental-options=true',
         '--python.CatchAllExceptions=true',
@@ -625,6 +635,7 @@ def graalpytest(args):
         cmd_args += ["-k", args.filter]
     env = os.environ.copy()
     env['PYTHONHASHSEED'] = '0'
+    delete_bad_env_keys(env)
     if args.python:
         return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
     else:
@@ -669,6 +680,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if env is None:
         env = os.environ.copy()
     env['PYTHONHASHSEED'] = '0'
+    delete_bad_env_keys(env)
 
     # list of excluded tests
     if aot_compatible:
@@ -742,6 +754,7 @@ def run_hpy_unittests(python_binary, args=None):
         env = os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
+        delete_bad_env_keys(env)
         mx.run_mx(["build", "--dependencies", "LLVM_TOOLCHAIN"])
         env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
