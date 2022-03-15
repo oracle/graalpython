@@ -2143,7 +2143,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.DICT: {
-                throw CompilerDirectives.shouldNotReachHere("Not supported yet.");
+                Object key = frame.getObject(stackTop - 1);
+                HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes[nodeIndex], UNCACHED_SET_ITEM, NODE_SET_ITEM, nodeIndex);
+                setItem.execute(frame, (PDict) collection, key, item);
+                frame.setObject(stackTop--, null);
+                break;
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();

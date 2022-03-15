@@ -850,12 +850,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.DictComp node) {
-        int savedOffset = setLocation(node);
-        try {
-            throw new UnsupportedOperationException("Not supported yet.");
-        } finally {
-            setLocation(savedOffset);
-        }
+        return visitComprehension(node, "<dictcomp>", node.generators, node.key, node.value, ComprehensionType.DICT);
     }
 
     @Override
@@ -984,10 +979,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.ListComp node) {
-        return visitComprehension(node, "<listcomp>", node.generators, node.element, ComprehensionType.LIST);
+        return visitComprehension(node, "<listcomp>", node.generators, node.element, null, ComprehensionType.LIST);
     }
 
-    private Void visitComprehension(ExprTy node, String name, ComprehensionTy[] generators, ExprTy element, ComprehensionType type) {
+    private Void visitComprehension(ExprTy node, String name, ComprehensionTy[] generators, ExprTy element, ExprTy value, ComprehensionType type) {
         /*
          * Create an inner anonymous function to run the comprehension. It takes the outermost
          * iterator as an argument and returns the accumulated sequence
@@ -999,7 +994,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 // The result accumulator, empty at the beginning
                 addOp(COLLECTION_FROM_STACK, type.typeBits);
             }
-            visitComprehensionGenerator(generators, 0, element, type);
+            visitComprehensionGenerator(generators, 0, element, value, type);
             if (type != ComprehensionType.GENEXPR) {
                 addOp(RETURN_VALUE);
             }
@@ -1015,7 +1010,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void visitComprehensionGenerator(ComprehensionTy[] generators, int i, ExprTy element, ComprehensionType type) {
+    private void visitComprehensionGenerator(ComprehensionTy[] generators, int i, ExprTy element, ExprTy value, ComprehensionType type) {
         ComprehensionTy gen = generators[i];
         if (i == 0) {
             /* The iterator is the function argument for the outermost generator */
@@ -1035,11 +1030,16 @@ public class Compiler implements SSTreeVisitor<Void> {
             jumpIf(ifExpr, ifCleanup, false);
         }
         if (i + 1 < generators.length) {
-            visitComprehensionGenerator(generators, i + 1, element, type);
+            visitComprehensionGenerator(generators, i + 1, element, value, type);
         }
         if (i == generators.length - 1) {
             /* The last generator produces the resulting element to be appended/yielded */
             element.accept(this);
+            int collectionStackDepth = generators.length + 1;
+            if (value != null) {
+                value.accept(this);
+                collectionStackDepth++;
+            }
             if (type == ComprehensionType.GENEXPR) {
                 // TODO yield and pop
                 throw new IllegalStateException("Not supported yet.");
@@ -1048,8 +1048,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                  * There is an iterator for every generator on the stack. We need to append to the
                  * collection that's below them
                  */
-                assert generators.length < CollectionBits.MAX_STACK_ELEMENT_COUNT;
-                addOp(ADD_TO_COLLECTION, (generators.length + 1) | type.typeBits);
+                // TODO turn this into an exeption
+                assert collectionStackDepth <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                addOp(ADD_TO_COLLECTION, collectionStackDepth | type.typeBits);
             }
         }
         unit.useNextBlock(ifCleanup);
@@ -1091,7 +1092,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.SetComp node) {
-        return visitComprehension(node, "<setcomp>", node.generators, node.element, ComprehensionType.SET);
+        return visitComprehension(node, "<setcomp>", node.generators, node.element, null, ComprehensionType.SET);
     }
 
     @Override

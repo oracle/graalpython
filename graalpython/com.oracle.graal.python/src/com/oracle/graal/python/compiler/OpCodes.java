@@ -53,6 +53,7 @@ class Constants {
     static final int FOR_ITER_EFFECT = 0xcaffee07;
     static final int POP_EFFECT5 = 0xcaffee08;
     static final int REDUCE_EFFECT5 = 0xcaffee09;
+    static final int POP_COLLECTION_ITEM_EFFECT = 0xcaffee10;
 }
 
 @GenerateEnumConstants
@@ -181,7 +182,7 @@ public enum OpCodes {
     COLLECTION_FROM_STACK(     1,    Constants.REDUCE_EFFECT5), // build a collection from arg elements on stack
     COLLECTION_ADD_COLLECTION( 1,   -1), // add the collection on top of stack to the collection underneath
     COLLECTION_FROM_COLLECTION(1,    0), // replace the collection on top of stack with a collection of another type
-    ADD_TO_COLLECTION(         1,   -1), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
+    ADD_TO_COLLECTION(         1,    Constants.POP_COLLECTION_ITEM_EFFECT), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
     KWARGS_DICT_MERGE(         0,   -1), // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
     MAKE_KEYWORD(              1,    0),
 
@@ -260,6 +261,8 @@ public enum OpCodes {
             case Constants.REDUCE_EFFECT5:
                 // arg is number of elements that get popped and reduced into a new element
                 return -(oparg & 0b11111) + 1;
+            case Constants.POP_COLLECTION_ITEM_EFFECT:
+                return ((oparg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT) == CollectionBits.DICT) ? -2 : -1;
             case Constants.UNPACK_EFFECT:
                 // arg is number of elements to unpack the list at the top of stack into, removing the
                 // list
