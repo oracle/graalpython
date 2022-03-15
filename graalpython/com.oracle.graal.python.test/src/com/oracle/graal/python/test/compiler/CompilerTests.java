@@ -86,6 +86,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testDel() {
+        doTest("del a");
+    }
+
+    @Test
     public void testGetItem() {
         doTest("a[3]");
     }
@@ -93,6 +98,11 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testSetItem() {
         doTest("a[3] = 1");
+    }
+
+    @Test
+    public void testDelItem() {
+        doTest("del a[3]");
     }
 
     @Test

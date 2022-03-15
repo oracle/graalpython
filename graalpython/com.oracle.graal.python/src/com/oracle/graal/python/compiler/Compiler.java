@@ -1427,7 +1427,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Delete node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        visitSequence(node.targets);
+        return null;
     }
 
     @Override
