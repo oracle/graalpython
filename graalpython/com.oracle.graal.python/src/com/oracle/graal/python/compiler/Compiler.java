@@ -402,15 +402,17 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void collectIntoArray(ExprTy[] nodes, int bits, int alreadyOnStack) {
         Collector collector = new Collector(bits, alreadyOnStack);
-        for (ExprTy e : nodes) {
-            if (e instanceof ExprTy.Starred) {
-                // splat
-                collector.flushStackIfNecessary();
-                e.accept(this);
-                collector.appendCollection();
-            } else {
-                e.accept(this);
-                collector.appendItem();
+        if (nodes != null) {
+            for (ExprTy e : nodes) {
+                if (e instanceof ExprTy.Starred) {
+                    // splat
+                    collector.flushStackIfNecessary();
+                    e.accept(this);
+                    collector.appendCollection();
+                } else {
+                    e.accept(this);
+                    collector.appendItem();
+                }
             }
         }
         collector.finishCollection();
@@ -421,20 +423,22 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void collectIntoDict(ExprTy[] keys, ExprTy[] values) {
-        assert keys.length == values.length;
         Collector collector = new Collector(CollectionBits.DICT);
-        for (int i = 0; i < keys.length; i++) {
-            ExprTy key = keys[i];
-            ExprTy value = values[i];
-            if (key == null) {
-                // splat
-                collector.flushStackIfNecessary();
-                value.accept(this);
-                collector.appendCollection();
-            } else {
-                key.accept(this);
-                value.accept(this);
-                collector.appendItem();
+        if (keys != null) {
+            assert keys.length == values.length;
+            for (int i = 0; i < keys.length; i++) {
+                ExprTy key = keys[i];
+                ExprTy value = values[i];
+                if (key == null) {
+                    // splat
+                    collector.flushStackIfNecessary();
+                    value.accept(this);
+                    collector.appendCollection();
+                } else {
+                    key.accept(this);
+                    value.accept(this);
+                    collector.appendItem();
+                }
             }
         }
         collector.finishCollection();
@@ -1166,12 +1170,16 @@ public class Compiler implements SSTreeVisitor<Void> {
                      * tuple within a single instruction, we construct a list and convert it to a
                      * tuple.
                      */
-                    boolean useList = node.elements.length > CollectionBits.MAX_STACK_ELEMENT_COUNT;
-                    if (!useList) {
-                        for (ExprTy e : node.elements) {
-                            if (e instanceof ExprTy.Starred) {
-                                useList = true;
-                                break;
+                    boolean useList = false;
+                    if (node.elements != null) {
+                        if (node.elements.length > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                            useList = true;
+                        } else {
+                            for (ExprTy e : node.elements) {
+                                if (e instanceof ExprTy.Starred) {
+                                    useList = true;
+                                    break;
+                                }
                             }
                         }
                     }

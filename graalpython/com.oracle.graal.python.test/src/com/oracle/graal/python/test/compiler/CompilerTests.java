@@ -321,6 +321,21 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testEmptyList() {
+        doTest("[]");
+    }
+
+    @Test
+    public void testEmptyTuple() {
+        doTest("()");
+    }
+
+    @Test
+    public void testEmptyDict() {
+        doTest("{}");
+    }
+
+    @Test
     public void testTupleLiteral() {
         doTest("(1, 2, 3)");
     }
