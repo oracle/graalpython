@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 
 public final class CodeUnit {
@@ -206,7 +208,14 @@ public final class CodeUnit {
                     if (constant instanceof CodeUnit) {
                         line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
                     } else {
-                        line[5] = Objects.toString(constant);
+                        if (constant instanceof byte[]) {
+                            byte[] bytes = (byte[]) constant;
+                            line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
+                        } else if (constant instanceof Object[]) {
+                            line[5] = Arrays.toString((Object[]) constant);
+                        } else {
+                            line[5] = Objects.toString(constant);
+                        }
                     }
                     break;
                 }

@@ -60,6 +60,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.util.PythonUtils;
 
 public class Compiler implements SSTreeVisitor<Void> {
     String filename;
@@ -534,7 +535,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(AliasTy node) {
         addOp(LOAD_BYTE, 0);
-        addOp(LOAD_NONE);
+        addOp(LOAD_CONST, addObject(unit.constants, PythonUtils.EMPTY_STRING_ARRAY));
         addOpName(IMPORT_NAME, unit.names, node.name);
         if (node.asName != null) {
             int dotIdx = node.name.indexOf('.');
@@ -816,11 +817,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BOOLEAN:
                     return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    if (node.longValue == (byte) node.longValue) {
-                        return addOp(LOAD_BYTE, (byte) node.longValue);
-                    } else {
-                        return addOp(LOAD_LONG, addObject(unit.primitiveConstants, node.longValue));
-                    }
+                    return addLoadLong(node.longValue);
                 case DOUBLE:
                     return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.longValue));
                 case COMPLEX:
@@ -838,6 +835,14 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         } finally {
             setLocation(savedOffset);
+        }
+    }
+
+    private Void addLoadLong(long value) {
+        if (value == (byte) value) {
+            return addOp(LOAD_BYTE, (byte) value);
+        } else {
+            return addOp(LOAD_LONG, addObject(unit.primitiveConstants, value));
         }
     }
 
@@ -1618,7 +1623,23 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.ImportFrom node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        addLoadLong(node.level);
+        String[] names = new String[node.names.length];
+        for (int i = 0; i < node.names.length; i++) {
+            names[i] = node.names[i].name;
+        }
+        addOp(LOAD_CONST, addObject(unit.constants, names));
+        addOpName(IMPORT_NAME, unit.names, node.module != null ? node.module : "");
+        for (AliasTy alias : node.names) {
+            if ("*".equals(alias.name)) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+            addOpName(IMPORT_FROM, unit.names, alias.name);
+            String storeName = alias.asName != null ? alias.asName : alias.name;
+            addNameOp(storeName, ExprContext.Store);
+        }
+        addOp(POP_TOP);
+        return null;
     }
 
     @Override

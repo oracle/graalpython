@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
@@ -93,6 +92,7 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
+import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -255,6 +255,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SetupWithNode> NODE_SETUP_WITH = SetupWithNode::create;
     private static final ExitWithNode UNCACHED_EXIT_WITH_NODE = ExitWithNode.getUncached();
     private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
+    private static final ImportFromNode UNCACHED_IMPORT_FROM = ImportFromNode.getUncached();
+    private static final NodeSupplier<ImportFromNode> NODE_IMPORT_FROM = ImportFromNode::create;
     private static final ExecutePositionalStarargsNode UNCACHED_EXECUTE_STARARGS = ExecutePositionalStarargsNode.getUncached();
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
     private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
@@ -1432,6 +1434,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeImportName(frame, context, builtins, globals, stackTop, bci, oparg, localNames, localNodes);
                         break;
                     }
+                    case IMPORT_FROM: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        String name = localNames[oparg];
+                        Object from = frame.getObject(stackTop);
+                        ImportFromNode importFromNode = insertChildNode(localNodes[bci], UNCACHED_IMPORT_FROM, NODE_IMPORT_FROM, bci);
+                        Object imported = importFromNode.execute(frame, from, name);
+                        frame.setObject(++stackTop, imported);
+                        break;
+                    }
                     case JUMP_FORWARD:
                         bci += Byte.toUnsignedInt(localBC[bci + 1]);
                         continue;
@@ -1839,26 +1850,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int bytecodeImportName(VirtualFrame frame, PythonContext context, PythonModule builtins, Object globals, int stackTop, int bci, int oparg, String[] localNames,
+    private int bytecodeImportName(VirtualFrame frame, PythonContext context, PythonModule builtins, Object globals, int initialStackTop, int bci, int oparg, String[] localNames,
                     Node[] localNodes) {
         CastToJavaIntExactNode castNode = insertChildNode(localNodes[bci - 1], UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT, bci - 1);
         String modname = localNames[oparg];
-        Object fromlist = frame.getObject(stackTop);
+        int stackTop = initialStackTop;
+        String[] fromlist = (String[]) frame.getObject(stackTop);
         frame.setObject(stackTop--, null);
-        String[] fromlistArg;
-        if (fromlist == PNone.NONE) {
-            fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
-        } else {
-            // import statement won't be dynamically created, so the fromlist is
-            // always
-            // from a LOAD_CONST, which will either be a tuple of strings or None.
-            assert fromlist instanceof PTuple;
-            Object[] list = ((PTuple) fromlist).getSequenceStorage().getInternalArray();
-            fromlistArg = (String[]) list;
-        }
         int level = castNode.execute(frame.getObject(stackTop));
         ImportName importNode = insertChildNode(localNodes[bci], UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME, bci);
-        Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
+        Object result = importNode.execute(frame, context, builtins, modname, globals, fromlist, level);
         frame.setObject(stackTop, result);
         return stackTop;
     }

@@ -459,6 +459,11 @@ public class CompilerTests extends PythonTests {
         doTest("import a.b.c as d");
     }
 
+    @Test
+    public void testImportFrom() {
+        doTest("from math import sqrt, sin as sine");
+    }
+
     private void doTest(String src) {
         doTest(src, null);
     }

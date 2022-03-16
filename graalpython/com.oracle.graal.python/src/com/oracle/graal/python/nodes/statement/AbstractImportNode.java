@@ -364,8 +364,8 @@ public abstract class AbstractImportNode extends StatementNode {
      * not the spec.
      */
     @GenerateUncached
-    abstract static class PyModuleIsInitializing extends Node {
-        abstract boolean execute(Frame frame, Object mod);
+    public abstract static class PyModuleIsInitializing extends Node {
+        public abstract boolean execute(Frame frame, Object mod);
 
         @Specialization
         static boolean isInitializing(VirtualFrame frame, Object mod,
@@ -387,6 +387,10 @@ public abstract class AbstractImportNode extends StatementNode {
                 // __spec__ or _initializing attributes
                 return false;
             }
+        }
+
+        public static PyModuleIsInitializing getUncached() {
+            return AbstractImportNodeFactory.PyModuleIsInitializingNodeGen.getUncached();
         }
     }
 
@@ -437,7 +441,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached PyDictGetItem getSpecNode,
                         @Cached PyObjectGetAttr getParent,
                         @Cached CastToJavaStringNode castPackageNode,
-                        @Cached(value="singleByte()", uncached="uncachedByte()", dimensions = 1) byte[] branchStates) {
+                        @Cached(value = "singleByte()", uncached = "uncachedByte()", dimensions = 1) byte[] branchStates) {
             PDict globalsDict = getDictNode.execute(globals);
             Object pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PACKAGE__);
             Object spec = getSpecNode.execute(frame, globalsDict, SpecialAttributeNames.__SPEC__);

@@ -68,4 +68,11 @@ public class ImportTests {
                         "print(__future__.__file__)\n";
         assertPrintContains("__future__.py\n", source);
     }
+
+    @Test
+    public void testFromImport() {
+        String souce = "from math import sqrt, sin as sine\n" +
+                        "print(sqrt.__name__, sine.__name__)\n";
+        assertPrints("sqrt sin\n", souce);
+    }
 }
