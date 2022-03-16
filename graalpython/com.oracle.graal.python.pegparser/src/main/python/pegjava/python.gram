@@ -546,15 +546,15 @@ lambda_slash_no_default[asdl_arg_seq*]:
     | a[asdl_arg_seq*]=lambda_param_no_default+ '/' ',' { a }
     | a[asdl_arg_seq*]=lambda_param_no_default+ '/' &':' { a }
 lambda_slash_with_default[SlashWithDefault*]:
-    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' ',' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
-    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' &':' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
+    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' ',' { new SlashWithDefault(a, b) }
+    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' &':' { new SlashWithDefault(a, b) }
 
 lambda_star_etc[StarEtc*]:
     | '*' a=lambda_param_no_default b=lambda_param_maybe_default* c=[lambda_kwds] {
-        _PyPegen_star_etc(p, a, b, c) }
+        new StarEtc(a, b, c) }
     | '*' ',' b=lambda_param_maybe_default+ c=[lambda_kwds] {
-        _PyPegen_star_etc(p, NULL, b, c) }
-    | a=lambda_kwds { _PyPegen_star_etc(p, NULL, NULL, a) }
+        new StarEtc(null, b, c) }
+    | a=lambda_kwds { new StarEtc(null, null, a) }
     | invalid_lambda_star_etc
 
 lambda_kwds[arg_ty]: '**' a=lambda_param_no_default { a }
@@ -563,11 +563,11 @@ lambda_param_no_default[arg_ty]:
     | a=lambda_param ',' { a }
     | a=lambda_param &':' { a }
 lambda_param_with_default[NameDefaultPair*]:
-    | a=lambda_param c=default_param ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
-    | a=lambda_param c=default_param &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
+    | a=lambda_param c=default_param ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default_param &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
 lambda_param_maybe_default[NameDefaultPair*]:
-    | a=lambda_param c=default_param? ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
-    | a=lambda_param c=default_param? &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
+    | a=lambda_param c=default_param? ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default_param? &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
 lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
