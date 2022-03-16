@@ -7327,9 +7327,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
                 return (SlashWithDefault)_res;
             }
@@ -7352,9 +7350,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
                 return (SlashWithDefault)_res;
             }
@@ -7399,9 +7395,7 @@ public final class Parser extends AbstractParser {
                 ((c = _tmp_138_rule()) != null || true)  // lambda_kwds?
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(a,b,c);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7425,9 +7419,7 @@ public final class Parser extends AbstractParser {
                 ((c = _tmp_140_rule()) != null || true)  // lambda_kwds?
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,b,c);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7442,9 +7434,7 @@ public final class Parser extends AbstractParser {
                 (a = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,null,a);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7586,9 +7576,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7608,9 +7596,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7650,9 +7636,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7672,9 +7656,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }

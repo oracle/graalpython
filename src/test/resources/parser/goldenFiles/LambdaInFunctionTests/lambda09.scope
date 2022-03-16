@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      fn: [DefLocal, Local]
+    Scope fn Function
+        Symbols:
+            bar: [Use, GlobalImplicit]
+      Scope lambda Function
+            Flags: [HasVarKeywords]
+            Varnames: foo, z
+            Symbols:
+                  foo: [DefParam, Local]
+                  z: [DefParam, Local]
