@@ -202,6 +202,7 @@ public final class CompilationUnit {
         assert flags < 256;
         flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
         flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
+        flags |= freevars.size() > 0 ? CodeUnit.HAS_CLOSURE : 0;
 
         short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * 3];
         for (int i = 0; i < finishedExceptionHandlerRanges.size(); i++) {

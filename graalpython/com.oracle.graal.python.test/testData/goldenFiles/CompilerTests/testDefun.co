@@ -2,7 +2,7 @@ Disassembly of <module>:
 000024         0 LOAD_BYTE                         5
 000000         2 COLLECTION_FROM_STACK             1    (Object[])
 000000         4 LOAD_CONST                        0    (docompute from <module>)
-000000         6 MAKE_FUNCTION                     2
+000000         6 MAKE_FUNCTION                     1
 000000         8 STORE_NAME                        0    (docompute)
 000000        10 LOAD_NONE
 000000        11 RETURN_VALUE

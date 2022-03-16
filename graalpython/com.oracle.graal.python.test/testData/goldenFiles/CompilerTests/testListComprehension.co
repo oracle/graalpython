@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000000         0 LOAD_CONST                        0    (<listcomp> from <module>)
-000000         2 MAKE_FUNCTION                     1
+000000         2 MAKE_FUNCTION                     0
 000019         4 LOAD_BYTE                         1
 000022         6 LOAD_BYTE                         2
 000025         8 LOAD_BYTE                         3

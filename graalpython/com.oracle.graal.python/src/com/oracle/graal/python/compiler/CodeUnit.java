@@ -50,10 +50,11 @@ import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 public final class CodeUnit {
     public static final byte HAS_DEFAULTS = 0x1;
     public static final byte HAS_KWONLY_DEFAULTS = 0x2;
-    public static final byte HAS_VAR_ARGS = 0x4;
-    public static final byte HAS_VAR_KW_ARGS = 0x8;
-    public static final byte HAS_ANNOTATIONS = 0x10;
-    public static final byte IS_GENERATOR = 0x20;
+    public static final byte HAS_ANNOTATIONS = 0x04;
+    public static final byte HAS_CLOSURE = 0x08;
+    public static final byte HAS_VAR_ARGS = 0x10;
+    public static final byte HAS_VAR_KW_ARGS = 0x20;
+    public static final byte IS_GENERATOR = 0x30;
     public static final byte IS_ASYNC = 0x40;
 
     public static final int DISASSEMBLY_NUM_COLUMNS = 7;

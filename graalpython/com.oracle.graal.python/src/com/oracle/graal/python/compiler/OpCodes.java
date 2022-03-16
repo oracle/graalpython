@@ -53,7 +53,8 @@ class Constants {
     static final int FOR_ITER_EFFECT = 0xcaffee07;
     static final int POP_EFFECT5 = 0xcaffee08;
     static final int REDUCE_EFFECT5 = 0xcaffee09;
-    static final int POP_COLLECTION_ITEM_EFFECT = 0xcaffee10;
+    static final int POP_COLLECTION_ITEM_EFFECT = 0xcaffee0a;
+    static final int POP_BITCOUNT_EFFECT = 0xcaffee0b;
 }
 
 @GenerateEnumConstants
@@ -175,7 +176,7 @@ public enum OpCodes {
     // making callables
     LOAD_CLOSURE(              1,    1),
     CLOSURE_FROM_STACK(        1,    Constants.REDUCE_EFFECT),
-    MAKE_FUNCTION(             1,    Constants.REDUCE_EFFECT),
+    MAKE_FUNCTION(             1,    Constants.POP_BITCOUNT_EFFECT),
 
     // collection literals
     COLLECTION_ADD_STACK(      1,    Constants.POP_EFFECT5), // add to coll underneath args the arg elements above
@@ -282,6 +283,8 @@ public enum OpCodes {
                 return withJump ? 0 : -1;
             case Constants.FOR_ITER_EFFECT:
                 return withJump ? -1 : 1;
+            case Constants.POP_BITCOUNT_EFFECT:
+                return -Integer.bitCount(oparg);
             default:
                 return stackEffect;
         }

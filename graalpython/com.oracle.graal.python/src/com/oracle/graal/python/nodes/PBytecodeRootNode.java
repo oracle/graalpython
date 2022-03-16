@@ -1583,7 +1583,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case MAKE_FUNCTION: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeMakeFunction(frame, globals, stackTop, bci, oparg);
+                        stackTop = bytecodeMakeFunction(frame, globals, stackTop, oparg);
                         break;
                     }
                     case MATCH_EXC_OR_JUMP: {
@@ -1932,7 +1932,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeMakeFunction(VirtualFrame frame, Object globals, int lastStackTop, int bci, int oparg) {
+    private int bytecodeMakeFunction(VirtualFrame frame, Object globals, int lastStackTop, int oparg) {
         int stackTop = lastStackTop;
         CodeUnit newCode = (CodeUnit) frame.getObject(stackTop);
 
@@ -1941,16 +1941,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PKeyword[] kwdefaults = null;
         Object[] defaults = null;
 
-        if (newCode.freevars.length > 0) {
+        if ((oparg & CodeUnit.HAS_CLOSURE) != 0) {
             frame.setObject(stackTop--, null);
             closure = (PCell[]) frame.getObject(stackTop);
         }
-        // TODO: annotations
-        if (newCode.hasKwDefaults()) {
+        if ((oparg & CodeUnit.HAS_ANNOTATIONS) != 0) {
+            frame.setObject(stackTop--, null);
+            annotations = frame.getObject(stackTop);
+        }
+        if ((oparg & CodeUnit.HAS_KWONLY_DEFAULTS) != 0) {
             frame.setObject(stackTop--, null);
             kwdefaults = (PKeyword[]) frame.getObject(stackTop);
         }
-        if (newCode.hasDefaults()) {
+        if ((oparg & CodeUnit.HAS_DEFAULTS) != 0) {
             frame.setObject(stackTop--, null);
             defaults = (Object[]) frame.getObject(stackTop);
         }

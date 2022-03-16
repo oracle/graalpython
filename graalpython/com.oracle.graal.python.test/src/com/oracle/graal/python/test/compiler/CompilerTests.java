@@ -399,6 +399,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testLambda() {
+        doTest("lambda x, *args: args[x]");
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +

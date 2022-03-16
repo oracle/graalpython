@@ -100,6 +100,22 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope(name, scopeType, node, 0, 0, 0, false, false);
     }
 
+    private void enterScope(String name, CompilationScope scope, SSTNode node, ArgumentsTy args) {
+        int argc, pargc, kwargc;
+        boolean splat, kwSplat;
+        if (args == null) {
+            argc = pargc = kwargc = 0;
+            splat = kwSplat = false;
+        } else {
+            argc = args.args == null ? 0 : args.args.length;
+            pargc = args.posOnlyArgs == null ? 0 : args.posOnlyArgs.length;
+            kwargc = args.kwOnlyArgs == null ? 0 : args.kwOnlyArgs.length;
+            splat = args.varArg != null;
+            kwSplat = args.kwArg != null;
+        }
+        enterScope(name, scope, node, argc, pargc, kwargc, splat, kwSplat);
+    }
+
     private void enterScope(String name, CompilationScope scopeType, SSTNode node, int argc, int pargc, int kwargc,
                     boolean hasSplat, boolean hasKwSplat) {
         if (unit != null) {
@@ -487,7 +503,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void makeClosure(CodeUnit code, int hasDefaults, int hasKwDefaults) {
+    private void makeClosure(CodeUnit code) {
         if (code.freevars.length > 0) {
             // add the closure
             for (String fv : code.freevars) {
@@ -503,7 +519,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
         }
         addOp(LOAD_CONST, addObject(unit.constants, code));
-        addOp(MAKE_FUNCTION, hasDefaults + hasKwDefaults + (code.freevars.length > 0 ? 2 : 1));
+        int flags = code.flags & (CodeUnit.HAS_DEFAULTS | CodeUnit.HAS_KWONLY_DEFAULTS | CodeUnit.HAS_ANNOTATIONS | CodeUnit.HAS_CLOSURE);
+        addOp(MAKE_FUNCTION, flags);
     }
 
     // visiting
@@ -906,7 +923,19 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Lambda node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            checkForbiddenArgs(node.args);
+            int flags = collectDefaults(node.args);
+            enterScope("<lambda>", CompilationScope.Lambda, node, node.args);
+            CodeUnit code;
+            try {
+                node.body.accept(this);
+                addOp(RETURN_VALUE);
+                code = unit.assemble(filename, flags);
+            } finally {
+                exitScope();
+            }
+            makeClosure(code);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
@@ -1009,7 +1038,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             CodeUnit code = unit.assemble(filename, 0);
             exitScope();
-            makeClosure(code, 0, 0);
+            makeClosure(code);
             generators[0].iter.accept(this);
             addOp(GET_ITER);
             addOp(CALL_FUNCTION, 1);
@@ -1411,7 +1440,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         exitScope();
 
         addOp(LOAD_BUILD_CLASS);
-        makeClosure(co, 0, 0);
+        makeClosure(co);
         addOp(LOAD_CONST, addObject(unit.constants, node.name));
 
         if ((node.bases.length < 3) && node.keywords.length == 0) {
@@ -1490,84 +1519,29 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.FunctionDef node) {
         setLocation(node);
-        if (node.args != null) {
-            if (node.args.posOnlyArgs != null) {
-                for (ArgTy arg : node.args.posOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
-                }
-            }
-            if (node.args.args != null) {
-                for (ArgTy arg : node.args.args) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
-                }
-            }
-            if (node.args.kwOnlyArgs != null) {
-                for (ArgTy arg : node.args.kwOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
-                }
-            }
-            if (node.args.varArg != null) {
-                checkForbiddenName(node.args.varArg.arg, ExprContext.Store);
-            }
-            if (node.args.kwArg != null) {
-                checkForbiddenName(node.args.kwArg.arg, ExprContext.Store);
-            }
-        }
+        checkForbiddenArgs(node.args);
 
         // visit decorators
         visitSequence(node.decoratorList);
 
         // visit defaults outside the function scope
-        int hasDefaults = 0;
-        int hasKwDefaults = 0;
-        if (node.args != null) {
-            if (node.args.defaults != null && node.args.defaults.length > 0) {
-                collectIntoArray(node.args.defaults, CollectionBits.OBJECT);
-                hasDefaults = CodeUnit.HAS_DEFAULTS;
-            }
-            if (node.args.kwDefaults != null && node.args.kwDefaults.length > 0) {
-                ArrayList<KeywordTy> defs = new ArrayList<>();
-                for (int i = 0; i < node.args.kwOnlyArgs.length; i++) {
-                    ArgTy arg = node.args.kwOnlyArgs[i];
-                    ExprTy def = node.args.kwDefaults[i];
-                    if (def != null) {
-                        String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
-                        defs.add(new KeywordTy(mangled, def, arg.getStartOffset(), def.getEndOffset()));
-                    }
-                }
-                collectKeywords(defs.toArray(KeywordTy[]::new));
-                hasKwDefaults = CodeUnit.HAS_KWONLY_DEFAULTS;
-            }
-        }
+        int flags = collectDefaults(node.args);
 
         // TODO: visit annotations
 
-        int argc, pargc, kwargc;
-        boolean splat, kwSplat;
-        if (node.args == null) {
-            argc = pargc = kwargc = 0;
-            splat = kwSplat = false;
-        } else {
-            argc = node.args.args == null ? 0 : node.args.args.length;
-            pargc = node.args.posOnlyArgs == null ? 0 : node.args.posOnlyArgs.length;
-            kwargc = node.args.kwOnlyArgs == null ? 0 : node.args.kwOnlyArgs.length;
-            splat = node.args.varArg != null;
-            kwSplat = node.args.kwArg != null;
-        }
-
-        enterScope(node.name, CompilationScope.Function, node, argc, pargc, kwargc, splat, kwSplat);
+        enterScope(node.name, CompilationScope.Function, node, node.args);
 
         CodeUnit code;
         try {
             String docString = getDocstring(node.body);
             addObject(unit.constants, docString);
             visitSequence(node.body);
-            code = unit.assemble(filename, hasDefaults | hasKwDefaults);
+            code = unit.assemble(filename, flags);
         } finally {
             exitScope();
         }
 
-        makeClosure(code, hasDefaults > 0 ? 1 : 0, hasKwDefaults > 0 ? 1 : 0);
+        makeClosure(code);
 
         if (node.decoratorList != null) {
             for (ExprTy decorator : node.decoratorList) {
@@ -1577,6 +1551,56 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         addNameOp(node.name, ExprContext.Store);
         return null;
+    }
+
+    private int collectDefaults(ArgumentsTy args) {
+        int flags = 0;
+        if (args != null) {
+            if (args.defaults != null && args.defaults.length > 0) {
+                collectIntoArray(args.defaults, CollectionBits.OBJECT);
+                flags |= CodeUnit.HAS_DEFAULTS;
+            }
+            if (args.kwDefaults != null && args.kwDefaults.length > 0) {
+                ArrayList<KeywordTy> defs = new ArrayList<>();
+                for (int i = 0; i < args.kwOnlyArgs.length; i++) {
+                    ArgTy arg = args.kwOnlyArgs[i];
+                    ExprTy def = args.kwDefaults[i];
+                    if (def != null) {
+                        String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
+                        defs.add(new KeywordTy(mangled, def, arg.getStartOffset(), def.getEndOffset()));
+                    }
+                }
+                collectKeywords(defs.toArray(KeywordTy[]::new));
+                return CodeUnit.HAS_KWONLY_DEFAULTS;
+            }
+        }
+        return flags;
+    }
+
+    private void checkForbiddenArgs(ArgumentsTy args) {
+        if (args != null) {
+            if (args.posOnlyArgs != null) {
+                for (ArgTy arg : args.posOnlyArgs) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (args.args != null) {
+                for (ArgTy arg : args.args) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (args.kwOnlyArgs != null) {
+                for (ArgTy arg : args.kwOnlyArgs) {
+                    checkForbiddenName(arg.arg, ExprContext.Store);
+                }
+            }
+            if (args.varArg != null) {
+                checkForbiddenName(args.varArg.arg, ExprContext.Store);
+            }
+            if (args.kwArg != null) {
+                checkForbiddenName(args.kwArg.arg, ExprContext.Store);
+            }
+        }
     }
 
     @Override
