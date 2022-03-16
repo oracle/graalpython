@@ -56,8 +56,6 @@
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_retr
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_rpop
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_stat
-*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_stls
-*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_stls_capa
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_stls_context
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_too_long_lines
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_top
