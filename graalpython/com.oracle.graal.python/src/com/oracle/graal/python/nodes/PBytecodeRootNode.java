@@ -564,6 +564,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 frame.setObject(idx, factory.createDict(PArguments.getKeywordArguments(arguments)));
             }
+            initCellVars(frame);
+            initFreeVars(frame, arguments);
 
             return executeOSR(frame, encodeBCI(0) | encodeStackTop(stackoffset - 1), arguments);
         } finally {
@@ -761,8 +763,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int loopCount = 0;
         int stackTop = decodeStackTop(target);
         int bci = decodeBCI(target);
-        initCellVars(frame);
-        initFreeVars(frame, (Object[]) originalArgs);
 
         byte[] localBC = bytecode;
         int[] localArgs = extraArgs;
