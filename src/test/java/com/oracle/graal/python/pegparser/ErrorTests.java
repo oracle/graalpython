@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package com.oracle.graal.python.pegparser;
 
-import java.util.HashMap;
+import org.junit.jupiter.api.Test;
 
-/**
- * Cache that is used in the generated parser. Really just a convenient
- * interface around nested HashMaps mapping
- * <code>
- * (int tokenPos) -> (int ruleId) -> (T cachedItem)
- * </code>
- */
-class RuleResultCache <T> {
-
-    private final AbstractParser parser;
-
-    private static class CachedItem<T> {
-
-        final T node;
-        final int endPos;
-
-        CachedItem(T node, int endPos) {
-            this.node = node;
-            this.endPos = endPos;
-        }
-    }
-
-    // HashMap<start pos, HashMap<rule id, (result, end pos)>>
-    private final HashMap<Integer, HashMap<Integer, CachedItem<T>>> mainCache;
-
-    public RuleResultCache(AbstractParser parser) {
-        this.parser = parser;
-        this.mainCache = new HashMap<>();
-    }
-
-    public boolean hasResult(int pos, int ruleId) {
-        return mainCache.containsKey(pos) && mainCache.get(pos).containsKey(ruleId);
-    }
-
-    public T getResult(int pos, int ruleId) {
-        CachedItem<T> item = mainCache.get(pos).get(ruleId);
-        parser.reset(item.endPos);
-        return item.node;
-    }
-
-    public T putResult(int pos, int ruleId, T node) {
-        HashMap<Integer, CachedItem<T>> posCache = mainCache.get(pos);
-        if (posCache == null) {
-            posCache = new HashMap<>();
-            mainCache.put(pos, posCache);
-        }
-        posCache.put(ruleId, new CachedItem<T>(node, parser.mark()));
-        return node;
+public class ErrorTests extends ParserTestBase {
+    
+    @Test
+    public void while01() throws Exception {
+        checkSyntaxErrorMessage("while True\n", "expected ':'");
     }
     
-    public void clear() {
-        mainCache.clear();
-    }
 }

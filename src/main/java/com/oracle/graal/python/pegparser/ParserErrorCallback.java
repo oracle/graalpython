@@ -52,7 +52,8 @@ public interface ParserErrorCallback {
         Exec,
         Encoding,
         Warning,
-        Value
+        Value, 
+        Syntax
     }
 
     public abstract void onError(ErrorType errorType, int startOffset, int endOffset, String message);

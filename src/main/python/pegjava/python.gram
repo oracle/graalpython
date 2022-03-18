@@ -72,32 +72,23 @@ import java.util.stream.Stream;
 '''
 
 @trailer '''
-void *
-_PyPegen_parse(Parser *p)
-{
-    // Initialize keywords
-    p->keywords = reserved_keywords;
-    p->n_keyword_lists = n_keyword_lists;
-    p->soft_keywords = soft_keywords;
-
-    // Run parser
-    void *result = NULL;
-    if (p->start_rule == Py_file_input) {
-        result = file_rule(p);
-    } else if (p->start_rule == Py_single_input) {
-        result = interactive_rule(p);
-    } else if (p->start_rule == Py_eval_input) {
-        result = eval_rule(p);
-    } else if (p->start_rule == Py_func_type_input) {
-        result = func_type_rule(p);
-    } else if (p->start_rule == Py_fstring_input) {
-        result = fstring_rule(p);
+    @Override
+    protected SSTNode runParser(InputType inputType) {
+        SSTNode result = null;
+        switch (inputType) {
+            case FILE:
+                return file_rule();
+            case SINGLE:
+                return interactive_rule();
+            case EVAL:
+                return eval_rule();
+            case FUNCTION_TYPE:
+                return func_type_rule();
+            case FSTRING:
+                return fstring_rule();
+        }
+        return result;
     }
-
-    return result;
-}
-
-// The end
 '''
 file[mod_ty]: a=[statements] ENDMARKER { factory.createModule(a, startToken.startOffset, endToken.endOffset) }
 interactive[mod_ty]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
@@ -817,7 +808,7 @@ t_atom[expr_ty]:
 
 # From here on, there are rules for invalid syntax with specialised error messages
 invalid_arguments:
-    | args ',' '*' { RAISE_SYNTAX_ERROR("iterable argument unpacking follows keyword argument unpacking") }
+    | args ',' '*' { this.raiseSyntaxError("iterable argument unpacking follows keyword argument unpacking") }
     | a=expression for_if_clauses ',' [args | expression for_if_clauses] {
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "Generator expression must be parenthesized") }
     | a=args for_if_clauses { _PyPegen_nonparen_genexp_in_call(p, a) }
@@ -886,24 +877,24 @@ invalid_dict_comprehension:
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "dict unpacking cannot be used in dict comprehension") }
 invalid_parameters:
     | param_no_default* invalid_parameters_helper param_no_default {
-        RAISE_SYNTAX_ERROR("non-default argument follows default argument") }
+        this.raiseSyntaxError("non-default argument follows default argument") }
 invalid_parameters_helper: # This is only there to avoid type errors
     | a=slash_with_default { this.singletonSequence(a) }
     | param_with_default+
 invalid_lambda_parameters:
     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default {
-        RAISE_SYNTAX_ERROR("non-default argument follows default argument") }
+        this.raiseSyntaxError("non-default argument follows default argument") }
 invalid_lambda_parameters_helper:
     | a=lambda_slash_with_default { this.singletonSequence(a) }
     | lambda_param_with_default+
 invalid_star_etc:
-    | '*' (')' | ',' (')' | '**')) { RAISE_SYNTAX_ERROR("named arguments must follow bare *") }
-    | '*' ',' TYPE_COMMENT { RAISE_SYNTAX_ERROR("bare * has associated type comment") }
+    | '*' (')' | ',' (')' | '**')) { this.raiseSyntaxError("named arguments must follow bare *") }
+    | '*' ',' TYPE_COMMENT { this.raiseSyntaxError("bare * has associated type comment") }
 invalid_lambda_star_etc:
-    | '*' (':' | ',' (':' | '**')) { RAISE_SYNTAX_ERROR("named arguments must follow bare *") }
+    | '*' (':' | ',' (':' | '**')) { this.raiseSyntaxError("named arguments must follow bare *") }
 invalid_double_type_comments:
     | TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT {
-        RAISE_SYNTAX_ERROR("Cannot have two type comments on def") }
+        this.raiseSyntaxError("Cannot have two type comments on def") }
 invalid_with_item:
     | expression 'as' a=expression &(',' | ')' | ':') {
         RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
@@ -919,7 +910,7 @@ invalid_group:
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use double starred expression here") }
 invalid_import_from_targets:
     | import_from_as_names ',' {
-        RAISE_SYNTAX_ERROR("trailing comma not allowed without surrounding parentheses") }
+        this.raiseSyntaxError("trailing comma not allowed without surrounding parentheses") }
 
 invalid_with_stmt:
     | [ASYNC] 'with' ','.(expression ['as' star_target])+ &&':'
@@ -932,15 +923,15 @@ invalid_except_block:
     | 'except' &&':'
 
 invalid_match_stmt:
-    | "match" subject_expr !':' { CHECK_VERSION(void*, 10, "Pattern matching is", RAISE_SYNTAX_ERROR("expected ':'") ) }
+    | "match" subject_expr !':' { CHECK_VERSION(void*, 10, "Pattern matching is", this.raiseSyntaxError("expected ':'") ) }
 invalid_case_block:
-    | "case" patterns guard? !':' { RAISE_SYNTAX_ERROR("expected ':'") }
+    | "case" patterns guard? !':' { this.raiseSyntaxError("expected ':'") }
 invalid_if_stmt:
-    | 'if' named_expression NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | 'if' named_expression NEWLINE { this.raiseSyntaxError("expected ':'") }
 invalid_elif_stmt:
-    | 'elif' named_expression NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | 'elif' named_expression NEWLINE { this.raiseSyntaxError("expected ':'") }
 invalid_while_stmt:
-    | 'while' named_expression NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | 'while' named_expression NEWLINE { this.raiseSyntaxError("expected ':'") }
 
 invalid_double_starred_kvpairs:
     | ','.double_starred_kvpair+ ',' invalid_kvpair

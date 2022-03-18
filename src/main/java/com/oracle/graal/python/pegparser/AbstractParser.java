@@ -62,6 +62,17 @@ abstract class AbstractParser {
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
     
     /**
+     * Type of input input for the parser
+     */
+    static public enum InputType {
+        SINGLE,
+        FILE,
+        EVAL,
+        FUNCTION_TYPE,
+        FSTRING
+    }
+    
+    /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used 
      * instead != . 
      */
@@ -78,6 +89,12 @@ abstract class AbstractParser {
     
     protected int level = 0;
     protected boolean callInvalidRules = false;
+    
+    /** 
+     * Indicates, whether there was found an error
+     */
+    protected boolean errorIndicator = false;
+    
     private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
@@ -88,10 +105,21 @@ abstract class AbstractParser {
 
     protected abstract Object[][][] getReservedKeywords();
     protected abstract String[] getSoftKeywords();
+    protected abstract SSTNode runParser(InputType inputType);
 
+    
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
+        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), 0);
+    }
+    
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, int flags) {
+        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), flags);
+    }
+    
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
         this(tokenizer, factory, fexprParser, errorCb, 0);
     }
+    
     
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
@@ -103,6 +131,28 @@ abstract class AbstractParser {
         this.flags = flags;
     }
 
+    public ParserErrorCallback getErrorCallback() {
+        return errorCb;
+    }
+
+    public SSTNode parse (InputType inputType) {
+        SSTNode res = runParser(inputType);
+        if (res == null) {
+            resetParserState();
+            runParser(inputType);
+        }
+        return res;
+    }
+    
+    
+    private void resetParserState() {
+        errorIndicator = false;
+        callInvalidRules = true;
+        level = 0;
+        cache.clear();
+        tokenizer.reset(0);
+    }
+    
     /**
      * Get position in the tokenizer.
      * @return the position in tokenizer.
@@ -713,5 +763,16 @@ abstract class AbstractParser {
             }
             return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
         }
+    }
+    
+    /**
+     * RAISE_SYNTAX_ERROR
+     */
+    final SSTNode raiseSyntaxError (String msg, Object... argumetns) {
+        errorIndicator = true;
+        Token errorToken = tokenizer.peekToken();
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
+        System.out.println("start: " + errorToken.startOffset);
+        return null;
     }
 }
