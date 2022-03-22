@@ -166,32 +166,32 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @ExportMessage
-    byte readByte(int byteOffset) throws IndexOutOfBoundsException {
+    byte readByte(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    short readShort(int byteOffset) throws IndexOutOfBoundsException {
+    short readShort(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    int readInt(int byteOffset) throws IndexOutOfBoundsException {
+    int readInt(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    long readLong(int byteOffset) throws IndexOutOfBoundsException {
+    long readLong(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    float readFloat(int byteOffset) throws IndexOutOfBoundsException {
+    float readFloat(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    double readDouble(int byteOffset) throws IndexOutOfBoundsException {
+    double readDouble(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 }
