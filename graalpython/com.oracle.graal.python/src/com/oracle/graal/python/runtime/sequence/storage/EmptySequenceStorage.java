@@ -171,27 +171,27 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @ExportMessage
-    short readShort(int byteOffset) throws IndexOutOfBoundsException  {
+    short readShort(int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    int readInt(int byteOffset) throws IndexOutOfBoundsException  {
+    int readInt(int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    long readLong(int byteOffset) throws IndexOutOfBoundsException  {
+    long readLong(int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    float readFloat(int byteOffset) throws IndexOutOfBoundsException  {
+    float readFloat(int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
-    double readDouble(int byteOffset) throws IndexOutOfBoundsException  {
+    double readDouble(int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 }
