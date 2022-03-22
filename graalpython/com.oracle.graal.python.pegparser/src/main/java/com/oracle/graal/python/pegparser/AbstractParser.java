@@ -40,27 +40,30 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
- * From this class is extended the generated parser. It allow access to the
- * tokenizer.  The methods defined in this class are mostly equivalents to those
- * defined in CPython's {@code pegen.c}. This allows us to keep the actions and
- * parser generator very similar to CPython for easier updating in the future.
+ * From this class is extended the generated parser. It allow access to the tokenizer. The methods
+ * defined in this class are mostly equivalents to those defined in CPython's {@code pegen.c}. This
+ * allows us to keep the actions and parser generator very similar to CPython for easier updating in
+ * the future.
  */
 abstract class AbstractParser {
     protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
-    
+
     /**
      * Type of input input for the parser
      */
@@ -71,13 +74,12 @@ abstract class AbstractParser {
         FUNCTION_TYPE,
         FSTRING
     }
-    
+
     /**
-     * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used 
-     * instead != . 
+     * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
      */
     protected static final int PARSE_BARRY_AS_BDFL = 0x0020;
-    
+
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
 
     private final ParserTokenizer tokenizer;
@@ -86,15 +88,15 @@ abstract class AbstractParser {
     protected final NodeFactory factory;
 
     private final int flags;
-    
+
     protected int level = 0;
     protected boolean callInvalidRules = false;
-    
-    /** 
+
+    /**
      * Indicates, whether there was found an error
      */
     protected boolean errorIndicator = false;
-    
+
     private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
@@ -104,23 +106,23 @@ abstract class AbstractParser {
     private final String[] softKeywords;
 
     protected abstract Object[][][] getReservedKeywords();
+
     protected abstract String[] getSoftKeywords();
+
     protected abstract SSTNode runParser(InputType inputType);
 
-    
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
         this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), 0);
     }
-    
+
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, int flags) {
         this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), flags);
     }
-    
+
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
         this(tokenizer, factory, fexprParser, errorCb, 0);
     }
-    
-    
+
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
         this.factory = factory;
@@ -135,7 +137,7 @@ abstract class AbstractParser {
         return errorCb;
     }
 
-    public SSTNode parse (InputType inputType) {
+    public SSTNode parse(InputType inputType) {
         SSTNode res = runParser(inputType);
         if (res == null) {
             resetParserState();
@@ -143,8 +145,7 @@ abstract class AbstractParser {
         }
         return res;
     }
-    
-    
+
     private void resetParserState() {
         errorIndicator = false;
         callInvalidRules = true;
@@ -152,9 +153,10 @@ abstract class AbstractParser {
         cache.clear();
         tokenizer.reset(0);
     }
-    
+
     /**
      * Get position in the tokenizer.
+     * 
      * @return the position in tokenizer.
      */
     public int mark() {
@@ -163,6 +165,7 @@ abstract class AbstractParser {
 
     /**
      * Reset position in the tokenizer
+     * 
      * @param position where the tokenizer should set the current position
      */
     public void reset(int position) {
@@ -170,11 +173,12 @@ abstract class AbstractParser {
     }
 
     /**
-     * Is the expected token on the current position in tokenizer? If there is the
-     * expected token, then the current position in tokenizer is changed to the next token.
+     * Is the expected token on the current position in tokenizer? If there is the expected token,
+     * then the current position in tokenizer is changed to the next token.
+     * 
      * @param tokenKind - the token kind that is expected on the current position
-     * @return The expected token or null if the token on the current position is not
-     * the expected one.
+     * @return The expected token or null if the token on the current position is not the expected
+     *         one.
      */
     public Token expect(int tokenKind) {
         Token token = getAndInitializeToken();
@@ -185,11 +189,12 @@ abstract class AbstractParser {
     }
 
     /**
-     * Is the expected token on the current position in tokenizer? If there is the
-     * expected token, then the current position in tokenizer is changed to the next token.
+     * Is the expected token on the current position in tokenizer? If there is the expected token,
+     * then the current position in tokenizer is changed to the next token.
+     * 
      * @param text - the token on the current position has to have this text
-     * @return The expected token or null if the token on the current position is not
-     * the expected one.
+     * @return The expected token or null if the token on the current position is not the expected
+     *         one.
      */
     public Token expect(String text) {
         Token token = tokenizer.peekToken();
@@ -200,8 +205,8 @@ abstract class AbstractParser {
     }
 
     /**
-     * Check if the next token that'll be read is if the expected kind. This has
-     * does not advance the tokenizer, in contrast to {@link expect(int)}.
+     * Check if the next token that'll be read is if the expected kind. This has does not advance
+     * the tokenizer, in contrast to {@link expect(int)}.
      */
     protected boolean lookahead(boolean match, int kind) {
         int pos = mark();
@@ -211,8 +216,8 @@ abstract class AbstractParser {
     }
 
     /**
-     * Check if the next token that'll be read is if the expected kind. This has
-     * does not advance the tokenizer, in contrast to {@link expect(String)}.
+     * Check if the next token that'll be read is if the expected kind. This has does not advance
+     * the tokenizer, in contrast to {@link expect(String)}.
      */
     protected boolean lookahead(boolean match, String text) {
         int pos = mark();
@@ -223,6 +228,7 @@ abstract class AbstractParser {
 
     /**
      * Shortcut to Tokenizer.getText(Token)
+     * 
      * @param token
      * @return
      */
@@ -277,7 +283,6 @@ abstract class AbstractParser {
         }
     }
 
-
     /**
      * 
      * @return flags that influence parsing.
@@ -315,8 +320,8 @@ abstract class AbstractParser {
     }
 
     /**
-     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. We are
-     * trying to be type safe, so we create a container.
+     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. We are trying to be type
+     * safe, so we create a container.
      */
     public Token string_token() {
         int pos = mark();
@@ -393,7 +398,7 @@ abstract class AbstractParser {
      * _PyPegen_join_names_with_dot
      */
     public SSTNode joinNamesWithDot(ExprTy a, ExprTy b) {
-        String id = ((ExprTy.Name)a).id + "." + ((ExprTy.Name)b).id;
+        String id = ((ExprTy.Name) a).id + "." + ((ExprTy.Name) b).id;
         return factory.createVariable(id, a.getStartOffset(), b.getEndOffset());
     }
 
@@ -404,7 +409,7 @@ abstract class AbstractParser {
     public <T> T[] insertInFront(T element, T[] seq) {
         T[] result;
         if (seq == null) {
-            result = (T[])Array.newInstance(element.getClass(), 1);
+            result = (T[]) Array.newInstance(element.getClass(), 1);
         } else {
             result = Arrays.copyOf(seq, seq.length + 1);
             System.arraycopy(seq, 0, result, 1, seq.length);
@@ -420,7 +425,7 @@ abstract class AbstractParser {
     public <T> T[] appendToEnd(T[] seq, T element) {
         T[] result;
         if (seq == null) {
-            result = (T[])Array.newInstance(element.getClass(), 1);
+            result = (T[]) Array.newInstance(element.getClass(), 1);
             result[0] = element;
         } else {
             result = Arrays.copyOf(seq, seq.length + 1);
@@ -435,7 +440,7 @@ abstract class AbstractParser {
      */
     @SuppressWarnings("unchecked")
     public <T> T[] singletonSequence(T element) {
-        T[] result = (T[])Array.newInstance(element.getClass(), 1);
+        T[] result = (T[]) Array.newInstance(element.getClass(), 1);
         result[0] = element;
         return result;
     }
@@ -460,40 +465,32 @@ abstract class AbstractParser {
     /**
      * _PyPegen_check_barry_as_flufl
      */
-    public boolean checkBarryAsFlufl (Token token) {
+    public boolean checkBarryAsFlufl(Token token) {
         if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
             errorCb.onError(token.startOffset, token.endOffset, BARRY_AS_BDFL);
             return true;
         }
         return false;
     }
-    
+
     /**
-    * _PyPegen_get_expr_name
-    */
+     * _PyPegen_get_expr_name
+     */
     public String getExprName(ExprTy e) {
-        if (e instanceof ExprTy.Attribute
-                || e instanceof ExprTy.Subscript
-                || e instanceof ExprTy.Starred
-                || e instanceof ExprTy.Name
-                || e instanceof ExprTy.Tuple
-                || e instanceof ExprTy.List
-                || e instanceof ExprTy.Lambda) {
+        if (e instanceof ExprTy.Attribute || e instanceof ExprTy.Subscript || e instanceof ExprTy.Starred || e instanceof ExprTy.Name || e instanceof ExprTy.Tuple || e instanceof ExprTy.List ||
+                        e instanceof ExprTy.Lambda) {
             return e.getClass().getSimpleName().toLowerCase();
         }
         if (e instanceof ExprTy.Call) {
             return "function call";
         }
-        if (e instanceof ExprTy.BoolOp
-                || e instanceof ExprTy.BinOp
-                || e instanceof ExprTy.UnaryOp) {
+        if (e instanceof ExprTy.BoolOp || e instanceof ExprTy.BinOp || e instanceof ExprTy.UnaryOp) {
             return "expression";
         }
         if (e instanceof ExprTy.GeneratorExp) {
             return "generator expression";
         }
-        if (e instanceof ExprTy.Yield
-                || e instanceof ExprTy.YieldFrom) {
+        if (e instanceof ExprTy.Yield || e instanceof ExprTy.YieldFrom) {
             return "yield expression";
         }
         if (e instanceof ExprTy.Await) {
@@ -514,17 +511,16 @@ abstract class AbstractParser {
         if (e instanceof ExprTy.Set) {
             return "set display";
         }
-        if (e instanceof ExprTy.JoinedStr
-                || e instanceof ExprTy.FormattedValue) {
+        if (e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
             return "f-string expression";
         }
         if (e instanceof ExprTy.Constant) {
-            ExprTy.Constant constant = (ExprTy.Constant)e;
-            switch(constant.kind) {
+            ExprTy.Constant constant = (ExprTy.Constant) e;
+            switch (constant.kind) {
                 case NONE:
                     return "None";
                 case BOOLEAN:
-                    Boolean value = (Boolean)constant.value;
+                    Boolean value = (Boolean) constant.value;
                     if (value.booleanValue()) {
                         return "True";
                     }
@@ -543,13 +539,13 @@ abstract class AbstractParser {
         if (e instanceof ExprTy.NamedExpr) {
             return "named expression";
         }
-        // TODO Rise system error 
-//         PyErr_Format(PyExc_SystemError,
-//                         "unexpected expression in assignment %d (line %d)",
-//                         e->kind, e->lineno);
+        // TODO Rise system error
+// PyErr_Format(PyExc_SystemError,
+// "unexpected expression in assignment %d (line %d)",
+// e->kind, e->lineno);
         return null;
-    } 
-    
+    }
+
     /**
      * equivalent to initialize_token
      */
@@ -561,7 +557,7 @@ abstract class AbstractParser {
             if (l < reservedKeywords.length && (kwlist = reservedKeywords[l]) != null) {
                 for (Object[] kwAssoc : kwlist) {
                     if (txt.equals(kwAssoc[0])) {
-                        token.type = (int)kwAssoc[1];
+                        token.type = (int) kwAssoc[1];
                         break;
                     }
                 }
@@ -574,14 +570,14 @@ abstract class AbstractParser {
      * _PyPegen_new_type_comment
      */
     protected String newTypeComment(Object token) {
-        return getText((Token)token);
+        return getText((Token) token);
     }
 
     /**
      * _PyPegen_join_sequences
      *
      */
-    protected <T> T[] join(T[] a , T[]b) {
+    protected <T> T[] join(T[] a, T[] b) {
         if (a == null && b != null) {
             return b;
         }
@@ -601,8 +597,8 @@ abstract class AbstractParser {
      * _PyPegen_set_expr_context
      *
      * TODO: (tfel) We should try to avoid having to walk the parse tree so often. The git history
-     * includes an attempt with a symbol and a scope stream synchronized to the token stream, but
-     * it doesn't really work with the pegen generator.
+     * includes an attempt with a symbol and a scope stream synchronized to the token stream, but it
+     * doesn't really work with the pegen generator.
      */
     protected ExprTy setExprContext(ExprTy node, ExprContext context) {
         return node.copyWithContext(context);
@@ -731,21 +727,40 @@ abstract class AbstractParser {
      * _PyPegen_seq_extract_starred_exprs
      */
     static ExprTy[] extractStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> !n.isKeyword).map(n -> (ExprTy)n.element).toArray(ExprTy[]::new);
+        List<ExprTy> list = new ArrayList<>();
+        for (KeywordOrStarred n : kwds) {
+            if (!n.isKeyword) {
+                ExprTy element = (ExprTy) n.element;
+                list.add(element);
+            }
+        }
+        return list.toArray(new ExprTy[0]);
     }
 
     /**
      * _PyPegen_seq_delete_starred_exprs
      */
     static KeywordTy[] deleteStarredExpressions(KeywordOrStarred[] kwds) {
-        return Arrays.stream(kwds).filter(n -> n.isKeyword).map(n -> (KeywordTy)n.element).toArray(KeywordTy[]::new);
+        List<KeywordTy> list = new ArrayList<>();
+        for (KeywordOrStarred n : kwds) {
+            if (n.isKeyword) {
+                KeywordTy element = (KeywordTy) n.element;
+                list.add(element);
+            }
+        }
+        return list.toArray(new KeywordTy[0]);
     }
 
     /**
      * _PyPegen_map_names_to_ids
      */
     static String[] extractNames(ExprTy[] seq) {
-        return Arrays.stream(seq).map((e) -> ((ExprTy.Name) e).id).toArray(String[]::new);
+        List<String> list = new ArrayList<>();
+        for (ExprTy e : seq) {
+            String id = ((ExprTy.Name) e).id;
+            list.add(id);
+        }
+        return list.toArray(new String[0]);
     }
 
     /**
@@ -766,7 +781,7 @@ abstract class AbstractParser {
             return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
         }
     }
-    
+
     /**
      * RAISE_SYNTAX_ERROR
      */
@@ -776,20 +791,18 @@ abstract class AbstractParser {
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
         return null;
     }
-    
+
     /**
-     * RAISE_ERROR_KNOWN_LOCATION
-     * the first param is a token, where error begins
+     * RAISE_ERROR_KNOWN_LOCATION the first param is a token, where error begins
      */
     final SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
         return null;
     }
-    
+
     /**
-     * RAISE_ERROR_KNOWN_LOCATION
-     * the first param is node, where error begins
+     * RAISE_ERROR_KNOWN_LOCATION the first param is node, where error begins
      */
     final SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
