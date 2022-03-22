@@ -5,7 +5,6 @@
  */
 package com.oracle.graal.python.pegparser.tokenizer;
 
-import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -16,11 +15,10 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 /**
- * This class is intentionally kept very close to CPython's tokenizer.c and
- * tokenizer.h files. The last time it was updated to the versions on the
- * v3.10.0 tag in the CPython source code repository. Where the names are not
- * the exact same, there are javadoc comments that tell the names in the CPython
- * source code.
+ * This class is intentionally kept very close to CPython's tokenizer.c and tokenizer.h files. The
+ * last time it was updated to the versions on the v3.10.0 tag in the CPython source code
+ * repository. Where the names are not the exact same, there are javadoc comments that tell the
+ * names in the CPython source code.
  */
 public class Tokenizer {
     private static final int EOF = -1;
@@ -32,20 +30,14 @@ public class Tokenizer {
      * is_potential_identifier_start
      */
     private static boolean isPotentialIdentifierStart(int c) {
-        return (c >= 'a' && c <= 'z')
-                || (c >= 'A' && c <= 'Z')
-                || c == '_' || c >= 128;
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c >= 128;
     }
 
     /**
      * is_potential_identifier_char
      */
     private static boolean isPotentialIdentifierChar(int c) {
-        return (c >= 'a' && c <= 'z')
-                || (c >= 'A' && c <= 'Z')
-                || (c >= '0' && c <= '9')
-                || c == '_'
-                || c >= 128;
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c >= 128;
     }
 
     private static final int TABSIZE = 8;
@@ -59,11 +51,10 @@ public class Tokenizer {
     /**
      * type_comment_prefix
      *
-     * Spaces in this constant are treated as "zero or more spaces or tabs" when
-     * tokenizing.
+     * Spaces in this constant are treated as "zero or more spaces or tabs" when tokenizing.
      */
     private static final byte[] TYPE_COMMENT_PREFIX = "# type: ".getBytes(StandardCharsets.US_ASCII);
-    private static final int[] IGNORE_BYTES = "ignore".codePoints().toArray();
+    private static final int[] IGNORE_BYTES = charsToCodePoints("ignore".toCharArray());
 
     public static enum StatusCode {
         OK,
@@ -149,8 +140,8 @@ public class Tokenizer {
         if (s.startsWith("utf-8")) {
             return "utf-8";
         } else if (s.startsWith("latin-1") ||
-                   s.startsWith("iso-8859-1") ||
-                   s.startsWith("iso-latin-1")) {
+                        s.startsWith("iso-8859-1") ||
+                        s.startsWith("iso-latin-1")) {
             return "iso-8859-1";
         } else {
             return s;
@@ -213,10 +204,9 @@ public class Tokenizer {
     /**
      * check_coding_spec
      *
-     * Check and return file encoding or {@code null} if none was found. This
-     * returns the default encoding if anything but a comment is found in the
-     * line, since that means there can be no further coding comments in this
-     * source.
+     * Check and return file encoding or {@code null} if none was found. This returns the default
+     * encoding if anything but a comment is found in the line, since that means there can be no
+     * further coding comments in this source.
      */
     private static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
         String spec = getCodingSpec(byteInput, lineStart);
@@ -237,7 +227,7 @@ public class Tokenizer {
         return Charset.forName(spec);
     }
 
-    private static final byte[] BOM_BYTES = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF};
+    private static final byte[] BOM_BYTES = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 
     /**
      * check_bom
@@ -315,12 +305,25 @@ public class Tokenizer {
             this.fileEncoding = StandardCharsets.UTF_8;
         }
 
-        this.codePointsInput = this.fileEncoding
-            .decode(ByteBuffer.wrap(code, sourceStart, code.length))
-            .codePoints()
-            .toArray();
+        this.codePointsInput = charsToCodePoints(this.fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
         this.interactive = flags.contains(Flag.INTERACTIVE);
         this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+    }
+
+    private static int[] charsToCodePoints(char[] chars) {
+        int cpIndex = 0;
+        for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
+            int cp = Character.codePointAt(chars, charIndex);
+            charIndex += Character.charCount(cp);
+        }
+        int[] codePoints = new int[cpIndex];
+        cpIndex = 0;
+        for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
+            int cp = Character.codePointAt(chars, charIndex);
+            codePoints[cpIndex] = cp;
+            charIndex += Character.charCount(cp);
+        }
+        return codePoints;
     }
 
     /**
@@ -334,7 +337,7 @@ public class Tokenizer {
      * PyTokenizer_FromUTF8
      */
     public Tokenizer(String code, EnumSet<Flag> flags) {
-        this.codePointsInput = code.codePoints().toArray();
+        this.codePointsInput = charsToCodePoints(code.toCharArray());
         this.fileEncoding = StandardCharsets.UTF_8;
         this.execInput = flags.contains(Flag.EXECT_INPUT);
         this.interactive = flags.contains(Flag.INTERACTIVE);
@@ -352,10 +355,9 @@ public class Tokenizer {
     /**
      * tok_nextc, inlining tok_underflow_string, because that's all we need
      *
-     * CPython always scans one line ahead, so every tok_underflow_string call
-     * will update the current line number, and then they keep returning the
-     * next char until they reach the next line. We do it differently, since we
-     * always have the entire buffer here.
+     * CPython always scans one line ahead, so every tok_underflow_string call will update the
+     * current line number, and then they keep returning the next char until they reach the next
+     * line. We do it differently, since we always have the entire buffer here.
      */
     int nextChar() {
         if (nextCharIndex < codePointsInput.length) {
@@ -428,7 +430,7 @@ public class Tokenizer {
         int end = nextCharIndex + test.length;
         if (end + 1 < codePointsInput.length) {
             return Arrays.equals(codePointsInput, nextCharIndex, end, test, 0, test.length) &&
-                !isPotentialIdentifierChar(codePointsInput[end + 1]);
+                            !isPotentialIdentifierChar(codePointsInput[end + 1]);
         } else {
             return false;
         }
@@ -437,20 +439,18 @@ public class Tokenizer {
     /**
      * verify_end_of_number
      *
-     * In contrast to CPython, we return {@code null} if fine, and a Token if
-     * there was an error. The caller should return the token further up in that
-     * case.
+     * In contrast to CPython, we return {@code null} if fine, and a Token if there was an error.
+     * The caller should return the token further up in that case.
      */
     private Token verifyEndOfNumber(int c, String kind) {
-        /* Emit a deprecation warning only if the numeric literal is immediately
-         * followed by one of keywords which can occurr after a numeric literal
-         * in valid code: "and", "else", "for", "if", "in", "is" and "or".
-         * It allows to gradually deprecate existing valid code without adding
-         * warning before error in most cases of invalid numeric literal (which
-         * would be confusiong and break existing tests).
-         * Raise a syntax error with slighly better message than plain
-         * "invalid syntax" if the numeric literal is immediately followed by
-         * other keyword or identifier.
+        /*
+         * Emit a deprecation warning only if the numeric literal is immediately followed by one of
+         * keywords which can occurr after a numeric literal in valid code: "and", "else", "for",
+         * "if", "in", "is" and "or". It allows to gradually deprecate existing valid code without
+         * adding warning before error in most cases of invalid numeric literal (which would be
+         * confusiong and break existing tests). Raise a syntax error with slighly better message
+         * than plain "invalid syntax" if the numeric literal is immediately followed by other
+         * keyword or identifier.
          */
         boolean r = false;
         if (c == 'a') {
@@ -482,8 +482,8 @@ public class Tokenizer {
     }
 
     /**
-     * verify_identifier
-     * Verify that the string is a valid identifier.
+     * verify_identifier Verify that the string is a valid identifier.
+     * 
      * @return {@code null} if valid, else an error message
      */
     private String verifyIdentifier(String tokenString) {
@@ -500,7 +500,7 @@ public class Tokenizer {
         }
         if (invalid < tokenString.length()) {
             int codePoint = tokenString.codePointAt(invalid);
-            String printString = new String(new int[] { codePoint }, 0, 1);
+            String printString = new String(new int[]{codePoint}, 0, 1);
             return String.format("invalid character '%s' (U+%x)", printString, codePoint);
         }
         return null;
@@ -551,396 +551,439 @@ public class Tokenizer {
 
         GOTO_LOOP: while (true) {
             switch (target) {
-            case LABEL_NEXTLINE:
-                blankline = false;
+                case LABEL_NEXTLINE:
+                    blankline = false;
 
-                if (atBeginningOfLine) {
-                    int col = 0;
-                    int altcol = 0;
-                    atBeginningOfLine = false;
-                    OUTER: while (true) {
-                        c = nextChar();
-                        switch (c) {
-                        case ' ':
-                            col++;
-                            altcol++;
-                            break;
-                        case '\t':
-                            col = (col / tabSize + 1) * tabSize;
-                            altcol = (altcol / ALTTABSIZE + 1) * ALTTABSIZE;
-                            break;
-                        case '\014':
-                            col = altcol = 0;
-                            break;
-                        default:
-                            break OUTER;
+                    if (atBeginningOfLine) {
+                        int col = 0;
+                        int altcol = 0;
+                        atBeginningOfLine = false;
+                        OUTER: while (true) {
+                            c = nextChar();
+                            switch (c) {
+                                case ' ':
+                                    col++;
+                                    altcol++;
+                                    break;
+                                case '\t':
+                                    col = (col / tabSize + 1) * tabSize;
+                                    altcol = (altcol / ALTTABSIZE + 1) * ALTTABSIZE;
+                                    break;
+                                case '\014':
+                                    col = altcol = 0;
+                                    break;
+                                default:
+                                    break OUTER;
+                            }
+                        }
+                        oneBack();
+                        if (c == '#' || c == '\n' || c == '\\') {
+                            /*
+                             * Lines with only whitespace and/or comments and/or a line continuation
+                             * character shouldn't affect the indentation and are not passed to the
+                             * parser as NEWLINE tokens, except *totally* empty lines in interactive
+                             * mode, which signal the end of a command group.
+                             */
+                            if (col == 0 && c == '\n' && interactive) {
+                                blankline = false; /* Let it through */
+                            } else if (interactive && currentLineNumber == 1) {
+                                /*
+                                 * In interactive mode, if the first line contains only spaces
+                                 * and/or a comment, let it through.
+                                 */
+                                blankline = false;
+                                col = altcol = 0;
+                            } else {
+                                blankline = true; /* Ignore completely */
+                            }
+                            /*
+                             * We can't jump back right here since we still may need to skip to the
+                             * end of a comment
+                             */
+                        }
+                        if (!blankline && parensNestingLevel == 0) {
+                            if (col == indentationStack[currentIndentIndex]) {
+                                /* No change */
+                                if (altcol != altIndentationStack[currentIndentIndex]) {
+                                    return indentError();
+                                }
+                            } else if (col > indentationStack[currentIndentIndex]) {
+                                /* Indent -- always one */
+                                if (currentIndentIndex + 1 >= MAXINDENT) {
+                                    done = StatusCode.TOO_DEEP_INDENTATION;
+                                    return createToken(Token.Kind.ERRORTOKEN);
+                                }
+                                if (altcol <= altIndentationStack[currentIndentIndex]) {
+                                    return indentError();
+                                }
+                                pendingIndents++;
+                                indentationStack[++currentIndentIndex] = col;
+                                altIndentationStack[currentIndentIndex] = altcol;
+                            } else {
+                                assert col < indentationStack[currentIndentIndex];
+                                /* Dedent -- any number, must be consistent */
+                                while (currentIndentIndex > 0 && col < indentationStack[currentIndentIndex]) {
+                                    pendingIndents--;
+                                    currentIndentIndex--;
+                                }
+                                if (col != indentationStack[currentIndentIndex]) {
+                                    done = StatusCode.DEDENT_INVALID;
+                                    return createToken(Token.Kind.ERRORTOKEN);
+                                }
+                                if (altcol != altIndentationStack[currentIndentIndex]) {
+                                    return indentError();
+                                }
+                            }
                         }
                     }
-                    oneBack();
-                    if (c == '#' || c == '\n' || c == '\\') {
-                        /* Lines with only whitespace and/or comments
-                           and/or a line continuation character
-                           shouldn't affect the indentation and are
-                           not passed to the parser as NEWLINE tokens,
-                           except *totally* empty lines in interactive
-                           mode, which signal the end of a command group. */
-                        if (col == 0 && c == '\n' && interactive) {
-                            blankline = false; /* Let it through */
-                        } else if (interactive && currentLineNumber == 1) {
-                            /* In interactive mode, if the first line contains
-                               only spaces and/or a comment, let it through. */
-                            blankline = false;
-                            col = altcol = 0;
-                        } else {
-                            blankline = true; /* Ignore completely */
-                        }
-                        /* We can't jump back right here since we still
-                           may need to skip to the end of a comment */
-                    }
-                    if (!blankline && parensNestingLevel == 0) {
-                        if (col == indentationStack[currentIndentIndex]) {
-                            /* No change */
-                            if (altcol != altIndentationStack[currentIndentIndex]) {
-                                return indentError();
-                            }
-                        } else if (col > indentationStack[currentIndentIndex]) {
-                            /* Indent -- always one */
-                            if (currentIndentIndex + 1 >= MAXINDENT) {
-                                done = StatusCode.TOO_DEEP_INDENTATION;
-                                return createToken(Token.Kind.ERRORTOKEN);
-                            }
-                            if (altcol <= altIndentationStack[currentIndentIndex]) {
-                                return indentError();
-                            }
+
+                    tokenStart = nextCharIndex;
+
+                    /* Return pending indents/dedents */
+                    if (pendingIndents != 0) {
+                        if (pendingIndents < 0) {
                             pendingIndents++;
-                            indentationStack[++currentIndentIndex] = col;
-                            altIndentationStack[currentIndentIndex] = altcol;
+                            return createToken(Token.Kind.DEDENT);
                         } else {
-                            assert col < indentationStack[currentIndentIndex];
-                            /* Dedent -- any number, must be consistent */
-                            while (currentIndentIndex > 0 && col < indentationStack[currentIndentIndex]) {
-                                pendingIndents--;
-                                currentIndentIndex--;
-                            }
-                            if (col != indentationStack[currentIndentIndex]) {
-                                done = StatusCode.DEDENT_INVALID;
-                                return createToken(Token.Kind.ERRORTOKEN);
-                            }
-                            if (altcol != altIndentationStack[currentIndentIndex]) {
-                                return indentError();
-                            }
+                            pendingIndents--;
+                            return createToken(Token.Kind.INDENT);
                         }
                     }
-                }
 
-                tokenStart = nextCharIndex;
-
-                /* Return pending indents/dedents */
-                if (pendingIndents != 0) {
-                    if (pendingIndents < 0) {
-                        pendingIndents++;
-                        return createToken(Token.Kind.DEDENT);
-                    } else {
-                        pendingIndents--;
-                        return createToken(Token.Kind.INDENT);
-                    }
-                }
-
-                /* Peek ahead at the next character */
-                c = nextChar();
-                oneBack();
-                /* Check if we are closing an async function */
-                if (insideAsyncDef
-                    && !blankline
-                    /* Due to some implementation artifacts of type comments,
-                     * a TYPE_COMMENT at the start of a function won't set an
-                     * indentation level and it will produce a NEWLINE after it.
-                     * To avoid spuriously ending an async function due to this,
-                     * wait until we have some non-newline char in front of us. */
-                    && c != '\n'
-                    && parensNestingLevel == 0
-                    /* There was a NEWLINE after ASYNC DEF,
-                       so we're past the signature. */
-                    && asyncDefFollowedByNewline
-                    /* Current indentation level is less than where
-                       the async function was defined */
-                    && indentationOfAsyncDef >= currentIndentIndex) {
-                    insideAsyncDef = false;
-                    indentationOfAsyncDef = 0;
-                    asyncDefFollowedByNewline = false;
-                }
-
-            case LABEL_AGAIN:
-                // skip spaces
-                do {
+                    /* Peek ahead at the next character */
                     c = nextChar();
-                } while (c == ' ' || c == '\t' || c == '\014');
+                    oneBack();
+                    /* Check if we are closing an async function */
+                    if (insideAsyncDef && !blankline
+                    /*
+                     * Due to some implementation artifacts of type comments, a TYPE_COMMENT at the
+                     * start of a function won't set an indentation level and it will produce a
+                     * NEWLINE after it. To avoid spuriously ending an async function due to this,
+                     * wait until we have some non-newline char in front of us.
+                     */
+                                    && c != '\n' && parensNestingLevel == 0
+                                    /*
+                                     * There was a NEWLINE after ASYNC DEF, so we're past the
+                                     * signature.
+                                     */
+                                    && asyncDefFollowedByNewline
+                                    /*
+                                     * Current indentation level is less than where the async
+                                     * function was defined
+                                     */
+                                    && indentationOfAsyncDef >= currentIndentIndex) {
+                        insideAsyncDef = false;
+                        indentationOfAsyncDef = 0;
+                        asyncDefFollowedByNewline = false;
+                    }
 
-                tokenStart = nextCharIndex - 1;
-
-                // skip comment
-                if (c == '#') {
+                case LABEL_AGAIN:
+                    // skip spaces
                     do {
                         c = nextChar();
-                    } while (c != EOF && c != '\n');
+                    } while (c == ' ' || c == '\t' || c == '\014');
 
-                    if (lookForTypeComments) {
-                        int prefixIdx = 0;
-                        //int chIdx = nextCharIndex;
-                        int chIdx = tokenStart;
-                        while (chIdx < codePointsInput.length && prefixIdx < TYPE_COMMENT_PREFIX.length) {
-                            if (TYPE_COMMENT_PREFIX[prefixIdx] == ' ') {
-                                while (chIdx < codePointsInput.length &&
-                                       (codePointsInput[chIdx] == ' ' || codePointsInput[chIdx] == '\t')) {
+                    tokenStart = nextCharIndex - 1;
+
+                    // skip comment
+                    if (c == '#') {
+                        do {
+                            c = nextChar();
+                        } while (c != EOF && c != '\n');
+
+                        if (lookForTypeComments) {
+                            int prefixIdx = 0;
+                            // int chIdx = nextCharIndex;
+                            int chIdx = tokenStart;
+                            while (chIdx < codePointsInput.length && prefixIdx < TYPE_COMMENT_PREFIX.length) {
+                                if (TYPE_COMMENT_PREFIX[prefixIdx] == ' ') {
+                                    while (chIdx < codePointsInput.length &&
+                                                    (codePointsInput[chIdx] == ' ' || codePointsInput[chIdx] == '\t')) {
+                                        chIdx++;
+                                    }
+                                } else if (TYPE_COMMENT_PREFIX[prefixIdx] == codePointsInput[chIdx]) {
                                     chIdx++;
+                                } else {
+                                    break;
                                 }
-                            } else if (TYPE_COMMENT_PREFIX[prefixIdx] == codePointsInput[chIdx]) {
-                                chIdx++;
+                                prefixIdx++;
+                            }
+
+                            /* This is a type comment if we matched all of type_comment_prefix. */
+                            if (prefixIdx == TYPE_COMMENT_PREFIX.length) {
+                                boolean isTypeIgnore;
+                                int ignoreEnd = chIdx + 6;
+                                int endChar = ignoreEnd < codePointsInput.length ? codePointsInput[ignoreEnd] : -1;
+                                oneBack(); /* don't eat the newline or EOF */
+
+                                int typeStart = chIdx;
+
+                                /*
+                                 * A TYPE_IGNORE is "type: ignore" followed by the end of the token
+                                 * or anything ASCII and non-alphanumeric.
+                                 */
+                                isTypeIgnore = (nextCharIndex >= ignoreEnd &&
+                                                Arrays.equals(codePointsInput, chIdx, ignoreEnd, IGNORE_BYTES, 0, 6) &&
+                                                !(nextCharIndex > ignoreEnd &&
+                                                                (endChar >= 128 || Character.isLetterOrDigit(endChar))));
+
+                                if (isTypeIgnore) {
+                                    /*
+                                     * If this type ignore is the only thing on the line, consume
+                                     * the newline also.
+                                     */
+                                    if (blankline) {
+                                        nextChar();
+                                        atBeginningOfLine = true;
+                                    }
+                                    tokenStart = ignoreEnd;
+                                    return createToken(Token.Kind.TYPE_IGNORE);
+                                } else {
+                                    tokenStart = typeStart; /* after type_comment_prefix */
+                                    return createToken(Token.Kind.TYPE_COMMENT);
+                                }
+                            }
+                        }
+                    }
+
+                    // check EOF
+                    if (c == EOF) {
+                        tokenStart = nextCharIndex;
+                        if (parensNestingLevel > 0) {
+                            return createToken(Token.Kind.ERRORTOKEN);
+                        }
+                        if (done == StatusCode.EOF) {
+                            return createToken(Token.Kind.ENDMARKER);
+                        } else {
+                            return createToken(Token.Kind.ERRORTOKEN);
+                        }
+                    }
+
+                    // identifier
+                    nonascii = false;
+                    if (isPotentialIdentifierStart(c)) {
+                        // check combinations of b"", r"", u"" and f""
+                        boolean sawb = false;
+                        boolean sawr = false;
+                        boolean sawu = false;
+                        boolean sawf = false;
+
+                        while (true) {
+                            if (!(sawb || sawu || sawf) && (c == 'b' || c == 'B')) {
+                                sawb = true;
+                            } else if (!(sawb || sawu || sawr || sawf) && (c == 'u' || c == 'U')) {
+                                sawu = true;
+                            } else if (!(sawr || sawu) && (c == 'r' || c == 'R')) {
+                                sawr = true;
+                            } else if (!(sawf || sawb || sawu) && (c == 'f' || c == 'F')) {
+                                sawf = true;
                             } else {
                                 break;
                             }
-                            prefixIdx++;
-                        }
-
-                        /* This is a type comment if we matched all of type_comment_prefix. */
-                        if (prefixIdx == TYPE_COMMENT_PREFIX.length) {
-                            boolean isTypeIgnore;
-                            int ignoreEnd = chIdx + 6;
-                            int endChar = ignoreEnd < codePointsInput.length ? codePointsInput[ignoreEnd] : -1;
-                            oneBack(); /* don't eat the newline or EOF */
-
-                            int typeStart = chIdx;
-
-                            /* A TYPE_IGNORE is "type: ignore" followed by the end of the token
-                             * or anything ASCII and non-alphanumeric. */
-                            isTypeIgnore = (nextCharIndex >= ignoreEnd &&
-                                            Arrays.equals(codePointsInput, chIdx, ignoreEnd, IGNORE_BYTES, 0, 6) &&
-                                            !(nextCharIndex > ignoreEnd &&
-                                              (endChar >= 128 || Character.isLetterOrDigit(endChar))));
-
-                            if (isTypeIgnore) {
-                                /* If this type ignore is the only thing on the line, consume the newline also. */
-                                if (blankline) {
-                                    nextChar();
-                                    atBeginningOfLine = true;
-                                }
-                                tokenStart = ignoreEnd;
-                                return createToken(Token.Kind.TYPE_IGNORE);
-                            } else {
-                                tokenStart = typeStart; /* after type_comment_prefix */
-                                return createToken(Token.Kind.TYPE_COMMENT);
+                            c = nextChar();
+                            if (c == '"' || c == '\'') {
+                                target = LABEL_LETTER_QUOTE;
+                                continue GOTO_LOOP;
                             }
                         }
-                    }
-                }
-
-                // check EOF
-                if (c == EOF) {
-                    tokenStart = nextCharIndex;
-                    if (parensNestingLevel > 0) {
-                        return createToken(Token.Kind.ERRORTOKEN);
-                    }
-                    if (done == StatusCode.EOF) {
-                        return createToken(Token.Kind.ENDMARKER);
-                    } else {
-                        return createToken(Token.Kind.ERRORTOKEN);
-                    }
-                }
-
-                // identifier
-                nonascii = false;
-                if (isPotentialIdentifierStart(c)) {
-                    // check combinations of b"", r"", u"" and f""
-                    boolean sawb = false;
-                    boolean sawr = false;
-                    boolean sawu = false;
-                    boolean sawf = false;
-
-                    while (true) {
-                        if (!(sawb || sawu || sawf) && (c == 'b' || c == 'B')) {
-                            sawb = true;
-                        } else if (!(sawb || sawu || sawr || sawf) && (c == 'u' || c == 'U')) {
-                            sawu = true;
-                        } else if (!(sawr || sawu) && (c == 'r' || c == 'R')) {
-                            sawr = true;
-                        } else if (!(sawf || sawb || sawu) && (c == 'f' || c == 'F')) {
-                            sawf = true;
-                        } else {
-                            break;
+                        while (isPotentialIdentifierChar(c)) {
+                            if (c >= 128) {
+                                nonascii = true;
+                            }
+                            c = nextChar();
                         }
-                        c = nextChar();
-                        if (c == '"' || c == '\'') {
-                            target = LABEL_LETTER_QUOTE;
+                        oneBack();
+
+                        String tokenString = new String(codePointsInput, tokenStart, nextCharIndex - tokenStart);
+                        String errMsg = null;
+                        if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
+                            return createToken(Token.Kind.ERRORTOKEN, errMsg);
+                        }
+                        // we never do the async hacks that cpython has as of 3.10
+                        if (tokenString.equals("async")) {
+                            return createToken(Token.Kind.ASYNC);
+                        }
+                        if (tokenString.equals("await")) {
+                            return createToken(Token.Kind.AWAIT);
+                        }
+
+                        return createToken(Token.Kind.NAME);
+                    }
+
+                    // newline
+                    if (c == '\n') {
+                        atBeginningOfLine = true;
+                        // since CPython only reads more characters line by line in
+                        // their underflow function, they know that if the next
+                        // character is requested, you'll always be on a new
+                        // line. we do not, so we modify the line number and line
+                        // start here
+                        currentLineNumber++;
+                        lineStartIndex = nextCharIndex;
+                        if (blankline || parensNestingLevel > 0) {
+                            target = LABEL_NEXTLINE;
                             continue GOTO_LOOP;
                         }
-                    }
-                    while (isPotentialIdentifierChar(c)) {
-                        if (c >= 128) {
-                            nonascii = true;
+                        if (insideAsyncDef) {
+                            /*
+                             * We're somewhere inside an 'async def' function, and we've encountered
+                             * a NEWLINE after its signature.
+                             */
+                            asyncDefFollowedByNewline = true;
                         }
+                        return createToken(Token.Kind.NEWLINE);
+                    }
+
+                    // period or number starting with period?
+                    if (c == '.') {
                         c = nextChar();
-                    }
-                    oneBack();
-
-                    String tokenString = new String(codePointsInput, tokenStart, nextCharIndex - tokenStart);
-                    String errMsg = null;
-                    if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
-                        return createToken(Token.Kind.ERRORTOKEN, errMsg);
-                    }
-                    // we never do the async hacks that cpython has as of 3.10
-                    if (tokenString.equals("async")) {
-                        return createToken(Token.Kind.ASYNC);
-                    }
-                    if (tokenString.equals("await")) {
-                        return createToken(Token.Kind.AWAIT);
-                    }
-
-                    return createToken(Token.Kind.NAME);
-                }
-
-                // newline
-                if (c == '\n') {
-                    atBeginningOfLine = true;
-                    // since CPython only reads more characters line by line in
-                    // their underflow function, they know that if the next
-                    // character is requested, you'll always be on a new
-                    // line. we do not, so we modify the line number and line
-                    // start here
-                    currentLineNumber++;
-                    lineStartIndex = nextCharIndex;
-                    if (blankline || parensNestingLevel > 0) {
-                        target = LABEL_NEXTLINE;
-                        continue GOTO_LOOP;
-                    }
-                    if (insideAsyncDef) {
-                        /* We're somewhere inside an 'async def' function, and
-                           we've encountered a NEWLINE after its signature. */
-                        asyncDefFollowedByNewline = true;
-                    }
-                    return createToken(Token.Kind.NEWLINE);
-                }
-
-                // period or number starting with period?
-                if (c == '.') {
-                    c = nextChar();
-                    if (Character.isDigit(c)) {
-                        target = LABEL_FRACTION;
-                        continue GOTO_LOOP;
-                    } else if (c == '.') {
-                        c = nextChar();
-                        if (c == '.') {
-                            return createToken(Token.Kind.ELLIPSIS);
+                        if (Character.isDigit(c)) {
+                            target = LABEL_FRACTION;
+                            continue GOTO_LOOP;
+                        } else if (c == '.') {
+                            c = nextChar();
+                            if (c == '.') {
+                                return createToken(Token.Kind.ELLIPSIS);
+                            } else {
+                                oneBack();
+                            }
+                            oneBack();
                         } else {
                             oneBack();
                         }
-                        oneBack();
-                    } else {
-                        oneBack();
+                        return createToken(Token.Kind.DOT);
                     }
-                    return createToken(Token.Kind.DOT);
-                }
 
-                // Number
-                if (Character.isDigit(c)) {
-                    if (c == '0') {
-                        // it can be hex, octal or binary
-                        c = nextChar();
-                        if (c == 'x' || c == 'X') {
-                            // Hex
+                    // Number
+                    if (Character.isDigit(c)) {
+                        if (c == '0') {
+                            // it can be hex, octal or binary
                             c = nextChar();
-                            do {
-                                if (c == '_') {
-                                    c = nextChar();
-                                }
-                                if (!isHexDigit(c)) {
-                                    oneBack();
-                                    return syntaxError("invalid hexadecimal literal");
-                                }
+                            if (c == 'x' || c == 'X') {
+                                // Hex
+                                c = nextChar();
                                 do {
-                                    c = nextChar();
-                                } while (isHexDigit(c));
-                            } while (c == '_');
-                            Token syntaxError = verifyEndOfNumber(c, "hexadecimal");
-                            if (syntaxError != null) {
-                                return syntaxError;
-                            }
-                        } else if (c == 'o' || c == 'O') {
-                            // octal
-                            c = nextChar();
-                            do {
-                                if (c == '_') {
-                                    c = nextChar();
-                                }
-                                if (c < '0' || c >= '8') {
-                                    oneBack();
-                                    if (Character.isDigit(c)) {
-                                        return syntaxError(String.format("invalid digit '%c' in octal literal", (char)c));
-                                    } else {
-                                        oneBack();
-                                        return syntaxError("invalid octal literal");
+                                    if (c == '_') {
+                                        c = nextChar();
                                     }
-                                }
-                                do {
-                                    c = nextChar();
-                                } while ('0' <= c && c < '8');
-                            } while (c == '_');
-                            if (Character.isDigit(c)) {
-                                return syntaxError(String.format("invalid digit '%c' in octal literal", (char)c));
-                            }
-                            Token syntaxError = verifyEndOfNumber(c, "octal");
-                            if (syntaxError != null) {
-                                return syntaxError;
-                            }
-                        } else if (c == 'b' || c == 'B') {
-                            // binary
-                            c = nextChar();
-                            do {
-                                if (c == '_') {
-                                    c = nextChar();
-                                }
-                                if (c != '0' && c != '1') {
-                                    oneBack();
-                                    if (Character.isDigit(c)) {
-                                        return syntaxError(String.format("invalid digit '%c' in binary literal", (char)c));
-                                    } else {
-                                        return syntaxError("invalid binary literal");
-                                    }
-                                }
-                                do {
-                                    c = nextChar();
-                                } while (c == '0' || c == '1');
-                            } while (c == '_');
-                            if (Character.isDigit(c)) {
-                                return syntaxError(String.format("invalid digit '%c' in binary literal", (char)c));
-                            }
-                            Token syntaxError = verifyEndOfNumber(c, "octal");
-                            if (syntaxError != null) {
-                                return syntaxError;
-                            }
-                        } else {
-                            boolean nonzero = false;
-                            /* maybe old-style octal; c is first char of it */
-                            /* in any case, allow '0' as a literal */
-                            while (true) {
-                                if (c == '_') {
-                                    c = nextChar();
-                                    if (!Character.isDigit(c)) {
+                                    if (!isHexDigit(c)) {
                                         oneBack();
+                                        return syntaxError("invalid hexadecimal literal");
+                                    }
+                                    do {
+                                        c = nextChar();
+                                    } while (isHexDigit(c));
+                                } while (c == '_');
+                                Token syntaxError = verifyEndOfNumber(c, "hexadecimal");
+                                if (syntaxError != null) {
+                                    return syntaxError;
+                                }
+                            } else if (c == 'o' || c == 'O') {
+                                // octal
+                                c = nextChar();
+                                do {
+                                    if (c == '_') {
+                                        c = nextChar();
+                                    }
+                                    if (c < '0' || c >= '8') {
+                                        oneBack();
+                                        if (Character.isDigit(c)) {
+                                            return syntaxError(String.format("invalid digit '%c' in octal literal", (char) c));
+                                        } else {
+                                            oneBack();
+                                            return syntaxError("invalid octal literal");
+                                        }
+                                    }
+                                    do {
+                                        c = nextChar();
+                                    } while ('0' <= c && c < '8');
+                                } while (c == '_');
+                                if (Character.isDigit(c)) {
+                                    return syntaxError(String.format("invalid digit '%c' in octal literal", (char) c));
+                                }
+                                Token syntaxError = verifyEndOfNumber(c, "octal");
+                                if (syntaxError != null) {
+                                    return syntaxError;
+                                }
+                            } else if (c == 'b' || c == 'B') {
+                                // binary
+                                c = nextChar();
+                                do {
+                                    if (c == '_') {
+                                        c = nextChar();
+                                    }
+                                    if (c != '0' && c != '1') {
+                                        oneBack();
+                                        if (Character.isDigit(c)) {
+                                            return syntaxError(String.format("invalid digit '%c' in binary literal", (char) c));
+                                        } else {
+                                            return syntaxError("invalid binary literal");
+                                        }
+                                    }
+                                    do {
+                                        c = nextChar();
+                                    } while (c == '0' || c == '1');
+                                } while (c == '_');
+                                if (Character.isDigit(c)) {
+                                    return syntaxError(String.format("invalid digit '%c' in binary literal", (char) c));
+                                }
+                                Token syntaxError = verifyEndOfNumber(c, "octal");
+                                if (syntaxError != null) {
+                                    return syntaxError;
+                                }
+                            } else {
+                                boolean nonzero = false;
+                                /* maybe old-style octal; c is first char of it */
+                                /* in any case, allow '0' as a literal */
+                                while (true) {
+                                    if (c == '_') {
+                                        c = nextChar();
+                                        if (!Character.isDigit(c)) {
+                                            oneBack();
+                                            return syntaxError("invalid decimal literal");
+                                        }
+                                    }
+                                    if (c != '0') {
+                                        break;
+                                    }
+                                    c = nextChar();
+                                }
+                                int zerosEnd = nextCharIndex;
+                                if (Character.isDigit(c)) {
+                                    nonzero = true;
+                                    c = readDecimalTail();
+                                    if (c == 0) {
                                         return syntaxError("invalid decimal literal");
                                     }
                                 }
-                                if (c != '0') {
-                                    break;
+                                if (c == '.') {
+                                    c = nextChar();
+                                    target = LABEL_FRACTION;
+                                    continue GOTO_LOOP;
+                                } else if (c == 'e' || c == 'E') {
+                                    target = LABEL_EXPONENT;
+                                    continue GOTO_LOOP;
+                                } else if (c == 'j' || c == 'J') {
+                                    target = LABEL_IMAGINARY;
+                                    continue GOTO_LOOP;
+                                } else if (nonzero) {
+                                    /* Old-style octal: now disallowed. */
+                                    oneBack();
+                                    nextCharIndex = zerosEnd;
+                                    return syntaxError("leading zeros in decimal integer " +
+                                                    "literals are not permitted; " +
+                                                    "use an 0o prefix for octal integers");
                                 }
-                                c = nextChar();
+                                Token syntaxError = verifyEndOfNumber(c, "decimal");
+                                if (syntaxError != null) {
+                                    return syntaxError;
+                                }
                             }
-                            int zerosEnd = nextCharIndex;
-                            if (Character.isDigit(c)) {
-                                nonzero = true;
-                                c = readDecimalTail();
-                                if (c == 0) {
-                                    return syntaxError("invalid decimal literal");
-                                }
+                        } else {
+                            // Decimal
+                            c = readDecimalTail();
+                            if (c == 0) {
+                                return syntaxError("invalid decimal literal");
                             }
                             if (c == '.') {
                                 c = nextChar();
@@ -952,71 +995,42 @@ public class Tokenizer {
                             } else if (c == 'j' || c == 'J') {
                                 target = LABEL_IMAGINARY;
                                 continue GOTO_LOOP;
-                            } else if (nonzero) {
-                                /* Old-style octal: now disallowed. */
-                                oneBack();
-                                nextCharIndex = zerosEnd;
-                                return syntaxError("leading zeros in decimal integer " +
-                                                   "literals are not permitted; " +
-                                                   "use an 0o prefix for octal integers");
-                            }
-                            Token syntaxError = verifyEndOfNumber(c, "decimal");
-                            if (syntaxError != null) {
-                                return syntaxError;
+                            } else {
+                                Token syntaxError = verifyEndOfNumber(c, "decimal");
+                                if (syntaxError != null) {
+                                    return syntaxError;
+                                }
                             }
                         }
-                    } else {
-                        // Decimal
+                        oneBack();
+                        return createToken(Token.Kind.NUMBER);
+                    }
+                    target = LABEL_LETTER_QUOTE;
+                    continue GOTO_LOOP;
+                case LABEL_FRACTION:
+                    // fraction
+                    if (Character.isDigit(c)) {
                         c = readDecimalTail();
                         if (c == 0) {
                             return syntaxError("invalid decimal literal");
                         }
-                        if (c == '.') {
-                            c = nextChar();
-                            target = LABEL_FRACTION;
-                            continue GOTO_LOOP;
-                        } else if (c == 'e' || c == 'E') {
-                            target = LABEL_EXPONENT;
-                            continue GOTO_LOOP;
-                        } else if (c == 'j' || c == 'J') {
-                            target = LABEL_IMAGINARY;
-                            continue GOTO_LOOP;
-                        } else {
-                            Token syntaxError = verifyEndOfNumber(c, "decimal");
-                            if (syntaxError != null) {
-                                return syntaxError;
-                            }
+                    }
+                    if (c == 'e' || c == 'E') {
+                        target = LABEL_EXPONENT;
+                        continue GOTO_LOOP;
+                    }
+                    if (c == 'j' || c == 'J') {
+                        target = LABEL_IMAGINARY;
+                        continue GOTO_LOOP;
+                    } else {
+                        Token syntaxError = verifyEndOfNumber(c, "decimal");
+                        if (syntaxError != null) {
+                            return syntaxError;
                         }
                     }
                     oneBack();
                     return createToken(Token.Kind.NUMBER);
-                }
-                target = LABEL_LETTER_QUOTE;
-                continue GOTO_LOOP;
-            case LABEL_FRACTION:
-                // fraction
-                if (Character.isDigit(c)) {
-                    c = readDecimalTail();
-                    if (c == 0) {
-                        return syntaxError("invalid decimal literal");
-                    }
-                }
-                if (c == 'e' || c == 'E') {
-                    target = LABEL_EXPONENT;
-                    continue GOTO_LOOP;
-                }
-                if (c == 'j' || c == 'J') {
-                    target = LABEL_IMAGINARY;
-                    continue GOTO_LOOP;
-                } else {
-                    Token syntaxError = verifyEndOfNumber(c, "decimal");
-                    if (syntaxError != null) {
-                        return syntaxError;
-                    }
-                }
-                oneBack();
-                return createToken(Token.Kind.NUMBER);
-            case LABEL_EXPONENT:
+                case LABEL_EXPONENT:
                 // exponent part
                 {
                     int e = c;
@@ -1041,106 +1055,106 @@ public class Tokenizer {
                         return syntaxError("invalid decimal literal");
                     }
                 }
-                if (c == 'j' || c == 'J') {
-                    target = LABEL_IMAGINARY;
-                    continue GOTO_LOOP;
-                } else {
-                    Token syntaxError = verifyEndOfNumber(c, "decimal");
-                    if (syntaxError != null) {
-                        return syntaxError;
-                    }
-                }
-                oneBack();
-                return createToken(Token.Kind.NUMBER);
-            case LABEL_IMAGINARY:
-                {
-                    c = nextChar();
-                    Token syntaxError = verifyEndOfNumber(c, "decimal");
-                    if (syntaxError != null) {
-                        return syntaxError;
-                    }
-                }
-                oneBack();
-                return createToken(Token.Kind.NUMBER);
-            case LABEL_LETTER_QUOTE:
-                // String
-                if (c == '\'' || c == '"') {
-                    int quote = c;
-                    int quote_size = 1;
-                    int end_quote_size = 0;
-
-                    /* Nodes of type STRING, especially multi line strings
-                       must be handled differently in order to get both
-                       the starting line number and the column offset right.
-                       (cf. issue 16806) */
-                    firstLineNumber = currentLineNumber;
-                    multiLineStartIndex = lineStartIndex;
-
-                    /* Find the quote size and start of string */
-                    c = nextChar();
-                    if (c == quote) {
-                        c = nextChar();
-                        if (c == quote) {
-                            quote_size = 3;
-                        }  else {
-                            end_quote_size = 1;     /* empty string found */
-                        }
-                    }
-                    if (c != quote) {
-                        oneBack();
-                    }
-
-                    /* Get rest of string */
-                    while (end_quote_size != quote_size) {
-                        c = nextChar();
-                        if (c == EOF || (quote_size == 1 && c == '\n')) {
-                            // shift the tok_state's location into
-                            // the start of string, and report the error
-                            // from the initial quote character
-                            nextCharIndex = tokenStart;
-                            nextCharIndex++;
-                            lineStartIndex = multiLineStartIndex;
-                            int start = currentLineNumber;
-                            currentLineNumber = firstLineNumber;
-                            if (quote_size == 3) {
-                                return syntaxError(String.format("unterminated triple-quoted string literal " +
-                                                                 " (detected at line %d)", start));
-                            } else {
-                                return syntaxError(String.format("unterminated string literal " +
-                                                                 " (detected at line %d)", start));
-                            }
-                        }
-                        if (c == quote) {
-                            end_quote_size += 1;
-                        } else {
-                            end_quote_size = 0;
-                            if (c == '\\') {
-                                nextChar(); /* skip escaped char */
-                            }
-                        }
-                    }
-
-                    return createToken(Token.Kind.STRING);
-                }
-
-                /* Line continuation */
-                if (c == '\\') {
-                    c = nextChar();
-                    if (c != '\n') {
-                        done = StatusCode.LINE_CONTINUATION_ERROR;
-                        return createToken(Token.Kind.ERRORTOKEN);
-                    }
-                    c = nextChar();
-                    if (c == EOF) {
-                        done = StatusCode.EOF;
-                        return createToken(Token.Kind.ERRORTOKEN);
+                    if (c == 'j' || c == 'J') {
+                        target = LABEL_IMAGINARY;
+                        continue GOTO_LOOP;
                     } else {
-                        oneBack();
+                        Token syntaxError = verifyEndOfNumber(c, "decimal");
+                        if (syntaxError != null) {
+                            return syntaxError;
+                        }
                     }
-                    inContinuationLine = true;
-                    target = LABEL_AGAIN;
-                    continue GOTO_LOOP; /* Read next line */
+                    oneBack();
+                    return createToken(Token.Kind.NUMBER);
+                case LABEL_IMAGINARY: {
+                    c = nextChar();
+                    Token syntaxError = verifyEndOfNumber(c, "decimal");
+                    if (syntaxError != null) {
+                        return syntaxError;
+                    }
                 }
+                    oneBack();
+                    return createToken(Token.Kind.NUMBER);
+                case LABEL_LETTER_QUOTE:
+                    // String
+                    if (c == '\'' || c == '"') {
+                        int quote = c;
+                        int quote_size = 1;
+                        int end_quote_size = 0;
+
+                        /*
+                         * Nodes of type STRING, especially multi line strings must be handled
+                         * differently in order to get both the starting line number and the column
+                         * offset right. (cf. issue 16806)
+                         */
+                        firstLineNumber = currentLineNumber;
+                        multiLineStartIndex = lineStartIndex;
+
+                        /* Find the quote size and start of string */
+                        c = nextChar();
+                        if (c == quote) {
+                            c = nextChar();
+                            if (c == quote) {
+                                quote_size = 3;
+                            } else {
+                                end_quote_size = 1; /* empty string found */
+                            }
+                        }
+                        if (c != quote) {
+                            oneBack();
+                        }
+
+                        /* Get rest of string */
+                        while (end_quote_size != quote_size) {
+                            c = nextChar();
+                            if (c == EOF || (quote_size == 1 && c == '\n')) {
+                                // shift the tok_state's location into
+                                // the start of string, and report the error
+                                // from the initial quote character
+                                nextCharIndex = tokenStart;
+                                nextCharIndex++;
+                                lineStartIndex = multiLineStartIndex;
+                                int start = currentLineNumber;
+                                currentLineNumber = firstLineNumber;
+                                if (quote_size == 3) {
+                                    return syntaxError(String.format("unterminated triple-quoted string literal " +
+                                                    " (detected at line %d)", start));
+                                } else {
+                                    return syntaxError(String.format("unterminated string literal " +
+                                                    " (detected at line %d)", start));
+                                }
+                            }
+                            if (c == quote) {
+                                end_quote_size += 1;
+                            } else {
+                                end_quote_size = 0;
+                                if (c == '\\') {
+                                    nextChar(); /* skip escaped char */
+                                }
+                            }
+                        }
+
+                        return createToken(Token.Kind.STRING);
+                    }
+
+                    /* Line continuation */
+                    if (c == '\\') {
+                        c = nextChar();
+                        if (c != '\n') {
+                            done = StatusCode.LINE_CONTINUATION_ERROR;
+                            return createToken(Token.Kind.ERRORTOKEN);
+                        }
+                        c = nextChar();
+                        if (c == EOF) {
+                            done = StatusCode.EOF;
+                            return createToken(Token.Kind.ERRORTOKEN);
+                        } else {
+                            oneBack();
+                        }
+                        inContinuationLine = true;
+                        target = LABEL_AGAIN;
+                        continue GOTO_LOOP; /* Read next line */
+                    }
 
                 /* Check for two-character token */
                 {
@@ -1159,45 +1173,45 @@ public class Tokenizer {
                     oneBack();
                 }
 
-                /* Keep track of parentheses nesting level */
-                switch (c) {
-                case '(':
-                case '[':
-                case '{':
-                    if (parensNestingLevel >= MAXLEVEL) {
-                        return syntaxError("too many nested parentheses");
+                    /* Keep track of parentheses nesting level */
+                    switch (c) {
+                        case '(':
+                        case '[':
+                        case '{':
+                            if (parensNestingLevel >= MAXLEVEL) {
+                                return syntaxError("too many nested parentheses");
+                            }
+                            parensStack[parensNestingLevel] = c;
+                            parensLineNumberStack[parensNestingLevel] = currentLineNumber;
+                            parensColumnsStack[parensNestingLevel] = (tokenStart - lineStartIndex);
+                            parensNestingLevel++;
+                            break;
+                        case ')':
+                        case ']':
+                        case '}':
+                            if (parensNestingLevel == 0) {
+                                return syntaxError(String.format("unmatched '%c'", (char) c));
+                            }
+                            parensNestingLevel--;
+                            int opening = parensStack[parensNestingLevel];
+                            if (!((opening == '(' && c == ')') ||
+                                            (opening == '[' && c == ']') ||
+                                            (opening == '{' && c == '}'))) {
+                                if (parensLineNumberStack[parensNestingLevel] != currentLineNumber) {
+                                    return syntaxError(String.format("closing parenthesis '%c' does not match " +
+                                                    "opening parenthesis '%c' on line %d",
+                                                    (char) c, (char) opening, parensLineNumberStack[parensNestingLevel]));
+                                } else {
+                                    return syntaxError(String.format("closing parenthesis '%c' does not match " +
+                                                    "opening parenthesis '%c'",
+                                                    (char) c, (char) opening));
+                                }
+                            }
+                            break;
                     }
-                    parensStack[parensNestingLevel] = c;
-                    parensLineNumberStack[parensNestingLevel] = currentLineNumber;
-                    parensColumnsStack[parensNestingLevel] = (tokenStart - lineStartIndex);
-                    parensNestingLevel++;
-                    break;
-                case ')':
-                case ']':
-                case '}':
-                    if (parensNestingLevel == 0) {
-                        return syntaxError(String.format("unmatched '%c'", (char)c));
-                    }
-                    parensNestingLevel--;
-                    int opening = parensStack[parensNestingLevel];
-                    if (!((opening == '(' && c == ')') ||
-                          (opening == '[' && c == ']') ||
-                          (opening == '{' && c == '}'))) {
-                        if (parensLineNumberStack[parensNestingLevel] != currentLineNumber) {
-                            return syntaxError(String.format("closing parenthesis '%c' does not match " +
-                                                             "opening parenthesis '%c' on line %d",
-                                                             (char)c, (char)opening, parensLineNumberStack[parensNestingLevel]));
-                        } else {
-                            return syntaxError(String.format("closing parenthesis '%c' does not match " +
-                                                             "opening parenthesis '%c'",
-                                                             (char)c, (char)opening));
-                        }
-                    }
-                    break;
-                }
 
-                /* Punctuation character */
-                return createToken(Token.oneChar(c));
+                    /* Punctuation character */
+                    return createToken(Token.oneChar(c));
             }
         }
     }
