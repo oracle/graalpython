@@ -159,6 +159,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -476,10 +477,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return newBuilder.build();
     }
 
+    @TruffleBoundary
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co, Source source) {
         this(language, makeFrameDescriptor(co, source), sign, co, source);
     }
 
+    @TruffleBoundary
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
         super(language, fd);
         FrameInfo info = (FrameInfo) fd.getInfo();
@@ -2383,6 +2386,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return co.startOffset;
     }
 
+    @TruffleBoundary
     public static int bciToLine(CodeUnit code, Source source, int bci) {
         if (source != null && bci >= 0) {
             return source.createSection(code.bciToSrcOffset(bci), 0).getStartLine();

@@ -709,29 +709,42 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 Source source;
                 if (codestr instanceof PBytesLike) {
                     try {
-                        byte[] c = toBytes.execute((PBytesLike) codestr);
-                        TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-                        if (truffleFile.exists() && c.length == truffleFile.size()) {
-                            source = Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
-                        } else {
-                            ByteSequence bs = ByteSequence.create(c);
-                            source = Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
-                        }
+                        source = getSource(path, toBytes.execute((PBytesLike) codestr));
                     } catch (SecurityException | IOException ex) {
                         throw raise.raise(SystemError, ex);
                     }
                 } else {
                     try {
-                        String c = castStr.execute(codestr);
-                        source = PythonLanguage.newSource(getContext(), c, path, true, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE);
+                        source = getSource(path, castStr.execute(codestr));
                     } catch (CannotCastException e) {
                         throw raise.raise(TypeError, "expected str or bytes, got '%p'", codestr);
                     }
                 }
-                CallTarget callTarget = getContext().getEnv().parsePublic(source);
+                CallTarget callTarget = createCallTarget(source);
                 return factory().createCode((RootCallTarget) callTarget);
             } else {
                 return compileNode.execute(frame, codestr, path, mode, 0, false, 2);
+            }
+        }
+
+        @TruffleBoundary
+        private CallTarget createCallTarget(Source source) {
+            return getContext().getEnv().parsePublic(source);
+        }
+
+        @TruffleBoundary
+        private Source getSource(String path, String code) {
+            return PythonLanguage.newSource(getContext(), code, path, true, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE);
+        }
+
+        @TruffleBoundary
+        private Source getSource(String path, byte[] code) throws IOException {
+            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            if (truffleFile.exists() && code.length == truffleFile.size()) {
+                return Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
+            } else {
+                ByteSequence bs = ByteSequence.create(code);
+                return Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
             }
         }
     }
