@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
+import com.oracle.graal.python.nodes.bytecode.GetNextNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
@@ -100,7 +101,6 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
@@ -1332,19 +1332,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case FOR_ITER_FAR: {
                         try {
                             Object next = insertChildNode(localNodes[bci], UNCACHED_GET_NEXT, NODE_GET_NEXT, bci).execute(frame, frame.getObject(stackTop));
-                            frame.setObject(++stackTop, next);
-                            bci = bci + 1 + (bc - FOR_ITER);
+                            if (next != null) {
+                                frame.setObject(++stackTop, next);
+                                bci = bci + 1 + (bc - FOR_ITER);
+                                break;
+                            }
                         } catch (PException e) {
                             e.expect(StopIteration, insertChildNode(localNodes[bci + 1], UNCACHED_IS_BUILTIN_CLASS_PROFILE, NODE_IS_BUILTIN_CLASS_PROFILE, bci + 1));
-                            int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                            if (bc == FOR_ITER_FAR) {
-                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
-                            }
-                            frame.setObject(stackTop--, null);
-                            bci += oparg;
-                            continue;
                         }
-                        break;
+                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                        if (bc == FOR_ITER_FAR) {
+                            oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
+                        }
+                        frame.setObject(stackTop--, null);
+                        bci += oparg;
+                        continue;
                     }
                     case CALL_METHOD: {
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
