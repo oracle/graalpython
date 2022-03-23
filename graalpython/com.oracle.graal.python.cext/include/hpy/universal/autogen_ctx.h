@@ -37,6 +37,7 @@
 typedef HPy* _HPyPtr;
 typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
+typedef HPyGlobal* _HPyGlobalPtr;
 
 #ifdef GRAALVM_PYTHON_LLVM
 #define HPy void*
@@ -45,6 +46,7 @@ typedef HPy _HPyConst;
 #define HPyTracker void*
 #define HPyField void*
 #define HPyThreadState void*
+#define HPyGlobal void*
 #endif
 
 
@@ -278,7 +280,7 @@ struct _HPyContext_s {
     HPy (*ctx_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
     HPyThreadState (*ctx_LeavePythonExecution)(HPyContext *ctx);
     void (*ctx_ReenterPythonExecution)(HPyContext *ctx, HPyThreadState state);
-    void (*ctx_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
+    void (*ctx_Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h);
     HPy (*ctx_Global_Load)(HPyContext *ctx, HPyGlobal global);
     void (*ctx_Dump)(HPyContext *ctx, HPy h);
 };
@@ -290,4 +292,5 @@ struct _HPyContext_s {
 #undef HPyTracker
 #undef HPyField
 #undef HPyThreadState
+#undef HPyGlobal
 #endif

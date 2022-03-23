@@ -47,6 +47,8 @@
 #define WRAP_THREADSTATE(_ptr) ((HPyThreadState){(_ptr)})
 #define UNWRAP_FIELD(_h) ((_h)._i)
 #define WRAP_FIELD(_ptr) ((HPyField){(_ptr)})
+#define UNWRAP_GLOBAL(_h) ((_h)._i)
+#define WRAP_GLOBAL(_ptr) ((HPyGlobal){(_ptr)})
 #else
 #define UNWRAP(_h) _h
 #define WRAP(_ptr) _ptr
@@ -60,6 +62,8 @@
 #define WRAP_THREADSTATE(_data) _data
 #define UNWRAP_FIELD(_h) _h
 #define WRAP_FIELD(_ptr) _ptr
+#define UNWRAP_GLOBAL(_h) _h
+#define WRAP_GLOBAL(_ptr) _ptr
 #endif
 
 HPyAPI_FUNC HPy HPyModule_Create(HPyContext *ctx, HPyModuleDef *def) {
@@ -131,11 +135,11 @@ HPyAPI_FUNC HPy_ssize_t HPyLong_AsSsize_t(HPyContext *ctx, HPy h) {
 }
 
 HPyAPI_FUNC void *HPyLong_AsVoidPtr(HPyContext *ctx, HPy h) {
-     return ctx->ctx_Long_AsVoidPtr ( ctx, h ); 
+     return ctx->ctx_Long_AsVoidPtr ( ctx, UNWRAP(h) ); 
 }
 
 HPyAPI_FUNC double HPyLong_AsDouble(HPyContext *ctx, HPy h) {
-     return ctx->ctx_Long_AsDouble ( ctx, h ); 
+     return ctx->ctx_Long_AsDouble ( ctx, UNWRAP(h) ); 
 }
 
 HPyAPI_FUNC HPy HPyFloat_FromDouble(HPyContext *ctx, double v) {
@@ -349,7 +353,7 @@ HPyAPI_FUNC int HPyErr_WarnEx(HPyContext *ctx, HPy category, const char *message
 }
 
 HPyAPI_FUNC void HPyErr_WriteUnraisable(HPyContext *ctx, HPy obj) {
-     ctx->ctx_Err_WriteUnraisable ( ctx, obj ); 
+     ctx->ctx_Err_WriteUnraisable ( ctx, UNWRAP(obj) ); 
 }
 
 HPyAPI_FUNC int HPy_IsTrue(HPyContext *ctx, HPy h) {
@@ -653,11 +657,11 @@ HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState stat
 }
 
 HPyAPI_FUNC void HPyGlobal_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
-     ctx->ctx_Global_Store ( ctx, global, h ); 
+     ctx->ctx_Global_Store ( ctx, global, UNWRAP(h) ); 
 }
 
 HPyAPI_FUNC HPy HPyGlobal_Load(HPyContext *ctx, HPyGlobal global) {
-     return ctx->ctx_Global_Load ( ctx, global ); 
+     return WRAP(ctx->ctx_Global_Load ( ctx, UNWRAP_GLOBAL(global) )); 
 }
 
 HPyAPI_FUNC void _HPy_Dump(HPyContext *ctx, HPy h) {

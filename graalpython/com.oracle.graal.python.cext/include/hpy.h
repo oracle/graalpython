@@ -144,6 +144,7 @@ typedef struct { intptr_t _i; } HPyThreadState;
 #else
 typedef struct _HPy_s { void* _i; } HPy;
 typedef struct { void* _i; } HPyField;
+typedef struct { void* _i; } HPyGlobal;
 typedef struct { void* _lst; } HPyListBuilder;
 typedef struct { void* _tup; } HPyTupleBuilder;
 typedef struct { void* _i; } HPyTracker;
