@@ -78,6 +78,14 @@ HPyAPI_FUNC HPy_ssize_t HPyLong_AsSsize_t(HPyContext *ctx, HPy h) {
      return ctx->ctx_Long_AsSsize_t ( ctx, h ); 
 }
 
+HPyAPI_FUNC void *HPyLong_AsVoidPtr(HPyContext *ctx, HPy h) {
+     return ctx->ctx_Long_AsVoidPtr ( ctx, h ); 
+}
+
+HPyAPI_FUNC double HPyLong_AsDouble(HPyContext *ctx, HPy h) {
+     return ctx->ctx_Long_AsDouble ( ctx, h ); 
+}
+
 HPyAPI_FUNC HPy HPyFloat_FromDouble(HPyContext *ctx, double v) {
      return ctx->ctx_Float_FromDouble ( ctx, v ); 
 }
@@ -284,6 +292,10 @@ HPyAPI_FUNC HPy HPyErr_NewExceptionWithDoc(HPyContext *ctx, const char *name, co
 
 HPyAPI_FUNC int HPyErr_WarnEx(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level) {
      return ctx->ctx_Err_WarnEx ( ctx, category, message, stack_level ); 
+}
+
+HPyAPI_FUNC void HPyErr_WriteUnraisable(HPyContext *ctx, HPy obj) {
+     ctx->ctx_Err_WriteUnraisable ( ctx, obj ); 
 }
 
 HPyAPI_FUNC int HPy_IsTrue(HPyContext *ctx, HPy h) {
@@ -584,6 +596,14 @@ HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx) {
 
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state) {
      ctx->ctx_ReenterPythonExecution ( ctx, state ); 
+}
+
+HPyAPI_FUNC void HPyGlobal_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
+     ctx->ctx_Global_Store ( ctx, global, h ); 
+}
+
+HPyAPI_FUNC HPy HPyGlobal_Load(HPyContext *ctx, HPyGlobal global) {
+     return ctx->ctx_Global_Load ( ctx, global ); 
 }
 
 HPyAPI_FUNC void _HPy_Dump(HPyContext *ctx, HPy h) {

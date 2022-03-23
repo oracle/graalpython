@@ -19,6 +19,9 @@ typedef struct {
     HPy_ssize_t size;
     cpy_PyMethodDef *legacy_methods;
     HPyDef **defines;   /* points to an array of 'HPyDef *' */
+    /* array with pointers to statically allocated HPyGlobal,
+     * with NULL at the end as a sentinel. */
+    HPyGlobal **globals;
 } HPyModuleDef;
 
 
