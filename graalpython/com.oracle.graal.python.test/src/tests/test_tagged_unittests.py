@@ -144,7 +144,11 @@ def make_tests_class():
         working_tests = working_tests[selected::total]
     else:
         selection = set(s.strip() for s in selection.split(","))
-        working_tests = [x for x in working_tests if x in selection]
+        working_tests = [x for x in working_tests if x[0] in selection]
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("working tests: ")
+    print([x[0] for x in working_tests])
+    print("-----------------------------------------------------------------------------------------------------------")
 
     for idx, working_test in enumerate(working_tests):
         fn = make_test_function(working_test)
