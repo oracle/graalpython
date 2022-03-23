@@ -464,7 +464,6 @@ class GraalPythonTags(object):
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
-    unittest_pickle = 'python-unittest-pickle'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -829,10 +828,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
             run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
-
-    with Task('GraalPython pickle/struct module tests', tasks, tags=[GraalPythonTags.unittest_pickle]) as task:
-        if task:
-            run_python_unittests(python_gvm_with_assertions(), paths=["test_struct.py", "test_pickle.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
