@@ -104,6 +104,16 @@ HPyAPI_FUNC HPy_ssize_t HPyLong_AsSsize_t(HPyContext *ctx, HPy h)
     return PyLong_AsSsize_t(_h2py(h));
 }
 
+HPyAPI_FUNC void *HPyLong_AsVoidPtr(HPyContext *ctx, HPy h)
+{
+    return PyLong_AsVoidPtr(_h2py(h));
+}
+
+HPyAPI_FUNC double HPyLong_AsDouble(HPyContext *ctx, HPy h)
+{
+    return PyLong_AsDouble(_h2py(h));
+}
+
 HPyAPI_FUNC HPy HPyFloat_FromDouble(HPyContext *ctx, double v)
 {
     return _py2h(PyFloat_FromDouble(v));
@@ -356,6 +366,11 @@ HPyAPI_FUNC HPy HPyErr_NewExceptionWithDoc(HPyContext *ctx, const char *name, co
 HPyAPI_FUNC int HPyErr_WarnEx(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level)
 {
     return PyErr_WarnEx(_h2py(category), message, stack_level);
+}
+
+HPyAPI_FUNC void HPyErr_WriteUnraisable(HPyContext *ctx, HPy obj)
+{
+    PyErr_WriteUnraisable(_h2py(obj));
 }
 
 HPyAPI_FUNC int HPy_IsTrue(HPyContext *ctx, HPy h)
