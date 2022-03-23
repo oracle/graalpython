@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,8 @@
 import glob
 import os
 import subprocess
-import test
-
 import sys
+import test
 
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
@@ -139,7 +138,14 @@ def make_tests_class():
         total = 1
     assert selected < total
 
-    working_tests = collect_working_tests()[selected::total]
+    working_tests = collect_working_tests()
+    selection = os.environ.get('TAGGED_UNITTEST_SELECTION')
+    if not selection:
+        working_tests = working_tests[selected::total]
+    else:
+        selection = set(s.strip() for s in selection.split(","))
+        working_tests = [x for x in working_tests if x in selection]
+
     for idx, working_test in enumerate(working_tests):
         fn = make_test_function(working_test)
         fn.__name__ = "%s[%d/%d]" % (fn.__name__, idx + 1, len(working_tests))
