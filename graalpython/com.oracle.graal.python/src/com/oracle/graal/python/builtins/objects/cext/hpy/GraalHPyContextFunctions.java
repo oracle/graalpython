@@ -2880,14 +2880,16 @@ public abstract class GraalHPyContextFunctions {
                 int idx;
                 if (lib.isNull(hpyFieldObject)) { // uninitialized
                     idx = 0;
-                } else if (hpyFieldObject instanceof GraalHPyField) {
+                } else if (hpyFieldObject instanceof GraalHPyHandle) {
                     // avoid `asPointer` message dispatch
-                    idx = ((GraalHPyField) hpyFieldObject).getId();
+                    idx = ((GraalHPyHandle) hpyFieldObject).getFieldId();
                 } else { // in case of transition to native
                     idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
                 }
+                // TODO: (tfel) do not actually allocate the index / free the existing one when
+                // value can be stored as tagged handle
                 idx = assign(owner, referent, idx);
-                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, new GraalHPyField(referent, idx));
+                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, context.createField(referent, idx));
                 return 0;
             } catch (InteropException | OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -2940,9 +2942,9 @@ public abstract class GraalHPyContextFunctions {
                     return GraalHPyHandle.NULL_HANDLE;
                 }
                 Object referent;
-                if (hpyFieldObject instanceof GraalHPyField) { // avoid `asPointer` message
+                if (hpyFieldObject instanceof GraalHPyHandle) { // avoid `asPointer` message
                                                                // dispatch
-                    referent = ((GraalHPyField) hpyFieldObject).getDelegate();
+                    referent = ((GraalHPyHandle) hpyFieldObject).getDelegate();
                 } else { // in case of transition to native
                     try {
                         int idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
@@ -2957,6 +2959,113 @@ public abstract class GraalHPyContextFunctions {
                     }
                 }
                 return asHandleNode.execute(context, referent);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyGlobalStore extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached("createClassProfile()") ValueProfile typeProfile,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object hpyGlobalPtr = arguments[1];
+                Object value = asPythonObjectNode.execute(context, arguments[2]);
+                Object hpyGlobal = typeProfile.profile(callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_GLOBAL_I, hpyGlobalPtr));
+
+                int idx = -1;
+                if (hpyGlobal instanceof GraalHPyHandle) {
+                    // branch profiling with typeProfile
+                    idx = ((GraalHPyHandle) hpyGlobal).getGlobalId();
+                } else if (!(hpyGlobal instanceof Long) && lib.isNull(hpyGlobal)) {
+                    // nothing to do
+                } else {
+                    long bits;
+                    if (hpyGlobal instanceof Long) {
+                        // branch profile due to lib.asPointer usage in else branch
+                        // and typeProfile
+                        bits = (Long) hpyGlobal;
+                    } else {
+                        try {
+                            bits = lib.asPointer(hpyGlobal);
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                    }
+                    if (GraalHPyBoxing.isBoxedHandle(bits)) {
+                        idx = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+                    }
+                }
+
+                // TODO: (tfel) do not actually allocate the index / free the existing one when
+                // value can be stored as tagged handle
+                GraalHPyHandle newHandle = context.createGlobal(value, idx);
+                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_GLOBAL_I, hpyGlobalPtr, newHandle);
+                return 0;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyGlobalLoad extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("createClassProfile()") ValueProfile typeProfile,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 2);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object hpyGlobal = typeProfile.profile(arguments[1]);
+                if (hpyGlobal instanceof GraalHPyHandle) {
+                    // branch profiling with typeProfile
+                    GraalHPyHandle h = (GraalHPyHandle) hpyGlobal;
+                    return asHandleNode.execute(context, h.getDelegate());
+                } else if (!(hpyGlobal instanceof Long) && lib.isNull(hpyGlobal)) {
+                    // type profile influences first test
+                    return GraalHPyHandle.NULL_HANDLE;
+                } else {
+                    long bits;
+                    if (hpyGlobal instanceof Long) {
+                        // branch profile due to lib.asPointer usage in else branch
+                        // and typeProfile
+                        bits = (Long) hpyGlobal;
+                    } else {
+                        try {
+                            bits = lib.asPointer(hpyGlobal);
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                    }
+                    if (GraalHPyBoxing.isBoxedHandle(bits)) {
+                        // if asHandleNode wasn't used above, it acts as a branch profile
+                        // here. otherwise we're probably already pulling in a lot of code
+                        // and are a bit too polymorphic
+                        return asHandleNode.execute(context, context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate());
+                    } else {
+                        // tagged handles can be returned directly
+                        return bits;
+                    }
+                }
             } finally {
                 gil.release(mustRelease);
             }

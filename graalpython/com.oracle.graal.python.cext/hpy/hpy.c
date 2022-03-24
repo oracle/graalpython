@@ -179,6 +179,14 @@ void graal_hpy_set_field_i(HPyField *hf, void* i) {
 	hf->_i = i;
 }
 
+void* graal_hpy_get_global_i(HPyGlobal *hg) {
+	return hg->_i;
+}
+
+void graal_hpy_set_global_i(HPyGlobal *hg, void* i) {
+	hg->_i = i;
+}
+
 /* getters for HPySlot */
 
 HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
@@ -649,6 +657,7 @@ HPy_buffer *graal_hpy_allocate_buffer() {
 typedef HPy* _HPyPtr;
 typedef HPyField* _HPyFieldPtr;
 typedef HPy _HPyConst;
+typedef HPyGlobal* _HPyGlobalPtr;
 
 #define HPy void*
 #define HPyListBuilder void*
@@ -656,6 +665,7 @@ typedef HPy _HPyConst;
 #define HPyTracker void*
 #define HPyField void*
 #define HPyThreadState void*
+#define HPyGlobal void*
 
 #define SELECT_CTX(__ctx__) ((__ctx__) == g_universal_ctx ? g_universal_ctx : g_debug_ctx)
 
@@ -1365,6 +1375,14 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(ReenterPythonExecution)(HPyContext *ctx, HPyT
 	UPCALL_VOID(ctx_ReenterPythonExecution, ctx, state);
 }
 
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h) {
+	UPCALL_VOID(ctx_Global_Store, ctx, global, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Global_Load)(HPyContext *ctx, HPyGlobal global) {
+	return UPCALL_HPY(ctx_Global_Load, ctx, global);
+}
+
 HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 	UPCALL_VOID(ctx_Dump, ctx, h);
 }
@@ -1375,6 +1393,7 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 #undef HPyTracker
 #undef HPyField
 #undef HPyThreadState
+#undef HPyGlobal
 
 #undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME
@@ -1602,19 +1621,21 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Field_Load);
     HPY_CTX_UPCALL(ctx_LeavePythonExecution);
     HPY_CTX_UPCALL(ctx_ReenterPythonExecution);
+    HPY_CTX_UPCALL(ctx_Global_Store);
+    HPY_CTX_UPCALL(ctx_Global_Load);
     HPY_CTX_UPCALL(ctx_Dump);
-	HPY_CTX_UPCALL(ctx_Long_AsVoidPtr);
-	HPY_CTX_UPCALL(ctx_Long_AsDouble);
-	HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilename);
-	HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilenameObjects);
-	HPY_CTX_UPCALL(ctx_Err_ExceptionMatches);
-	HPY_CTX_UPCALL(ctx_Err_WarnEx);
-	HPY_CTX_UPCALL(ctx_Err_WriteUnraisable);
-	HPY_CTX_UPCALL(ctx_Unicode_AsASCIIString);
-	HPY_CTX_UPCALL(ctx_Unicode_DecodeFSDefaultAndSize);
-	HPY_CTX_UPCALL(ctx_Unicode_EncodeFSDefault);
-	HPY_CTX_UPCALL(ctx_Unicode_ReadChar);
-	HPY_CTX_UPCALL(ctx_Unicode_DecodeLatin1);
+    HPY_CTX_UPCALL(ctx_Long_AsVoidPtr);
+    HPY_CTX_UPCALL(ctx_Long_AsDouble);
+    HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilename);
+    HPY_CTX_UPCALL(ctx_Err_SetFromErrnoWithFilenameObjects);
+    HPY_CTX_UPCALL(ctx_Err_ExceptionMatches);
+    HPY_CTX_UPCALL(ctx_Err_WarnEx);
+    HPY_CTX_UPCALL(ctx_Err_WriteUnraisable);
+    HPY_CTX_UPCALL(ctx_Unicode_AsASCIIString);
+    HPY_CTX_UPCALL(ctx_Unicode_DecodeFSDefaultAndSize);
+    HPY_CTX_UPCALL(ctx_Unicode_EncodeFSDefault);
+    HPY_CTX_UPCALL(ctx_Unicode_ReadChar);
+    HPY_CTX_UPCALL(ctx_Unicode_DecodeLatin1);
 
 #undef HPY_CTX_UPCALL
 

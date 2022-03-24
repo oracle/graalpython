@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyField;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyGlobal;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyTracker;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy_ssize_t;
@@ -53,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Long;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Void;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType._HPyFieldPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType._HPyGlobalPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
@@ -123,6 +125,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFromPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGlobalLoad;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGlobalStore;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyImportModule;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyInplaceArithmetic;
@@ -399,7 +403,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         HPyModuleDef("HPyModuleDef*", "POINTER", long.class),
         HPyThreadState("HPyThreadState", "POINTER", long.class),
         HPyField("HPyField", "POINTER", long.class),
-        _HPyFieldPtr("_HPyFieldPtr", "POINTER", long.class);
+        _HPyFieldPtr("_HPyFieldPtr", "POINTER", long.class),
+        HPyGlobal("HPyGlobal", "POINTER", long.class),
+        _HPyGlobalPtr("_HPyGlobalPtr", "POINTER", long.class);
 
         /** The type definition used in C source code. */
         final String cType;
@@ -683,6 +689,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_FIELD_LOAD("ctx_Field_Load", signature(HPy, HPyField)),
         CTX_LEAVEPYTHONEXECUTION("ctx_LeavePythonExecution", signature(HPyThreadState)),
         CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution", signature(Void, HPyThreadState)),
+        CTX_GLOBAL_STORE("ctx_Global_Store", signature(Void, _HPyGlobalPtr, HPy)),
+        CTX_GLOBAL_LOAD("ctx_Global_Load", signature(Void, HPyGlobal, HPy)),
         CTX_DUMP("ctx_Dump");
 
         final String name;
@@ -780,6 +788,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private final HandleStack freeStack = new HandleStack(16);
     Object nativePointer;
 
@@ -2103,6 +2112,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_FIELD_LOAD.ordinal()] = new GraalHPyFieldLoad();
         members[HPyContextMember.CTX_LEAVEPYTHONEXECUTION.ordinal()] = new GraalHPyLeavePythonExecution();
         members[HPyContextMember.CTX_REENTERPYTHONEXECUTION.ordinal()] = new GraalHPyReenterPythonExecution();
+        members[HPyContextMember.CTX_GLOBAL_STORE.ordinal()] = new GraalHPyGlobalStore();
+        members[HPyContextMember.CTX_GLOBAL_LOAD.ordinal()] = new GraalHPyGlobalLoad();
         members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
 
         if (TRACE) {
@@ -2175,15 +2186,53 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     private static void createConstant(Object[] members, HPyContextMember member, Object value) {
-        members[member.ordinal()] = new GraalHPyHandle(value);
+        members[member.ordinal()] = GraalHPyHandle.create(value);
     }
 
     private static void createTypeConstant(Object[] members, HPyContextMember member, Python3Core core, PythonBuiltinClassType value) {
-        members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
+        members[member.ordinal()] = GraalHPyHandle.create(core.lookupType(value));
     }
 
     public GraalHPyHandle createHandle(Object delegate) {
-        return new GraalHPyHandle(delegate);
+        return GraalHPyHandle.create(delegate);
+    }
+
+    public GraalHPyHandle createField(Object delegate, int idx) {
+        return GraalHPyHandle.createField(delegate, idx);
+    }
+
+    public synchronized GraalHPyHandle createGlobal(Object delegate, int idx) {
+        final int newIdx;
+        if (idx <= 0) {
+            newIdx = allocateHPyGlobal();
+        } else {
+            newIdx = idx;
+        }
+        GraalHPyHandle h = GraalHPyHandle.createGlobal(delegate, newIdx);
+        hpyGlobalsTable[newIdx] = h;
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.finer(() -> String.format("allocating HPy global %d (object: %s)", newIdx, delegate));
+        }
+        return h;
+    }
+
+    private synchronized int allocateHPyGlobal() {
+        int handle = 0;
+        for (int i = 1; i < hpyGlobalsTable.length; i++) {
+            if (hpyGlobalsTable[i] == null) {
+                handle = i;
+                break;
+            }
+        }
+        if (handle == 0) {
+            // resize
+            handle = hpyGlobalsTable.length;
+            int newSize = Math.max(16, hpyGlobalsTable.length * 2);
+            LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
+            hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
+            // TODO: (tfel) mirror these to native as we do for handles? not sure if it pays
+        }
+        return handle;
     }
 
     private static Unsafe unsafe = CArrayWrappers.UNSAFE;
@@ -2295,6 +2344,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
+    }
+
+    public synchronized GraalHPyHandle getObjectForHPyGlobal(int handle) {
+        assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
+        return hpyGlobalsTable[handle];
     }
 
     synchronized boolean releaseHPyHandleForObject(int handle) {
