@@ -79,6 +79,7 @@ import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -104,14 +105,13 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.InvertNodeGen;
-import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.NegNodeGen;
-import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGen;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
@@ -158,9 +158,6 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
     private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
-    private static final NodeSupplier<InvertNode> NODE_UNARY_INVERT = () -> InvertNodeGen.create(null);
-    private static final NodeSupplier<NegNode> NODE_UNARY_NEG = () -> NegNodeGen.create(null);
-    private static final NodeSupplier<PosNode> NODE_UNARY_POS = () -> PosNodeGen.create(null);
     private static final NodeSupplier<DeleteItemNode> NODE_DELETE_ITEM = DeleteItemNode::create;
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
@@ -241,6 +238,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
 
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
+
+    private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
+        switch (op) {
+            case UnaryOpsConstants.NOT:
+                return CoerceToBooleanNode.createIfFalseNode();
+            case UnaryOpsConstants.POSITIVE:
+                return PosNode.create();
+            case UnaryOpsConstants.NEGATIVE:
+                return NegNode.create();
+            case UnaryOpsConstants.INVERT:
+                return InvertNode.create();
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+    };
 
     private static final IntNodeFunction<Node> BINARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -944,24 +956,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(stackTop + 1, frame.getObject(stackTop - 1));
                         stackTop += 2;
                         break;
-                    case UNARY_POSITIVE: {
-                        PosNode posNode = insertChildNode(localNodes[bci], NODE_UNARY_POS, bci);
-                        frame.setObject(stackTop, posNode.execute(frame, frame.getObject(stackTop)));
-                        break;
-                    }
-                    case UNARY_NEGATIVE: {
-                        NegNode negNode = insertChildNode(localNodes[bci], NODE_UNARY_NEG, bci);
-                        frame.setObject(stackTop, negNode.execute(frame, frame.getObject(stackTop)));
-                        break;
-                    }
-                    case UNARY_NOT: {
-                        boolean result = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci).execute(frame, frame.getObject(stackTop));
-                        frame.setObject(stackTop, !result);
-                        break;
-                    }
-                    case UNARY_INVERT: {
-                        InvertNode invertNode = insertChildNode(localNodes[bci], NODE_UNARY_INVERT, bci);
-                        frame.setObject(stackTop, invertNode.execute(frame, frame.getObject(stackTop)));
+                    case UNARY_OP: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        UnaryOpNode opNode = insertChildNode(localNodes[bci], UNARY_OP_FACTORY, bci, oparg);
+                        Object value = frame.getObject(stackTop);
+                        Object result = opNode.execute(frame, value);
+                        frame.setObject(stackTop, result);
                         break;
                     }
                     case BINARY_OP: {

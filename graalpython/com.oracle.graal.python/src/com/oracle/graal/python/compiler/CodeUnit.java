@@ -260,6 +260,9 @@ public final class CodeUnit {
                     line[5] = names[arg & 0xFF];
                     break;
                 }
+                case UNARY_OP:
+                    line[5] = UnaryOps.values()[arg].toString();
+                    break;
                 case BINARY_OP:
                     line[5] = BinaryOps.values()[arg].toString();
                     break;

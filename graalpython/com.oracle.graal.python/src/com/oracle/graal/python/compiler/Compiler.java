@@ -801,14 +801,14 @@ public class Compiler implements SSTreeVisitor<Void> {
                 break;
             case ISNOT:
                 addOp(BINARY_OP, BinaryOps.IS.ordinal());
-                addOp(UNARY_NOT);
+                addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 break;
             case IN:
                 addOp(BINARY_OP, BinaryOps.IN.ordinal());
                 break;
             case NOTIN:
                 addOp(BINARY_OP, BinaryOps.IN.ordinal());
-                addOp(UNARY_NOT);
+                addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 break;
         }
     }
@@ -1268,14 +1268,15 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.operand.accept(this);
             switch (node.op) {
                 case ADD:
-                    return addOp(UNARY_POSITIVE);
+                    return addOp(UNARY_OP, UnaryOps.POSITIVE.ordinal());
                 case INVERT:
-                    return addOp(UNARY_INVERT);
+                    return addOp(UNARY_OP, UnaryOps.INVERT.ordinal());
                 case NOT:
-                    return addOp(UNARY_NOT);
+                    return addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 case SUB:
+                    return addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
                 default:
-                    return addOp(UNARY_NEGATIVE);
+                    throw new IllegalStateException("Unknown unary operation");
             }
         } finally {
             setLocation(savedOffset);
