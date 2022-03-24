@@ -18,7 +18,7 @@ Disassembly of docompute:
 000039         2 LOAD_FAST                         0    (num)
 000033         4 CALL_FUNCTION                     1
 000024         6 GET_ITER
-000024   >>    7 FOR_ITER                          62   (to 69)
+000024   >>    7 FOR_ITER                          72   (to 79)
 000028         9 STORE_FAST                        1    (i)
 000060        11 LOAD_DOUBLE                       0    (0.0)
 000053        13 STORE_FAST                        2    (sum_)
@@ -26,36 +26,36 @@ Disassembly of docompute:
 000072        17 STORE_FAST                        3    (j)
 000092   >>   19 LOAD_FAST                         3    (j)
 000096        21 LOAD_FAST                         0    (num)
-000092        23 COMPARE_OP                        2
-000086        25 POP_AND_JUMP_IF_FALSE             42   (to 67)
+000092        23 BINARY_OP                         14   (LT)
+000086        25 POP_AND_JUMP_IF_FALSE             52   (to 77)
 000113        27 LOAD_FAST                         2    (sum_)
 000121        29 LOAD_DOUBLE                       1    (1.0)
 000130        31 LOAD_FAST                         1    (i)
 000134        33 LOAD_FAST                         3    (j)
-000130        35 BINARY_ADD
-000140        36 LOAD_FAST                         1    (i)
-000144        38 LOAD_FAST                         3    (j)
-000140        40 BINARY_ADD
-000148        41 LOAD_BYTE                         1
-000140        43 BINARY_ADD
-000129        44 BINARY_MULTIPLY
-000154        45 LOAD_BYTE                         1
-000129        47 BINARY_RSHIFT
-000159        48 LOAD_FAST                         1    (i)
-000128        50 BINARY_ADD
-000163        51 LOAD_BYTE                         1
-000128        53 BINARY_ADD
-000121        54 BINARY_TRUE_DIVIDE
-000113        55 INPLACE_ADD
-000113        56 STORE_FAST                        2    (sum_)
-000178        58 LOAD_FAST                         3    (j)
-000183        60 LOAD_BYTE                         1
-000178        62 INPLACE_ADD
-000178        63 STORE_FAST                        3    (j)
-000178        65 JUMP_BACKWARD                     46   (to 19)
-000178   >>   67 JUMP_BACKWARD                     60   (to 7)
-000197   >>   69 LOAD_FAST                         2    (sum_)
-000190        71 RETURN_VALUE
+000130        35 BINARY_OP                         0    (ADD)
+000140        37 LOAD_FAST                         1    (i)
+000144        39 LOAD_FAST                         3    (j)
+000140        41 BINARY_OP                         0    (ADD)
+000148        43 LOAD_BYTE                         1
+000140        45 BINARY_OP                         0    (ADD)
+000129        47 BINARY_OP                         4    (MUL)
+000154        49 LOAD_BYTE                         1
+000129        51 BINARY_OP                         20   (RSHIFT)
+000159        53 LOAD_FAST                         1    (i)
+000128        55 BINARY_OP                         0    (ADD)
+000163        57 LOAD_BYTE                         1
+000128        59 BINARY_OP                         0    (ADD)
+000121        61 BINARY_OP                         8    (TRUEDIV)
+000113        63 BINARY_OP                         1    (INPLACE_ADD)
+000113        65 STORE_FAST                        2    (sum_)
+000178        67 LOAD_FAST                         3    (j)
+000183        69 LOAD_BYTE                         1
+000178        71 BINARY_OP                         1    (INPLACE_ADD)
+000178        73 STORE_FAST                        3    (j)
+000178        75 JUMP_BACKWARD                     56   (to 19)
+000178   >>   77 JUMP_BACKWARD                     70   (to 7)
+000197   >>   79 LOAD_FAST                         2    (sum_)
+000190        81 RETURN_VALUE
 
 Disassembly of measure:
 000237         0 LOAD_GLOBAL                       0    (range)

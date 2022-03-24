@@ -1,8 +1,8 @@
 Disassembly of <module>:
 000003         0 LOAD_NAME                         0    (__name__)
 000015         2 LOAD_STRING                       0    (__main__)
-000003         4 COMPARE_OP                        0
-000000         6 POP_AND_JUMP_IF_FALSE             117   (to 123)
+000003         4 BINARY_OP                         12   (EQ)
+000000         6 POP_AND_JUMP_IF_FALSE             119   (to 125)
 000031         8 LOAD_BYTE                         0
 000031        10 LOAD_CONST                        1    ([])
 000031        12 IMPORT_NAME                       1    (sys)
@@ -12,18 +12,18 @@ Disassembly of <module>:
 000058        20 LOAD_ATTR                         3    (argv)
 000054        22 CALL_FUNCTION                     1
 000071        24 LOAD_BYTE                         1
-000054        26 COMPARE_OP                        0
+000054        26 BINARY_OP                         12   (EQ)
 000054        28 JUMP_IF_FALSE_OR_POP              16   (to 44)
 000077        30 LOAD_NAME                         1    (sys)
 000077        32 LOAD_ATTR                         3    (argv)
 000086        34 LOAD_BYTE                         0
 000077        36 BINARY_SUBSCR
 000092        37 LOAD_STRING                       2    (java_embedding_bench)
-000077        39 COMPARE_OP                        0
+000077        39 BINARY_OP                         12   (EQ)
 000054        41 JUMP_IF_FALSE_OR_POP              3    (to 44)
 000054        43 LOAD_TRUE
 000049   >>   44 UNARY_NOT
-000046        45 POP_AND_JUMP_IF_FALSE             78   (to 123)
+000046        45 POP_AND_JUMP_IF_FALSE             80   (to 125)
 000125        47 LOAD_BYTE                         0
 000125        49 LOAD_CONST                        1    ([])
 000125        51 IMPORT_NAME                       4    (time)
@@ -36,7 +36,7 @@ Disassembly of <module>:
 000180        66 LOAD_ATTR                         3    (argv)
 000176        68 CALL_FUNCTION                     1
 000193        70 LOAD_BYTE                         2
-000176        72 COMPARE_OP                        5
+000176        72 BINARY_OP                         17   (GE)
 000173        74 POP_AND_JUMP_IF_FALSE             24   (to 98)
 000214        76 LOAD_NAME                         6    (int)
 000218        78 LOAD_NAME                         1    (sys)
@@ -59,10 +59,10 @@ Disassembly of <module>:
 000346       109 LOAD_NAME                         4    (time)
 000346       111 CALL_METHOD                       0    (time)
 000360       114 LOAD_NAME                         5    (start)
-000346       116 BINARY_SUBTRACT
-000335       117 COLLECTION_FROM_STACK             2    (tuple)
-000318       119 BINARY_MODULO
-000312       120 CALL_FUNCTION                     1
-000312       122 POP_TOP
-000312   >>  123 LOAD_NONE
-000312       124 RETURN_VALUE
+000346       116 BINARY_OP                         2    (SUB)
+000335       118 COLLECTION_FROM_STACK             2    (tuple)
+000318       120 BINARY_OP                         10   (MOD)
+000312       122 CALL_FUNCTION                     1
+000312       124 POP_TOP
+000312   >>  125 LOAD_NONE
+000312       126 RETURN_VALUE

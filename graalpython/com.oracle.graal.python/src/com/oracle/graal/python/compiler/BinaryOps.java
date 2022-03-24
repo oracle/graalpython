@@ -1,0 +1,41 @@
+package com.oracle.graal.python.compiler;
+
+import com.oracle.graal.python.annotations.GenerateEnumConstants;
+
+@GenerateEnumConstants
+public enum BinaryOps {
+    ADD,
+    INPLACE_ADD,
+    SUB,
+    INPLACE_SUB,
+    MUL,
+    INPLACE_MUL,
+    FLOORDIV,
+    INPLACE_FLOORDIV,
+    TRUEDIV,
+    INPLACE_TRUEDIV,
+    MOD,
+    INPLACE_MOD,
+    EQ,
+    NE,
+    LT,
+    LE,
+    GT,
+    GE,
+    LSHIFT,
+    INPLACE_LSHIFT,
+    RSHIFT,
+    INPLACE_RSHIFT,
+    AND,
+    INPLACE_AND,
+    OR,
+    INPLACE_OR,
+    XOR,
+    INPLACE_XOR,
+    POW,
+    INPLACE_POW,
+    IN,
+    IS,
+    MATMUL,
+    INPLACE_MATMUL,
+}

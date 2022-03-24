@@ -75,10 +75,10 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
+import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -101,36 +101,11 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.FloorDivNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.LShiftNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MatMulNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.ModNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.PowNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.RShiftNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.SubNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.TrueDivNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.AddNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitAndNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitOrNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitXorNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.FloorDivNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.LShiftNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.MatMulNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.ModNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.MulNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.PowNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.RShiftNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.SubNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.TrueDivNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
+import com.oracle.graal.python.nodes.expression.BinaryOp;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
@@ -149,7 +124,6 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -183,21 +157,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
-    private static final NodeSupplier<MulNode> NODE_BINARY_MUL = () -> MulNodeGen.create(null, null);
-    private static final NodeSupplier<CoerceToBooleanNode> NODE_COERCE_TO_BOOLEAN_IF_FALSE = CoerceToBooleanNode::createIfFalseNode;
     private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
-    private static final NodeSupplier<BitOrNode> NODE_BINARY_BITOR = () -> BitOrNodeGen.create(null, null);
-    private static final NodeSupplier<BitXorNode> NODE_BINARY_BITXOR = () -> BitXorNodeGen.create(null, null);
-    private static final NodeSupplier<BitAndNode> NODE_BINARY_BITAND = () -> BitAndNodeGen.create(null, null);
-    private static final NodeSupplier<RShiftNode> NODE_BINARY_RSHIFT = () -> RShiftNodeGen.create(null, null);
-    private static final NodeSupplier<LShiftNode> NODE_BINARY_LSHIFT = () -> LShiftNodeGen.create(null, null);
-    private static final NodeSupplier<SubNode> NODE_BINARY_SUB = () -> SubNodeGen.create(null, null);
-    private static final NodeSupplier<AddNode> NODE_BINARY_ADD = () -> AddNodeGen.create(null, null);
-    private static final NodeSupplier<ModNode> NODE_BINARY_MOD = () -> ModNodeGen.create(null, null);
-    private static final NodeSupplier<FloorDivNode> NODE_BINARY_FLOORDIV = () -> FloorDivNodeGen.create(null, null);
-    private static final NodeSupplier<TrueDivNode> NODE_BINARY_TRUEDIV = () -> TrueDivNodeGen.create(null, null);
-    private static final NodeSupplier<MatMulNode> NODE_BINARY_MATMUL = () -> MatMulNodeGen.create(null, null);
-    private static final NodeSupplier<PowNode> NODE_BINARY_POW = () -> PowNodeGen.create(null, null);
     private static final NodeSupplier<InvertNode> NODE_UNARY_INVERT = () -> InvertNodeGen.create(null);
     private static final NodeSupplier<NegNode> NODE_UNARY_NEG = () -> NegNodeGen.create(null);
     private static final NodeSupplier<PosNode> NODE_UNARY_POS = () -> PosNodeGen.create(null);
@@ -217,8 +177,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PRaiseNode UNCACHED_RAISE = PRaiseNode.getUncached();
     private static final NodeSupplier<IsBuiltinClassProfile> NODE_IS_BUILTIN_CLASS_PROFILE = IsBuiltinClassProfile::create;
     private static final IsBuiltinClassProfile UNCACHED_IS_BUILTIN_CLASS_PROFILE = IsBuiltinClassProfile.getUncached();
-    private static final NodeSupplier<CastToJavaStringNode> NODE_CAST_TO_JAVA_STRING = CastToJavaStringNode::create;
-    private static final CastToJavaStringNode UNCACHED_CAST_TO_JAVA_STRING = CastToJavaStringNode.getUncached();
     private static final NodeSupplier<CallNode> NODE_CALL = CallNode::create;
     private static final CallNode UNCACHED_CALL = CallNode.getUncached();
     private static final NodeSupplier<CallQuaternaryMethodNode> NODE_CALL_QUATERNARY_METHOD = CallQuaternaryMethodNode::create;
@@ -236,7 +194,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
     private static final NodeSupplier<HashingStorageLibrary> NODE_HASHING_STORAGE_LIBRARY = () -> HashingStorageLibrary.getFactory().createDispatched(2);
-    private static final NodeFunction<Object, HashingStorageLibrary> NODE_HASHING_STORAGE_LIBRARY_DIRECT = a -> HashingStorageLibrary.getFactory().create(a);
     private static final HashingStorageLibrary UNCACHED_HASHING_STORAGE_LIBRARY = HashingStorageLibrary.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
@@ -245,8 +202,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final ReadGlobalOrBuiltinNode UNCACHED_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode.getUncached();
     private static final NodeSupplier<PyObjectSetItem> NODE_OBJECT_SET_ITEM = PyObjectSetItem::create;
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
-    private static final NodeSupplier<PyObjectCallMethodObjArgs> NODE_OBJECT_CALL_METHOD_OBJ_ARGS = PyObjectCallMethodObjArgs::create;
-    private static final PyObjectCallMethodObjArgs UNCACHED_OBJECT_CALL_METHOD_OBJ_ARGS = PyObjectCallMethodObjArgs.getUncached();
     private static final NodeSupplier<PyObjectIsTrueNode> NODE_OBJECT_IS_TRUE = PyObjectIsTrueNode::create;
     private static final PyObjectIsTrueNode UNCACHED_OBJECT_IS_TRUE = PyObjectIsTrueNode.getUncached();
     private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
@@ -287,56 +242,76 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
 
-    private static final IsNode UNCACHED_IS_NODE = IsNode.getUncached();
-    private static final NodeSupplier<IsNode> NODE_IS_NODE = IsNode::create;
-
-    private static final IntNodeFunction<BinaryComparisonNode> COMPARE_OP_FACTORY = (int op) -> {
+    private static final IntNodeFunction<Node> BINARY_OP_FACTORY = (int op) -> {
         switch (op) {
-            case 0:
-                return BinaryComparisonNode.EqNode.create();
-            case 1:
-                return BinaryComparisonNode.NeNode.create();
-            case 2:
-                return BinaryComparisonNode.LtNode.create();
-            case 3:
-                return BinaryComparisonNode.LeNode.create();
-            case 4:
-                return BinaryComparisonNode.GtNode.create();
-            case 5:
-                return BinaryComparisonNode.GeNode.create();
-            default:
-                throw CompilerDirectives.shouldNotReachHere();
-        }
-    };
-
-    private static final IntNodeFunction<LookupAndCallInplaceNode> INPLACE_ARITH_FACTORY = (int op) -> {
-        switch (op) {
-            case INPLACE_POWER:
-                return InplaceArithmetic.IPow.create();
-            case INPLACE_MULTIPLY:
-                return InplaceArithmetic.IMul.create();
-            case INPLACE_MATRIX_MULTIPLY:
-                return InplaceArithmetic.IMatMul.create();
-            case INPLACE_TRUE_DIVIDE:
-                return InplaceArithmetic.ITrueDiv.create();
-            case INPLACE_FLOOR_DIVIDE:
-                return InplaceArithmetic.IFloorDiv.create();
-            case INPLACE_MODULO:
-                return InplaceArithmetic.IMod.create();
-            case INPLACE_ADD:
+            case BinaryOpsConstants.ADD:
+                return BinaryArithmetic.Add.create();
+            case BinaryOpsConstants.SUB:
+                return BinaryArithmetic.Sub.create();
+            case BinaryOpsConstants.MUL:
+                return BinaryArithmetic.Mul.create();
+            case BinaryOpsConstants.TRUEDIV:
+                return BinaryArithmetic.TrueDiv.create();
+            case BinaryOpsConstants.FLOORDIV:
+                return BinaryArithmetic.FloorDiv.create();
+            case BinaryOpsConstants.MOD:
+                return BinaryArithmetic.Mod.create();
+            case BinaryOpsConstants.LSHIFT:
+                return BinaryArithmetic.LShift.create();
+            case BinaryOpsConstants.RSHIFT:
+                return BinaryArithmetic.RShift.create();
+            case BinaryOpsConstants.AND:
+                return BinaryArithmetic.And.create();
+            case BinaryOpsConstants.OR:
+                return BinaryArithmetic.Or.create();
+            case BinaryOpsConstants.XOR:
+                return BinaryArithmetic.Xor.create();
+            case BinaryOpsConstants.POW:
+                return BinaryArithmetic.Pow.create();
+            case BinaryOpsConstants.MATMUL:
+                return BinaryArithmetic.MatMul.create();
+            case BinaryOpsConstants.INPLACE_ADD:
                 return InplaceArithmetic.IAdd.create();
-            case INPLACE_SUBTRACT:
+            case BinaryOpsConstants.INPLACE_SUB:
                 return InplaceArithmetic.ISub.create();
-            case INPLACE_LSHIFT:
+            case BinaryOpsConstants.INPLACE_MUL:
+                return InplaceArithmetic.IMul.create();
+            case BinaryOpsConstants.INPLACE_TRUEDIV:
+                return InplaceArithmetic.ITrueDiv.create();
+            case BinaryOpsConstants.INPLACE_FLOORDIV:
+                return InplaceArithmetic.IFloorDiv.create();
+            case BinaryOpsConstants.INPLACE_MOD:
+                return InplaceArithmetic.IMod.create();
+            case BinaryOpsConstants.INPLACE_LSHIFT:
                 return InplaceArithmetic.ILShift.create();
-            case INPLACE_RSHIFT:
+            case BinaryOpsConstants.INPLACE_RSHIFT:
                 return InplaceArithmetic.IRShift.create();
-            case INPLACE_AND:
+            case BinaryOpsConstants.INPLACE_AND:
                 return InplaceArithmetic.IAnd.create();
-            case INPLACE_XOR:
-                return InplaceArithmetic.IXor.create();
-            case INPLACE_OR:
+            case BinaryOpsConstants.INPLACE_OR:
                 return InplaceArithmetic.IOr.create();
+            case BinaryOpsConstants.INPLACE_XOR:
+                return InplaceArithmetic.IXor.create();
+            case BinaryOpsConstants.INPLACE_POW:
+                return InplaceArithmetic.IPow.create();
+            case BinaryOpsConstants.INPLACE_MATMUL:
+                return InplaceArithmetic.IMatMul.create();
+            case BinaryOpsConstants.EQ:
+                return BinaryComparisonNode.EqNode.create();
+            case BinaryOpsConstants.NE:
+                return BinaryComparisonNode.NeNode.create();
+            case BinaryOpsConstants.LT:
+                return BinaryComparisonNode.LtNode.create();
+            case BinaryOpsConstants.LE:
+                return BinaryComparisonNode.LeNode.create();
+            case BinaryOpsConstants.GT:
+                return BinaryComparisonNode.GtNode.create();
+            case BinaryOpsConstants.GE:
+                return BinaryComparisonNode.GeNode.create();
+            case BinaryOpsConstants.IS:
+                return IsNode.create();
+            case BinaryOpsConstants.IN:
+                return ContainsNode.create();
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }
@@ -587,7 +562,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @FunctionalInterface
-    private static interface IntNodeFunction<T> {
+    private static interface IntNodeFunction<T extends Node> {
         T apply(int argument);
     }
 
@@ -989,57 +964,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         frame.setObject(stackTop, invertNode.execute(frame, frame.getObject(stackTop)));
                         break;
                     }
-                    case BINARY_POWER: {
-                        PowNode powNode = insertChildNode(localNodes[bci], NODE_BINARY_POW, bci);
+                    case BINARY_OP: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        BinaryOp opNode = (BinaryOp) insertChildNode(localNodes[bci], BINARY_OP_FACTORY, bci, oparg);
                         Object right = frame.getObject(stackTop);
                         frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, powNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_MULTIPLY: {
-                        stackTop = bytecodeBinaryMultiply(frame, stackTop, bci);
-                        break;
-                    }
-                    case BINARY_MATRIX_MULTIPLY: {
-                        MatMulNode matMulNode = insertChildNode(localNodes[bci], NODE_BINARY_MATMUL, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, matMulNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_TRUE_DIVIDE: {
-                        TrueDivNode trueDivNode = insertChildNode(localNodes[bci], NODE_BINARY_TRUEDIV, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, trueDivNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_FLOOR_DIVIDE: {
-                        FloorDivNode floorDivNode = insertChildNode(localNodes[bci], NODE_BINARY_FLOORDIV, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, floorDivNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_MODULO: {
-                        ModNode modNode = insertChildNode(localNodes[bci], NODE_BINARY_MOD, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, modNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_ADD: {
-                        AddNode addNode = insertChildNode(localNodes[bci], NODE_BINARY_ADD, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, addNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_SUBTRACT: {
-                        SubNode subNode = insertChildNode(localNodes[bci], NODE_BINARY_SUB, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, subNode.executeObject(frame, frame.getObject(stackTop), right));
+                        Object left = frame.getObject(stackTop);
+                        Object result = opNode.executeObject(frame, left, right);
+                        frame.setObject(stackTop, result);
                         break;
                     }
                     case BINARY_SUBSCR: {
@@ -1047,57 +979,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object slice = frame.getObject(stackTop);
                         frame.setObject(stackTop--, null);
                         frame.setObject(stackTop, getItemNode.execute(frame, frame.getObject(stackTop), slice));
-                        break;
-                    }
-                    case BINARY_LSHIFT: {
-                        LShiftNode lShiftNode = insertChildNode(localNodes[bci], NODE_BINARY_LSHIFT, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, lShiftNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_RSHIFT: {
-                        RShiftNode rShiftNode = insertChildNode(localNodes[bci], NODE_BINARY_RSHIFT, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, rShiftNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_AND: {
-                        BitAndNode bitAndNode = insertChildNode(localNodes[bci], NODE_BINARY_BITAND, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, bitAndNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_XOR: {
-                        BitXorNode bitXorNode = insertChildNode(localNodes[bci], NODE_BINARY_BITXOR, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, bitXorNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case BINARY_OR: {
-                        BitOrNode bitOrNode = insertChildNode(localNodes[bci], NODE_BINARY_BITOR, bci);
-                        Object right = frame.getObject(stackTop);
-                        frame.setObject(stackTop--, null);
-                        frame.setObject(stackTop, bitOrNode.executeObject(frame, frame.getObject(stackTop), right));
-                        break;
-                    }
-                    case INPLACE_POWER:
-                    case INPLACE_MULTIPLY:
-                    case INPLACE_MATRIX_MULTIPLY:
-                    case INPLACE_TRUE_DIVIDE:
-                    case INPLACE_FLOOR_DIVIDE:
-                    case INPLACE_MODULO:
-                    case INPLACE_ADD:
-                    case INPLACE_SUBTRACT:
-                    case INPLACE_LSHIFT:
-                    case INPLACE_RSHIFT:
-                    case INPLACE_AND:
-                    case INPLACE_XOR:
-                    case INPLACE_OR: {
-                        stackTop = bytecodeInplaceOp(frame, stackTop, bci, localNodes, bc);
                         break;
                     }
                     case STORE_SUBSCR: {
@@ -1175,16 +1056,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case LOAD_ATTR: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeLoadAttr(frame, stackTop, bci, oparg, localNodes, localNames);
-                        break;
-                    }
-                    case COMPARE_OP: {
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeCompareOp(frame, stackTop, bci, oparg, localNodes);
-                        break;
-                    }
-                    case IS_OP: {
-                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeIs(frame, stackTop, bci, oparg, localNodes);
                         break;
                     }
                     case IMPORT_NAME: {
@@ -1452,15 +1323,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeInplaceOp(VirtualFrame frame, int stackTop, int bci, Node[] localNodes, int bc) {
-        LookupAndCallInplaceNode opNode = insertChildNode(localNodes[bci], INPLACE_ARITH_FACTORY, bci, bc);
-        Object right = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        Object left = frame.getObject(stackTop);
-        frame.setObject(stackTop, opNode.execute(frame, left, right));
-        return stackTop;
-    }
-
     private void bytecodeEndExcHandler(VirtualFrame frame, int stackTop) {
         Object exception = frame.getObject(stackTop);
         Object savedException = frame.getObject(stackTop - 1);
@@ -1476,15 +1338,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, "expected exception on the stack");
         }
-    }
-
-    private int bytecodeCompareOp(VirtualFrame frame, int stackTop, int bci, int oparg, Node[] localNodes) {
-        Object right = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        Object left = frame.getObject(stackTop);
-        BinaryComparisonNode opNode = insertChildNode(localNodes[bci - 1], COMPARE_OP_FACTORY, bci - 1, oparg);
-        frame.setObject(stackTop, opNode.executeObject(frame, left, right));
-        return stackTop;
     }
 
     private void bytecodeLoadAttr(VirtualFrame frame, int stackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
@@ -1625,21 +1478,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object func = getMethodNode.execute(frame, rcvr, methodName);
         CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
         frame.setObject(stackTop, callNode.execute(frame, func, args, PKeyword.EMPTY_KEYWORDS));
-    }
-
-    private int bytecodeIs(VirtualFrame frame, int initialStackTop, int bci, int oparg, Node[] localNodes) {
-        int stackTop = initialStackTop;
-        Object right = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        Object left = frame.getObject(stackTop);
-        IsNode opNode = insertChildNode(localNodes[bci], UNCACHED_IS_NODE, NODE_IS_NODE, bci);
-        boolean result = opNode.execute(left, right);
-        if (oparg == 1) {
-            frame.setObject(stackTop, !result);
-        } else {
-            frame.setObject(stackTop, result);
-        }
-        return stackTop;
     }
 
     private int bytecodeLoadName(VirtualFrame frame, Object globals, Object locals, int initialStackTop, int bci, int oparg, Node[] localNodes, String[] localNames, PythonLanguage lang) {
@@ -1922,15 +1760,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(target);
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
-    }
-
-    private int bytecodeBinaryMultiply(VirtualFrame frame, int lastStackTop, int bci) {
-        int stackTop = lastStackTop;
-        MulNode mulNode = insertChildNode(adoptedNodes[bci], NODE_BINARY_MUL, bci);
-        Object right = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        frame.setObject(stackTop, mulNode.executeObject(frame, frame.getObject(stackTop), right));
-        return stackTop;
     }
 
     private int bytecodeMakeFunction(VirtualFrame frame, Object globals, int lastStackTop, int oparg) {

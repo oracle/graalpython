@@ -638,34 +638,48 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.right.accept(this);
             switch (node.op) {
                 case ADD:
-                    return addOp(BINARY_ADD);
+                    addOp(BINARY_OP, BinaryOps.ADD.ordinal());
+                    break;
                 case SUB:
-                    return addOp(BINARY_SUBTRACT);
+                    addOp(BINARY_OP, BinaryOps.SUB.ordinal());
+                    break;
                 case MULT:
-                    return addOp(BINARY_MULTIPLY);
+                    addOp(BINARY_OP, BinaryOps.MUL.ordinal());
+                    break;
                 case MATMULT:
-                    return addOp(BINARY_MATRIX_MULTIPLY);
+                    addOp(BINARY_OP, BinaryOps.MATMUL.ordinal());
+                    break;
                 case DIV:
-                    return addOp(BINARY_TRUE_DIVIDE);
+                    addOp(BINARY_OP, BinaryOps.TRUEDIV.ordinal());
+                    break;
                 case MOD:
-                    return addOp(BINARY_MODULO);
+                    addOp(BINARY_OP, BinaryOps.MOD.ordinal());
+                    break;
                 case POW:
-                    return addOp(BINARY_POWER);
+                    addOp(BINARY_OP, BinaryOps.POW.ordinal());
+                    break;
                 case LSHIFT:
-                    return addOp(BINARY_LSHIFT);
+                    addOp(BINARY_OP, BinaryOps.LSHIFT.ordinal());
+                    break;
                 case RSHIFT:
-                    return addOp(BINARY_RSHIFT);
+                    addOp(BINARY_OP, BinaryOps.RSHIFT.ordinal());
+                    break;
                 case BITOR:
-                    return addOp(BINARY_OR);
+                    addOp(BINARY_OP, BinaryOps.OR.ordinal());
+                    break;
                 case BITXOR:
-                    return addOp(BINARY_XOR);
+                    addOp(BINARY_OP, BinaryOps.XOR.ordinal());
+                    break;
                 case BITAND:
-                    return addOp(BINARY_AND);
+                    addOp(BINARY_OP, BinaryOps.AND.ordinal());
+                    break;
                 case FLOORDIV:
-                    return addOp(BINARY_FLOOR_DIVIDE);
+                    addOp(BINARY_OP, BinaryOps.FLOORDIV.ordinal());
+                    break;
                 default:
                     throw new UnsupportedOperationException("Not supported yet.");
             }
+            return null;
         } finally {
             setLocation(savedOffset);
         }
@@ -765,24 +779,36 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addCompareOp(ExprTy.Compare.Operator op) {
         switch (op) {
             case EQ:
+                addOp(BINARY_OP, BinaryOps.EQ.ordinal());
+                break;
             case NOTEQ:
+                addOp(BINARY_OP, BinaryOps.NE.ordinal());
+                break;
             case LT:
+                addOp(BINARY_OP, BinaryOps.LT.ordinal());
+                break;
             case LTE:
+                addOp(BINARY_OP, BinaryOps.LE.ordinal());
+                break;
             case GT:
+                addOp(BINARY_OP, BinaryOps.GT.ordinal());
+                break;
             case GTE:
-                addOp(COMPARE_OP, op.ordinal());
+                addOp(BINARY_OP, BinaryOps.GE.ordinal());
                 break;
             case IS:
-                addOp(IS_OP, 0);
+                addOp(BINARY_OP, BinaryOps.IS.ordinal());
                 break;
             case ISNOT:
-                addOp(IS_OP, 1);
+                addOp(BINARY_OP, BinaryOps.IS.ordinal());
+                addOp(UNARY_NOT);
                 break;
             case IN:
-                addOp(CONTAINS_OP, 0);
+                addOp(BINARY_OP, BinaryOps.IN.ordinal());
                 break;
             case NOTIN:
-                addOp(CONTAINS_OP, 1);
+                addOp(BINARY_OP, BinaryOps.IN.ordinal());
+                addOp(UNARY_NOT);
                 break;
         }
     }
@@ -1370,43 +1396,43 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         switch (node.op) {
             case ADD:
-                addOp(INPLACE_ADD);
+                addOp(BINARY_OP, BinaryOps.INPLACE_ADD.ordinal());
                 break;
             case SUB:
-                addOp(INPLACE_SUBTRACT);
+                addOp(BINARY_OP, BinaryOps.INPLACE_SUB.ordinal());
                 break;
             case MULT:
-                addOp(INPLACE_MULTIPLY);
+                addOp(BINARY_OP, BinaryOps.INPLACE_MUL.ordinal());
                 break;
             case MATMULT:
-                addOp(INPLACE_MATRIX_MULTIPLY);
+                addOp(BINARY_OP, BinaryOps.INPLACE_MATMUL.ordinal());
                 break;
             case DIV:
-                addOp(INPLACE_TRUE_DIVIDE);
+                addOp(BINARY_OP, BinaryOps.INPLACE_TRUEDIV.ordinal());
                 break;
             case MOD:
-                addOp(INPLACE_MODULO);
+                addOp(BINARY_OP, BinaryOps.INPLACE_MOD.ordinal());
                 break;
             case POW:
-                addOp(INPLACE_POWER);
+                addOp(BINARY_OP, BinaryOps.INPLACE_POW.ordinal());
                 break;
             case LSHIFT:
-                addOp(INPLACE_LSHIFT);
+                addOp(BINARY_OP, BinaryOps.INPLACE_LSHIFT.ordinal());
                 break;
             case RSHIFT:
-                addOp(INPLACE_RSHIFT);
+                addOp(BINARY_OP, BinaryOps.INPLACE_RSHIFT.ordinal());
                 break;
             case BITOR:
-                addOp(INPLACE_OR);
+                addOp(BINARY_OP, BinaryOps.INPLACE_OR.ordinal());
                 break;
             case BITXOR:
-                addOp(INPLACE_XOR);
+                addOp(BINARY_OP, BinaryOps.INPLACE_XOR.ordinal());
                 break;
             case BITAND:
-                addOp(INPLACE_AND);
+                addOp(BINARY_OP, BinaryOps.INPLACE_AND.ordinal());
                 break;
             case FLOORDIV:
-                addOp(INPLACE_FLOOR_DIVIDE);
+                addOp(BINARY_OP, BinaryOps.INPLACE_FLOORDIV.ordinal());
                 break;
             default:
                 throw new UnsupportedOperationException("Not supported yet.");

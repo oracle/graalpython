@@ -260,6 +260,9 @@ public final class CodeUnit {
                     line[5] = names[arg & 0xFF];
                     break;
                 }
+                case BINARY_OP:
+                    line[5] = BinaryOps.values()[arg].toString();
+                    break;
                 case COLLECTION_FROM_STACK:
                 case COLLECTION_ADD_STACK:
                 case COLLECTION_FROM_COLLECTION:
