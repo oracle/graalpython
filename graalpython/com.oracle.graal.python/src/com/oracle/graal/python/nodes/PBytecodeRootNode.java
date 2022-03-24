@@ -740,11 +740,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop + 1;
     }
 
-    private static final Object BOOLEAN_MARKER = new Object();
-    private static final Object INTEGER_MARKER = new Object();
-    private static final Object LONG_MARKER = new Object();
-    private static final Object DOUBLE_MARKER = new Object();
-
     /**
      * @param target - encodes bci (16bit), stackTop (12bit), and blockstackTop (4bit)
      */
@@ -761,7 +756,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         Object globals = PArguments.getGlobals((Object[]) originalArgs);
         Object locals = PArguments.getSpecialArgument((Object[]) originalArgs);
-        long[] longlocals = new long[varnames.length];
 
         int loopCount = 0;
         int stackTop = decodeStackTop(target);
@@ -897,19 +891,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case LOAD_FAST: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         Object value = frame.getObject(oparg);
-                        if (!inInterpreter) {
-                            if (value == BOOLEAN_MARKER) {
-                                value = longlocals[oparg] == 1;
-                            } else if (value == INTEGER_MARKER) {
-                                // CompilerDirectives.transferToInterpreterAndInvalidate();
-                                // localBC[bci] = LOAD_FAST_INT;
-                                value = (int) longlocals[oparg];
-                            } else if (value == LONG_MARKER) {
-                                value = longlocals[oparg];
-                            } else if (value == DOUBLE_MARKER) {
-                                value = Double.longBitsToDouble(longlocals[oparg]);
-                            }
-                        }
                         if (value == null) {
                             if (localArgs[bci] == 0) {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -950,36 +931,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case STORE_FAST: {
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        stackTop = bytecodeStoreFast(frame, stackTop, bci, oparg, localBC);
-                        bci++;
-                        break;
-                    }
-                    case STORE_FAST_BOOLEAN: {
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        stackTop = bytecodeStoreFastBoolean(frame, inInterpreter, longlocals, stackTop, bci, localBC, oparg);
-                        bci++;
-                        break;
-                    }
-                    case STORE_FAST_INT: {
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        stackTop = bytecodeStoreFastInt(frame, inInterpreter, longlocals, stackTop, bci, localBC, oparg);
-                        bci++;
-                        break;
-                    }
-                    case STORE_FAST_LONG: {
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        stackTop = bytecodeStoreFastLong(frame, inInterpreter, longlocals, stackTop, bci, localBC, oparg);
-                        bci++;
-                        break;
-                    }
-                    case STORE_FAST_DOUBLE: {
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        stackTop = bytecodeStoreFastDouble(frame, inInterpreter, longlocals, stackTop, bci, localBC, oparg);
-                        bci++;
-                        break;
-                    }
-                    case STORE_FAST_GENERIC: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         frame.setObject(oparg, frame.getObject(stackTop));
                         frame.setObject(stackTop--, null);
@@ -1624,109 +1575,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object value = frame.getObject(stackTop);
         frame.setObject(stackTop--, null);
         setItem.execute(frame, container, index, value);
-        return stackTop;
-    }
-
-    private int bytecodeStoreFastDouble(VirtualFrame frame, boolean inInterpreter, long[] longlocals, int stackTop, int bci, byte[] localBC, int oparg) {
-        Object value = frame.getObject(stackTop);
-        if (value instanceof Double) {
-            if (inInterpreter) {
-                frame.setObject(oparg, value);
-            } else {
-                frame.setObject(oparg, DOUBLE_MARKER);
-                longlocals[oparg] = Double.doubleToRawLongBits((double) value);
-            }
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            localBC[bci] = STORE_FAST_GENERIC;
-            frame.setObject(oparg, value);
-        }
-        frame.setObject(stackTop--, null);
-        return stackTop;
-    }
-
-    private int bytecodeStoreFastLong(VirtualFrame frame, boolean inInterpreter, long[] longlocals, int stackTop, int bci, byte[] localBC, int oparg) {
-        Object value = frame.getObject(stackTop);
-        if (value instanceof Long) {
-            if (inInterpreter) {
-                frame.setObject(oparg, value);
-            } else {
-                frame.setObject(oparg, LONG_MARKER);
-                longlocals[oparg] = (long) value;
-            }
-        } else if (value instanceof Integer) {
-            if (inInterpreter) {
-                frame.setObject(oparg, value);
-            } else {
-                frame.setObject(oparg, LONG_MARKER);
-                longlocals[oparg] = (int) value;
-            }
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            localBC[bci] = STORE_FAST_GENERIC;
-            frame.setObject(oparg, value);
-        }
-        frame.setObject(stackTop--, null);
-        return stackTop;
-    }
-
-    private int bytecodeStoreFastInt(VirtualFrame frame, boolean inInterpreter, long[] longlocals, int stackTop, int bci, byte[] localBC, int oparg) {
-        Object value = frame.getObject(stackTop);
-        if (value instanceof Integer) {
-            if (inInterpreter) {
-                frame.setObject(oparg, value);
-            } else {
-                frame.setObject(oparg, INTEGER_MARKER);
-                longlocals[oparg] = (int) value;
-            }
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (value instanceof Long) {
-                localBC[bci] = STORE_FAST_LONG;
-            } else {
-                localBC[bci] = STORE_FAST_GENERIC;
-            }
-            frame.setObject(oparg, value);
-        }
-        frame.setObject(stackTop--, null);
-        return stackTop;
-    }
-
-    private int bytecodeStoreFastBoolean(VirtualFrame frame, boolean inInterpreter, long[] longlocals, int stackTop, int bci, byte[] localBC, int oparg) {
-        Object value = frame.getObject(stackTop);
-        if (value instanceof Boolean) {
-            if (inInterpreter) {
-                frame.setObject(oparg, value);
-            } else {
-                frame.setObject(oparg, BOOLEAN_MARKER);
-                longlocals[oparg] = value == Boolean.TRUE ? 1 : 0;
-            }
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            localBC[bci] = STORE_FAST_GENERIC;
-            frame.setObject(oparg, value);
-        }
-        frame.setObject(stackTop--, null);
-        return stackTop;
-    }
-
-    private int bytecodeStoreFast(VirtualFrame frame, int initialStackTop, int bci, int oparg, byte[] localBC) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        int stackTop = initialStackTop;
-        Object value = frame.getObject(stackTop);
-        if (value instanceof Boolean) {
-            localBC[bci] = STORE_FAST_BOOLEAN;
-        } else if (value instanceof Integer) {
-            localBC[bci] = STORE_FAST_INT;
-        } else if (value instanceof Long) {
-            localBC[bci] = STORE_FAST_LONG;
-        } else if (value instanceof Double) {
-            localBC[bci] = STORE_FAST_DOUBLE;
-        } else {
-            localBC[bci] = STORE_FAST_GENERIC;
-        }
-        frame.setObject(oparg, value);
-        frame.setObject(stackTop--, null);
         return stackTop;
     }
 
