@@ -46,6 +46,54 @@ import org.junit.jupiter.api.Test;
 public class ErrorTests extends ParserTestBase {
     
     @Test
+    public void arguments01() throws Exception {
+        checkSyntaxErrorMessage("f(lambda x: x[0] = 3)", "expression cannot contain assignment,perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(x()=2)", "expression cannot contain assignment,perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(a or b=1)", "expression cannot contain assignment,perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(x.y=1)", "expression cannot contain assignment,perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(True=2)", "expression cannot contain assignment,perhaps you meant \"==\"?");     
+    }
+    
+    @Test
+    public void invalidDictComprehension01() throws Exception {
+        checkSyntaxErrorMessage("{**{} for a in [1]}", "dict unpacking cannot be used in dict comprehension");     
+    }
+    
+    @Test
+    public void invalidDoubleStarredKvPairs01() throws Exception {
+        checkSyntaxErrorMessage("{1: *12+1}", "cannot use a starred expression in a dictionary value");     
+        checkSyntaxErrorMessage("{1: *12+1, 23: 1}", "cannot use a starred expression in a dictionary value");
+        checkSyntaxErrorMessage("{1:}", "expression expected after dictionary key and ':'");
+    }
+    
+    @Test
+    public void invalidKvPairs01() throws Exception {
+        checkSyntaxErrorMessage("{ 23: 1, 1: *12+1}", "cannot use a starred expression in a dictionary value");     
+        checkSyntaxErrorMessage("{1:2, 3:4, 5:}", "expression expected after dictionary key and ':'");
+    }
+    
+    @Test
+    public void invalidNameExpression01() throws Exception {
+        checkSyntaxErrorMessage("if x = 3:\n" +
+            "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");     
+        checkSyntaxErrorMessage("while x = 3:\n" +
+            "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");     
+    }
+    
+    @Test
+    public void invalidNameExpression02() throws Exception {
+        checkSyntaxErrorMessage("if x.a = 3:\n" +
+            "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");     
+        checkSyntaxErrorMessage("while x.a = 3:\n" +
+            "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");     
+    }
+    
+    @Test
+    public void invalidPrimary01() throws Exception {
+        checkSyntaxErrorMessage("f{", "invalid syntax");     
+    }
+    
+    @Test
     public void while01() throws Exception {
         checkSyntaxErrorMessage("while True\n", "expected ':'");
     }

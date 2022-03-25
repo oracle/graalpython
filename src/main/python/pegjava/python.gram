@@ -817,7 +817,7 @@ invalid_arguments:
     | a=args ',' args { _PyPegen_arguments_parsing_error(p, a) }
 invalid_kwarg:
     | expression a='=' {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(
+        this.raiseSyntaxErrorKnownLocation(
             a, "expression cannot contain assignment, perhaps you meant \"==\"?") }
 
 invalid_expression:
@@ -831,10 +831,10 @@ invalid_named_expression:
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(
             a, "cannot use assignment expressions with %s", _PyPegen_get_expr_name(a)) }
     | a=NAME b='=' bitwise_or !('='|':='|',') {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?") }
+        this.raiseSyntaxErrorKnownLocation(b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?") }
     | !(list|tuple|genexp|'True'|'None'|'False') a=bitwise_or b='=' bitwise_or !('='|':='|',') {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(b, "cannot assign to %s here. Maybe you meant '==' instead of '='?",
-                                          _PyPegen_get_expr_name(a)) }
+        this.raiseSyntaxErrorKnownLocation(b, "cannot assign to %s here. Maybe you meant '==' instead of '='?",
+                                          getExprName(a)) }
 
 invalid_assignment:
     | a=invalid_ann_assign_target ':' expression {
@@ -866,7 +866,7 @@ invalid_del_stmt:
 invalid_block:
     | NEWLINE !INDENT { RAISE_INDENTATION_ERROR("expected an indented block") }
 invalid_primary:
-    | primary a='{' { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "invalid syntax") }
+    | primary a='{' { this.raiseSyntaxErrorKnownLocation(a, "invalid syntax") }
 invalid_comprehension:
     | ('[' | '(' | '{') a=starred_expression for_if_clauses {
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "iterable unpacking cannot be used in comprehension") }
@@ -874,7 +874,7 @@ invalid_comprehension:
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "did you forget parentheses around the comprehension target?") }
 invalid_dict_comprehension:
     | '{' a='**' bitwise_or for_if_clauses '}' {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "dict unpacking cannot be used in dict comprehension") }
+        this.raiseSyntaxErrorKnownLocation(a, "dict unpacking cannot be used in dict comprehension") }
 invalid_parameters:
     | param_no_default* invalid_parameters_helper param_no_default {
         this.raiseSyntaxError("non-default argument follows default argument") }
@@ -907,7 +907,7 @@ invalid_group:
     | '(' a=starred_expression ')' {
         RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use starred expression here") }
     | '(' a='**' expression ')' {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use double starred expression here") }
+        this.raiseSyntaxErrorKnownLocation(a, "cannot use double starred expression here") }
 invalid_import_from_targets:
     | import_from_as_names ',' {
         this.raiseSyntaxError("trailing comma not allowed without surrounding parentheses") }
@@ -935,10 +935,10 @@ invalid_while_stmt:
 
 invalid_double_starred_kvpairs:
     | ','.double_starred_kvpair+ ',' invalid_kvpair
-    | expression ':' a='*' bitwise_or { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use a starred expression in a dictionary value") }
-    | expression a=':' &('}'|',') { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "expression expected after dictionary key and ':'") }
+    | expression ':' a='*' bitwise_or { this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value") }
+    | expression a=':' &('}'|',') { this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }
 invalid_kvpair:
     | a=expression !(':') {
         RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "':' expected after dictionary key") }
-    | expression ':' a='*' bitwise_or { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use a starred expression in a dictionary value") }
-    | expression a=':' {RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "expression expected after dictionary key and ':'") }
+    | expression ':' a='*' bitwise_or { this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value") }
+    | expression a=':' {this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }

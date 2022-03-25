@@ -477,7 +477,7 @@ abstract class AbstractParser {
                 || e instanceof ExprTy.Starred
                 || e instanceof ExprTy.Name
                 || e instanceof ExprTy.List) {
-            return e.getClass().getName().toLowerCase();
+            return e.getClass().getSimpleName().toLowerCase();
         }
         if (e instanceof ExprTy.Call) {
             return "function call";
@@ -772,7 +772,15 @@ abstract class AbstractParser {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
-        System.out.println("start: " + errorToken.startOffset);
+        return null;
+    }
+    
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     */
+    final SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
         return null;
     }
 }

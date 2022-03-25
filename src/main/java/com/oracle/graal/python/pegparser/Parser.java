@@ -12320,9 +12320,7 @@ public final class Parser extends AbstractParser {
                 (a = (Token)expect(22)) != null  // token='='
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression cannot contain assignment, perhaps you meant \"==\"?" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression cannot contain assignment, perhaps you meant \'==\'?' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"expression cannot contain assignment,perhaps you meant \"==\"?");
                 cache.putResult(_mark, INVALID_KWARG_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12427,9 +12425,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_202_rule(false)
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "invalid syntax. Maybe you meant '==' or ':=' instead of '='?" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , 'invalid syntax. Maybe you meant '==' or ':=' instead of '='?' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(b,"invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12454,9 +12450,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_204_rule(false)
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "cannot assign to %s here. Maybe you meant '==' instead of '='?" , _PyPegen_get_expr_name ( a ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , 'cannot assign to %s here. Maybe you meant '==' instead of '='?' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(b,"cannot assign to %s here.Maybe you meant '==' instead of '='?",getExprName(a));
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12796,9 +12790,7 @@ public final class Parser extends AbstractParser {
                 (a = (Token)expect(25)) != null  // token='{'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "invalid syntax" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'invalid syntax' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"invalid syntax");
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12911,9 +12903,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(26)) != null  // token='}'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "dict unpacking cannot be used in dict comprehension" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'dict unpacking cannot be used in dict comprehension' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"dict unpacking cannot be used in dict comprehension");
                 cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -13367,9 +13357,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use double starred expression here" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use double starred expression here' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use double starred expression here");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13832,9 +13820,7 @@ public final class Parser extends AbstractParser {
                 (bitwise_or_var = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use a starred expression in a dictionary value' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use a starred expression in a dictionary value");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 return (Object)_res;
             }
@@ -13854,9 +13840,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_229_rule(true)
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression expected after dictionary key and ':'' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"expression expected after dictionary key and ':'");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 return (Object)_res;
             }
@@ -13916,9 +13900,7 @@ public final class Parser extends AbstractParser {
                 (bitwise_or_var = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use a starred expression in a dictionary value' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use a starred expression in a dictionary value");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13936,9 +13918,7 @@ public final class Parser extends AbstractParser {
                 (a = (Token)expect(11)) != null  // token=':'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'expression expected after dictionary key and ':'' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"expression expected after dictionary key and ':'");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }
