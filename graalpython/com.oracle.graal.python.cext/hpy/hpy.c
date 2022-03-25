@@ -1407,14 +1407,14 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
 	HPyContext *native_context = graal_native_context_get_hpy_context(full_native_context);
 
 #define COPY(__member) native_context->__member = managed_context->__member
-	COPY(name);
-	COPY(ctx_version);
-	COPY(h_None);
-	COPY(h_True);
-	COPY(h_False);
-	COPY(h_NotImplemented);
-	COPY(h_Ellipsis);
-	COPY(h_BaseException);
+    COPY(name);
+    COPY(ctx_version);
+    COPY(h_None);
+    COPY(h_True);
+    COPY(h_False);
+    COPY(h_NotImplemented);
+    COPY(h_Ellipsis);
+    COPY(h_BaseException);
     COPY(h_Exception);
     COPY(h_StopAsyncIteration);
     COPY(h_StopIteration);
