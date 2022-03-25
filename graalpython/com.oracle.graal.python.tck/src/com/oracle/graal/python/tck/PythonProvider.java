@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,7 +89,7 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor BOOL = BOOLEAN;
     private static final TypeDescriptor FLOAT = NUMBER;
     private static final TypeDescriptor COMPLEX = intersection(OBJECT);
-    private static final TypeDescriptor NONE = NULL;
+    private static final TypeDescriptor NONE = intersection(NULL, OBJECT);
     private static final TypeDescriptor STR = intersection(OBJECT, STRING, ITERABLE, array(STRING));
     private static final TypeDescriptor BYTES = intersection(OBJECT, ITERABLE, array(INT));
     private static final TypeDescriptor BYTEARRAY = intersection(OBJECT, ITERABLE, array(INT));
