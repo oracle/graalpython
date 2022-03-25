@@ -1,4 +1,4 @@
-from test.support import SUPPORTS_SYS_EXECUTABLE
+from hpy.test.support import SUPPORTS_SYS_EXECUTABLE
 import os
 import pytest
 
