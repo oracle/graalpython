@@ -45,7 +45,11 @@ ctx_TupleBuilder_New(HPyContext *ctx, HPy_ssize_t initial_size)
            HPyTupleBuilder_Build() will re-raise the MemoryError and so
            it's enough for the caller to check at that point. */
     }
+#ifdef GRAALVM_PYTHON_LLVM
+    return (HPyTupleBuilder){(void*)tup};
+#else
     return (HPyTupleBuilder){(HPy_ssize_t)tup};
+#endif
 }
 
 _HPy_HIDDEN void
