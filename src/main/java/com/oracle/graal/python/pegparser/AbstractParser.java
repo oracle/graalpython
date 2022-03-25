@@ -476,7 +476,9 @@ abstract class AbstractParser {
                 || e instanceof ExprTy.Subscript
                 || e instanceof ExprTy.Starred
                 || e instanceof ExprTy.Name
-                || e instanceof ExprTy.List) {
+                || e instanceof ExprTy.Tuple
+                || e instanceof ExprTy.List
+                || e instanceof ExprTy.Lambda) {
             return e.getClass().getSimpleName().toLowerCase();
         }
         if (e instanceof ExprTy.Call) {
@@ -492,10 +494,10 @@ abstract class AbstractParser {
         }
         if (e instanceof ExprTy.Yield
                 || e instanceof ExprTy.YieldFrom) {
-            return "yield expresssion";
+            return "yield expression";
         }
         if (e instanceof ExprTy.Await) {
-            return "await expresssion";
+            return "await expression";
         }
         if (e instanceof ExprTy.ListComp) {
             return "list comprehension";
@@ -777,10 +779,21 @@ abstract class AbstractParser {
     
     /**
      * RAISE_ERROR_KNOWN_LOCATION
+     * the first param is a token, where error begins
      */
     final SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
+        return null;
+    }
+    
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     * the first param is node, where error begins
+     */
+    final SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
         return null;
     }
 }

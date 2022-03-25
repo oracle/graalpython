@@ -1,4 +1,6 @@
 Module[0, 6]
     Assign[0, 6]
         LHS: Name[0, 1] Value: "l" Store
-        RHS: List[4, 6]
+        RHS: 
+            List[4, 6]
+                Values:

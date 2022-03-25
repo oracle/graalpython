@@ -12214,9 +12214,7 @@ public final class Parser extends AbstractParser {
                 ((_opt_var = (Object)_tmp_200_rule()) != null || true)  // [args | expression for_if_clauses]
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'Generator expression must be parenthesized' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"Generator expression must be parenthesized");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }
@@ -12260,9 +12258,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'Generator expression must be parenthesized' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"Generator expression must be parenthesized");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }
@@ -12400,9 +12396,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use assignment expressions with %s" , _PyPegen_get_expr_name ( a ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use assignment expressions with %s' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use assignment expressions with %s",getExprName(a));
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12494,9 +12488,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not %s) can be annotated" , _PyPegen_get_expr_name ( a ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'only single target (not %s) can be annotated' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"only single target(not %s)can be annotated",getExprName(a));
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12523,9 +12515,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not tuple) can be annotated" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'only single target (not tuple) can be annotated' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"only single target(not tuple)can be annotated");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12546,9 +12536,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "illegal target for annotation" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'illegal target for annotation' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"illegal target for annotation");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12592,9 +12580,7 @@ public final class Parser extends AbstractParser {
                 (_literal = (Token)expect(22)) != null  // token='='
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "assignment to yield expression not possible" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'assignment to yield expression not possible' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"assignment to yield expression not possible");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12615,9 +12601,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_208_var = (ExprTy)_tmp_208_rule()) != null  // yield_expr | star_expressions
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "'%s' is an illegal expression for augmented assignment" , _PyPegen_get_expr_name ( a ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , ''%s' is an illegal expression for augmented assignment' , _PyPegen_get_expr_name ( a ) ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"'%s' is an illegal expression for augmented assignment",getExprName(a));
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12828,9 +12812,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "iterable unpacking cannot be used in comprehension" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'iterable unpacking cannot be used in comprehension' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"iterable unpacking cannot be used in comprehension");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -12857,9 +12839,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "did you forget parentheses around the comprehension target?" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'did you forget parentheses around the comprehension target?' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"did you forget parentheses around the comprehension target?");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -13331,9 +13311,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use starred expression here" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'cannot use starred expression here' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use starred expression here");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13518,9 +13496,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "exception group must be parenthesized" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , 'exception group must be parenthesized' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorKnownLocation(a,"exception group must be parenthesized");
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
                 return (Object)_res;
             }

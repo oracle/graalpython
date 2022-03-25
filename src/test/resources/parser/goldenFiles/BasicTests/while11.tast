@@ -3,16 +3,18 @@ Module[0, 147]
         LHS: Name[0, 5] Value: "iters" Store
         RHS: LONG[8, 9] Value: 0
     While[10, 147]
-        Condition: Compare[16, 26]
-            LHS: Name[16, 21] Value: "iters"
-            Op: LT
-            RHS: LONG[24, 26] Value: 40
+        Condition: 
+            Compare[16, 26]
+                LHS: Name[16, 21] Value: "iters"
+                Op: LT
+                RHS: LONG[24, 26] Value: 40
         Body:
             While[32, 147]
-                Condition: Compare[38, 48]
-                    LHS: Name[38, 43] Value: "iters"
-                    Op: LT
-                    RHS: LONG[46, 48] Value: 10
+                Condition: 
+                    Compare[38, 48]
+                        LHS: Name[38, 43] Value: "iters"
+                        Op: LT
+                        RHS: LONG[46, 48] Value: 10
                 Body:
                     If[58, 85]
                         Test: BOOLEAN[61, 66] Value: false

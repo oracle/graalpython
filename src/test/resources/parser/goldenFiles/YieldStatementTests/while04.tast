@@ -9,10 +9,11 @@ Module[0, 81]
             Condition: Name[21, 22] Value: "x"
             Body:
                 If[29, 55]
-                    Test: Compare[32, 38]
-                        LHS: Name[32, 33] Value: "x"
-                        Op: EQ
-                        RHS: LONG[37, 38] Value: 1
+                    Test: 
+                        Compare[32, 38]
+                            LHS: Name[32, 33] Value: "x"
+                            Op: EQ
+                            RHS: LONG[37, 38] Value: 1
                     Then:
                         Yield[47, 55]
                             UnaryOp[53, 55]

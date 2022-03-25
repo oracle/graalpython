@@ -3,12 +3,14 @@ Module[0, 47]
         Name:avg
         ---- Function body of avg ----
         Assert[15, 47]
-            Test: Compare[22, 30]
-                LHS: Name[22, 25] Value: "len"
-                Op: NOTEQ
-                RHS: LONG[29, 30] Value: 0
-            Msg: Call[32, 47]
-                Target: Name[32, 42] Value: "getMessage"
-                Args:
-                    Name[43, 46] Value: "len"
+            Test: 
+                Compare[22, 30]
+                    LHS: Name[22, 25] Value: "len"
+                    Op: NOTEQ
+                    RHS: LONG[29, 30] Value: 0
+            Msg: 
+                Call[32, 47]
+                    Target: Name[32, 42] Value: "getMessage"
+                    Args:
+                        Name[43, 46] Value: "len"
         ---- End of avg function ----

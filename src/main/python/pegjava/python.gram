@@ -810,10 +810,10 @@ t_atom[expr_ty]:
 invalid_arguments:
     | args ',' '*' { this.raiseSyntaxError("iterable argument unpacking follows keyword argument unpacking") }
     | a=expression for_if_clauses ',' [args | expression for_if_clauses] {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "Generator expression must be parenthesized") }
+        this.raiseSyntaxErrorKnownLocation(a, "Generator expression must be parenthesized") }
     | a=args for_if_clauses { _PyPegen_nonparen_genexp_in_call(p, a) }
     | args ',' a=expression for_if_clauses {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "Generator expression must be parenthesized") }
+        this.raiseSyntaxErrorKnownLocation(a, "Generator expression must be parenthesized") }
     | a=args ',' args { _PyPegen_arguments_parsing_error(p, a) }
 invalid_kwarg:
     | expression a='=' {
@@ -828,8 +828,8 @@ invalid_expression:
 
 invalid_named_expression:
     | a=expression ':=' expression {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(
-            a, "cannot use assignment expressions with %s", _PyPegen_get_expr_name(a)) }
+        this.raiseSyntaxErrorKnownLocation(
+            a, "cannot use assignment expressions with %s", getExprName(a)) }
     | a=NAME b='=' bitwise_or !('='|':='|',') {
         this.raiseSyntaxErrorKnownLocation(b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?") }
     | !(list|tuple|genexp|'True'|'None'|'False') a=bitwise_or b='=' bitwise_or !('='|':='|',') {
@@ -838,23 +838,23 @@ invalid_named_expression:
 
 invalid_assignment:
     | a=invalid_ann_assign_target ':' expression {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(
+        this.raiseSyntaxErrorKnownLocation(
             a,
             "only single target (not %s) can be annotated",
-            _PyPegen_get_expr_name(a)
+            getExprName(a)
         )}
     | a=star_named_expression ',' star_named_expressions* ':' expression {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "only single target (not tuple) can be annotated") }
+        this.raiseSyntaxErrorKnownLocation(a, "only single target (not tuple) can be annotated") }
     | a=expression ':' expression {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "illegal target for annotation") }
+        this.raiseSyntaxErrorKnownLocation(a, "illegal target for annotation") }
     | (star_targets '=')* a=star_expressions '=' {
         RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
-    | (star_targets '=')* a=yield_expr '=' { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "assignment to yield expression not possible") }
+    | (star_targets '=')* a=yield_expr '=' { this.raiseSyntaxErrorKnownLocation(a, "assignment to yield expression not possible") }
     | a=star_expressions augassign (yield_expr | star_expressions) {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(
+        this.raiseSyntaxErrorKnownLocation(
             a,
             "'%s' is an illegal expression for augmented assignment",
-            _PyPegen_get_expr_name(a)
+            getExprName(a)
         )}
 invalid_ann_assign_target[expr_ty]:
     | list
@@ -869,9 +869,9 @@ invalid_primary:
     | primary a='{' { this.raiseSyntaxErrorKnownLocation(a, "invalid syntax") }
 invalid_comprehension:
     | ('[' | '(' | '{') a=starred_expression for_if_clauses {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "iterable unpacking cannot be used in comprehension") }
+        this.raiseSyntaxErrorKnownLocation(a, "iterable unpacking cannot be used in comprehension") }
     | ('[' | '{') a=star_named_expression ',' [star_named_expressions] for_if_clauses {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "did you forget parentheses around the comprehension target?") }
+        this.raiseSyntaxErrorKnownLocation(a, "did you forget parentheses around the comprehension target?") }
 invalid_dict_comprehension:
     | '{' a='**' bitwise_or for_if_clauses '}' {
         this.raiseSyntaxErrorKnownLocation(a, "dict unpacking cannot be used in dict comprehension") }
@@ -905,7 +905,7 @@ invalid_for_target:
 
 invalid_group:
     | '(' a=starred_expression ')' {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use starred expression here") }
+        this.raiseSyntaxErrorKnownLocation(a, "cannot use starred expression here") }
     | '(' a='**' expression ')' {
         this.raiseSyntaxErrorKnownLocation(a, "cannot use double starred expression here") }
 invalid_import_from_targets:
@@ -918,7 +918,7 @@ invalid_with_stmt:
 
 invalid_except_block:
     | 'except' a=expression ',' expressions ['as' NAME ] ':' {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "exception group must be parenthesized") }
+        this.raiseSyntaxErrorKnownLocation(a, "exception group must be parenthesized") }
     | 'except' expression ['as' NAME ] &&':'
     | 'except' &&':'
 

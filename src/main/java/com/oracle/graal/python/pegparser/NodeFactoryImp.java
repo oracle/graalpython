@@ -359,12 +359,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Tuple(values, context, startOffset, endOffset);
+        return new ExprTy.Tuple(values != null ? values : new ExprTy[0], context, startOffset, endOffset);
     }
 
     @Override
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.List(values, context, startOffset, endOffset);
+        return new ExprTy.List(values != null ? values : new ExprTy[0] , context, startOffset, endOffset);
     }
 
     @Override
