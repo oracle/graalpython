@@ -27,8 +27,10 @@ import functools
 import re
 from pathlib import Path
 from distutils import log
+from distutils.ccompiler import new_compiler
 from distutils.command.build import build
 from distutils.errors import DistutilsError
+from distutils import sysconfig
 from setuptools.command import bdist_egg as bdist_egg_mod
 from setuptools.command.build_ext import build_ext
 
@@ -48,6 +50,7 @@ class HPyDevel:
         self.base_dir = Path(base_dir)
         self.include_dir = self.base_dir.joinpath('include')
         self.src_dir = self.base_dir.joinpath('src', 'runtime')
+        self._ctx_lib = None
 
     def get_extra_include_dirs(self):
         """ Extra include directories needed by extensions in both CPython and
@@ -71,6 +74,56 @@ class HPyDevel:
         """ Extra sources needed only in the CPython ABI mode.
         """
         return list(map(str, self.src_dir.glob('ctx_*.c')))
+
+    def get_ctx_lib(self):
+        ctx_lib = self._ctx_lib
+        if not ctx_lib:
+            workdir = os.path.join(sysconfig.get_python_lib(plat_specific=1, standard_lib=1), "hpy.devel")
+            lib_name = "cpy_abi"
+            sources = self.get_ctx_sources()
+            ctx_lib = HPyDevel._compile_ctx_sources(sources, lib_name, workdir)
+            self._ctx_lib = ctx_lib
+        return ctx_lib
+
+    @staticmethod
+    def _compile_ctx_sources(sources, lib_name, output_dir):
+        """ Compiles the sources 'get_ctx_sources' and creates a static library.
+        """
+        c = new_compiler()
+        # the compiler needs to be "customized" such that it uses the right flags etc.
+        sysconfig.customize_compiler(c)
+        ctx_lib = c.library_filename(lib_name, output_dir=output_dir)
+        if HPyDevel._ctx_lib_needsBuild(sources, ctx_lib):
+            # Create compiler with default options
+            py_include = sysconfig.get_python_inc()
+            include_dirs = [py_include]
+            plat_py_include = sysconfig.get_python_inc(plat_specific=1)
+            if plat_py_include != py_include:
+                include_dirs.append(plat_py_include)
+            objects = c.compile(sources, output_dir=output_dir, include_dirs=include_dirs)
+            c.create_static_lib(objects, lib_name, output_dir=output_dir)
+        return ctx_lib
+
+    @staticmethod
+    def _ctx_lib_needsBuild(sources, ctx_lib):
+        return True
+        if not os.path.exists(ctx_lib):
+            log.debug("Building %s (did not exist)", ctx_lib)
+            return True
+        # Compare timestamps; if any sources is newer than 'ctx_lib' -> rebuild
+        ts_newest_source = 0
+        newest_source_file = None
+        for f in sources:
+            ts = os.path.getmtime(f)
+            if ts_newest_source < ts:
+                ts_newest_source = ts
+                newest_source_file = f
+        ts_lib = os.path.getmtime(ctx_lib)
+        if ts_lib < ts_newest_source:
+            log.debug("Rebuild needed for %s (%s newer than %s)", ctx_lib, newest_source_file, ts_lib)
+            return True
+        log.debug("%s is up-to-date", ctx_lib)
+        return False
 
     def fix_distribution(self, dist):
         """ Override build_ext to support hpy modules.
@@ -244,7 +297,8 @@ class build_hpy_ext_mixin:
         ext.sources += self.hpydevel.get_extra_sources()
         ext.define_macros.append(('HPY', None))
         if ext.hpy_abi == 'cpython':
-            ext.sources += self.hpydevel.get_ctx_sources()
+            # ext.sources += self.hpydevel.get_ctx_sources()
+            ext.extra_objects.append(self.hpydevel.get_ctx_lib())
             ext._hpy_needs_stub = False
         elif ext.hpy_abi == 'universal':
             ext.define_macros.append(('HPY_UNIVERSAL_ABI', None))
