@@ -2883,16 +2883,27 @@ public abstract class GraalHPyContextFunctions {
                 } else if (hpyFieldObject instanceof GraalHPyHandle) {
                     // avoid `asPointer` message dispatch
                     idx = ((GraalHPyHandle) hpyFieldObject).getFieldId();
-                } else { // in case of transition to native
-                    idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                } else {
+                    if (hpyFieldObject instanceof Long) {
+                        // branch profile in lib.asPointer
+                        try {
+                            idx = PInt.intValueExact((Long) hpyFieldObject);
+                        } catch (OverflowException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    } else {
+                        try {
+                            idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                        } catch (InteropException | OverflowException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
                 }
                 // TODO: (tfel) do not actually allocate the index / free the existing one when
                 // value can be stored as tagged handle
                 idx = assign(owner, referent, idx);
                 callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, context.createField(referent, idx));
                 return 0;
-            } catch (InteropException | OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.release(mustRelease);
             }
@@ -2945,17 +2956,27 @@ public abstract class GraalHPyContextFunctions {
                 if (hpyFieldObject instanceof GraalHPyHandle) { // avoid `asPointer` message
                                                                // dispatch
                     referent = ((GraalHPyHandle) hpyFieldObject).getDelegate();
-                } else { // in case of transition to native
-                    try {
-                        int idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
-                        Object owner = asPythonObjectNode.execute(context, arguments[1]);
-                        if (owner instanceof PythonObject) {
-                            referent = ((PythonObject) owner).getHpyFields()[idx - 1];
-                        } else {
-                            throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
+                } else {
+                    int idx;
+                    if (hpyFieldObject instanceof Long) {
+                        // branch profile in lib.asPointer
+                        try {
+                            idx = PInt.intValueExact((Long) hpyFieldObject);
+                        } catch (OverflowException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
                         }
-                    } catch (InteropException | OverflowException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
+                    } else {
+                        try {
+                            idx = PInt.intValueExact(lib.asPointer(hpyFieldObject));
+                        } catch (InteropException | OverflowException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
+                    Object owner = asPythonObjectNode.execute(context, arguments[1]);
+                    if (owner instanceof PythonObject) {
+                        referent = ((PythonObject) owner).getHpyFields()[idx - 1];
+                    } else {
+                        throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
                     }
                 }
                 return asHandleNode.execute(context, referent);
