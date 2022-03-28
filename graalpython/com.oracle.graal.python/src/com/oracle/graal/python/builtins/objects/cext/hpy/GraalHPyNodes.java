@@ -2352,6 +2352,7 @@ public class GraalHPyNodes {
                 case HPyFunc_getattrfunc:
                 case HPyFunc_getattrofunc:
                 case HPyFunc_ssizeargfunc:
+                case HPyFunc_traverseproc:
                     return JNIFunctionSignature.PRIMITIVE3;
                 case HPyFunc_varargs:
                 case HPyFunc_ternaryfunc:
@@ -2386,6 +2387,8 @@ public class GraalHPyNodes {
                     return JNIFunctionSignature.RELEASEBUFFERPROC;
                 case HPyFunc_destroyfunc:
                     return JNIFunctionSignature.DESTROYFUNC;
+                case HPyFunc_destructor:
+                    return JNIFunctionSignature.DESTRUCTOR;
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

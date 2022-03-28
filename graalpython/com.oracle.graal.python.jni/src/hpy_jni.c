@@ -557,7 +557,10 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 	((void (*)(jlong, jlong, jlong)) target)(arg1, arg2, arg3);
 }
 
-
 JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeRichcomparefunc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jint arg4) {
 	return ((jlong (*)(jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4);
+}
+
+JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeDestructor(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2) {
+	((void (*)(jlong, jlong)) target)(arg1, arg2);
 }

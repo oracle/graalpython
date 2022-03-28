@@ -1320,6 +1320,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public static native long executeRichcomparefunc(long target, long arg1, long arg2, long arg3, int arg4);
 
     @TruffleBoundary
+    public static native void executeDestructor(long target, long arg1, long arg2);
+
+    @TruffleBoundary
     private static native int initJNI(GraalHPyContext context, long nativePointer);
 
     public enum Counter {
