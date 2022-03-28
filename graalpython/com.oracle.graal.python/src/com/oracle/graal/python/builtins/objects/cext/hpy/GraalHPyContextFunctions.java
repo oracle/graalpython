@@ -1063,7 +1063,7 @@ public abstract class GraalHPyContextFunctions {
                     throw CompilerDirectives.shouldNotReachHere();
                 } catch (PException p) {
                     transformExceptionToNativeNode.execute(context, p);
-                    return 0;
+                    return 0L;
                 }
             } finally {
                 gil.release(mustRelease);
