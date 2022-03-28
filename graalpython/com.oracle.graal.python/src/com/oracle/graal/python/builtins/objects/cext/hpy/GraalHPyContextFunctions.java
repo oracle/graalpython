@@ -1119,7 +1119,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached RecursiveExceptionMatches exceptionMatches) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            Object err = getThreadStateNode.getCurrentException(context.getContext());
+            PException err = getThreadStateNode.getCurrentException(context.getContext());
             if (err == null) {
                 return 0;
             }
@@ -1127,7 +1127,7 @@ public abstract class GraalHPyContextFunctions {
             if (exc == NULL_HANDLE_DELEGATE) {
                 return 0;
             }
-            return exceptionMatches.execute(context, err, exc);
+            return exceptionMatches.execute(context, err.getUnreifiedException(), exc);
         }
     }
 
