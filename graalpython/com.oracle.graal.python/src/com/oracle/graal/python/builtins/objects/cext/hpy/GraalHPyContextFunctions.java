@@ -1593,11 +1593,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGetAttr extends GraalHPyContextFunction {
+    static final class GraalHPyGetAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        public GraalHPyGetAttr(FunctionMode mode) {
+        GraalHPyGetAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1676,11 +1676,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyHasAttr extends GraalHPyContextFunction {
+    static final class GraalHPyHasAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        public GraalHPyHasAttr(FunctionMode mode) {
+        GraalHPyHasAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1723,11 +1723,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySetAttr extends GraalHPyContextFunction {
+    static final class GraalHPySetAttr extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        public GraalHPySetAttr(FunctionMode mode) {
+        GraalHPySetAttr(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR);
             this.mode = mode;
         }
@@ -1789,11 +1789,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyGetItem extends GraalHPyContextFunction {
+    static final class GraalHPyGetItem extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        public GraalHPyGetItem(FunctionMode mode) {
+        GraalHPyGetItem(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR, INT32);
             this.mode = mode;
         }
@@ -1842,11 +1842,11 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPySetItem extends GraalHPyContextFunction {
+    static final class GraalHPySetItem extends GraalHPyContextFunction {
 
         private final FunctionMode mode;
 
-        public GraalHPySetItem(FunctionMode mode) {
+        GraalHPySetItem(FunctionMode mode) {
             checkMode(mode, OBJECT, CHAR_PTR, INT32);
             this.mode = mode;
         }
@@ -2048,7 +2048,7 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
+    static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
 
         private final String key;
         private final int nPythonArguments;
@@ -2056,11 +2056,11 @@ public abstract class GraalHPyContextFunctions {
 
         private ConversionNodeSupplier toNativeNodeSupplier;
 
-        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments) {
+        GraalHPyCallBuiltinFunction(String key, int nPythonArguments) {
             this(key, nPythonArguments, ReturnType.OBJECT, null);
         }
 
-        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments, ReturnType returnType, ConversionNodeSupplier toNativeNodeSupplier) {
+        GraalHPyCallBuiltinFunction(String key, int nPythonArguments, ReturnType returnType, ConversionNodeSupplier toNativeNodeSupplier) {
             this.key = key;
             assert nPythonArguments >= 0 : "number of arguments cannot be negative";
             this.nPythonArguments = nPythonArguments;
