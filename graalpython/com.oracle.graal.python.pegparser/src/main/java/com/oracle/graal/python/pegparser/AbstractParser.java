@@ -406,10 +406,10 @@ abstract class AbstractParser {
      * _PyPegen_seq_insert_in_front
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] insertInFront(T element, T[] seq) {
+    public <T> T[] insertInFront(T element, T[] seq, Class<T> clazz) {
         T[] result;
         if (seq == null) {
-            result = (T[]) Array.newInstance(element.getClass(), 1);
+            result = (T[]) Array.newInstance(clazz, 1);
         } else {
             result = Arrays.copyOf(seq, seq.length + 1);
             System.arraycopy(seq, 0, result, 1, seq.length);
@@ -418,14 +418,18 @@ abstract class AbstractParser {
         return result;
     }
 
+    public ExprTy[] insertInFront(ExprTy element, ExprTy[] seq) {
+        return insertInFront(element, seq, ExprTy.class);
+    }
+
     /**
      * _PyPegen_seq_append_to_end
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] appendToEnd(T[] seq, T element) {
+    public <T> T[] appendToEnd(T[] seq, T element, Class<T> clazz) {
         T[] result;
         if (seq == null) {
-            result = (T[]) Array.newInstance(element.getClass(), 1);
+            result = (T[]) Array.newInstance(clazz, 1);
             result[0] = element;
         } else {
             result = Arrays.copyOf(seq, seq.length + 1);
@@ -435,14 +439,8 @@ abstract class AbstractParser {
         return result;
     }
 
-    /**
-     * _PyPegen_singleton_seq
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T[] singletonSequence(T element) {
-        T[] result = (T[]) Array.newInstance(element.getClass(), 1);
-        result[0] = element;
-        return result;
+    public ExprTy[] appendToEnd(ExprTy[] seq, ExprTy element) {
+        return appendToEnd(seq, element, ExprTy.class);
     }
 
     /**

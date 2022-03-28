@@ -866,9 +866,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if len(self.local_variable_names) > 1:
             if is_gather:
                 assert len(self.local_variable_names) == 2
+                element_type = _check_type(self, node.items[0].type)
                 self.print(
                     f"_res = insertInFront("
-                    f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
+                    f"{self.local_variable_names[0]}, {self.local_variable_names[1]}, {element_type}.class);"
                 )
             else:
                 self.printDebug(

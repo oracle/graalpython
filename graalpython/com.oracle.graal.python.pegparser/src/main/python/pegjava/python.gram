@@ -103,9 +103,9 @@ type_expressions[asdl_expr_seq*]:
     | a=','.expression+ ',' '*' b=expression { this.appendToEnd(a, b) }
     | a=','.expression+ ',' '**' b=expression { this.appendToEnd(a, b) }
     | '*' a=expression ',' '**' b=expression {
-        this.appendToEnd(this.singletonSequence(a), b) }
-    | '*' a=expression { this.singletonSequence(a) }
-    | '**' a=expression { this.singletonSequence(a) }
+        this.appendToEnd(new ExprTy[] {a}, b) }
+    | '*' a=expression { new ExprTy[] {a} }
+    | '**' a=expression { new ExprTy[] {a} }
     | a[asdl_expr_seq*]=','.expression+ {a}
 
 statements[asdl_stmt_seq*]: a=statement+ { a }
@@ -113,13 +113,13 @@ statement[asdl_stmt_seq*]:
     | a=compound_stmt { new StmtTy[]{a} }
     | a[asdl_stmt_seq*]=simple_stmts { a }
 statement_newline[asdl_stmt_seq*]:
-    | a=compound_stmt NEWLINE { this.singletonSequence(a) }
+    | a=compound_stmt NEWLINE { new StmtTy[] {a} }
     | simple_stmts
-    | NEWLINE { this.singletonSequence(factory.createPass(startToken.startOffset, endToken.endOffset)) }
+    | NEWLINE { new StmtTy[] {factory.createPass(startToken.startOffset, endToken.endOffset)} }
     | ENDMARKER { _PyPegen_interactive_exit(p) }
 simple_stmts[asdl_stmt_seq*]:
     | a=simple_stmt !';' NEWLINE {
-            this.singletonSequence(a); } # Not needed, there for speedup
+            new StmtTy[] {a}; } # Not needed, there for speedup
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -203,7 +203,7 @@ import_from[stmt_ty]:
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { this.singletonSequence(factory.createAlias("*", null, startToken.startOffset, endToken.endOffset)) }
+    | '*' { new AliasTy[] {factory.createAlias("*", null, startToken.startOffset, endToken.endOffset)} }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
@@ -223,12 +223,12 @@ dotted_name[expr_ty]:
 
 if_stmt[stmt_ty]:
     | 'if' a=named_expression ':' b=block c=elif_stmt {
-        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+        factory.createIf(a, b, new StmtTy[] {c}, startToken.startOffset, endToken.endOffset) }
     | 'if' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_if_stmt
 elif_stmt[stmt_ty]:
     | 'elif' a=named_expression ':' b=block c=elif_stmt {
-        factory.createIf(a, b, this.singletonSequence(c), startToken.startOffset, endToken.endOffset) }
+        factory.createIf(a, b, new StmtTy[] {c}, startToken.startOffset, endToken.endOffset) }
     | 'elif' a=named_expression ':' b=block c=[else_block] { factory.createIf(a, b, c, startToken.startOffset, endToken.endOffset) }
     | invalid_elif_stmt
 else_block[asdl_stmt_seq*]: 'else' &&':' b=block { b }
@@ -342,7 +342,7 @@ sequence_pattern[expr_ty]:
     | '(' values=open_sequence_pattern? ')' { _PyAST_Tuple(values, Load, EXTRA) }
 open_sequence_pattern[asdl_seq*]:
     | value=maybe_star_pattern ',' values=maybe_sequence_pattern? {
-        this.insertInFront(value, (SSTNode[])values) }
+        this.insertInFront(value, values) }
 maybe_sequence_pattern[asdl_seq*]:
     | values=','.maybe_star_pattern+ ','? { values }
 maybe_star_pattern[expr_ty]:
@@ -487,7 +487,7 @@ block[asdl_stmt_seq*] (memo):
 star_expressions[expr_ty]:
     | a=star_expression b=(',' c=star_expression { c })+ [','] {
         factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
-    | a=star_expression ',' { factory.createTuple(this.singletonSequence(a), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
+    | a=star_expression ',' { factory.createTuple(new ExprTy[] {a}, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | star_expression
 star_expression[expr_ty] (memo):
     | '*' a=bitwise_or { factory.createStarred(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
@@ -512,7 +512,7 @@ annotated_rhs[expr_ty]: yield_expr | star_expressions
 expressions[expr_ty]:
     | a=expression b=(',' c=expression { c })+ [','] {
         _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
-    | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
+    | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, new ExprTy[] {a}), Load, EXTRA) }
     | expression
 expression[expr_ty] (memo):
     | invalid_expression
@@ -649,7 +649,7 @@ await_primary[expr_ty] (memo):
 primary[expr_ty]:
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
     | a=primary '.' b=NAME { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
-    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
+    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, new ExprTy[] {b}), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
@@ -750,7 +750,7 @@ star_targets[expr_ty]:
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { this.insertInFront(a, b) }
-    | a=star_target ',' { this.singletonSequence(a) }
+    | a=star_target ',' { new ExprTy[] {a} }
 star_target[expr_ty] (memo):
     | '*' a=(!'*' star_target) {
         factory.createStarred(this.setExprContext(a, ExprContext.Store), ExprContext.Store, startToken.startOffset, endToken.endOffset)}
@@ -793,7 +793,7 @@ t_primary[expr_ty]:
     | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=t_primary b=genexp &t_lookahead {
-        _PyAST_Call(a, CHECK(asdl_expr_seq*, (ExprTy[])this.singletonSequence(b)), NULL, EXTRA) }
+        _PyAST_Call(a, CHECK(asdl_expr_seq*, new ExprTy[] {b}), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
             factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) 
         }
@@ -879,13 +879,13 @@ invalid_parameters:
     | param_no_default* invalid_parameters_helper param_no_default {
         this.raiseSyntaxError("non-default argument follows default argument") }
 invalid_parameters_helper: # This is only there to avoid type errors
-    | a=slash_with_default { this.singletonSequence(a) }
+    | a=slash_with_default { new SlashWithDefault[] {a} }
     | param_with_default+
 invalid_lambda_parameters:
     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default {
         this.raiseSyntaxError("non-default argument follows default argument") }
 invalid_lambda_parameters_helper:
-    | a=lambda_slash_with_default { this.singletonSequence(a) }
+    | a=lambda_slash_with_default { new SlashWithDefault[] {a} }
     | lambda_param_with_default+
 invalid_star_etc:
     | '*' (')' | ',' (')' | '**')) { this.raiseSyntaxError("named arguments must follow bare *") }
