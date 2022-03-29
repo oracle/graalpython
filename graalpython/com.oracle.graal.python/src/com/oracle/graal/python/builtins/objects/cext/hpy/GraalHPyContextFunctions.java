@@ -212,6 +212,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 
 @SuppressWarnings("static-method")
 public abstract class GraalHPyContextFunctions {
@@ -1217,14 +1220,13 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
-            Charset encoding = charset != null ? charset : CharsetMapping.getCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
                 try {
-                    byte[] result = encodeNativeStringNode.execute(encoding, unicodeObject, CodecsModuleBuiltins.STRICT);
+                    byte[] result = encodeNativeStringNode.execute(charset, unicodeObject, CodecsModuleBuiltins.STRICT);
                     return resultAsHandleNode.execute(context, factory.createBytes(result));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
@@ -1249,7 +1251,7 @@ public abstract class GraalHPyContextFunctions {
 
         @TruffleBoundary
         public static GraalHPyUnicodeAsCharsetString asFSDefault() {
-            return new GraalHPyUnicodeAsCharsetString(null);
+            return new GraalHPyUnicodeAsCharsetString(CharsetMapping.getCharset(GetFileSystemEncodingNode.getFileSystemEncoding()));
         }
     }
 
@@ -1379,14 +1381,6 @@ public abstract class GraalHPyContextFunctions {
         public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
             return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
         }
-
-        public static GraalHPyUnicodeDecodeCharset decodeASCII() {
-            return new GraalHPyUnicodeDecodeCharset("ASCII");
-        }
-
-        public static GraalHPyUnicodeDecodeCharset decodeLatin1() {
-            return new GraalHPyUnicodeDecodeCharset("ISO-8859-1");
-        }
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -1428,6 +1422,76 @@ public abstract class GraalHPyContextFunctions {
 
         public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
             return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeDecodeCharsetAndSizeAndErrors extends GraalHPyContextFunction {
+
+        private final String charset;
+
+        public GraalHPyUnicodeDecodeCharsetAndSizeAndErrors(String charset) {
+            this.charset = charset;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PCallHPyFunction callHPyFunction,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached HPyRaiseNode raiseNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 4);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object charPtr = arguments[1];
+                long size = castToJavaLongNode.execute(arguments[2]);
+                if (!interopLib.hasArrayElements(charPtr)) {
+                    charPtr = callHPyFunction.call(context, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, size);
+                }
+                byte[] bytes;
+                try {
+                    bytes = getByteArrayNode.execute(charPtr, size);
+                } catch (OverflowException | InteropException ex) {
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
+                String errors = castToJavaStringNode.execute(callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[3], "ascii"));
+                CodingErrorAction errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors);
+                String result = decode(errorAction, bytes);
+                if (result == null) {
+                    // TODO: refactor helper nodes for CodecsModuleBuiltins to use them here
+                    return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, PythonBuiltinClassType.UnicodeDecodeError, ErrorMessages.MALFORMED_INPUT);
+                } else {
+                    return asHandleNode.execute(context, result);
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        public static GraalHPyUnicodeDecodeCharsetAndSizeAndErrors decodeASCII() {
+            return new GraalHPyUnicodeDecodeCharsetAndSizeAndErrors("ASCII");
+        }
+
+        public static GraalHPyUnicodeDecodeCharsetAndSizeAndErrors decodeLatin1() {
+            return new GraalHPyUnicodeDecodeCharsetAndSizeAndErrors("ISO-8859-1");
+        }
+
+        @TruffleBoundary
+        private String decode(CodingErrorAction errorAction, byte[] bytes) {
+            try {
+                return CharsetMapping.getCharset(charset).newDecoder()
+                        .onMalformedInput(errorAction)
+                        .onUnmappableCharacter(errorAction)
+                        .decode(ByteBuffer.wrap(bytes)).toString();
+            } catch (CharacterCodingException ex) {
+                return null;
+            }
         }
     }
 

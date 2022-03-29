@@ -142,7 +142,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public static final String SURROGATEESCAPE = "surrogateescape";
     public static final String SURROGATEPASS = "surrogatepass";
 
-    static CodingErrorAction convertCodingErrorAction(String errors) {
+    public static CodingErrorAction convertCodingErrorAction(String errors) {
         CodingErrorAction errorAction;
         switch (errors) {
             // TODO: see [GR-10256] to implement the correct handling mechanics
