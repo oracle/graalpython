@@ -403,7 +403,7 @@ class PythonSubprocessRunner:
         if 'PYTHONPATH' in env:
             pythonpath.append(env['PYTHONPATH'])
         env["PYTHONPATH"] = os.pathsep.join(pythonpath)
-        if self.hpy_abi in ['universal', 'debug']:
+        if self.hpy_abi in ['universal', 'debug', 'nfi']:
             # HPy module
             load_module = "import sys;" + \
                           "import hpy.universal;" + \
