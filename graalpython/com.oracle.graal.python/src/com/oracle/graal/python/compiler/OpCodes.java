@@ -42,131 +42,114 @@ package com.oracle.graal.python.compiler;
 
 import com.oracle.graal.python.annotations.GenerateEnumConstants;
 
-class Constants {
-    static final int CALL_EFFECT = 0xcaffee00;
-    static final int CALL_METHOD_EFFECT = 0xcaffee01;
-    static final int UNPACK_EFFECT = 0xcaffee02;
-    static final int UNPACK_EX_EFFECT = 0xcaffee03;
-    static final int POP_EFFECT = 0xcaffee04;
-    static final int REDUCE_EFFECT = 0xcaffee05;
-    static final int POP_OR_JUMP_EFFECT = 0xcaffee06;
-    static final int FOR_ITER_EFFECT = 0xcaffee07;
-    static final int POP_EFFECT5 = 0xcaffee08;
-    static final int REDUCE_EFFECT5 = 0xcaffee09;
-    static final int POP_COLLECTION_ITEM_EFFECT = 0xcaffee0a;
-    static final int POP_BITCOUNT_EFFECT = 0xcaffee0b;
-}
-
 @GenerateEnumConstants
 public enum OpCodes {
-    POP_TOP(                   0,   -1),
-    ROT_TWO(                   0,    0),
-    ROT_THREE(                 0,    0),
-    DUP_TOP(                   0,    1),
-    DUP_TOP_TWO(               0,    2),
-    ROT_FOUR(                  0,    0),
-    NOP(                      -1,    0),
-    UNARY_OP(                  1,    0),
-    BINARY_OP(                 1,   -1),
-    BINARY_SUBSCR(             0,   -1),
-    STORE_SUBSCR(              0,   -3),
-    DELETE_SUBSCR(             0,   -2),
-    GET_ITER(                  0,    0),
-    LOAD_BUILD_CLASS(          0,    1),
-    LOAD_ASSERTION_ERROR(      0,    1),
-    RETURN_VALUE(              0,   -1),
-    STORE_NAME(                1,   -1),
-    DELETE_NAME(               1,    0),
-    STORE_ATTR(                1,   -2),
-    DELETE_ATTR(               1,   -1),
-    STORE_GLOBAL(              1,   -1),
-    DELETE_GLOBAL(             1,    0),
-    ROT_N(                     1,    0),
-    LOAD_CONST(                1,    1),
-    LOAD_NAME(                 1,    1),
-    LOAD_ATTR(                 1,    0),
-    LOAD_GLOBAL(               1,    1),
-    LOAD_FAST(                 1,    1),
-    STORE_FAST(                1,   -1),
-    DELETE_FAST(               1,    0),
-    RAISE_VARARGS(             1,    Constants.POP_EFFECT),
-    LOAD_DEREF(                1,    1),
-    STORE_DEREF(               1,   -1),
-    DELETE_DEREF(              1,    0),
-    LOAD_CLASSDEREF(           1,    1),
-    BUILD_SLICE(               1,    Constants.REDUCE_EFFECT),
+    POP_TOP(                   0, 1, 0),
+    ROT_TWO(                   0, 2, 2),
+    ROT_THREE(                 0, 3, 3),
+    DUP_TOP(                   0, 1, 2),
+    ROT_FOUR(                  0, 4, 4),
+    NOP(                       0, 0, 0),
+    UNARY_OP(                  1, 1, 1),
+    BINARY_OP(                 1, 2, 1),
+    BINARY_SUBSCR(             0, 2, 1),
+    STORE_SUBSCR(              0, 3, 0),
+    DELETE_SUBSCR(             0, 2, 0),
+    GET_ITER(                  0, 1, 1),
+    LOAD_BUILD_CLASS(          0, 0, 1),
+    LOAD_ASSERTION_ERROR(      0, 0, 1),
+    RETURN_VALUE(              0, 1, 0),
+    STORE_NAME(                1, 1, 0),
+    DELETE_NAME(               1, 0, 0),
+    STORE_ATTR(                1, 2, 0),
+    DELETE_ATTR(               1, 1, 0),
+    STORE_GLOBAL(              1, 1, 0),
+    DELETE_GLOBAL(             1, 0, 0),
+    LOAD_CONST(                1, 0, 1),
+    LOAD_NAME(                 1, 0, 1),
+    LOAD_ATTR(                 1, 1, 1),
+    LOAD_GLOBAL(               1, 0, 1),
+    LOAD_FAST(                 1, 0, 1),
+    STORE_FAST(                1, 1, 0),
+    DELETE_FAST(               1, 0, 0),
+    RAISE_VARARGS(             1, (oparg, withJump) -> oparg, 0),
+    LOAD_DEREF(                1, 0, 1),
+    STORE_DEREF(               1, 1, 0),
+    DELETE_DEREF(              1, 0, 0),
+    LOAD_CLASSDEREF(           1, 0, 1),
+    BUILD_SLICE(               1, (oparg, withJump) -> oparg, 1),
 
-    IMPORT_NAME(               1,   -1),
-    IMPORT_FROM(               1,    1),
+    IMPORT_NAME(               1, 2, 1),
+    IMPORT_FROM(               1, 1, 2),
 
     // load bytecodes for special constants
-    LOAD_NONE(                 0,    1),
-    LOAD_ELLIPSIS(             0,    1),
-    LOAD_TRUE(                 0,    1),
-    LOAD_FALSE(                0,    1),
-    LOAD_BYTE(                 1,    1),
-    LOAD_LONG(                 1,    1),
-    LOAD_DOUBLE(               1,    1),
-    LOAD_BIGINT(               1,    1),
-    LOAD_STRING(               1,    1),
-    LOAD_BYTES(                1,    1),
+    LOAD_NONE(                 0, 0, 1),
+    LOAD_ELLIPSIS(             0, 0, 1),
+    LOAD_TRUE(                 0, 0, 1),
+    LOAD_FALSE(                0, 0, 1),
+    LOAD_BYTE(                 1, 0, 1),
+    LOAD_LONG(                 1, 0, 1),
+    LOAD_DOUBLE(               1, 0, 1),
+    LOAD_BIGINT(               1, 0, 1),
+    LOAD_STRING(               1, 0, 1),
+    LOAD_BYTES(                1, 0, 1),
     // make a complex from two doubles on the top of stack
-    MAKE_COMPLEX(              0,   -1),
+    MAKE_COMPLEX(              0, 2, 1),
 
     // calling
-    CALL_METHOD_VARARGS(       1,    0), // args[] => result
-    CALL_METHOD(               2,    Constants.CALL_METHOD_EFFECT),
-    CALL_FUNCTION(             1,    Constants.CALL_EFFECT),
-    CALL_FUNCTION_KW(          0,   -2), // func, args[], keywords[] => result
-    CALL_FUNCTION_VARARGS(     0,   -1), // func, args[] => result
+    CALL_METHOD_VARARGS(       1, 1, 1), // args[] => result
+    CALL_METHOD(               2, (oparg, withJump) -> (oparg >> 8) + 1, 1),
+    CALL_FUNCTION(             1, (oparg, withJump) -> oparg + 1, 1),
+    CALL_FUNCTION_KW(          0, 3, 1), // func, args[], keywords[] => result
+    CALL_FUNCTION_VARARGS(     0, 2, 1), // func, args[] => result
 
     // destructuring bytecodes
-    UNPACK_EX(                 1,    Constants.UNPACK_EX_EFFECT),
-    UNPACK_EX_LARGE(           2,    Constants.UNPACK_EX_EFFECT),
-    UNPACK_SEQUENCE(           1,    Constants.UNPACK_EFFECT),
-    UNPACK_SEQUENCE_LARGE(     2,    Constants.UNPACK_EFFECT),
+    UNPACK_EX(                 1, 1, OpCodes::unpackExStackEffect),
+    UNPACK_EX_LARGE(           2, 1, OpCodes::unpackExStackEffect),
+    UNPACK_SEQUENCE(           1, 1, (oparg, withJump) -> oparg),
+    UNPACK_SEQUENCE_LARGE(     2, 1, (oparg, withJump) -> oparg),
 
     // jumps
-    FOR_ITER(                  1,    Constants.FOR_ITER_EFFECT),
-    FOR_ITER_FAR(              2,    Constants.FOR_ITER_EFFECT),
-    JUMP_FORWARD(              1,    0),
-    JUMP_FORWARD_FAR(          2,    0),
-    JUMP_BACKWARD(             1,    0),
-    JUMP_BACKWARD_FAR(         2,    0),
-    JUMP_IF_FALSE_OR_POP(      1,    Constants.POP_OR_JUMP_EFFECT),
-    JUMP_IF_FALSE_OR_POP_FAR(  2,    Constants.POP_OR_JUMP_EFFECT),
-    JUMP_IF_TRUE_OR_POP(       1,    Constants.POP_OR_JUMP_EFFECT),
-    JUMP_IF_TRUE_OR_POP_FAR(   2,    Constants.POP_OR_JUMP_EFFECT),
-    POP_AND_JUMP_IF_TRUE(      1,   -1),
-    POP_AND_JUMP_IF_TRUE_FAR(  2,   -1),
-    POP_AND_JUMP_IF_FALSE(     1,   -1),
-    POP_AND_JUMP_IF_FALSE_FAR( 2,   -1),
+    FOR_ITER(                  1, 1, (oparg, withJump) -> withJump? 0 : 2),
+    FOR_ITER_FAR(              2, 1, (oparg, withJump) -> withJump? 0 : 2),
+    JUMP_FORWARD(              1, 0, 0),
+    JUMP_FORWARD_FAR(          2, 0, 0),
+    JUMP_BACKWARD(             1, 0, 0),
+    JUMP_BACKWARD_FAR(         2, 0, 0),
+    JUMP_IF_FALSE_OR_POP(      1, (oparg, withJump) -> withJump? 0 : 1, 0),
+    JUMP_IF_FALSE_OR_POP_FAR(  2, (oparg, withJump) -> withJump? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP(       1, (oparg, withJump) -> withJump? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP_FAR(   2, (oparg, withJump) -> withJump? 0 : 1, 0),
+    POP_AND_JUMP_IF_TRUE(      1, 1, 0),
+    POP_AND_JUMP_IF_TRUE_FAR(  2, 1, 0),
+    POP_AND_JUMP_IF_FALSE(     1, 1, 0),
+    POP_AND_JUMP_IF_FALSE_FAR( 2, 1, 0),
 
     // making callables
-    LOAD_CLOSURE(              1,    1),
-    CLOSURE_FROM_STACK(        1,    Constants.REDUCE_EFFECT),
-    MAKE_FUNCTION(             1,    Constants.POP_BITCOUNT_EFFECT),
+    LOAD_CLOSURE(              1, 0, 1),
+    CLOSURE_FROM_STACK(        1, (oparg, withJump) -> oparg, 1),
+    MAKE_FUNCTION(             1, (oparg, withJump) -> Integer.bitCount(oparg), 1),
 
     // collection literals
-    COLLECTION_ADD_STACK(      1,    Constants.POP_EFFECT5), // add to coll underneath args the arg elements above
-    COLLECTION_FROM_STACK(     1,    Constants.REDUCE_EFFECT5), // build a collection from arg elements on stack
-    COLLECTION_ADD_COLLECTION( 1,   -1), // add the collection on top of stack to the collection underneath
-    COLLECTION_FROM_COLLECTION(1,    0), // replace the collection on top of stack with a collection of another type
-    ADD_TO_COLLECTION(         1,    Constants.POP_COLLECTION_ITEM_EFFECT), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
-    KWARGS_DICT_MERGE(         0,   -1), // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
-    MAKE_KEYWORD(              1,    0),
+    COLLECTION_ADD_STACK(      1, (oparg, withJump) -> CollectionBits.elementCount(oparg) + 1, 1), // add to coll underneath args the arg elements above
+    COLLECTION_FROM_STACK(     1, (oparg, withJump) -> CollectionBits.elementCount(oparg), 1), // build a collection from arg elements on stack
+    COLLECTION_ADD_COLLECTION( 1, 2, 1), // add the collection on top of stack to the collection underneath
+    COLLECTION_FROM_COLLECTION(1, 1, 1), // replace the collection on top of stack with a collection of another type
+    ADD_TO_COLLECTION(         1, (oparg, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
+    KWARGS_DICT_MERGE(         0, 2, 1), // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
+    MAKE_KEYWORD(              1, 1, 1),
 
     // exceptions
-    MATCH_EXC_OR_JUMP(         1,   -1),
-    MATCH_EXC_OR_JUMP_FAR(     2,   -1),
-    PUSH_EXC_INFO(             0,    1),
-    POP_EXCEPT(                0,   -1),
-    END_EXC_HANDLER(           0,   -2),
-    UNWRAP_EXC(                0,    0),
+    MATCH_EXC_OR_JUMP(         1, 1, 0),
+    MATCH_EXC_OR_JUMP_FAR(     2, 1, 0),
+    PUSH_EXC_INFO(             0, 0, 1),
+    POP_EXCEPT(                0, 1, 0),
+    END_EXC_HANDLER(           0, 2, 0),
+    UNWRAP_EXC(                0, 1, 1),
 
     // with statements
-    SETUP_WITH(                0,    2),
-    EXIT_WITH(                 0,   -3);
+    SETUP_WITH(                0, 1, 3),
+    EXIT_WITH(                 0, 3, 0);
 
     public static final class CollectionBits {
         public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
@@ -176,6 +159,14 @@ public enum OpCodes {
         public static final int DICT                    = 0b10000000;
         public static final int KWORDS                  = 0b10100000;
         public static final int OBJECT                  = 0b11000000;
+
+        public static int elementCount(int oparg) {
+            return oparg & MAX_STACK_ELEMENT_COUNT;
+        }
+
+        public static int elementType(int oparg) {
+            return oparg & ~MAX_STACK_ELEMENT_COUNT;
+        }
     }
 
     public static final OpCodes[] VALUES = new OpCodes[values().length];
@@ -185,16 +176,35 @@ public enum OpCodes {
         System.arraycopy(values(), 0, VALUES, 0, VALUES.length);
     }
 
-    public final int stackEffect;
+    public final StackEffect consumesStackItems;
+    public final StackEffect producesStackItems;
 
     /**
      * Instruction argument length in bytes
      */
     public final int argLength;
 
-    private OpCodes(int argLength, int stackEffect) {
+    OpCodes(int argLength, int consumesStackItems, int producesStackItems) {
+        this(argLength, (oparg, withJump) -> consumesStackItems, (oparg, withJump) -> producesStackItems);
+    }
+
+    OpCodes(int argLength, StackEffect consumesStackItems, int producesStackItems) {
+        this(argLength, consumesStackItems, (oparg, withJump) -> producesStackItems);
+    }
+
+    OpCodes(int argLength, int consumesStackItems, StackEffect producesStackItems) {
+        this(argLength, (oparg, withJump) -> consumesStackItems, producesStackItems);
+    }
+
+    OpCodes(int argLength, StackEffect consumesStackItems, StackEffect producesStackItems) {
         this.argLength = argLength;
-        this.stackEffect = stackEffect;
+        this.consumesStackItems = consumesStackItems;
+        this.producesStackItems = producesStackItems;
+    }
+
+    @FunctionalInterface
+    private interface StackEffect {
+        int stackEffect(int oparg, boolean withJump);
     }
 
     public boolean hasArg() {
@@ -205,50 +215,25 @@ public enum OpCodes {
         return argLength + 1;
     }
 
-    public int getStackEffect(int oparg, boolean withJump) {
-        switch (stackEffect) {
-            case Constants.CALL_EFFECT:
-                // arg is argcount, pop args, pop function, push result
-                return -oparg - 1 + 1;
-            case Constants.CALL_METHOD_EFFECT:
-                // arg is argcount | method name const idx, pop args, pop receiver, push result
-                return -(oparg >> 8) - 1 + 1;
-            case Constants.POP_EFFECT:
-                // arg is number of elements that get popped pop
-                return -oparg;
-            case Constants.REDUCE_EFFECT:
-                // arg is number of elements that get popped and reduced into a new element
-                return -oparg + 1;
-            case Constants.POP_EFFECT5:
-                return -(oparg & 0b11111);
-            case Constants.REDUCE_EFFECT5:
-                // arg is number of elements that get popped and reduced into a new element
-                return -(oparg & 0b11111) + 1;
-            case Constants.POP_COLLECTION_ITEM_EFFECT:
-                return ((oparg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT) == CollectionBits.DICT) ? -2 : -1;
-            case Constants.UNPACK_EFFECT:
-                // arg is number of elements to unpack the list at the top of stack into, removing the
-                // list
-                return -1 + oparg;
-            case Constants.UNPACK_EX_EFFECT:
-                // arg is split evenly in bits into into number of args before and number of args after
-                // the stararg to expand into, then we also get the stararg list, and we pop the list
-                // that we are unpacking from
-                if (oparg <= 0xff) {
-                    return (oparg & 0xf) + (oparg >> 4) + 1 - 1;
-                } else if (oparg <= 0xffff) {
-                    return (oparg & 0xff) + (oparg >> 8) + 1 - 1;
-                } else {
-                    throw new IllegalStateException("not supported");
-                }
-            case Constants.POP_OR_JUMP_EFFECT:
-                return withJump ? 0 : -1;
-            case Constants.FOR_ITER_EFFECT:
-                return withJump ? -1 : 1;
-            case Constants.POP_BITCOUNT_EFFECT:
-                return -Integer.bitCount(oparg);
-            default:
-                return stackEffect;
+    private static int unpackExStackEffect(int oparg, @SuppressWarnings("unused") boolean withJump) {
+        if (oparg <= 0xff) {
+            return (oparg & 0xf) + (oparg >> 4) + 1;
+        } else if (oparg <= 0xffff) {
+            return (oparg & 0xff) + (oparg >> 8) + 1;
+        } else {
+            throw new IllegalStateException("not supported");
         }
+    }
+
+    public int getNumberOfConsumedStackItems(int oparg, boolean withJump) {
+        return consumesStackItems.stackEffect(oparg, withJump);
+    }
+
+    public int getNumberOfProducedStackItems(int oparg, boolean withJump) {
+        return producesStackItems.stackEffect(oparg, withJump);
+    }
+
+    public int getStackEffect(int oparg, boolean withJump) {
+        return getNumberOfProducedStackItems(oparg, withJump) - getNumberOfConsumedStackItems(oparg, withJump);
     }
 }

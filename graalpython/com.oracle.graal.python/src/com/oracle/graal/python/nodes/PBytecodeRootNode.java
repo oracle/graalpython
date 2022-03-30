@@ -842,24 +842,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case COLLECTION_FROM_STACK: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        int count = oparg & CollectionBits.MAX_STACK_ELEMENT_COUNT;
-                        int type = oparg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int count = CollectionBits.elementCount(oparg);
+                        int type = CollectionBits.elementType(oparg);
                         stackTop = bytecodeCollectionFromStack(frame, type, count, stackTop, localNodes, bci);
                         break;
                     }
                     case COLLECTION_ADD_STACK: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
                         // Just combine COLLECTION_FROM_STACK and COLLECTION_ADD_COLLECTION for now
-                        int count = oparg & CollectionBits.MAX_STACK_ELEMENT_COUNT;
-                        int type = oparg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int count = CollectionBits.elementCount(oparg);
+                        int type = CollectionBits.elementType(oparg);
                         stackTop = bytecodeCollectionFromStack(frame, type, count, stackTop, localNodes, bci - 1);
                         stackTop = bytecodeCollectionAddCollection(frame, type, stackTop, localNodes, bci);
                         break;
                     }
                     case ADD_TO_COLLECTION: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        int depth = oparg & CollectionBits.MAX_STACK_ELEMENT_COUNT;
-                        int type = oparg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                        int depth = CollectionBits.elementCount(oparg);
+                        int type = CollectionBits.elementType(oparg);
                         stackTop = bytecodeAddToCollection(frame, stackTop, bci, localNodes, depth, type);
                         break;
                     }
@@ -950,11 +950,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case DUP_TOP:
                         frame.setObject(stackTop + 1, frame.getObject(stackTop));
                         stackTop++;
-                        break;
-                    case DUP_TOP_TWO:
-                        frame.setObject(stackTop + 2, frame.getObject(stackTop));
-                        frame.setObject(stackTop + 1, frame.getObject(stackTop - 1));
-                        stackTop += 2;
                         break;
                     case UNARY_OP: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);

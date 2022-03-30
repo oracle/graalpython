@@ -271,8 +271,8 @@ public final class CodeUnit {
                 case COLLECTION_FROM_COLLECTION:
                 case COLLECTION_ADD_COLLECTION:
                 case ADD_TO_COLLECTION:
-                    line[4] = String.format("% 2d", arg & CollectionBits.MAX_STACK_ELEMENT_COUNT);
-                    switch (arg & ~CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                    line[4] = String.format("% 2d", CollectionBits.elementCount(arg));
+                    switch (CollectionBits.elementType(arg)) {
                         case CollectionBits.LIST:
                             line[5] = "list";
                             break;
