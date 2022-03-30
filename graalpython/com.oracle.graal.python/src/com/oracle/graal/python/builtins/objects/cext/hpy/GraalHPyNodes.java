@@ -1366,6 +1366,24 @@ public class GraalHPyNodes {
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
+        protected static final byte HANDLE = 0;
+        protected static final byte GLOBAL = 1;
+        protected static final byte FIELD = 2;
+
+        @Override
+        public final GraalHPyHandle execute(CExtContext nativeContext, Object object) {
+            return execute(nativeContext, object, 0, HANDLE);
+        }
+
+        public final GraalHPyHandle executeGlobal(CExtContext nativeContext, Object object, int id) {
+            return execute(nativeContext, object, id, GLOBAL);
+        }
+
+        public final GraalHPyHandle executeField(CExtContext nativeContext, Object object, int id) {
+            return execute(nativeContext, object, id, FIELD);
+        }
+
+        protected abstract GraalHPyHandle execute(CExtContext nativeContext, Object object, int id, int type);
 
         /*
          * NOTE: We *MUST NOT* box values here because we don't know where the handle will be given
@@ -1375,19 +1393,41 @@ public class GraalHPyNodes {
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object) {
+        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object, int id, int type) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"!isNoValue(object)"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doObject(CExtContext hpyContext, Object object) {
+        @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doObject(CExtContext hpyContext, Object object, int id, int type) {
             return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
-        @Specialization(guards = {"!isNoValue(object)"})
-        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object,
+        @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"})
+        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object, int id, int type,
                         @Cached("createClassProfile()") ValueProfile contextProfile) {
             return contextProfile.profile(hpyContext).createHandle(object);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doGlobal(CExtContext hpyContext, Object object, int id, int type) {
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createGlobal(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
+        static GraalHPyHandle doDebugGlobal(GraalHPyContext hpyContext, Object object, int id, int type,
+                        @Cached("createClassProfile()") ValueProfile contextProfile) {
+            return contextProfile.profile(hpyContext).createGlobal(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == FIELD"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doField(CExtContext hpyContext, Object object, int id, int type) {
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createField(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
+        static GraalHPyHandle doDebugField(GraalHPyContext hpyContext, Object object, int id, int type,
+                        @Cached("createClassProfile()") ValueProfile contextProfile) {
+            return contextProfile.profile(hpyContext).createField(object, id);
         }
 
         Assumption noDebugModeAssumption() {

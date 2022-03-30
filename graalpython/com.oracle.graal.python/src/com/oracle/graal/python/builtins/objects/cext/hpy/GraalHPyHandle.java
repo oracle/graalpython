@@ -96,6 +96,7 @@ public final class GraalHPyHandle implements TruffleObject {
 
     private GraalHPyHandle(Object delegate, int id) {
         assert delegate != null : "HPy handles to Java null are not allowed";
+        assert delegate != NULL_HANDLE_DELEGATE || id == 0 : "must not not create more than on HPy_NULL";
         this.delegate = delegate;
         this.id = id;
     }

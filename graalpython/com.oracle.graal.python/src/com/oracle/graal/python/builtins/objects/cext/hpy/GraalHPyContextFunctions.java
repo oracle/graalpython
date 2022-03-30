@@ -2924,8 +2924,10 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached ConditionProfile nullHandleProfile,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 4);
             boolean mustRelease = gil.acquire();
@@ -2965,8 +2967,13 @@ public abstract class GraalHPyContextFunctions {
                 }
                 // TODO: (tfel) do not actually allocate the index / free the existing one when
                 // value can be stored as tagged handle
-                idx = assign(owner, referent, idx);
-                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, context.createField(referent, idx));
+                if (nullHandleProfile.profile(referent == GraalHPyHandle.NULL_HANDLE_DELEGATE && idx == 0)) {
+                    // assigning HPy_NULL to a field that already holds HPy_NULL, nothing to do
+                } else {
+                    idx = assign(owner, referent, idx);
+                }
+                GraalHPyHandle newHandle = asHandleNode.executeField(context, referent, idx);
+                callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_FIELD_I, hpyFieldPtr, newHandle);
                 return 0;
             } finally {
                 gil.release(mustRelease);
@@ -3036,6 +3043,9 @@ public abstract class GraalHPyContextFunctions {
                             throw CompilerDirectives.shouldNotReachHere(e);
                         }
                     }
+                    if (idx == 0) {
+                        return GraalHPyHandle.NULL_HANDLE;
+                    }
                     Object owner = asPythonObjectNode.execute(context, arguments[1]);
                     if (owner instanceof PythonObject) {
                         referent = ((PythonObject) owner).getHpyFields()[idx - 1];
@@ -3096,7 +3106,7 @@ public abstract class GraalHPyContextFunctions {
 
                 // TODO: (tfel) do not actually allocate the index / free the existing one when
                 // value can be stored as tagged handle
-                GraalHPyHandle newHandle = context.createGlobal(value, idx);
+                GraalHPyHandle newHandle = asHandleNode.executeGlobal(context, value, idx);
                 callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_GLOBAL_I, hpyGlobalPtr, newHandle);
                 return 0;
             } finally {
