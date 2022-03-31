@@ -1223,6 +1223,10 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsASCIIString)(HPyContext *ctx, HPy h)
      return UPCALL_HPY(ctx_Unicode_AsASCIIString, ctx, h); 
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsLatin1String)(HPyContext *ctx, HPy h) {
+     return UPCALL_HPY(ctx_Unicode_AsLatin1String, ctx, h);
+}
+
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsUTF8String)(HPyContext *ctx, HPy h)
 {
 	return UPCALL_HPY(ctx_Unicode_AsUTF8String, ctx, h);
@@ -1632,6 +1636,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Err_WarnEx);
     HPY_CTX_UPCALL(ctx_Err_WriteUnraisable);
     HPY_CTX_UPCALL(ctx_Unicode_AsASCIIString);
+    HPY_CTX_UPCALL(ctx_Unicode_AsLatin1String);
     HPY_CTX_UPCALL(ctx_Unicode_DecodeFSDefaultAndSize);
     HPY_CTX_UPCALL(ctx_Unicode_EncodeFSDefault);
     HPY_CTX_UPCALL(ctx_Unicode_ReadChar);
