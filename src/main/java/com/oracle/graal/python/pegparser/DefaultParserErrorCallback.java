@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DefaultParserErrorCallback implements ParserErrorCallback {
-    
+
     public static class Error {
         private final ParserErrorCallback.ErrorType type;
         private int startOffset;
@@ -76,23 +76,22 @@ public class DefaultParserErrorCallback implements ParserErrorCallback {
         public String getMessage() {
             return message;
         }
-        
-        
+
     }
-    
+
     private final List<Error> errors = new ArrayList<>(1);
 
     public List<Error> getErrors() {
         return errors;
     }
-    
+
     public boolean hasErrors() {
         return !errors.isEmpty();
     }
-    
+
     @Override
     public void onError(ErrorType errorType, int startOffset, int endOffset, String message) {
         errors.add(new Error(errorType, startOffset, endOffset, message));
     }
-    
+
 }

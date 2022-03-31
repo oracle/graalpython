@@ -196,7 +196,7 @@ public class Scope {
     private List<String> getSortedSymbols() {
         if (sortedSymbols == null) {
             sortedSymbols = new ArrayList<>(symbols.keySet());
-            sortedSymbols.sort((s1,s2) -> s1.compareTo(s2));
+            sortedSymbols.sort((s1, s2) -> s1.compareTo(s2));
         }
         return sortedSymbols;
     }

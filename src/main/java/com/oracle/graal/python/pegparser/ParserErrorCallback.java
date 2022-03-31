@@ -52,7 +52,7 @@ public interface ParserErrorCallback {
         Exec,
         Encoding,
         Warning,
-        Value, 
+        Value,
         Syntax
     }
 

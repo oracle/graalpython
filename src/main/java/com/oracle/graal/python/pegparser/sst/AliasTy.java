@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-
 public final class AliasTy extends SSTNode {
     public final String name;
     public final String asName;

@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-
 public abstract class StringLiteralUtils {
     private static final ExprTy[] EMPTY_SST_ARRAY = new ExprTy[0];
 
@@ -102,7 +101,7 @@ public abstract class StringLiteralUtils {
                     case 'r':
                         isRaw = true;
                         break;
-                // unicode case (default)
+                    // unicode case (default)
                     case 'u':
                         break;
                     case 'b':
@@ -167,7 +166,8 @@ public abstract class StringLiteralUtils {
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues, startOffset + startPartOffsetInValues + strStartIndex, nodeFactory, exprParser, errorCallback);
+                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues, startOffset + startPartOffsetInValues + strStartIndex, nodeFactory, exprParser,
+                                    errorCallback);
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
@@ -223,8 +223,8 @@ public abstract class StringLiteralUtils {
             public final int endIndex;
             /**
              * Count how many tokens follow as tokens of format specifier. So the next expression or
-             * string is not the next token, but the next token + the value under this index. Value is
-             * useful/defined only for expression tokens.
+             * string is not the next token, but the next token + the value under this index. Value
+             * is useful/defined only for expression tokens.
              */
             public int formatTokensCount;
 
@@ -244,7 +244,8 @@ public abstract class StringLiteralUtils {
             }
         }
 
-        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, ParserErrorCallback errorCallback, FExprParser exprParser) {
+        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource,
+                        NodeFactory nodeFactory, ParserErrorCallback errorCallback, FExprParser exprParser) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
@@ -269,7 +270,7 @@ public abstract class StringLiteralUtils {
                 for (i = 0; i < specTokensCount; i++) {
                     specToken = tokens.get(specifierTokenStartIndex + i);
                     specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, isRawString, partOffsetInSource, textOffsetInSource,
-                                                                                            nodeFactory, errorCallback, exprParser);
+                                    nodeFactory, errorCallback, exprParser);
                     i = i + specToken.formatTokensCount;
                 }
 
@@ -285,17 +286,17 @@ public abstract class StringLiteralUtils {
             }
             ExprTy.FormattedValue.ConversionType conversionType;
             switch (token.type) {
-            case TOKEN_TYPE_EXPRESSION_STR:
-                conversionType = ExprTy.FormattedValue.ConversionType.STR;
-                break;
-            case TOKEN_TYPE_EXPRESSION_REPR:
-                conversionType = ExprTy.FormattedValue.ConversionType.REPR;
-                break;
-            case TOKEN_TYPE_EXPRESSION_ASCII:
-                conversionType = ExprTy.FormattedValue.ConversionType.ASCII;
-                break;
-            default:
-                conversionType = ExprTy.FormattedValue.ConversionType.NONE;
+                case TOKEN_TYPE_EXPRESSION_STR:
+                    conversionType = ExprTy.FormattedValue.ConversionType.STR;
+                    break;
+                case TOKEN_TYPE_EXPRESSION_REPR:
+                    conversionType = ExprTy.FormattedValue.ConversionType.REPR;
+                    break;
+                case TOKEN_TYPE_EXPRESSION_ASCII:
+                    conversionType = ExprTy.FormattedValue.ConversionType.ASCII;
+                    break;
+                default:
+                    conversionType = ExprTy.FormattedValue.ConversionType.NONE;
             }
             int endOffset = specifier == null ? textOffsetInSource + token.endIndex : specifier.endOffset;
             if (conversionType != ExprTy.FormattedValue.ConversionType.NONE) {
@@ -305,10 +306,11 @@ public abstract class StringLiteralUtils {
         }
 
         /**
-         * Parses f-string into an array of {@link ExprTy}. The nodes can end up being {@link
-         * ExprTy.Constant} or {@link ExprTy.FormattedValue}.
+         * Parses f-string into an array of {@link ExprTy}. The nodes can end up being
+         * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
-        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
+        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, FExprParser exprParser,
+                        ParserErrorCallback errorCallback) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -358,11 +360,11 @@ public abstract class StringLiteralUtils {
          * @param errorCallback it's needed for raising syntax errors
          * @param startIndex start parsing from this index
          * @param text text to be parsed
-         * @param isRawString whether the String is raw, i.e., escape sequences should be interpreted as
-         *            a verbatim text
-         * @param recursionLevel recursive calls are used for parsing the formatting string, which may
-         *            contain other expressions. Depending on the recursive level some rules apply
-         *            differently.
+         * @param isRawString whether the String is raw, i.e., escape sequences should be
+         *            interpreted as a verbatim text
+         * @param recursionLevel recursive calls are used for parsing the formatting string, which
+         *            may contain other expressions. Depending on the recursive level some rules
+         *            apply differently.
          * @return the index of the last processed character or {@code -1} on error
          */
         public static int createTokens(ArrayList<Token> tokens, ParserErrorCallback errorCallback, int startIndex, String text, boolean isRawString, int recursionLevel) {
@@ -375,316 +377,327 @@ public abstract class StringLiteralUtils {
             int index = startIndex;
             int start = startIndex;
             boolean toplevel = recursionLevel == 0;
-            // currentExpression is set by '=' or '!' handlers, which create the expression token, and
-            // is read by the ':', which either needs to create the expression token itself or should
+            // currentExpression is set by '=' or '!' handlers, which create the expression token,
+            // and
+            // is read by the ':', which either needs to create the expression token itself or
+            // should
             // reuse the created by '=' or '!' if preceded by '=' or '!', e.g., f'{expr!s:10<}'
             Token currentExpression = null;
             parserLoop: while (index < len) {
                 char ch = text.charAt(index);
                 switch (state) {
-                case STATE_TEXT:
-                    switch (ch) {
-                    case '\\':
-                        if (isRawString) {
-                            break;
-                        }
-                        if (lookahead(text, index, len, '\\')) {
-                            // double "\\" is skipped, note that "\\\N{...}" should still be
-                            // treated as \N escape sequence
-                            index++;
-                        } else if (lookahead(text, index, len, '{')) {
-                            warnInvalidEscapeSequence(errorCallback, text.charAt(index + 1));
-                        } else if (lookahead(text, index, len, 'N', '{')) {
-                            // skip escape sequence \N{...}, it should not be treated as an
-                            // expression inside f-string, but \\N{...} should be left intact
-                            index += 2;
-                            while (index < len && text.charAt(index) != '}') {
-                                index++;
-                            }
-                            if (index >= len) {
-                                // Missing the closing brace. The escape sequence is malformed,
-                                // which will be reported by the String escaping code later,
-                                // here we just end the parsing
-                                index = len - 1;
-                                break parserLoop;
-                            }
+                    case STATE_TEXT:
+                        switch (ch) {
+                            case '\\':
+                                if (isRawString) {
+                                    break;
+                                }
+                                if (lookahead(text, index, len, '\\')) {
+                                    // double "\\" is skipped, note that "\\\N{...}" should still be
+                                    // treated as \N escape sequence
+                                    index++;
+                                } else if (lookahead(text, index, len, '{')) {
+                                    warnInvalidEscapeSequence(errorCallback, text.charAt(index + 1));
+                                } else if (lookahead(text, index, len, 'N', '{')) {
+                                    // skip escape sequence \N{...}, it should not be treated as an
+                                    // expression inside f-string, but \\N{...} should be left
+                                    // intact
+                                    index += 2;
+                                    while (index < len && text.charAt(index) != '}') {
+                                        index++;
+                                    }
+                                    if (index >= len) {
+                                        // Missing the closing brace. The escape sequence is
+                                        // malformed,
+                                        // which will be reported by the String escaping code later,
+                                        // here we just end the parsing
+                                        index = len - 1;
+                                        break parserLoop;
+                                    }
+                                }
+                                break;
+                            case '{':
+                                if (start < index) {
+                                    tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
+                                }
+                                state = STATE_AFTER_OPEN_BRACE;
+                                start = index + 1;
+                                braceLevel++;
+                                break;
+                            case '}':
+                                braceLevel--;
+                                if (braceLevel == -1) {
+                                    if (!toplevel) {
+                                        // We are parsing a format specifier (nested f-string) and
+                                        // here
+                                        // we reached the closing brace of the top-level f-string,
+                                        // i.e.,
+                                        // the end of the nested f-string too
+                                        break parserLoop;
+                                    }
+                                }
+                                state = STATE_AFTER_CLOSE_BRACE;
+                                break;
                         }
                         break;
-                    case '{':
-                        if (start < index) {
-                            tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
+                    case STATE_AFTER_OPEN_BRACE:
+                        if (ch == '}' || ch == '=') {
+                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_EMPTY_EXPRESSION);
+                            return -1;
                         }
-                        state = STATE_AFTER_OPEN_BRACE;
-                        start = index + 1;
-                        braceLevel++;
-                        break;
-                    case '}':
-                        braceLevel--;
-                        if (braceLevel == -1) {
-                            if (!toplevel) {
-                                // We are parsing a format specifier (nested f-string) and here
-                                // we reached the closing brace of the top-level f-string, i.e.,
-                                // the end of the nested f-string too
-                                break parserLoop;
-                            }
-                        }
-                        state = STATE_AFTER_CLOSE_BRACE;
-                        break;
-                    }
-                    break;
-                case STATE_AFTER_OPEN_BRACE:
-                    if (ch == '}' || ch == '=') {
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EMPTY_EXPRESSION);
-                        return -1;
-                    }
-                    if (ch == '{' && toplevel) {
-                        // '{' escaping works only when parsing the expression, not when parsing the
-                        // format (i.e., when we are in the recursive call)
-                        state = STATE_TEXT;
-                        braceLevel--;
-                    } else if (recursionLevel == 2) {
-                        // we are inside formatting expression of another formatting expression,
-                        // example: f'{42:{42:{42}}}'. This level of nesting is not allowed.
-                        errorCallback.onError(startIndex, index, "f-string: expressions nested too deeply");
-                        return -1;
-                    } else {
-                        index--;
-                        state = STATE_EXPRESSION;
-                        braceLevelInExpression = 0;
-                        currentExpression = null;
-                    }
-                    break;
-                case STATE_AFTER_CLOSE_BRACE:
-                    if (toplevel && ch == '}') {
-                        // after '}' should in this moment follow second '}', only allowed when
-                        // parsing the expression, not when parsing the format
-                        if (start < index) {
-                            tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
-                        }
-                        braceLevel++;
-                        if (braceLevel == 0) {
+                        if (ch == '{' && toplevel) {
+                            // '{' escaping works only when parsing the expression, not when parsing
+                            // the
+                            // format (i.e., when we are in the recursive call)
                             state = STATE_TEXT;
-                        }
-                        start = index + 1;
-                    } else {
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
-                        return -1;
-                    }
-                    break;
-                case STATE_EXPRESSION:
-                    if (index + 1 < len) {
-                        // Some patterns of two characters, such as '!=', should be skipped
-                        if ((ch == '!' || ch == '<' || ch == '>' || ch == '=') && (text.charAt(index + 1) == '=')) {
-                            index += 2;
-                            continue;
-                        }
-                    }
-                    switch (ch) {
-                    case '{':
-                    case '(':
-                    case '[':
-                        bracesInExpression[braceLevelInExpression] = ch;
-                        braceLevelInExpression++;
-                        if (braceLevelInExpression >= MAX_PAR_NESTING) {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_TOO_MANY_NESTED_PARS);
-                            return -1;
-                        }
-                        break;
-                    case ')':
-                    case ']':
-                        if (braceLevelInExpression == 0) {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_UNMATCHED_PAR, ch);
-                            return -1;
-                        }
-                        braceLevelInExpression--;
-                        char expected = ch == ')' ? '(' : '[';
-                        if (bracesInExpression[braceLevelInExpression] != expected) {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], ch);
-                            return -1;
-                        }
-                        break;
-                    case '}':
-                        if (braceLevelInExpression == 0) {
-                            Token t = createExpressionToken(errorCallback, text, start, index);
-                            if (t == null) {
-                                return -1;
-                            }
-                            tokens.add(t);
                             braceLevel--;
-                            state = STATE_TEXT;
+                        } else if (recursionLevel == 2) {
+                            // we are inside formatting expression of another formatting expression,
+                            // example: f'{42:{42:{42}}}'. This level of nesting is not allowed.
+                            errorCallback.onError(startIndex, index, "f-string: expressions nested too deeply");
+                            return -1;
+                        } else {
+                            index--;
+                            state = STATE_EXPRESSION;
+                            braceLevelInExpression = 0;
+                            currentExpression = null;
+                        }
+                        break;
+                    case STATE_AFTER_CLOSE_BRACE:
+                        if (toplevel && ch == '}') {
+                            // after '}' should in this moment follow second '}', only allowed when
+                            // parsing the expression, not when parsing the format
+                            if (start < index) {
+                                tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
+                            }
+                            braceLevel++;
+                            if (braceLevel == 0) {
+                                state = STATE_TEXT;
+                            }
                             start = index + 1;
                         } else {
-                            braceLevelInExpression--;
-                            if (bracesInExpression[braceLevelInExpression] != '{') {
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], '}');
-                                return -1;
-                            }
-                        }
-                        break;
-                    case '=':
-                        if (braceLevelInExpression == 0) {
-                            // The "=" mode, e.g., f'{1+1=}' produces "1+1=2"
-                            // Python allows '=' to be followed by whitespace, but nothing else
-                            // "=" inside format specification
-                            int expressionEndIndex = index;
-                            index++;
-                            while (index < len && Character.isWhitespace(text.charAt(index))) {
-                                index++;
-                            }
-
-                            // Have we reached a legal end character of an expression?
-                            if (index >= len) {
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                                return -1;
-                            }
-                            char endChar = text.charAt(index);
-                            if (endChar != '}' && endChar != ':' && endChar != '!') {
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                                return -1;
-                            }
-
-                            // add verbatim text of the expression (including the "=" and any
-                            // spaces after it) and the expression itself
-                            tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
-                            currentExpression = createExpressionToken(errorCallback, text, start, expressionEndIndex);
-                            if (currentExpression == null) {
-                                return -1;
-                            }
-                            tokens.add(currentExpression);
-                            if (endChar == '}') {
-                                // "debug" expressions are by default converted using "repr",
-                                // but as long as there is no format
-                                currentExpression.type = TOKEN_TYPE_EXPRESSION_REPR;
-                                // we're done with the expression
-                                braceLevel--;
-                                state = STATE_TEXT;
-                                start = index + 1;
-                                currentExpression = null;
-                            } else if (endChar == '!') {
-                                // parse the format specifier, this state expects to see the
-                                // expression token in currentExpression
-                                state = STATE_AFTER_EXCLAMATION;
-                            } else {
-                                // endChar must be ':'
-                                // parse ':' again, the ':' handler checks the currentExpression
-                                start = index;
-                                state = STATE_AFTER_COLON;
-                            }
-                        }
-                        break;
-                    case '\'':
-                    case '"':
-                        index = skipString(errorCallback, text, index, len, ch);
-                        if (index < 0) {
-                            return index;
-                        }
-                        break;
-                    case '!':
-                        state = STATE_AFTER_EXCLAMATION;
-                        currentExpression = createExpressionToken(errorCallback, text, start, index);
-                        if (currentExpression == null) {
+                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
                             return -1;
                         }
-                        tokens.add(currentExpression);
                         break;
-                    case ':':
-                        if (braceLevelInExpression == 0) {
-                            currentExpression = createExpressionToken(errorCallback, text, start, index);
-                            if (currentExpression == null) {
-                                return -1;
+                    case STATE_EXPRESSION:
+                        if (index + 1 < len) {
+                            // Some patterns of two characters, such as '!=', should be skipped
+                            if ((ch == '!' || ch == '<' || ch == '>' || ch == '=') && (text.charAt(index + 1) == '=')) {
+                                index += 2;
+                                continue;
                             }
-                            tokens.add(currentExpression);
-                            state = STATE_AFTER_COLON;
+                        }
+                        switch (ch) {
+                            case '{':
+                            case '(':
+                            case '[':
+                                bracesInExpression[braceLevelInExpression] = ch;
+                                braceLevelInExpression++;
+                                if (braceLevelInExpression >= MAX_PAR_NESTING) {
+                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_TOO_MANY_NESTED_PARS);
+                                    return -1;
+                                }
+                                break;
+                            case ')':
+                            case ']':
+                                if (braceLevelInExpression == 0) {
+                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_UNMATCHED_PAR, ch);
+                                    return -1;
+                                }
+                                braceLevelInExpression--;
+                                char expected = ch == ')' ? '(' : '[';
+                                if (bracesInExpression[braceLevelInExpression] != expected) {
+                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], ch);
+                                    return -1;
+                                }
+                                break;
+                            case '}':
+                                if (braceLevelInExpression == 0) {
+                                    Token t = createExpressionToken(errorCallback, text, start, index);
+                                    if (t == null) {
+                                        return -1;
+                                    }
+                                    tokens.add(t);
+                                    braceLevel--;
+                                    state = STATE_TEXT;
+                                    start = index + 1;
+                                } else {
+                                    braceLevelInExpression--;
+                                    if (bracesInExpression[braceLevelInExpression] != '{') {
+                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], '}');
+                                        return -1;
+                                    }
+                                }
+                                break;
+                            case '=':
+                                if (braceLevelInExpression == 0) {
+                                    // The "=" mode, e.g., f'{1+1=}' produces "1+1=2"
+                                    // Python allows '=' to be followed by whitespace, but nothing
+                                    // else
+                                    // "=" inside format specification
+                                    int expressionEndIndex = index;
+                                    index++;
+                                    while (index < len && Character.isWhitespace(text.charAt(index))) {
+                                        index++;
+                                    }
+
+                                    // Have we reached a legal end character of an expression?
+                                    if (index >= len) {
+                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                        return -1;
+                                    }
+                                    char endChar = text.charAt(index);
+                                    if (endChar != '}' && endChar != ':' && endChar != '!') {
+                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                        return -1;
+                                    }
+
+                                    // add verbatim text of the expression (including the "=" and
+                                    // any
+                                    // spaces after it) and the expression itself
+                                    tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
+                                    currentExpression = createExpressionToken(errorCallback, text, start, expressionEndIndex);
+                                    if (currentExpression == null) {
+                                        return -1;
+                                    }
+                                    tokens.add(currentExpression);
+                                    if (endChar == '}') {
+                                        // "debug" expressions are by default converted using
+                                        // "repr",
+                                        // but as long as there is no format
+                                        currentExpression.type = TOKEN_TYPE_EXPRESSION_REPR;
+                                        // we're done with the expression
+                                        braceLevel--;
+                                        state = STATE_TEXT;
+                                        start = index + 1;
+                                        currentExpression = null;
+                                    } else if (endChar == '!') {
+                                        // parse the format specifier, this state expects to see the
+                                        // expression token in currentExpression
+                                        state = STATE_AFTER_EXCLAMATION;
+                                    } else {
+                                        // endChar must be ':'
+                                        // parse ':' again, the ':' handler checks the
+                                        // currentExpression
+                                        start = index;
+                                        state = STATE_AFTER_COLON;
+                                    }
+                                }
+                                break;
+                            case '\'':
+                            case '"':
+                                index = skipString(errorCallback, text, index, len, ch);
+                                if (index < 0) {
+                                    return index;
+                                }
+                                break;
+                            case '!':
+                                state = STATE_AFTER_EXCLAMATION;
+                                currentExpression = createExpressionToken(errorCallback, text, start, index);
+                                if (currentExpression == null) {
+                                    return -1;
+                                }
+                                tokens.add(currentExpression);
+                                break;
+                            case ':':
+                                if (braceLevelInExpression == 0) {
+                                    currentExpression = createExpressionToken(errorCallback, text, start, index);
+                                    if (currentExpression == null) {
+                                        return -1;
+                                    }
+                                    tokens.add(currentExpression);
+                                    state = STATE_AFTER_COLON;
+                                }
+                                break;
+                            case '#':
+                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_HASH_IN_EXPRESSION);
+                                return -1;
+                            case '\\':
+                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
+                                return -1;
+                            default:
+                                break;
                         }
                         break;
-                    case '#':
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_HASH_IN_EXPRESSION);
-                        return -1;
-                    case '\\':
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
-                        return -1;
-                    default:
+                    case STATE_AFTER_EXCLAMATION:
+                        assert currentExpression != null;
+                        switch (ch) {
+                            case 's':
+                                currentExpression.type = TOKEN_TYPE_EXPRESSION_STR;
+                                break;
+                            case 'r':
+                                currentExpression.type = TOKEN_TYPE_EXPRESSION_REPR;
+                                break;
+                            case 'a':
+                                currentExpression.type = TOKEN_TYPE_EXPRESSION_ASCII;
+                                break;
+                            default:
+                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_INVALID_CONVERSION);
+                                return -1;
+                        }
+                        start = index + 2;
+                        index++;
+                        char next = index < len ? text.charAt(index) : Character.MAX_VALUE;
+                        switch (next) {
+                            case ':':
+                                state = STATE_AFTER_COLON;
+                                break;
+                            case '}':
+                                // We're done with the expression
+                                state = STATE_TEXT;
+                                braceLevel--;
+                                break;
+                            default:
+                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                return -1;
+                        }
                         break;
-                    }
-                    break;
-                case STATE_AFTER_EXCLAMATION:
-                    assert currentExpression != null;
-                    switch (ch) {
-                    case 's':
-                        currentExpression.type = TOKEN_TYPE_EXPRESSION_STR;
-                        break;
-                    case 'r':
-                        currentExpression.type = TOKEN_TYPE_EXPRESSION_REPR;
-                        break;
-                    case 'a':
-                        currentExpression.type = TOKEN_TYPE_EXPRESSION_ASCII;
-                        break;
-                    default:
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_INVALID_CONVERSION);
-                        return -1;
-                    }
-                    start = index + 2;
-                    index++;
-                    char next = index < len ? text.charAt(index) : Character.MAX_VALUE;
-                    switch (next) {
-                    case ':':
-                        state = STATE_AFTER_COLON;
-                        break;
-                    case '}':
-                        // We're done with the expression
-                        state = STATE_TEXT;
+                    case STATE_AFTER_COLON:
+                        assert currentExpression != null;
+                        int tokensSizeBefore = tokens.size();
+                        index = createTokens(tokens, errorCallback, index, text, isRawString, recursionLevel + 1);
+                        if (index < 0) {
+                            return -1;
+                        }
+                        currentExpression.formatTokensCount = tokens.size() - tokensSizeBefore;
+                        if (index >= len || text.charAt(index) != '}') {
+                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                            return -1;
+                        }
                         braceLevel--;
-                        break;
-                    default:
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                        return -1;
-                    }
-                    break;
-                case STATE_AFTER_COLON:
-                    assert currentExpression != null;
-                    int tokensSizeBefore = tokens.size();
-                    index = createTokens(tokens, errorCallback, index, text, isRawString, recursionLevel + 1);
-                    if (index < 0) {
-                        return -1;
-                    }
-                    currentExpression.formatTokensCount = tokens.size() - tokensSizeBefore;
-                    if (index >= len || text.charAt(index) != '}') {
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                        return -1;
-                    }
-                    braceLevel--;
-                    state = STATE_TEXT;
-                    start = index + 1;
-                    break;
-                case STATE_UNKNOWN:
-                    if (ch == '}') {
                         state = STATE_TEXT;
                         start = index + 1;
-                    }
-                    break;
+                        break;
+                    case STATE_UNKNOWN:
+                        if (ch == '}') {
+                            state = STATE_TEXT;
+                            start = index + 1;
+                        }
+                        break;
                 }
                 index++;
             }
             switch (state) {
-            case STATE_TEXT:
-                if (start < index) {
-                    // handle the end of the string
-                    tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
-                }
-                break;
-            case STATE_AFTER_CLOSE_BRACE:
-                errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
-                return -1;
-            case STATE_AFTER_EXCLAMATION:
-            case STATE_AFTER_OPEN_BRACE:
-            case STATE_AFTER_COLON:
-                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                return -1;
-            case STATE_EXPRESSION:
-                // expression is not allowed to span multiple f-strings: f'{3+' f'1}' is not
-                // the same as f'{3+1}'
-                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
-                return -1;
+                case STATE_TEXT:
+                    if (start < index) {
+                        // handle the end of the string
+                        tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
+                    }
+                    break;
+                case STATE_AFTER_CLOSE_BRACE:
+                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
+                    return -1;
+                case STATE_AFTER_EXCLAMATION:
+                case STATE_AFTER_OPEN_BRACE:
+                case STATE_AFTER_COLON:
+                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                    return -1;
+                case STATE_EXPRESSION:
+                    // expression is not allowed to span multiple f-strings: f'{3+' f'1}' is not
+                    // the same as f'{3+1}'
+                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                    return -1;
             }
             return index;
         }
@@ -797,107 +810,107 @@ public abstract class StringLiteralUtils {
 
             chr = string.charAt(i);
             switch (chr) {
-            case '\n':
-                break;
-            case '\\':
-                if (regexMode) {
+                case '\n':
+                    break;
+                case '\\':
+                    if (regexMode) {
+                        charList.append('\\');
+                    }
                     charList.append('\\');
-                }
-                charList.append('\\');
-                break;
-            case '\'':
-                charList.append('\'');
-                break;
-            case '\"':
-                charList.append('\"');
-                break;
-            case 'b':
-                charList.append('\b');
-                break;
-            case 'f':
-                charList.append('\014');
-                break; /* FF */
-            case 't':
-                charList.append('\t');
-                break;
-            case 'n':
-                charList.append('\n');
-                break;
-            case 'r':
-                charList.append('\r');
-                break;
-            case 'v':
-                charList.append('\013');
-                break; /* VT */
-            case 'a':
-                charList.append('\007');
-                break; /* BEL */
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-                if (!regexMode) {
-                    int code = chr - '0';
-                    if (i + 1 < length) {
-                        char nextChar = string.charAt(i + 1);
-                        if ('0' <= nextChar && nextChar <= '7') {
-                            code = (code << 3) + nextChar - '0';
-                            i++;
+                    break;
+                case '\'':
+                    charList.append('\'');
+                    break;
+                case '\"':
+                    charList.append('\"');
+                    break;
+                case 'b':
+                    charList.append('\b');
+                    break;
+                case 'f':
+                    charList.append('\014');
+                    break; /* FF */
+                case 't':
+                    charList.append('\t');
+                    break;
+                case 'n':
+                    charList.append('\n');
+                    break;
+                case 'r':
+                    charList.append('\r');
+                    break;
+                case 'v':
+                    charList.append('\013');
+                    break; /* VT */
+                case 'a':
+                    charList.append('\007');
+                    break; /* BEL */
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                    if (!regexMode) {
+                        int code = chr - '0';
+                        if (i + 1 < length) {
+                            char nextChar = string.charAt(i + 1);
+                            if ('0' <= nextChar && nextChar <= '7') {
+                                code = (code << 3) + nextChar - '0';
+                                i++;
 
-                            if (i + 1 < length) {
-                                nextChar = string.charAt(i + 1);
-                                if ('0' <= nextChar && nextChar <= '7') {
-                                    code = (code << 3) + nextChar - '0';
-                                    i++;
+                                if (i + 1 < length) {
+                                    nextChar = string.charAt(i + 1);
+                                    if ('0' <= nextChar && nextChar <= '7') {
+                                        code = (code << 3) + nextChar - '0';
+                                        i++;
+                                    }
                                 }
                             }
                         }
-                    }
-                    charList.append((char) code);
-                } else {
-                    // this mode is required for regex substitute to disambiguate from
-                    // backreferences
-                    charList.append('\\');
-                    charList.append(chr);
-                }
-                break;
-            case 'x':
-                if (i + 2 < length) {
-                    try {
-                        int b = Integer.parseInt(string.substring(i + 1, i + 3), 16);
-                        assert b >= 0x00 && b <= 0xFF;
-                        charList.append((char) b);
-                        i += 2;
-                        break;
-                    } catch (NumberFormatException e) {
-                        // fall through
-                    }
-                }
-                errors.onError(ParserErrorCallback.ErrorType.Value, i, i + 2, INVALID_ESCAPE_AT, "\\x", i);
-                return charList;
-            default:
-                if (regexMode) {
-                    if (chr == 'g' || (chr >= '0' && chr <= '9')) {
-                        // only allow backslashes, named group references and numbered group
-                        // references in regex mode
+                        charList.append((char) code);
+                    } else {
+                        // this mode is required for regex substitute to disambiguate from
+                        // backreferences
                         charList.append('\\');
                         charList.append(chr);
+                    }
+                    break;
+                case 'x':
+                    if (i + 2 < length) {
+                        try {
+                            int b = Integer.parseInt(string.substring(i + 1, i + 3), 16);
+                            assert b >= 0x00 && b <= 0xFF;
+                            charList.append((char) b);
+                            i += 2;
+                            break;
+                        } catch (NumberFormatException e) {
+                            // fall through
+                        }
+                    }
+                    errors.onError(ParserErrorCallback.ErrorType.Value, i, i + 2, INVALID_ESCAPE_AT, "\\x", i);
+                    return charList;
+                default:
+                    if (regexMode) {
+                        if (chr == 'g' || (chr >= '0' && chr <= '9')) {
+                            // only allow backslashes, named group references and numbered group
+                            // references in regex mode
+                            charList.append('\\');
+                            charList.append(chr);
+                        } else {
+                            errors.onError(ParserErrorCallback.ErrorType.Value, i, length, INVALID_ESCAPE_AT, "\\x", i);
+                            return charList;
+                        }
                     } else {
-                        errors.onError(ParserErrorCallback.ErrorType.Value, i, length, INVALID_ESCAPE_AT, "\\x", i);
-                        return charList;
+                        charList.append('\\');
+                        charList.append(chr);
+                        if (!wasDeprecationWarning) {
+                            wasDeprecationWarning = true;
+                            warnInvalidEscapeSequence(errors, chr);
+                        }
                     }
-                } else {
-                    charList.append('\\');
-                    charList.append(chr);
-                    if (!wasDeprecationWarning) {
-                        wasDeprecationWarning = true;
-                        warnInvalidEscapeSequence(errors, chr);
-                    }
-                }
             }
         }
 
