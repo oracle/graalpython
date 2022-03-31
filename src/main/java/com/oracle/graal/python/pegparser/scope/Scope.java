@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
-import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 
 /**
  * Roughly equivalent to CPython's {@code symtable_entry}.
@@ -215,6 +214,10 @@ public class Scope {
 
     public boolean isModule() {
         return type == ScopeType.Module;
+    }
+
+    public boolean isGenerator() {
+        return flags.contains(ScopeFlags.IsGenerator);
     }
 
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
