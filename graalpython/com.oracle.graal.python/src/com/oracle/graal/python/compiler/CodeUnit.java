@@ -48,14 +48,14 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 
 public final class CodeUnit {
-    public static final byte HAS_DEFAULTS = 0x1;
-    public static final byte HAS_KWONLY_DEFAULTS = 0x2;
-    public static final byte HAS_ANNOTATIONS = 0x04;
-    public static final byte HAS_CLOSURE = 0x08;
-    public static final byte HAS_VAR_ARGS = 0x10;
-    public static final byte HAS_VAR_KW_ARGS = 0x20;
-    public static final byte IS_GENERATOR = 0x30;
-    public static final byte IS_ASYNC = 0x40;
+    public static final int HAS_DEFAULTS = 0x1;
+    public static final int HAS_KWONLY_DEFAULTS = 0x2;
+    public static final int HAS_ANNOTATIONS = 0x04;
+    public static final int HAS_CLOSURE = 0x08;
+    public static final int HAS_VAR_ARGS = 0x10;
+    public static final int HAS_VAR_KW_ARGS = 0x20;
+    public static final int IS_GENERATOR = 0x40;
+    public static final int IS_ASYNC = 0x80;
 
     public static final int DISASSEMBLY_NUM_COLUMNS = 7;
 
@@ -71,7 +71,7 @@ public final class CodeUnit {
 
     public final byte[] code;
     public final byte[] srcOffsetTable;
-    public final byte flags;
+    public final int flags;
 
     public final String[] names;
     public final String[] varnames;
@@ -87,7 +87,7 @@ public final class CodeUnit {
 
     CodeUnit(String name, String filename,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
-                    byte[] code, byte[] linetable, byte flags,
+                    byte[] code, byte[] linetable, int flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars,
                     Object[] constants, long[] primitiveConstants,
                     short[] exceptionHandlerRanges, int startOffset) {
@@ -165,6 +165,10 @@ public final class CodeUnit {
         return (flags & HAS_KWONLY_DEFAULTS) != 0;
     }
 
+    public boolean isGenerator() {
+        return (flags & IS_GENERATOR) != 0;
+    }
+
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
@@ -173,6 +177,10 @@ public final class CodeUnit {
         HashMap<Integer, String[]> lines = new HashMap<>();
 
         sb.append("Disassembly of ").append(name).append(":\n");
+
+        if (isGenerator()) {
+            sb.append("Flags: CO_GENERATOR\n");
+        }
 
         int bci = 0;
         while (bci < code.length) {

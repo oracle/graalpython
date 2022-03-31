@@ -203,6 +203,7 @@ public final class CompilationUnit {
         flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
         flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
         flags |= freevars.size() > 0 ? CodeUnit.HAS_CLOSURE : 0;
+        flags |= scope.isGenerator() ? CodeUnit.IS_GENERATOR : 0;
 
         short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * 3];
         for (int i = 0; i < finishedExceptionHandlerRanges.size(); i++) {
@@ -214,7 +215,7 @@ public final class CompilationUnit {
         return new CodeUnit(qualName == null ? name : qualName, filename,
                         argCount, kwOnlyArgCount, positionalOnlyArgCount,
                         varnames.size(), maxStackSize,
-                        buf.toByteArray(), srcOffsets.toByteArray(), (byte) flags,
+                        buf.toByteArray(), srcOffsets.toByteArray(), flags,
                         orderedKeys(names, new String[0]),
                         orderedKeys(varnames, new String[0]),
                         orderedKeys(cellvars, new String[0]),
