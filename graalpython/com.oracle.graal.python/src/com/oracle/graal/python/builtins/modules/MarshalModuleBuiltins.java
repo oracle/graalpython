@@ -227,9 +227,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return MarshalModuleBuiltinsClinicProviders.LoadsNodeClinicProviderGen.INSTANCE;
         }
+
     }
 
-    private static final class Marshal {
+    static final class Marshal {
         private static final char TYPE_NULL = '0';
         private static final char TYPE_NONE = 'N';
         private static final char TYPE_NOVALUE = 'n';
@@ -300,14 +301,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static byte[] dump(Object value, int version, Python3Core core) throws IOException, MarshalError {
+        static byte[] dump(Object value, int version, Python3Core core) throws IOException, MarshalError {
             Marshal outMarshal = new Marshal(version, core.getTrue(), core.getFalse());
             outMarshal.writeObject(value);
             return outMarshal.out.toByteArray();
         }
 
         @TruffleBoundary
-        private static Object load(byte[] ary, int length) throws NumberFormatException, MarshalError {
+        static Object load(byte[] ary, int length) throws NumberFormatException, MarshalError {
             Marshal inMarshal = new Marshal(ary, length);
             Object result = inMarshal.readObject();
             if (result == null) {
@@ -317,7 +318,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object loadFile(Object file) throws NumberFormatException, MarshalError {
+        static Object loadFile(Object file) throws NumberFormatException, MarshalError {
             Marshal inMarshal = new Marshal(file);
             Object result = inMarshal.readObject();
             if (result == null) {
@@ -331,7 +332,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
          * Python's r_string function in marshal.c when p->readable is set, i.e., it uses readinto
          * to read enough bytes into a buffer.
          */
-        private static final class FileLikeInputStream extends InputStream {
+        static final class FileLikeInputStream extends InputStream {
             private static final String METHOD = "readinto";
             private final Object fileLike;
             private final PyObjectCallMethodObjArgs callReadIntoNode;

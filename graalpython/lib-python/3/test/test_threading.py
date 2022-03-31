@@ -856,8 +856,9 @@ class ThreadJoinOnShutdown(BaseTestCase):
 
             def random_io():
                 '''Loop for a while sleeping random tiny amounts and doing some I/O.'''
+                import __future__ as mod
                 while True:
-                    with open(os.__file__, 'rb') as in_f:
+                    with open(mod.__file__, 'rb') as in_f:
                         stuff = in_f.read(200)
                         with open(os.devnull, 'wb') as null_f:
                             null_f.write(stuff)

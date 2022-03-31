@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -78,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
@@ -128,7 +126,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -342,139 +339,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] objectArr = new Object[arr.length];
         System.arraycopy(arr, 0, objectArr, 0, arr.length);
         return objectArr;
-    }
-
-    @Builtin(name = "cache_module_code", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    public abstract static class CacheModuleCode extends PythonTernaryBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CacheModuleCode.class);
-
-        @Specialization
-        public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath) {
-            return doCache(modulename, moduleFile, PythonUtils.EMPTY_STRING_ARRAY, PythonContext.get(this), getLanguage());
-        }
-
-        @Specialization
-        public Object run(String modulename, String moduleFile, PList modulepath,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("cast") @Cached CastToJavaStringNode castString) {
-            SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
-            int n = lenNode.execute(sequenceStorage);
-            Object[] pathList = sequenceStorage.getInternalArray();
-            assert n <= pathList.length;
-            String[] paths = new String[n];
-            for (int i = 0; i < n; i++) {
-                try {
-                    paths[i] = castString.execute(pathList[i]);
-                } catch (CannotCastException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException();
-                }
-            }
-            return doCache(modulename, moduleFile, paths, PythonContext.get(this), getLanguage());
-        }
-
-        private Object doCache(String modulename, String moduleFile, String[] modulepath, PythonContext ctxt, PythonLanguage lang) {
-            assert !ctxt.isInitialized() : "this can only be called during initialization";
-            final CallTarget ct = lang.cacheCode(moduleFile, () -> null);
-            if (ct == null) {
-                throw raise(NotImplementedError, "cannot cache something we haven't cached before");
-            }
-            return cacheWithModulePath(modulename, modulepath, lang, ct);
-        }
-
-        private static Object cacheWithModulePath(String modulename, String[] modulepath, PythonLanguage lang, final CallTarget ct) {
-            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, modulepath);
-            if (cachedCt != ct) {
-                LOGGER.log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization
-        public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath) {
-            final CallTarget ct = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
-            if (ct == null) {
-                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
-            }
-            return cacheWithModulePath(modulename, PythonUtils.EMPTY_STRING_ARRAY, getLanguage(), ct);
-        }
-
-        @Specialization
-        public Object run(String modulename, PCode code, PList modulepath,
-                        @Shared("cast") @Cached CastToJavaStringNode castString) {
-            final CallTarget ct = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
-            if (ct == null) {
-                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
-            }
-            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
-            String[] paths = new String[pathList.length];
-            for (int i = 0; i < pathList.length; i++) {
-                try {
-                    paths[i] = castString.execute(pathList[i]);
-                } catch (CannotCastException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException();
-                }
-            }
-            return cacheWithModulePath(modulename, paths, getLanguage(), ct);
-        }
-    }
-
-    @Builtin(name = "has_cached_code", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HasCachedCode extends PythonUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HasCachedCode.class);
-
-        @Specialization
-        public boolean run(String modulename) {
-            boolean b = PythonContext.get(this).getOption(PythonOptions.WithCachedSources) && getLanguage().hasCachedCode(modulename);
-            if (b) {
-                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
-            }
-            return b;
-        }
-    }
-
-    @Builtin(name = "get_cached_code_path", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CachedCodeIsPackage.class);
-
-        @Specialization
-        public Object run(String modulename) {
-            String[] modulePath = null;
-            if (PythonContext.get(this).getOption(PythonOptions.WithCachedSources)) {
-                modulePath = getLanguage().cachedCodeModulePath(modulename);
-            }
-            if (modulePath != null) {
-                Object[] outPath = new Object[modulePath.length];
-                PythonUtils.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
-                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
-                return factory().createList(outPath);
-            } else {
-                return PNone.NONE;
-            }
-        }
-
-        @Fallback
-        public Object run(@SuppressWarnings("unused") Object modulename) {
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "get_cached_code", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class GetCachedCode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object run(String modulename) {
-            final CallTarget ct = getLanguage().cacheCode(modulename, () -> null);
-            if (ct == null) {
-                throw raise(ImportError, ErrorMessages.NO_CACHED_CODE, modulename);
-            } else {
-                return factory().createCode((RootCallTarget) ct);
-            }
-        }
     }
 
     @Builtin(name = "read_file", minNumOfPositionalArgs = 1)
@@ -829,26 +693,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             PythonUtils.dumpHeap(tempFile.getPath());
             return tempFile.getPath();
-        }
-    }
-
-    @Builtin(name = "register_import_func", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doit(PMethod func) {
-            getContext().registerImportFunc(func);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "register_importlib", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doit(PythonModule lib) {
-            getContext().registerImportlib(lib);
-            return PNone.NONE;
         }
     }
 

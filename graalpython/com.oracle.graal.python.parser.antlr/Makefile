@@ -56,7 +56,7 @@ ${STAMP}: ${SOURCE} ${POSTPROCESSOR}
 
 # postprocessing to make source compile without warnings
 ${PARSER_PATH}/%.java: ${STAMP}
-	python ${POSTPROCESSOR} $@
+	python3 ${POSTPROCESSOR} $@
 
 clean:
 ifeq ($(wildcard ${SOURCE}),)

@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "22.1.0",
+    "version": "22.2.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -265,7 +265,36 @@ suite = {
             "jacoco": "exclude",
             "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
-            "workingSets": "Truffle,Python",
+        },
+
+        # FROZEN MODULES
+        "com.oracle.graal.python.frozen": {
+            "subDir": "graalpython",
+            "vpath": True,
+            "type": "GraalpythonProject",
+            "args": [
+                "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
+                "--python-lib",
+                "<suite:graalpython>/graalpython/lib-python/3",
+                "--binary-dir",
+                "<output_root:com.oracle.graal.python.frozen>/com/oracle/graal/python/builtins/objects/module/",
+                "--sources-dir",
+                "<path:com.oracle.graal.python>/src/com/oracle/graal/python/builtins/objects/module/",
+            ],
+            "platformDependent": False,
+            "buildDependencies": [
+                # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist
+                "com.oracle.graal.python",
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_JNI",
+                "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
+                "regex:TREGEX",
+                "sdk:GRAAL_SDK",
+                "sulong:SULONG_API",
+                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+            ],
         },
 
         # GRAALPYTHON
@@ -378,6 +407,10 @@ suite = {
             "vpath": True,
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
+            "args": [
+                "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                "<output_root:com.oracle.graal.python.cext>",
+            ],
             "buildDependencies": [
                 "GRAALPYTHON",
                 "sulong:SULONG_HOME",
@@ -482,6 +515,7 @@ suite = {
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
+                "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",

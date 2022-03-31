@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -77,6 +77,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer, FStringExprParser {
@@ -206,11 +207,16 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             globalScope = ScopeInfo.read(dis, null);
             int offset = dis.readInt();
 
+            SourceBuilder sb;
             if (path.isEmpty() || offset != 0) {
-                source = Source.newBuilder(PythonLanguage.ID, contents, name).build();
+                sb = Source.newBuilder(PythonLanguage.ID, contents, name);
             } else {
-                source = Source.newBuilder(PythonLanguage.ID, PythonContext.get(null).getEnv().getPublicTruffleFile(path)).content(contents).name(name).build();
+                sb = Source.newBuilder(PythonLanguage.ID, PythonContext.get(null).getEnv().getPublicTruffleFile(path)).content(contents).name(name);
             }
+            if (!errorCallback.getContext().getCore().isCoreInitialized()) {
+                sb = sb.internal(true).cached(false);
+            }
+            source = sb.build();
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {
             throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());
