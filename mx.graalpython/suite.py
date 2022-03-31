@@ -121,24 +121,24 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "ICU4J-69.1" : {
+        "ICU4J-70.1" : {
             "moduleName" : "com.ibm.icu",
-            "sha1" : "ff666ac55986650893aacb9e2e0003538e9799c0",
-            "sourceSha1" : "3e19ca5465fce86a094c24df0b6c9256e53c8885",
+            "sha1" : "dfa3a1fbc55bf5db8c6e79fc0935ac7ab1202950",
+            "sourceSha1" : "21551c094193ab59d284b434c1e33a3ddf4b5c0e",
             "maven" : {
-            "groupId" : "com.ibm.icu",
-            "artifactId" : "icu4j",
-            "version" : "69.1",
+                "groupId" : "com.ibm.icu",
+                "artifactId" : "icu4j",
+                "version" : "70.1",
             },
         },
-        "ICU4J-CHARSET-69.1" : {
+        "ICU4J-CHARSET-70.1" : {
             "moduleName" : "com.ibm.icu.charset",
-            "sha1" : "c62f823ed741048490beb1660765397ad6331287",
-            "sourceSha1" : "9b366d73b5621fe534624be8276e53f2f9ee1485",
+            "sha1" : "9d220e65da007d8ed60cd7970a74d14a8205dfe7",
+            "sourceSha1" : "8f38201691b79d28e424daaa1c9a95039468e946",
             "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j-charset",
-              "version" : "69.1",
+                "groupId" : "com.ibm.icu",
+                "artifactId" : "icu4j-charset",
+                "version" : "70.1",
             },
         },
         "NETBEANS-LIB-PROFILER" : {
@@ -268,8 +268,8 @@ suite = {
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "ICU4J-69.1",
-                "ICU4J-CHARSET-69.1",
+                "ICU4J-70.1",
+                "ICU4J-CHARSET-70.1",
                 "sdk:JLINE3",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
