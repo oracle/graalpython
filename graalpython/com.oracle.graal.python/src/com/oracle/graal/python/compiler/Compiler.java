@@ -1287,7 +1287,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Yield node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            addOp(YIELD_VALUE);
+            return null;
         } finally {
             setLocation(savedOffset);
         }

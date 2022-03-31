@@ -156,6 +156,9 @@ public enum OpCodes {
     END_EXC_HANDLER(0, 2, 0),
     UNWRAP_EXC(0, 1, 1),
 
+    // generators
+    YIELD_VALUE(0, 1, 1),
+
     // with statements
     SETUP_WITH(0, 1, 3),
     EXIT_WITH(0, 3, 0);

@@ -404,6 +404,13 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testGenerator() {
+        String source = "def gen(a):\n" +
+                        "    yield a + 1\n";
+        doTest(source);
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +
