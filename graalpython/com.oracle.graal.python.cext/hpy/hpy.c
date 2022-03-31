@@ -1030,6 +1030,10 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_WriteUnraisable)(HPyContext *ctx, HPy obj
      UPCALL_VOID(ctx_Err_WriteUnraisable, ctx, obj); 
 }
 
+HPyAPI_STORAGE void _HPy_IMPL_NAME(FatalError)(HPyContext *ctx, const char *msg) {
+     UPCALL_VOID(ctx_FatalError, ctx, msg); 
+}
+
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(IsTrue)(HPyContext *ctx, HPy h)
 {
 	return UPCALL_HPY(ctx_IsTrue, ctx, h);
@@ -1639,6 +1643,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Err_ExceptionMatches);
     HPY_CTX_UPCALL(ctx_Err_WarnEx);
     HPY_CTX_UPCALL(ctx_Err_WriteUnraisable);
+    HPY_CTX_UPCALL(ctx_FatalError);
     HPY_CTX_UPCALL(ctx_Unicode_AsASCIIString);
     HPY_CTX_UPCALL(ctx_Unicode_AsLatin1String);
     HPY_CTX_UPCALL(ctx_Unicode_DecodeFSDefaultAndSize);
