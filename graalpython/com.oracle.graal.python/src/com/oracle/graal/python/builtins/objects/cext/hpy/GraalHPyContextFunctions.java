@@ -1396,32 +1396,47 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached PCallHPyFunction callHPyFunction,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached GetLLVMType getLLVMType,
-                        @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
-                Object result = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], charset);
-                Object sizePtr = arguments[2];
-                if (!ptrLib.isNull(sizePtr)) {
-                    sizePtr = callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_TYPED, sizePtr, getLLVMType.execute(LLVMType.Py_ssize_ptr_t));
-                    try {
-                        ptrLib.writeArrayElement(sizePtr, 0, ptrLib.getArraySize(result));
-                    } catch (InteropException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
+                Object charPtr = arguments[1];
+                long size = castToJavaLongNode.execute(arguments[2]);
+                if (!interopLib.hasArrayElements(charPtr)) {
+                    charPtr = callHPyFunction.call(context, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, size);
                 }
+                byte[] bytes;
+                try {
+                    bytes = getByteArrayNode.execute(charPtr, size);
+                } catch (OverflowException | InteropException ex) {
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
+                String result = decode(CodingErrorAction.IGNORE, bytes);
                 return asHandleNode.execute(context, result);
             } finally {
                 gil.release(mustRelease);
             }
         }
 
-        public static GraalHPyUnicodeDecodeCharset decodeFSDefault() {
-            return new GraalHPyUnicodeDecodeCharset(GetFileSystemEncodingNode.getFileSystemEncoding());
+        public static GraalHPyUnicodeDecodeCharsetAndSize decodeFSDefault() {
+            return new GraalHPyUnicodeDecodeCharsetAndSize(GetFileSystemEncodingNode.getFileSystemEncoding());
+        }
+
+        @TruffleBoundary
+        private String decode(CodingErrorAction errorAction, byte[] bytes) {
+            try {
+                return CharsetMapping.getCharset(charset).newDecoder()
+                        .onMalformedInput(errorAction)
+                        .onUnmappableCharacter(errorAction)
+                        .decode(ByteBuffer.wrap(bytes)).toString();
+            } catch (CharacterCodingException ex) {
+                throw CompilerDirectives.shouldNotReachHere(ex);
+            }
         }
     }
 
