@@ -465,6 +465,7 @@ class GraalPythonTags(object):
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
     tagged = 'python-tagged-unittest'
+    tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     shared_object = 'python-so'
