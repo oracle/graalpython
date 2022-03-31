@@ -60,7 +60,8 @@ public abstract class ExprTy extends SSTNode {
         }
 
         public static enum Type {
-            And, Or;
+            And,
+            Or;
         }
 
         public final Type op;
@@ -90,8 +91,18 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class BinOp extends ExprTy {
         public static enum Operator {
-            ADD, SUB, MULT, MATMULT, DIV, MOD, POW,
-            LSHIFT, RSHIFT, BITOR, BITXOR, BITAND,
+            ADD,
+            SUB,
+            MULT,
+            MATMULT,
+            DIV,
+            MOD,
+            POW,
+            LSHIFT,
+            RSHIFT,
+            BITOR,
+            BITXOR,
+            BITAND,
             FLOORDIV;
         }
 
@@ -114,7 +125,10 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class UnaryOp extends ExprTy {
         public static enum Operator {
-            INVERT, NOT, ADD, SUB;
+            INVERT,
+            NOT,
+            ADD,
+            SUB;
         }
 
         public final Operator op;
@@ -306,8 +320,16 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Compare extends ExprTy {
         public static enum Operator {
-            EQ, NOTEQ, LT, LTE, GT, GTE, IS, ISNOT,
-            IN, NOTIN;
+            EQ,
+            NOTEQ,
+            LT,
+            LTE,
+            GT,
+            GTE,
+            IS,
+            ISNOT,
+            IN,
+            NOTIN;
         }
 
         public final ExprTy left;
@@ -432,7 +454,7 @@ public abstract class ExprTy extends SSTNode {
 
         public long getReal() {
             assert kind == Kind.COMPLEX;
-            return Double.doubleToLongBits((Double)value);
+            return Double.doubleToLongBits((Double) value);
         }
 
         public long getImaginary() {

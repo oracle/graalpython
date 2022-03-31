@@ -53,8 +53,16 @@ final class BlockInfo {
     }
 
     enum Type {
-        WHILE_LOOP, FOR_LOOP, TRY_EXCEPT, FINALLY_TRY, FINALLY_END,
-        WITH, ASYNC_WITH, HANDLER_CLEANUP, POP_VALUE, EXCEPTION_HANDLER,
+        WHILE_LOOP,
+        FOR_LOOP,
+        TRY_EXCEPT,
+        FINALLY_TRY,
+        FINALLY_END,
+        WITH,
+        ASYNC_WITH,
+        HANDLER_CLEANUP,
+        POP_VALUE,
+        EXCEPTION_HANDLER,
         ASYNC_COMPREHENSION_GENERATOR;
     }
 }

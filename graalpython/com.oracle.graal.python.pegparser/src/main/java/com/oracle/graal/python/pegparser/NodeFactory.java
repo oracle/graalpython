@@ -81,7 +81,7 @@ public interface NodeFactory {
     public ExprTy createCall(ExprTy func, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset);
 
     public StmtTy createContinue(int startOffset, int endOffset);
-    
+
     public StmtTy createDelete(ExprTy[] targets, int startOffset, int endOffset);
 
     public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset);

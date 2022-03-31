@@ -44,121 +44,130 @@ import com.oracle.graal.python.annotations.GenerateEnumConstants;
 
 @GenerateEnumConstants
 public enum OpCodes {
-    POP_TOP(                   0, 1, 0),
-    ROT_TWO(                   0, 2, 2),
-    ROT_THREE(                 0, 3, 3),
-    DUP_TOP(                   0, 1, 2),
-    ROT_FOUR(                  0, 4, 4),
-    NOP(                       0, 0, 0),
-    UNARY_OP(                  1, 1, 1),
-    BINARY_OP(                 1, 2, 1),
-    BINARY_SUBSCR(             0, 2, 1),
-    STORE_SUBSCR(              0, 3, 0),
-    DELETE_SUBSCR(             0, 2, 0),
-    GET_ITER(                  0, 1, 1),
-    LOAD_BUILD_CLASS(          0, 0, 1),
-    LOAD_ASSERTION_ERROR(      0, 0, 1),
-    RETURN_VALUE(              0, 1, 0),
-    STORE_NAME(                1, 1, 0),
-    DELETE_NAME(               1, 0, 0),
-    STORE_ATTR(                1, 2, 0),
-    DELETE_ATTR(               1, 1, 0),
-    STORE_GLOBAL(              1, 1, 0),
-    DELETE_GLOBAL(             1, 0, 0),
-    LOAD_CONST(                1, 0, 1),
-    LOAD_NAME(                 1, 0, 1),
-    LOAD_ATTR(                 1, 1, 1),
-    LOAD_GLOBAL(               1, 0, 1),
-    LOAD_FAST(                 1, 0, 1),
-    STORE_FAST(                1, 1, 0),
-    DELETE_FAST(               1, 0, 0),
-    RAISE_VARARGS(             1, (oparg, withJump) -> oparg, 0),
-    LOAD_DEREF(                1, 0, 1),
-    STORE_DEREF(               1, 1, 0),
-    DELETE_DEREF(              1, 0, 0),
-    LOAD_CLASSDEREF(           1, 0, 1),
-    BUILD_SLICE(               1, (oparg, withJump) -> oparg, 1),
+    POP_TOP(0, 1, 0),
+    ROT_TWO(0, 2, 2),
+    ROT_THREE(0, 3, 3),
+    DUP_TOP(0, 1, 2),
+    ROT_FOUR(0, 4, 4),
+    NOP(0, 0, 0),
+    UNARY_OP(1, 1, 1),
+    BINARY_OP(1, 2, 1),
+    BINARY_SUBSCR(0, 2, 1),
+    STORE_SUBSCR(0, 3, 0),
+    DELETE_SUBSCR(0, 2, 0),
+    GET_ITER(0, 1, 1),
+    LOAD_BUILD_CLASS(0, 0, 1),
+    LOAD_ASSERTION_ERROR(0, 0, 1),
+    RETURN_VALUE(0, 1, 0),
+    STORE_NAME(1, 1, 0),
+    DELETE_NAME(1, 0, 0),
+    STORE_ATTR(1, 2, 0),
+    DELETE_ATTR(1, 1, 0),
+    STORE_GLOBAL(1, 1, 0),
+    DELETE_GLOBAL(1, 0, 0),
+    LOAD_CONST(1, 0, 1),
+    LOAD_NAME(1, 0, 1),
+    LOAD_ATTR(1, 1, 1),
+    LOAD_GLOBAL(1, 0, 1),
+    LOAD_FAST(1, 0, 1),
+    STORE_FAST(1, 1, 0),
+    DELETE_FAST(1, 0, 0),
+    RAISE_VARARGS(1, (oparg, withJump) -> oparg, 0),
+    LOAD_DEREF(1, 0, 1),
+    STORE_DEREF(1, 1, 0),
+    DELETE_DEREF(1, 0, 0),
+    LOAD_CLASSDEREF(1, 0, 1),
+    BUILD_SLICE(1, (oparg, withJump) -> oparg, 1),
 
-    IMPORT_NAME(               1, 2, 1),
-    IMPORT_FROM(               1, 1, 2),
+    IMPORT_NAME(1, 2, 1),
+    IMPORT_FROM(1, 1, 2),
 
     // load bytecodes for special constants
-    LOAD_NONE(                 0, 0, 1),
-    LOAD_ELLIPSIS(             0, 0, 1),
-    LOAD_TRUE(                 0, 0, 1),
-    LOAD_FALSE(                0, 0, 1),
-    LOAD_BYTE(                 1, 0, 1),
-    LOAD_LONG(                 1, 0, 1),
-    LOAD_DOUBLE(               1, 0, 1),
-    LOAD_BIGINT(               1, 0, 1),
-    LOAD_STRING(               1, 0, 1),
-    LOAD_BYTES(                1, 0, 1),
+    LOAD_NONE(0, 0, 1),
+    LOAD_ELLIPSIS(0, 0, 1),
+    LOAD_TRUE(0, 0, 1),
+    LOAD_FALSE(0, 0, 1),
+    LOAD_BYTE(1, 0, 1),
+    LOAD_LONG(1, 0, 1),
+    LOAD_DOUBLE(1, 0, 1),
+    LOAD_BIGINT(1, 0, 1),
+    LOAD_STRING(1, 0, 1),
+    LOAD_BYTES(1, 0, 1),
     // make a complex from two doubles on the top of stack
-    MAKE_COMPLEX(              0, 2, 1),
+    MAKE_COMPLEX(0, 2, 1),
 
     // calling
-    CALL_METHOD_VARARGS(       1, 1, 1), // args[] => result
-    CALL_METHOD(               2, (oparg, withJump) -> (oparg >> 8) + 1, 1),
-    CALL_FUNCTION(             1, (oparg, withJump) -> oparg + 1, 1),
-    CALL_FUNCTION_KW(          0, 3, 1), // func, args[], keywords[] => result
-    CALL_FUNCTION_VARARGS(     0, 2, 1), // func, args[] => result
+    // args[] => result
+    CALL_METHOD_VARARGS(1, 1, 1),
+    CALL_METHOD(2, (oparg, withJump) -> (oparg >> 8) + 1, 1),
+    CALL_FUNCTION(1, (oparg, withJump) -> oparg + 1, 1),
+    // func, args[], keywords[] => result
+    CALL_FUNCTION_KW(0, 3, 1),
+    // func, args[] => result
+    CALL_FUNCTION_VARARGS(0, 2, 1),
 
     // destructuring bytecodes
-    UNPACK_EX(                 1, 1, OpCodes::unpackExStackEffect),
-    UNPACK_EX_LARGE(           2, 1, OpCodes::unpackExStackEffect),
-    UNPACK_SEQUENCE(           1, 1, (oparg, withJump) -> oparg),
-    UNPACK_SEQUENCE_LARGE(     2, 1, (oparg, withJump) -> oparg),
+    UNPACK_EX(1, 1, OpCodes::unpackExStackEffect),
+    UNPACK_EX_LARGE(2, 1, OpCodes::unpackExStackEffect),
+    UNPACK_SEQUENCE(1, 1, (oparg, withJump) -> oparg),
+    UNPACK_SEQUENCE_LARGE(2, 1, (oparg, withJump) -> oparg),
 
     // jumps
-    FOR_ITER(                  1, 1, (oparg, withJump) -> withJump? 0 : 2),
-    FOR_ITER_FAR(              2, 1, (oparg, withJump) -> withJump? 0 : 2),
-    JUMP_FORWARD(              1, 0, 0),
-    JUMP_FORWARD_FAR(          2, 0, 0),
-    JUMP_BACKWARD(             1, 0, 0),
-    JUMP_BACKWARD_FAR(         2, 0, 0),
-    JUMP_IF_FALSE_OR_POP(      1, (oparg, withJump) -> withJump? 0 : 1, 0),
-    JUMP_IF_FALSE_OR_POP_FAR(  2, (oparg, withJump) -> withJump? 0 : 1, 0),
-    JUMP_IF_TRUE_OR_POP(       1, (oparg, withJump) -> withJump? 0 : 1, 0),
-    JUMP_IF_TRUE_OR_POP_FAR(   2, (oparg, withJump) -> withJump? 0 : 1, 0),
-    POP_AND_JUMP_IF_TRUE(      1, 1, 0),
-    POP_AND_JUMP_IF_TRUE_FAR(  2, 1, 0),
-    POP_AND_JUMP_IF_FALSE(     1, 1, 0),
-    POP_AND_JUMP_IF_FALSE_FAR( 2, 1, 0),
+    FOR_ITER(1, 1, (oparg, withJump) -> withJump ? 0 : 2),
+    FOR_ITER_FAR(2, 1, (oparg, withJump) -> withJump ? 0 : 2),
+    JUMP_FORWARD(1, 0, 0),
+    JUMP_FORWARD_FAR(2, 0, 0),
+    JUMP_BACKWARD(1, 0, 0),
+    JUMP_BACKWARD_FAR(2, 0, 0),
+    JUMP_IF_FALSE_OR_POP(1, (oparg, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_FALSE_OR_POP_FAR(2, (oparg, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP(1, (oparg, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP_FAR(2, (oparg, withJump) -> withJump ? 0 : 1, 0),
+    POP_AND_JUMP_IF_TRUE(1, 1, 0),
+    POP_AND_JUMP_IF_TRUE_FAR(2, 1, 0),
+    POP_AND_JUMP_IF_FALSE(1, 1, 0),
+    POP_AND_JUMP_IF_FALSE_FAR(2, 1, 0),
 
     // making callables
-    LOAD_CLOSURE(              1, 0, 1),
-    CLOSURE_FROM_STACK(        1, (oparg, withJump) -> oparg, 1),
-    MAKE_FUNCTION(             1, (oparg, withJump) -> Integer.bitCount(oparg), 1),
+    LOAD_CLOSURE(1, 0, 1),
+    CLOSURE_FROM_STACK(1, (oparg, withJump) -> oparg, 1),
+    MAKE_FUNCTION(1, (oparg, withJump) -> Integer.bitCount(oparg), 1),
 
     // collection literals
-    COLLECTION_ADD_STACK(      1, (oparg, withJump) -> CollectionBits.elementCount(oparg) + 1, 1), // add to coll underneath args the arg elements above
-    COLLECTION_FROM_STACK(     1, (oparg, withJump) -> CollectionBits.elementCount(oparg), 1), // build a collection from arg elements on stack
-    COLLECTION_ADD_COLLECTION( 1, 2, 1), // add the collection on top of stack to the collection underneath
-    COLLECTION_FROM_COLLECTION(1, 1, 1), // replace the collection on top of stack with a collection of another type
-    ADD_TO_COLLECTION(         1, (oparg, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0), // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
-    KWARGS_DICT_MERGE(         0, 2, 1), // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
-    MAKE_KEYWORD(              1, 1, 1),
+    // add to coll underneath args the arg elements above
+    COLLECTION_ADD_STACK(1, (oparg, withJump) -> CollectionBits.elementCount(oparg) + 1, 1),
+    // build a collection from arg elements on stack
+    COLLECTION_FROM_STACK(1, (oparg, withJump) -> CollectionBits.elementCount(oparg), 1),
+    // add the collection on top of stack to the collection underneath
+    COLLECTION_ADD_COLLECTION(1, 2, 1),
+    // replace the collection on top of stack with a collection of another type
+    COLLECTION_FROM_COLLECTION(1, 1, 1),
+    // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
+    ADD_TO_COLLECTION(1, (oparg, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0),
+    // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
+    KWARGS_DICT_MERGE(0, 2, 1),
+    MAKE_KEYWORD(1, 1, 1),
 
     // exceptions
-    MATCH_EXC_OR_JUMP(         1, 1, 0),
-    MATCH_EXC_OR_JUMP_FAR(     2, 1, 0),
-    PUSH_EXC_INFO(             0, 0, 1),
-    POP_EXCEPT(                0, 1, 0),
-    END_EXC_HANDLER(           0, 2, 0),
-    UNWRAP_EXC(                0, 1, 1),
+    MATCH_EXC_OR_JUMP(1, 1, 0),
+    MATCH_EXC_OR_JUMP_FAR(2, 1, 0),
+    PUSH_EXC_INFO(0, 0, 1),
+    POP_EXCEPT(0, 1, 0),
+    END_EXC_HANDLER(0, 2, 0),
+    UNWRAP_EXC(0, 1, 1),
 
     // with statements
-    SETUP_WITH(                0, 1, 3),
-    EXIT_WITH(                 0, 3, 0);
+    SETUP_WITH(0, 1, 3),
+    EXIT_WITH(0, 3, 0);
 
     public static final class CollectionBits {
         public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
-        public static final int LIST                    = 0b00100000;
-        public static final int TUPLE                   = 0b01000000;
-        public static final int SET                     = 0b01100000;
-        public static final int DICT                    = 0b10000000;
-        public static final int KWORDS                  = 0b10100000;
-        public static final int OBJECT                  = 0b11000000;
+        public static final int LIST = 0b00100000;
+        public static final int TUPLE = 0b01000000;
+        public static final int SET = 0b01100000;
+        public static final int DICT = 0b10000000;
+        public static final int KWORDS = 0b10100000;
+        public static final int OBJECT = 0b11000000;
 
         public static int elementCount(int oparg) {
             return oparg & MAX_STACK_ELEMENT_COUNT;

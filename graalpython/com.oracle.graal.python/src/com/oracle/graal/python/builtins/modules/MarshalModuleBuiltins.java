@@ -983,13 +983,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             // int refidx = -1;
             // if (shouldAddRef) {
-            //     refidx = refList.size();
-            //     refList.add(null); // reserve
+            // refidx = refList.size();
+            // refList.add(null); // reserve
             // }
 
-            // GetInternalByteArrayNode getByteAryNode = SequenceStorageNodes.GetInternalByteArrayNode.getUncached();
-            // GetInternalObjectArrayNode getObjAryNode = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached();
-            // GetSequenceStorageNode getStoreNode = SequenceNodes.GetSequenceStorageNode.getUncached();
+            // GetInternalByteArrayNode getByteAryNode =
+            // SequenceStorageNodes.GetInternalByteArrayNode.getUncached();
+            // GetInternalObjectArrayNode getObjAryNode =
+            // SequenceStorageNodes.GetInternalObjectArrayNode.getUncached();
+            // GetSequenceStorageNode getStoreNode =
+            // SequenceNodes.GetSequenceStorageNode.getUncached();
             // CastToJavaStringNode castStrNode = CastToJavaStringNode.getUncached();
 
             // int argcount = readInt();
@@ -1003,22 +1006,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             // Object[] nameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
             // String[] names = new String[nameObjs.length];
             // for (int i = 0; i < nameObjs.length; i++) {
-            //     names[i] = castStrNode.execute(nameObjs[i]);
+            // names[i] = castStrNode.execute(nameObjs[i]);
             // }
             // Object[] varnameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
             // String[] varnames = new String[varnameObjs.length];
             // for (int i = 0; i < varnameObjs.length; i++) {
-            //     varnames[i] = castStrNode.execute(varnameObjs[i]);
+            // varnames[i] = castStrNode.execute(varnameObjs[i]);
             // }
             // Object[] freevarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
             // String[] freevars = new String[freevarObjs.length];
             // for (int i = 0; i < freevarObjs.length; i++) {
-            //     freevars[i] = castStrNode.execute(freevarObjs[i]);
+            // freevars[i] = castStrNode.execute(freevarObjs[i]);
             // }
             // Object[] cellvarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
             // String[] cellvars = new String[cellvarObjs.length];
             // for (int i = 0; i < cellvarObjs.length; i++) {
-            //     cellvars[i] = castStrNode.execute(cellvarObjs[i]);
+            // cellvars[i] = castStrNode.execute(cellvarObjs[i]);
             // }
             // String filename = castStrNode.execute(readObject());
             // String name = castStrNode.execute(readObject());
@@ -1030,16 +1033,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             // int positionalOnlyArgIndex = argcount - posonlyargcount;
             // boolean takesVarArgs = (flags & PCode.FLAG_VAR_ARGS) != 0;
             // boolean takesVarKeywordArgs = (flags & PCode.FLAG_VAR_KW_ARGS) != 0;
-            // Signature signature = new Signature(positionalOnlyArgIndex, takesVarKeywordArgs, takesVarArgs ? argcount : -1, false, paramaterIds, keywordNames);
+            // Signature signature = new Signature(positionalOnlyArgIndex, takesVarKeywordArgs,
+            // takesVarArgs ? argcount : -1, false, paramaterIds, keywordNames);
 
-            // PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(null), signature, bytecode,
-            //                 filename, name, firstlineno,
-            //                 consts, names, varnames, freevars, cellvars, stacksize);
+            // PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(null),
+            // signature, bytecode,
+            // filename, name, firstlineno,
+            // consts, names, varnames, freevars, cellvars, stacksize);
             // RootCallTarget ct = Truffle.getRuntime().createCallTarget(rootNode);
-            // PCode code = factory.createCode(ct, signature, nlocals, stacksize, flags, consts, nameObjs, varnameObjs, freevars, cellvars, filename, name, firstlineno, lnotab);
+            // PCode code = factory.createCode(ct, signature, nlocals, stacksize, flags, consts,
+            // nameObjs, varnameObjs, freevars, cellvars, filename, name, firstlineno, lnotab);
 
             // if (shouldAddRef) {
-            //     refList.set(refidx, code);
+            // refList.set(refidx, code);
             // }
 
             return null;
