@@ -46,6 +46,13 @@ def pytest_configure(config):
         "markers", "syncgc: Mark tests that rely on a synchronous GC."
     )
 
+
+def pytest_runtest_setup(item):
+    if (sys.implementation.name in ["graalpython", "pypy"] and
+        "syncgc" in [mark.name for mark in item.iter_markers()]):
+        pytest.skip(f"cannot run syncgc test on {sys.implementation.name}")
+
+
 @pytest.fixture(scope='session')
 def hpy_devel(request):
     from hpy.devel import HPyDevel
