@@ -770,7 +770,7 @@ abstract class AbstractParser {
     /**
      * RAISE_SYNTAX_ERROR
      */
-    final SSTNode raiseSyntaxError (String msg, Object... argumetns) {
+    final SSTNode raiseSyntaxError(String msg, Object... argumetns) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
