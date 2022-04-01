@@ -462,6 +462,10 @@ int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
     return waitpid(pid, status, options);
 }
 
+void call_abort() {
+    abort();
+}
+
 int32_t call_wcoredump(int32_t status) {
     return WCOREDUMP(status) ? 1 : 0;
 }

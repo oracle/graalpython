@@ -249,6 +249,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -1701,6 +1702,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     private static void interruptThread() {
         Thread.currentThread().interrupt();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void abort(@CachedLibrary("this") PosixSupportLibrary thisLib) {
+        throw new PythonExitException(thisLib, 134); // 134 == 128 + SIGABRT
     }
 
     // TODO the implementation of the following builtins is taken from posix.py,
