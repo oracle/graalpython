@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "0c2991165d3819639a0aedbef73bd8723b004db8",
+                "version": "27105f4259ba117779273330a38b6d3044ccf8e8",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "0c2991165d3819639a0aedbef73bd8723b004db8",
+                "version": "27105f4259ba117779273330a38b6d3044ccf8e8",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "0c2991165d3819639a0aedbef73bd8723b004db8",
+                "version": "27105f4259ba117779273330a38b6d3044ccf8e8",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -114,24 +114,24 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "ICU4J-66.1" : {
+        "ICU4J-70.1" : {
             "moduleName" : "com.ibm.icu",
-            "sha1" : "72c7519b6d91f7a1f993bd44a99fe95d67211b27",
-            "sourceSha1" : "57d00b7135ca8fa82311d6b9fd345309e4c46f0b",
+            "sha1" : "dfa3a1fbc55bf5db8c6e79fc0935ac7ab1202950",
+            "sourceSha1" : "21551c094193ab59d284b434c1e33a3ddf4b5c0e",
             "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j",
-              "version" : "66.1",
+                "groupId" : "com.ibm.icu",
+                "artifactId" : "icu4j",
+                "version" : "70.1",
             },
         },
-        "ICU4J-CHARSET-66.1" : {
+        "ICU4J-CHARSET-70.1" : {
             "moduleName" : "com.ibm.icu.charset",
-            "sha1" : "292f8736709f5c69afd9275faf92fac11a342b3e",
-            "sourceSha1" : "e981b54cb052d22f5512626dac6a29c79b1460d6",
+            "sha1" : "9d220e65da007d8ed60cd7970a74d14a8205dfe7",
+            "sourceSha1" : "8f38201691b79d28e424daaa1c9a95039468e946",
             "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j-charset",
-              "version" : "66.1",
+                "groupId" : "com.ibm.icu",
+                "artifactId" : "icu4j-charset",
+                "version" : "70.1",
             },
         },
         "NETBEANS-LIB-PROFILER" : {
@@ -260,8 +260,8 @@ suite = {
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "ICU4J-66.1",
-                "ICU4J-CHARSET-66.1",
+                "ICU4J-70.1",
+                "ICU4J-CHARSET-70.1",
                 "sdk:JLINE3",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
