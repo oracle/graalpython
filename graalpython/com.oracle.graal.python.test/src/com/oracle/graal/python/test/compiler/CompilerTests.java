@@ -411,6 +411,12 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testGeneratorComprehension() {
+        String source = "(str(x) for y in [[1, 2, 3], [4, 5, 6]] for x in y if x < 5)";
+        doTest(source);
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +

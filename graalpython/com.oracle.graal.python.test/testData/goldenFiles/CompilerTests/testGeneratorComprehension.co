@@ -1,0 +1,41 @@
+Disassembly of <module>:
+000000         0 LOAD_CONST                        0    (<genexpr> from <module>)
+000000         2 MAKE_FUNCTION                     0
+000019         4 LOAD_BYTE                         1
+000022         6 LOAD_BYTE                         2
+000025         8 LOAD_BYTE                         3
+000018        10 COLLECTION_FROM_STACK             3    (list)
+000030        12 LOAD_BYTE                         4
+000033        14 LOAD_BYTE                         5
+000036        16 LOAD_BYTE                         6
+000029        18 COLLECTION_FROM_STACK             3    (list)
+000017        20 COLLECTION_FROM_STACK             2    (list)
+000000        22 GET_ITER
+000000        23 CALL_FUNCTION                     1
+000000        25 POP_TOP
+000000        26 LOAD_NONE
+000000        27 RETURN_VALUE
+
+Disassembly of <genexpr>:
+Flags: CO_GENERATOR
+000000         0 LOAD_FAST                         0    (.0)
+000000   >>    2 FOR_ITER                          32   (to 34)
+000012         4 STORE_FAST                        1    (y)
+000049         6 LOAD_FAST                         1    (y)
+000000         8 GET_ITER
+000000   >>    9 FOR_ITER                          23   (to 32)
+000044        11 STORE_FAST                        2    (x)
+000054        13 LOAD_FAST                         2    (x)
+000058        15 LOAD_BYTE                         5
+000054        17 BINARY_OP                         14   (LT)
+000000        19 POP_AND_JUMP_IF_FALSE             11   (to 30)
+000001        21 LOAD_GLOBAL                       0    (str)
+000005        23 LOAD_FAST                         2    (x)
+000001        25 CALL_FUNCTION                     1
+000000        27 YIELD_VALUE
+000000        28 RESUME_YIELD
+000000        29 POP_TOP
+000000   >>   30 JUMP_BACKWARD                     21   (to 9)
+000000   >>   32 JUMP_BACKWARD                     30   (to 2)
+000000   >>   34 LOAD_NONE
+000000        35 RETURN_VALUE

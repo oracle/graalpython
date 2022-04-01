@@ -917,12 +917,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.GeneratorExp node) {
-        int savedOffset = setLocation(node);
-        try {
-            throw new UnsupportedOperationException("Not supported yet.");
-        } finally {
-            setLocation(savedOffset);
-        }
+        return visitComprehension(node, "<genexpr>", node.generators, node.element, null, ComprehensionType.GENEXPR);
     }
 
     @Override
@@ -1105,8 +1100,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 collectionStackDepth++;
             }
             if (type == ComprehensionType.GENEXPR) {
-                // TODO yield and pop
-                throw new IllegalStateException("Not supported yet.");
+                addOp(YIELD_VALUE);
+                addOp(RESUME_YIELD);
+                addOp(POP_TOP);
             } else {
                 /*
                  * There is an iterator for every generator on the stack. We need to append to the
