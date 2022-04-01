@@ -1414,24 +1414,23 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_FatalError", parameterNames = {"prefix", "msg", "status"})
+    @Builtin(name = "PyTruffle_FatalError", parameterNames = {"msg", "status"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffleFatalErrorNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        Object doStrings(String prefix, String msg, int status) {
-            CExtCommonNodes.fatalError(this, PythonContext.get(this), prefix, msg, status);
+        Object doStrings(String msg, int status) {
+            CExtCommonNodes.fatalError(this, PythonContext.get(this), "", msg, status);
             return PNone.NONE;
         }
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(Object prefixObj, Object msgObj, int status) {
-            String prefix = prefixObj == PNone.NO_VALUE ? null : (String) prefixObj;
+        Object doGeneric(Object msgObj, int status) {
             String msg = msgObj == PNone.NO_VALUE ? null : (String) msgObj;
-            return doStrings(prefix, msg, status);
+            return doStrings(msg, status);
         }
     }
 
