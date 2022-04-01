@@ -167,6 +167,32 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testForBreakContinue() {
+        String source = "for i in range(10):\n" +
+                        "  if i == 3:\n" +
+                        "    break\n" +
+                        "  else:\n" +
+                        "    continue\n" +
+                        "else:\n" +
+                        "  print('else')";
+        doTest(source);
+    }
+
+    @Test
+    public void testWhileBreakContinue() {
+        String source = "i = 0\n" +
+                        "while i < 10:\n" +
+                        "  if i == 3:\n" +
+                        "    break\n" +
+                        "  else:\n" +
+                        "    i += 1\n" +
+                        "    continue\n" +
+                        "else:\n" +
+                        "  print('else')";
+        doTest(source);
+    }
+
+    @Test
     public void testTryExcept() {
         String s = "print('before')\n" +
                         "try:\n" +

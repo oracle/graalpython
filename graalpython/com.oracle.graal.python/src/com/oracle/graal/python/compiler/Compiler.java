@@ -1985,16 +1985,48 @@ public class Compiler implements SSTreeVisitor<Void> {
         throw new UnsupportedOperationException("should not reach here");
     }
 
+    private BlockInfo unwindBlockStackUntilLoop() {
+        while (true) {
+            if (unit.blockInfoStack.empty()) {
+                return null;
+            }
+            BlockInfo info = unit.blockInfoStack.peek();
+            switch (info.type) {
+                case FOR_LOOP:
+                case WHILE_LOOP:
+                    return info;
+                // TODO unwind try, with
+            }
+        }
+    }
+
     @Override
     public Void visit(StmtTy.Break node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        setLocation(node);
+        BlockInfo info = unwindBlockStackUntilLoop();
+        if (info == null) {
+            // TODO syntax error
+            throw new IllegalStateException("'break' outside loop");
+        }
+        if (info.type == BlockInfo.Type.FOR_LOOP) {
+            // pop the iterator
+            addOp(POP_TOP);
+        }
+        addOp(JUMP_FORWARD, info.after);
+        return null;
     }
 
     @Override
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        BlockInfo info = unwindBlockStackUntilLoop();
+        if (info == null) {
+            // TODO syntax error
+            throw new IllegalStateException("'continue' not properly in loop");
+        }
+        addOp(JUMP_BACKWARD, info.start);
+        return null;
     }
 
     @Override
