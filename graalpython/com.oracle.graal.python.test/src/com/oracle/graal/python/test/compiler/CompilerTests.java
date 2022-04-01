@@ -387,6 +387,12 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testNestedListComprehension() {
+        String source = "[[x for x in range(5)] for y in range(3)]";
+        doTest(source);
+    }
+
+    @Test
     public void testSetComprehension() {
         String source = "{x * 2 for x in range(10) if x % 2 == 0}";
         doTest(source);

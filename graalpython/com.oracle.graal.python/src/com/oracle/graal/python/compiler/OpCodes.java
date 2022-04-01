@@ -131,7 +131,7 @@ public enum OpCodes {
     // making callables
     LOAD_CLOSURE(1, 0, 1),
     CLOSURE_FROM_STACK(1, (oparg, withJump) -> oparg, 1),
-    MAKE_FUNCTION(1, (oparg, withJump) -> Integer.bitCount(oparg), 1),
+    MAKE_FUNCTION(1, (oparg, withJump) -> Integer.bitCount(oparg) + 1, 1),
 
     // collection literals
     // add to coll underneath args the arg elements above
