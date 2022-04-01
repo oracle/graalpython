@@ -21,17 +21,16 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class UnpackSequenceNode extends PNodeWithContext {
-    public abstract void execute(Frame frame, int stackTop, Object collection, int count);
+    public abstract void execute(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int count);
 
     @Specialization(guards = {"cannotBeOverridden(sequence, getClassNode)", "!isPString(sequence)"}, limit = "1")
     @ExplodeLoop
-    static void doUnpackSequence(VirtualFrame frame, int stackTop, PSequence sequence, int count,
+    static void doUnpackSequence(int stackTop, Frame localFrame, PSequence sequence, int count,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
@@ -42,7 +41,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
         int len = lenNode.execute(storage);
         if (len == count) {
             for (int i = 0; i < count; i++) {
-                frame.setObject(stackTop + count - i, getItemNode.execute(storage, i));
+                localFrame.setObject(stackTop + count - i, getItemNode.execute(storage, i));
             }
         } else {
             errorProfile.enter();
@@ -56,7 +55,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
 
     @Fallback
     @ExplodeLoop
-    static void doUnpackIterable(VirtualFrame frame, int stackTop, Object collection, int count,
+    static void doUnpackIterable(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int count,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode getNextNode,
                     @Cached IsBuiltinClassProfile notIterableProfile,
@@ -65,22 +64,22 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         Object iterator;
         try {
-            iterator = getIter.execute(frame, collection);
+            iterator = getIter.execute(virtualFrame, collection);
         } catch (PException e) {
             e.expectTypeError(notIterableProfile);
             throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         for (int i = 0; i < count; i++) {
             try {
-                Object item = getNextNode.execute(frame, iterator);
-                frame.setObject(stackTop + count - i, item);
+                Object item = getNextNode.execute(virtualFrame, iterator);
+                localFrame.setObject(stackTop + count - i, item);
             } catch (PException e) {
                 e.expectStopIteration(stopIterationProfile1);
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
             }
         }
         try {
-            getNextNode.execute(frame, iterator);
+            getNextNode.execute(virtualFrame, iterator);
         } catch (PException e) {
             e.expectStopIteration(stopIterationProfile2);
             return;

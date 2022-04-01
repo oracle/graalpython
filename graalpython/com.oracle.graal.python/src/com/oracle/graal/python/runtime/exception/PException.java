@@ -58,6 +58,7 @@ import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -279,11 +280,11 @@ public final class PException extends AbstractTruffleException {
      *
      * @param frame The current frame of the exception handler.
      */
-    public void setCatchingFrameReference(VirtualFrame frame, Node catchLocation) {
+    public void setCatchingFrameReference(Frame frame, Node catchLocation) {
         setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
     }
 
-    public void setCatchingFrameReference(VirtualFrame frame, PBytecodeRootNode catchLocation, int catchBci) {
+    public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
         setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
         this.catchBci = catchBci;
     }
@@ -292,7 +293,7 @@ public final class PException extends AbstractTruffleException {
      * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference, Node)} and @{link
      * {@link #getEscapedException()}}
      */
-    public PBaseException setCatchingFrameAndGetEscapedException(VirtualFrame frame, Node catchLocation) {
+    public PBaseException setCatchingFrameAndGetEscapedException(Frame frame, Node catchLocation) {
         setCatchingFrameReference(frame, catchLocation);
         return this.getEscapedException();
     }

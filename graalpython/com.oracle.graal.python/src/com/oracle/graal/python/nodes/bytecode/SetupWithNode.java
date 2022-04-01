@@ -17,16 +17,15 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class SetupWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
 
     @Specialization
-    static int setup(VirtualFrame frame, int stackTopIn,
+    static int setup(Frame virtualFrame, int stackTopIn, Frame localFrame,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                     @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
@@ -36,23 +35,23 @@ public abstract class SetupWithNode extends PNodeWithContext {
                     @Cached BranchProfile errorProfile,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
-        Object contextManager = frame.getObject(stackTop);
+        Object contextManager = localFrame.getObject(stackTop);
         Object type = getClassNode.execute(contextManager);
-        Object enter = lookupEnter.execute(frame, type, contextManager);
+        Object enter = lookupEnter.execute(virtualFrame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{__ENTER__});
         }
-        enter = bindEnter.execute(frame, enter, contextManager, type);
-        Object exit = lookupExit.execute(frame, type, contextManager);
+        enter = bindEnter.execute(virtualFrame, enter, contextManager, type);
+        Object exit = lookupExit.execute(virtualFrame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{__EXIT__});
         }
-        exit = bindExit.execute(frame, exit, contextManager, type);
-        Object res = callEnter.executeObject(frame, enter, contextManager);
-        frame.setObject(++stackTop, exit);
-        frame.setObject(++stackTop, res);
+        exit = bindExit.execute(virtualFrame, exit, contextManager, type);
+        Object res = callEnter.executeObject(virtualFrame, enter, contextManager);
+        localFrame.setObject(++stackTop, exit);
+        localFrame.setObject(++stackTop, res);
         return stackTop;
     }
 

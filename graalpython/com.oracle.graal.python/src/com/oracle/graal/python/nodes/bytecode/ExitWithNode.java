@@ -19,41 +19,40 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class ExitWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
 
     @Specialization
-    int exit(VirtualFrame frame, int stackTopIn,
+    int exit(Frame virtualFrame, int stackTopIn, Frame localFrame,
                     @Cached CallQuaternaryMethodNode callExit,
                     @Cached GetClassNode getClassNode,
                     @Cached GetExceptionTracebackNode getTracebackNode,
                     @Cached PyObjectIsTrueNode isTrueNode,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
-        Object exception = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        Object exit = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
-        Object contextManager = frame.getObject(stackTop);
-        frame.setObject(stackTop--, null);
+        Object exception = localFrame.getObject(stackTop);
+        localFrame.setObject(stackTop--, null);
+        Object exit = localFrame.getObject(stackTop);
+        localFrame.setObject(stackTop--, null);
+        Object contextManager = localFrame.getObject(stackTop);
+        localFrame.setObject(stackTop--, null);
         if (exception == PNone.NONE) {
-            callExit.execute(frame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
+            callExit.execute(virtualFrame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         } else {
-            PException savedExcState = PArguments.getException(frame);
+            PException savedExcState = PArguments.getException(virtualFrame);
             try {
                 Object pythonException = exception;
                 if (exception instanceof PException) {
-                    PArguments.setException(frame, (PException) exception);
+                    PArguments.setException(virtualFrame, (PException) exception);
                     pythonException = ((PException) exception).getEscapedException();
                 }
                 Object excType = getClassNode.execute(pythonException);
                 Object excTraceback = getTracebackNode.execute(pythonException);
-                Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
-                if (!isTrueNode.execute(frame, result)) {
+                Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
+                if (!isTrueNode.execute(virtualFrame, result)) {
                     if (exception instanceof AbstractTruffleException) {
                         throw (AbstractTruffleException) exception;
                     } else {
@@ -62,7 +61,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
                     }
                 }
             } finally {
-                PArguments.setException(frame, savedExcState);
+                PArguments.setException(virtualFrame, savedExcState);
             }
         }
         return stackTop;
