@@ -364,7 +364,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.List(values != null ? values : new ExprTy[0] , context, startOffset, endOffset);
+        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, startOffset, endOffset);
     }
 
     @Override
