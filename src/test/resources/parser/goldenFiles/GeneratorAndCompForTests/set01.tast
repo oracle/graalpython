@@ -1,0 +1,12 @@
+Module[0, 25]
+    SetComp[0, 25]
+        Element: BinOp[1, 5]
+            Op: POW
+            LHS: Name[1, 2] Value: "x"
+            RHS: Name[4, 5] Value: "y"
+        ComprehensionTy[6, 24]
+            Target: Name[10, 11] Value: "x" Store
+            Iterator: Call[15, 24]
+                Target: Name[15, 20] Value: "range"
+                Args:
+                    LONG[21, 23] Value: 20

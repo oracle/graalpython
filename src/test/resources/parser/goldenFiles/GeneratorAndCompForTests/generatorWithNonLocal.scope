@@ -1,0 +1,25 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      b_func: [DefLocal, Local]
+    Scope b_func Function
+        Flags: [HasChildWithFreeVars]
+        Symbols:
+            Y: [DefLocal, Cell]
+            _inner_func: [DefLocal, Use, Local]
+            exec_gen: [DefLocal, Cell]
+            gen: [DefLocal, Use, Local]
+            list: [Use, GlobalImplicit]
+      Scope _inner_func Function
+            Flags: [HasFreeVars, HasChildWithFreeVars, IsGenerator]
+            Symbols:
+                  A: [DefLocal, Use, Local]
+                  C: [DefLocal, Local]
+                  Y: [Use, Free]
+                  doit: [DefLocal, Use, Local]
+                  exec_gen: [Free]
+        Scope doit Function
+                Flags: [HasFreeVars]
+                Symbols:
+                        exec_gen: [DefLocal, DefNonLocal, Free]

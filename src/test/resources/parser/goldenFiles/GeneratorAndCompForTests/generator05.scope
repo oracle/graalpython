@@ -1,0 +1,16 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      fn: [DefLocal, Local]
+    Scope fn Function
+        Flags: [IsGenerator]
+        Varnames: self
+        Symbols:
+            caretspace: [DefLocal, Use, Local]
+            self: [DefParam, Local]
+      Scope genexp Function
+            Flags: [IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  c: [DefLocal, Use, DefCompIter, Local]

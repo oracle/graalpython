@@ -1,0 +1,19 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      format_exception_only: [DefLocal, Local]
+    Scope format_exception_only Function
+        Flags: [IsGenerator]
+        Varnames: self
+        Symbols:
+            a: [Use, GlobalImplicit]
+            badline: [Use, GlobalImplicit]
+            caretspace: [DefLocal, Use, Local]
+            offset: [Use, GlobalImplicit]
+            self: [DefParam, Local]
+      Scope genexp Function
+            Flags: [IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  c: [DefLocal, Use, DefCompIter, Local]

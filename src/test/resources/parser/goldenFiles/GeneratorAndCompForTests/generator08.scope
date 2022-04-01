@@ -1,0 +1,15 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      merge: [DefLocal, Local]
+    Scope merge Function
+        Flags: [IsGenerator]
+        Varnames: h
+        Symbols:
+            b: [Use, GlobalImplicit]
+            h: [DefParam, Use, Local]
+            it: [DefLocal, Local]
+            len: [Use, GlobalImplicit]
+            next: [Use, GlobalImplicit]
+            order: [DefLocal, Local]
+            value: [DefLocal, Use, Local]

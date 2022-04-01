@@ -1,0 +1,21 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      resutl: [DefLocal, Local]
+      something: [Use, GlobalImplicit]
+    Scope dictcomp Function
+        Flags: [HasChildWithFreeVars, IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            i: [DefLocal, Use, DefCompIter, Cell]
+            t: [DefLocal, Use, DefCompIter, Local]
+            tuple: [Use, GlobalImplicit]
+      Scope genexp Function
+            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  i: [Use, Free]
+                  j: [DefLocal, Use, DefCompIter, Local]
