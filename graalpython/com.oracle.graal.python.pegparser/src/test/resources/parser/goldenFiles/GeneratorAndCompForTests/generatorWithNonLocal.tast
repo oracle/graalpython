@@ -1,0 +1,52 @@
+Module[0, 247]
+    FunctionDef[0, 247]
+        Name:b_func
+        ---- Function body of b_func ----
+        Assign[16, 32]
+            LHS: Name[16, 24] Value: "exec_gen" Store
+            RHS: BOOLEAN[27, 32] Value: false
+        FunctionDef[35, 187]
+            Name:_inner_func
+            ---- Function body of _inner_func ----
+            FunctionDef[58, 132]
+                Name:doit
+                ---- Function body of doit ----
+                NonLocal[76, 93]: exec_gen 
+                Assign[100, 115]
+                    LHS: Name[100, 108] Value: "exec_gen" Store
+                    RHS: BOOLEAN[111, 115] Value: true
+                Return[122, 132] 
+                    List[129, 132]
+                        Values:
+                            LONG[130, 131] Value: 1
+                ---- End of doit function ----
+            For[137, 187]
+                Target: Name[141, 142] Value: "A" Store
+                Iter: Call[146, 152]
+                    Target: Name[146, 150] Value: "doit"
+                Body:
+                    For[160, 187]
+                        Target: Name[164, 165] Value: "C" Store
+                        Iter: Name[169, 170] Value: "Y"
+                        Body:
+                            Yield[180, 187]
+                                Name[186, 187] Value: "A"
+            ---- End of _inner_func function ----
+        Assign[190, 209]
+            LHS: Name[190, 193] Value: "gen" Store
+            RHS: 
+                Call[196, 209]
+                    Target: Name[196, 207] Value: "_inner_func"
+        Assign[212, 222]
+            LHS: Name[212, 213] Value: "Y" Store
+            RHS: 
+                List[216, 222]
+                    Values:
+                        LONG[217, 218] Value: 1
+                        LONG[220, 221] Value: 2
+        Call[225, 234]
+            Target: Name[225, 229] Value: "list"
+            Args:
+                Name[230, 233] Value: "gen"
+        Return[237, 247] Name[244, 247] Value: "gen"
+        ---- End of b_func function ----

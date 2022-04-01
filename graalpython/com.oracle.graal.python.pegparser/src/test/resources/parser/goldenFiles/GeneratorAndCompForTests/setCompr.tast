@@ -1,0 +1,9 @@
+Module[0, 21]
+    SetComp[0, 21]
+        Element: Name[1, 2] Value: "i"
+        ComprehensionTy[3, 20]
+            Target: Name[7, 8] Value: "i" Store
+            Iterator: Call[12, 20]
+                Target: Name[12, 17] Value: "range"
+                Args:
+                    LONG[18, 19] Value: 3

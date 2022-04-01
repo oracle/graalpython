@@ -1,0 +1,9 @@
+Module[0, 29]
+    FunctionDef[0, 29]
+        Name:fn
+        ---- Function body of fn ----
+        Yield[12, 19]
+            LONG[18, 19] Value: 1
+        Yield[22, 29]
+            LONG[28, 29] Value: 2
+        ---- End of fn function ----

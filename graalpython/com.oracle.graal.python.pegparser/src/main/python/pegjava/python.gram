@@ -649,9 +649,9 @@ await_primary[expr_ty] (memo):
 primary[expr_ty]:
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
     | a=primary '.' b=NAME { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
-    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, new ExprTy[] {b}), NULL, EXTRA) }
+    | a=primary b=genexp { factory.createCall(a, new ExprTy[] {b}, EMPTY_KWDS, startToken.startOffset, endToken.endOffset) }
     | a=primary '(' b=[arguments] ')' {
-        factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) }
+        factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset) }
     | a=primary '[' b=slices ']' { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | atom
 
@@ -793,7 +793,7 @@ t_primary[expr_ty]:
     | a=t_primary '.' b=NAME &t_lookahead { factory.createGetAttribute(a, ((ExprTy.Name)b).id, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=t_primary '[' b=slices ']' &t_lookahead { factory.createSubscript(a, b, ExprContext.Load, startToken.startOffset, startToken.endOffset) }
     | a=t_primary b=genexp &t_lookahead {
-        _PyAST_Call(a, CHECK(asdl_expr_seq*, new ExprTy[] {b}), NULL, EXTRA) }
+        factory.createCall(a, new ExprTy[] {b}, EMPTY_KWDS, startToken.startOffset, endToken.endOffset) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
             factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) 
         }

@@ -1,0 +1,17 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      fn: [DefLocal, Local]
+    Scope fn Function
+        Flags: [HasChildWithFreeVars]
+        Symbols:
+            c: [DefLocal, Cell]
+            range: [Use, GlobalImplicit]
+      Scope genexp Function
+            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  c: [Use, Free]
+                  x: [DefLocal, Use, DefCompIter, Local]

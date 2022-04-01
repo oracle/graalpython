@@ -9335,9 +9335,11 @@ public final class Parser extends AbstractParser {
                 (b = genexp_rule()) != null  // genexp
             )
             {
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , new ExprTy [ ] {b} ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , new ExprTy [ ] {b} ) , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createCall(a,new ExprTy [ ] {b},EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11919,9 +11921,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , new ExprTy [ ] {b} ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , new ExprTy [ ] {b} ) , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createCall(a,new ExprTy [ ] {b},EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
                 return (ExprTy)_res;
             }
             reset(_mark);

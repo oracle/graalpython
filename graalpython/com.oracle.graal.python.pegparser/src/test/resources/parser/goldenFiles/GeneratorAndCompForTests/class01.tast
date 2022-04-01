@@ -1,0 +1,41 @@
+Module[0, 192]
+    ClassDef[0, 192] OrderedDict
+        Bases:
+            Name[18, 22] Value: "dict"
+        ---- Class body of OrderedDict ----
+        FunctionDef[29, 192]
+            Name:__reversed__
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[46, 50] self
+            ---- Function body of __reversed__ ----
+            Assign[61, 79]
+                LHS: Name[61, 65] Value: "root" Store
+                RHS: 
+                    Attribute[68, 72] 
+                        Receiver: Name[68, 72] Value: "self"
+                        Attr: __root
+            Assign[88, 104]
+                LHS: Name[88, 92] Value: "curr" Store
+                RHS: 
+                    Attribute[95, 99] 
+                        Receiver: Name[95, 99] Value: "root"
+                        Attr: prev
+            While[113, 192]
+                Condition: Compare[119, 135]
+                    LHS: Name[119, 123] Value: "curr"
+                    Op: ISNOT
+                    RHS: Name[131, 135] Value: "root"
+                Body:
+                    Yield[149, 163]
+                        Attribute[155, 159] 
+                            Receiver: Name[155, 159] Value: "curr"
+                            Attr: key
+                    Assign[176, 192]
+                        LHS: Name[176, 180] Value: "curr" Store
+                        RHS: 
+                            Attribute[183, 187] 
+                                Receiver: Name[183, 187] Value: "curr"
+                                Attr: prev
+            ---- End of __reversed__ function ----
+        ---- End of OrderedDict class ----

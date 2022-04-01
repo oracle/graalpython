@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      fn: [DefLocal, Local]
+    Scope fn Function
+        Flags: [IsGenerator, HasVarKeywords]
+        Varnames: arg
+        Symbols:
+            arg: [DefParam, Use, Local]
+            p: [DefLocal, Use, Local]
