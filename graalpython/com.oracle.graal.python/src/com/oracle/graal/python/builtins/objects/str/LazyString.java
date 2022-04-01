@@ -73,7 +73,7 @@ public final class LazyString implements PCharSequence {
 
     private static boolean assertChecked(PythonContext context, CharSequence left, CharSequence right, int length) {
         assert context.getOption(PythonOptions.LazyStrings);
-        assert (PGuards.isString(left) || left instanceof LazyString) && (PGuards.isString(right) || right instanceof LazyString);
+        assert (PGuards.isString(left) || left instanceof LazyString || left instanceof NativeCharSequence) && (PGuards.isString(right) || right instanceof LazyString || right instanceof NativeCharSequence);
         assert length == left.length() + right.length();
         assert left.length() > 0 && right.length() > 0;
         assert length >= context.getOption(PythonOptions.MinLazyStringLength);
@@ -190,6 +190,9 @@ public final class LazyString implements PCharSequence {
                 }
             } else if (str instanceof String) {
                 ((String) str).getChars(from, to, dst, dstFrom);
+                return;
+            } else if (str instanceof NativeCharSequence) {
+                ((NativeCharSequence) str).materialize().getChars(from, to, dst, dstFrom);
                 return;
             }
         }

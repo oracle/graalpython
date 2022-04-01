@@ -888,10 +888,11 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethObjObjArgProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "x", "y"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"$self", "x"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
-        @Child private ReadIndexedArgumentNode readArg2Node;
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private PRaiseNode raiseNode;
 
         public HPyMethObjObjArgProcRoot(PythonLanguage language, String name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -899,7 +900,32 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
-            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+            Object[] varargs = getVarargs(frame);
+            if (varargs.length == 0) {
+                return new Object[]{getSelf(frame), getArg1(frame), PNone.NO_VALUE};
+            } else if (varargs.length == 1) {
+                return new Object[]{getSelf(frame), getArg1(frame), varargs[0]};
+            } else {
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                                ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
+                                getName(), 2, 3, "s", 1 + varargs.length, "were", "");
+            }
+        }
+
+        private PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
         }
 
         private Object getArg1(VirtualFrame frame) {
@@ -908,14 +934,6 @@ public abstract class HPyExternalFunctionNodes {
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArg1Node.execute(frame);
-        }
-
-        private Object getArg2(VirtualFrame frame) {
-            if (readArg2Node == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
-            }
-            return readArg2Node.execute(frame);
         }
 
         @Override

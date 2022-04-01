@@ -317,6 +317,9 @@ public abstract class GraalHPyDef {
     enum HPySlot {
         HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
         HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, TypeBuiltins.TYPE_RELEASEBUFFER),
+        HPY_MP_ASS_SUBSCRRIPT(3, HPySlotWrapper.OBJOBJARGPROC, __SETITEM__, __DELITEM__),
+        HPY_MP_LENGTH(4, HPySlotWrapper.LENFUNC, __LEN__),
+        HPY_MP_SUBSCRIPT(5, HPySlotWrapper.BINARYFUNC, __GETITEM__),
         HPY_NB_ABSOLUTE(6, HPySlotWrapper.UNARYFUNC, __ABS__),
         HPY_NB_ADD(7, HPySlotWrapper.BINARYFUNC_L, __ADD__, HPySlotWrapper.BINARYFUNC_R, __RADD__),
         HPY_NB_AND(8, HPySlotWrapper.BINARYFUNC_L, __AND__, HPySlotWrapper.BINARYFUNC_R, __RAND__),

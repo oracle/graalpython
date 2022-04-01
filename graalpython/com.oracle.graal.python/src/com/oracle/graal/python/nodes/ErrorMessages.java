@@ -375,6 +375,7 @@ public abstract class ErrorMessages {
     public static final String ISLICE_WRONG_ARGS = "islice(seq, stop) or islice(seq, start, stop[, step])";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A = "%s is not a %s";
+    public static final String IS_NOT_A_CONTAINER = "%p is not a container";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";

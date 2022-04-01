@@ -1578,6 +1578,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_GetItem);
     HPY_CTX_UPCALL(ctx_GetItem_i);
     HPY_CTX_UPCALL(ctx_GetItem_s);
+    HPY_CTX_UPCALL(ctx_Contains);
     HPY_CTX_UPCALL(ctx_SetItem);
     HPY_CTX_UPCALL(ctx_SetItem_i);
     HPY_CTX_UPCALL(ctx_SetItem_s);

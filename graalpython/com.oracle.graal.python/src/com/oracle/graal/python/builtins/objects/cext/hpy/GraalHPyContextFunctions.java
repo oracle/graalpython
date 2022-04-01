@@ -143,6 +143,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -3220,12 +3221,8 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupAttrNode,
-                        @Cached CallBinaryMethodNode callAttrNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached PySequenceContainsNode containsNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ConditionProfile profile,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 3);
             boolean mustRelease = gil.acquire();
@@ -3233,30 +3230,12 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object container = asPythonObjectNode.execute(context, arguments[1]);
                 Object key = asPythonObjectNode.execute(context, arguments[2]);
-                Object containsAttr = lookupAttrNode.execute(container, SpecialMethodNames.__CONTAINS__);
-                if (profile.profile(containsAttr != PNone.NO_VALUE)) {
-                    try {
-                        callAttrNode.executeObject(null, containsAttr, container, key);
-                    } catch (PException e) {
-                        transformExceptionToNativeNode.execute(context, e);
-                        return -1;
-                    }
-                } else {
-                    Object iterAttr = lookupAttrNode.execute(container, SpecialMethodNames.__ITER__);
-                    if (profile.profile(iterAttr != PNone.NO_VALUE)) {
-                        while (true) {
-                            try {
-                                if (eqNode.execute(null, GetNextNode.getUncached().execute(iterAttr), key)) {
-                                    return true;
-                                }
-                            } catch (PException e) {
-                                e.expectStopIteration(isBuiltinClassProfile);
-                                return false;
-                            }
-                        }
-                    }
+                try {
+                    return containsNode.execute(container, key) ? 1 : 0;
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return -1;
                 }
-                return 0;
             } finally {
                 gil.release(mustRelease);
             }

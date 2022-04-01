@@ -116,7 +116,7 @@ public final class NativeCharSequence implements CharSequence {
         return materialized;
     }
 
-    private String materialize() {
+    String materialize() {
         if (!isMaterialized()) {
             LOGGER.warning("uncached materialization of NativeCharSequence");
             materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached());
