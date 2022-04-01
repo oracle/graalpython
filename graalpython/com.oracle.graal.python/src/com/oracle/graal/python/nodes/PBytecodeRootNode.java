@@ -62,9 +62,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -114,6 +116,7 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
@@ -135,6 +138,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -142,6 +146,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -377,6 +382,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
 
+        public Object getReturnValue(Frame frame) {
+            return frame.getObject(getBciOffset() + 2);
+        }
+
         public int getLineno(Frame frame) {
             return bciToLine(getBci(frame));
         }
@@ -462,8 +471,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.addSlots(co.freevars.length, FrameSlotKind.Illegal);
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
-        // BCI filled when unwinding the stack to note the location for tracebacks
+        // BCI filled when unwinding the stack or when pausing generators
         newBuilder.addSlot(FrameSlotKind.Int, null, null);
+        if (co.isGenerator()) {
+            // stackTop saved when pausing a generator
+            newBuilder.addSlot(FrameSlotKind.Int, null, null);
+            // return value of a generator
+            newBuilder.addSlot(FrameSlotKind.Int, null, null);
+        }
         return newBuilder.build();
     }
 
@@ -546,7 +561,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         try {
             Object[] arguments = virtualFrame.getArguments();
             if (!co.isGenerator()) {
-                initFrame(virtualFrame, arguments);
+                copyArgsAndCells(virtualFrame, arguments);
             }
 
             return executeOSR(virtualFrame, encodeBCI(0) | encodeStackTop(stackoffset - 1), arguments);
@@ -555,7 +570,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private void initFrame(Frame localFrame, Object[] arguments) {
+    public void createGeneratorFrame(Object[] arguments) {
+        Object[] generatorFrameArguments = PArguments.create();
+        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
+        PArguments.setGeneratorFrame(arguments, generatorFrame);
+        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
+        // The invoking node will set these two to the correct value only when the callee requests
+        // it, otherwise they stay at the initial value, which we must set to null here
+        PArguments.setException(arguments, null);
+        PArguments.setCallerFrameInfo(arguments, null);
+        generatorFrame.setInt(bcioffset, 0);
+        generatorFrame.setInt(bcioffset + 1, stackoffset - 1);
+        copyArgsAndCells(generatorFrame, arguments);
+    }
+
+    private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
         copyArgs(arguments, localFrame);
         int varargsIdx = signature.getVarargsIdx();
         if (varargsIdx >= 0) {
@@ -745,10 +774,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     public Object executeOSR(VirtualFrame virtualFrame, int target, Object originalArgsObject) {
         Object[] originalArgs = (Object[]) originalArgsObject;
-        Frame localFrame = virtualFrame;
-        if (co.isGenerator()) {
-            localFrame = PArguments.getGeneratorFrame(originalArgs);
-        }
         PythonLanguage lang = PythonLanguage.get(this);
         PythonContext context = PythonContext.get(this);
         PythonModule builtins = context.getBuiltins();
@@ -762,6 +787,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = decodeStackTop(target);
         int bci = decodeBCI(target);
 
+        Frame localFrame = virtualFrame;
+        boolean isGenerator = co.isGenerator();
+        if (isGenerator) {
+            localFrame = PArguments.getGeneratorFrame(originalArgs);
+            /* Check if we're resuming the generator or resuming after OSR */
+            if (bci == 0) {
+                bci = localFrame.getInt(bcioffset);
+                stackTop = localFrame.getInt(bcioffset + 1);
+            }
+        }
+
         byte[] localBC = bytecode;
         int[] localArgs = extraArgs;
         Object[] localConsts = consts;
@@ -772,9 +808,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         verifyBeforeLoop(target, stackTop, bci, localBC);
 
         while (true) {
-            // System.out.println(java.util.Arrays.toString(stack));
-            // System.out.println(bci);
-
             final byte bc = localBC[bci];
 
             verifyInLoop(stackTop, bci, bc);
@@ -1003,11 +1036,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeRaiseVarargs(virtualFrame, localFrame, stackTop, bci, oparg, localNodes);
                         break;
                     }
-                    case RETURN_VALUE:
+                    case RETURN_VALUE: {
                         if (inInterpreter) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
-                        return localFrame.getObject(stackTop);
+                        Object value = localFrame.getObject(stackTop);
+                        if (isGenerator) {
+                            localFrame.setObject(stackTop--, null);
+                            localFrame.setInt(bcioffset, bci + 1);
+                            localFrame.setInt(bcioffset + 1, stackTop);
+                            localFrame.setObject(bcioffset + 2, value);
+                            return null;
+                        } else {
+                            return value;
+                        }
+                    }
                     case LOAD_BUILD_CLASS: {
                         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes[bci], UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS, bci);
                         localFrame.setObject(++stackTop, read.read(virtualFrame, globals, __BUILD_CLASS__));
@@ -1258,6 +1301,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case END_EXC_HANDLER: {
                         bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
                     }
+                    case YIELD_VALUE: {
+                        if (inInterpreter) {
+                            LoopNode.reportLoopCount(this, loopCount);
+                        }
+                        Object value = localFrame.getObject(stackTop);
+                        localFrame.setObject(stackTop--, null);
+                        localFrame.setInt(bcioffset, bci + 1);
+                        localFrame.setInt(bcioffset + 1, stackTop);
+                        return value;
+                    }
+                    case RESUME_YIELD: {
+                        Object sendValue = PArguments.getSpecialArgument(virtualFrame);
+                        if (sendValue == null) {
+                            sendValue = PNone.NONE;
+                        } else if (sendValue instanceof ThrowData) {
+                            ThrowData throwData = (ThrowData) sendValue;
+                            throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
+                        }
+                        localFrame.setObject(++stackTop, sendValue);
+                        break;
+                    }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "not implemented bytecode %s", OpCodes.VALUES[bc]);
@@ -1283,7 +1347,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // to be replaced with the exception
                     localFrame.setObject(stackTop, e);
                     bci = decodeBCI((int) newTarget);
-                    continue;
                 }
             } catch (AbstractTruffleException | StackOverflowError e) {
                 throw e;
@@ -1805,8 +1868,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         newCode.positionalOnlyArgCount > 0,
                         parameterNames,
                         kwOnlyNames);
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
-        PCode codeobj = factory.createCode(rootNode.getCallTarget(), newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
+        RootCallTarget callTarget;
+        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
+        if (newCode.isGenerator()) {
+            // TODO what should the frameDescriptor be? does it matter?
+            callTarget = new PBytecodeGeneratorFunctionRootNode(PythonLanguage.get(this), bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, newCode.name, signature).getCallTarget();
+        } else {
+            callTarget = bytecodeRootNode.getCallTarget();
+        }
+        assert callTarget != null;
+        PCode codeobj = factory.createCode(callTarget, newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
                         newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, newCode.filename, newCode.name,
                         newCode.startOffset, newCode.srcOffsetTable);
         localFrame.setObject(stackTop, factory.createFunction(newCode.name, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));

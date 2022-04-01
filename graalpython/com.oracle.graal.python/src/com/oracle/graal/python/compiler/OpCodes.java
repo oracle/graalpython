@@ -157,7 +157,8 @@ public enum OpCodes {
     UNWRAP_EXC(0, 1, 1),
 
     // generators
-    YIELD_VALUE(0, 1, 1),
+    YIELD_VALUE(0, 1, 0),
+    RESUME_YIELD(0, 0, 1),
 
     // with statements
     SETUP_WITH(0, 1, 3),

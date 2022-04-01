@@ -1289,6 +1289,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             node.value.accept(this);
             addOp(YIELD_VALUE);
+            addOp(RESUME_YIELD);
             return null;
         } finally {
             setLocation(savedOffset);

@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -69,7 +70,7 @@ public abstract class InvokeNode extends Node implements IndirectCallNode {
 
     protected static void optionallySetGeneratorFunction(Object[] arguments, CallTarget callTarget, ConditionProfile isGeneratorFunctionProfile, PFunction callee) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (isGeneratorFunctionProfile.profile(rootNode instanceof GeneratorFunctionRootNode)) {
+        if (isGeneratorFunctionProfile.profile(rootNode instanceof GeneratorFunctionRootNode || rootNode instanceof PBytecodeGeneratorFunctionRootNode)) {
             assert callee != null : "generator function callee not passed to invoke node";
             PArguments.setGeneratorFunction(arguments, callee);
         }

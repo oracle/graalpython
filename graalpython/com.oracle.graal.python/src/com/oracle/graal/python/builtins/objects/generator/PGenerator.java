@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
@@ -52,6 +53,8 @@ public final class PGenerator extends PythonBuiltinObject {
 
     private String name;
     private String qualname;
+    private boolean usesBytecode;
+    private int bci;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
@@ -103,7 +106,12 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator);
+        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator, false);
+    }
+
+    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget bytecodeCallTarget, Object[] arguments) {
+        rootNode.createGeneratorFrame(arguments);
+        return new PGenerator(lang, name, qualname, new RootCallTarget[]{bytecodeCallTarget}, null, arguments, null, null, true);
     }
 
     @ExplodeLoop
@@ -123,7 +131,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
-                    PCell[] closure, Object iterator) {
+                    PCell[] closure, Object iterator, boolean usesBytecode) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -135,10 +143,13 @@ public final class PGenerator extends PythonBuiltinObject {
         this.finished = false;
         this.iterator = iterator;
         this.isPRangeIterator = iterator instanceof PIntRangeIterator;
+        this.usesBytecode = usesBytecode;
     }
 
     public void setNextCallTarget() {
-        currentCallTarget = PArguments.getControlDataFromGeneratorArguments(getArguments()).getLastYieldIndex();
+        if (!usesBytecode) {
+            currentCallTarget = PArguments.getControlDataFromGeneratorArguments(getArguments()).getLastYieldIndex();
+        }
     }
 
     /**
@@ -151,6 +162,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public AbstractYieldNode getCurrentYieldNode() {
+        // TODO bytecode
         if (currentCallTarget == 0 || running || finished) {
             // Not stopped on a yield
             return null;
@@ -160,7 +172,19 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public boolean isStarted() {
-        return currentCallTarget != 0 && !running;
+        return (currentCallTarget != 0 || usesBytecode && getBci() > 0) && !running;
+    }
+
+    public int getBci() {
+        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
+        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+        return info.getBci(generatorFrame);
+    }
+
+    public Object getReturnValue() {
+        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
+        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+        return info.getReturnValue(generatorFrame);
     }
 
     public Object[] getArguments() {

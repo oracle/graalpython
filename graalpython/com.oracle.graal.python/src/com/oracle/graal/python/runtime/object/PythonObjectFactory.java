@@ -190,6 +190,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
@@ -837,6 +838,10 @@ public abstract class PythonObjectFactory extends Node {
                     ExecutionCellSlots cellSlots,
                     GeneratorInfo generatorInfo, Object iterator) {
         return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
+    }
+
+    public final PGenerator createGenerator(String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget bytecodeCallTarget, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, bytecodeCallTarget, arguments));
     }
 
     public final PMappingproxy createMappingproxy(Object object) {

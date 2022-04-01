@@ -45,73 +45,43 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
+public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
+    private final PBytecodeRootNode rootNode;
     private final RootCallTarget callTarget;
-    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
-    private final FrameDescriptor frameDescriptor;
-    private final GeneratorInfo generatorInfo;
-    private final ExecutionCellSlots cellSlots;
     private final String originalName;
+    private final Signature signature;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
-                    Signature signature, GeneratorInfo generatorInfo) {
-        super(language, frameDescriptor, executionCellSlots, signature);
-        this.callTarget = callTarget;
+    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName,
+                    Signature signature) {
+        super(language, frameDescriptor);
+        this.rootNode = rootNode;
+        this.signature = signature;
         this.originalName = originalName;
-        this.frameDescriptor = frameDescriptor;
-        this.cellSlots = executionCellSlots;
-        this.generatorInfo = generatorInfo;
+        this.callTarget = rootNode.getCallTarget();
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        // TODO 'materialize' generator frame and create locals dict eagerly
-        if (callTargets == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callTargets = createYieldTargets(callTarget);
-        }
-        CompilerAsserts.partialEvaluationConstant(cellSlots);
-
         Object[] arguments = frame.getArguments();
 
-        // This is passed from CallDispatch node
+        // This is passed from InvokeNode node
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
-
-        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), callTargets, frameDescriptor, arguments, PArguments.getClosure(frame), cellSlots,
-                        generatorInfo, null);
+        assert generatorFunction != null;
+        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTarget, arguments);
     }
 
-    public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {
-        CompilerAsserts.neverPartOfCompilation();
-        int numYields = NodeUtil.countNodes(callTarget.getRootNode(), (node) -> node instanceof AbstractYieldNode);
-        RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
-        callTargets[0] = callTarget;
-        for (int i = 1; i < callTargets.length; i++) {
-            callTargets[i] = PythonUtils.getOrCreateCallTarget(NodeUtil.cloneNode(callTarget.getRootNode()));
-        }
-        return callTargets;
-    }
-
-    public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+    public PBytecodeRootNode getFunctionRootNode() {
+        return rootNode;
     }
 
     @Override
@@ -126,19 +96,17 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     }
 
     @Override
-    public void initializeFrame(VirtualFrame frame) {
-        // nothing to do
+    public Signature getSignature() {
+        return signature;
     }
 
     @Override
     public boolean isPythonInternal() {
-        RootNode rootNode = callTarget.getRootNode();
-        return rootNode instanceof PRootNode && ((PRootNode) rootNode).isPythonInternal();
+        return rootNode.isPythonInternal();
     }
 
     @Override
     public SourceSection getSourceSection() {
-        return getFunctionRootNode().getSourceSection();
+        return rootNode.getSourceSection();
     }
-
 }

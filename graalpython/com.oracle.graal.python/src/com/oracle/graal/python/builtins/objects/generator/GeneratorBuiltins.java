@@ -144,14 +144,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
+                        @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
+            Object result;
             try {
-                return call.execute(frame, null, null, null, arguments);
+                result = call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -159,23 +161,29 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
+            if (result == null) {
+                throw raiseNode.raise(StopIteration, self.getReturnValue());
+            }
+            return result;
         }
 
         @Specialization(replaces = "cached")
         @Megamorphic
         static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached GenericInvokeNode call) {
+                        @Cached GenericInvokeNode call,
+                        @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
+            Object result;
             try {
                 if (hasFrameProfile.profile(frame != null)) {
-                    return call.execute(frame, self.getCurrentCallTarget(), arguments);
+                    result = call.execute(frame, self.getCurrentCallTarget(), arguments);
                 } else {
-                    return call.execute(self.getCurrentCallTarget(), arguments);
+                    result = call.execute(self.getCurrentCallTarget(), arguments);
                 }
             } catch (PException e) {
                 self.markAsFinished();
@@ -184,6 +192,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
+            if (result == null) {
+                throw raiseNode.raise(StopIteration, self.getReturnValue());
+            }
+            return result;
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
