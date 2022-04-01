@@ -19,10 +19,11 @@ Module[0, 244]
                         ArgTy[101, 105] self
                 ---- Function body of __next__ ----
                 Raise[120, 143]
-                    Exc: Call[126, 143]
-                        Target: Name[126, 139] Value: "StopIteration"
-                        Args:
-                            LONG[140, 142] Value: 42
+                    Exc: 
+                        Call[126, 143]
+                            Target: Name[126, 139] Value: "StopIteration"
+                            Args:
+                                LONG[140, 142] Value: 42
                 ---- End of __next__ function ----
             ---- End of MyIter class ----
         FunctionDef[148, 213]

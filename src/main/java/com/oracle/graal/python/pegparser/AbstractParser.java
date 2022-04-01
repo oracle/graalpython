@@ -62,6 +62,17 @@ abstract class AbstractParser {
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
     
     /**
+     * Type of input input for the parser
+     */
+    static public enum InputType {
+        SINGLE,
+        FILE,
+        EVAL,
+        FUNCTION_TYPE,
+        FSTRING
+    }
+    
+    /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used 
      * instead != . 
      */
@@ -78,6 +89,12 @@ abstract class AbstractParser {
     
     protected int level = 0;
     protected boolean callInvalidRules = false;
+    
+    /** 
+     * Indicates, whether there was found an error
+     */
+    protected boolean errorIndicator = false;
+    
     private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
@@ -88,10 +105,21 @@ abstract class AbstractParser {
 
     protected abstract Object[][][] getReservedKeywords();
     protected abstract String[] getSoftKeywords();
+    protected abstract SSTNode runParser(InputType inputType);
 
+    
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
+        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), 0);
+    }
+    
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, int flags) {
+        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), flags);
+    }
+    
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
         this(tokenizer, factory, fexprParser, errorCb, 0);
     }
+    
     
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
@@ -103,6 +131,28 @@ abstract class AbstractParser {
         this.flags = flags;
     }
 
+    public ParserErrorCallback getErrorCallback() {
+        return errorCb;
+    }
+
+    public SSTNode parse (InputType inputType) {
+        SSTNode res = runParser(inputType);
+        if (res == null) {
+            resetParserState();
+            runParser(inputType);
+        }
+        return res;
+    }
+    
+    
+    private void resetParserState() {
+        errorIndicator = false;
+        callInvalidRules = true;
+        level = 0;
+        cache.clear();
+        tokenizer.reset(0);
+    }
+    
     /**
      * Get position in the tokenizer.
      * @return the position in tokenizer.
@@ -419,6 +469,88 @@ abstract class AbstractParser {
     }
     
     /**
+    * _PyPegen_get_expr_name
+    */
+    public String getExprName(ExprTy e) {
+        if (e instanceof ExprTy.Attribute
+                || e instanceof ExprTy.Subscript
+                || e instanceof ExprTy.Starred
+                || e instanceof ExprTy.Name
+                || e instanceof ExprTy.Tuple
+                || e instanceof ExprTy.List
+                || e instanceof ExprTy.Lambda) {
+            return e.getClass().getSimpleName().toLowerCase();
+        }
+        if (e instanceof ExprTy.Call) {
+            return "function call";
+        }
+        if (e instanceof ExprTy.BoolOp
+                || e instanceof ExprTy.BinOp
+                || e instanceof ExprTy.UnaryOp) {
+            return "expression";
+        }
+        if (e instanceof ExprTy.GeneratorExp) {
+            return "generator expression";
+        }
+        if (e instanceof ExprTy.Yield
+                || e instanceof ExprTy.YieldFrom) {
+            return "yield expression";
+        }
+        if (e instanceof ExprTy.Await) {
+            return "await expression";
+        }
+        if (e instanceof ExprTy.ListComp) {
+            return "list comprehension";
+        }
+        if (e instanceof ExprTy.SetComp) {
+            return "set comprehension";
+        }
+        if (e instanceof ExprTy.DictComp) {
+            return "dict comprehension";
+        }
+        if (e instanceof ExprTy.Dict) {
+            return "dict literal";
+        }
+        if (e instanceof ExprTy.Set) {
+            return "set display";
+        }
+        if (e instanceof ExprTy.JoinedStr
+                || e instanceof ExprTy.FormattedValue) {
+            return "f-string expression";
+        }
+        if (e instanceof ExprTy.Constant) {
+            ExprTy.Constant constant = (ExprTy.Constant)e;
+            switch(constant.kind) {
+                case NONE:
+                    return "None";
+                case BOOLEAN:
+                    Boolean value = (Boolean)constant.value;
+                    if (value.booleanValue()) {
+                        return "True";
+                    }
+                    return "False";
+                case ELLIPSIS:
+                    return "Ellipsis";
+            }
+            return "literal";
+        }
+        if (e instanceof ExprTy.Compare) {
+            return "comparision";
+        }
+        if (e instanceof ExprTy.IfExp) {
+            return "conditional expression";
+        }
+        if (e instanceof ExprTy.NamedExpr) {
+            return "named expression";
+        }
+        // TODO Rise system error 
+//         PyErr_Format(PyExc_SystemError,
+//                         "unexpected expression in assignment %d (line %d)",
+//                         e->kind, e->lineno);
+        return null;
+    } 
+    
+    /**
      * equivalent to initialize_token
      */
     private Token initializeToken(Token token) {
@@ -633,5 +765,35 @@ abstract class AbstractParser {
             }
             return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
         }
+    }
+    
+    /**
+     * RAISE_SYNTAX_ERROR
+     */
+    final SSTNode raiseSyntaxError(String msg, Object... argumetns) {
+        errorIndicator = true;
+        Token errorToken = tokenizer.peekToken();
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
+        return null;
+    }
+    
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     * the first param is a token, where error begins
+     */
+    final SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
+        return null;
+    }
+    
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     * the first param is node, where error begins
+     */
+    final SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
+        return null;
     }
 }

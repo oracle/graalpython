@@ -1,7 +1,8 @@
 Module[0, 14]
     If[0, 14]
-        Test: UnaryOp[3, 8]
-            Op: NOT
-            Value: Name[7, 8] Value: "i"
+        Test: 
+            UnaryOp[3, 8]
+                Op: NOT
+                Value: Name[7, 8] Value: "i"
         Then:
             Pass[10, 14]

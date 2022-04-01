@@ -9,17 +9,19 @@ Module[0, 110]
             Condition: Name[21, 22] Value: "x"
             Body:
                 If[29, 52]
-                    Test: Compare[32, 38]
-                        LHS: Name[32, 33] Value: "x"
-                        Op: EQ
-                        RHS: LONG[37, 38] Value: 1
+                    Test: 
+                        Compare[32, 38]
+                            LHS: Name[32, 33] Value: "x"
+                            Op: EQ
+                            RHS: LONG[37, 38] Value: 1
                     Then:
                         Break[47, 52]
                 If[58, 84]
-                    Test: Compare[61, 67]
-                        LHS: Name[61, 62] Value: "x"
-                        Op: EQ
-                        RHS: LONG[66, 67] Value: 2
+                    Test: 
+                        Compare[61, 67]
+                            LHS: Name[61, 62] Value: "x"
+                            Op: EQ
+                            RHS: LONG[66, 67] Value: 2
                     Then:
                         Continue[76, 84]
                 Assign[90, 97]

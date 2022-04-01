@@ -4,16 +4,18 @@ Module[0, 58]
         ---- Function body of fn ----
         For[12, 58]
             Target: Name[16, 17] Value: "x" Store
-            Iter: Call[21, 30]
-                Target: Name[21, 27] Value: "xrange"
-                Args:
-                    LONG[28, 29] Value: 3
+            Iter: 
+                Call[21, 30]
+                    Target: Name[21, 27] Value: "xrange"
+                    Args:
+                        LONG[28, 29] Value: 3
             Body:
                 If[36, 58]
-                    Test: Compare[39, 45]
-                        LHS: Name[39, 40] Value: "x"
-                        Op: EQ
-                        RHS: LONG[44, 45] Value: 1
+                    Test: 
+                        Compare[39, 45]
+                            LHS: Name[39, 40] Value: "x"
+                            Op: EQ
+                            RHS: LONG[44, 45] Value: 1
                     Then:
                         Break[53, 58]
         ---- End of fn function ----
