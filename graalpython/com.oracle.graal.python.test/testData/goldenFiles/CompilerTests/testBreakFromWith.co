@@ -1,0 +1,20 @@
+Disassembly of <module>:
+000009         0 LOAD_NAME                         0    (range)
+000015         2 LOAD_BYTE                         10
+000009         4 CALL_FUNCTION                     1
+000000         6 GET_ITER
+000000   >>    7 FOR_ITER                          20   (to 27)
+000004         9 STORE_NAME                        1    (i)
+000027        11 LOAD_NAME                         2    (foo)
+000027        13 CALL_FUNCTION                     0
+000022        15 SETUP_WITH
+000036        16 STORE_NAME                        3    (cm)
+000022        18 LOAD_NONE
+000022        19 EXIT_WITH
+000022        20 POP_TOP
+000022        21 JUMP_FORWARD                      6    (to 27)
+000022        23 LOAD_NONE
+000022        24 EXIT_WITH                                                               (exc handler 16 - 24; stack: 3)
+000022        25 JUMP_BACKWARD                     18   (to 7)
+000022   >>   27 LOAD_NONE
+000022        28 RETURN_VALUE

@@ -135,4 +135,21 @@ public class WithTests {
 
         assertPrints("NameError()\nNone\n", source);
     }
+
+    @Test
+    public void withBreakExecutesExit() {
+        String source = "class CM:\n" +
+                        "    def __enter__(self):\n" +
+                        "        print('enter')\n" +
+                        "        return self\n" +
+                        "    def __exit__(self, et, e, tb):\n" +
+                        "        print('exit')\n" +
+                        "        return True\n" +
+                        "for i in range(1):\n" +
+                        "    with CM():\n" +
+                        "        print('inner')\n" +
+                        "        break\n";
+
+        assertPrints("enter\ninner\nexit\n", source);
+    }
 }

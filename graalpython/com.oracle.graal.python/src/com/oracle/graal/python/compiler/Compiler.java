@@ -45,6 +45,7 @@ import static com.oracle.graal.python.compiler.OpCodes.*;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ExprContext;
@@ -1108,7 +1109,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                  * There is an iterator for every generator on the stack. We need to append to the
                  * collection that's below them
                  */
-                // TODO turn this into an exeption
+                // TODO turn this into an exception
                 assert collectionStackDepth <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
                 addOp(ADD_TO_COLLECTION, collectionStackDepth | type.typeBits);
             }
@@ -1524,13 +1525,13 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(FOR_ITER, orelse);
 
         unit.useNextBlock(body);
-        unit.blockInfoStack.push(new BlockInfo(head, end, BlockInfo.Type.FOR_LOOP));
+        unit.pushBlock(new BlockInfo(head, end, BlockInfo.Type.FOR_LOOP));
         try {
             node.target.accept(this);
             visitSequence(node.body);
             addOp(JUMP_BACKWARD, head);
         } finally {
-            unit.blockInfoStack.pop();
+            unit.popBlock();
         }
 
         if (node.orElse != null) {
@@ -1795,6 +1796,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             finallyBlockNormal = new Block();
             finallyBlockExcept = Block.createFinallyHandler(tryBody);
             finallyBlockExceptWithSavedExc = new Block();
+            unit.pushBlock(new BlockInfo(BlockInfo.Type.FINALLY_TRY, node.finalBody));
         }
         Block elseBlock = node.orElse != null ? new Block() : null;
         assert hasFinally || hasHandlers;
@@ -1802,6 +1804,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         // try block
         unit.useNextBlock(tryBody);
         visitSequence(node.body);
+        if (hasFinally) {
+            unit.popBlock();
+        }
         if (elseBlock != null) {
             addOp(JUMP_FORWARD, elseBlock);
         } else {
@@ -1821,6 +1826,7 @@ public class Compiler implements SSTreeVisitor<Void> {
              * case of an exception, we need an internal finally handler for this.
              */
             Block cleanupHandler = Block.createFinallyHandler(nextHandler);
+            unit.pushBlock(new BlockInfo(BlockInfo.Type.EXCEPTION_HANDLER));
             /*
              * We use this offset to unwind the exception from the except block, we don't need it on
              * the stack
@@ -1859,6 +1865,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(POP_EXCEPT);
                 jumpToFinally(finallyBlockNormal, end);
             }
+            unit.popBlock();
             unit.useNextBlock(cleanupHandler);
             if (hasFinally) {
                 addOp(ROT_TWO);
@@ -1893,6 +1900,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             unit.useNextBlock(finallyBlockExcept);
             /* This puts saved exception under the current exception */
             addOp(PUSH_EXC_INFO);
+            unit.pushBlock(new BlockInfo(BlockInfo.Type.FINALLY_END));
             Block cleanupHandler = Block.createFinallyHandler(finallyBlockExceptWithSavedExc);
             cleanupHandler.unwindOffset = -1;
             /* The stack is [*, savedException, currentException] */
@@ -1900,6 +1908,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             visitSequence(node.finalBody);
             unit.useNextBlock(cleanupHandler);
             addOp(END_EXC_HANDLER);
+            unit.popBlock();
 
             /* Now emit the finally for the no-exception case */
             unit.useNextBlock(finallyBlockNormal);
@@ -1926,12 +1935,12 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(test);
         jumpIf(node.test, orelse, false);
         unit.useNextBlock(body);
-        unit.blockInfoStack.push(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
+        unit.pushBlock(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
         try {
             visitSequence(node.body);
             addOp(JUMP_BACKWARD, test);
         } finally {
-            unit.blockInfoStack.pop();
+            unit.popBlock();
         }
         if (node.orElse != null) {
             unit.useNextBlock(orelse);
@@ -1956,6 +1965,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         StmtTy.With.Item item = node.items[itemIndex];
         item.contextExpr.accept(this);
         addOp(SETUP_WITH);
+        unit.pushBlock(new BlockInfo(BlockInfo.Type.WITH, node));
 
         unit.useNextBlock(body);
         /*
@@ -1978,6 +1988,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(handler);
         setLocation(node);
         addOp(EXIT_WITH);
+        unit.popBlock();
     }
 
     @Override
@@ -1986,18 +1997,35 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private BlockInfo unwindBlockStackUntilLoop() {
-        while (true) {
-            if (unit.blockInfoStack.empty()) {
-                return null;
-            }
-            BlockInfo info = unit.blockInfoStack.peek();
+        for (int i = unit.blockInfoStack.size() - 1; i >= 0; i--) {
+            BlockInfo info = unit.blockInfoStack.get(i);
             switch (info.type) {
                 case FOR_LOOP:
                 case WHILE_LOOP:
                     return info;
-                // TODO unwind try, with
+                case WITH:
+                    setLocation((SSTNode) info.data);
+                    addOp(LOAD_NONE);
+                    addOp(EXIT_WITH);
+                    break;
+                case FINALLY_TRY:
+                    // XXX this will still be covered by the exception handler, we need a way to cut
+                    // off the handler here
+                    List<BlockInfo> savedBlockStack = unit.blockInfoStack;
+                    unit.blockInfoStack = unit.blockInfoStack.subList(0, i);
+                    visitSequence((SSTNode[]) info.data);
+                    unit.blockInfoStack = savedBlockStack;
+                    break;
+                case EXCEPTION_HANDLER:
+                    addOp(POP_EXCEPT);
+                    break;
+                case FINALLY_END:
+                    addOp(POP_EXCEPT);
+                    addOp(POP_TOP);
+                    break;
             }
         }
+        return null;
     }
 
     @Override

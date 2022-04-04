@@ -50,8 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
@@ -75,7 +75,7 @@ public final class CompilationUnit {
     final Scope scope;
     final CompilationScope scopeType;
     final String privateName;
-    final Stack<BlockInfo> blockInfoStack = new Stack<>();
+    List<BlockInfo> blockInfoStack = new ArrayList<>();
 
     Block currentBlock = startBlock;
     int maxStackSize = 0;
@@ -352,5 +352,13 @@ public final class CompilationUnit {
             ary[e.getValue()] = e.getKey();
         }
         return ary;
+    }
+
+    void pushBlock(BlockInfo info) {
+        blockInfoStack.add(info);
+    }
+
+    void popBlock() {
+        blockInfoStack.remove(blockInfoStack.size() - 1);
     }
 }

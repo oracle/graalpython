@@ -193,6 +193,45 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testBreakFromWith() {
+        String source = "for i in range(10):\n" +
+                        "  with foo() as cm:\n" +
+                        "    break\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testBreakFromTry() {
+        String source = "for i in range(10):\n" +
+                        "  try:\n" +
+                        "    break\n" +
+                        "  finally:" +
+                        "    print('finally')";
+        doTest(source);
+    }
+
+    @Test
+    public void testBreakFromExcept() {
+        String source = "for i in range(10):\n" +
+                        "  try:\n" +
+                        "    1 / 0\n" +
+                        "  except RuntimeError as e:" +
+                        "    break";
+        doTest(source);
+    }
+
+    @Test
+    public void testBreakFromFinally() {
+        String source = "for i in range(10):\n" +
+                        "  try:\n" +
+                        "    break\n" +
+                        "  finally:\n" +
+                        "    print('finally')\n" +
+                        "    break";
+        doTest(source);
+    }
+
+    @Test
     public void testTryExcept() {
         String s = "print('before')\n" +
                         "try:\n" +

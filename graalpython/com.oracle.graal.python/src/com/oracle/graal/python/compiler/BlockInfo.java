@@ -45,11 +45,24 @@ final class BlockInfo {
     final Block start;
     final Block after;
     final Type type;
+    final Object data;
 
     public BlockInfo(Block start, Block after, Type type) {
         this.start = start;
         this.after = after;
         this.type = type;
+        this.data = null;
+    }
+
+    public BlockInfo(Type type, Object data) {
+        this.start = null;
+        this.after = null;
+        this.type = type;
+        this.data = data;
+    }
+
+    public BlockInfo(Type type) {
+        this(type, null);
     }
 
     enum Type {
