@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -315,7 +315,7 @@ public final class NumericSupport {
         final byte[] src = value.toByteArray();
         int srcIndex = 0;
         int srcBytes = src.length;
-        if (src.length > numBytes) {
+        if (srcBytes > numBytes) {
             for (int i = 0; i < src.length; i++) {
                 srcIndex = i;
                 if (src[i] != 0) {
@@ -325,6 +325,13 @@ public final class NumericSupport {
             srcBytes -= srcIndex;
             if (srcBytes > numBytes) {
                 throw OverflowException.INSTANCE;
+            }
+        } else if (srcBytes < numBytes) {
+            // perform sign extension
+            if (value.signum() < 0) {
+                for (int i = 0; i < numBytes - srcBytes; i++) {
+                    buffer[i] = -1;
+                }
             }
         }
         int dstIndex = index + (numBytes - srcBytes);

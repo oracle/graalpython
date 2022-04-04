@@ -21,7 +21,6 @@
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_binunicode8
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffer_callback_error
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffers_error
-*graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_buffers_numpy
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytearray
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytearray8
 *graalpython.lib-python.3.test.test_pickle.InMemoryPickleTests.test_bytes
@@ -170,7 +169,6 @@
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bad_getattr
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffer_callback_error
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffers_error
-*graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_buffers_numpy
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bytearray
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_bytes
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_c_methods
@@ -315,7 +313,6 @@
 *test.pickletester.AbstractPickleTests.test_bad_getattr
 *test.pickletester.AbstractPickleTests.test_buffer_callback_error
 *test.pickletester.AbstractPickleTests.test_buffers_error
-*test.pickletester.AbstractPickleTests.test_buffers_numpy
 *test.pickletester.AbstractPickleTests.test_in_band_buffers
 *test.pickletester.AbstractPickleTests.test_local_lookup_error
 *test.pickletester.AbstractPickleTests.test_oob_buffers
