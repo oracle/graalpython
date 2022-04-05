@@ -308,6 +308,7 @@ class TestHPyField(HPyTest):
         gc.collect()
         assert count_pairs() == 0
 
+    @pytest.mark.syncgc
     def test_tp_finalize(self):
         # Tests the contract of tp_finalize: what it should see
         # if called from within HPyField_Store

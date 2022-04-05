@@ -95,6 +95,7 @@ class TestLegacyType(_TestType):
         import gc; gc.collect()
         assert mod.get_counter() == 1
 
+    @pytest.mark.syncgc
     def test_legacy_dealloc_and_HPy_tp_traverse(self):
         import pytest
         mod_src = """
@@ -129,6 +130,7 @@ class TestLegacyType(_TestType):
             mod = self.make_module(mod_src)
         assert "legacy tp_dealloc" in str(err.value)
 
+    @pytest.mark.syncgc
     def test_legacy_dealloc_and_HPy_tp_destroy(self):
         import pytest
         mod_src = """
