@@ -224,7 +224,9 @@ public class CompilerTests extends PythonTests {
     public void testBreakFromFinally() {
         String source = "for i in range(10):\n" +
                         "  try:\n" +
-                        "    break\n" +
+                        "    if i:\n" +
+                        "      break\n" +
+                        "    print(i)\n" +
                         "  finally:\n" +
                         "    print('finally')\n" +
                         "    break";

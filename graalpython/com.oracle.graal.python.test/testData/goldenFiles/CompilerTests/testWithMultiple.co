@@ -20,7 +20,7 @@ Disassembly of <module>:
 000065        32 LOAD_NONE
 000016        33 EXIT_WITH                                                               (exc handler 23 - 33; stack: 4)
 000016        34 LOAD_NONE
-000016        35 EXIT_WITH                                                               (exc handler 14 - 35; stack: 2)
+000016        35 EXIT_WITH                                                               (exc handler 14 - 23; stack: 2 | exc handler 33 - 35; stack: 2)
 000080        36 LOAD_NAME                         0    (print)
 000086        38 LOAD_STRING                       4    (after)
 000080        40 CALL_FUNCTION                     1

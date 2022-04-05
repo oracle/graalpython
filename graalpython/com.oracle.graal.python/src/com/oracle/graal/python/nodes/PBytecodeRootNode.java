@@ -2099,13 +2099,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         int targetBCI = -1;
         int targetStackTop = -1;
-        for (int i = 0; i < exceptionHandlerRanges.length; i += 3) {
-            // The ranges are ordered by their end bci, so the first one found is the most specific
-            // one
-            if (bci >= exceptionHandlerRanges[i] && bci < exceptionHandlerRanges[i + 1]) {
+        for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
+            // The ranges are ordered by their start and non-overlapping
+            if (bci < exceptionHandlerRanges[i]) {
+                break;
+            } else if (bci < exceptionHandlerRanges[i + 1]) {
                 // bci is inside this try-block range. get the target stack size
-                targetBCI = exceptionHandlerRanges[i + 1];
-                targetStackTop = exceptionHandlerRanges[i + 2] & 0xffff;
+                targetBCI = exceptionHandlerRanges[i + 2] & 0xffff;
+                targetStackTop = exceptionHandlerRanges[i + 3] & 0xffff;
                 break;
             }
         }

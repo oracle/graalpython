@@ -32,7 +32,7 @@ Disassembly of <module>:
 000104        51 ROT_TWO                                                                 (exc handler 17 - 51; stack: 1)
 000104        52 POP_EXCEPT
 000104        53 JUMP_FORWARD                      2    (to 55)
-000104   >>   55 PUSH_EXC_INFO                                                           (exc handler 7 - 55; stack: 0)
+000104   >>   55 PUSH_EXC_INFO                                                           (exc handler 16 - 17; stack: 0 | exc handler 51 - 55; stack: 0)
 000132   >>   56 LOAD_NAME                         0    (print)
 000138        58 LOAD_STRING                       4    (finally)
 000132        60 CALL_FUNCTION                     1

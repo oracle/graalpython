@@ -40,42 +40,88 @@
  */
 package com.oracle.graal.python.compiler;
 
-final class BlockInfo {
+import com.oracle.graal.python.pegparser.sst.StmtTy;
 
-    final Block start;
-    final Block after;
-    final Type type;
-    final Object data;
+class BlockInfo {
+    BlockInfo outer;
 
-    public BlockInfo(Block start, Block after, Type type) {
-        this.start = start;
-        this.after = after;
-        this.type = type;
-        this.data = null;
+    AbstractExceptionHandler findExceptionHandler() {
+        if (outer != null) {
+            return outer.findExceptionHandler();
+        }
+        return null;
     }
 
-    public BlockInfo(Type type, Object data) {
-        this.start = null;
-        this.after = null;
-        this.type = type;
-        this.data = data;
+    abstract static class Loop extends BlockInfo {
+        final Block start;
+        final Block after;
+
+        public Loop(Block start, Block after) {
+            this.start = start;
+            this.after = after;
+        }
     }
 
-    public BlockInfo(Type type) {
-        this(type, null);
+    static class While extends Loop {
+        public While(Block start, Block after) {
+            super(start, after);
+        }
     }
 
-    enum Type {
-        WHILE_LOOP,
-        FOR_LOOP,
-        TRY_EXCEPT,
-        FINALLY_TRY,
-        FINALLY_END,
-        WITH,
-        ASYNC_WITH,
-        HANDLER_CLEANUP,
-        POP_VALUE,
-        EXCEPTION_HANDLER,
-        ASYNC_COMPREHENSION_GENERATOR;
+    static class For extends Loop {
+        public For(Block start, Block after) {
+            super(start, after);
+        }
+    }
+
+    static class AbstractExceptionHandler extends BlockInfo {
+        final Block tryBlock;
+        final Block exceptionHandler;
+
+        public AbstractExceptionHandler(Block tryBlock, Block exceptionHandler) {
+            this.tryBlock = tryBlock;
+            this.exceptionHandler = exceptionHandler;
+        }
+
+        @Override
+        AbstractExceptionHandler findExceptionHandler() {
+            return this;
+        }
+    }
+
+    static class ExceptHandler extends AbstractExceptionHandler {
+        public ExceptHandler(Block tryBlock, Block exceptionHandler) {
+            super(tryBlock, exceptionHandler);
+        }
+    }
+
+    static class TryExcept extends AbstractExceptionHandler {
+        public TryExcept(Block tryBlock, Block exceptionHandler) {
+            super(tryBlock, exceptionHandler);
+        }
+    }
+
+    static class FinallyHandler extends AbstractExceptionHandler {
+        public FinallyHandler(Block tryBlock, Block exceptionHandler) {
+            super(tryBlock, exceptionHandler);
+        }
+    }
+
+    static class With extends AbstractExceptionHandler {
+        final StmtTy.With node;
+
+        public With(Block tryBlock, Block exceptionHandler, StmtTy.With node) {
+            super(tryBlock, exceptionHandler);
+            this.node = node;
+        }
+    }
+
+    static class TryFinally extends AbstractExceptionHandler {
+        final StmtTy[] body;
+
+        public TryFinally(Block tryBlock, Block exceptionHandler, StmtTy[] body) {
+            super(tryBlock, exceptionHandler);
+            this.body = body;
+        }
     }
 }

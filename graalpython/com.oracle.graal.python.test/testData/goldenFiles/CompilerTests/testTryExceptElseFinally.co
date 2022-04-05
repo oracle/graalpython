@@ -37,7 +37,7 @@ Disassembly of <module>:
 000129        59 CALL_FUNCTION                     1
 000129        61 POP_TOP
 000129        62 JUMP_FORWARD                      11   (to 73)
-000129   >>   64 PUSH_EXC_INFO                                                           (exc handler 7 - 64; stack: 0)
+000129   >>   64 PUSH_EXC_INFO                                                           (exc handler 16 - 17; stack: 0 | exc handler 51 - 64; stack: 0)
 000154   >>   65 LOAD_NAME                         0    (print)
 000160        67 LOAD_STRING                       5    (finally)
 000154        69 CALL_FUNCTION                     1

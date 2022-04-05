@@ -325,13 +325,19 @@ public final class CodeUnit {
             }
         }
 
-        for (int i = 0; i < exceptionHandlerRanges.length; i += 3) {
+        for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
             int start = exceptionHandlerRanges[i] & 0xffff;
             int stop = exceptionHandlerRanges[i + 1] & 0xffff;
-            int stackAtHandler = exceptionHandlerRanges[i + 2];
-            String[] line = lines.get(stop);
+            int handler = exceptionHandlerRanges[i + 2] & 0xffff;
+            int stackAtHandler = exceptionHandlerRanges[i + 3] & 0xffff;
+            String[] line = lines.get(handler);
             assert line != null;
-            line[6] = String.format("exc handler %d - %d; stack: %d", start, stop, stackAtHandler);
+            String handlerStr = String.format("exc handler %d - %d; stack: %d", start, stop, stackAtHandler);
+            if (line[6] == null) {
+                line[6] = handlerStr;
+            } else {
+                line[6] += " | " + handlerStr;
+            }
         }
 
         for (bci = 0; bci < code.length; bci++) {

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.compiler.OpCodes.*;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ExprContext;
@@ -1525,7 +1524,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(FOR_ITER, orelse);
 
         unit.useNextBlock(body);
-        unit.pushBlock(new BlockInfo(head, end, BlockInfo.Type.FOR_LOOP));
+        unit.pushBlock(new BlockInfo.For(head, end));
         try {
             node.target.accept(this);
             visitSequence(node.body);
@@ -1789,22 +1788,26 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block end = new Block();
         boolean hasFinally = node.finalBody != null;
         boolean hasHandlers = node.handlers != null && node.handlers.length > 0;
+        assert hasFinally || hasHandlers;
+        Block exceptionHandlerBlock = null;
         Block finallyBlockNormal = null;
         Block finallyBlockExcept = null;
         Block finallyBlockExceptWithSavedExc = null;
+        Block elseBlock = node.orElse != null ? new Block() : null;
         if (hasFinally) {
             finallyBlockNormal = new Block();
-            finallyBlockExcept = Block.createFinallyHandler(tryBody);
+            finallyBlockExcept = new Block();
             finallyBlockExceptWithSavedExc = new Block();
-            unit.pushBlock(new BlockInfo(BlockInfo.Type.FINALLY_TRY, node.finalBody));
+            unit.pushBlock(new BlockInfo.TryFinally(tryBody, finallyBlockExcept, node.finalBody));
         }
-        Block elseBlock = node.orElse != null ? new Block() : null;
-        assert hasFinally || hasHandlers;
-
+        if (hasHandlers) {
+            exceptionHandlerBlock = new Block();
+            unit.pushBlock(new BlockInfo.TryExcept(tryBody, exceptionHandlerBlock));
+        }
         // try block
         unit.useNextBlock(tryBody);
         visitSequence(node.body);
-        if (hasFinally) {
+        if (hasHandlers) {
             unit.popBlock();
         }
         if (elseBlock != null) {
@@ -1815,7 +1818,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         // except clauses
         if (hasHandlers) {
-            unit.useNextBlock(Block.createExceptionHandler(tryBody));
+            unit.useNextBlock(exceptionHandlerBlock);
             /* This puts saved exception under the current exception */
             addOp(PUSH_EXC_INFO);
             /* The stack is now [*, savedException, currentException] */
@@ -1825,8 +1828,8 @@ public class Compiler implements SSTreeVisitor<Void> {
              * We need to save and restore the outer exception state. In order to restore it even in
              * case of an exception, we need an internal finally handler for this.
              */
-            Block cleanupHandler = Block.createFinallyHandler(nextHandler);
-            unit.pushBlock(new BlockInfo(BlockInfo.Type.EXCEPTION_HANDLER));
+            Block cleanupHandler = new Block();
+            unit.pushBlock(new BlockInfo.ExceptHandler(nextHandler, cleanupHandler));
             /*
              * We use this offset to unwind the exception from the except block, we don't need it on
              * the stack
@@ -1841,7 +1844,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     nextHandler = new Block();
                 } else {
                     if (hasFinally) {
-                        // Keep the save state, it's the same
+                        // Keep the saved state, it's the same
                         nextHandler = finallyBlockExceptWithSavedExc;
                     } else {
                         nextHandler = cleanupHandler;
@@ -1897,18 +1900,19 @@ public class Compiler implements SSTreeVisitor<Void> {
          * exception state. We start with the latter.
          */
         if (hasFinally) {
+            unit.popBlock();
             unit.useNextBlock(finallyBlockExcept);
             /* This puts saved exception under the current exception */
             addOp(PUSH_EXC_INFO);
-            unit.pushBlock(new BlockInfo(BlockInfo.Type.FINALLY_END));
-            Block cleanupHandler = Block.createFinallyHandler(finallyBlockExceptWithSavedExc);
+            Block cleanupHandler = new Block();
             cleanupHandler.unwindOffset = -1;
+            unit.pushBlock(new BlockInfo.FinallyHandler(finallyBlockExceptWithSavedExc, cleanupHandler));
             /* The stack is [*, savedException, currentException] */
             unit.useNextBlock(finallyBlockExceptWithSavedExc);
             visitSequence(node.finalBody);
+            unit.popBlock();
             unit.useNextBlock(cleanupHandler);
             addOp(END_EXC_HANDLER);
-            unit.popBlock();
 
             /* Now emit the finally for the no-exception case */
             unit.useNextBlock(finallyBlockNormal);
@@ -1935,7 +1939,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(test);
         jumpIf(node.test, orelse, false);
         unit.useNextBlock(body);
-        unit.pushBlock(new BlockInfo(test, end, BlockInfo.Type.WHILE_LOOP));
+        unit.pushBlock(new BlockInfo.While(test, end));
         try {
             visitSequence(node.body);
             addOp(JUMP_BACKWARD, test);
@@ -1960,12 +1964,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void visitWith(StmtTy.With node, int itemIndex) {
         Block body = new Block();
-        Block handler = Block.createFinallyHandler(body);
+        Block handler = new Block();
 
         StmtTy.With.Item item = node.items[itemIndex];
         item.contextExpr.accept(this);
         addOp(SETUP_WITH);
-        unit.pushBlock(new BlockInfo(BlockInfo.Type.WITH, node));
+        unit.pushBlock(new BlockInfo.With(body, handler, node));
 
         unit.useNextBlock(body);
         /*
@@ -1984,11 +1988,11 @@ public class Compiler implements SSTreeVisitor<Void> {
             visitSequence(node.body);
         }
         addOp(LOAD_NONE);
+        unit.popBlock();
 
         unit.useNextBlock(handler);
         setLocation(node);
         addOp(EXIT_WITH);
-        unit.popBlock();
     }
 
     @Override
@@ -1996,34 +2000,32 @@ public class Compiler implements SSTreeVisitor<Void> {
         throw new UnsupportedOperationException("should not reach here");
     }
 
-    private BlockInfo unwindBlockStackUntilLoop() {
-        for (int i = unit.blockInfoStack.size() - 1; i >= 0; i--) {
-            BlockInfo info = unit.blockInfoStack.get(i);
-            switch (info.type) {
-                case FOR_LOOP:
-                case WHILE_LOOP:
-                    return info;
-                case WITH:
-                    setLocation((SSTNode) info.data);
+    private BlockInfo.Loop unwindBlockStackUntilLoop() {
+        final BlockInfo savedInfo = unit.blockInfo;
+        try {
+            BlockInfo info = unit.blockInfo;
+            while (info != null) {
+                unit.blockInfo = info.outer;
+                if (info instanceof BlockInfo.Loop) {
+                    return (BlockInfo.Loop) info;
+                } else if (info instanceof BlockInfo.With) {
+                    BlockInfo.With with = (BlockInfo.With) info;
+                    setLocation(with.node);
                     addOp(LOAD_NONE);
                     addOp(EXIT_WITH);
-                    break;
-                case FINALLY_TRY:
-                    // XXX this will still be covered by the exception handler, we need a way to cut
-                    // off the handler here
-                    List<BlockInfo> savedBlockStack = unit.blockInfoStack;
-                    unit.blockInfoStack = unit.blockInfoStack.subList(0, i);
-                    visitSequence((SSTNode[]) info.data);
-                    unit.blockInfoStack = savedBlockStack;
-                    break;
-                case EXCEPTION_HANDLER:
+                } else if (info instanceof BlockInfo.TryFinally) {
+                    unit.useNextBlock(new Block());
+                    visitSequence(((BlockInfo.TryFinally) info).body);
+                } else if (info instanceof BlockInfo.ExceptHandler) {
                     addOp(POP_EXCEPT);
-                    break;
-                case FINALLY_END:
+                } else if (info instanceof BlockInfo.FinallyHandler) {
                     addOp(POP_EXCEPT);
                     addOp(POP_TOP);
-                    break;
+                }
+                info = info.outer;
             }
+        } finally {
+            unit.blockInfo = savedInfo;
         }
         return null;
     }
@@ -2032,12 +2034,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Break node) {
         setLocation(node);
         setLocation(node);
-        BlockInfo info = unwindBlockStackUntilLoop();
+        BlockInfo.Loop info = unwindBlockStackUntilLoop();
         if (info == null) {
             // TODO syntax error
             throw new IllegalStateException("'break' outside loop");
         }
-        if (info.type == BlockInfo.Type.FOR_LOOP) {
+        if (info instanceof BlockInfo.For) {
             // pop the iterator
             addOp(POP_TOP);
         }
@@ -2048,7 +2050,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
-        BlockInfo info = unwindBlockStackUntilLoop();
+        BlockInfo.Loop info = unwindBlockStackUntilLoop();
         if (info == null) {
             // TODO syntax error
             throw new IllegalStateException("'continue' not properly in loop");

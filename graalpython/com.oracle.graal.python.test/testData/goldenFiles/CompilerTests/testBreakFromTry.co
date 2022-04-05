@@ -12,7 +12,7 @@ Disassembly of <module>:
 000051        18 POP_TOP
 000051        19 JUMP_FORWARD                      22   (to 41)
 000051        21 JUMP_FORWARD                      11   (to 32)
-000051        23 PUSH_EXC_INFO                                                           (exc handler 11 - 23; stack: 1)
+000051        23 PUSH_EXC_INFO
 000051        24 LOAD_NAME                         2    (print)
 000057        26 LOAD_STRING                       0    (finally)
 000051        28 CALL_FUNCTION                     1
