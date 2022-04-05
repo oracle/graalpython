@@ -45,12 +45,18 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "syncgc: Mark tests that rely on a synchronous GC."
     )
+    config.addinivalue_line(
+        "markers", "tp_traverse: Mark tests that rely tp_traverse being called."
+    )
 
 
 def pytest_runtest_setup(item):
     if (sys.implementation.name in ["graalpython", "pypy"] and
         "syncgc" in [mark.name for mark in item.iter_markers()]):
         pytest.skip(f"cannot run syncgc test on {sys.implementation.name}")
+    if (sys.implementation.name in ["graalpython"] and
+        "tp_traverse" in [mark.name for mark in item.iter_markers()]):
+        pytest.skip(f"{sys.implementation.name} does not call tp_traverse")
 
 
 @pytest.fixture(scope='session')
