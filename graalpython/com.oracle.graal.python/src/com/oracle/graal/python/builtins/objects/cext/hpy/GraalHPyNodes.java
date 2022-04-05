@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
@@ -730,7 +732,7 @@ public class GraalHPyNodes {
 
     /**
      * Parser an {@code HPySlot} structure, creates and adds the appropriate function as magic
-     * method.
+     * method. Returns either an HPyProperty if created, or the HPySlot itself.
      *
      * <pre>
      * typedef struct {
@@ -743,10 +745,10 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCreateSlotNode extends PNodeWithContext {
 
-        public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+        public abstract Object execute(GraalHPyContext context, Object enclosingType, Object slotDef);
 
         @Specialization(limit = "1")
-        static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+        static Object doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
                         @CachedLibrary("slotDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -802,6 +804,9 @@ public class GraalHPyNodes {
                 if (enclosingType instanceof PythonClass) {
                     ((PythonClass) enclosingType).hpyDestroyFunc = methodFunctionPointer;
                 }
+            } else if (HPY_TP_TRAVERSE.equals(slot)) {
+                assert methodNames.length == 0;
+                return HPY_TP_TRAVERSE;
             } else {
                 // create properties
                 for (int i = 0; i < methodNames.length; i++) {
@@ -1933,6 +1938,7 @@ public class GraalHPyNodes {
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
+                        @Cached ReadAttributeFromObjectNode readHPyIsPureNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1978,21 +1984,13 @@ public class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
-                if ((flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0) {
-                    throw raiseNode.raise(TypeError, "HPy_TPFLAGS_INTERNAL_PURE should not be used directly, set .legacy=true instead");
-                }
-
                 long legacy = castToLong(valueLib, ptrLib.readMember(typeSpec, "legacy"));
-                if (legacy != 0) {
-                    flags &= ~GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
-                } else {
-                    flags |= GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
-                }
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, legacy == 0);
                 if (newType instanceof PythonClass) {
                     PythonClass clazz = (PythonClass) newType;
                     clazz.basicSize = basicSize;
@@ -2001,6 +1999,7 @@ public class GraalHPyNodes {
                 }
 
                 boolean seenNew = false;
+                boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);
 
                 // process defines
                 Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
@@ -2023,7 +2022,12 @@ public class GraalHPyNodes {
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
                                 Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
-                                property = addSlotNode.execute(context, newType, slotDef);
+                                Object addSlotResult = addSlotNode.execute(context, newType, slotDef);
+                                if (HPY_TP_TRAVERSE.equals(addSlotResult)) {
+                                    needsTpTraverse = false;
+                                } else if (addSlotResult instanceof HPyProperty) {
+                                    property = (HPyProperty) addSlotResult;
+                                }
                                 if (property != null && SpecialMethodNames.__NEW__.equals(property.key)) {
                                     seenNew = true;
                                 }
@@ -2045,6 +2049,10 @@ public class GraalHPyNodes {
                             property.write(writeAttributeToObjectNode, newType);
                         }
                     }
+                }
+
+                if (needsTpTraverse) {
+                    throw raiseNode.raise(ValueError, "traverse function needed for type with HAVE_GC");
                 }
 
                 // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
@@ -2089,7 +2097,7 @@ public class GraalHPyNodes {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
                 }
-                checkInheritanceConstraints(flags, baseFlags, raiseNode);
+                checkInheritanceConstraints(flags, baseFlags, legacy == 0, readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_IS_PURE), raiseNode);
 
                 return newType;
             } catch (CannotCastException | InteropException e) {
@@ -2171,9 +2179,7 @@ public class GraalHPyNodes {
             return new String[]{null, specName};
         }
 
-        private static void checkInheritanceConstraints(long flags, long baseFlags, PRaiseNode raiseNode) {
-            boolean isPure = (flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
-            boolean isBasePure = (baseFlags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
+        private static void checkInheritanceConstraints(long flags, long baseFlags, boolean isPure, Object baseIsPure, PRaiseNode raiseNode) {
             // Pure types may inherit from:
             //
             // * pure types, or
@@ -2184,7 +2190,7 @@ public class GraalHPyNodes {
             //
             // It would be nice to relax these restrictions or check them here.
             // See https://github.com/hpyproject/hpy/issues/169 for details.
-            if (!isPure && isBasePure) {
+            if (!isPure && baseIsPure == Boolean.TRUE) {
                 throw raiseNode.raise(TypeError, "A legacy type should not inherit its memory layout from a pure type");
             }
         }
