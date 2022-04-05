@@ -69,6 +69,7 @@ public final class CompilationUnit {
     final HashMap<String, Integer> varnames = new HashMap<>();
     final HashMap<String, Integer> cellvars;
     final HashMap<String, Integer> freevars;
+    final int[] cell2arg;
     final int argCount;
     final int positionalOnlyArgCount;
     final int kwOnlyArgCount;
@@ -129,6 +130,17 @@ public final class CompilationUnit {
             assert cellvars.isEmpty();
             cellvars.put("__class__", 0);
         }
+
+        int[] cell2arg = new int[cellvars.size()];
+        boolean hasArgCell = false;
+        Arrays.fill(cell2arg, -1);
+        for (String cellvar : cellvars.keySet()) {
+            if (varnames.containsKey(cellvar)) {
+                cell2arg[cellvars.get(cellvar)] = varnames.get(cellvar);
+                hasArgCell = true;
+            }
+        }
+        this.cell2arg = hasArgCell ? cell2arg : null;
         freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), cellvars.size());
     }
 
@@ -236,6 +248,7 @@ public final class CompilationUnit {
                         orderedKeys(varnames, new String[0]),
                         orderedKeys(cellvars, new String[0]),
                         orderedKeys(freevars, new String[0], cellvars.size()),
+                        cell2arg,
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,

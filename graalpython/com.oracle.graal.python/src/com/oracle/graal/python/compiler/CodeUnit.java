@@ -77,6 +77,7 @@ public final class CodeUnit {
     public final String[] varnames;
     public final String[] cellvars;
     public final String[] freevars;
+    public final int[] cell2arg;
 
     public final Object[] constants;
     public final long[] primitiveConstants;
@@ -88,7 +89,7 @@ public final class CodeUnit {
     CodeUnit(String name, String filename,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
                     byte[] code, byte[] linetable, int flags,
-                    String[] names, String[] varnames, String[] cellvars, String[] freevars,
+                    String[] names, String[] varnames, String[] cellvars, String[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     short[] exceptionHandlerRanges, int startOffset) {
         this.name = name;
@@ -105,6 +106,7 @@ public final class CodeUnit {
         this.varnames = varnames;
         this.cellvars = cellvars;
         this.freevars = freevars;
+        this.cell2arg = cell2arg;
         this.constants = constants;
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;

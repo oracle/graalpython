@@ -1785,13 +1785,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @ExplodeLoop
     private void initCellVarsExploded(Frame localFrame) {
         for (int i = 0; i < cellvars.length; i++) {
-            localFrame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
+            initCell(localFrame, i);
         }
     }
 
     private void initCellVarsLoop(Frame localFrame) {
         for (int i = 0; i < cellvars.length; i++) {
-            localFrame.setObject(celloffset + i, new PCell(cellEffectivelyFinalAssumptions[i]));
+            initCell(localFrame, i);
+        }
+    }
+
+    private void initCell(Frame localFrame, int i) {
+        PCell cell = new PCell(cellEffectivelyFinalAssumptions[i]);
+        localFrame.setObject(celloffset + i, cell);
+        if (co.cell2arg != null && co.cell2arg[i] != -1) {
+            int idx = co.cell2arg[i];
+            cell.setRef(localFrame.getObject(idx));
+            localFrame.setObject(idx, null);
         }
     }
 
