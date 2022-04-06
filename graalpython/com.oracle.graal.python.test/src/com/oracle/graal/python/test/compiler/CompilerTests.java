@@ -76,6 +76,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testComplexNumber() {
+        doTest("-2 + 3j");
+    }
+
+    @Test
     public void testAssignment() {
         doTest("a = 12");
     }

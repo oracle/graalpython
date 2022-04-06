@@ -163,7 +163,11 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createNumber(String number, int startOffset, int endOffset) {
+    public ExprTy createNumber(String numberWithUnderscores, int startOffset, int endOffset) {
+        String number = numberWithUnderscores;
+        if (number.contains("_")) {
+            number = number.replace("_", "");
+        }
         int base = 10;
         int start = 0;
         boolean isFloat = false;
@@ -176,7 +180,7 @@ public class NodeFactoryImp implements NodeFactory {
             } else if (number.startsWith("0o") || number.startsWith("0O")) {
                 base = 8;
                 start = 2;
-            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+            } else if (number.startsWith("0b") || number.startsWith("0B")) {
                 base = 2;
                 start = 2;
             }
@@ -187,14 +191,14 @@ public class NodeFactoryImp implements NodeFactory {
                 isFloat = number.contains(".") || number.contains("e") || number.contains("E");
             }
         }
-        String value = number.replace("_", "");
 
         if (isComplex) {
-            return new ExprTy.Constant(Double.parseDouble(value.substring(0, value.length() - 1)),
+            double imag = Double.parseDouble(number.substring(0, number.length() - 1));
+            return new ExprTy.Constant(new double[]{0.0, imag},
                             ExprTy.Constant.Kind.COMPLEX,
                             startOffset, endOffset);
         } else if (isFloat) {
-            return new ExprTy.Constant(Double.parseDouble(value),
+            return new ExprTy.Constant(Double.parseDouble(number),
                             ExprTy.Constant.Kind.DOUBLE,
                             startOffset, endOffset);
         } else {
@@ -204,8 +208,8 @@ public class NodeFactoryImp implements NodeFactory {
             long result = 0;
             int lastD;
             boolean overunder = false;
-            while (i < value.length()) {
-                lastD = digitValue(value.charAt(i));
+            while (i < number.length()) {
+                lastD = digitValue(number.charAt(i));
 
                 long next = result;
                 if (next > moltmax) {
@@ -222,8 +226,8 @@ public class NodeFactoryImp implements NodeFactory {
                     // overflow
                     BigInteger bigResult = BigInteger.valueOf(result);
                     BigInteger bigBase = BigInteger.valueOf(base);
-                    while (i < value.length()) {
-                        bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(value.charAt(i))));
+                    while (i < number.length()) {
+                        bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
                         i++;
                     }
                     return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
@@ -231,7 +235,7 @@ public class NodeFactoryImp implements NodeFactory {
                 result = next;
                 i++;
             }
-            return new ExprTy.Constant(result, startOffset, endOffset);
+            return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, startOffset, endOffset);
         }
     }
 

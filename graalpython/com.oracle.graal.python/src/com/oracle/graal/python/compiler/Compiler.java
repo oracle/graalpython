@@ -860,13 +860,14 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BOOLEAN:
                     return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    return addLoadLong(node.longValue);
+                    return addLoadLong((Long) node.value);
                 case DOUBLE:
-                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.longValue));
+                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
                 case COMPLEX:
-                    addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getReal()));
-                    addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, node.getImaginary()));
-                    return addOp(MAKE_COMPLEX);
+                    double[] num = (double[]) node.value;
+                    int realIdx = addObject(unit.primitiveConstants, Double.doubleToRawLongBits(num[0]));
+                    int imagIdx = addObject(unit.primitiveConstants, Double.doubleToRawLongBits(num[1]));
+                    return addOp(LOAD_COMPLEX, realIdx << 8 | imagIdx);
                 case BIGINTEGER:
                     return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
                 case RAW:

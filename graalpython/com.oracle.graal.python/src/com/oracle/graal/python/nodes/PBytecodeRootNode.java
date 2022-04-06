@@ -837,10 +837,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
                         break;
                     }
-                    case MAKE_COMPLEX: {
-                        double imag = (double) localFrame.getObject(stackTop--);
-                        double real = (double) localFrame.getObject(stackTop);
-                        localFrame.setObject(stackTop, factory.createComplex(real, imag));
+                    case LOAD_COMPLEX: {
+                        int oparg1 = Byte.toUnsignedInt(localBC[++bci]);
+                        double real = Double.longBitsToDouble(localLongConsts[oparg1]);
+                        int oparg2 = Byte.toUnsignedInt(localBC[++bci]);
+                        double imag = Double.longBitsToDouble(localLongConsts[oparg2]);
+                        localFrame.setObject(++stackTop, factory.createComplex(real, imag));
                         break;
                     }
                     case MAKE_KEYWORD: {

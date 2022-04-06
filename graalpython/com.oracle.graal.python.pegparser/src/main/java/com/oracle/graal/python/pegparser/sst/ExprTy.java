@@ -407,7 +407,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Constant extends ExprTy {
-        public static enum Kind {
+        public enum Kind {
             OBJECT,
             NONE,
             ELLIPSIS,
@@ -417,49 +417,16 @@ public abstract class ExprTy extends SSTNode {
             COMPLEX,
             BIGINTEGER,
             RAW,
-            BYTES;
+            BYTES
         }
 
         public final Object value;
-        public final long longValue;
         public final Kind kind;
 
         public Constant(Object value, Kind kind, int startOffset, int endOffset) {
             super(startOffset, endOffset);
             this.value = value;
-            this.longValue = 0;
             this.kind = kind == null ? Kind.OBJECT : kind;
-        }
-
-        public Constant(double value, Kind kind, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = null;
-            this.longValue = Double.doubleToLongBits(value);
-            this.kind = kind;
-        }
-
-        public Constant(long longValue, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = null;
-            this.longValue = longValue;
-            this.kind = Kind.LONG;
-        }
-
-        public Constant(double real, double imag, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = real;
-            this.longValue = Double.doubleToLongBits(imag);
-            this.kind = Kind.COMPLEX;
-        }
-
-        public long getReal() {
-            assert kind == Kind.COMPLEX;
-            return Double.doubleToLongBits((Double) value);
-        }
-
-        public long getImaginary() {
-            assert kind == Kind.COMPLEX;
-            return longValue;
         }
 
         @Override

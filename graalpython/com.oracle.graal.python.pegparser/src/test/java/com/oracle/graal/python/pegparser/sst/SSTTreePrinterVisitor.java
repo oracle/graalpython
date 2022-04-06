@@ -194,13 +194,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         sb.append(" Value: ");
         switch (node.kind) {
             case LONG:
-                sb.append(node.longValue);
+                sb.append((Long) node.value);
                 break;
             case DOUBLE:
-                sb.append(Double.longBitsToDouble(node.longValue));
+                sb.append((Double) node.value);
                 break;
             case COMPLEX:
-                sb.append(Double.longBitsToDouble(node.longValue)).append('j');
+                double[] val = (double[]) node.value;
+                sb.append(String.format("%g%+gj", val[0], val[1]));
                 break;
             default:
                 if (node.value == null || node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {

@@ -93,8 +93,7 @@ public enum OpCodes {
     LOAD_BIGINT(1, 0, 1),
     LOAD_STRING(1, 0, 1),
     LOAD_BYTES(1, 0, 1),
-    // make a complex from two doubles on the top of stack
-    MAKE_COMPLEX(0, 2, 1),
+    LOAD_COMPLEX(2, 0, 1),
 
     // calling
     // args[] => result

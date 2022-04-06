@@ -236,6 +236,16 @@ public final class CodeUnit {
                 case LOAD_DOUBLE:
                     line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[arg]));
                     break;
+                case LOAD_COMPLEX: {
+                    double real = Double.longBitsToDouble(primitiveConstants[arg >>> 8]);
+                    double imag = Double.longBitsToDouble(primitiveConstants[arg & 0xff]);
+                    if (real == 0.0) {
+                        line[5] = String.format("%gj", imag);
+                    } else {
+                        line[5] = String.format("%g%+gj", real, imag);
+                    }
+                    break;
+                }
                 case LOAD_CLOSURE:
                 case LOAD_DEREF:
                 case STORE_DEREF:
