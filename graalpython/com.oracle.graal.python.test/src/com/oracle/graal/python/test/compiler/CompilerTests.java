@@ -347,10 +347,16 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testDefun() {
-        String s;
-        s = "def docompute(num, num2=5):\n" +
+        String source = "def docompute(num, num2=5):\n" +
                         "   return (num, num2)\n";
-        doTest(s);
+        doTest(source);
+    }
+
+    @Test
+    public void testReturnPlain() {
+        String source = "def foo():\n" +
+                        "   return\n";
+        doTest(source);
     }
 
     @Test

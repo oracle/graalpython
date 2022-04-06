@@ -1776,7 +1776,11 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Return node) {
         setLocation(node);
-        node.value.accept(this);
+        if (node.value != null) {
+            node.value.accept(this);
+        } else {
+            addOp(LOAD_NONE);
+        }
         return addOp(RETURN_VALUE);
     }
 
