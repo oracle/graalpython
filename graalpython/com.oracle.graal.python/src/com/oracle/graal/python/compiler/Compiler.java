@@ -690,25 +690,19 @@ public class Compiler implements SSTreeVisitor<Void> {
         int savedOffset = setLocation(node);
         try {
             Block end = new Block();
-            for (ExprTy v : node.values) {
+            ExprTy[] values = node.values;
+            OpCodes op;
+            if (node.op == ExprTy.BoolOp.Type.And) {
+                op = JUMP_IF_FALSE_OR_POP;
+            } else {
+                op = JUMP_IF_TRUE_OR_POP;
+            }
+            for (int i = 0; i < values.length - 1; i++) {
+                ExprTy v = values[i];
                 v.accept(this);
-                switch (node.op) {
-                    case And:
-                        addOp(JUMP_IF_FALSE_OR_POP, end);
-                        break;
-                    case Or:
-                    default:
-                        addOp(JUMP_IF_TRUE_OR_POP, end);
-                }
+                addOp(op, end);
             }
-            switch (node.op) {
-                case And:
-                    addOp(LOAD_TRUE);
-                    break;
-                case Or:
-                default:
-                    addOp(LOAD_FALSE);
-            }
+            values[values.length - 1].accept(this);
             unit.useNextBlock(end);
             return null;
         } finally {
