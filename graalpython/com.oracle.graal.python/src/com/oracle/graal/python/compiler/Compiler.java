@@ -1597,7 +1597,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                 }
                 collectKeywords(defs.toArray(KeywordTy[]::new));
-                return CodeUnit.HAS_KWONLY_DEFAULTS;
+                flags |= CodeUnit.HAS_KWONLY_DEFAULTS;
             }
         }
         return flags;
