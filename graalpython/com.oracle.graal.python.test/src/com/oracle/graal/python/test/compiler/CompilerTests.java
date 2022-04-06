@@ -369,12 +369,16 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testIf() {
-        String source = "" +
-                        "if False:\n" +
+        String source = "if False:\n" +
                         "   print(True)\n" +
                         "else:\n" +
                         "   print(False)\n";
         doTest(source);
+    }
+
+    @Test
+    public void testIfExpression() {
+        doTest("t if cond else f\n");
     }
 
     @Test
