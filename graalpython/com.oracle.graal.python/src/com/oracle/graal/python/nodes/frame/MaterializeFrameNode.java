@@ -181,6 +181,7 @@ public abstract class MaterializeFrameNode extends Node {
             PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
             pyFrame.setLasti(info.getBci(frameToMaterialize));
             pyFrame.setLine(info.getLineno(frameToMaterialize));
+            pyFrame.setLocation(info.getRootNode());
         }
     }
 

@@ -184,7 +184,7 @@ public final class PGenerator extends PythonBuiltinObject {
     public Object getReturnValue() {
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
         PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-        return info.getReturnValue(generatorFrame);
+        return info.getGeneratorReturnValue(generatorFrame);
     }
 
     public Object[] getArguments() {

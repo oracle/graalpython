@@ -333,7 +333,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     };
 
-    private final int stacksize;
     private final Signature signature;
     private final String name;
     public final String filename;
@@ -342,48 +341,31 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int freeoffset;
     private final int stackoffset;
     private final int bcioffset;
+    private final int generatorStackTopOffset;
+    private final int generatorReturnOffset;
     private final int classcellIndex;
 
     public static final class FrameInfo {
-        private final CodeUnit code;
-        private final Source source;
+        @CompilationFinal PBytecodeRootNode rootNode;
 
-        public FrameInfo(CodeUnit code, Source source) {
-            this.code = code;
-            this.source = source;
-        }
-
-        public int getCellOffset() {
-            return code.varnames.length;
-        }
-
-        public int getFreeOffset() {
-            return getCellOffset() + code.cellvars.length;
-        }
-
-        public int getStackOffset() {
-            return getFreeOffset() + code.freevars.length;
-        }
-
-        public int getBciOffset() {
-            return getStackOffset() + code.stacksize;
+        public PBytecodeRootNode getRootNode() {
+            return rootNode;
         }
 
         public int bciToLine(int bci) {
-            return PBytecodeRootNode.bciToLine(code, source, bci);
+            return rootNode.bciToLine(bci);
         }
 
         public int getBci(Frame frame) {
-            int bciOffset = getBciOffset();
             try {
-                return frame.getInt(bciOffset);
+                return frame.getInt(rootNode.bcioffset);
             } catch (FrameSlotTypeException e) {
                 return -1;
             }
         }
 
-        public Object getReturnValue(Frame frame) {
-            return frame.getObject(getBciOffset() + 2);
+        public Object getGeneratorReturnValue(Frame frame) {
+            return frame.getObject(rootNode.generatorReturnOffset);
         }
 
         public int getLineno(Frame frame) {
@@ -392,20 +374,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         public void syncLocals(VirtualFrame virtualFrame, Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile) {
             Frame localFrame = frameToSync;
+            CodeUnit code = rootNode.co;
             if (code.isGenerator()) {
                 localFrame = PArguments.getGeneratorFrame(frameToSync);
             }
             for (int i = 0; i < code.varnames.length; i++) {
                 setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.varnames[i], localFrame.getObject(i));
             }
-            int cellOffset = getCellOffset();
             for (int i = 0; i < code.cellvars.length; i++) {
-                PCell cell = (PCell) localFrame.getObject(cellOffset + i);
+                PCell cell = (PCell) localFrame.getObject(rootNode.celloffset + i);
                 setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.cellvars[i], cell.getRef());
             }
-            int freeOffset = getFreeOffset();
             for (int i = 0; i < code.freevars.length; i++) {
-                PCell cell = (PCell) localFrame.getObject(freeOffset + i);
+                PCell cell = (PCell) localFrame.getObject(rootNode.freeoffset + i);
                 setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.freevars[i], cell.getRef());
             }
         }
@@ -462,7 +443,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co, Source source) {
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(4);
-        newBuilder.info(new FrameInfo(co, source));
+        newBuilder.info(new FrameInfo());
         // locals
         newBuilder.addSlots(co.varnames.length, FrameSlotKind.Illegal);
         // cells
@@ -490,11 +471,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @TruffleBoundary
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
         super(language, fd);
-        FrameInfo info = (FrameInfo) fd.getInfo();
-        this.celloffset = info.getCellOffset();
-        this.freeoffset = info.getFreeOffset();
-        this.stackoffset = info.getStackOffset();
-        this.bcioffset = info.getBciOffset();
+        ((FrameInfo) fd.getInfo()).rootNode = this;
+        this.celloffset = co.varnames.length;
+        this.freeoffset = celloffset + co.cellvars.length;
+        this.stackoffset = freeoffset + co.freevars.length;
+        this.bcioffset = stackoffset + co.stacksize;
+        this.generatorStackTopOffset = bcioffset + 1;
+        this.generatorReturnOffset = generatorStackTopOffset + 1;
         this.source = source;
         this.signature = sign;
         this.bytecode = co.code;
@@ -506,12 +489,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.varnames = co.varnames;
         this.freevars = co.freevars;
         this.cellvars = co.cellvars;
-        this.stacksize = co.stacksize;
         this.filename = co.filename;
         this.name = co.name;
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
-        assert stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
+        assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
         assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
         cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
         for (int i = 0; i < cellvars.length; i++) {
@@ -580,7 +562,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
         generatorFrame.setInt(bcioffset, 0);
-        generatorFrame.setInt(bcioffset + 1, stackoffset - 1);
+        generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
         copyArgsAndCells(generatorFrame, arguments);
     }
 
@@ -794,7 +776,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             /* Check if we're resuming the generator or resuming after OSR */
             if (bci == 0) {
                 bci = localFrame.getInt(bcioffset);
-                stackTop = localFrame.getInt(bcioffset + 1);
+                stackTop = localFrame.getInt(generatorStackTopOffset);
             }
         }
 
@@ -1044,8 +1026,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (isGenerator) {
                             localFrame.setObject(stackTop--, null);
                             localFrame.setInt(bcioffset, bci + 1);
-                            localFrame.setInt(bcioffset + 1, stackTop);
-                            localFrame.setObject(bcioffset + 2, value);
+                            localFrame.setInt(generatorStackTopOffset, stackTop);
+                            localFrame.setObject(generatorReturnOffset, value);
                             return null;
                         } else {
                             return value;
@@ -1308,7 +1290,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         localFrame.setInt(bcioffset, bci + 1);
-                        localFrame.setInt(bcioffset + 1, stackTop);
+                        localFrame.setInt(generatorStackTopOffset, stackTop);
                         return value;
                     }
                     case RESUME_YIELD: {
@@ -2156,15 +2138,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public static int bciToLine(CodeUnit code, Source source, int bci) {
+    public int bciToLine(int bci) {
         if (source != null && bci >= 0) {
-            return source.createSection(code.bciToSrcOffset(bci), 0).getStartLine();
+            return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
         }
         return -1;
-    }
-
-    public int bciToLine(int bci) {
-        return bciToLine(co, source, bci);
     }
 
     @Override
