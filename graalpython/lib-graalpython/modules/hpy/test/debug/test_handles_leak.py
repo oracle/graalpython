@@ -208,6 +208,7 @@ def test_closed_handles_queue_max_size(compiler):
     finally:
         _debug.set_closed_handles_queue_max_size(old_size)
 
+@pytest.mark.xfail
 def test_reuse_closed_handles(compiler):
     from hpy.universal import _debug
     mod = compiler.make_module("""

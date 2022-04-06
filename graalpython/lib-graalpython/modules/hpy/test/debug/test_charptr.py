@@ -16,6 +16,7 @@ def hpy_abi():
         yield "debug"
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_charptr_use_after_implicit_arg_handle_close(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -53,6 +54,7 @@ def test_charptr_use_after_implicit_arg_handle_close(compiler, python_subprocess
         assert b"UnicodeDecodeError" in result.stderr
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(not SUPPORTS_SYS_EXECUTABLE, reason="needs subprocess")
 def test_charptr_use_after_handle_close(compiler, python_subprocess):
     mod = compiler.compile_module("""
@@ -83,6 +85,7 @@ def test_charptr_use_after_handle_close(compiler, python_subprocess):
         assert b"UnicodeDecodeError" in result.stderr
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(not SUPPORTS_MEM_PROTECTION, reason=
                     "Could be implemented by checking the contents on "
                     "close, but long term it would be better to provide"
@@ -133,6 +136,7 @@ def test_charptr_correct_usage(compiler):
     assert mod.f('I wont be leaked!') == 'I wont be leaked!';
 
 
+@pytest.mark.xfail
 def test_charptr_limit_stress_test(compiler):
     from hpy.universal import _debug
     mod = compiler.make_module("""
