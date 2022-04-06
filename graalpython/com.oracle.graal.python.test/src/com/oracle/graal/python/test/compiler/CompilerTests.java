@@ -487,9 +487,23 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
-    public void testGenerator() {
+    public void testYieldPlain() {
+        String source = "def gen(a):\n" +
+                        "    yield\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testYieldValue() {
         String source = "def gen(a):\n" +
                         "    yield a + 1\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testYieldExpression() {
+        String source = "def gen(a):\n" +
+                        "    b = yield a\n";
         doTest(source);
     }
 

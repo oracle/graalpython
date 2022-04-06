@@ -1278,7 +1278,11 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Yield node) {
         int savedOffset = setLocation(node);
         try {
-            node.value.accept(this);
+            if (node.value != null) {
+                node.value.accept(this);
+            } else {
+                addOp(LOAD_NONE);
+            }
             addOp(YIELD_VALUE);
             addOp(RESUME_YIELD);
             return null;
