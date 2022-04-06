@@ -541,7 +541,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         String docstring = getDocstring(stmts);
         if (docstring != null) {
             i++;
-            stmts[0].accept(this);
+            StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
+            stmt.value.accept(this);
             addNameOp("__doc__", ExprContext.Store);
         }
         for (; i < stmts.length; i++) {
