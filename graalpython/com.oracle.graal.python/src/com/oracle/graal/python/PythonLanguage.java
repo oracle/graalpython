@@ -400,6 +400,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = PythonContext.get(null);
+        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            return parseForBytecodeInterpreter(request);
+        }
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty()) {
@@ -444,47 +447,99 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
         }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType()) || MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
-            com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-            ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
-                throw raiseSyntaxError(source, errorType, startOffset, endOffset, message);
-            };
-            FExprParser fexpParser = new FExprParser() {
-                @Override
-                public ExprTy parse(String code) {
-                    ParserTokenizer tok = new ParserTokenizer(code);
-                    return new Parser(tok, factory, this, errorCb).fstring_rule();
-                }
-            };
-            try {
-                Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-                Compiler compiler = new Compiler();
-                ModTy mod = (ModTy) parser.parse(AbstractParser.InputType.FILE);
-                // TODO this is needed until we get complete error handling in the parser
-                if (mod == null) {
-                    throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
-                }
-                CompilationUnit cu = compiler.compile(mod, source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
-                CodeUnit co = cu.assemble(source.getName(), 0);
-
-                Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
-                                co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, co.positionalOnlyArgCount > 0,
-                                Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                                Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-                RootNode rootNode = new PBytecodeRootNode(this, signature, co, source);
-                if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-                    rootNode = new TopLevelExceptionHandler(this, rootNode, source);
-                }
-                return PythonUtils.getOrCreateCallTarget(rootNode);
-            } catch (PException e) {
-                if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-                    PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
-                }
-                throw e;
-            }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, 0);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private CallTarget parseForBytecodeInterpreter(ParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        Source source = request.getSource();
+        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
+            if (!request.getArgumentNames().isEmpty()) {
+                throw new IllegalStateException("Not supported yet");
+            }
+            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+        }
+        if (!request.getArgumentNames().isEmpty()) {
+            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
+        }
+        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
+            // byte[] bytes = source.getBytes().toByteArray();
+            throw new IllegalStateException("Unmarshalling bytecode not supported yet");
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
+            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.EVAL, false, optimize);
+            }
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
+            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, optimize);
+            }
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, 0);
+        }
+        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, AbstractParser.InputType type, boolean topLevel, int optimize) {
+        ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
+        com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
+        ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
+            throw raiseSyntaxError(source, errorType, startOffset, endOffset, message);
+        };
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public ExprTy parse(String code) {
+                ParserTokenizer tok = new ParserTokenizer(code);
+                return new Parser(tok, factory, this, errorCb).fstring_rule();
+            }
+        };
+        try {
+            Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+            Compiler compiler = new Compiler();
+            ModTy mod = (ModTy) parser.parse(type);
+            // TODO this is needed until we get complete error handling in the parser
+            if (mod == null) {
+                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
+            }
+            CompilationUnit cu = compiler.compile(mod, source.getName(), EnumSet.noneOf(Compiler.Flags.class), optimize);
+            CodeUnit co = cu.assemble(source.getName(), 0);
+
+            Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
+                            co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, co.positionalOnlyArgCount > 0,
+                            Arrays.copyOf(co.varnames, co.argCount), // parameter names
+                            Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, signature, co, source);
+            GilNode gil = GilNode.getUncached();
+            boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
+            try {
+                bytecodeRootNode.triggerDeprecationWarnings();
+            } finally {
+                gil.release(context, wasAcquired);
+            }
+            RootNode rootNode = bytecodeRootNode;
+            if (topLevel && context.isCoreInitialized()) {
+                rootNode = new TopLevelExceptionHandler(this, bytecodeRootNode, source);
+            }
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        } catch (PException e) {
+            if (topLevel) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            }
+            throw e;
+        }
     }
 
     private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
