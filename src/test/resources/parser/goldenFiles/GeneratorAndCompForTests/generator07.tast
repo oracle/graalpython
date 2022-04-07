@@ -6,14 +6,15 @@ Module[0, 121]
                 ArgTy[10, 11] h
         ---- Function body of merge ----
         While[18, 121]
-            Condition: Compare[24, 34]
-                LHS: 
-                    Call[24, 30]
-                        Target: Name[24, 27] Value: "len"
-                        Args:
-                            Name[28, 29] Value: "h"
-                Op: GT
-                RHS: LONG[33, 34] Value: 1
+            Condition: 
+                Compare[24, 34]
+                    LHS: 
+                        Call[24, 30]
+                            Target: Name[24, 27] Value: "len"
+                            Args:
+                                Name[28, 29] Value: "h"
+                    Op: GT
+                    RHS: LONG[33, 34] Value: 1
             Body:
                 While[44, 121]
                     Condition: BOOLEAN[50, 54] Value: true

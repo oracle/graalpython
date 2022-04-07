@@ -14,10 +14,11 @@ Module[0, 89]
                         Call[46, 52]
                             Target: Name[46, 50] Value: "next"
         While[57, 89]
-            Condition: Compare[63, 68]
-                LHS: Name[63, 64] Value: "h"
-                Op: GT
-                RHS: LONG[67, 68] Value: 1
+            Condition: 
+                Compare[63, 68]
+                    LHS: Name[63, 64] Value: "h"
+                    Op: GT
+                    RHS: LONG[67, 68] Value: 1
             Body:
                 Yield[78, 89]
                     Name[84, 89] Value: "value"

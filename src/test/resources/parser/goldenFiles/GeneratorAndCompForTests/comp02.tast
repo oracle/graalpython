@@ -13,22 +13,25 @@ Module[0, 203]
             Iter: Name[41, 45] Value: "abcs"
             Body:
                 If[55, 150]
-                    Test: UnaryOp[58, 109]
-                        Op: NOT
-                        Value: Call[62, 109]
-                            Target: Name[62, 65] Value: "any"
-                            Args:
-                                GeneratorExp[65, 109]
-                                    Element: Call[66, 85]
-                                        Target: Name[66, 76] Value: "issubclass"
-                                        Args:
-                                            Name[77, 78] Value: "b"
-                                            Name[80, 84] Value: "base"
-                                    ComprehensionTy[86, 108]
-                                        Target: Name[90, 91] Value: "b" Store
-                                        Iterator: Attribute[95, 98] 
-                                            Receiver: Name[95, 98] Value: "cls"
-                                            Attr: __bases__
+                    Test: 
+                        UnaryOp[58, 109]
+                            Op: NOT
+                            Value: Call[62, 109]
+                                Target: Name[62, 65] Value: "any"
+                                Args:
+                                    GeneratorExp[65, 109]
+                                        Element: 
+                                            Call[66, 85]
+                                                Target: Name[66, 76] Value: "issubclass"
+                                                Args:
+                                                    Name[77, 78] Value: "b"
+                                                    Name[80, 84] Value: "base"
+                                        ComprehensionTy[86, 108]
+                                            Target: Name[90, 91] Value: "b" Store
+                                            Iterator: 
+                                                Attribute[95, 98] 
+                                                    Receiver: Name[95, 98] Value: "cls"
+                                                    Attr: __bases__
                     Then:
                         Call[123, 150]
                             Target: 

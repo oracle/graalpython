@@ -22,8 +22,9 @@ Module[0, 247]
                 ---- End of doit function ----
             For[137, 187]
                 Target: Name[141, 142] Value: "A" Store
-                Iter: Call[146, 152]
-                    Target: Name[146, 150] Value: "doit"
+                Iter: 
+                    Call[146, 152]
+                        Target: Name[146, 150] Value: "doit"
                 Body:
                     For[160, 187]
                         Target: Name[164, 165] Value: "C" Store
