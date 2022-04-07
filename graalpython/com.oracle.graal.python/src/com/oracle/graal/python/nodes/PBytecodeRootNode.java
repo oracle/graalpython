@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
+import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -1084,6 +1085,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeImportFrom(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
+                    case IMPORT_STAR: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeImportStar(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
+                        break;
+                    }
                     case JUMP_FORWARD:
                         bci += Byte.toUnsignedInt(localBC[bci + 1]);
                         continue;
@@ -1677,6 +1683,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         ImportFromNode importFromNode = insertChildNode(localNodes, bci, UNCACHED_IMPORT_FROM, NODE_IMPORT_FROM);
         Object imported = importFromNode.execute(virtualFrame, from, name);
         localFrame.setObject(++stackTop, imported);
+        return stackTop;
+    }
+
+    private int bytecodeImportStar(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+        int stackTop = initialStackTop;
+        String name = localNames[oparg];
+        int level = (int) localFrame.getObject(stackTop);
+        localFrame.setObject(stackTop--, null);
+        ImportStarNode importStarNode = insertChildNode(localNodes, bci, () -> new ImportStarNode(name, level));
+        importStarNode.executeVoid(virtualFrame);
         return stackTop;
     }
 

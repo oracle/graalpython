@@ -81,6 +81,7 @@ public enum OpCodes {
 
     IMPORT_NAME(1, 2, 1),
     IMPORT_FROM(1, 1, 2),
+    IMPORT_STAR(1, 1, 0),
 
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),

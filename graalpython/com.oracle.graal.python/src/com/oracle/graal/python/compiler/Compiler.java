@@ -1686,17 +1686,20 @@ public class Compiler implements SSTreeVisitor<Void> {
         for (int i = 0; i < node.names.length; i++) {
             names[i] = node.names[i].name;
         }
-        addOp(LOAD_CONST, addObject(unit.constants, names));
-        addOpName(IMPORT_NAME, unit.names, node.module != null ? node.module : "");
-        for (AliasTy alias : node.names) {
-            if ("*".equals(alias.name)) {
-                throw new UnsupportedOperationException("Not supported yet.");
+        String moduleName = node.module != null ? node.module : "";
+        if ("*".equals(node.names[0].name)) {
+            addOpName(IMPORT_STAR, unit.names, moduleName);
+        } else {
+            addOp(LOAD_CONST, addObject(unit.constants, names));
+            addOpName(IMPORT_NAME, unit.names, moduleName);
+            for (AliasTy alias : node.names) {
+                addOpName(IMPORT_FROM, unit.names, alias.name);
+                String storeName = alias.asName != null ? alias.asName : alias.name;
+                addNameOp(storeName, ExprContext.Store);
+
             }
-            addOpName(IMPORT_FROM, unit.names, alias.name);
-            String storeName = alias.asName != null ? alias.asName : alias.name;
-            addNameOp(storeName, ExprContext.Store);
+            addOp(POP_TOP);
         }
-        addOp(POP_TOP);
         return null;
     }
 
