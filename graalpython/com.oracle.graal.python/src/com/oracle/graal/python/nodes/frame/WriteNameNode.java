@@ -63,6 +63,12 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
+    public static WriteNameNode create(String attributeId) {
+        return WriteNameNodeGen.create(attributeId, null);
+    }
+
+    public abstract void execute(VirtualFrame frame, Object value);
+
     @Specialization(guards = "!hasLocals(frame)")
     protected static void writeGlobal(VirtualFrame frame, Object value,
                     @Cached("create(attributeId)") WriteGlobalNode setItem) {

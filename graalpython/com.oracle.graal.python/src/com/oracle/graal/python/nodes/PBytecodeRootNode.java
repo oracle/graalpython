@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -115,7 +114,9 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -194,12 +195,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyIterNextNode UNCACHED_GET_NEXT = PyIterNextNode.getUncached();
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
-    private static final NodeSupplier<HashingStorageLibrary> NODE_HASHING_STORAGE_LIBRARY = () -> HashingStorageLibrary.getFactory().createDispatched(2);
-    private static final HashingStorageLibrary UNCACHED_HASHING_STORAGE_LIBRARY = HashingStorageLibrary.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
     private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__);
     private static final NodeFunction<String, ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode::create;
+    private static final NodeFunction<String, ReadNameNode> NODE_READ_NAME = ReadNameNode::create;
+    private static final NodeFunction<String, WriteNameNode> NODE_WRITE_NAME = WriteNameNode::create;
     private static final ReadGlobalOrBuiltinNode UNCACHED_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode.getUncached();
     private static final NodeSupplier<PyObjectSetItem> NODE_OBJECT_SET_ITEM = PyObjectSetItem::create;
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
@@ -630,12 +631,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, Node node, T uncached, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (node == null) { // first execution uncached
-            adoptedNodes[nodeIndex] = MARKER_NODE;
+            nodes[nodeIndex] = MARKER_NODE;
             return uncached;
         } else {
             assert node == MARKER_NODE; // second execution caches
             T newNode = nodeSupplier.apply(argument);
-            adoptedNodes[nodeIndex] = insert(newNode);
+            nodes[nodeIndex] = insert(newNode);
             return newNode;
         }
     }
@@ -735,7 +736,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     public Object executeOSR(VirtualFrame virtualFrame, int target, Object originalArgsObject) {
         Object[] originalArgs = (Object[]) originalArgsObject;
-        PythonLanguage lang = PythonLanguage.get(this);
         PythonContext context = PythonContext.get(this);
         PythonModule builtins = context.getBuiltins();
 
@@ -1026,7 +1026,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case STORE_NAME: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeStoreName(virtualFrame, localFrame, lang, globals, locals, stackTop, beginBci, oparg, localNames, localNodes);
+                        stackTop = bytecodeStoreName(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
                     case DELETE_NAME: {
@@ -1056,7 +1056,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case LOAD_NAME: {
                         int oparg = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadName(virtualFrame, localFrame, globals, locals, stackTop, beginBci, oparg, localNodes, localNames, lang);
+                        stackTop = bytecodeLoadName(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
                     case LOAD_GLOBAL: {
@@ -1514,43 +1514,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         localFrame.setObject(stackTop, callNode.execute(virtualFrame, func, args, PKeyword.EMPTY_KEYWORDS));
     }
 
-    private int bytecodeLoadName(VirtualFrame virtualFrame, Frame localFrame, Object globals, Object locals, int initialStackTop, int bci, int oparg, Node[] localNodes, String[] localNames,
-                    PythonLanguage lang) {
+    private int bytecodeLoadName(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
         int stackTop = initialStackTop;
-        String localName = localNames[oparg];
-        Object result = null;
-        if (locals != null) {
-            Node helper = localNodes[bci];
-            if (helper instanceof HashingStorageLibrary) {
-                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                    HashingStorageLibrary lib = (HashingStorageLibrary) helper;
-                    result = lib.getItem(((PDict) locals).getDictStorage(), localName);
-                } else { // generalize
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    GetItemNode newNode = GetItemNode.create();
-                    localNodes[bci] = helper.replace(newNode);
-                    result = newNode.execute(virtualFrame, locals, localName);
-                }
-            } else if (helper instanceof GetItemNode) {
-                result = ((GetItemNode) helper).execute(virtualFrame, locals, localName);
-            } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                assert helper == null || helper == MARKER_NODE;
-                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                    HashingStorageLibrary lib = insertChildNode(localNodes, bci, UNCACHED_HASHING_STORAGE_LIBRARY, NODE_HASHING_STORAGE_LIBRARY);
-                    result = lib.getItem(((PDict) locals).getDictStorage(), localName);
-                } else {
-                    GetItemNode newNode = insertChildNode(localNodes, bci, NODE_GET_ITEM);
-                    result = newNode.execute(virtualFrame, locals, localName);
-                }
-            }
-        }
-        if (result == null) {
-            ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, bci, UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN,
-                            localName);
-            result = read.read(virtualFrame, globals, localName);
-        }
-        localFrame.setObject(++stackTop, result);
+        ReadNameNode readNameNode = insertChildNode(localNodes, bci, NODE_READ_NAME, localNames[oparg]);
+        localFrame.setObject(++stackTop, readNameNode.execute(virtualFrame));
         return stackTop;
     }
 
@@ -1649,37 +1616,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeStoreName(VirtualFrame virtualFrame, Frame localFrame, PythonLanguage lang, Object globals, Object locals, int stackTop, int bci, int oparg, String[] localNames,
-                    Node[] localNodes) {
-        String varname = localNames[oparg];
+    private int bytecodeStoreName(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+        int stackTop = initialStackTop;
         Object value = localFrame.getObject(stackTop);
         localFrame.setObject(stackTop--, null);
-        if (locals != null) {
-            Node helper = localNodes[bci];
-            if (helper instanceof HashingCollectionNodes.SetItemNode) {
-                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                    HashingCollectionNodes.SetItemNode setItemNode = (HashingCollectionNodes.SetItemNode) helper;
-                    setItemNode.execute(virtualFrame, (PDict) locals, varname, value);
-                    return stackTop;
-                }
-            }
-            if (helper instanceof PyObjectSetItem) {
-                ((PyObjectSetItem) helper).execute(virtualFrame, locals, varname, value);
-                return stackTop;
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            assert helper == null || helper == MARKER_NODE;
-            if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, bci, UNCACHED_SET_ITEM, NODE_SET_ITEM);
-                newNode.execute(virtualFrame, (PDict) locals, varname, value);
-            } else {
-                PyObjectSetItem newNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_SET_ITEM, NODE_OBJECT_SET_ITEM);
-                newNode.execute(virtualFrame, locals, varname, value);
-            }
-        } else {
-            WriteGlobalNode writeGlobalNode = insertChildNode(localNodes, bci + 1, UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, varname);
-            writeGlobalNode.write(virtualFrame, globals, varname, value);
-        }
+        WriteNameNode writeNameNode = insertChildNode(localNodes, bci, NODE_WRITE_NAME, localNames[oparg]);
+        writeNameNode.execute(virtualFrame, value);
         return stackTop;
     }
 
