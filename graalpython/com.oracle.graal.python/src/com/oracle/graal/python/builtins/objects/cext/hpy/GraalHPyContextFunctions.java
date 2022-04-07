@@ -129,6 +129,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -1303,6 +1305,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached StringMaterializeNode stringMaterializeNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
@@ -1310,6 +1313,9 @@ public abstract class GraalHPyContextFunctions {
             try {
                 // TODO(fa) provide encoding (utf8)
                 Object str = fromCharPointerNode.execute(arguments[1]);
+                if (str instanceof PString) {
+                    str = stringMaterializeNode.execute((PString) str);
+                }
                 return asHandleNode.execute(context, str);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
