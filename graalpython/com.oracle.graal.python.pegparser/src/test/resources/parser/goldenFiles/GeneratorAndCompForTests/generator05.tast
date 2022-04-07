@@ -9,11 +9,12 @@ Module[0, 85]
             LHS: Name[18, 28] Value: "caretspace" Store
             RHS: 
                 GeneratorExp[31, 64]
-                    Element: Call[32, 43]
-                        Target: 
-                            Attribute[32, 33] 
-                                Receiver: Name[32, 33] Value: "c"
-                                Attr: isspace
+                    Element: 
+                        Call[32, 43]
+                            Target: 
+                                Attribute[32, 33] 
+                                    Receiver: Name[32, 33] Value: "c"
+                                    Attr: isspace
                     ComprehensionTy[44, 63]
                         Target: Name[48, 49] Value: "c" Store
                         Iterator: Name[53, 63] Value: "caretspace"

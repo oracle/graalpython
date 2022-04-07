@@ -22,10 +22,11 @@ Module[0, 192]
                         Receiver: Name[95, 99] Value: "root"
                         Attr: prev
             While[113, 192]
-                Condition: Compare[119, 135]
-                    LHS: Name[119, 123] Value: "curr"
-                    Op: ISNOT
-                    RHS: Name[131, 135] Value: "root"
+                Condition: 
+                    Compare[119, 135]
+                        LHS: Name[119, 123] Value: "curr"
+                        Op: ISNOT
+                        RHS: Name[131, 135] Value: "root"
                 Body:
                     Yield[149, 163]
                         Attribute[155, 159] 

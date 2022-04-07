@@ -8,10 +8,11 @@ Module[0, 155]
         With[31, 155]
             Items:
                 Item[36, 51]
-                    ContextExpr: Call[36, 46]
-                        Target: Name[36, 40] Value: "open"
-                        Args:
-                            Name[41, 45] Value: "path"
+                    ContextExpr: 
+                        Call[36, 46]
+                            Target: Name[36, 40] Value: "open"
+                            Args:
+                                Name[41, 45] Value: "path"
                     OptionalVars: Name[50, 51] Value: "f" Store
             Body:
                 For[61, 155]

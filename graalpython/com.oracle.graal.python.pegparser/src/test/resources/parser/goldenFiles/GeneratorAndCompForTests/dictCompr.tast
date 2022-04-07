@@ -7,7 +7,8 @@ Module[0, 28]
             RHS: LONG[8, 9] Value: 1
         ComprehensionTy[10, 27]
             Target: Name[14, 15] Value: "i" Store
-            Iterator: Call[19, 27]
-                Target: Name[19, 24] Value: "range"
-                Args:
-                    LONG[25, 26] Value: 3
+            Iterator: 
+                Call[19, 27]
+                    Target: Name[19, 24] Value: "range"
+                    Args:
+                        LONG[25, 26] Value: 3

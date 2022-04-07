@@ -15,15 +15,17 @@ Module[0, 208]
                     ListComp[73, 128]
                         Element: Name[74, 78] Value: "elem"
                         ComprehensionTy[79, 127]
-                            Target: Tuple[83, 94] Context: Store
-                                Values:
-                                    Name[83, 87] Value: "elem" Store
-                                    Name[89, 94] Value: "count" Store
-                            Iterator: Call[98, 110]
-                                Target: 
-                                    Attribute[98, 102] 
-                                        Receiver: Name[98, 102] Value: "self"
-                                        Attr: items
+                            Target: 
+                                Tuple[83, 94] Context: Store
+                                    Values:
+                                        Name[83, 87] Value: "elem" Store
+                                        Name[89, 94] Value: "count" Store
+                            Iterator: 
+                                Call[98, 110]
+                                    Target: 
+                                        Attribute[98, 102] 
+                                            Receiver: Name[98, 102] Value: "self"
+                                            Attr: items
                             Ifs:
                                 UnaryOp[114, 127]
                                     Op: NOT

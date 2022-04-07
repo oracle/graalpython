@@ -24,12 +24,14 @@ Module[0, 98]
                     LHS: Name[67, 68] Value: "v"
                     RHS: LONG[69, 70] Value: 2
                 ComprehensionTy[71, 97]
-                    Target: Tuple[75, 80] Context: Store
-                        Values:
-                            Name[76, 77] Value: "k" Store
-                            Name[78, 79] Value: "v" Store
-                    Iterator: Call[84, 97]
-                        Target: 
-                            Attribute[84, 89] 
-                                Receiver: Name[84, 89] Value: "dict1"
-                                Attr: items
+                    Target: 
+                        Tuple[75, 80] Context: Store
+                            Values:
+                                Name[76, 77] Value: "k" Store
+                                Name[78, 79] Value: "v" Store
+                    Iterator: 
+                        Call[84, 97]
+                            Target: 
+                                Attribute[84, 89] 
+                                    Receiver: Name[84, 89] Value: "dict1"
+                                    Attr: items
