@@ -44,11 +44,13 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKN
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -141,7 +143,8 @@ public class LazyTraceback {
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
         Frame frame = element.getFrame();
         // only include frames of non-builtin python functions
-        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(element.getTarget().getRootNode());
+        RootNode rootNode = element.getTarget().getRootNode();
+        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(rootNode instanceof PBytecodeRootNode ? rootNode : element.getLocation());
     }
 
     public boolean catchingFrameWantedForTraceback() {
