@@ -17,18 +17,22 @@ Module[0, 65]
         Return[32, 65] 
             BinOp[39, 65]
                 Op: ADD
-                LHS: BinOp[39, 54]
-                    Op: ADD
-                    LHS: BinOp[39, 49]
+                LHS: 
+                    BinOp[39, 54]
                         Op: ADD
-                        LHS: BinOp[39, 44]
-                            Op: ADD
-                            LHS: Name[39, 40] Value: "a"
-                            RHS: Name[43, 44] Value: "b"
-                        RHS: Name[47, 49] Value: "k1"
-                    RHS: Name[52, 54] Value: "k2"
-                RHS: Call[57, 65]
-                    Target: Name[57, 60] Value: "sum"
-                    Args:
-                        Name[61, 64] Value: "arg"
+                        LHS: 
+                            BinOp[39, 49]
+                                Op: ADD
+                                LHS: 
+                                    BinOp[39, 44]
+                                        Op: ADD
+                                        LHS: Name[39, 40] Value: "a"
+                                        RHS: Name[43, 44] Value: "b"
+                                RHS: Name[47, 49] Value: "k1"
+                        RHS: Name[52, 54] Value: "k2"
+                RHS: 
+                    Call[57, 65]
+                        Target: Name[57, 60] Value: "sum"
+                        Args:
+                            Name[61, 64] Value: "arg"
         ---- End of fn function ----

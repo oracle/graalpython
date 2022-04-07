@@ -7,10 +7,11 @@ Module[0, 357]
         ---- Function body of docompute ----
         For[24, 184]
             Target: Name[28, 29] Value: "i" Store
-            Iter: Call[33, 43]
-                Target: Name[33, 38] Value: "range"
-                Args:
-                    Name[39, 42] Value: "num"
+            Iter: 
+                Call[33, 43]
+                    Target: Name[33, 38] Value: "range"
+                    Args:
+                        Name[39, 42] Value: "num"
             Body:
                 Assign[53, 63]
                     LHS: Name[53, 57] Value: "sum_" Store
@@ -19,39 +20,48 @@ Module[0, 357]
                     LHS: Name[72, 73] Value: "j" Store
                     RHS: LONG[76, 77] Value: 0
                 While[86, 184]
-                    Condition: Compare[92, 99]
-                        LHS: Name[92, 93] Value: "j"
-                        Op: LT
-                        RHS: Name[96, 99] Value: "num"
+                    Condition: 
+                        Compare[92, 99]
+                            LHS: Name[92, 93] Value: "j"
+                            Op: LT
+                            RHS: Name[96, 99] Value: "num"
                     Body:
                         AugAssign[113, 165]
                             Op: ADD
                             LHS: Name[113, 117] Value: "sum_" Store
-                            RHS: BinOp[121, 165]
-                                Op: DIV
-                                LHS: DOUBLE[121, 124] Value: 1.0
-                                RHS: BinOp[128, 164]
-                                    Op: ADD
-                                    LHS: BinOp[128, 160]
-                                        Op: ADD
-                                        LHS: BinOp[129, 155]
-                                            Op: RSHIFT
-                                            LHS: BinOp[129, 150]
-                                                Op: MULT
-                                                LHS: BinOp[130, 135]
+                            RHS: 
+                                BinOp[121, 165]
+                                    Op: DIV
+                                    LHS: DOUBLE[121, 124] Value: 1.0
+                                    RHS: 
+                                        BinOp[128, 164]
+                                            Op: ADD
+                                            LHS: 
+                                                BinOp[128, 160]
                                                     Op: ADD
-                                                    LHS: Name[130, 131] Value: "i"
-                                                    RHS: Name[134, 135] Value: "j"
-                                                RHS: BinOp[140, 149]
-                                                    Op: ADD
-                                                    LHS: BinOp[140, 145]
-                                                        Op: ADD
-                                                        LHS: Name[140, 141] Value: "i"
-                                                        RHS: Name[144, 145] Value: "j"
-                                                    RHS: LONG[148, 149] Value: 1
-                                            RHS: LONG[154, 155] Value: 1
-                                        RHS: Name[159, 160] Value: "i"
-                                    RHS: LONG[163, 164] Value: 1
+                                                    LHS: 
+                                                        BinOp[129, 155]
+                                                            Op: RSHIFT
+                                                            LHS: 
+                                                                BinOp[129, 150]
+                                                                    Op: MULT
+                                                                    LHS: 
+                                                                        BinOp[130, 135]
+                                                                            Op: ADD
+                                                                            LHS: Name[130, 131] Value: "i"
+                                                                            RHS: Name[134, 135] Value: "j"
+                                                                    RHS: 
+                                                                        BinOp[140, 149]
+                                                                            Op: ADD
+                                                                            LHS: 
+                                                                                BinOp[140, 145]
+                                                                                    Op: ADD
+                                                                                    LHS: Name[140, 141] Value: "i"
+                                                                                    RHS: Name[144, 145] Value: "j"
+                                                                            RHS: LONG[148, 149] Value: 1
+                                                            RHS: LONG[154, 155] Value: 1
+                                                    RHS: Name[159, 160] Value: "i"
+                                            RHS: LONG[163, 164] Value: 1
                         AugAssign[178, 184]
                             Op: ADD
                             LHS: Name[178, 179] Value: "j" Store
@@ -66,10 +76,11 @@ Module[0, 357]
         ---- Function body of measure ----
         For[226, 280]
             Target: Name[230, 233] Value: "run" Store
-            Iter: Call[237, 247]
-                Target: Name[237, 242] Value: "range"
-                Args:
-                    Name[243, 246] Value: "num"
+            Iter: 
+                Call[237, 247]
+                    Target: Name[237, 242] Value: "range"
+                    Args:
+                        Name[243, 246] Value: "num"
             Body:
                 Assign[257, 280]
                     LHS: Name[257, 261] Value: "sum_" Store

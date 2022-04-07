@@ -12,10 +12,11 @@ Module[0, 49]
         Return[24, 40] 
             BinOp[31, 40]
                 Op: ADD
-                LHS: BinOp[31, 36]
-                    Op: ADD
-                    LHS: Name[31, 32] Value: "a"
-                    RHS: Name[35, 36] Value: "b"
+                LHS: 
+                    BinOp[31, 36]
+                        Op: ADD
+                        LHS: Name[31, 32] Value: "a"
+                        RHS: Name[35, 36] Value: "b"
                 RHS: Name[39, 40] Value: "c"
         ---- End of foo function ----
     Call[41, 49]

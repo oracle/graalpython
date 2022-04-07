@@ -3,10 +3,11 @@ Module[0, 87]
         Name:formatyear
         ---- Function body of formatyear ----
         For[26, 69]
-            Target: Tuple[30, 38] Context: Store
-                Values:
-                    Name[31, 32] Value: "i" Store
-                    Name[34, 37] Value: "row" Store
+            Target: 
+                Tuple[30, 38] Context: Store
+                    Values:
+                        Name[31, 32] Value: "i" Store
+                        Name[34, 37] Value: "row" Store
             Iter: Name[42, 51] Value: "something"
             Body:
                 Pass[65, 69]

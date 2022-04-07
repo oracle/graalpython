@@ -1,11 +1,12 @@
 Module[0, 124]
     For[0, 124]
         Target: Name[4, 7] Value: "cls" Store
-        Iter: Tuple[11, 20]
-            Values:
-                Name[12, 13] Value: "B"
-                Name[15, 16] Value: "C"
-                Name[18, 19] Value: "D"
+        Iter: 
+            Tuple[11, 20]
+                Values:
+                    Name[12, 13] Value: "B"
+                    Name[15, 16] Value: "C"
+                    Name[18, 19] Value: "D"
         Body:
             Try[26, 29]
                 Body:

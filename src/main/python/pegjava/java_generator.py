@@ -591,6 +591,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {" % className)
+        with self.indent():
+            self.print("super(tokenizer, factory, fexprParser);")
+        self.print("}" )
         self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {" % className)
         with self.indent():
             self.print("super(tokenizer, factory, fexprParser, errorCb);")
@@ -603,10 +607,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 if rule.left_recursive:
                     self.print("// Left-recursive")
                 self.visit(rule)
-        # we don't need the C trailer, but we have our own final things to generate and close the class
+                
         self._generate_lookahead_methods()
         for todo in getattr(self, "_type_conversions", {}).keys():
             self.print(todo)
+        trailer = self.grammar.metas.get("trailer")
+        if trailer:
+            self.print(trailer)
         self.level -= 1
         self.print("}")
 
@@ -663,8 +670,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("}")
 
     def _check_for_errors(self) -> None:
-        "not used in Java"
-        pass
+        self.print("if (errorIndicator) {")
+        with self.indent():
+            self.remove_level();
+            self.print("return null;")
+        self.print("}")
 
     def _set_up_rule_memoization(self, node: Rule, result_type: str) -> None:
         self.print("{")
@@ -960,7 +970,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             node_str = str(node).replace('"', '\\"')
             self.printDebug(
                 f"debugMessageln(\"%d%s {rulename}[%d-%d]: %s failed!\", level,\n"
-                f'                  "-", _mark, mark(), "{node_str}");'
+                f'                  errorIndicator ? " ERROR!": "-", _mark, mark(), "{node_str}");'
             )
             if "_cut_var" in vars:
                 self.print("if (_cut_var != 0) {")

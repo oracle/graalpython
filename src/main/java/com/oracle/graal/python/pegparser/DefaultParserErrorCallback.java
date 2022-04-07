@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package com.oracle.graal.python.pegparser;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-/**
- * Cache that is used in the generated parser. Really just a convenient
- * interface around nested HashMaps mapping
- * <code>
- * (int tokenPos) -> (int ruleId) -> (T cachedItem)
- * </code>
- */
-class RuleResultCache <T> {
+public class DefaultParserErrorCallback implements ParserErrorCallback {
+    
+    public static class Error {
+        private final ParserErrorCallback.ErrorType type;
+        private int startOffset;
+        private int endOffset;
+        private final String message;
 
-    private final AbstractParser parser;
-
-    private static class CachedItem<T> {
-
-        final T node;
-        final int endPos;
-
-        CachedItem(T node, int endPos) {
-            this.node = node;
-            this.endPos = endPos;
+        public Error(ErrorType type, int startOffset, int endOffset, String message) {
+            this.type = type;
+            this.startOffset = startOffset;
+            this.endOffset = endOffset;
+            this.message = message;
         }
-    }
 
-    // HashMap<start pos, HashMap<rule id, (result, end pos)>>
-    private final HashMap<Integer, HashMap<Integer, CachedItem<T>>> mainCache;
-
-    public RuleResultCache(AbstractParser parser) {
-        this.parser = parser;
-        this.mainCache = new HashMap<>();
-    }
-
-    public boolean hasResult(int pos, int ruleId) {
-        return mainCache.containsKey(pos) && mainCache.get(pos).containsKey(ruleId);
-    }
-
-    public T getResult(int pos, int ruleId) {
-        CachedItem<T> item = mainCache.get(pos).get(ruleId);
-        parser.reset(item.endPos);
-        return item.node;
-    }
-
-    public T putResult(int pos, int ruleId, T node) {
-        HashMap<Integer, CachedItem<T>> posCache = mainCache.get(pos);
-        if (posCache == null) {
-            posCache = new HashMap<>();
-            mainCache.put(pos, posCache);
+        public ErrorType getType() {
+            return type;
         }
-        posCache.put(ruleId, new CachedItem<T>(node, parser.mark()));
-        return node;
+
+        public int getStartOffset() {
+            return startOffset;
+        }
+
+        public int getEndOffset() {
+            return endOffset;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+        
+        
     }
     
-    public void clear() {
-        mainCache.clear();
+    private final List<Error> errors = new ArrayList<>(1);
+
+    public List<Error> getErrors() {
+        return errors;
     }
+    
+    public boolean hasErrors() {
+        return !errors.isEmpty();
+    }
+    
+    @Override
+    public void onError(ErrorType errorType, int startOffset, int endOffset, String message) {
+        errors.add(new Error(errorType, startOffset, endOffset, message));
+    }
+    
 }

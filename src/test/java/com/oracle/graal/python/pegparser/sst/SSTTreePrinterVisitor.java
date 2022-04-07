@@ -45,7 +45,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private void appendNode(StringBuilder sb, String name, SSTNode node) {
         if (node != null) {
-            appendNewLineIndented(sb, name + ": ").append(node.accept(this));
+            appendNewLineIndented(sb, name + ": ");
+            putOnSameLineIfShort(sb, node);
         }
     }
 

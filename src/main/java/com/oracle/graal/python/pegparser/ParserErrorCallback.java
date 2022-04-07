@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.ParserErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 
 @FunctionalInterface
@@ -53,7 +52,8 @@ public interface ParserErrorCallback {
         Exec,
         Encoding,
         Warning,
-        Value
+        Value, 
+        Syntax
     }
 
     public abstract void onError(ErrorType errorType, int startOffset, int endOffset, String message);

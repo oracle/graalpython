@@ -335,7 +335,7 @@ public class NodeFactoryImp implements NodeFactory {
             }
         } else {
             kwOnlyArgs = new ArgTy[0];
-            kwDefaults = new ExprTy[0];
+            kwDefaults = AbstractParser.EMPTY_EXPR;
         }
 
         return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults, 0, 0);
@@ -359,12 +359,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Tuple(values, context, startOffset, endOffset);
+        return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, startOffset, endOffset);
     }
 
     @Override
     public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.List(values, context, startOffset, endOffset);
+        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, startOffset, endOffset);
     }
 
     @Override
