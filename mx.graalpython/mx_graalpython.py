@@ -465,6 +465,7 @@ class GraalPythonTags(object):
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
     tagged = 'python-tagged-unittest'
+    tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     shared_object = 'python-so'
@@ -563,6 +564,11 @@ def python_managed_gvm(_=None):
     mx.log(launcher)
     return launcher
 
+def python_enterprise_gvm(_=None):
+    home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
+    launcher = _join_bin(home, "graalpython")
+    mx.log(launcher)
+    return launcher
 
 def python_gvm_with_assertions():
     launcher = python_gvm()
@@ -668,7 +674,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False, cwd=None):
     # ensure that the test distribution is up-to-date
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
@@ -714,7 +720,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
                 # jacoco only dumps the data on exit, and when we run all our unittests
                 # at once it generates so much data we run out of heap space
                 for testfile in testfiles:
-                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env)
+                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd)
             finally:
                 shutil.move(launcher_path_bak, launcher_path)
         else:
@@ -727,11 +733,11 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
-                mx.run([python_binary, "--jvm", agent_args] + args + [testfile], nonZeroIsFatal=False, env=env)
+                mx.run([python_binary, "--jvm", agent_args] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
-        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
+        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env, cwd=cwd)
 
 
 def is_bash_launcher(launcher_path):
@@ -764,7 +770,7 @@ def run_hpy_unittests(python_binary, args=None):
         return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env, use_pytest=True)
 
 
-def run_tagged_unittests(python_binary, env=None):
+def run_tagged_unittests(python_binary, env=None, cwd=None):
     if env is None:
         env = os.environ
     sub_env = dict(
@@ -778,6 +784,7 @@ def run_tagged_unittests(python_binary, env=None):
         args=["-v"],
         paths=["test_tagged_unittests.py"],
         env=sub_env,
+        cwd=cwd
     )
 
 
