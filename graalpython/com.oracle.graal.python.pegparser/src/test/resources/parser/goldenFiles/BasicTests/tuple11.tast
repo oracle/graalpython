@@ -2,8 +2,9 @@ Module[0, 10]
     AugAssign[0, 10]
         Op: ADD
         LHS: Name[0, 1] Value: "a" Store
-        RHS: Tuple[5, 10]
-            Values:
-                LONG[5, 6] Value: 1
-                LONG[7, 8] Value: 2
-                LONG[9, 10] Value: 3
+        RHS: 
+            Tuple[5, 10]
+                Values:
+                    LONG[5, 6] Value: 1
+                    LONG[7, 8] Value: 2
+                    LONG[9, 10] Value: 3

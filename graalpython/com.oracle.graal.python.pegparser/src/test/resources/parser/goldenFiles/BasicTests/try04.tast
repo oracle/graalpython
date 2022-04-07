@@ -4,10 +4,11 @@ Module[0, 63]
             Pass[7, 11]
         Except:
             ExceptHandler[12, 18]
-                Type: Tuple[19, 55]
-                    Values:
-                        Name[20, 32] Value: "RuntimeError"
-                        Name[34, 43] Value: "TypeError"
-                        Name[45, 54] Value: "NameError"
+                Type: 
+                    Tuple[19, 55]
+                        Values:
+                            Name[20, 32] Value: "RuntimeError"
+                            Name[34, 43] Value: "TypeError"
+                            Name[45, 54] Value: "NameError"
                 Body:
                     Pass[59, 63]

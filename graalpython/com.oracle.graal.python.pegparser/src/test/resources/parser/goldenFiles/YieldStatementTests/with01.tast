@@ -5,8 +5,9 @@ Module[0, 49]
         With[13, 49]
             Items:
                 Item[18, 22]
-                    ContextExpr: Call[18, 22]
-                        Target: Name[18, 20] Value: "fn"
+                    ContextExpr: 
+                        Call[18, 22]
+                            Target: Name[18, 20] Value: "fn"
             Body:
                 Yield[28, 36]
                     LONG[34, 36] Value: 12

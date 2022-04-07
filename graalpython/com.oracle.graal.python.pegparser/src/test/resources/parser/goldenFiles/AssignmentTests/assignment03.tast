@@ -10,8 +10,9 @@ Module[0, 25]
         RHS: 
             BinOp[16, 25]
                 Op: ADD
-                LHS: BinOp[16, 21]
-                    Op: ADD
-                    LHS: Name[16, 17] Value: "a"
-                    RHS: Name[20, 21] Value: "a"
+                LHS: 
+                    BinOp[16, 21]
+                        Op: ADD
+                        LHS: Name[16, 17] Value: "a"
+                        RHS: Name[20, 21] Value: "a"
                 RHS: Name[24, 25] Value: "b"

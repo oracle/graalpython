@@ -18,9 +18,11 @@ Module[0, 54]
         RHS: 
             BinOp[45, 54]
                 Op: ADD
-                LHS: Attribute[45, 46] 
-                    Receiver: Name[45, 46] Value: "p"
-                    Attr: x
-                RHS: Attribute[51, 52] 
-                    Receiver: Name[51, 52] Value: "p"
-                    Attr: y
+                LHS: 
+                    Attribute[45, 46] 
+                        Receiver: Name[45, 46] Value: "p"
+                        Attr: x
+                RHS: 
+                    Attribute[51, 52] 
+                        Receiver: Name[51, 52] Value: "p"
+                        Attr: y

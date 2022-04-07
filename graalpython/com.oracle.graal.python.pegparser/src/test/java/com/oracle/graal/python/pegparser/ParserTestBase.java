@@ -76,6 +76,8 @@ public class ParserTestBase {
 
     private static final boolean REGENERATE_TREE = false;
 
+    protected ParserErrorCallback lastParserErrorCallback;
+    
     public TestInfo testInfo;
 
     private SSTNode lastSST;
@@ -106,22 +108,17 @@ public class ParserTestBase {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
-        ParserErrorCallback errorCb = new ParserErrorCallback() {
-            @Override
-            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
-                System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
-            }
-        };
+        
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
-                return new Parser(tok, factory, this, errorCb).fstring_rule();
+                return (ExprTy)new Parser(tok, factory, this).parse(AbstractParser.InputType.FSTRING);
             }
         };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        ModTy result = parser.file_rule();
-
+        Parser parser = new Parser(tokenizer, factory, fexpParser);
+        ModTy result = (ModTy)parser.parse(AbstractParser.InputType.FILE);
+        lastParserErrorCallback = parser.getErrorCallback();
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
 //        lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
@@ -144,39 +141,28 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxError(String source) throws Exception {
-        boolean thrown = false;
-        try {
-            parse(source, getFileName(), 1);
-        } catch (Exception e) {
-            thrown = isSyntaxError(e);
-        }
-
-        assertTrue( thrown, "Expected SyntaxError was not thrown.");
+        parse(source, getFileName(), 1);
+        DefaultParserErrorCallback ec = (DefaultParserErrorCallback)lastParserErrorCallback;
+        assertTrue(ec.hasErrors(), "Expected Error.");
+        assertTrue(ec.getErrors().get(0).getType() == ParserErrorCallback.ErrorType.Syntax, "Expected SyntaxError");
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) throws Exception {
-        boolean thrown = false;
-        try {
-            parse(source, getFileName(), 1);
-        } catch (Exception e) {
-            thrown = isSyntaxError(e);
-//            String exceptionMessage = PythonTests.getExceptionMessage(e);
-//            Assert.assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + exceptionMessage + "\"", exceptionMessage.contains(expectedMessage));
-        }
-
-        assertTrue(thrown, "Expected SyntaxError was not thrown.");
+        parse(source, getFileName(), 1);
+        DefaultParserErrorCallback ec = (DefaultParserErrorCallback)lastParserErrorCallback;
+        assertTrue(ec.hasErrors(), "Expected Error.");
+        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertTrue(error.getType() == ParserErrorCallback.ErrorType.Syntax, "Expected SyntaxError not " + error.getType());
+        assertTrue(error.getMessage().contains(expectedMessage), "The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.getMessage() + "\"");
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) throws Exception {
-        boolean thrown = false;
-        try {
-            parse(source, getFileName(), 1);
-        } catch (Exception e) {
-            thrown = isSyntaxError(e);
-//            Assert.assertEquals(expectedMessage, PythonTests.getExceptionMessage(e));
-        }
-
-        assertTrue(thrown, "Expected SyntaxError was not thrown.");
+        parse(source, getFileName(), 1);
+        DefaultParserErrorCallback ec = (DefaultParserErrorCallback)lastParserErrorCallback;
+        assertTrue(ec.hasErrors(), "Expected Error.");
+        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertTrue(error.getType() == ParserErrorCallback.ErrorType.Syntax, "Expected SyntaxError not " + error.getType());
+        assertTrue(error.getMessage().equals(expectedMessage), "The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"");
     }
 
     protected static boolean isSyntaxError(Exception e) throws Exception {
@@ -282,11 +268,11 @@ public class ParserTestBase {
             @Override
             public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
-                return new Parser(tok, factory, this, errorCb).fstring_rule();
+                return (ExprTy)new Parser(tok, factory, this, errorCb).parse(AbstractParser.InputType.FSTRING);
             }
         };
         Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        parser.file_rule();
+        parser.parse(AbstractParser.InputType.FILE);
         assertEquals(Arrays.asList(expectedErrors), errors);
     }
 

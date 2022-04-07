@@ -3,10 +3,11 @@ Module[0, 96]
         LHS: Name[0, 3] Value: "var" Store
         RHS: LONG[6, 9] Value: 100
     If[10, 96]
-        Test: Compare[13, 23]
-            LHS: Name[13, 16] Value: "var"
-            Op: EQ
-            RHS: LONG[20, 23] Value: 200
+        Test: 
+            Compare[13, 23]
+                LHS: Name[13, 16] Value: "var"
+                Op: EQ
+                RHS: LONG[20, 23] Value: 200
         Then:
             Call[27, 36]
                 Target: Name[27, 32] Value: "print"
@@ -14,10 +15,11 @@ Module[0, 96]
                     LONG[34, 35] Value: 2
         Else:
             If[37, 96]
-                Test: Compare[42, 52]
-                    LHS: Name[42, 45] Value: "var"
-                    Op: EQ
-                    RHS: LONG[49, 52] Value: 150
+                Test: 
+                    Compare[42, 52]
+                        LHS: Name[42, 45] Value: "var"
+                        Op: EQ
+                        RHS: LONG[49, 52] Value: 150
                 Then:
                     Call[56, 67]
                         Target: Name[56, 61] Value: "print"
@@ -25,10 +27,11 @@ Module[0, 96]
                             DOUBLE[63, 66] Value: 1.5
                 Else:
                     If[68, 96]
-                        Test: Compare[73, 83]
-                            LHS: Name[73, 76] Value: "var"
-                            Op: EQ
-                            RHS: LONG[80, 83] Value: 100
+                        Test: 
+                            Compare[73, 83]
+                                LHS: Name[73, 76] Value: "var"
+                                Op: EQ
+                                RHS: LONG[80, 83] Value: 100
                         Then:
                             Call[87, 96]
                                 Target: Name[87, 92] Value: "print"
