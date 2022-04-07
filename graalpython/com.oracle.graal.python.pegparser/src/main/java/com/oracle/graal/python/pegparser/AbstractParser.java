@@ -60,14 +60,14 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
  * allows us to keep the actions and parser generator very similar to CPython for easier updating in
  * the future.
  */
-abstract class AbstractParser {
+public abstract class AbstractParser {
     protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
 
     /**
      * Type of input input for the parser
      */
-    static public enum InputType {
+    public enum InputType {
         SINGLE,
         FILE,
         EVAL,
@@ -783,10 +783,10 @@ abstract class AbstractParser {
     /**
      * RAISE_SYNTAX_ERROR
      */
-    final SSTNode raiseSyntaxError(String msg, Object... argumetns) {
+    final SSTNode raiseSyntaxError(String msg, Object... arguments) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, arguments);
         return null;
     }
 

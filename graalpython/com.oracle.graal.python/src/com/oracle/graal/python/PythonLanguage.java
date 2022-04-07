@@ -43,6 +43,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -56,13 +58,13 @@ import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
@@ -445,8 +447,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType()) || MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
             ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
             com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-            ParserErrorCallback errorCb = (ParserErrorCallback.ErrorType type, int start, int end, String message) -> {
-                System.err.printf("TODO: %s[%d:%d]: %s%n", type.name(), start, end, message);
+            ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
+                throw raiseSyntaxError(source, errorType, startOffset, endOffset, message);
             };
             FExprParser fexpParser = new FExprParser() {
                 @Override
@@ -458,16 +460,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             try {
                 Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
                 Compiler compiler = new Compiler();
-                ModTy mod = parser.file_rule();
-                // TODO this is needed until we get proper error handling in the parser
+                ModTy mod = (ModTy) parser.parse(AbstractParser.InputType.FILE);
+                // TODO this is needed until we get complete error handling in the parser
                 if (mod == null) {
-                    Node errorLocation = new Node() {
-                        @Override
-                        public SourceSection getSourceSection() {
-                            return source.createSection(0, source.getLength());
-                        }
-                    };
-                    throw PRaiseNode.raiseUncached(errorLocation, PythonBuiltinClassType.SyntaxError);
+                    throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
                 }
                 CompilationUnit cu = compiler.compile(mod, source.getName(), EnumSet.noneOf(Compiler.Flags.class), 2);
                 CodeUnit co = cu.assemble(source.getName(), 0);
@@ -482,10 +478,51 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
                 return PythonUtils.getOrCreateCallTarget(rootNode);
             } catch (PException e) {
-                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+                if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+                    PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+                }
+                throw e;
             }
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
+        Node location = new Node() {
+            @Override
+            public boolean isAdoptable() {
+                return false;
+            }
+
+            @Override
+            public SourceSection getSourceSection() {
+                return source.createSection(startOffset, endOffset - startOffset);
+            }
+        };
+        PBaseException instance;
+        PythonBuiltinClassType cls = PythonBuiltinClassType.SyntaxError;
+        switch (errorType) {
+            case Indentation:
+                cls = PythonBuiltinClassType.IndentationError;
+                break;
+            case Tab:
+                cls = PythonBuiltinClassType.TabError;
+                break;
+        }
+        instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+        final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
+        SourceSection section = location.getSourceSection();
+        String path = source.getPath();
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute is NONE, then the line is not printed
+        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        instance.setExceptionAttributes(excAttrs);
+        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(this));
     }
 
     private RootNode doParse(PythonContext context, Source source, int optimize) {
