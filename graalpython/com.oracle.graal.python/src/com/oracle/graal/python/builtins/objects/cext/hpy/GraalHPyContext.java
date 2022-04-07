@@ -2620,4 +2620,32 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
         }
     }
+
+    private static final long NATIVE_ARGUMENT_STACK_SIZE = (2 ^ 15) * SIZEOF_LONG; // 32k entries
+    private long nativeArgumentsStack = 0;
+    private int nativeArgumentStackPos = 0;
+
+    public final long createNativeArguments(Object[] delegate) {
+        if (nativeArgumentsStack == 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeArgumentsStack = unsafe.allocateMemory(NATIVE_ARGUMENT_STACK_SIZE);
+        }
+        long arraySize = delegate.length * SIZEOF_LONG;
+        if (nativeArgumentStackPos + arraySize > NATIVE_ARGUMENT_STACK_SIZE) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new InternalError("overflow on native argument stack");
+        }
+        long arrayPtr = nativeArgumentsStack;
+        nativeArgumentsStack += arraySize;
+
+        for (int i = 0; i < delegate.length; i++) {
+            unsafe.putLong(arrayPtr + i * SIZEOF_LONG, ((GraalHPyHandle) delegate[i]).getId(this, ConditionProfile.getUncached()));
+        }
+        return arrayPtr;
+    }
+
+    public final void freeNativeArgumentsArray(int size) {
+        long arraySize = size * SIZEOF_LONG;
+        nativeArgumentsStack -= arraySize;
+    }
 }
