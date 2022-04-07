@@ -187,12 +187,14 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
+import com.oracle.graal.python.lib.PyLongAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -203,6 +205,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -551,10 +554,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
         CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
         CTX_LONG_ASVOIDPTR("ctx_Long_AsVoidPtr"),
-        CTX_LONG_ASDOUBLE("ctx_Long_AsDouble"),
+        CTX_LONG_ASDOUBLE("ctx_Long_AsDouble", signature(Double, HPy)),
         CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE("ctx_Type"),
-        CTX_TYPECHECK("ctx_TypeCheck"),
+        CTX_TYPECHECK("ctx_TypeCheck", signature(Long, HPy, HPy)),
         CTX_IS("ctx_Is"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
@@ -788,7 +791,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
+    private static final int IMMUTABLE_HANDLE_COUNT = 256;
+
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    private int nextHandle = 1;
+
     private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private final HandleStack freeStack = new HandleStack(16);
     Object nativePointer;
@@ -831,6 +838,16 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.slowPathFactory = context.factory();
         this.hpyContextMembers = createMembers(context, getName());
+        for (Object member : hpyContextMembers) {
+            if (member instanceof GraalHPyHandle) {
+                GraalHPyHandle handle = (GraalHPyHandle) member;
+                int id = handle.getId(this, ConditionProfile.getUncached());
+                assert id > 0 && id < IMMUTABLE_HANDLE_COUNT;
+
+            }
+        }
+        hpyHandleTable = Arrays.copyOf(hpyHandleTable, IMMUTABLE_HANDLE_COUNT * 2);
+        nextHandle = IMMUTABLE_HANDLE_COUNT;
         this.useNativeFastPaths = context.getLanguage().getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
     }
 
@@ -1340,9 +1357,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallSetItemI,
         UpcallDup,
         UpcallNumberCheck,
+        UpcallTypeCheck,
         UpcallLength,
         UpcallListCheck,
         UpcallLongAsLong,
+        UpcallLongAsDouble,
         UpcallLongFromLong,
         UpcallFloatAsDouble,
         UpcallFloatFromDouble,
@@ -1411,6 +1430,22 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
             try {
                 return (long) AsNativePrimitiveNodeGen.getUncached().execute(object, 1, java.lang.Long.BYTES, true);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+                return -1L;
+            }
+        }
+    }
+
+    public final double ctxLongAsDouble(long handle) {
+        Counter.UpcallLongAsDouble.increment();
+
+        if (GraalHPyBoxing.isBoxedInt(handle)) {
+            return GraalHPyBoxing.unboxInt(handle);
+        } else {
+            Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            try {
+                return (double) PyLongAsDoubleNodeGen.getUncached().execute(object);
             } catch (PException e) {
                 HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
                 return -1L;
@@ -1678,6 +1713,59 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
             Object receiverType = GetClassNode.getUncached().execute(receiver);
             return PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return 0;
+        }
+    }
+
+    private static PythonBuiltinClassType getBuiltinClass(Object cls) {
+        if (cls instanceof PythonBuiltinClassType) {
+            return (PythonBuiltinClassType) cls;
+        } else if (cls instanceof PythonBuiltinClass) {
+            return ((PythonBuiltinClass) cls).getType();
+        } else {
+            return null;
+        }
+    }
+
+    public final int ctxTypeCheck(long handle, long typeHandle) {
+        Counter.UpcallTypeCheck.increment();
+        Object receiver;
+        if (GraalHPyBoxing.isBoxedDouble(handle)) {
+            receiver = PythonBuiltinClassType.PFloat;
+        } else if (GraalHPyBoxing.isBoxedInt(handle)) {
+            receiver = PythonBuiltinClassType.PInt;
+        } else {
+            receiver = GetClassNode.getUncached().execute(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate());
+        }
+        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
+
+        if (receiver == type) {
+            return 1;
+        }
+
+        PythonBuiltinClassType receiverBuiltin = getBuiltinClass(receiver);
+        if (receiverBuiltin != null) {
+            PythonBuiltinClassType typeBuiltin = getBuiltinClass(type);
+            if (typeBuiltin == null) {
+                // builtin type cannot be a subclass of a non-builtin type
+                return 0;
+            }
+            // fast path for builtin types: walk class hierarchy
+            while (true) {
+                if (receiverBuiltin == typeBuiltin) {
+                    return 1;
+                }
+                if (receiverBuiltin == PythonBuiltinClassType.PythonObject) {
+                    return 0;
+                }
+                receiverBuiltin = receiverBuiltin.getBase();
+            }
+        }
+
+        try {
+            return IsSubtypeNode.getUncached().execute(receiver, type) ? 1 : 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             return 0;
@@ -2244,36 +2332,34 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private long nativeSpacePointers;
 
-    @TruffleBoundary(allowInlining = true)
-    private int allocateHandle() {
-        int freeItem = freeStack.pop();
-        if (freeItem != -1) {
-            assert 0 <= freeItem && freeItem < hpyHandleTable.length;
-            assert hpyHandleTable[freeItem] == null;
-            return freeItem;
+    private int resizeHandleTable() {
+        CompilerAsserts.neverPartOfCompilation();
+        assert nextHandle == hpyHandleTable.length;
+        int newSize = Math.max(16, hpyHandleTable.length * 2);
+        LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
+        hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
+        if (useNativeFastPaths && isPointer()) {
+            reallocateNativeSpacePointersMirror();
         }
-        for (int i = 1; i < hpyHandleTable.length; i++) {
-            if (hpyHandleTable[i] == null) {
-                return i;
-            }
-        }
-        return -1;
+        return nextHandle++;
     }
 
-    public final synchronized int getHPyHandleForObject(GraalHPyHandle object) {
+    public final int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
-        int handle = allocateHandle();
+
+        int handle = freeStack.pop();
         if (handle == -1) {
-            // resize
-            int newSize = Math.max(16, hpyHandleTable.length * 2);
-            LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
-            hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
-            if (useNativeFastPaths && isPointer()) {
-                reallocateNativeSpacePointersMirror();
+            if (nextHandle < hpyHandleTable.length) {
+                handle = nextHandle++;
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                handle = resizeHandleTable();
             }
-            handle = allocateHandle();
         }
-        assert handle > 0;
+
+        assert 0 <= handle && handle < hpyHandleTable.length;
+        assert hpyHandleTable[handle] == null;
+
         hpyHandleTable[handle] = object;
         if (useNativeFastPaths && isPointer()) {
             mirrorNativeSpacePointerToNative(object, handle);
@@ -2361,6 +2447,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(() -> "releasing HPy handle " + handle);
+        }
+        if (handle < IMMUTABLE_HANDLE_COUNT) {
+            return false;
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);

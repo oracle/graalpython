@@ -166,13 +166,16 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
             return false;
         } else {
             GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
-            super.releaseHPyHandleForObject(handleId);
-            debugHandleInfo[handleId] = -1;
-            if (!closedHandles.isEmpty() && closedHandles.size() >= closedHandlesQueueMaxSize) {
-                closedHandles.removeFirst();
+            if (super.releaseHPyHandleForObject(handleId)) {
+                debugHandleInfo[handleId] = -1;
+                if (!closedHandles.isEmpty() && closedHandles.size() >= closedHandlesQueueMaxSize) {
+                    closedHandles.removeFirst();
+                }
+                closedHandles.add(handle);
+                return true;
+            } else {
+                return false;
             }
-            closedHandles.add(handle);
-            return true;
         }
     }
 
