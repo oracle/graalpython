@@ -927,6 +927,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                      * thread).
                      */
                     GraalHPyHandleReference refList;
+                    int retries = 0;
                     do {
                         /*
                          * If 'refList' is null then the main is currently updating it. So, we need
@@ -934,7 +935,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                          * lost.
                          */
                         refList = hPyContext.references.getAndSet(null);
-                    } while (refList == null);
+                    } while (refList == null && retries++ < 3);
 
                     if (!refs.isEmpty()) {
                         try {
