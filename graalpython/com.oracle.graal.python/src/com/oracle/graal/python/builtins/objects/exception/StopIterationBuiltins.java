@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,7 +95,11 @@ public final class StopIterationBuiltins extends PythonBuiltins {
 
     @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "generator return value")
     @GenerateNodeFactory
-    public abstract static class StopIterationValueNode extends PythonBuiltinNode {
+    public abstract static class StopIterationValueNode extends PythonBinaryBuiltinNode {
+        public final Object execute(PBaseException self) {
+            return execute(null, self, PNone.NO_VALUE);
+        }
+
         @Specialization
         static Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {

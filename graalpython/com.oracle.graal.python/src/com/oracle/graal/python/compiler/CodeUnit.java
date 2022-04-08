@@ -355,6 +355,8 @@ public final class CodeUnit {
                 case JUMP_IF_TRUE_OR_POP_FAR:
                 case MATCH_EXC_OR_JUMP:
                 case MATCH_EXC_OR_JUMP_FAR:
+                case SEND:
+                case SEND_FAR:
                     lines.computeIfAbsent(bcBCI + arg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
                     line[5] = String.format("to %d", bcBCI + arg);
                     break;

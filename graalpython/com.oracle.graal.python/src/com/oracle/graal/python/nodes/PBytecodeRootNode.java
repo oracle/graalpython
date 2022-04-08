@@ -100,6 +100,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
+import com.oracle.graal.python.nodes.bytecode.SendNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -251,6 +252,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyObjectAsciiNode UNCACHED_ASCII = PyObjectAsciiNode.getUncached();
     private static final NodeSupplier<PyObjectAsciiNode> NODE_ASCII = PyObjectAsciiNode::create;
     private static final NodeSupplier<BuiltinFunctions.FormatNode> NODE_FORMAT = BuiltinFunctions.FormatNode::create;
+    private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -1310,6 +1312,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         localFrame.setObject(++stackTop, sendValue);
                         break;
+                    }
+                    case SEND:
+                    case SEND_FAR: {
+                        Object value = localFrame.getObject(stackTop);
+                        Object obj = localFrame.getObject(stackTop - 1);
+                        SendNode sendNode = insertChildNode(localNodes, beginBci, NODE_SEND);
+                        boolean returned = sendNode.execute(virtualFrame, stackTop, localFrame, obj, value);
+                        if (!returned) {
+                            bci++;
+                            if (bc == SEND_FAR) {
+                                bci++;
+                            }
+                            break;
+                        } else {
+                            stackTop--;
+                            int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                            if (bc == SEND_FAR) {
+                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
+                            }
+                            bci += oparg;
+                            continue;
+                        }
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();

@@ -160,6 +160,8 @@ public enum OpCodes {
     // generators
     YIELD_VALUE(0, 1, 0),
     RESUME_YIELD(0, 0, 1),
+    SEND(1, 2, (oparg, withJump) -> withJump ? 1 : 2),
+    SEND_FAR(2, 2, 2),
 
     // with statements
     SETUP_WITH(0, 1, 3),

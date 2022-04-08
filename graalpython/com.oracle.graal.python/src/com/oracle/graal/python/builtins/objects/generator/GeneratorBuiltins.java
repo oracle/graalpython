@@ -277,7 +277,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "send", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SendNode extends PythonBuiltinNode {
+    public abstract static class SendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object send(VirtualFrame frame, PGenerator self, Object value,
