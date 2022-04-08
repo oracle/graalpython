@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,11 +27,15 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
@@ -148,5 +152,46 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Empty;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return 0;
+    }
+
+    @ExportMessage
+    byte readByte(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    short readShort(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    int readInt(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    long readLong(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    float readFloat(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    double readDouble(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,11 @@
 #define HAVE_FCNTL_H 1
 #define HAVE_FUTIMENS 1
 #define HAVE_GETTEXT 1
+#ifdef __aarch64__
+#define HAVE_IMMINTRIN_H 0
+#else
 #define HAVE_IMMINTRIN_H 1
+#endif
 #define HAVE_INTTYPES_H 1
 #define HAVE_LIMITS_H 1
 #define HAVE_MBRTOWC 1

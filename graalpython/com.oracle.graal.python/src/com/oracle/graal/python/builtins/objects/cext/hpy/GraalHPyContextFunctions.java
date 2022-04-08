@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,9 +81,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
@@ -130,7 +132,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -1305,17 +1306,14 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached StringMaterializeNode stringMaterializeNode,
+                        @Cached CastToJavaStringNode toString,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             try {
                 // TODO(fa) provide encoding (utf8)
-                Object str = fromCharPointerNode.execute(arguments[1]);
-                if (str instanceof PString) {
-                    str = stringMaterializeNode.execute((PString) str);
-                }
+                String str = toString.execute(fromCharPointerNode.execute(arguments[1]));
                 return asHandleNode.execute(context, str);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
