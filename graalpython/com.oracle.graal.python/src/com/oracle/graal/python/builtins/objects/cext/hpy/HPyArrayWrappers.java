@@ -42,30 +42,18 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -75,37 +63,37 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public class HPyArrayWrappers {
 
+    /**
+     * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
+     * {@code HPy *}).
+     */
     @ExportLibrary(InteropLibrary.class)
-    abstract static class HPyObjectArrayWrapper implements TruffleObject {
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
+    static final class HPyArrayWrapper implements TruffleObject {
+
+        private static final int UNINITIALIZED = 0;
+        private static final int INVALIDATED = -1;
 
         final GraalHPyContext hpyContext;
 
-        private Object[] delegate;
-        private Object nativePointer;
+        final Object[] delegate;
+        private long nativePointer = UNINITIALIZED;
 
-        HPyObjectArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
+        HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
             this.hpyContext = hpyContext;
             this.delegate = delegate;
         }
 
-        HPyObjectArrayWrapper(GraalHPyContext hpyContext, int capacity) {
-            this.hpyContext = hpyContext;
-            this.delegate = new Object[capacity];
-        }
-
-        public final Object[] getDelegate() {
+        public Object[] getDelegate() {
             return delegate;
         }
 
-        final void setDelegate(Object[] delegate) {
-            this.delegate = delegate;
-        }
-
-        final void setNativePointer(Object nativePointer) {
+        void setNativePointer(long nativePointer) {
+            assert nativePointer != UNINITIALIZED;
             this.nativePointer = nativePointer;
         }
 
-        final Object getNativePointer() {
+        long getNativePointer() {
             return this.nativePointer;
         }
 
@@ -132,234 +120,69 @@ public class HPyArrayWrappers {
             // n.b.: (tfel) This is hopefully fine here, since if we get to this
             // code path, we don't speculate that either of those objects is
             // constant anymore, so any caching on them won't happen anyway
-            return delegate == ((HPyObjectArrayWrapper) obj).delegate;
+            return delegate == ((HPyArrayWrapper) obj).delegate;
         }
 
+        @SuppressWarnings("static-method")
         @ExportMessage
         boolean hasArrayElements() {
             return true;
         }
 
         @ExportMessage
-        static final class GetArraySize {
-
-            @Specialization(guards = "delegate != null")
-            static long doManaged(HPyObjectArrayWrapper receiver,
-                            @Exclusive @Cached GilNode gil,
-                            @Bind("gil.acquire()") boolean mustRelease,
-                            @Bind("receiver.getDelegate()") Object[] delegate) {
-                try {
-                    assert receiver.getNativePointer() == null : "HPyObjectArrayWrapper is managed but there is a native pointer.";
-                    return delegate.length;
-                } finally {
-                    gil.release(mustRelease);
-                }
-            }
-
-            @Specialization(guards = "receiver.getNativePointer() != null", replaces = "doManaged")
-            static long doNative(HPyObjectArrayWrapper receiver,
-                            @Exclusive @Cached GilNode gil,
-                            @Bind("gil.acquire()") boolean mustRelease,
-                            @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-                try {
-                    assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
-                    return lib.getArraySize(receiver.getNativePointer());
-                } finally {
-                    gil.release(mustRelease);
-                }
-            }
-
-            @Specialization(replaces = {"doManaged", "doNative"})
-            static long doGeneric(HPyObjectArrayWrapper receiver,
-                            @Exclusive @Cached GilNode gil,
-                            @Bind("gil.acquire()") boolean mustRelease,
-                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-                try {
-                    Object[] delegate = receiver.getDelegate();
-                    if (delegate != null) {
-                        return delegate.length;
-                    }
-                    return lib.getArraySize(receiver.getNativePointer());
-                } finally {
-                    gil.release(mustRelease);
-                }
-            }
+        long getArraySize() {
+            return delegate.length;
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (delegate != null) {
-                    return 0 <= idx && idx < delegate.length;
-                }
-                return lib.isArrayElementReadable(nativePointer, idx);
-            } finally {
-                gil.release(mustRelease);
+        boolean isArrayElementReadable(long index) {
+            return 0 <= index && index < delegate.length;
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index,
+                        @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws InvalidArrayIndexException {
+            if (index < 0 || index > delegate.length) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
             }
-        }
-
-        @ExportMessage
-        boolean isArrayElementModifiable(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached GilNode gil) {
-            return isArrayElementReadable(idx, lib, gil);
-        }
-
-        @ExportMessage
-        boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx) {
-            return false;
-        }
-
-        @ExportMessage
-        Object readArrayElement(@SuppressWarnings("unused") long idx) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError();
-        }
-
-        @ExportMessage
-        void writeArrayElement(long idx, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached GilNode gil)
-                        throws UnsupportedMessageException, InvalidArrayIndexException, UnsupportedTypeException {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (!isPointer()) {
-                    delegate[(int) idx] = value;
-                } else {
-                    lib.writeArrayElement(nativePointer, idx, value);
-                }
-            } finally {
-                gil.release(mustRelease);
+            int i = (int) index;
+            Object object = delegate[i];
+            if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
+                object = asHandleNode.execute(hpyContext, object);
+                delegate[i] = object;
             }
+            return object;
         }
 
         @ExportMessage
         boolean isPointer() {
-            return nativePointer != null;
+            return nativePointer != UNINITIALIZED;
         }
 
         @ExportMessage
-        long asPointer(
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-            return lib.asPointer(nativePointer);
-        }
-    }
-
-    /**
-     * Wraps a sequence object (like a list) such that it behaves like a {@code HPy} array (C type
-     * {@code HPy *}).
-     */
-    @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-    static final class HPyArrayWrapper extends HPyObjectArrayWrapper {
-
-        public HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
-            super(hpyContext, delegate);
-        }
-
-        @ExportMessage
-        static final class ReadArrayElement {
-
-            @Specialization(guards = "delegate != null", rewriteOn = OverflowException.class)
-            static Object doManaged(HPyArrayWrapper receiver, long index,
-                            @Bind("receiver.getDelegate()") Object[] delegate,
-                            @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
-                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
-                            @Exclusive @Cached GilNode gil) throws OverflowException {
-                boolean mustRelease = gil.acquire();
-                try {
-                    assert receiver.getNativePointer() == null : "HPyObjectArrayWrapper is managed but there is a native pointer.";
-                    int i = PInt.intValueExact(index);
-                    Object object = delegate[i];
-                    if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
-                        object = asHandleNode.execute(receiver.hpyContext, object);
-                        delegate[i] = object;
-                    }
-                    return object;
-                } finally {
-                    gil.release(mustRelease);
-                }
+        long asPointer() throws UnsupportedMessageException {
+            if (!isPointer()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
             }
-
-            @Specialization(guards = "delegate != null", replaces = "doManaged")
-            static Object doManagedOvf(HPyArrayWrapper receiver, long index,
-                            @Bind("receiver.getDelegate()") Object[] delegate,
-                            @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
-                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
-                            @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
-                try {
-                    return doManaged(receiver, index, delegate, isHandleProfile, asHandleNode, gil);
-                } catch (OverflowException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw InvalidArrayIndexException.create(index);
-                }
-            }
-
-            @Specialization(guards = "receiver.getNativePointer() != null", replaces = {"doManaged", "doManagedOvf"})
-            static Object doNative(HPyArrayWrapper receiver, long index,
-                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode,
-                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-                boolean mustRelease = gil.acquire();
-                try {
-                    assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
-                    // read the array element; this will return a pointer to an HPy struct
-                    try {
-                        Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
-                    } catch (UnknownIdentifierException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } finally {
-                    gil.release(mustRelease);
-                }
-            }
-
-            @Specialization(replaces = {"doManaged", "doNative"})
-            static Object doGeneric(HPyArrayWrapper receiver, long index,
-                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode,
-                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
-                boolean mustRelease = gil.acquire();
-                try {
-                    Object[] delegate = receiver.getDelegate();
-                    if (delegate != null) {
-                        try {
-                            return delegate[PInt.intValueExact(index)];
-                        } catch (OverflowException e) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw InvalidArrayIndexException.create(index);
-                        }
-                    }
-                    try {
-                        Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
-                    } catch (UnknownIdentifierException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } finally {
-                    gil.release(mustRelease);
-                }
-            }
+            return nativePointer;
         }
 
         @ExportMessage
         void toNative(
-                        @Cached GraalHPyNodes.PCallHPyFunction callToArrayNode,
                         @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                invalidateNode.execute();
-                if (!isPointer()) {
-                    setNativePointer(callToArrayNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
-                    setDelegate(null);
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+            invalidateNode.execute();
+            if (!isPointer()) {
+                for (int i = 0; i < delegate.length; i++) {
+                    Object element = delegate[i];
+                    if (!(element instanceof GraalHPyHandle)) {
+                        delegate[i] = asHandleNode.execute(hpyContext, element);
+                    }
                 }
-            } finally {
-                gil.release(mustRelease);
+                setNativePointer(hpyContext.createNativeArguments(delegate));
             }
         }
 
@@ -379,51 +202,40 @@ public class HPyArrayWrappers {
 
         public abstract void execute(GraalHPyContext hpyContext, HPyArrayWrapper wrapper);
 
-        @Specialization(guards = {"cachedLen == size(lib, wrapper)", "cachedLen <= 8"}, limit = "1")
+        @Specialization(guards = {"cachedLen == wrapper.delegate.length", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop
         static void doCachedLen(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
-                        @CachedLibrary("wrapper") InteropLibrary lib,
-                        @Cached("size(lib, wrapper)") int cachedLen,
+                        @Cached("wrapper.delegate.length") int cachedLen,
                         @Cached HPyCloseHandleNode closeHandleNode,
-                        @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles) {
-            try {
-                for (int i = 0; i < cachedLen; i++) {
-                    Object element = lib.readArrayElement(wrapper, i);
-                    if (profiles[i].profile(element instanceof GraalHPyHandle)) {
-                        closeHandleNode.execute(hpyContext, element);
-                    }
+                        @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles,
+                        @Cached ConditionProfile isPointerProfile) {
+            for (int i = 0; i < cachedLen; i++) {
+                Object element = wrapper.delegate[i];
+                if (profiles[i].profile(element instanceof GraalHPyHandle)) {
+                    closeHandleNode.execute(hpyContext, element);
                 }
-            } catch (InteropException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            if (isPointerProfile.profile(wrapper.isPointer())) {
+                wrapper.hpyContext.freeNativeArgumentsArray(wrapper.delegate.length);
+                wrapper.setNativePointer(HPyArrayWrapper.INVALIDATED);
             }
         }
 
-        @Specialization(replaces = "doCachedLen", limit = "1")
+        @Specialization(replaces = "doCachedLen")
         static void doLoop(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
-                        @CachedLibrary("wrapper") InteropLibrary lib,
                         @Cached HPyCloseHandleNode closeHandleNode,
-                        @Cached ConditionProfile profile) {
-            int n = size(lib, wrapper);
-            try {
-                for (int i = 0; i < n; i++) {
-                    Object element = lib.readArrayElement(wrapper, i);
-                    if (profile.profile(element instanceof GraalHPyHandle)) {
-                        closeHandleNode.execute(hpyContext, element);
-                    }
+                        @Cached ConditionProfile profile,
+                        @Cached ConditionProfile isPointerProfile) {
+            int n = wrapper.delegate.length;
+            for (int i = 0; i < n; i++) {
+                Object element = wrapper.delegate[i];
+                if (profile.profile(element instanceof GraalHPyHandle)) {
+                    closeHandleNode.execute(hpyContext, element);
                 }
-            } catch (InteropException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
             }
-        }
-
-        static int size(InteropLibrary lib, HPyArrayWrapper wrapper) {
-            try {
-                return PInt.intValueExact(lib.getArraySize(wrapper));
-            } catch (OverflowException e) {
-                // we know that the length should always fit into an integer
-                throw CompilerDirectives.shouldNotReachHere("array length does not fit into int");
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            if (isPointerProfile.profile(wrapper.isPointer())) {
+                wrapper.hpyContext.freeNativeArgumentsArray(wrapper.delegate.length);
+                wrapper.setNativePointer(HPyArrayWrapper.INVALIDATED);
             }
         }
 
@@ -433,63 +245,6 @@ public class HPyArrayWrappers {
                 profiles[i] = ConditionProfile.create();
             }
             return profiles;
-        }
-    }
-
-    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-    @ExportLibrary(InteropLibrary.class)
-    static final class PtrArrayWrapper extends HPyObjectArrayWrapper {
-
-        PtrArrayWrapper(GraalHPyContext hpyContext, int capacity) {
-            super(hpyContext, capacity);
-        }
-
-        @ExportMessage
-        Object readArrayElement(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (!isPointer()) {
-                    Object result = getDelegate()[(int) idx];
-                    if (result == null) {
-                        // TODO(fa): not sure if this is a good idea but it will do the job since it
-                        // reports `isNull == true`
-                        return PNone.NO_VALUE;
-                    }
-                    return result;
-                }
-                return lib.readArrayElement(getNativePointer(), idx);
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasNativeType() {
-            return false;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType() {
-            return null;
-        }
-
-        @ExportMessage
-        void toNative(
-                        @Cached PCallHPyFunction callHPyFunction,
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (!isPointer()) {
-                    setNativePointer(callHPyFunction.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
-                    setDelegate(null);
-                }
-            } finally {
-                gil.release(mustRelease);
-            }
         }
     }
 }

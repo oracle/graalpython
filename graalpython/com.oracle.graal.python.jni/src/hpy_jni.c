@@ -74,12 +74,14 @@ static JNIEnv* jniEnv;
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
     UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
+    UPCALL(LongAsDouble, SIG_HPY, SIG_DOUBLE) \
     UPCALL(LongFromLong, SIG_LONG, SIG_HPY) \
     UPCALL(Dup, SIG_HPY, SIG_HPY) \
     UPCALL(GetItemi, SIG_HPY SIG_SIZE_T, SIG_HPY) \
     UPCALL(SetItemi, SIG_HPY SIG_SIZE_T SIG_HPY, SIG_INT) \
     UPCALL(SetItem, SIG_HPY SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
+    UPCALL(TypeCheck, SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
@@ -127,6 +129,10 @@ static long ctx_LongAsLong_jni(HPyContext *ctx, HPy h) {
     return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), LongAsLong, HPY_UP(h));
 }
 
+static double ctx_LongAsDouble_jni(HPyContext *ctx, HPy h) {
+    return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), LongAsDouble, HPY_UP(h));
+}
+
 static HPy ctx_LongFromLong_jni(HPyContext *ctx, long l) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), LongFromLong, l);
 }
@@ -157,6 +163,10 @@ static HPy ctx_Dup_jni(HPyContext *ctx, HPy h) {
 
 static int ctx_NumberCheck_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), NumberCheck, HPY_UP(obj));
+}
+
+static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheck, HPY_UP(obj), HPY_UP(type));
 }
 
 static int ctx_ListCheck_jni(HPyContext *ctx, HPy obj) {
@@ -191,6 +201,7 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
 #define NAN_BOXING_INT (0x0001000000000000llu)
 #define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
 #define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
+#define IMMUTABLE_HANDLES (0x0000000000000100llu)
 
 static bool isBoxedDouble(uint64_t value) {
     return value >= NAN_BOXING_BASE;
@@ -249,9 +260,11 @@ static HPy (*original_Dup)(HPyContext *ctx, HPy h);
 static HPy (*original_FloatFromDouble)(HPyContext *ctx, double v);
 static double (*original_FloatAsDouble)(HPyContext *ctx, HPy h);
 static long (*original_LongAsLong)(HPyContext *ctx, HPy h);
+static double (*original_LongAsDouble)(HPyContext *ctx, HPy h);
 static HPy (*original_LongFromLong)(HPyContext *ctx, long l);
 static int (*original_ListCheck)(HPyContext *ctx, HPy h);
 static int (*original_NumberCheck)(HPyContext *ctx, HPy h);
+static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 
@@ -289,6 +302,15 @@ static long augment_LongAsLong(HPyContext *ctx, HPy h) {
     }
 }
 
+static double augment_LongAsDouble(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return unboxInt(bits);
+    } else {
+        return original_LongAsDouble(ctx, h);
+    }
+}
+
 static HPy augment_LongFromLong(HPyContext *ctx, long l) {
 	int32_t i = (int32_t) l;
 	if (l == i) {
@@ -308,6 +330,9 @@ static void augment_Close(HPyContext *ctx, HPy h) {
 static HPy augment_Dup(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
+        if (bits < IMMUTABLE_HANDLES) {
+            return h;
+        }
         return original_Dup(ctx, h);
     } else {
         return h;
@@ -321,6 +346,26 @@ static int augment_NumberCheck(HPyContext *ctx, HPy obj) {
     } else {
         return original_NumberCheck(ctx, obj);
     }
+}
+
+static int augment_TypeCheck(HPyContext *ctx, HPy obj, HPy type) {
+    uint64_t bits = toBits(obj);
+    if (isBoxedInt(bits)) {
+        if (toBits(type) == toBits(ctx->h_LongType)) {
+            return true;
+        }
+        if (toBits(type) == toBits(ctx->h_FloatType)) {
+            return false;
+        }
+    } else if (isBoxedDouble(bits)) {
+        if (toBits(type) == toBits(ctx->h_FloatType)) {
+            return true;
+        }
+        if (toBits(type) == toBits(ctx->h_LongType)) {
+            return false;
+        }
+    }
+    return original_TypeCheck(ctx, obj, type);
 }
 
 static int augment_ListCheck(HPyContext *ctx, HPy obj) {
@@ -390,9 +435,12 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_FloatAsDouble = context->ctx_Float_AsDouble;
     context->ctx_Float_AsDouble = augment_FloatAsDouble;
-
+    
     original_LongAsLong = context->ctx_Long_AsLong;
     context->ctx_Long_AsLong = augment_LongAsLong;
+    
+    original_LongAsDouble = context->ctx_Long_AsDouble;
+    context->ctx_Long_AsDouble = augment_LongAsDouble;
 
     original_LongFromLong = context->ctx_Long_FromLong;
     context->ctx_Long_FromLong = augment_LongFromLong;
@@ -408,6 +456,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_NumberCheck = context->ctx_Number_Check;
     context->ctx_Number_Check = augment_NumberCheck;
+
+    original_TypeCheck = context->ctx_TypeCheck;
+    context->ctx_TypeCheck = augment_TypeCheck;
 
     original_ListCheck = context->ctx_List_Check;
     context->ctx_List_Check = augment_ListCheck;
@@ -437,11 +488,13 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Float_FromDouble = ctx_FloatFromDouble_jni;
     context->ctx_Float_AsDouble = ctx_FloatAsDouble_jni;
     context->ctx_Long_AsLong = ctx_LongAsLong_jni;
+    context->ctx_Long_AsDouble = ctx_LongAsDouble_jni;
     context->ctx_AsStruct = ctx_AsStruct_jni;
     context->ctx_Close = ctx_Close_jni;
 
     context->ctx_Dup = ctx_Dup_jni;
     context->ctx_Number_Check = ctx_NumberCheck_jni;
+    context->ctx_TypeCheck = ctx_TypeCheck_jni;
     context->ctx_List_Check = ctx_ListCheck_jni;
 
     context->ctx_Length = ctx_Length_jni;
