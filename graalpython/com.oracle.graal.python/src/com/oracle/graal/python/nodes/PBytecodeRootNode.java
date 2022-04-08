@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -93,7 +93,6 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
-import com.oracle.graal.python.nodes.bytecode.GetNextNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
@@ -186,8 +185,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final CallUnaryMethodNode UNCACHED_CALL_UNARY_METHOD = CallUnaryMethodNode.getUncached();
     private static final NodeSupplier<PyObjectGetMethod> NODE_OBJECT_GET_METHOD = PyObjectGetMethodNodeGen::create;
     private static final PyObjectGetMethod UNCACHED_OBJECT_GET_METHOD = PyObjectGetMethodNodeGen.getUncached();
-    private static final NodeSupplier<GetNextNode> NODE_GET_NEXT = GetNextNode::create;
-    private static final GetNextNode UNCACHED_GET_NEXT = GetNextNode.getUncached();
+    private static final NodeSupplier<PyIterNextNode> NODE_GET_NEXT = PyIterNextNode::create;
+    private static final PyIterNextNode UNCACHED_GET_NEXT = PyIterNextNode.getUncached();
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
     private static final NodeSupplier<HashingStorageLibrary> NODE_HASHING_STORAGE_LIBRARY = () -> HashingStorageLibrary.getFactory().createDispatched(2);
@@ -1147,23 +1146,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case FOR_ITER:
                     case FOR_ITER_FAR: {
-                        try {
-                            Object next = insertChildNode(localNodes[bci], UNCACHED_GET_NEXT, NODE_GET_NEXT, bci).execute(frame, frame.getObject(stackTop));
-                            if (next != null) {
-                                frame.setObject(++stackTop, next);
-                                bci = bci + 1 + (bc - FOR_ITER);
-                                break;
+                        Object next = insertChildNode(localNodes[bci], UNCACHED_GET_NEXT, NODE_GET_NEXT, bci).execute(frame, frame.getObject(stackTop));
+                        if (next != null) {
+                            frame.setObject(++stackTop, next);
+                            bci = bci + 1 + (bc - FOR_ITER);
+                        } else {
+                            int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                            if (bc == FOR_ITER_FAR) {
+                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
                             }
-                        } catch (PException e) {
-                            e.expect(StopIteration, insertChildNode(localNodes[bci + 1], UNCACHED_IS_BUILTIN_CLASS_PROFILE, NODE_IS_BUILTIN_CLASS_PROFILE, bci + 1));
+                            frame.setObject(stackTop--, null);
+                            bci += oparg;
+                            continue;
                         }
-                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                        if (bc == FOR_ITER_FAR) {
-                            oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
-                        }
-                        frame.setObject(stackTop--, null);
-                        bci += oparg;
-                        continue;
+                        break;
                     }
                     case CALL_METHOD: {
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);

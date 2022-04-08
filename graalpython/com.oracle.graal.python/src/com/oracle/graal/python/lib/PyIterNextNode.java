@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
+package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
@@ -49,6 +49,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -56,8 +58,12 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+/**
+ * Obtains the next value of an iterator. When the iterator is exhausted it returns {@code null}. It
+ * never raises {@code StopIteration}.
+ */
 @GenerateUncached
-public abstract class GetNextNode extends PNodeWithContext {
+public abstract class PyIterNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
 
     @Specialization
@@ -85,19 +91,25 @@ public abstract class GetNextNode extends PNodeWithContext {
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
+                    @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Cached PRaiseNode raiseNode) {
         Object nextMethod = lookupNext.execute(frame, getClassNode.execute(iterator), iterator);
         if (nextMethod == PNone.NO_VALUE) {
             throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
         }
-        return callNext.executeObject(frame, nextMethod, iterator);
+        try {
+            return callNext.executeObject(frame, nextMethod, iterator);
+        } catch (PException e) {
+            e.expectStopIteration(stopIterationProfile);
+            return null;
+        }
     }
 
-    public static GetNextNode create() {
-        return GetNextNodeGen.create();
+    public static PyIterNextNode create() {
+        return PyIterNextNodeGen.create();
     }
 
-    public static GetNextNode getUncached() {
-        return GetNextNodeGen.getUncached();
+    public static PyIterNextNode getUncached() {
+        return PyIterNextNodeGen.getUncached();
     }
 }
