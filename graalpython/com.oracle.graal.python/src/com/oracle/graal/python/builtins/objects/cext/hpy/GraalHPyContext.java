@@ -2625,7 +2625,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private long nativeArgumentsStack = 0;
     private int nativeArgumentStackPos = 0;
 
-    public final long createNativeArguments(Object[] delegate) {
+    public final long createNativeArguments(Object[] delegate, InteropLibrary delegateLib) {
         if (nativeArgumentsStack == 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             nativeArgumentsStack = unsafe.allocateMemory(NATIVE_ARGUMENT_STACK_SIZE);
@@ -2639,7 +2639,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         nativeArgumentsStack += arraySize;
 
         for (int i = 0; i < delegate.length; i++) {
-            unsafe.putLong(arrayPtr + i * SIZEOF_LONG, ((GraalHPyHandle) delegate[i]).getId(this, ConditionProfile.getUncached()));
+            Object element = delegate[i];
+            delegateLib.toNative(element);
+            try {
+                unsafe.putLong(arrayPtr + i * SIZEOF_LONG, delegateLib.asPointer(element));
+            } catch (UnsupportedMessageException ex) {
+                throw CompilerDirectives.shouldNotReachHere(ex);
+            }
         }
         return arrayPtr;
     }

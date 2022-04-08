@@ -54,6 +54,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -173,6 +174,7 @@ public class HPyArrayWrappers {
         @ExportMessage
         void toNative(
                         @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
+                        @CachedLibrary(limit = "1") InteropLibrary delegateLib,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
             invalidateNode.execute();
             if (!isPointer()) {
@@ -182,7 +184,7 @@ public class HPyArrayWrappers {
                         delegate[i] = asHandleNode.execute(hpyContext, element);
                     }
                 }
-                setNativePointer(hpyContext.createNativeArguments(delegate));
+                setNativePointer(hpyContext.createNativeArguments(delegate, delegateLib));
             }
         }
 
