@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.util.Arrays;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
     private static final int DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE = 1024;
@@ -97,6 +98,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
                 trackHandle((GraalHPyHandle) member);
             }
         }
+        assert debugHandleInfo.length <= IMMUTABLE_HANDLE_COUNT;
+        debugHandleInfo = Arrays.copyOf(debugHandleInfo, IMMUTABLE_HANDLE_COUNT * 2);
     }
 
     @Override

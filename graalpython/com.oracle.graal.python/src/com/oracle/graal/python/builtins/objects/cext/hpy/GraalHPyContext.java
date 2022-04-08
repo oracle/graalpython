@@ -791,7 +791,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    private static final int IMMUTABLE_HANDLE_COUNT = 256;
+    protected static final int IMMUTABLE_HANDLE_COUNT = 256;
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private int nextHandle = 1;
