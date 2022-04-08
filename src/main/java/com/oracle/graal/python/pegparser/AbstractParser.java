@@ -70,7 +70,17 @@ abstract class AbstractParser {
         EVAL,
         FUNCTION_TYPE,
         FSTRING
-    }
+    };
+    
+    /**
+     * Corresponds to TARGET_TYPES in CPython
+     */
+    static public enum TargetsType {
+        STAR_TARGETS,
+        DEL_TARGETS,
+        FOR_TARGETS
+    };
+    
     
     /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used 
@@ -781,10 +791,71 @@ abstract class AbstractParser {
         }
     }
     
+    private ExprTy visitContainer(ExprTy[] elements, TargetsType type) {
+        if (elements == null) {
+            return null;
+        }
+        ExprTy child;
+        for (ExprTy expr : elements) {
+            child = getInvalidTarget(expr, type);
+            if (child != null) {
+                return child;
+            }
+        }
+        return null;
+    }
+    
+    private ExprTy getInvalidTarget (ExprTy expr, TargetsType type) {
+        if (expr == null) {
+            return null;
+        }
+        if (expr instanceof ExprTy.List) {
+            return visitContainer(((ExprTy.List)expr).elements, type);
+        }
+        if (expr instanceof ExprTy.Tuple) {
+            return visitContainer(((ExprTy.Tuple)expr).elements, type);
+        }
+        if (expr instanceof ExprTy.Starred) {
+            if (type == TargetsType.DEL_TARGETS) {
+                return expr;
+            }
+            return getInvalidTarget(((ExprTy.Starred) expr).value, type);
+        }
+        if (expr instanceof ExprTy.Compare) {
+            if (type == TargetsType.FOR_TARGETS) {
+                ExprTy.Compare compare = (ExprTy.Compare) expr;
+                if (compare.ops[0] == ExprTy.Compare.Operator.IN) {
+                    return getInvalidTarget(compare.left, type);
+                }
+                return null;
+            }
+            return expr;
+        }
+        if (expr instanceof ExprTy.Name 
+                || expr instanceof ExprTy.Subscript
+                || expr instanceof ExprTy.Attribute) {
+            return null;
+        }
+        return expr;
+    }
+    
+    /**
+     * RAISE_SYNTAX_ERROR_INVALID_TARGET
+     */
+    SSTNode raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {
+        ExprTy invalidTarget = getInvalidTarget(expr, type);
+        if (invalidTarget != null) {
+            String message = (type == TargetsType.STAR_TARGETS || type == TargetsType.FOR_TARGETS) 
+                    ? "cannot assign to %s" : "cannot delete %s";
+            raiseSyntaxErrorKnownLocation(invalidTarget, message, getExprName(invalidTarget));
+        }
+        return raiseSyntaxError("invalid syntax");
+    }
+    
     /**
      * RAISE_SYNTAX_ERROR
      */
-    final SSTNode raiseSyntaxError(String msg, Object... argumetns) {
+    SSTNode raiseSyntaxError(String msg, Object... argumetns) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argumetns);
@@ -795,7 +866,7 @@ abstract class AbstractParser {
      * RAISE_ERROR_KNOWN_LOCATION
      * the first param is a token, where error begins
      */
-    final SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
+    SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
         return null;
@@ -805,7 +876,7 @@ abstract class AbstractParser {
      * RAISE_ERROR_KNOWN_LOCATION
      * the first param is node, where error begins
      */
-    final SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
+    SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
         return null;

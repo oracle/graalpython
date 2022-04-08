@@ -12557,9 +12557,7 @@ public final class Parser extends AbstractParser {
                 (_literal = (Token)expect(22)) != null  // token='='
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a);
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12704,9 +12702,7 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a);
                 cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13231,9 +13227,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_218_rule(true)
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a);
                 cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13271,9 +13265,7 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a);
                 cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
