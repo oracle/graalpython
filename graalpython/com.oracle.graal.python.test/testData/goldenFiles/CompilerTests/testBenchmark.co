@@ -70,7 +70,7 @@ Disassembly of measure:
 000257        17 STORE_FAST                        2    (sum_)
 000257        19 JUMP_BACKWARD                     12   (to 7)
 000294   >>   21 LOAD_GLOBAL                       2    (print)
-000300        23 LOAD_STRING                       1    (sum)
+000300        23 LOAD_STRING                       1    ('sum')
 000307        25 LOAD_FAST                         2    (sum_)
 000294        27 CALL_FUNCTION                     2
 000294        29 POP_TOP

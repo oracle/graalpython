@@ -493,7 +493,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     k.value.accept(this);
                     collector.appendCollection();
                 } else {
-                    addOp(LOAD_CONST, addObject(unit.constants, k.arg));
+                    addOp(LOAD_STRING, addObject(unit.constants, k.arg));
                     k.value.accept(this);
                     collector.appendItem();
                 }
@@ -905,7 +905,30 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.FormattedValue node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            int oparg;
+            switch (node.conversion) {
+                case STR:
+                    oparg = FormatOptions.FVC_STR;
+                    break;
+                case REPR:
+                    oparg = FormatOptions.FVC_REPR;
+                    break;
+                case ASCII:
+                    oparg = FormatOptions.FVC_ASCII;
+                    break;
+                case NONE:
+                    oparg = FormatOptions.FVC_NONE;
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown format conversion");
+            }
+            if (node.formatSpec != null) {
+                node.formatSpec.accept(this);
+                oparg |= FormatOptions.FVS_HAVE_SPEC;
+            }
+            addOp(FORMAT_VALUE, oparg);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
@@ -938,7 +961,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.JoinedStr node) {
         int savedOffset = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            // TODO add optimized op for small chains
+            addOp(LOAD_STRING, addObject(unit.constants, ""));
+            collectIntoArray(node.values, CollectionBits.LIST);
+            int oparg = 1 << 8 | addObject(unit.names, "join");
+            addOp(CALL_METHOD, oparg);
+            return null;
         } finally {
             setLocation(savedOffset);
         }
@@ -1456,7 +1484,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
         addNameOp("__name__", ExprContext.Load);
         addNameOp("__module__", ExprContext.Store);
-        addOp(LOAD_CONST, addObject(unit.constants, unit.qualName));
+        addOp(LOAD_STRING, addObject(unit.constants, unit.qualName));
         addNameOp("__qualname__", ExprContext.Store);
 
         visitBody(node.body);
@@ -1475,7 +1503,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         addOp(LOAD_BUILD_CLASS);
         makeClosure(co);
-        addOp(LOAD_CONST, addObject(unit.constants, node.name));
+        addOp(LOAD_STRING, addObject(unit.constants, node.name));
 
         if ((node.bases.length < 3) && node.keywords.length == 0) {
             visitSequence(node.bases);

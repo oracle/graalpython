@@ -1,10 +1,10 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (print)
-000006         2 LOAD_STRING                       0    (before)
+000006         2 LOAD_STRING                       0    ('before')
 000000         4 CALL_FUNCTION                     1
 000000         6 POP_TOP
 000023         7 LOAD_NAME                         0    (print)
-000029         9 LOAD_STRING                       1    (try)
+000029         9 LOAD_STRING                       1    ('try')
 000023        11 CALL_FUNCTION                     1
 000023        13 POP_TOP
 000023        14 JUMP_FORWARD                      38   (to 52)
@@ -14,7 +14,7 @@ Disassembly of <module>:
 000036        21 UNWRAP_EXC
 000036        22 STORE_NAME                        2    (e)
 000061        24 LOAD_NAME                         0    (print)
-000067        26 LOAD_STRING                       2    (except1)
+000067        26 LOAD_STRING                       2    ('except1')
 000061        28 CALL_FUNCTION                     1
 000061        30 POP_TOP
 000061        31 POP_EXCEPT
@@ -24,19 +24,19 @@ Disassembly of <module>:
 000078        38 UNWRAP_EXC
 000078        39 STORE_NAME                        2    (e)
 000104        41 LOAD_NAME                         0    (print)
-000110        43 LOAD_STRING                       3    (except2)
+000110        43 LOAD_STRING                       3    ('except2')
 000104        45 CALL_FUNCTION                     1
 000104        47 POP_TOP
 000104        48 POP_EXCEPT
 000104        49 JUMP_FORWARD                      12   (to 61)
 000104   >>   51 END_EXC_HANDLER                                                         (exc handler 17 - 51; stack: 1)
 000129   >>   52 LOAD_NAME                         0    (print)
-000135        54 LOAD_STRING                       4    (else)
+000135        54 LOAD_STRING                       4    ('else')
 000129        56 CALL_FUNCTION                     1
 000129        58 POP_TOP
 000129        59 JUMP_FORWARD                      2    (to 61)
 000143   >>   61 LOAD_NAME                         0    (print)
-000149        63 LOAD_STRING                       5    (after)
+000149        63 LOAD_STRING                       5    ('after')
 000143        65 CALL_FUNCTION                     1
 000143        67 POP_TOP
 000143        68 LOAD_NONE

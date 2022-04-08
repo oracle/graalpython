@@ -78,6 +78,7 @@ public enum OpCodes {
     DELETE_DEREF(1, 0, 0),
     LOAD_CLASSDEREF(1, 0, 1),
     BUILD_SLICE(1, (oparg, withJump) -> oparg, 1),
+    FORMAT_VALUE(1, (oparg, withJump) -> (oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC ? 2 : 1, 1),
 
     IMPORT_NAME(1, 2, 1),
     IMPORT_FROM(1, 1, 2),

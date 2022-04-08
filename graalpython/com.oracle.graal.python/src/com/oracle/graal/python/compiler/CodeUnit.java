@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 
 public final class CodeUnit {
@@ -219,7 +220,9 @@ public final class CodeUnit {
                     if (constant instanceof CodeUnit) {
                         line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
                     } else {
-                        if (constant instanceof byte[]) {
+                        if (constant instanceof String) {
+                            line[5] = PString.repr((String) constant);
+                        } else if (constant instanceof byte[]) {
                             byte[] bytes = (byte[]) constant;
                             line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
                         } else if (constant instanceof Object[]) {
@@ -275,6 +278,27 @@ public final class CodeUnit {
                 case CALL_METHOD_VARARGS:
                     line[5] = names[arg];
                     break;
+                case FORMAT_VALUE: {
+                    int type = arg & FormatOptions.FVC_MASK;
+                    switch (type) {
+                        case FormatOptions.FVC_STR:
+                            line[5] = "STR";
+                            break;
+                        case FormatOptions.FVC_REPR:
+                            line[5] = "REPR";
+                            break;
+                        case FormatOptions.FVC_ASCII:
+                            line[5] = "ASCII";
+                            break;
+                        case FormatOptions.FVC_NONE:
+                            line[5] = "NONE";
+                            break;
+                    }
+                    if ((arg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
+                        line[5] += " + SPEC";
+                    }
+                    break;
+                }
                 case CALL_METHOD: {
                     line[4] = String.format("% 2d", arg >>> 8);
                     line[5] = names[arg & 0xFF];

@@ -1,10 +1,10 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (print)
-000006         2 LOAD_STRING                       0    (before)
+000006         2 LOAD_STRING                       0    ('before')
 000000         4 CALL_FUNCTION                     1
 000000         6 POP_TOP
 000023         7 LOAD_NAME                         0    (print)
-000029         9 LOAD_STRING                       1    (try)
+000029         9 LOAD_STRING                       1    ('try')
 000023        11 CALL_FUNCTION                     1
 000023        13 POP_TOP
 000023        14 JUMP_FORWARD                      32   (to 46)
@@ -14,21 +14,21 @@ Disassembly of <module>:
 000036        21 UNWRAP_EXC
 000036        22 STORE_NAME                        2    (e)
 000061        24 LOAD_NAME                         0    (print)
-000067        26 LOAD_STRING                       2    (except1)
+000067        26 LOAD_STRING                       2    ('except1')
 000061        28 CALL_FUNCTION                     1
 000061        30 POP_TOP
 000061        31 POP_EXCEPT
 000061        32 JUMP_FORWARD                      14   (to 46)
 000078   >>   34 POP_TOP
 000088        35 LOAD_NAME                         0    (print)
-000094        37 LOAD_STRING                       3    (except bare)
+000094        37 LOAD_STRING                       3    ('except bare')
 000088        39 CALL_FUNCTION                     1
 000088        41 POP_TOP
 000088        42 POP_EXCEPT
 000088        43 JUMP_FORWARD                      3    (to 46)
 000088        45 END_EXC_HANDLER                                                         (exc handler 17 - 45; stack: 1)
 000109   >>   46 LOAD_NAME                         0    (print)
-000115        48 LOAD_STRING                       4    (after)
+000115        48 LOAD_STRING                       4    ('after')
 000109        50 CALL_FUNCTION                     1
 000109        52 POP_TOP
 000109        53 LOAD_NONE

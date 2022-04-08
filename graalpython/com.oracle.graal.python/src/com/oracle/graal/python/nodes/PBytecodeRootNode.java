@@ -52,6 +52,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -77,9 +78,11 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -87,8 +90,10 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -239,6 +244,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SetNodes.AddNode> NODE_SET_ADD = SetNodes.AddNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
     private static final NodeSupplier<UnpackSequenceNode> NODE_UNPACK_SEQUENCE = UnpackSequenceNode::create;
+    private static final PyObjectStrAsObjectNode UNCACHED_STR = PyObjectStrAsObjectNode.getUncached();
+    private static final NodeSupplier<PyObjectStrAsObjectNode> NODE_STR = PyObjectStrAsObjectNode::create;
+    private static final PyObjectReprAsObjectNode UNCACHED_REPR = PyObjectReprAsObjectNode.getUncached();
+    private static final NodeSupplier<PyObjectReprAsObjectNode> NODE_REPR = PyObjectReprAsObjectNode::create;
+    private static final PyObjectAsciiNode UNCACHED_ASCII = PyObjectAsciiNode.getUncached();
+    private static final NodeSupplier<PyObjectAsciiNode> NODE_ASCII = PyObjectAsciiNode::create;
+    private static final NodeSupplier<BuiltinFunctions.FormatNode> NODE_FORMAT = BuiltinFunctions.FormatNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -838,6 +850,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeBuildSlice(localFrame, stackTop, beginBci, oparg, localNodes);
                         break;
                     }
+                    case FORMAT_VALUE: {
+                        int oparg = Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeFormatValue(virtualFrame, stackTop, beginBci, localFrame, localNodes, oparg);
+                        break;
+                    }
                     case COLLECTION_FROM_COLLECTION: {
                         int type = Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeCollectionFromCollection(virtualFrame, localFrame, type, stackTop, localNodes, beginBci);
@@ -1327,6 +1344,34 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private int bytecodeFormatValue(VirtualFrame virtualFrame, int initialStackTop, int bci, Frame localFrame, Node[] localNodes, int oparg) {
+        int stackTop = initialStackTop;
+        int type = oparg & FormatOptions.FVC_MASK;
+        Object spec = PNone.NO_VALUE;
+        if ((oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
+            spec = localFrame.getObject(stackTop);
+            localFrame.setObject(stackTop--, null);
+        }
+        Object value = localFrame.getObject(stackTop);
+        switch (type) {
+            case FormatOptions.FVC_STR:
+                value = insertChildNode(localNodes, bci, UNCACHED_STR, NODE_STR).execute(virtualFrame, value);
+                break;
+            case FormatOptions.FVC_REPR:
+                value = insertChildNode(localNodes, bci, UNCACHED_REPR, NODE_REPR).execute(virtualFrame, value);
+                break;
+            case FormatOptions.FVC_ASCII:
+                value = insertChildNode(localNodes, bci, UNCACHED_ASCII, NODE_ASCII).execute(virtualFrame, value);
+                break;
+            default:
+                assert type == FormatOptions.FVC_NONE;
+        }
+        BuiltinFunctions.FormatNode formatNode = insertChildNode(localNodes, bci + 1, NODE_FORMAT);
+        value = formatNode.execute(virtualFrame, value, spec);
+        localFrame.setObject(stackTop, value);
+        return stackTop;
     }
 
     private void bytecodeDeleteDeref(Frame localFrame, int bci, Node[] localNodes, int oparg) {

@@ -474,6 +474,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testFString() {
+        doTest("f'before{a}middle{b!r:5}after'");
+    }
+
+    @Test
     public void testNestedListComprehension() {
         String source = "[[x for x in range(5)] for y in range(3)]";
         doTest(source);

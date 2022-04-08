@@ -15,7 +15,7 @@ Disassembly of <module>:
 000055   >>   24 JUMP_BACKWARD                     17   (to 7)
 000055   >>   26 JUMP_BACKWARD                     19   (to 7)
 000072   >>   28 LOAD_NAME                         2    (print)
-000078        30 LOAD_STRING                       0    (else)
+000078        30 LOAD_STRING                       0    ('else')
 000072        32 CALL_FUNCTION                     1
 000072        34 POP_TOP
 000072   >>   35 LOAD_NONE

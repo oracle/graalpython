@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000003         0 LOAD_NAME                         0    (__name__)
-000015         2 LOAD_STRING                       0    (__main__)
+000015         2 LOAD_STRING                       0    ('__main__')
 000003         4 BINARY_OP                         12   (EQ)
 000000         6 POP_AND_JUMP_IF_FALSE             117   (to 123)
 000031         8 LOAD_BYTE                         0
@@ -18,7 +18,7 @@ Disassembly of <module>:
 000077        32 LOAD_ATTR                         3    (argv)
 000086        34 LOAD_BYTE                         0
 000077        36 BINARY_SUBSCR
-000092        37 LOAD_STRING                       2    (java_embedding_bench)
+000092        37 LOAD_STRING                       2    ('java_embedding_bench')
 000077        39 BINARY_OP                         12   (EQ)
 000049   >>   41 UNARY_OP                          0    (NOT)
 000046        43 POP_AND_JUMP_IF_FALSE             80   (to 123)
@@ -52,7 +52,7 @@ Disassembly of <module>:
 000288        98 CALL_FUNCTION                     0
 000288       100 POP_TOP
 000312   >>  101 LOAD_NAME                         9    (print)
-000318       103 LOAD_STRING                       3    (%s took %s s)
+000318       103 LOAD_STRING                       3    ('%s took %s s')
 000336       105 LOAD_NAME                         10   (__file__)
 000346       107 LOAD_NAME                         4    (time)
 000346       109 CALL_METHOD                       0    (time)

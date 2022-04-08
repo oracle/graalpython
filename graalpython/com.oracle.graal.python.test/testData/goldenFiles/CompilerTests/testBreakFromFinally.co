@@ -8,7 +8,7 @@ Disassembly of <module>:
 000034        11 LOAD_NAME                         1    (i)
 000031        13 POP_AND_JUMP_IF_FALSE             15   (to 28)
 000077        15 LOAD_NAME                         2    (print)
-000083        17 LOAD_STRING                       0    (finally)
+000083        17 LOAD_STRING                       0    ('finally')
 000077        19 CALL_FUNCTION                     1
 000077        21 POP_TOP
 000098        22 POP_TOP
@@ -22,7 +22,7 @@ Disassembly of <module>:
 000053        35 JUMP_FORWARD                      16   (to 51)
 000053        37 PUSH_EXC_INFO                                                           (exc handler 11 - 15; stack: 1 | exc handler 28 - 37; stack: 1)
 000077        38 LOAD_NAME                         2    (print)
-000083        40 LOAD_STRING                       0    (finally)
+000083        40 LOAD_STRING                       0    ('finally')
 000077        42 CALL_FUNCTION                     1
 000077        44 POP_TOP
 000098        45 POP_EXCEPT
@@ -31,7 +31,7 @@ Disassembly of <module>:
 000098        48 JUMP_FORWARD                      15   (to 63)
 000098        50 END_EXC_HANDLER                                                         (exc handler 38 - 50; stack: 2)
 000077   >>   51 LOAD_NAME                         2    (print)
-000083        53 LOAD_STRING                       0    (finally)
+000083        53 LOAD_STRING                       0    ('finally')
 000077        55 CALL_FUNCTION                     1
 000077        57 POP_TOP
 000098        58 POP_TOP

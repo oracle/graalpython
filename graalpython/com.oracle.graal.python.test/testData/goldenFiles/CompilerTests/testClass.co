@@ -2,7 +2,7 @@ Disassembly of <module>:
 000000         0 LOAD_BUILD_CLASS
 000000         1 LOAD_CONST                        0    (Foo from <module>)
 000000         3 MAKE_FUNCTION                     0
-000000         5 LOAD_CONST                        1    (Foo)
+000000         5 LOAD_STRING                       1    ('Foo')
 000000         7 CALL_FUNCTION                     2
 000000         9 STORE_NAME                        0    (Foo)
 000000        11 LOAD_NONE
@@ -11,7 +11,7 @@ Disassembly of <module>:
 Disassembly of Foo:
 000000         0 LOAD_NAME                         0    (__name__)
 000000         2 STORE_NAME                        1    (__module__)
-000000         4 LOAD_CONST                        0    (Foo)
+000000         4 LOAD_STRING                       0    ('Foo')
 000000         6 STORE_NAME                        2    (__qualname__)
 000019         8 LOAD_BYTE                         64
 000015        10 STORE_NAME                        3    (c)
