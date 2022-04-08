@@ -124,15 +124,17 @@ public abstract class PySequenceContainsNode extends PNodeWithContext {
                 }
                 try {
                     if (eqNode.execute(frame, callNext.executeObject(frame, next, iterator), key)) {
+                        if (CompilerDirectives.hasNextTier()) {
+                            LoopNode.reportLoopCount(this, i);
+                        }
                         return true;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(stopIterationProfile);
-                    return false;
-                } finally {
                     if (CompilerDirectives.hasNextTier()) {
                         LoopNode.reportLoopCount(this, i);
                     }
+                    return false;
                 }
             }
         } else {
