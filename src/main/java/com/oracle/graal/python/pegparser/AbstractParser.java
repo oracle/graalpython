@@ -140,6 +140,20 @@ abstract class AbstractParser {
         if (res == null) {
             resetParserState();
             runParser(inputType);
+            if (errorIndicator) {
+                // shouldn't we return at least wrong AST based on a option?
+                return null;
+            }
+            int pos = mark();
+            if (pos == 0) {
+                raiseSyntaxError("error at start before reading any input");
+            } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER ) {
+                // TODO we should handle this in better way. See cpython
+                raiseSyntaxError("unexpected EOF while parsing");
+            } else {
+                // TODO check indentation errors 
+                raiseSyntaxError("invalid syntax");
+            }
         }
         return res;
     }
