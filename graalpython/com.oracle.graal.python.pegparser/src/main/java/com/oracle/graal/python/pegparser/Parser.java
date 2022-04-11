@@ -5300,7 +5300,7 @@ public final class Parser extends AbstractParser {
                 (f = function_def_raw_rule()) != null  // function_def_raw
             )
             {
-                _res = factory.createFunctionDef(f,d);
+                _res = factory.createFunctionDefWithDecorators(f,d);
                 cache.putResult(_mark, FUNCTION_DEF_ID, _res);
                 return (StmtTy)_res;
             }
@@ -5420,9 +5420,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async functions are' , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"Async functions are",factory.createAsyncFunctionDef(((ExprTy.Name)n).id,params,b,a,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset));
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
@@ -9212,6 +9214,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, AWAIT_PRIMARY_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // AWAIT primary
             if (errorIndicator) {
                 return null;
@@ -9224,9 +9227,11 @@ public final class Parser extends AbstractParser {
                 (a = primary_rule()) != null  // primary
             )
             {
-                // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'Await expressions are' , _PyAST_Await ( a , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"Await expressions are",factory.createAwait(a,startToken.startOffset,endToken.endOffset));
                 cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
                 return (ExprTy)_res;
             }

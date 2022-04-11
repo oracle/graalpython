@@ -220,6 +220,10 @@ public class Scope {
         return flags.contains(ScopeFlags.IsGenerator);
     }
 
+    public boolean isCoroutine() {
+        return flags.contains(ScopeFlags.IsCoroutine);
+    }
+
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();
