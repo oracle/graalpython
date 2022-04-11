@@ -106,6 +106,7 @@ def test_cant_use_closed_handle(compiler, hpy_debug_capture):
         assert hpy_debug_capture.invalid_handles_count == 6
 
 
+@pytest.mark.xfail(reason="graalpython does not prevent reuse of leaked handles for other handles and thus cannot always catch this")
 def test_keeping_and_reusing_argument_handle(compiler, hpy_debug_capture):
     mod = compiler.make_module("""
         HPy keep;
