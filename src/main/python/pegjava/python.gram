@@ -632,7 +632,7 @@ term[expr_ty]:
     | a=term '/' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.DIV, a, b, startToken.startOffset, endToken.endOffset ) }
     | a=term '//' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.FLOORDIV, a, b, startToken.startOffset, endToken.endOffset ) }
     | a=term '%' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.MOD, a, b, startToken.startOffset, endToken.endOffset ) }
-    | a=term '@' b=factor { CHECK_VERSION(expr_ty, 5, "The '@' operator is", _PyAST_BinOp(a, MatMult, b, EXTRA)) }
+    | a=term '@' b=factor { checkVersion(5, "The '@' operator is", factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT, a, b, startToken.startOffset, endToken.endOffset )) }
     | factor
 factor[expr_ty] (memo):
     | '+' a=factor {factory.createUnaryOp(ExprTy.UnaryOp.Operator.ADD, a, startToken.startOffset, endToken.endOffset)}

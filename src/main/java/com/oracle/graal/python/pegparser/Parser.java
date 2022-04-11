@@ -9020,9 +9020,11 @@ public final class Parser extends AbstractParser {
                 (b = factor_rule()) != null  // factor
             )
             {
-                // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "The '@' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'The '@' operator is' , _PyAST_BinOp ( a , MatMult , b , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"The '@' operator is",factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT,a,b,startToken.startOffset,endToken.endOffset));
                 return (ExprTy)_res;
             }
             reset(_mark);
