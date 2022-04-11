@@ -2449,7 +2449,7 @@ public class GraalHPyNodes {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    public static abstract class RecursiveExceptionMatches extends Node {
+    public abstract static class RecursiveExceptionMatches extends Node {
         abstract int execute(GraalHPyContext context, Object err, Object exc);
 
         @Specialization

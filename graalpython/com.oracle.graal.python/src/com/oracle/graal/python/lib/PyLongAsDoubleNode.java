@@ -52,8 +52,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double.
- * Raises {@code OverflowError} on overflow.
+ * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double. Raises
+ * {@code OverflowError} on overflow.
  */
 @GenerateUncached
 public abstract class PyLongAsDoubleNode extends PNodeWithContext {

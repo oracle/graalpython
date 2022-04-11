@@ -81,11 +81,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
@@ -131,7 +129,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -145,7 +142,6 @@ import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -168,7 +164,6 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
@@ -1435,10 +1430,7 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         private String decode(CodingErrorAction errorAction, byte[] bytes) {
             try {
-                return CharsetMapping.getCharset(charset).newDecoder()
-                        .onMalformedInput(errorAction)
-                        .onUnmappableCharacter(errorAction)
-                        .decode(ByteBuffer.wrap(bytes)).toString();
+                return CharsetMapping.getCharset(charset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
             } catch (CharacterCodingException ex) {
                 throw CompilerDirectives.shouldNotReachHere(ex);
             }
@@ -1505,10 +1497,7 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         private String decode(CodingErrorAction errorAction, byte[] bytes) {
             try {
-                return CharsetMapping.getCharset(charset).newDecoder()
-                        .onMalformedInput(errorAction)
-                        .onUnmappableCharacter(errorAction)
-                        .decode(ByteBuffer.wrap(bytes)).toString();
+                return CharsetMapping.getCharset(charset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
             } catch (CharacterCodingException ex) {
                 return null;
             }
@@ -3045,7 +3034,7 @@ public abstract class GraalHPyContextFunctions {
                 }
                 Object referent;
                 if (hpyFieldObject instanceof GraalHPyHandle) { // avoid `asPointer` message
-                                                               // dispatch
+                                                                // dispatch
                     referent = ((GraalHPyHandle) hpyFieldObject).getDelegate();
                 } else {
                     int idx;

@@ -56,8 +56,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double.
- * Raises {@code OverflowError} on overflow.
+ * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double. Raises
+ * {@code OverflowError} on overflow.
  */
 @GenerateUncached
 public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
@@ -65,21 +65,21 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
 
     @Specialization
     int doGeneric(Object type, long lindex,
-                  @Cached CastToJavaStringNode castToJavaStringNode,
-                  @Cached PRaiseNode raiseNode) {
-            try {
-                String s = castToJavaStringNode.execute(type);
-                int index = PInt.intValueExact(lindex);
-                // avoid StringIndexOutOfBoundsException
-                if (index < 0 || index >= PString.length(s)) {
-                    throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
-                }
-                return PString.charAt(s, index);
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
-            } catch (OverflowException e) {
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            String s = castToJavaStringNode.execute(type);
+            int index = PInt.intValueExact(lindex);
+            // avoid StringIndexOutOfBoundsException
+            if (index < 0 || index >= PString.length(s)) {
                 throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
+            return PString.charAt(s, index);
+        } catch (CannotCastException e) {
+            throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        } catch (OverflowException e) {
+            throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+        }
     }
 
     public static PyUnicodeReadCharNode create() {
