@@ -4,13 +4,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -52,11 +51,10 @@ public abstract class ImportFromNode extends PNodeWithContext {
             pkgnameObj = null;
         }
         if (pkgnameObj != null) {
-            try {
-                String fullname = pkgname + "." + name;
-                return PyObjectGetItem.getUncached().execute(null, getContext().getSysModules(), fullname);
-            } catch (PException e) {
-                e.expectAttributeError(IsBuiltinClassProfile.getUncached());
+            String fullname = pkgname + "." + name;
+            Object imported = PyDictGetItem.getUncached().execute(null, getContext().getSysModules(), fullname);
+            if (imported != null) {
+                return imported;
             }
             try {
                 pkgpathObj = PyObjectGetAttr.getUncached().execute(null, module, __FILE__);
