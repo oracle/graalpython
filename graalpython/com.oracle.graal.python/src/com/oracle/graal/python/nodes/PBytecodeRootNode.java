@@ -1115,76 +1115,80 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case JUMP_FORWARD_FAR:
                         bci += ((Byte.toUnsignedInt(localBC[bci + 1]) << 8) | Byte.toUnsignedInt(localBC[bci + 2]));
                         continue;
-                    case POP_AND_JUMP_IF_FALSE: {
+                    case POP_AND_JUMP_IF_FALSE:
+                    case POP_AND_JUMP_IF_FALSE_FAR: {
+                        boolean farJump = bc == POP_AND_JUMP_IF_FALSE_FAR;
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         if (!isTrue.execute(virtualFrame, cond)) {
-                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci = jump(localBC, bci, farJump);
                             continue;
+                        } else {
+                            bci = skipJumpOperand(bci, farJump);
                         }
-                        bci++;
                         break;
                     }
-                    case POP_AND_JUMP_IF_TRUE: {
+                    case POP_AND_JUMP_IF_TRUE:
+                    case POP_AND_JUMP_IF_TRUE_FAR: {
+                        boolean farJump = bc == POP_AND_JUMP_IF_TRUE_FAR;
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         if (isTrue.execute(virtualFrame, cond)) {
-                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci = jump(localBC, bci, farJump);
                             continue;
+                        } else {
+                            bci = skipJumpOperand(bci, farJump);
                         }
-                        bci++;
                         break;
                     }
-                    case JUMP_IF_FALSE_OR_POP: {
+                    case JUMP_IF_FALSE_OR_POP:
+                    case JUMP_IF_FALSE_OR_POP_FAR: {
+                        boolean farJump = bc == JUMP_IF_FALSE_OR_POP_FAR;
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         if (!isTrue.execute(localFrame, cond)) {
-                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci = jump(localBC, bci, farJump);
                             continue;
                         } else {
                             localFrame.setObject(stackTop--, null);
+                            bci = skipJumpOperand(bci, farJump);
                         }
-                        bci++;
                         break;
                     }
-                    case JUMP_IF_TRUE_OR_POP: {
+                    case JUMP_IF_TRUE_OR_POP:
+                    case JUMP_IF_TRUE_OR_POP_FAR: {
+                        boolean farJump = bc == JUMP_IF_TRUE_OR_POP_FAR;
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         if (isTrue.execute(virtualFrame, cond)) {
-                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci = jump(localBC, bci, farJump);
                             continue;
                         } else {
                             localFrame.setObject(stackTop--, null);
+                            bci = skipJumpOperand(bci, farJump);
                         }
-                        bci++;
                         break;
                     }
                     case JUMP_BACKWARD:
                     case JUMP_BACKWARD_FAR: {
+                        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+                        if (bc == JUMP_BACKWARD_FAR) {
+                            oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
+                        }
+                        bci -= oparg;
                         if (inInterpreter) {
                             loopCount++;
                             if (BytecodeOSRNode.pollOSRBackEdge(this)) {
                                 // we're in the interpreter, so the unboxed storage for locals
                                 // is not used
-                                int newBCI;
-                                if (bc == JUMP_BACKWARD_FAR) {
-                                    newBCI = bci - ((Byte.toUnsignedInt(localBC[bci + 1]) << 8) | Byte.toUnsignedInt(localBC[bci + 2]));
-                                } else {
-                                    newBCI = bci - Byte.toUnsignedInt(localBC[bci + 1]);
-                                }
-                                Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(newBCI) | encodeStackTop(stackTop), originalArgsObject, null, virtualFrame);
+                                Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(bci) | encodeStackTop(stackTop), originalArgsObject, null, virtualFrame);
                                 if (osrResult != null) {
                                     LoopNode.reportLoopCount(this, loopCount);
                                     return osrResult;
                                 }
                             }
-                        }
-                        if (bc == JUMP_BACKWARD_FAR) {
-                            bci -= ((Byte.toUnsignedInt(localBC[bci + 1]) << 8) | Byte.toUnsignedInt(localBC[bci + 2]));
-                        } else {
-                            bci -= Byte.toUnsignedInt(localBC[bci + 1]);
                         }
                         continue;
                     }
@@ -1196,16 +1200,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case FOR_ITER:
                     case FOR_ITER_FAR: {
                         Object next = insertChildNode(localNodes, beginBci, UNCACHED_GET_NEXT, NODE_GET_NEXT).execute(virtualFrame, localFrame.getObject(stackTop));
+                        boolean farJump = bc == FOR_ITER_FAR;
                         if (next != null) {
                             localFrame.setObject(++stackTop, next);
-                            bci = bci + 1 + (bc - FOR_ITER);
+                            bci = skipJumpOperand(bci, farJump);
                         } else {
-                            int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                            if (bc == FOR_ITER_FAR) {
-                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
-                            }
                             localFrame.setObject(stackTop--, null);
-                            bci += oparg;
+                            bci = jump(localBC, bci, farJump);
                             continue;
                         }
                         break;
@@ -1239,19 +1240,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeMakeFunction(localFrame, globals, stackTop, oparg);
                         break;
                     }
-                    case MATCH_EXC_OR_JUMP: {
+                    case MATCH_EXC_OR_JUMP:
+                    case MATCH_EXC_OR_JUMP_FAR: {
+                        boolean farJump = bc == MATCH_EXC_OR_JUMP_FAR;
                         Object exception = localFrame.getObject(stackTop - 1);
                         Object matchType = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         ExceptMatchNode matchNode = insertChildNode(localNodes, beginBci, UNCACHED_EXCEPT_MATCH, NODE_EXCEPT_MATCH);
                         if (!matchNode.executeMatch(virtualFrame, exception, matchType)) {
-                            bci += Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci = jump(localBC, bci, farJump);
                             continue;
+                        } else {
+                            bci = skipJumpOperand(bci, farJump);
                         }
-                        bci++;
                         break;
                     }
-                    // TODO MATCH_EXC_OR_JUMP_FAR
                     case UNWRAP_EXC: {
                         Object exception = localFrame.getObject(stackTop);
                         if (exception instanceof PException) {
@@ -1315,23 +1318,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case SEND:
                     case SEND_FAR: {
+                        boolean farJump = bc == SEND_FAR;
                         Object value = localFrame.getObject(stackTop);
                         Object obj = localFrame.getObject(stackTop - 1);
                         SendNode sendNode = insertChildNode(localNodes, beginBci, NODE_SEND);
                         boolean returned = sendNode.execute(virtualFrame, stackTop, localFrame, obj, value);
                         if (!returned) {
-                            bci++;
-                            if (bc == SEND_FAR) {
-                                bci++;
-                            }
+                            bci = skipJumpOperand(bci, farJump);
                             break;
                         } else {
                             stackTop--;
-                            int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
-                            if (bc == SEND_FAR) {
-                                oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
-                            }
-                            bci += oparg;
+                            bci = jump(localBC, bci, farJump);
                             continue;
                         }
                     }
@@ -1368,6 +1365,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private static int skipJumpOperand(int bci, boolean farJump) {
+        if (farJump) {
+            return bci + 2;
+        } else {
+            return bci + 1;
+        }
+    }
+
+    private static int jump(byte[] localBC, int bci, boolean farJump) {
+        int oparg = Byte.toUnsignedInt(localBC[bci + 1]);
+        if (farJump) {
+            oparg = (oparg << 8) | Byte.toUnsignedInt(localBC[bci + 2]);
+        }
+        return bci + oparg;
     }
 
     private int bytecodeFormatValue(VirtualFrame virtualFrame, int initialStackTop, int bci, Frame localFrame, Node[] localNodes, int oparg) {
