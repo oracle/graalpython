@@ -807,4 +807,10 @@ public abstract class AbstractParser {
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
         return null;
     }
+
+    @SuppressWarnings("unused")
+    // TODO implement the check
+    final <T> T checkVersion(int version, String msg, T node) {
+        return node;
+    }
 }

@@ -412,8 +412,13 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createFunctionDef(StmtTy funcDef, ExprTy[] decorators) {
+    public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators) {
         return ((StmtTy.FunctionDef) funcDef).copyWithDecorators(decorators);
+    }
+
+    @Override
+    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset) {
+        return new StmtTy.AsyncFunctionDef(name, args, body, null, returns, typeComment, startOffset, endOffset);
     }
 
     @Override
@@ -524,5 +529,10 @@ public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
         return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
+    }
+
+    @Override
+    public ExprTy createAwait(ExprTy value, int startOffset, int endOffset) {
+        return new ExprTy.Await(value, startOffset, endOffset);
     }
 }

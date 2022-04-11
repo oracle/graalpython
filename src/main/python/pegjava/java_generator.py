@@ -844,6 +844,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
         if (node_action.startswith('factory')
             or node_action.startswith('new')
+            or node_action.startswith('checkVersion')
             or "ExprTy." in node_action
             or 'SSTNode' in node_action
             or len(node_action) == 1

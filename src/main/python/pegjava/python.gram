@@ -387,7 +387,7 @@ raise_stmt[stmt_ty]:
     | 'raise' { factory.createRaise(null, null, startToken.startOffset, endToken.endOffset) }
 
 function_def[stmt_ty]:
-    | d=decorators f=function_def_raw { factory.createFunctionDef(f, d) }
+    | d=decorators f=function_def_raw { factory.createFunctionDefWithDecorators(f, d) }
     | function_def_raw
 
 function_def_raw[stmt_ty]:
@@ -397,13 +397,12 @@ function_def_raw[stmt_ty]:
                         b, (ExprTy)a, newTypeComment((Token)tc),
                         startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
-        CHECK_VERSION(
-            stmt_ty,
+        checkVersion(
             5,
             "Async functions are",
-            _PyAST_AsyncFunctionDef(n->v.Name.id,
-                            (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                            b, NULL, a, NEW_TYPE_COMMENT(p, tc), EXTRA)
+            factory.createAsyncFunctionDef(((ExprTy.Name)n).id,
+                            params,
+                            b, a, newTypeComment((Token)tc), startToken.startOffset, endToken.endOffset)
         ) }
 func_type_comment[Token*]:
     | NEWLINE t=TYPE_COMMENT &(NEWLINE INDENT) { t }  # Must be followed by indented block
@@ -644,7 +643,7 @@ power[expr_ty]:
     | a=await_primary '**' b=factor { factory.createBinaryOp(ExprTy.BinOp.Operator.POW, a, b, startToken.startOffset, endToken.endOffset ) }
     | await_primary
 await_primary[expr_ty] (memo):
-    | AWAIT a=primary { CHECK_VERSION(expr_ty, 5, "Await expressions are", _PyAST_Await(a, EXTRA)) }
+    | AWAIT a=primary { checkVersion(5, "Await expressions are", factory.createAwait(a, startToken.startOffset, endToken.endOffset)) }
     | primary
 primary[expr_ty]:
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
