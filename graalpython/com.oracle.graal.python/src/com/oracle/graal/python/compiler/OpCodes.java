@@ -56,6 +56,7 @@ public enum OpCodes {
     STORE_SUBSCR(0, 3, 0),
     DELETE_SUBSCR(0, 2, 0),
     GET_ITER(0, 1, 1),
+    GET_AWAITABLE(0, 1, 1),
     LOAD_BUILD_CLASS(0, 0, 1),
     LOAD_ASSERTION_ERROR(0, 0, 1),
     RETURN_VALUE(0, 1, 0),

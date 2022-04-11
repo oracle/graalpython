@@ -523,6 +523,13 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testCoroutine() {
+        String source = "async def foo(a):\n" +
+                        "    await a\n";
+        doTest(source);
+    }
+
+    @Test
     public void testYieldExpression() {
         String source = "def gen(a):\n" +
                         "    b = yield a\n";

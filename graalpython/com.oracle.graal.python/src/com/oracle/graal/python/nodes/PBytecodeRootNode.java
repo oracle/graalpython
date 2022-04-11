@@ -82,8 +82,8 @@ import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -391,7 +391,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         public void syncLocals(VirtualFrame virtualFrame, Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile) {
             Frame localFrame = frameToSync;
             CodeUnit code = rootNode.co;
-            if (code.isGenerator()) {
+            if (code.isGeneratorOrCoroutine()) {
                 localFrame = PArguments.getGeneratorFrame(frameToSync);
             }
             for (int i = 0; i < code.varnames.length; i++) {
@@ -470,7 +470,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
         newBuilder.addSlot(FrameSlotKind.Int, null, null);
-        if (co.isGenerator()) {
+        if (co.isGeneratorOrCoroutine()) {
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
             // return value of a generator
@@ -558,7 +558,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         calleeContext.enter(virtualFrame);
         try {
             Object[] arguments = virtualFrame.getArguments();
-            if (!co.isGenerator()) {
+            if (!co.isGeneratorOrCoroutine()) {
                 copyArgsAndCells(virtualFrame, arguments);
             }
 
@@ -764,8 +764,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int bci = decodeBCI(target);
 
         Frame localFrame = virtualFrame;
-        boolean isGenerator = co.isGenerator();
-        if (isGenerator) {
+        boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
+        if (isGeneratorOrCoroutine) {
             localFrame = PArguments.getGeneratorFrame(originalArgs);
             /* Check if we're resuming the generator or resuming after OSR */
             if (bci == 0) {
@@ -1025,7 +1025,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         Object value = localFrame.getObject(stackTop);
-                        if (isGenerator) {
+                        if (isGeneratorOrCoroutine) {
                             localFrame.setObject(stackTop--, null);
                             localFrame.setInt(bcioffset, bci + 1);
                             localFrame.setInt(generatorStackTopOffset, stackTop);
@@ -1871,7 +1871,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         kwOnlyNames);
         RootCallTarget callTarget;
         PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
-        if (newCode.isGenerator()) {
+        if (newCode.isGeneratorOrCoroutine()) {
             // TODO what should the frameDescriptor be? does it matter?
             callTarget = new PBytecodeGeneratorFunctionRootNode(PythonLanguage.get(this), bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, newCode.name, signature).getCallTarget();
         } else {

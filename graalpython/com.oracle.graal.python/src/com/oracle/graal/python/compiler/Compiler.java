@@ -624,8 +624,20 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Await node) {
         int savedOffset = setLocation(node);
+        // TODO if !IS_TOP_LEVEL_AWAIT
+        if (!unit.scope.isFunction()) {
+            // TODO syntax error
+            throw new IllegalStateException("'await' outside function");
+        }
+        if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
+            // TODO syntax error
+            throw new IllegalStateException("'await' outside async function");
+        }
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            addOp(GET_AWAITABLE);
+            addYieldFrom();
+            return null;
         } finally {
             setLocation(savedOffset);
         }
@@ -1336,18 +1348,22 @@ public class Compiler implements SSTreeVisitor<Void> {
             // TODO GET_YIELD_FROM_ITER
             addOp(GET_ITER);
             addOp(LOAD_NONE);
-            Block start = new Block();
-            Block exit = new Block();
-            unit.useNextBlock(start);
-            addOp(SEND, exit);
-            addOp(YIELD_VALUE);
-            addOp(RESUME_YIELD);
-            addOp(JUMP_BACKWARD, start);
-            unit.useNextBlock(exit);
+            addYieldFrom();
             return null;
         } finally {
             setLocation(savedOffset);
         }
+    }
+
+    private void addYieldFrom() {
+        Block start = new Block();
+        Block exit = new Block();
+        unit.useNextBlock(start);
+        addOp(SEND, exit);
+        addOp(YIELD_VALUE);
+        addOp(RESUME_YIELD);
+        addOp(JUMP_BACKWARD, start);
+        unit.useNextBlock(exit);
     }
 
     @Override
@@ -1425,8 +1441,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
-        setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        return visitFunctionDef(node, true);
     }
 
     @Override
@@ -1592,6 +1607,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
+        return visitFunctionDef(node, false);
+    }
+
+    private Void visitFunctionDef(StmtTy.FunctionDef node, boolean isAsync) {
         setLocation(node);
         checkForbiddenArgs(node.args);
 
@@ -1603,7 +1622,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         // TODO: visit annotations
 
-        enterScope(node.name, CompilationScope.Function, node, node.args);
+        CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
+        enterScope(node.name, scopeType, node, node.args);
 
         CodeUnit code;
         try {
@@ -1618,7 +1638,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         makeClosure(code);
 
         if (node.decoratorList != null) {
-            for (ExprTy decorator : node.decoratorList) {
+            ExprTy[] decoratorList = node.decoratorList;
+            for (int i = 0; i < decoratorList.length; i++) {
                 addOp(CALL_FUNCTION, 1);
             }
         }

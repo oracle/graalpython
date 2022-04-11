@@ -231,6 +231,7 @@ public final class CompilationUnit {
         flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
         flags |= freevars.size() > 0 ? CodeUnit.HAS_CLOSURE : 0;
         flags |= scope.isGenerator() ? CodeUnit.IS_GENERATOR : 0;
+        flags |= scope.isCoroutine() ? CodeUnit.IS_COROUTINE : 0;
 
         final int rangeElements = 4;
         short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * rangeElements];

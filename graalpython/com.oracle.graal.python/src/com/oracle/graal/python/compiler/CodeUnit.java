@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
@@ -56,7 +58,7 @@ public final class CodeUnit {
     public static final int HAS_VAR_ARGS = 0x10;
     public static final int HAS_VAR_KW_ARGS = 0x20;
     public static final int IS_GENERATOR = 0x40;
-    public static final int IS_ASYNC = 0x80;
+    public static final int IS_COROUTINE = 0x80;
 
     public static final int DISASSEMBLY_NUM_COLUMNS = 7;
 
@@ -172,6 +174,14 @@ public final class CodeUnit {
         return (flags & IS_GENERATOR) != 0;
     }
 
+    public boolean isCoroutine() {
+        return (flags & IS_COROUTINE) != 0;
+    }
+
+    public boolean isGeneratorOrCoroutine() {
+        return (flags & (IS_GENERATOR | IS_COROUTINE)) != 0;
+    }
+
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
@@ -181,8 +191,15 @@ public final class CodeUnit {
 
         sb.append("Disassembly of ").append(name).append(":\n");
 
+        List<String> flagNames = new ArrayList<>();
         if (isGenerator()) {
-            sb.append("Flags: CO_GENERATOR\n");
+            flagNames.add("CO_GENERATOR");
+        }
+        if (isCoroutine()) {
+            flagNames.add("CO_COROUTINE");
+        }
+        if (!flagNames.isEmpty()) {
+            sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");
         }
 
         int bci = 0;
