@@ -42,21 +42,20 @@ package com.oracle.graal.python.compiler;
 
 final class Instruction {
 
-    OpCodes opcode;
-    int arg;
-    Block target;
-    int srcOffset;
+    final OpCodes opcode;
+    final int arg;
+    final byte[] followingArgs;
+    final Block target;
+    final int srcOffset;
 
-    Instruction(OpCodes opcode, int arg, Block target, int srcOffset) {
+    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, int srcOffset) {
         this.opcode = opcode;
         this.arg = arg;
+        this.followingArgs = followingArgs;
         this.target = target;
         this.srcOffset = srcOffset;
         assert arg >= 0;
-        assert opcode.argLength == -1 ||
-                        opcode.argLength == 0 && arg == 0 ||
-                        opcode.argLength == 1 && arg <= 0xff ||
-                        opcode.argLength == 2 && arg <= 0xffff;
+        assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
     }
 
     @Override
@@ -78,5 +77,21 @@ final class Instruction {
             }
         }
         return t;
+    }
+
+    public int extensions() {
+        if (arg <= 0xFF) {
+            return 0;
+        } else if (arg <= 0xFFFF) {
+            return 1;
+        } else if (arg <= 0xFFFFFF) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
+
+    public int extendedLength() {
+        return opcode.length() + extensions() * 2;
     }
 }

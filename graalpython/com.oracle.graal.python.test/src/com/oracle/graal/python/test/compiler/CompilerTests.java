@@ -543,6 +543,18 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testExtendedArgs() {
+        StringBuilder source = new StringBuilder();
+        source.append("if a:\n");
+        for (int i = 0; i < 260; i++) {
+            source.append(String.format("   a.f%d('%d')\n", i, i));
+        }
+        source.append("else:\n");
+        source.append("    print('else')");
+        doTest(source.toString());
+    }
+
+    @Test
     public void testBenchmark() {
         String source = "def docompute(num):\n" +
                         "    for i in range(num):\n" +

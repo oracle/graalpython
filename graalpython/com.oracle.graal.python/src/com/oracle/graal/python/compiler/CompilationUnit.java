@@ -164,8 +164,8 @@ public final class CompilationUnit {
             b = b.next;
         }
         if (!b.isReturn()) {
-            b.instr.add(new Instruction(OpCodes.LOAD_NONE, 0, null, 0));
-            b.instr.add(new Instruction(OpCodes.RETURN_VALUE, 0, null, 0));
+            b.instr.add(new Instruction(OpCodes.LOAD_NONE, 0, null, null, 0));
+            b.instr.add(new Instruction(OpCodes.RETURN_VALUE, 0, null, null, 0));
         }
     }
 
@@ -268,8 +268,7 @@ public final class CompilationUnit {
         finishedExceptionHandlerRanges.add(range);
     }
 
-    private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_BACKWARD_FAR, OpCodes.JUMP_FORWARD, OpCodes.JUMP_FORWARD_FAR,
-                    OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS, OpCodes.END_EXC_HANDLER);
+    private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_FORWARD, OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS, OpCodes.END_EXC_HANDLER);
 
     private void computeStackLevels(Block block, int startLevel) {
         int level = startLevel;
@@ -287,13 +286,13 @@ public final class CompilationUnit {
         for (Instruction i : block.instr) {
             Block target = i.getTarget();
             if (target != null) {
-                int jumpLevel = level + i.opcode.getStackEffect(i.arg, true);
+                int jumpLevel = level + i.opcode.getStackEffect(i.arg, i.followingArgs, true);
                 computeStackLevels(target, jumpLevel);
             }
             if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
                 return;
             }
-            level += i.opcode.getStackEffect(i.arg, false);
+            level += i.opcode.getStackEffect(i.arg, i.followingArgs, false);
             maxStackSize = Math.max(maxStackSize, level);
         }
         if (block.next != null) {
@@ -303,43 +302,39 @@ public final class CompilationUnit {
 
     private void calculateJumpInstructionArguments() {
         HashMap<Block, Integer> blockLocationMap = new HashMap<>();
-        int p = 0;
-        Block b = startBlock;
-        while (b != null) {
-            blockLocationMap.put(b, p);
-            for (Instruction i : b.instr) {
-                p += i.opcode.length();
-            }
-            b = b.next;
-        }
-
-        boolean recurse = false;
-        p = 0;
-        b = startBlock;
-        while (b != null) {
-            for (int i = 0; i < b.instr.size(); i++) {
-                Instruction is = b.instr.get(i);
-                Block tgt = is.getTarget();
-                if (tgt != null) {
-                    int targetPos = blockLocationMap.get(tgt);
-                    int distance = Math.abs(p - targetPos);
-                    OpCodes opcode = is.opcode;
-                    if (distance > 0xff && opcode.argLength == 1) {
-                        // switch to long jump opcode, we'll have to go through again
-                        opcode = OpCodes.values()[opcode.ordinal() + 1];
-                        recurse = true;
-                    } else if (distance > 0xffff) {
-                        throw new IllegalStateException(">16bit jumps not supported");
-                    }
-                    b.instr.set(i, new Instruction(opcode, distance, is.target, is.srcOffset));
+        boolean repeat;
+        do {
+            repeat = false;
+            int bci = 0;
+            Block block = startBlock;
+            while (block != null) {
+                blockLocationMap.put(block, bci);
+                for (Instruction i : block.instr) {
+                    bci += i.extendedLength();
                 }
-                p += is.opcode.length();
+                block = block.next;
             }
-            b = b.next;
-        }
-        if (recurse) {
-            calculateJumpInstructionArguments();
-        }
+
+            bci = 0;
+            block = startBlock;
+            while (block != null) {
+                for (int i = 0; i < block.instr.size(); i++) {
+                    Instruction instr = block.instr.get(i);
+                    Block target = instr.getTarget();
+                    if (target != null) {
+                        int targetPos = blockLocationMap.get(target);
+                        int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
+                        Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.srcOffset);
+                        if (newInstr.extendedLength() != instr.extendedLength()) {
+                            repeat = true;
+                        }
+                        block.instr.set(i, newInstr);
+                    }
+                    bci += instr.extendedLength();
+                }
+                block = block.next;
+            }
+        } while (repeat);
     }
 
     private void insertSrcOffsetTable(int srcOffset, int lastSrcOffset, ByteArrayOutputStream srcOffsets) {
@@ -355,23 +350,24 @@ public final class CompilationUnit {
         srcOffsets.write((byte) srcDelta);
     }
 
-    private void emitBytecode(Instruction i, ByteArrayOutputStream buf) throws IllegalStateException {
-        assert i.opcode.ordinal() < 256;
-        buf.write((byte) i.opcode.ordinal());
-        switch (i.opcode.argLength) {
-            case 0:
-                break;
-            case 1:
-                assert i.arg <= 0xff;
-                buf.write((byte) i.arg);
-                break;
-            case 2:
-                assert i.arg <= 0xffff;
-                buf.write((byte) (i.arg >> 8));
-                buf.write((byte) i.arg);
-                break;
-            default:
-                throw new IllegalStateException("unsupported length");
+    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf) throws IllegalStateException {
+        assert instr.opcode.ordinal() < 256;
+        if (!instr.opcode.hasArg()) {
+            buf.write(instr.opcode.ordinal());
+        } else {
+            int oparg = instr.arg;
+            for (int i = instr.extensions(); i >= 1; i--) {
+                buf.write(OpCodes.EXTENDED_ARG.ordinal());
+                buf.write((oparg >> (i * 8)) & 0xFF);
+            }
+            buf.write(instr.opcode.ordinal());
+            buf.write(oparg & 0xFF);
+            if (instr.opcode.argLength > 1) {
+                assert instr.followingArgs.length == instr.opcode.argLength - 1;
+                for (int i = 0; i < instr.followingArgs.length; i++) {
+                    buf.write(instr.followingArgs[i]);
+                }
+            }
         }
     }
 

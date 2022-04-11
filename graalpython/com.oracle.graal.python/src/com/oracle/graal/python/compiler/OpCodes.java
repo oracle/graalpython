@@ -73,13 +73,15 @@ public enum OpCodes {
     LOAD_FAST(1, 0, 1),
     STORE_FAST(1, 1, 0),
     DELETE_FAST(1, 0, 0),
-    RAISE_VARARGS(1, (oparg, withJump) -> oparg, 0),
+    RAISE_VARARGS(1, (oparg, followingArgs, withJump) -> oparg, 0),
     LOAD_DEREF(1, 0, 1),
     STORE_DEREF(1, 1, 0),
     DELETE_DEREF(1, 0, 0),
     LOAD_CLASSDEREF(1, 0, 1),
-    BUILD_SLICE(1, (oparg, withJump) -> oparg, 1),
-    FORMAT_VALUE(1, (oparg, withJump) -> (oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC ? 2 : 1, 1),
+    BUILD_SLICE(1, (oparg, followingArgs, withJump) -> oparg, 1),
+    FORMAT_VALUE(1, (oparg, followingArgs, withJump) -> (oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC ? 2 : 1, 1),
+
+    EXTENDED_ARG(1, 0, 0),
 
     IMPORT_NAME(1, 2, 1),
     IMPORT_FROM(1, 1, 2),
@@ -96,13 +98,13 @@ public enum OpCodes {
     LOAD_BIGINT(1, 0, 1),
     LOAD_STRING(1, 0, 1),
     LOAD_BYTES(1, 0, 1),
-    LOAD_COMPLEX(2, 0, 1),
+    LOAD_COMPLEX(1, 0, 1),
 
     // calling
     // args[] => result
     CALL_METHOD_VARARGS(1, 1, 1),
-    CALL_METHOD(2, (oparg, withJump) -> (oparg >> 8) + 1, 1),
-    CALL_FUNCTION(1, (oparg, withJump) -> oparg + 1, 1),
+    CALL_METHOD(2, (oparg, followingArgs, withJump) -> followingArgs[0] + 1, 1),
+    CALL_FUNCTION(1, (oparg, followingArgs, withJump) -> oparg + 1, 1),
     // func, args[], keywords[] => result
     CALL_FUNCTION_KW(0, 3, 1),
     // func, args[] => result
@@ -110,49 +112,39 @@ public enum OpCodes {
 
     // destructuring bytecodes
     UNPACK_EX(1, 1, OpCodes::unpackExStackEffect),
-    UNPACK_EX_LARGE(2, 1, OpCodes::unpackExStackEffect),
-    UNPACK_SEQUENCE(1, 1, (oparg, withJump) -> oparg),
-    UNPACK_SEQUENCE_LARGE(2, 1, (oparg, withJump) -> oparg),
+    UNPACK_SEQUENCE(1, 1, (oparg, followingArgs, withJump) -> oparg),
 
     // jumps
-    FOR_ITER(1, 1, (oparg, withJump) -> withJump ? 0 : 2),
-    FOR_ITER_FAR(2, 1, (oparg, withJump) -> withJump ? 0 : 2),
+    FOR_ITER(1, 1, (oparg, followingArgs, withJump) -> withJump ? 0 : 2),
     JUMP_FORWARD(1, 0, 0),
-    JUMP_FORWARD_FAR(2, 0, 0),
     JUMP_BACKWARD(1, 0, 0),
-    JUMP_BACKWARD_FAR(2, 0, 0),
-    JUMP_IF_FALSE_OR_POP(1, (oparg, withJump) -> withJump ? 0 : 1, 0),
-    JUMP_IF_FALSE_OR_POP_FAR(2, (oparg, withJump) -> withJump ? 0 : 1, 0),
-    JUMP_IF_TRUE_OR_POP(1, (oparg, withJump) -> withJump ? 0 : 1, 0),
-    JUMP_IF_TRUE_OR_POP_FAR(2, (oparg, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_FALSE_OR_POP(1, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP(1, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
     POP_AND_JUMP_IF_TRUE(1, 1, 0),
-    POP_AND_JUMP_IF_TRUE_FAR(2, 1, 0),
     POP_AND_JUMP_IF_FALSE(1, 1, 0),
-    POP_AND_JUMP_IF_FALSE_FAR(2, 1, 0),
 
     // making callables
     LOAD_CLOSURE(1, 0, 1),
-    CLOSURE_FROM_STACK(1, (oparg, withJump) -> oparg, 1),
-    MAKE_FUNCTION(1, (oparg, withJump) -> Integer.bitCount(oparg) + 1, 1),
+    CLOSURE_FROM_STACK(1, (oparg, followingArgs, withJump) -> oparg, 1),
+    MAKE_FUNCTION(1, (oparg, followingArgs, withJump) -> Integer.bitCount(oparg) + 1, 1),
 
     // collection literals
     // add to coll underneath args the arg elements above
-    COLLECTION_ADD_STACK(1, (oparg, withJump) -> CollectionBits.elementCount(oparg) + 1, 1),
+    COLLECTION_ADD_STACK(1, (oparg, followingArgs, withJump) -> CollectionBits.elementCount(oparg) + 1, 1),
     // build a collection from arg elements on stack
-    COLLECTION_FROM_STACK(1, (oparg, withJump) -> CollectionBits.elementCount(oparg), 1),
+    COLLECTION_FROM_STACK(1, (oparg, followingArgs, withJump) -> CollectionBits.elementCount(oparg), 1),
     // add the collection on top of stack to the collection underneath
     COLLECTION_ADD_COLLECTION(1, 2, 1),
     // replace the collection on top of stack with a collection of another type
     COLLECTION_FROM_COLLECTION(1, 1, 1),
     // adds one element to a collection that is `oparg` deep. Used to implement comprehensions
-    ADD_TO_COLLECTION(1, (oparg, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0),
+    ADD_TO_COLLECTION(1, (oparg, followingArgs, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0),
     // like COLLECTION_ADD_COLLECTION for Dict, but with checks for duplicate keys
     KWARGS_DICT_MERGE(0, 2, 1),
     MAKE_KEYWORD(1, 1, 1),
 
     // exceptions
     MATCH_EXC_OR_JUMP(1, 1, 0),
-    MATCH_EXC_OR_JUMP_FAR(2, 1, 0),
     PUSH_EXC_INFO(0, 0, 1),
     POP_EXCEPT(0, 1, 0),
     END_EXC_HANDLER(0, 2, 0),
@@ -161,8 +153,7 @@ public enum OpCodes {
     // generators
     YIELD_VALUE(0, 1, 0),
     RESUME_YIELD(0, 0, 1),
-    SEND(1, 2, (oparg, withJump) -> withJump ? 1 : 2),
-    SEND_FAR(2, 2, 2),
+    SEND(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
 
     // with statements
     SETUP_WITH(0, 1, 3),
@@ -202,15 +193,15 @@ public enum OpCodes {
     public final int argLength;
 
     OpCodes(int argLength, int consumesStackItems, int producesStackItems) {
-        this(argLength, (oparg, withJump) -> consumesStackItems, (oparg, withJump) -> producesStackItems);
+        this(argLength, (oparg, followingArgs, withJump) -> consumesStackItems, (oparg, followingArgs, withJump) -> producesStackItems);
     }
 
     OpCodes(int argLength, StackEffect consumesStackItems, int producesStackItems) {
-        this(argLength, consumesStackItems, (oparg, withJump) -> producesStackItems);
+        this(argLength, consumesStackItems, (oparg, followingArgs, withJump) -> producesStackItems);
     }
 
     OpCodes(int argLength, int consumesStackItems, StackEffect producesStackItems) {
-        this(argLength, (oparg, withJump) -> consumesStackItems, producesStackItems);
+        this(argLength, (oparg, followingArgs, withJump) -> consumesStackItems, producesStackItems);
     }
 
     OpCodes(int argLength, StackEffect consumesStackItems, StackEffect producesStackItems) {
@@ -221,7 +212,7 @@ public enum OpCodes {
 
     @FunctionalInterface
     private interface StackEffect {
-        int stackEffect(int oparg, boolean withJump);
+        int stackEffect(int oparg, byte[] followingArgs, boolean withJump);
     }
 
     public boolean hasArg() {
@@ -232,7 +223,7 @@ public enum OpCodes {
         return argLength + 1;
     }
 
-    private static int unpackExStackEffect(int oparg, @SuppressWarnings("unused") boolean withJump) {
+    private static int unpackExStackEffect(int oparg, @SuppressWarnings("unused") byte[] followingArgs, @SuppressWarnings("unused") boolean withJump) {
         if (oparg <= 0xff) {
             return (oparg & 0xf) + (oparg >> 4) + 1;
         } else if (oparg <= 0xffff) {
@@ -242,15 +233,15 @@ public enum OpCodes {
         }
     }
 
-    public int getNumberOfConsumedStackItems(int oparg, boolean withJump) {
-        return consumesStackItems.stackEffect(oparg, withJump);
+    public int getNumberOfConsumedStackItems(int oparg, byte[] followingArgs, boolean withJump) {
+        return consumesStackItems.stackEffect(oparg, followingArgs, withJump);
     }
 
-    public int getNumberOfProducedStackItems(int oparg, boolean withJump) {
-        return producesStackItems.stackEffect(oparg, withJump);
+    public int getNumberOfProducedStackItems(int oparg, byte[] followingArgs, boolean withJump) {
+        return producesStackItems.stackEffect(oparg, followingArgs, withJump);
     }
 
-    public int getStackEffect(int oparg, boolean withJump) {
-        return getNumberOfProducedStackItems(oparg, withJump) - getNumberOfConsumedStackItems(oparg, withJump);
+    public int getStackEffect(int oparg, byte[] followingArgs, boolean withJump) {
+        return getNumberOfProducedStackItems(oparg, followingArgs, withJump) - getNumberOfConsumedStackItems(oparg, followingArgs, withJump);
     }
 }

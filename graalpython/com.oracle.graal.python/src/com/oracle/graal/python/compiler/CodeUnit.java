@@ -49,6 +49,7 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class CodeUnit {
     public static final int HAS_DEFAULTS = 0x1;
@@ -203,6 +204,7 @@ public final class CodeUnit {
         }
 
         int bci = 0;
+        int oparg = 0;
         while (bci < code.length) {
             int bcBCI = bci;
             int bc = Byte.toUnsignedInt(code[bci++]);
@@ -217,23 +219,30 @@ public final class CodeUnit {
             }
             line[2] = String.valueOf(bcBCI);
             line[3] = opcode.toString();
-            int arg = 0;
+            byte[] followingArgs = PythonUtils.EMPTY_BYTE_ARRAY;
             if (!opcode.hasArg()) {
                 line[4] = "";
             } else {
-                for (int i = 0; i < opcode.argLength; i++) {
-                    arg = (arg << 8) | Byte.toUnsignedInt(code[bci++]);
+                oparg |= Byte.toUnsignedInt(code[bci++]);
+                if (opcode.argLength > 1) {
+                    followingArgs = new byte[opcode.argLength - 1];
+                    for (int i = 0; i < opcode.argLength - 1; i++) {
+                        followingArgs[i] = code[bci++];
+                    }
                 }
-                line[4] = String.format("% 2d", arg);
+                line[4] = String.format("% 2d", oparg);
             }
 
             switch (opcode) {
+                case EXTENDED_ARG:
+                    line[4] = "";
+                    break;
                 case LOAD_CONST:
                 case LOAD_BIGINT:
                 case LOAD_STRING:
                 case LOAD_BYTES:
                 case MAKE_KEYWORD: {
-                    Object constant = constants[arg];
+                    Object constant = constants[oparg];
                     if (constant instanceof CodeUnit) {
                         line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
                     } else {
@@ -251,18 +260,17 @@ public final class CodeUnit {
                     break;
                 }
                 case LOAD_LONG:
-                    line[5] = Objects.toString(primitiveConstants[arg]);
+                    line[5] = Objects.toString(primitiveConstants[oparg]);
                     break;
                 case LOAD_DOUBLE:
-                    line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[arg]));
+                    line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[oparg]));
                     break;
                 case LOAD_COMPLEX: {
-                    double real = Double.longBitsToDouble(primitiveConstants[arg >>> 8]);
-                    double imag = Double.longBitsToDouble(primitiveConstants[arg & 0xff]);
-                    if (real == 0.0) {
-                        line[5] = String.format("%gj", imag);
+                    double[] num = (double[]) constants[oparg];
+                    if (num[0] == 0.0) {
+                        line[5] = String.format("%gj", num[1]);
                     } else {
-                        line[5] = String.format("%g%+gj", real, imag);
+                        line[5] = String.format("%g%+gj", num[0], num[1]);
                     }
                     break;
                 }
@@ -270,16 +278,16 @@ public final class CodeUnit {
                 case LOAD_DEREF:
                 case STORE_DEREF:
                 case DELETE_DEREF:
-                    if (arg >= cellvars.length) {
-                        line[5] = freevars[arg - cellvars.length];
+                    if (oparg >= cellvars.length) {
+                        line[5] = freevars[oparg - cellvars.length];
                     } else {
-                        line[5] = cellvars[arg];
+                        line[5] = cellvars[oparg];
                     }
                     break;
                 case LOAD_FAST:
                 case STORE_FAST:
                 case DELETE_FAST:
-                    line[5] = varnames[arg];
+                    line[5] = varnames[oparg];
                     break;
                 case LOAD_NAME:
                 case STORE_NAME:
@@ -293,10 +301,10 @@ public final class CodeUnit {
                 case STORE_ATTR:
                 case DELETE_ATTR:
                 case CALL_METHOD_VARARGS:
-                    line[5] = names[arg];
+                    line[5] = names[oparg];
                     break;
                 case FORMAT_VALUE: {
-                    int type = arg & FormatOptions.FVC_MASK;
+                    int type = oparg & FormatOptions.FVC_MASK;
                     switch (type) {
                         case FormatOptions.FVC_STR:
                             line[5] = "STR";
@@ -311,29 +319,29 @@ public final class CodeUnit {
                             line[5] = "NONE";
                             break;
                     }
-                    if ((arg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
+                    if ((oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
                         line[5] += " + SPEC";
                     }
                     break;
                 }
                 case CALL_METHOD: {
-                    line[4] = String.format("% 2d", arg >>> 8);
-                    line[5] = names[arg & 0xFF];
+                    line[4] = String.format("% 2d", followingArgs[0]);
+                    line[5] = names[oparg];
                     break;
                 }
                 case UNARY_OP:
-                    line[5] = UnaryOps.values()[arg].toString();
+                    line[5] = UnaryOps.values()[oparg].toString();
                     break;
                 case BINARY_OP:
-                    line[5] = BinaryOps.values()[arg].toString();
+                    line[5] = BinaryOps.values()[oparg].toString();
                     break;
                 case COLLECTION_FROM_STACK:
                 case COLLECTION_ADD_STACK:
                 case COLLECTION_FROM_COLLECTION:
                 case COLLECTION_ADD_COLLECTION:
                 case ADD_TO_COLLECTION:
-                    line[4] = String.format("% 2d", CollectionBits.elementCount(arg));
-                    switch (CollectionBits.elementType(arg)) {
+                    line[4] = String.format("% 2d", CollectionBits.elementCount(oparg));
+                    switch (CollectionBits.elementType(oparg)) {
                         case CollectionBits.LIST:
                             line[5] = "list";
                             break;
@@ -355,28 +363,24 @@ public final class CodeUnit {
                     }
                     break;
                 case JUMP_BACKWARD:
-                case JUMP_BACKWARD_FAR:
-                    arg = -arg;
+                    oparg = -oparg;
                     // fall through
                 case FOR_ITER:
-                case FOR_ITER_FAR:
                 case JUMP_FORWARD:
-                case JUMP_FORWARD_FAR:
                 case POP_AND_JUMP_IF_FALSE:
-                case POP_AND_JUMP_IF_FALSE_FAR:
                 case POP_AND_JUMP_IF_TRUE:
-                case POP_AND_JUMP_IF_TRUE_FAR:
                 case JUMP_IF_FALSE_OR_POP:
-                case JUMP_IF_FALSE_OR_POP_FAR:
                 case JUMP_IF_TRUE_OR_POP:
-                case JUMP_IF_TRUE_OR_POP_FAR:
                 case MATCH_EXC_OR_JUMP:
-                case MATCH_EXC_OR_JUMP_FAR:
                 case SEND:
-                case SEND_FAR:
-                    lines.computeIfAbsent(bcBCI + arg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
-                    line[5] = String.format("to %d", bcBCI + arg);
+                    lines.computeIfAbsent(bcBCI + oparg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
+                    line[5] = String.format("to %d", bcBCI + oparg);
                     break;
+            }
+            if (opcode == OpCodes.EXTENDED_ARG) {
+                oparg <<= 8;
+            } else {
+                oparg = 0;
             }
         }
 

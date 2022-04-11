@@ -181,23 +181,28 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private Void addOp(OpCodes code) {
-        addOp(code, 0, unit.startOffset);
+        addOp(code, 0, null, unit.startOffset);
         return null;
     }
 
     private void addOp(OpCodes code, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, target, unit.startOffset));
+        b.instr.add(new Instruction(code, 0, null, target, unit.startOffset));
     }
 
     private Void addOp(OpCodes code, int arg) {
-        addOp(code, arg, unit.startOffset);
+        addOp(code, arg, null, unit.startOffset);
         return null;
     }
 
-    private void addOp(OpCodes code, int arg, int srcOffset) {
+    private Void addOp(OpCodes code, int arg, byte[] followingArgs) {
+        addOp(code, arg, followingArgs, unit.startOffset);
+        return null;
+    }
+
+    private void addOp(OpCodes code, int arg, byte[] followingArgs, int srcOffset) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, arg, null, srcOffset));
+        b.instr.add(new Instruction(code, arg, followingArgs, null, srcOffset));
     }
 
     private void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
@@ -301,7 +306,6 @@ public class Compiler implements SSTreeVisitor<Void> {
         Integer v = dict.get(o);
         if (v == null) {
             v = dict.size();
-            assert v < 256;
             dict.put(o, v);
         }
         return v;
@@ -747,27 +751,29 @@ public class Compiler implements SSTreeVisitor<Void> {
             ExprTy func = node.func;
             OpCodes op = CALL_FUNCTION_VARARGS;
             int oparg = 0;
-            boolean shortCall = false;
+            byte[] followingArgs = null;
+            boolean shortCall;
+            int argcount = node.args.length;
             if (isAttributeLoad(func) && node.keywords.length == 0) {
                 ((ExprTy.Attribute) func).value.accept(this);
                 op = CALL_METHOD_VARARGS;
                 oparg = addObject(unit.names, ((ExprTy.Attribute) func).attr);
-                shortCall = node.args.length <= 3;
+                shortCall = argcount <= 3;
             } else {
                 func.accept(this);
-                shortCall = node.args.length <= 4;
+                shortCall = argcount <= 4;
             }
             if (hasOnlyPlainArgs(node) && shortCall) {
                 if (op == CALL_METHOD_VARARGS) {
-                    oparg = (node.args.length << 8) | oparg;
+                    followingArgs = new byte[]{(byte) argcount};
                     op = CALL_METHOD;
                 } else {
-                    oparg = node.args.length;
+                    oparg = argcount;
                     op = CALL_FUNCTION;
                 }
                 // fast calls without extra arguments array
                 visitSequence(node.args);
-                return addOp(op, oparg);
+                return addOp(op, oparg, followingArgs);
             } else {
                 collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
                 if (node.keywords.length > 0) {
@@ -871,10 +877,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case DOUBLE:
                     return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
                 case COMPLEX:
-                    double[] num = (double[]) node.value;
-                    int realIdx = addObject(unit.primitiveConstants, Double.doubleToRawLongBits(num[0]));
-                    int imagIdx = addObject(unit.primitiveConstants, Double.doubleToRawLongBits(num[1]));
-                    return addOp(LOAD_COMPLEX, realIdx << 8 | imagIdx);
+                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value));
                 case BIGINTEGER:
                     return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
                 case RAW:
@@ -976,8 +979,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             // TODO add optimized op for small chains
             addOp(LOAD_STRING, addObject(unit.constants, ""));
             collectIntoArray(node.values, CollectionBits.LIST);
-            int oparg = 1 << 8 | addObject(unit.names, "join");
-            addOp(CALL_METHOD, oparg);
+            addOp(CALL_METHOD, addObject(unit.names, "join"), new byte[]{1});
             return null;
         } finally {
             setLocation(savedOffset);
@@ -1015,28 +1017,16 @@ public class Compiler implements SSTreeVisitor<Void> {
                     // TODO: raise "multiple starred expressions in assignment"
                 }
                 unpack = true;
-                if (elements.length < 0xf) {
-                    // single byte arg is enough
-                    addOp(UNPACK_EX, (i << 4) | (elements.length - i - 1));
-                } else if (elements.length <= 0xff) {
-                    // short arg is enough
-                    addOp(UNPACK_EX_LARGE, i << 8 | (elements.length - i - 1));
-                } else {
-                    // don't support this, it's silly
-                    // TODO: raise too many expressions in star-unpacking assignment
+                int n = elements.length;
+                if ((i >= (1 << 8)) || (n - i - 1 >= (Integer.MAX_VALUE >> 8))) {
+                    // TODO syntax error
+                    throw new IllegalStateException("too many expressions in star-unpacking assignment");
                 }
+                addOp(UNPACK_EX, (i + ((n - i - 1) << 8)));
             }
         }
         if (!unpack) {
-            if (elements.length <= 0xff) {
-                addOp(UNPACK_SEQUENCE, elements.length);
-            } else if (elements.length <= 0xffff) {
-                addOp(UNPACK_SEQUENCE_LARGE, elements.length);
-            } else {
-                // don't support this, it's silly
-                // TODO: raise too many expressions in star-unpacking assignment
-                return null;
-            }
+            addOp(UNPACK_SEQUENCE, elements.length);
         }
         for (ExprTy e : elements) {
             if (e instanceof ExprTy.Starred) {
