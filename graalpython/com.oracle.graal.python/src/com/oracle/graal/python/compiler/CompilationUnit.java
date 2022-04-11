@@ -99,12 +99,14 @@ public final class CompilationUnit {
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startOffset = startOffset;
 
+        if (scopeType == Class) {
+            privateName = name;
+        } else if (parent != null) {
+            privateName = parent.privateName;
+        } else {
+            privateName = null;
+        }
         if (scopeDepth > 1 && parent != null) {
-            if (scopeType == Class) {
-                privateName = name;
-            } else {
-                privateName = parent.privateName;
-            }
             if (!(EnumSet.of(Function, AsyncFunction, Class).contains(scopeType) &&
                             parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
                 String base;
@@ -115,8 +117,6 @@ public final class CompilationUnit {
                 }
                 name = base + "." + name;
             }
-        } else {
-            privateName = null;
         }
         qualName = name;
 
