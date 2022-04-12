@@ -13,6 +13,4 @@ Disassembly of <module>:
 000024        23 LOAD_STRING                       4    ('after')
 000000        25 COLLECTION_FROM_STACK             5    (list)
 000000        27 CALL_METHOD                       1    (join)
-000000        30 POP_TOP
-000000        31 LOAD_NONE
-000000        32 RETURN_VALUE
+000000        30 RETURN_VALUE

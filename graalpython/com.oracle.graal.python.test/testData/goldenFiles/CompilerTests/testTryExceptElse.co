@@ -38,6 +38,4 @@ Disassembly of <module>:
 000143   >>   61 LOAD_NAME                         0    (print)
 000149        63 LOAD_STRING                       5    ('after')
 000143        65 CALL_FUNCTION                     1
-000143        67 POP_TOP
-000143        68 LOAD_NONE
-000143        69 RETURN_VALUE
+000143        67 RETURN_VALUE

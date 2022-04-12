@@ -1,9 +1,7 @@
 Disassembly of <module>:
 000000         0 LOAD_CONST                        0    (<lambda> from <module>)
 000000         2 MAKE_FUNCTION                     0
-000000         4 POP_TOP
-000000         5 LOAD_NONE
-000000         6 RETURN_VALUE
+000000         4 RETURN_VALUE
 
 Disassembly of <lambda>:
 000017         0 LOAD_FAST                         1    (args)

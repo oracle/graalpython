@@ -82,8 +82,18 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;
-        if (!unit.currentBlock.isReturn()) {
-            if (!(mod instanceof ModTy.Expression)) {
+        Block lastBlock = unit.currentBlock;
+        if (!lastBlock.isReturn()) {
+            boolean addNone = !(mod instanceof ModTy.Expression);
+            if (lastBlock.instr.size() > 0 && lastBlock.instr.get(lastBlock.instr.size() - 1).opcode == POP_TOP) {
+                /*
+                 * To support interop eval we need to return the value of the last statement even if
+                 * we're in file mode.
+                 */
+                lastBlock.instr.remove(lastBlock.instr.size() - 1);
+                addNone = false;
+            }
+            if (addNone) {
                 // add a none return at the end
                 addOp(LOAD_NONE);
             }

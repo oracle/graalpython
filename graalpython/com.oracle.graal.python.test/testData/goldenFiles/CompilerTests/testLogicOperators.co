@@ -5,6 +5,4 @@ Disassembly of <module>:
 000000   >>    6 JUMP_IF_TRUE_OR_POP               6    (to 12)
 000015         8 LOAD_NAME                         2    (c)
 000011        10 UNARY_OP                          0    (NOT)
-000000   >>   12 POP_TOP
-000000        13 LOAD_NONE
-000000        14 RETURN_VALUE
+000000   >>   12 RETURN_VALUE

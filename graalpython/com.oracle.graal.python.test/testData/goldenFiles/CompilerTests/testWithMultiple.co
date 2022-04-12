@@ -24,6 +24,4 @@ Disassembly of <module>:
 000080        36 LOAD_NAME                         0    (print)
 000086        38 LOAD_STRING                       4    ('after')
 000080        40 CALL_FUNCTION                     1
-000080        42 POP_TOP
-000080        43 LOAD_NONE
-000080        44 RETURN_VALUE
+000080        42 RETURN_VALUE
