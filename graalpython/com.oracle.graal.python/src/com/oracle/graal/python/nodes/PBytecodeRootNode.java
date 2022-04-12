@@ -347,6 +347,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final Signature signature;
     private final String name;
     public final String filename;
+    private boolean pythonInternal;
 
     private final int celloffset;
     private final int freeoffset;
@@ -537,7 +538,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public boolean isPythonInternal() {
-        return false;
+        return pythonInternal;
+    }
+
+    public void setPythonInternal(boolean pythonInternal) {
+        this.pythonInternal = pythonInternal;
     }
 
     @ExplodeLoop

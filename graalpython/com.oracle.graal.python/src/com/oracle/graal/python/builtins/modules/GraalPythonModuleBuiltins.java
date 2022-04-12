@@ -450,8 +450,12 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
-            FunctionRootNode rootNode = (FunctionRootNode) CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
-            rootNode.setPythonInternal(true);
+            RootNode rootNode = CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
+            if (rootNode instanceof FunctionRootNode) {
+                ((FunctionRootNode) rootNode).setPythonInternal(true);
+            } else if (rootNode instanceof PBytecodeRootNode) {
+                ((PBytecodeRootNode) rootNode).setPythonInternal(true);
+            }
             return func;
         }
     }
@@ -462,8 +466,12 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doIt(PFunction func,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
-            FunctionRootNode functionRootNode = (FunctionRootNode) getRootNode.execute(func.getCode());
-            functionRootNode.setPythonInternal(true);
+            RootNode rootNode = getRootNode.execute(func.getCode());
+            if (rootNode instanceof FunctionRootNode) {
+                ((FunctionRootNode) rootNode).setPythonInternal(true);
+            } else if (rootNode instanceof PBytecodeRootNode) {
+                ((PBytecodeRootNode) rootNode).setPythonInternal(true);
+            }
             return func;
         }
     }
