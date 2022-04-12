@@ -1841,10 +1841,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Return node) {
         setLocation(node);
-        if (node.value != null) {
+        if (node.value == null) {
+            unwindBlockStack(UnwindType.RETURN_CONST);
+            addOp(LOAD_NONE);
+        } else if (node.value instanceof ExprTy.Constant) {
+            unwindBlockStack(UnwindType.RETURN_CONST);
             node.value.accept(this);
         } else {
-            addOp(LOAD_NONE);
+            node.value.accept(this);
+            unwindBlockStack(UnwindType.RETURN_VALUE);
         }
         return addOp(RETURN_VALUE);
     }
@@ -2076,26 +2081,68 @@ public class Compiler implements SSTreeVisitor<Void> {
         throw new UnsupportedOperationException("should not reach here");
     }
 
-    private BlockInfo.Loop unwindBlockStackUntilLoop() {
+    private enum UnwindType {
+        BREAK,
+        CONTINUE,
+        RETURN_VALUE,
+        RETURN_CONST,
+    }
+
+    private BlockInfo.Loop unwindBlockStack(UnwindType type) {
         final BlockInfo savedInfo = unit.blockInfo;
         try {
             BlockInfo info = unit.blockInfo;
             while (info != null) {
                 unit.blockInfo = info.outer;
-                unit.useNextBlock(new Block());
-                if (info instanceof BlockInfo.Loop) {
-                    return (BlockInfo.Loop) info;
+                if (info instanceof BlockInfo.For) {
+                    if (type == UnwindType.CONTINUE) {
+                        return (BlockInfo.Loop) info;
+                    }
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_TWO);
+                    }
+                    addOp(POP_TOP);
+                    if (type == UnwindType.BREAK) {
+                        return (BlockInfo.Loop) info;
+                    }
+                } else if (info instanceof BlockInfo.While) {
+                    if (type == UnwindType.BREAK || type == UnwindType.CONTINUE) {
+                        return (BlockInfo.Loop) info;
+                    }
                 } else if (info instanceof BlockInfo.With) {
+                    unit.useNextBlock(new Block());
                     BlockInfo.With with = (BlockInfo.With) info;
                     setLocation(with.node);
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_THREE);
+                    }
                     addOp(LOAD_NONE);
                     addOp(EXIT_WITH);
                 } else if (info instanceof BlockInfo.TryFinally) {
+                    unit.useNextBlock(new Block());
+                    if (type == UnwindType.RETURN_VALUE) {
+                        /*
+                         * If we're returning, the finally block may "cancel" the return using
+                         * break/continue. In that case, we need to pop the return value.
+                         */
+                        unit.pushBlock(new BlockInfo.PopValue());
+                    }
                     visitSequence(((BlockInfo.TryFinally) info).body);
                 } else if (info instanceof BlockInfo.ExceptHandler) {
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_TWO);
+                    }
                     addOp(POP_EXCEPT);
                 } else if (info instanceof BlockInfo.FinallyHandler) {
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_THREE);
+                    }
                     addOp(POP_EXCEPT);
+                    addOp(POP_TOP);
+                } else if (info instanceof BlockInfo.PopValue) {
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_TWO);
+                    }
                     addOp(POP_TOP);
                 }
                 info = info.outer;
@@ -2110,14 +2157,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.Break node) {
         setLocation(node);
         setLocation(node);
-        BlockInfo.Loop info = unwindBlockStackUntilLoop();
+        BlockInfo.Loop info = unwindBlockStack(UnwindType.BREAK);
         if (info == null) {
             // TODO syntax error
             throw new IllegalStateException("'break' outside loop");
-        }
-        if (info instanceof BlockInfo.For) {
-            // pop the iterator
-            addOp(POP_TOP);
         }
         addOp(JUMP_FORWARD, info.after);
         return null;
@@ -2126,7 +2169,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Continue node) {
         setLocation(node);
-        BlockInfo.Loop info = unwindBlockStackUntilLoop();
+        BlockInfo.Loop info = unwindBlockStack(UnwindType.CONTINUE);
         if (info == null) {
             // TODO syntax error
             throw new IllegalStateException("'continue' not properly in loop");

@@ -74,6 +74,9 @@ class BlockInfo {
         }
     }
 
+    static class PopValue extends BlockInfo {
+    }
+
     static class AbstractExceptionHandler extends BlockInfo {
         final Block tryBlock;
         final Block exceptionHandler;
