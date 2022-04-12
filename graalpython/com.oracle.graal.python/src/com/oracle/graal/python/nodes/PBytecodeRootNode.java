@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
@@ -100,6 +99,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
+import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.SendNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
@@ -126,7 +126,6 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
@@ -135,7 +134,6 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -178,14 +176,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final SetItemNode UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.getUncached();
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
-    private static final NodeSupplier<ImportName> NODE_IMPORT_NAME = ImportName::create;
-    private static final ImportName UNCACHED_IMPORT_NAME = ImportName.getUncached();
+    private static final NodeSupplier<ImportNode> NODE_IMPORT = ImportNode::new;
     private static final NodeSupplier<PyObjectGetAttr> NODE_OBJECT_GET_ATTR = PyObjectGetAttr::create;
     private static final PyObjectGetAttr UNCACHED_OBJECT_GET_ATTR = PyObjectGetAttr.getUncached();
     private static final NodeSupplier<PRaiseNode> NODE_RAISE = PRaiseNode::create;
     private static final PRaiseNode UNCACHED_RAISE = PRaiseNode.getUncached();
-    private static final NodeSupplier<IsBuiltinClassProfile> NODE_IS_BUILTIN_CLASS_PROFILE = IsBuiltinClassProfile::create;
-    private static final IsBuiltinClassProfile UNCACHED_IS_BUILTIN_CLASS_PROFILE = IsBuiltinClassProfile.getUncached();
     private static final NodeSupplier<CallNode> NODE_CALL = CallNode::create;
     private static final CallNode UNCACHED_CALL = CallNode.getUncached();
     private static final NodeSupplier<CallQuaternaryMethodNode> NODE_CALL_QUATERNARY_METHOD = CallQuaternaryMethodNode::create;
@@ -751,9 +746,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     public Object executeOSR(VirtualFrame virtualFrame, int target, Object originalArgsObject) {
         Object[] originalArgs = (Object[]) originalArgsObject;
-        PythonContext context = PythonContext.get(this);
-        PythonModule builtins = context.getBuiltins();
-
         boolean inInterpreter = CompilerDirectives.inInterpreter();
 
         Object globals = PArguments.getGlobals(originalArgs);
@@ -1090,7 +1082,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case IMPORT_NAME: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeImportName(virtualFrame, localFrame, context, builtins, globals, stackTop, beginBci, oparg, localNames, localNodes);
+                        stackTop = bytecodeImportName(virtualFrame, localFrame, globals, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
                     case IMPORT_FROM: {
@@ -1730,16 +1722,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int bytecodeImportName(VirtualFrame virtualFrame, Frame localFrame, PythonContext context, PythonModule builtins, Object globals, int initialStackTop, int bci, int oparg,
-                    String[] localNames, Node[] localNodes) {
+    private int bytecodeImportName(VirtualFrame virtualFrame, Frame localFrame, Object globals, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
         CastToJavaIntExactNode castNode = insertChildNode(localNodes, bci, UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT);
         String modname = localNames[oparg];
         int stackTop = initialStackTop;
         String[] fromlist = (String[]) localFrame.getObject(stackTop);
         localFrame.setObject(stackTop--, null);
         int level = castNode.execute(localFrame.getObject(stackTop));
-        ImportName importNode = insertChildNode(localNodes, bci + 1, UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME);
-        Object result = importNode.execute(virtualFrame, context, builtins, modname, globals, fromlist, level);
+        ImportNode importNode = insertChildNode(localNodes, bci + 1, NODE_IMPORT);
+        Object result = importNode.execute(virtualFrame, modname, globals, fromlist, level);
         localFrame.setObject(stackTop, result);
         return stackTop;
     }
