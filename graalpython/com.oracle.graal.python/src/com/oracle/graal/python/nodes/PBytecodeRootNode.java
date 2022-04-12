@@ -579,16 +579,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
         copyArgs(arguments, localFrame);
-        int varargsIdx = signature.getVarargsIdx();
-        if (varargsIdx >= 0) {
-            localFrame.setObject(varargsIdx, factory.createList(PArguments.getVariableArguments(arguments)));
+        int varIdx = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
+        if (co.takesVarArgs()) {
+            localFrame.setObject(varIdx++, factory.createList(PArguments.getVariableArguments(arguments)));
         }
-        if (signature.takesVarKeywordArgs()) {
-            int idx = signature.getParameterIds().length + signature.getKeywordNames().length;
-            if (varargsIdx >= 0) {
-                idx += 1;
-            }
-            localFrame.setObject(idx, factory.createDict(PArguments.getKeywordArguments(arguments)));
+        if (co.takesVarKeywordArgs()) {
+            localFrame.setObject(varIdx, factory.createDict(PArguments.getKeywordArguments(arguments)));
         }
         initCellVars(localFrame);
         initFreeVars(localFrame, arguments);

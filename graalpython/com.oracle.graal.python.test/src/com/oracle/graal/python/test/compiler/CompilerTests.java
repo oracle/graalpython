@@ -167,6 +167,13 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testArgsCombination() {
+        String source = "def foo(a, /, b, *c, d, **e):\n" +
+                        "  print(a, b, c, d, e)\n";
+        doTest(source);
+    }
+
+    @Test
     public void testFor() {
         doTest("for i in [1,2]:\n pass");
     }
