@@ -38,13 +38,13 @@
 # SOFTWARE.
 
 @__graalpython__.builtin
-def hasattr(obj, key):
+def hasattr(module, obj, key):
     default = object()
     return getattr(obj, key, default) is not default
 
 
 @__graalpython__.builtin
-def any(iterable):
+def any(module, iterable):
     for i in iterable:
         if i:
             return True
@@ -52,7 +52,7 @@ def any(iterable):
 
 
 @__graalpython__.builtin
-def all(iterable):
+def all(module, iterable):
     for i in iterable:
         if not i:
             return False
@@ -60,7 +60,7 @@ def all(iterable):
 
 
 @__graalpython__.builtin
-def filter(func, iterable):
+def filter(module, func, iterable):
     result = []
     predicate = func if func is not None else lambda a: a
     for i in iterable:
@@ -112,7 +112,7 @@ from sys import _getframe as __getframe__
 
 
 @__graalpython__.builtin
-def vars(*obj):
+def vars(module, *obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
@@ -127,7 +127,7 @@ def vars(*obj):
 
 
 @__graalpython__.builtin
-def format(value, format_spec=''):
+def format(module, value, format_spec=''):
     """Return value.__format__(format_spec)
 
     format_spec defaults to the empty string.
@@ -137,7 +137,7 @@ def format(value, format_spec=''):
 
 
 @__graalpython__.builtin
-def sorted(iterable, key=None, reverse=False):
+def sorted(module, iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 
     A custom key function can be supplied to customize the sort order, and the

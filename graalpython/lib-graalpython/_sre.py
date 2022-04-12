@@ -587,32 +587,32 @@ def compile(pattern, flags, code, groups, groupindex, indexgroup):
 
 
 @__graalpython__.builtin
-def getcodesize(*args, **kwargs):
+def getcodesize(module, *args, **kwargs):
     raise NotImplementedError("_sre.getcodesize is not yet implemented")
 
 
 @__graalpython__.builtin
-def getlower(char_ord, flags):
+def getlower(module, char_ord, flags):
     import _cpython_sre
     return _cpython_sre.getlower(char_ord, flags)
 
 
 @__graalpython__.builtin
-def unicode_iscased(codepoint):
+def unicode_iscased(module, codepoint):
     ch = chr(codepoint)
     return ch != ch.lower() or ch != ch.upper()
 
 
 @__graalpython__.builtin
-def unicode_tolower(codepoint):
+def unicode_tolower(module, codepoint):
     return ord(chr(codepoint).lower())
 
 
 @__graalpython__.builtin
-def ascii_iscased(codepoint):
+def ascii_iscased(module, codepoint):
     return codepoint < 128 and chr(codepoint).isalpha()
 
 
 @__graalpython__.builtin
-def ascii_tolower(codepoint):
+def ascii_tolower(module, codepoint):
     return ord(chr(codepoint).lower()) if codepoint < 128 else codepoint

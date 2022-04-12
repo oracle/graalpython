@@ -56,7 +56,7 @@ from sys import _getframe as __getframe__
 
 
 @__graalpython__.builtin
-def vars(*obj):
+def vars(module, *obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
@@ -71,7 +71,7 @@ def vars(*obj):
 
 
 @__graalpython__.builtin
-def input(prompt=None):
+def input(module, prompt=None):
     import sys
     if(not hasattr(sys, "stdin")):
         raise RuntimeError('input(): lost sys.stdin')
