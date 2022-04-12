@@ -493,7 +493,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    private RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, AbstractParser.InputType type, boolean topLevel, int optimize) {
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, AbstractParser.InputType type, boolean topLevel, int optimize) {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
         ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
