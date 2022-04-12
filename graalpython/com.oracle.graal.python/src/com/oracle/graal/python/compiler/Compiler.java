@@ -2082,6 +2082,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             BlockInfo info = unit.blockInfo;
             while (info != null) {
                 unit.blockInfo = info.outer;
+                unit.useNextBlock(new Block());
                 if (info instanceof BlockInfo.Loop) {
                     return (BlockInfo.Loop) info;
                 } else if (info instanceof BlockInfo.With) {
@@ -2090,7 +2091,6 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(LOAD_NONE);
                     addOp(EXIT_WITH);
                 } else if (info instanceof BlockInfo.TryFinally) {
-                    unit.useNextBlock(new Block());
                     visitSequence(((BlockInfo.TryFinally) info).body);
                 } else if (info instanceof BlockInfo.ExceptHandler) {
                     addOp(POP_EXCEPT);
