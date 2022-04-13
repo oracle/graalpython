@@ -215,9 +215,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         b.instr.add(new Instruction(code, arg, followingArgs, null, srcOffset));
     }
 
-    private void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
+    private Void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
         String mangled = ScopeEnvironment.mangle(unit.privateName, name);
         addOpObject(code, dict, mangled);
+        return null;
     }
 
     private <T> void addOpObject(OpCodes code, HashMap<T, Integer> dict, T obj) {
@@ -620,15 +621,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         int savedOffset = setLocation(node);
         try {
             node.value.accept(this);
-            int idx = addObject(unit.names, node.attr);
             switch (node.context) {
                 case Store:
-                    return addOp(STORE_ATTR, idx);
+                    return addOpName(STORE_ATTR, unit.names, node.attr);
                 case Delete:
-                    return addOp(DELETE_ATTR, idx);
+                    return addOpName(DELETE_ATTR, unit.names, node.attr);
                 case Load:
                 default:
-                    return addOp(LOAD_ATTR, idx);
+                    return addOpName(LOAD_ATTR, unit.names, node.attr);
             }
         } finally {
             setLocation(savedOffset);
@@ -767,7 +767,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (isAttributeLoad(func) && node.keywords.length == 0) {
                 ((ExprTy.Attribute) func).value.accept(this);
                 op = CALL_METHOD_VARARGS;
-                oparg = addObject(unit.names, ((ExprTy.Attribute) func).attr);
+                String mangled = ScopeEnvironment.mangle(unit.privateName, ((ExprTy.Attribute) func).attr);
+                oparg = addObject(unit.names, mangled);
                 shortCall = argcount <= 3;
             } else {
                 func.accept(this);
