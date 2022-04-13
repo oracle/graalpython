@@ -64,6 +64,7 @@ public final class CodeUnit {
     public static final int DISASSEMBLY_NUM_COLUMNS = 7;
 
     public final String name;
+    public final String qualname;
     public final String filename;
 
     public final int argCount;
@@ -90,13 +91,14 @@ public final class CodeUnit {
 
     public final int startOffset;
 
-    CodeUnit(String name, String filename,
+    CodeUnit(String name, String qualname, String filename,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
                     byte[] code, byte[] linetable, int flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     short[] exceptionHandlerRanges, int startOffset) {
         this.name = name;
+        this.qualname = qualname != null ? qualname : name;
         this.filename = filename;
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
@@ -190,7 +192,7 @@ public final class CodeUnit {
 
         HashMap<Integer, String[]> lines = new HashMap<>();
 
-        sb.append("Disassembly of ").append(name).append(":\n");
+        sb.append("Disassembly of ").append(qualname).append(":\n");
 
         List<String> flagNames = new ArrayList<>();
         if (isGenerator()) {
@@ -244,7 +246,7 @@ public final class CodeUnit {
                 case MAKE_KEYWORD: {
                     Object constant = constants[oparg];
                     if (constant instanceof CodeUnit) {
-                        line[5] = ((CodeUnit) constant).name + " from " + ((CodeUnit) constant).filename;
+                        line[5] = ((CodeUnit) constant).qualname + " from " + ((CodeUnit) constant).filename;
                     } else {
                         if (constant instanceof String) {
                             line[5] = PString.repr((String) constant);

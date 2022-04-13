@@ -1872,7 +1872,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PCode codeobj = factory.createCode(callTarget, newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
                         newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, newCode.filename, newCode.name,
                         newCode.startOffset, newCode.srcOffsetTable);
-        localFrame.setObject(stackTop, factory.createFunction(newCode.name, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));
+        localFrame.setObject(stackTop, factory.createFunction(newCode.name, newCode.qualname, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));
         if (annotations != null) {
             DynamicObjectLibrary.getUncached().put((DynamicObject) localFrame.getObject(stackTop), __ANNOTATIONS__, annotations);
         }

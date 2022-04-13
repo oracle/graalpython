@@ -242,7 +242,7 @@ public final class CompilationUnit {
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
         }
-        return new CodeUnit(qualName == null ? name : qualName, filename,
+        return new CodeUnit(name, qualName, filename,
                         argCount, kwOnlyArgCount, positionalOnlyArgCount,
                         varnames.size(), maxStackSize,
                         buf.toByteArray(), srcOffsets.toByteArray(), flags,
