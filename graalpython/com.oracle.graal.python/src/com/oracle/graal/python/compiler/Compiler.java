@@ -79,6 +79,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         this.filename = filename == null ? "<module>" : filename;
         this.flags = flags;
         this.env = new ScopeEnvironment(mod);
+        this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;
@@ -1392,7 +1393,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Module node) {
-        visitBody(node.body);
+        if (node.body != null) {
+            visitBody(node.body);
+        }
         return null;
     }
 
