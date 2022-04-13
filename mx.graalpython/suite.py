@@ -199,6 +199,11 @@ suite = {
                 "modules"
             ],
         },
+
+        "com.oracle.graal.python.frozen": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.frozen",
+        }
     },
 
     "projects": {
