@@ -339,6 +339,21 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testTryFinallyNested() {
+        String source = "def foo(obj):\n" +
+                "            for x in obj:\n" +
+                "                print(x)\n" +
+                "            try:\n" +
+                "                try:\n" +
+                "                    print('try')\n" +
+                "                finally:\n" +
+                "                    print('finally1')\n" +
+                "            finally:\n" +
+                "                print('finally2')\n";
+        doTest(source);
+    }
+
+    @Test
     public void testTryExceptFinally() {
         String s = "print('before')\n" +
                         "try:\n" +

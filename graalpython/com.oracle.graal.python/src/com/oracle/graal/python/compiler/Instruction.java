@@ -69,16 +69,6 @@ final class Instruction {
         return opcode.toString();
     }
 
-    Block getTarget() {
-        Block t = target;
-        if (t != null) {
-            while (t.instr.isEmpty()) {
-                t = t.next;
-            }
-        }
-        return t;
-    }
-
     public int extensions() {
         if (arg <= 0xFF) {
             return 0;

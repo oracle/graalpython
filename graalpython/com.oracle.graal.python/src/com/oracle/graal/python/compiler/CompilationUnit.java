@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.Stack;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.pegparser.scope.Scope;
@@ -186,7 +187,7 @@ public final class CompilationUnit {
         // The actual bytecodes
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-        computeStackLevels(startBlock, 0);
+        computeStackLevels();
 
         SortedSet<short[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
@@ -270,36 +271,49 @@ public final class CompilationUnit {
 
     private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_FORWARD, OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS, OpCodes.END_EXC_HANDLER);
 
-    private void computeStackLevels(Block block, int startLevel) {
-        int level = startLevel;
-        assert level >= 0;
-        if (block.stackLevel != -1) {
-            assert block.stackLevel == level;
-            return;
-        }
-        maxStackSize = Math.max(maxStackSize, level);
-        block.stackLevel = level;
-        BlockInfo.AbstractExceptionHandler handler = block.findExceptionHandler();
-        if (handler != null) {
-            assert handler.tryBlock.stackLevel != -1;
-            computeStackLevels(handler.exceptionHandler, handler.tryBlock.stackLevel + handler.exceptionHandler.unwindOffset + 1);
-        }
-        for (Instruction i : block.instr) {
-            Block target = i.getTarget();
-            if (target != null) {
-                int jumpLevel = level + i.opcode.getStackEffect(i.arg, i.followingArgs, true);
-                computeStackLevels(target, jumpLevel);
-            }
-            if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
-                assert i.opcode != OpCodes.RETURN_VALUE || level == 1;
-                return;
-            }
-            level += i.opcode.getStackEffect(i.arg, i.followingArgs, false);
+    private void computeStackLevels() {
+        Stack<Block> todo = new Stack<>();
+        todo.add(startBlock);
+        startBlock.stackLevel = 0;
+        while (!todo.empty()) {
+            Block block = todo.pop();
+            int level = block.stackLevel;
             assert level >= 0;
             maxStackSize = Math.max(maxStackSize, level);
+            BlockInfo.AbstractExceptionHandler handler = block.findExceptionHandler();
+            if (handler != null) {
+                assert handler.tryBlock.stackLevel != -1;
+                int handlerLevel = handler.tryBlock.stackLevel + handler.exceptionHandler.unwindOffset + 1;
+                computeStackLevels(handler.exceptionHandler, handlerLevel, todo);
+            }
+            boolean fallthrough = true;
+            for (Instruction i : block.instr) {
+                Block target = i.target;
+                if (target != null) {
+                    int jumpLevel = level + i.opcode.getStackEffect(i.arg, i.followingArgs, true);
+                    computeStackLevels(target, jumpLevel, todo);
+                }
+                if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
+                    assert i.opcode != OpCodes.RETURN_VALUE || level == 1;
+                    fallthrough = false;
+                    break;
+                }
+                level += i.opcode.getStackEffect(i.arg, i.followingArgs, false);
+                assert level >= 0;
+                maxStackSize = Math.max(maxStackSize, level);
+            }
+            if (fallthrough && block.next != null) {
+                computeStackLevels(block.next, level, todo);
+            }
         }
-        if (block.next != null) {
-            computeStackLevels(block.next, level);
+    }
+
+    private void computeStackLevels(Block block, int level, Stack<Block> todo) {
+        if (block.stackLevel == -1) {
+            block.stackLevel = level;
+            todo.add(block);
+        } else {
+            assert block.stackLevel == level;
         }
     }
 
@@ -323,7 +337,7 @@ public final class CompilationUnit {
             while (block != null) {
                 for (int i = 0; i < block.instr.size(); i++) {
                     Instruction instr = block.instr.get(i);
-                    Block target = instr.getTarget();
+                    Block target = instr.target;
                     if (target != null) {
                         int targetPos = blockLocationMap.get(target);
                         int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
