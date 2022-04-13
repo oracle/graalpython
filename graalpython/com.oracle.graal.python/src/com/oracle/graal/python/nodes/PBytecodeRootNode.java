@@ -355,6 +355,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int bcioffset;
     private final int generatorStackTopOffset;
     private final int generatorReturnOffset;
+    private final int selfIndex;
     private final int classcellIndex;
 
     public static final class FrameInfo {
@@ -519,6 +520,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
         this.classcellIndex = classcellIndex;
+        int selfIndex = -1;
+        if (!signature.takesNoArguments()) {
+            selfIndex = 0;
+            if (co.cell2arg != null) {
+                for (int i = 0; i < co.cell2arg.length; i++) {
+                    if (co.cell2arg[i] == 0) {
+                        selfIndex = celloffset + i;
+                        break;
+                    }
+                }
+            }
+        }
+        this.selfIndex = selfIndex;
     }
 
     @Override
@@ -2119,18 +2133,30 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTopBeforeBlock;
     }
 
-    public PCell readClassCell(Frame localFrame) {
+    public PCell readClassCell(VirtualFrame virtualFrame) {
+        Frame localFrame = virtualFrame;
+        if (co.isGeneratorOrCoroutine()) {
+            localFrame = PArguments.getGeneratorFrame(virtualFrame);
+        }
         if (classcellIndex < 0) {
             return null;
         }
         return (PCell) localFrame.getObject(classcellIndex);
     }
 
-    public Object readSelf(Frame localFrame) {
-        if (signature.takesNoArguments()) {
-            return null;
+    public Object readSelf(VirtualFrame virtualFrame) {
+        Frame localFrame = virtualFrame;
+        if (co.isGeneratorOrCoroutine()) {
+            localFrame = PArguments.getGeneratorFrame(virtualFrame);
         }
-        return localFrame.getObject(0);
+        if (selfIndex < 0) {
+            return null;
+        } else if (selfIndex == 0) {
+            return localFrame.getObject(0);
+        } else {
+            PCell selfCell = (PCell) localFrame.getObject(selfIndex);
+            return selfCell.getRef();
+        }
     }
 
     public int getStartOffset() {
