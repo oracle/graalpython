@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import pytest
 from .support import HPyTest
 
 
@@ -106,6 +106,7 @@ class TestBuildValue(HPyTest):
             actual = mod.f(i)
             assert actual == expected, code
 
+    @pytest.mark.xfail(__graalpython__.platform_id == "managed", reason="GR-38126")
     def test_bad_formats(self):
         test_cases = [
             ('return HPy_BuildValue(ctx, "(q)", 42);',
