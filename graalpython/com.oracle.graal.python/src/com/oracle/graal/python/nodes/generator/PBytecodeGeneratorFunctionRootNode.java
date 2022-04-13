@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -61,6 +62,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
+    @TruffleBoundary
     public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName,
                     Signature signature) {
         super(language, frameDescriptor);
