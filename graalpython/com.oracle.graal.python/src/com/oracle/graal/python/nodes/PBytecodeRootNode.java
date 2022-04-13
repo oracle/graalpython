@@ -1342,7 +1342,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     ExceptionHandlingStatementNode.chainExceptions(e.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
                 if (newTarget == -1) {
-                    localFrame.setObject(bcioffset, beginBci);
+                    localFrame.setInt(bcioffset, beginBci);
                     throw e;
                 } else {
                     e.setCatchingFrameReference(localFrame, this, bci);

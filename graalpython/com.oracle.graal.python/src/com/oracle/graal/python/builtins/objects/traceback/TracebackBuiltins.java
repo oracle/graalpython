@@ -49,6 +49,8 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -117,6 +119,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
              * doesn't belong to the traceback, contains the desired location from which we can get
              * the lineno.
              */
+            boolean usingBytecodeIntepreter = PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
             int lineno = -2;
             PTraceback next = null;
             if (tb.getLazyTraceback().getNextChain() != null) {
@@ -141,7 +144,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                      * Bytecode tracebacks pull location data from corresponding stacktrace element.
                      * AST tracebacks pull locations from the call node of the element "above".
                      */
-                    if (pException.originatesFromBytecode()) {
+                    if (usingBytecodeIntepreter || pException.originatesFromBytecode()) {
                         if (LazyTraceback.elementWantedForTraceback(element)) {
                             nextElement = element;
                             PFrame pFrame = materializeFrame(element, materializeFrameNode);
@@ -156,8 +159,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            if (pException.getCatchLocation() instanceof PBytecodeRootNode) {
-                // caught in bytecode
+            if (usingBytecodeIntepreter || pException.getCatchLocation() instanceof PBytecodeRootNode) {
                 if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
                     PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
                     tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));

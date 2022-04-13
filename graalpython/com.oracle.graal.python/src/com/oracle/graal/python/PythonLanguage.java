@@ -514,7 +514,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (mod == null) {
                 throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
             }
-            CompilationUnit cu = compiler.compile(mod, source.getName(), EnumSet.noneOf(Compiler.Flags.class), optimize);
+            CompilationUnit cu = compiler.compile(mod, source.getPath(), EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(source.getName(), 0);
 
             Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
