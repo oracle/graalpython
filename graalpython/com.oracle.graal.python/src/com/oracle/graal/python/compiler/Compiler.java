@@ -650,6 +650,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             node.value.accept(this);
             addOp(GET_AWAITABLE);
+            addOp(LOAD_NONE);
             addYieldFrom();
             return null;
         } finally {

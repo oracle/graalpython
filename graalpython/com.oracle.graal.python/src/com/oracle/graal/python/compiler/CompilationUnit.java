@@ -272,6 +272,7 @@ public final class CompilationUnit {
 
     private void computeStackLevels(Block block, int startLevel) {
         int level = startLevel;
+        assert level >= 0;
         if (block.stackLevel != -1) {
             assert block.stackLevel == level;
             return;
@@ -290,9 +291,11 @@ public final class CompilationUnit {
                 computeStackLevels(target, jumpLevel);
             }
             if (UNCONDITIONAL_JUMP_OPCODES.contains(i.opcode)) {
+                assert i.opcode != OpCodes.RETURN_VALUE || level == 1;
                 return;
             }
             level += i.opcode.getStackEffect(i.arg, i.followingArgs, false);
+            assert level >= 0;
             maxStackSize = Math.max(maxStackSize, level);
         }
         if (block.next != null) {

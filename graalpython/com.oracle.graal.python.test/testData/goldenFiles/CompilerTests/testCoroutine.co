@@ -9,10 +9,11 @@ Disassembly of foo:
 Flags: CO_COROUTINE
 000028         0 LOAD_FAST                         0    (a)
 000022         2 GET_AWAITABLE
-000022   >>    3 SEND                              6    (to 9)
-000022         5 YIELD_VALUE
-000022         6 RESUME_YIELD
-000022         7 JUMP_BACKWARD                     4    (to 3)
-000022   >>    9 POP_TOP
-000000        10 LOAD_NONE
-000000        11 RETURN_VALUE
+000022         3 LOAD_NONE
+000022   >>    4 SEND                              6    (to 10)
+000022         6 YIELD_VALUE
+000022         7 RESUME_YIELD
+000022         8 JUMP_BACKWARD                     4    (to 4)
+000022   >>   10 POP_TOP
+000000        11 LOAD_NONE
+000000        12 RETURN_VALUE
