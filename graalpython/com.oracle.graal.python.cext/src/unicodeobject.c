@@ -227,6 +227,11 @@ PyObject* PyUnicode_FromString(const char* o) {
     return to_sulong(polyglot_from_string(o, SRC_CS));
 }
 
+UPCALL_ID(PyUnicode_EncodeFSDefault);
+PyObject* PyUnicode_EncodeFSDefault(PyObject* o) {
+    return UPCALL_CEXT_O(_jls_PyUnicode_EncodeFSDefault, native_to_java(o));
+}
+
 PyObject* PyUnicode_DecodeFSDefault(const char* o) {
     // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
     return to_sulong(polyglot_from_string(o, "utf-8"));
@@ -582,6 +587,10 @@ PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
 	return PyUnicode_Decode(s, size, "ascii", errors);
+}
+
+PyObject * PyUnicode_DecodeLatin(const char *s, Py_ssize_t size, const char *errors) {
+	return PyUnicode_Decode(s, size, "latin1", errors);
 }
 
 UPCALL_ID(PyUnicode_Tailmatch);

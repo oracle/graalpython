@@ -68,11 +68,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeUn
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.DecodeNode;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -109,6 +111,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -813,6 +816,25 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toSulongNode.execute(getContext().getNativeNull());
             }
+        }
+    }
+
+    @Builtin(name = "PyUnicode_EncodeFSDefault", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeEncodeFSDefaultNode extends PythonBuiltinNode {
+        @Specialization
+        PBytes fromObject(String s,
+                        @Shared("encode") @Cached EncodeNativeStringNode encode) {
+            byte[] array = encode.execute(StandardCharsets.UTF_8, s, "replace");
+            return factory().createBytes(array);
+        }
+
+        @Specialization
+        PBytes fromObject(Object s,
+                        @Cached CastToJavaStringNode castStr,
+                        @Shared("encode") @Cached EncodeNativeStringNode encode) {
+            byte[] array = encode.execute(StandardCharsets.UTF_8, castStr.execute(s), "replace");
+            return factory().createBytes(array);
         }
     }
 }
