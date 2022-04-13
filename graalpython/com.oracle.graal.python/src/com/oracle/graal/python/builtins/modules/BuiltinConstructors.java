@@ -34,7 +34,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
 import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
-import static com.oracle.graal.python.nodes.BuiltinNames.INSTANCEMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
@@ -47,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETSET_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.INSTANCEMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
 import static com.oracle.graal.python.nodes.BuiltinNames.MAP;
@@ -181,7 +181,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassN
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
@@ -2028,58 +2027,50 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
-        @Child private GetNameNode getNameNode;
-
         @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, null);
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs,
+                        @SuppressWarnings("unused") PNone closure) {
+            return factory().createFunction(name, code, globals, null);
         }
 
         @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
+                        PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction("<lambda>", code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
                         @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, null);
+            return factory().createFunction("<lambda>", code, globals, null);
         }
 
         @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
-        }
-
-        @Specialization
-        public PFunction function(Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
+        }
+
+        @Specialization
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(name, code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        public PFunction function(Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
+        public PFunction function(@SuppressWarnings("unused") Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
             throw raise(TypeError, ErrorMessages.FUNC_CONSTRUCTION_NOT_SUPPORTED, cls, code, globals, name, defaultArgs, closure);
-        }
-
-        private String getTypeName(Object typeObj) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(TypeNodes.GetNameNode.create());
-            }
-            return getNameNode.execute(typeObj);
         }
     }
 

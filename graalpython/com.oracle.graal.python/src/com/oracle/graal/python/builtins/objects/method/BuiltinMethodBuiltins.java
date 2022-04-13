@@ -81,7 +81,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
 
         static boolean isBuiltinFunction(PMethod self) {
-            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).getEnclosingClassName() == null;
+            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).isBuiltin();
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")

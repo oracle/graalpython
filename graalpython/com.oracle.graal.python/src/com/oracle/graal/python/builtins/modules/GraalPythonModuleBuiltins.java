@@ -443,6 +443,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         public synchronized PFunction convertToBuiltin(PFunction func) {
             FunctionRootNode rootNode = (FunctionRootNode) CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
             rootNode.setPythonInternal(true);
+            func.setBuiltin(true);
             return func;
         }
     }

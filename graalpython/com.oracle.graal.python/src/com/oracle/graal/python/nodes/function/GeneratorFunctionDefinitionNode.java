@@ -85,7 +85,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, qualname, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
     public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonLanguage language) {
