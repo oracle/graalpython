@@ -5,17 +5,17 @@ Scope: []
     FreeVars: Empty
     Scope: sorted
         Kind: Function
-        FrameDescriptor: [<return_val>, iterable, key, result, reverse]
+        FrameDescriptor: [<return_val>, iterable, key, module, result, reverse]
         CellVars: Empty
         FreeVars: Empty
     Scope: format
         Kind: Function
-        FrameDescriptor: [<return_val>, format_spec, value]
+        FrameDescriptor: [<return_val>, format_spec, module, value]
         CellVars: Empty
         FreeVars: Empty
     Scope: vars
         Kind: Function
-        FrameDescriptor: [<return_val>, obj]
+        FrameDescriptor: [<return_val>, module, obj]
         CellVars: Empty
         FreeVars: Empty
     Scope: map
@@ -50,7 +50,7 @@ Scope: []
         FreeVars: Empty
     Scope: filter
         Kind: Function
-        FrameDescriptor: [<>temp5, <return_val>, func, i, iterable, predicate, result]
+        FrameDescriptor: [<>temp6, <return_val>, func, i, iterable, module, predicate, result]
         CellVars: Empty
         FreeVars: Empty
         Scope: <lambda>
@@ -60,16 +60,16 @@ Scope: []
             FreeVars: Empty
     Scope: all
         Kind: Function
-        FrameDescriptor: [<>temp2, <return_val>, i, iterable]
+        FrameDescriptor: [<>temp3, <return_val>, i, iterable, module]
         CellVars: Empty
         FreeVars: Empty
     Scope: any
         Kind: Function
-        FrameDescriptor: [<>temp2, <return_val>, i, iterable]
+        FrameDescriptor: [<>temp3, <return_val>, i, iterable, module]
         CellVars: Empty
         FreeVars: Empty
     Scope: hasattr
         Kind: Function
-        FrameDescriptor: [<return_val>, default, key, obj]
+        FrameDescriptor: [<return_val>, default, key, module, obj]
         CellVars: Empty
         FreeVars: Empty

@@ -1,12 +1,12 @@
-ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c) 2018...`
+ModuleRootNode Name: <module 'functions'> SourceSection: [0,5034]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,4978]`# Copyright (c) 2018...`
-    ExpressionWithSideEffects SourceSection: [1998,4978]`↵@__graalpython__.bu...`
-      WriteNameNodeGen SourceSection: [1999,2125]`@__graalpython__.bui...`
+  InnerRootNode SourceSection: [0,5034]`# Copyright (c) 2018...`
+    ExpressionWithSideEffects SourceSection: [1998,5034]`↵@__graalpython__.bu...`
+      WriteNameNodeGen SourceSection: [1999,2133]`@__graalpython__.bui...`
         Identifier: hasattr
         PythonCallUnary SourceSection: [1999,2023]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -23,61 +23,67 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [2024,2125]`def hasattr(obj, key...`
+            FunctionRootNode SourceSection: [2024,2133]`def hasattr(module, ...`
               Name: hasattr
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: obj, key
+                Param Names: module, obj, key
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [<return_val>, default, key, obj]
+              FrameDescriptor: 5 slots [<return_val>, default, key, module, obj]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [2024,2125]`def hasattr(obj, key...`
-                ReturnTargetNode SourceSection: [2024,2125]`def hasattr(obj, key...`
+              InnerRootNode SourceSection: [2024,2133]`def hasattr(module, ...`
+                ReturnTargetNode SourceSection: [2024,2133]`def hasattr(module, ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: obj
-                        Frame: [0,obj,Illegal]
+                        Identifier: module
+                        Frame: [0,module,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: key
-                        Frame: [1,key,Illegal]
+                        Identifier: obj
+                        Frame: [1,obj,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    FunctionBodyNode SourceSection: [2051,2122]`default = object()↵ ...`
-                      WriteLocalVariableNodeGen SourceSection: [2051,2069]`default = object()`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: key
+                        Frame: [2,key,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
+                    FunctionBodyNode SourceSection: [2059,2130]`default = object()↵ ...`
+                      WriteLocalVariableNodeGen SourceSection: [2059,2077]`default = object()`
                         Identifier: default
-                        Frame: [2,default,Illegal]
-                        PythonCallNodeGen SourceSection: [2061,2069]`object()`
+                        Frame: [3,default,Illegal]
+                        PythonCallNodeGen SourceSection: [2069,2077]`object()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [2061,2067]`object`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2069,2075]`object`
                             Identifier: object
-                      FrameReturnNode SourceSection: [2074,2122]`return getattr(obj, ...`
-                        NotNodeGen SourceSection: [2081,2122]`getattr(obj, key, de...`
+                      FrameReturnNode SourceSection: [2082,2130]`return getattr(obj, ...`
+                        NotNodeGen SourceSection: [2089,2130]`getattr(obj, key, de...`
                           IsExpressionNodeGen SourceSection: None
-                            PythonCallTernary SourceSection: [2081,2107]`getattr(obj, key, de...`
+                            PythonCallTernary SourceSection: [2089,2115]`getattr(obj, key, de...`
                               CallTernaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [2081,2088]`getattr`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [2089,2096]`getattr`
                                 Identifier: getattr
-                              ReadLocalVariableNodeGen SourceSection: [2089,2092]`obj`
-                                Frame: [0,obj,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [2094,2097]`key`
-                                Frame: [1,key,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [2099,2106]`default`
-                                Frame: [2,default,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [2115,2122]`default`
-                              Frame: [2,default,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [2097,2100]`obj`
+                                Frame: [1,obj,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [2102,2105]`key`
+                                Frame: [2,key,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [2107,2114]`default`
+                                Frame: [3,default,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [2123,2130]`default`
+                              Frame: [3,default,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [2125,2249]`@__graalpython__.bui...`
+                    Frame: [4,<return_val>,Object]
+      WriteNameNodeGen SourceSection: [2133,2265]`@__graalpython__.bui...`
         Identifier: any
-        PythonCallUnary SourceSection: [2125,2149]`@__graalpython__.bui...`
+        PythonCallUnary SourceSection: [2133,2157]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
@@ -92,52 +98,59 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [2150,2249]`def any(iterable):↵ ...`
+            FunctionRootNode SourceSection: [2158,2265]`def any(module, iter...`
               Name: any
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: iterable
+                Param Names: module, iterable
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [<>temp2, <return_val>, i, iterable]
+              FrameDescriptor: 5 slots [<>temp3, <return_val>, i, iterable, module]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [2150,2249]`def any(iterable):↵ ...`
-                ReturnTargetNode SourceSection: [2150,2249]`def any(iterable):↵ ...`
+              InnerRootNode SourceSection: [2158,2265]`def any(module, iter...`
+                ReturnTargetNode SourceSection: [2158,2265]`def any(module, iter...`
                   Body: BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: None
-                      Identifier: iterable
-                      Frame: [0,iterable,Illegal]
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                    FunctionBodyNode SourceSection: [2173,2246]`for i in iterable:↵ ...`
-                      ElseNode SourceSection: [2173,2234]`for i in iterable:↵ ...`
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: module
+                        Frame: [0,module,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: iterable
+                        Frame: [1,iterable,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                    FunctionBodyNode SourceSection: [2189,2262]`for i in iterable:↵ ...`
+                      ElseNode SourceSection: [2189,2250]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
-                                Frame: [1,i,Illegal]
-                            IfNode SourceSection: [2200,2234]`if i:↵            re...`
+                                Frame: [2,i,Illegal]
+                            IfNode SourceSection: [2216,2250]`if i:↵            re...`
                               YesNodeGen SourceSection: None
-                                ReadLocalVariableNodeGen SourceSection: [2203,2204]`i`
-                                  Frame: [1,i,Illegal]
-                              FrameReturnNode SourceSection: [2218,2229]`return True`
-                                BooleanLiteralNode SourceSection: [2225,2229]`True`
+                                ReadLocalVariableNodeGen SourceSection: [2219,2220]`i`
+                                  Frame: [2,i,Illegal]
+                              FrameReturnNode SourceSection: [2234,2245]`return True`
+                                BooleanLiteralNode SourceSection: [2241,2245]`True`
                               BlockNode SourceSection: None
-                          GetIteratorExpressionNodeGen SourceSection: [2182,2190]`iterable`
-                            ReadLocalVariableNodeGen SourceSection: [2182,2190]`iterable`
-                              Frame: [0,iterable,Illegal]
+                          GetIteratorExpressionNodeGen SourceSection: [2198,2206]`iterable`
+                            ReadLocalVariableNodeGen SourceSection: [2198,2206]`iterable`
+                              Frame: [1,iterable,Illegal]
                         BlockNode SourceSection: None
-                      FrameReturnNode SourceSection: [2234,2246]`return False`
-                        BooleanLiteralNode SourceSection: [2241,2246]`False`
+                      FrameReturnNode SourceSection: [2250,2262]`return False`
+                        BooleanLiteralNode SourceSection: [2257,2262]`False`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [2249,2377]`@__graalpython__.bui...`
+                    Frame: [4,<return_val>,Object]
+      WriteNameNodeGen SourceSection: [2265,2401]`@__graalpython__.bui...`
         Identifier: all
-        PythonCallUnary SourceSection: [2249,2273]`@__graalpython__.bui...`
+        PythonCallUnary SourceSection: [2265,2289]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
@@ -152,52 +165,59 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [2274,2377]`def all(iterable):↵ ...`
+            FunctionRootNode SourceSection: [2290,2401]`def all(module, iter...`
               Name: all
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: iterable
+                Param Names: module, iterable
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [<>temp2, <return_val>, i, iterable]
+              FrameDescriptor: 5 slots [<>temp3, <return_val>, i, iterable, module]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [2274,2377]`def all(iterable):↵ ...`
-                ReturnTargetNode SourceSection: [2274,2377]`def all(iterable):↵ ...`
+              InnerRootNode SourceSection: [2290,2401]`def all(module, iter...`
+                ReturnTargetNode SourceSection: [2290,2401]`def all(module, iter...`
                   Body: BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: None
-                      Identifier: iterable
-                      Frame: [0,iterable,Illegal]
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                    FunctionBodyNode SourceSection: [2297,2374]`for i in iterable:↵ ...`
-                      ElseNode SourceSection: [2297,2363]`for i in iterable:↵ ...`
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: module
+                        Frame: [0,module,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: iterable
+                        Frame: [1,iterable,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                    FunctionBodyNode SourceSection: [2321,2398]`for i in iterable:↵ ...`
+                      ElseNode SourceSection: [2321,2387]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
-                                Frame: [1,i,Illegal]
-                            IfNode SourceSection: [2324,2363]`if not i:↵          ...`
-                              NotNodeGen SourceSection: [2327,2332]`not i`
-                                ReadLocalVariableNodeGen SourceSection: [2331,2332]`i`
-                                  Frame: [1,i,Illegal]
-                              FrameReturnNode SourceSection: [2346,2358]`return False`
-                                BooleanLiteralNode SourceSection: [2353,2358]`False`
+                                Frame: [2,i,Illegal]
+                            IfNode SourceSection: [2348,2387]`if not i:↵          ...`
+                              NotNodeGen SourceSection: [2351,2356]`not i`
+                                ReadLocalVariableNodeGen SourceSection: [2355,2356]`i`
+                                  Frame: [2,i,Illegal]
+                              FrameReturnNode SourceSection: [2370,2382]`return False`
+                                BooleanLiteralNode SourceSection: [2377,2382]`False`
                               BlockNode SourceSection: None
-                          GetIteratorExpressionNodeGen SourceSection: [2306,2314]`iterable`
-                            ReadLocalVariableNodeGen SourceSection: [2306,2314]`iterable`
-                              Frame: [0,iterable,Illegal]
+                          GetIteratorExpressionNodeGen SourceSection: [2330,2338]`iterable`
+                            ReadLocalVariableNodeGen SourceSection: [2330,2338]`iterable`
+                              Frame: [1,iterable,Illegal]
                         BlockNode SourceSection: None
-                      FrameReturnNode SourceSection: [2363,2374]`return True`
-                        BooleanLiteralNode SourceSection: [2370,2374]`True`
+                      FrameReturnNode SourceSection: [2387,2398]`return True`
+                        BooleanLiteralNode SourceSection: [2394,2398]`True`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [2377,2666]`@__graalpython__.bui...`
+                    Frame: [4,<return_val>,Object]
+      WriteNameNodeGen SourceSection: [2401,2698]`@__graalpython__.bui...`
         Identifier: filter
-        PythonCallUnary SourceSection: [2377,2401]`@__graalpython__.bui...`
+        PythonCallUnary SourceSection: [2401,2425]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
@@ -212,51 +232,57 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [2402,2666]`def filter(func, ite...`
+            FunctionRootNode SourceSection: [2426,2698]`def filter(module, f...`
               Name: filter
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: func, iterable
+                Param Names: module, func, iterable
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [<>temp5, <return_val>, func, i, iterable, predicate, result]
+              FrameDescriptor: 8 slots [<>temp6, <return_val>, func, i, iterable, module, predicate, result]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [2402,2666]`def filter(func, ite...`
-                ReturnTargetNode SourceSection: [2402,2666]`def filter(func, ite...`
+              InnerRootNode SourceSection: [2426,2698]`def filter(module, f...`
+                ReturnTargetNode SourceSection: [2426,2698]`def filter(module, f...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: func
-                        Frame: [0,func,Illegal]
+                        Identifier: module
+                        Frame: [0,module,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: iterable
-                        Frame: [1,iterable,Illegal]
+                        Identifier: func
+                        Frame: [1,func,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    FunctionBodyNode SourceSection: [2434,2605]`result = []↵    pred...`
-                      WriteLocalVariableNodeGen SourceSection: [2434,2445]`result = []`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: iterable
+                        Frame: [2,iterable,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
+                    FunctionBodyNode SourceSection: [2466,2637]`result = []↵    pred...`
+                      WriteLocalVariableNodeGen SourceSection: [2466,2477]`result = []`
                         Identifier: result
-                        Frame: [2,result,Illegal]
-                        ListLiteralNode SourceSection: [2443,2445]`[]`
+                        Frame: [3,result,Illegal]
+                        ListLiteralNode SourceSection: [2475,2477]`[]`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: [2450,2503]`predicate = func if ...`
+                      WriteLocalVariableNodeGen SourceSection: [2482,2535]`predicate = func if ...`
                         Identifier: predicate
-                        Frame: [3,predicate,Illegal]
-                        TernaryIfNode SourceSection: [2462,2503]`func if func is not ...`
-                          NotNodeGen SourceSection: [2470,2486]`func is not None`
+                        Frame: [4,predicate,Illegal]
+                        TernaryIfNode SourceSection: [2494,2535]`func if func is not ...`
+                          NotNodeGen SourceSection: [2502,2518]`func is not None`
                             IsExpressionNodeGen SourceSection: None
-                              ReadLocalVariableNodeGen SourceSection: [2470,2474]`func`
-                                Frame: [0,func,Illegal]
-                              ObjectLiteralNode SourceSection: [2482,2486]`None`
-                          ReadLocalVariableNodeGen SourceSection: [2462,2466]`func`
-                            Frame: [0,func,Illegal]
-                          FunctionDefinitionNode Name: <lambda> SourceSection: [2492,2503]`lambda a: a`
+                              ReadLocalVariableNodeGen SourceSection: [2502,2506]`func`
+                                Frame: [1,func,Illegal]
+                              ObjectLiteralNode SourceSection: [2514,2518]`None`
+                          ReadLocalVariableNodeGen SourceSection: [2494,2498]`func`
+                            Frame: [1,func,Illegal]
+                          FunctionDefinitionNode Name: <lambda> SourceSection: [2524,2535]`lambda a: a`
                             Arguments: None
                             KwArguments: None
                             Documentation: None
@@ -264,7 +290,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            FunctionRootNode SourceSection: [2492,2503]`lambda a: a`
+                            FunctionRootNode SourceSection: [2524,2535]`lambda a: a`
                               Name: <lambda>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: a
@@ -275,8 +301,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [2492,2503]`lambda a: a`
-                                ReturnTargetNode SourceSection: [2492,2503]`lambda a: a`
+                              InnerRootNode SourceSection: [2524,2535]`lambda a: a`
+                                ReturnTargetNode SourceSection: [2524,2535]`lambda a: a`
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: a
@@ -285,62 +311,62 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FrameReturnNode SourceSection: None
-                                      LambdaBodyNode SourceSection: [2502,2503]`a`
-                                        ReadLocalVariableNodeGen SourceSection: [2502,2503]`a`
+                                      LambdaBodyNode SourceSection: [2534,2535]`a`
+                                        ReadLocalVariableNodeGen SourceSection: [2534,2535]`a`
                                           Frame: [0,a,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      ElseNode SourceSection: [2508,2585]`for i in iterable:↵ ...`
+                      ElseNode SourceSection: [2540,2617]`for i in iterable:↵ ...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: i
-                                Frame: [4,i,Illegal]
-                            IfNode SourceSection: [2535,2585]`if predicate(i):↵   ...`
+                                Frame: [5,i,Illegal]
+                            IfNode SourceSection: [2567,2617]`if predicate(i):↵   ...`
                               YesNodeGen SourceSection: None
-                                PythonCallUnary SourceSection: [2538,2550]`predicate(i)`
+                                PythonCallUnary SourceSection: [2570,2582]`predicate(i)`
                                   CallUnaryMethodNodeGen SourceSection: None
-                                  ReadLocalVariableNodeGen SourceSection: [2538,2547]`predicate`
-                                    Frame: [3,predicate,Illegal]
-                                  ReadLocalVariableNodeGen SourceSection: [2548,2549]`i`
-                                    Frame: [4,i,Illegal]
-                              ExpressionStatementNode SourceSection: [2564,2580]`result.append(i)`
-                                PythonCallUnary SourceSection: [2564,2580]`result.append(i)`
+                                  ReadLocalVariableNodeGen SourceSection: [2570,2579]`predicate`
+                                    Frame: [4,predicate,Illegal]
+                                  ReadLocalVariableNodeGen SourceSection: [2580,2581]`i`
+                                    Frame: [5,i,Illegal]
+                              ExpressionStatementNode SourceSection: [2596,2612]`result.append(i)`
+                                PythonCallUnary SourceSection: [2596,2612]`result.append(i)`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
-                                    ReadLocalVariableNodeGen SourceSection: [2564,2570]`result`
-                                      Frame: [2,result,Illegal]
-                                  ReadLocalVariableNodeGen SourceSection: [2578,2579]`i`
-                                    Frame: [4,i,Illegal]
+                                    ReadLocalVariableNodeGen SourceSection: [2596,2602]`result`
+                                      Frame: [3,result,Illegal]
+                                  ReadLocalVariableNodeGen SourceSection: [2610,2611]`i`
+                                    Frame: [5,i,Illegal]
                               BlockNode SourceSection: None
-                          GetIteratorExpressionNodeGen SourceSection: [2517,2525]`iterable`
-                            ReadLocalVariableNodeGen SourceSection: [2517,2525]`iterable`
-                              Frame: [1,iterable,Illegal]
+                          GetIteratorExpressionNodeGen SourceSection: [2549,2557]`iterable`
+                            ReadLocalVariableNodeGen SourceSection: [2549,2557]`iterable`
+                              Frame: [2,iterable,Illegal]
                         BlockNode SourceSection: None
-                      FrameReturnNode SourceSection: [2585,2605]`return tuple(result)...`
-                        PythonCallUnary SourceSection: [2592,2605]`tuple(result)`
+                      FrameReturnNode SourceSection: [2617,2637]`return tuple(result)...`
+                        PythonCallUnary SourceSection: [2624,2637]`tuple(result)`
                           CallUnaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [2592,2597]`tuple`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2624,2629]`tuple`
                             Identifier: tuple
-                          ReadLocalVariableNodeGen SourceSection: [2598,2604]`result`
-                            Frame: [2,result,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [2630,2636]`result`
+                            Frame: [3,result,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [6,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [2666,3055]`def __build_class__(...`
+                    Frame: [7,<return_val>,Object]
+      WriteNameNodeGen SourceSection: [2698,3087]`def __build_class__(...`
         Identifier: __build_class__
         FunctionDefinitionNode Name: __build_class__ SourceSection: None
           Arguments: None
           KwArguments:
             KwDefaultExpressionNode SourceSection: None
               Name: metaclass
-              Value: ObjectLiteralNode SourceSection: [2716,2720]`None`
+              Value: ObjectLiteralNode SourceSection: [2748,2752]`None`
           Documentation: StringLiteralNode: `↵    Stage 1 helper ...`
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          FunctionRootNode SourceSection: [2666,3055]`def __build_class__(...`
+          FunctionRootNode SourceSection: [2698,3087]`def __build_class__(...`
             Name: __build_class__
             Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=True, varArgsIdx=2
               Param Names: func, name
@@ -352,8 +378,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            InnerRootNode SourceSection: [2666,3055]`def __build_class__(...`
-              ReturnTargetNode SourceSection: [2666,3055]`def __build_class__(...`
+            InnerRootNode SourceSection: [2698,3087]`def __build_class__(...`
+              ReturnTargetNode SourceSection: [2698,3087]`def __build_class__(...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
@@ -386,75 +412,75 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       ArgumentExpressionNode SourceSection: None
                         ReadVarKeywordsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
-                  FunctionBodyNode SourceSection: [2809,3052]`if metaclass is not ...`
-                    IfNode SourceSection: [2809,2999]`if metaclass is not ...`
+                  FunctionBodyNode SourceSection: [2841,3084]`if metaclass is not ...`
+                    IfNode SourceSection: [2841,3031]`if metaclass is not ...`
                       YesNodeGen SourceSection: None
-                        OrNode SourceSection: [2812,2852]`metaclass is not Non...`
-                          NotNodeGen SourceSection: [2812,2833]`metaclass is not Non...`
+                        OrNode SourceSection: [2844,2884]`metaclass is not Non...`
+                          NotNodeGen SourceSection: [2844,2865]`metaclass is not Non...`
                             IsExpressionNodeGen SourceSection: None
-                              ReadLocalVariableNodeGen SourceSection: [2812,2821]`metaclass`
+                              ReadLocalVariableNodeGen SourceSection: [2844,2853]`metaclass`
                                 Frame: [3,metaclass,Illegal]
-                              ObjectLiteralNode SourceSection: [2829,2833]`None`
-                          GtNodeGen SourceSection: [2837,2852]`len(kwargs) > 0`
-                            PythonCallUnary SourceSection: [2837,2848]`len(kwargs)`
+                              ObjectLiteralNode SourceSection: [2861,2865]`None`
+                          GtNodeGen SourceSection: [2869,2884]`len(kwargs) > 0`
+                            PythonCallUnary SourceSection: [2869,2880]`len(kwargs)`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [2837,2840]`len`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [2869,2872]`len`
                                 Identifier: len
-                              ReadLocalVariableNodeGen SourceSection: [2841,2847]`kwargs`
+                              ReadLocalVariableNodeGen SourceSection: [2873,2879]`kwargs`
                                 Frame: [4,kwargs,Illegal]
-                            IntegerLiteralNode SourceSection: [2851,2852]`0`
+                            IntegerLiteralNode SourceSection: [2883,2884]`0`
                               Value: 0
                           YesNodeGen SourceSection: None
                       BlockNode SourceSection: None
-                        WriteLocalVariableNodeGen SourceSection: [2869,2875]`_posix`
+                        WriteLocalVariableNodeGen SourceSection: [2901,2907]`_posix`
                           Identifier: _posix
                           Frame: [5,_posix,Illegal]
                           ImportExpression SourceSection: None
                             ImportNode SourceSection: None
                               Module: _posix
-                        ExpressionStatementNode SourceSection: [2884,2970]`print("Tried to use ...`
-                          PythonCallUnary SourceSection: [2884,2970]`print("Tried to use ...`
+                        ExpressionStatementNode SourceSection: [2916,3002]`print("Tried to use ...`
+                          PythonCallUnary SourceSection: [2916,3002]`print("Tried to use ...`
                             CallUnaryMethodNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [2884,2889]`print`
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2916,2921]`print`
                               Identifier: print
-                            StringLiteralNode SourceSection: [2890,2969]`"Tried to use keywor...`
-                        ExpressionStatementNode SourceSection: [2979,2994]`_posix.exit(-1)`
-                          PythonCallUnary SourceSection: [2979,2994]`_posix.exit(-1)`
+                            StringLiteralNode SourceSection: [2922,3001]`"Tried to use keywor...`
+                        ExpressionStatementNode SourceSection: [3011,3026]`_posix.exit(-1)`
+                          PythonCallUnary SourceSection: [3011,3026]`_posix.exit(-1)`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              ReadLocalVariableNodeGen SourceSection: [2979,2985]`_posix`
+                              ReadLocalVariableNodeGen SourceSection: [3011,3017]`_posix`
                                 Frame: [5,_posix,Illegal]
-                            IntegerLiteralNode SourceSection: [2991,2993]`-1`
+                            IntegerLiteralNode SourceSection: [3023,3025]`-1`
                               Value: -1
                       BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: [2999,3006]`ns = {}`
+                    WriteLocalVariableNodeGen SourceSection: [3031,3038]`ns = {}`
                       Identifier: ns
                       Frame: [6,ns,Illegal]
-                      EmptyDictLiteralNode SourceSection: [3004,3006]`{}`
+                      EmptyDictLiteralNode SourceSection: [3036,3038]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
-                    ExpressionStatementNode SourceSection: [3011,3019]`func(ns)`
-                      PythonCallUnary SourceSection: [3011,3019]`func(ns)`
+                    ExpressionStatementNode SourceSection: [3043,3051]`func(ns)`
+                      PythonCallUnary SourceSection: [3043,3051]`func(ns)`
                         CallUnaryMethodNodeGen SourceSection: None
-                        ReadLocalVariableNodeGen SourceSection: [3011,3015]`func`
+                        ReadLocalVariableNodeGen SourceSection: [3043,3047]`func`
                           Frame: [0,func,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [3016,3018]`ns`
+                        ReadLocalVariableNodeGen SourceSection: [3048,3050]`ns`
                           Frame: [6,ns,Illegal]
-                    FrameReturnNode SourceSection: [3024,3052]`return type(name, ba...`
-                      PythonCallTernary SourceSection: [3031,3052]`type(name, bases, ns...`
+                    FrameReturnNode SourceSection: [3056,3084]`return type(name, ba...`
+                      PythonCallTernary SourceSection: [3063,3084]`type(name, bases, ns...`
                         CallTernaryMethodNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [3031,3035]`type`
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [3063,3067]`type`
                           Identifier: type
-                        ReadLocalVariableNodeGen SourceSection: [3036,3040]`name`
+                        ReadLocalVariableNodeGen SourceSection: [3068,3072]`name`
                           Frame: [1,name,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [3042,3047]`bases`
+                        ReadLocalVariableNodeGen SourceSection: [3074,3079]`bases`
                           Frame: [2,bases,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [3049,3051]`ns`
+                        ReadLocalVariableNodeGen SourceSection: [3081,3083]`ns`
                           Frame: [6,ns,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [7,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [3055,3636]`class map(object):↵ ...`
+      WriteNameNodeGen SourceSection: [3087,3668]`class map(object):↵ ...`
         Identifier: map
-        PythonCallTernary SourceSection: [3055,3636]`class map(object):↵ ...`
+        PythonCallTernary SourceSection: [3087,3668]`class map(object):↵ ...`
           CallTernaryMethodNodeGen SourceSection: None
           LoadBuildClassNode SourceSection: None
             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -466,7 +492,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            ClassBodyRootNode SourceSection: [3055,3636]`class map(object):↵ ...`
+            ClassBodyRootNode SourceSection: [3087,3668]`class map(object):↵ ...`
               Name: map
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
@@ -476,8 +502,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [3055,3636]`class map(object):↵ ...`
-                ReturnTargetNode SourceSection: [3055,3636]`class map(object):↵ ...`
+              InnerRootNode SourceSection: [3087,3668]`class map(object):↵ ...`
+                ReturnTargetNode SourceSection: [3087,3668]`class map(object):↵ ...`
                   Body: BlockNode SourceSection: None
                     ClassDefinitionPrologueNode SourceSection: None
                       QualName: map
@@ -487,8 +513,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         Identifier: __module__
                       WriteNameNodeGen SourceSection: None
                         Identifier: __qualname__
-                    FunctionBodyNode SourceSection: [3078,3636]`def __init__(self, f...`
-                      WriteNameNodeGen SourceSection: [3078,3288]`def __init__(self, f...`
+                    FunctionBodyNode SourceSection: [3110,3668]`def __init__(self, f...`
+                      WriteNameNodeGen SourceSection: [3110,3320]`def __init__(self, f...`
                         Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
@@ -498,7 +524,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
-                          FunctionRootNode SourceSection: [3078,3288]`def __init__(self, f...`
+                          FunctionRootNode SourceSection: [3110,3320]`def __init__(self, f...`
                             Name: __init__
                             Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=3
                               Param Names: self, func, iterable
@@ -509,8 +535,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [3078,3288]`def __init__(self, f...`
-                              ReturnTargetNode SourceSection: [3078,3288]`def __init__(self, f...`
+                            InnerRootNode SourceSection: [3110,3320]`def __init__(self, f...`
+                              ReturnTargetNode SourceSection: [3110,3320]`def __init__(self, f...`
                                 Body: BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
@@ -537,56 +563,56 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       ArgumentExpressionNode SourceSection: None
                                         ReadVarArgsNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
-                                  FunctionBodyNode SourceSection: [3129,3282]`self.__func = func↵ ...`
-                                    SetAttributeNodeGen SourceSection: [3129,3147]`self.__func = func`
+                                  FunctionBodyNode SourceSection: [3161,3314]`self.__func = func↵ ...`
+                                    SetAttributeNodeGen SourceSection: [3161,3179]`self.__func = func`
                                       Attribute: _map__func
-                                      ReadLocalVariableNodeGen SourceSection: [3129,3133]`self`
+                                      ReadLocalVariableNodeGen SourceSection: [3161,3165]`self`
                                         Frame: [0,self,Illegal]
-                                      ReadLocalVariableNodeGen SourceSection: [3143,3147]`func`
+                                      ReadLocalVariableNodeGen SourceSection: [3175,3179]`func`
                                         Frame: [1,func,Illegal]
-                                    WriteLocalVariableNodeGen SourceSection: [3156,3184]`iterators = [iter(it...`
+                                    WriteLocalVariableNodeGen SourceSection: [3188,3216]`iterators = [iter(it...`
                                       Identifier: iterators
                                       Frame: [4,iterators,Illegal]
-                                      ListLiteralNode SourceSection: [3168,3184]`[iter(iterable)]`
-                                        PythonCallUnary SourceSection: [3169,3183]`iter(iterable)`
+                                      ListLiteralNode SourceSection: [3200,3216]`[iter(iterable)]`
+                                        PythonCallUnary SourceSection: [3201,3215]`iter(iterable)`
                                           CallUnaryMethodNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [3169,3173]`iter`
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [3201,3205]`iter`
                                             Identifier: iter
-                                          ReadLocalVariableNodeGen SourceSection: [3174,3182]`iterable`
+                                          ReadLocalVariableNodeGen SourceSection: [3206,3214]`iterable`
                                             Frame: [2,iterable,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                    ElseNode SourceSection: [3193,3254]`for i in args:↵     ...`
+                                    ElseNode SourceSection: [3225,3286]`for i in args:↵     ...`
                                       ForNode SourceSection: None
                                         ForRepeatingNode SourceSection: None
                                           ForNextElementNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: i
                                               Frame: [5,i,Illegal]
-                                          ExpressionStatementNode SourceSection: [3220,3245]`iterators.append(ite...`
-                                            PythonCallUnary SourceSection: [3220,3245]`iterators.append(ite...`
+                                          ExpressionStatementNode SourceSection: [3252,3277]`iterators.append(ite...`
+                                            PythonCallUnary SourceSection: [3252,3277]`iterators.append(ite...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                ReadLocalVariableNodeGen SourceSection: [3220,3229]`iterators`
+                                                ReadLocalVariableNodeGen SourceSection: [3252,3261]`iterators`
                                                   Frame: [4,iterators,Illegal]
-                                              PythonCallUnary SourceSection: [3237,3244]`iter(i)`
+                                              PythonCallUnary SourceSection: [3269,3276]`iter(i)`
                                                 CallUnaryMethodNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3237,3241]`iter`
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3269,3273]`iter`
                                                   Identifier: iter
-                                                ReadLocalVariableNodeGen SourceSection: [3242,3243]`i`
+                                                ReadLocalVariableNodeGen SourceSection: [3274,3275]`i`
                                                   Frame: [5,i,Illegal]
-                                        GetIteratorExpressionNodeGen SourceSection: [3202,3206]`args`
-                                          ReadLocalVariableNodeGen SourceSection: [3202,3206]`args`
+                                        GetIteratorExpressionNodeGen SourceSection: [3234,3238]`args`
+                                          ReadLocalVariableNodeGen SourceSection: [3234,3238]`args`
                                             Frame: [3,args,Illegal]
                                       BlockNode SourceSection: None
-                                    SetAttributeNodeGen SourceSection: [3254,3282]`self.__iterators = i...`
+                                    SetAttributeNodeGen SourceSection: [3286,3314]`self.__iterators = i...`
                                       Attribute: _map__iterators
-                                      ReadLocalVariableNodeGen SourceSection: [3254,3258]`self`
+                                      ReadLocalVariableNodeGen SourceSection: [3286,3290]`self`
                                         Frame: [0,self,Illegal]
-                                      ReadLocalVariableNodeGen SourceSection: [3273,3282]`iterators`
+                                      ReadLocalVariableNodeGen SourceSection: [3305,3314]`iterators`
                                         Frame: [4,iterators,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [7,<return_val>,Object]
-                      WriteNameNodeGen SourceSection: [3288,3435]`def __next__(self):↵...`
+                      WriteNameNodeGen SourceSection: [3320,3467]`def __next__(self):↵...`
                         Identifier: __next__
                         FunctionDefinitionNode Name: __next__ SourceSection: None
                           Arguments: None
@@ -596,7 +622,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
-                          FunctionRootNode SourceSection: [3288,3435]`def __next__(self):↵...`
+                          FunctionRootNode SourceSection: [3320,3467]`def __next__(self):↵...`
                             Name: __next__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
@@ -607,8 +633,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [3288,3435]`def __next__(self):↵...`
-                              ReturnTargetNode SourceSection: [3288,3435]`def __next__(self):↵...`
+                            InnerRootNode SourceSection: [3320,3467]`def __next__(self):↵...`
+                              ReturnTargetNode SourceSection: [3320,3467]`def __next__(self):↵...`
                                 Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: self
@@ -616,53 +642,53 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                  FunctionBodyNode SourceSection: [3316,3429]`args = []↵        fo...`
-                                    WriteLocalVariableNodeGen SourceSection: [3316,3325]`args = []`
+                                  FunctionBodyNode SourceSection: [3348,3461]`args = []↵        fo...`
+                                    WriteLocalVariableNodeGen SourceSection: [3348,3357]`args = []`
                                       Identifier: args
                                       Frame: [1,args,Illegal]
-                                      ListLiteralNode SourceSection: [3323,3325]`[]`
+                                      ListLiteralNode SourceSection: [3355,3357]`[]`
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                    ElseNode SourceSection: [3334,3404]`for it in self.__ite...`
+                                    ElseNode SourceSection: [3366,3436]`for it in self.__ite...`
                                       ForNode SourceSection: None
                                         ForRepeatingNode SourceSection: None
                                           ForNextElementNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: it
                                               Frame: [2,it,Illegal]
-                                          ExpressionStatementNode SourceSection: [3374,3395]`args.append(next(it)...`
-                                            PythonCallUnary SourceSection: [3374,3395]`args.append(next(it)...`
+                                          ExpressionStatementNode SourceSection: [3406,3427]`args.append(next(it)...`
+                                            PythonCallUnary SourceSection: [3406,3427]`args.append(next(it)...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                ReadLocalVariableNodeGen SourceSection: [3374,3378]`args`
+                                                ReadLocalVariableNodeGen SourceSection: [3406,3410]`args`
                                                   Frame: [1,args,Illegal]
-                                              PythonCallUnary SourceSection: [3386,3394]`next(it)`
+                                              PythonCallUnary SourceSection: [3418,3426]`next(it)`
                                                 CallUnaryMethodNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3386,3390]`next`
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3418,3422]`next`
                                                   Identifier: next
-                                                ReadLocalVariableNodeGen SourceSection: [3391,3393]`it`
+                                                ReadLocalVariableNodeGen SourceSection: [3423,3425]`it`
                                                   Frame: [2,it,Illegal]
-                                        GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                          GetAttributeNode SourceSection: [3344,3360]`self.__iterators`
+                                        GetIteratorExpressionNodeGen SourceSection: [3376,3392]`self.__iterators`
+                                          GetAttributeNode SourceSection: [3376,3392]`self.__iterators`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _map__iterators
                                               LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                            ReadLocalVariableNodeGen SourceSection: [3344,3348]`self`
+                                            ReadLocalVariableNodeGen SourceSection: [3376,3380]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
-                                    FrameReturnNode SourceSection: [3404,3429]`return self.__func(*...`
-                                      PythonCallNodeGen SourceSection: [3411,3429]`self.__func(*args)`
+                                    FrameReturnNode SourceSection: [3436,3461]`return self.__func(*...`
+                                      PythonCallNodeGen SourceSection: [3443,3461]`self.__func(*args)`
                                         CallNodeGen SourceSection: None
                                         PositionalArgumentsNode SourceSection: None
-                                          ReadLocalVariableNodeGen SourceSection: [3424,3428]`args`
+                                          ReadLocalVariableNodeGen SourceSection: [3456,3460]`args`
                                             Frame: [1,args,Illegal]
                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          ReadLocalVariableNodeGen SourceSection: [3411,3415]`self`
+                                          ReadLocalVariableNodeGen SourceSection: [3443,3447]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      WriteNameNodeGen SourceSection: [3435,3480]`def __iter__(self):↵...`
+                      WriteNameNodeGen SourceSection: [3467,3512]`def __iter__(self):↵...`
                         Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
@@ -672,7 +698,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
-                          FunctionRootNode SourceSection: [3435,3480]`def __iter__(self):↵...`
+                          FunctionRootNode SourceSection: [3467,3512]`def __iter__(self):↵...`
                             Name: __iter__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
@@ -683,8 +709,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [3435,3480]`def __iter__(self):↵...`
-                              ReturnTargetNode SourceSection: [3435,3480]`def __iter__(self):↵...`
+                            InnerRootNode SourceSection: [3467,3512]`def __iter__(self):↵...`
+                              ReturnTargetNode SourceSection: [3467,3512]`def __iter__(self):↵...`
                                 Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: self
@@ -692,13 +718,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                  FunctionBodyNode SourceSection: [3463,3474]`return self`
-                                    FrameReturnNode SourceSection: [3463,3474]`return self`
-                                      ReadLocalVariableNodeGen SourceSection: [3470,3474]`self`
+                                  FunctionBodyNode SourceSection: [3495,3506]`return self`
+                                    FrameReturnNode SourceSection: [3495,3506]`return self`
+                                      ReadLocalVariableNodeGen SourceSection: [3502,3506]`self`
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      WriteNameNodeGen SourceSection: [3480,3636]`def __contains__(sel...`
+                      WriteNameNodeGen SourceSection: [3512,3668]`def __contains__(sel...`
                         Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
@@ -708,7 +734,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
-                          FunctionRootNode SourceSection: [3480,3636]`def __contains__(sel...`
+                          FunctionRootNode SourceSection: [3512,3668]`def __contains__(sel...`
                             Name: __contains__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x
@@ -719,8 +745,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [3480,3636]`def __contains__(sel...`
-                              ReturnTargetNode SourceSection: [3480,3636]`def __contains__(sel...`
+                            InnerRootNode SourceSection: [3512,3668]`def __contains__(sel...`
+                              ReturnTargetNode SourceSection: [3512,3668]`def __contains__(sel...`
                                 Body: BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
@@ -735,57 +761,57 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
-                                  FunctionBodyNode SourceSection: [3515,3632]`for i in map(self.__...`
-                                    ElseNode SourceSection: [3515,3620]`for i in map(self.__...`
+                                  FunctionBodyNode SourceSection: [3547,3664]`for i in map(self.__...`
+                                    ElseNode SourceSection: [3547,3652]`for i in map(self.__...`
                                       ForNode SourceSection: None
                                         ForRepeatingNode SourceSection: None
                                           ForNextElementNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: i
                                               Frame: [2,i,Illegal]
-                                          IfNode SourceSection: [3573,3620]`if x == i:↵         ...`
+                                          IfNode SourceSection: [3605,3652]`if x == i:↵         ...`
                                             YesNodeGen SourceSection: None
-                                              EqNodeGen SourceSection: [3576,3582]`x == i`
-                                                ReadLocalVariableNodeGen SourceSection: [3576,3577]`x`
+                                              EqNodeGen SourceSection: [3608,3614]`x == i`
+                                                ReadLocalVariableNodeGen SourceSection: [3608,3609]`x`
                                                   Frame: [1,x,Illegal]
-                                                ReadLocalVariableNodeGen SourceSection: [3581,3582]`i`
+                                                ReadLocalVariableNodeGen SourceSection: [3613,3614]`i`
                                                   Frame: [2,i,Illegal]
-                                            FrameReturnNode SourceSection: [3600,3611]`return True`
-                                              BooleanLiteralNode SourceSection: [3607,3611]`True`
+                                            FrameReturnNode SourceSection: [3632,3643]`return True`
+                                              BooleanLiteralNode SourceSection: [3639,3643]`True`
                                             BlockNode SourceSection: None
-                                        GetIteratorExpressionNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
-                                          PythonCallNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
+                                        GetIteratorExpressionNodeGen SourceSection: [3556,3591]`map(self.__func, *se...`
+                                          PythonCallNodeGen SourceSection: [3556,3591]`map(self.__func, *se...`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
-                                              GetAttributeNode SourceSection: [3528,3539]`self.__func`
+                                              GetAttributeNode SourceSection: [3560,3571]`self.__func`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _map__func
                                                   LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                ReadLocalVariableNodeGen SourceSection: [3528,3532]`self`
+                                                ReadLocalVariableNodeGen SourceSection: [3560,3564]`self`
                                                   Frame: [0,self,Illegal]
-                                              GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
+                                              GetAttributeNode SourceSection: [3574,3590]`self.__iterators`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _map__iterators
                                                   LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                ReadLocalVariableNodeGen SourceSection: [3542,3546]`self`
+                                                ReadLocalVariableNodeGen SourceSection: [3574,3578]`self`
                                                   Frame: [0,self,Illegal]
                                               ExecutePositionalStarargsNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [3524,3527]`map`
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [3556,3559]`map`
                                               Identifier: map
                                       BlockNode SourceSection: None
-                                    FrameReturnNode SourceSection: [3620,3632]`return False`
-                                      BooleanLiteralNode SourceSection: [3627,3632]`False`
+                                    FrameReturnNode SourceSection: [3652,3664]`return False`
+                                      BooleanLiteralNode SourceSection: [3659,3664]`False`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
-          ReadNameNodeGen SourceSection: [3065,3071]`object`
+          ReadNameNodeGen SourceSection: [3097,3103]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-      ImportFromNode SourceSection: [3636,3677]`from sys import _get...`
+      ImportFromNode SourceSection: [3668,3709]`from sys import _get...`
         Importee: sys
         Level: 0
         FromList: _getframe
@@ -796,9 +822,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           GetClassNodeGen SourceSection: None
-      WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`
+      WriteNameNodeGen SourceSection: [3712,4311]`@__graalpython__.bui...`
         Identifier: vars
-        PythonCallUnary SourceSection: [3680,3704]`@__graalpython__.bui...`
+        PythonCallUnary SourceSection: [3712,3736]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
@@ -813,97 +839,105 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [3705,4271]`def vars(*obj):↵    ...`
+            FunctionRootNode SourceSection: [3737,4311]`def vars(module, *ob...`
               Name: vars
-              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
+              Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=1
+                Param Names: module
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [<return_val>, obj]
+              FrameDescriptor: 3 slots [<return_val>, module, obj]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [3705,4271]`def vars(*obj):↵    ...`
-                ReturnTargetNode SourceSection: [3705,4271]`def vars(*obj):↵    ...`
+              InnerRootNode SourceSection: [3737,4311]`def vars(module, *ob...`
+                ReturnTargetNode SourceSection: [3737,4311]`def vars(module, *ob...`
                   Body: BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: None
-                      Identifier: obj
-                      Frame: [0,obj,Illegal]
-                      ArgumentExpressionNode SourceSection: None
-                        ReadVarArgsNodeGen SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
-                    FunctionBodyNode SourceSection: [3877,4271]`if len(obj) == 0:↵  ...`
-                      IfNode SourceSection: [3877,4134]`if len(obj) == 0:↵  ...`
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: module
+                        Frame: [0,module,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: obj
+                        Frame: [1,obj,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadVarArgsNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [3917,4311]`if len(obj) == 0:↵  ...`
+                      IfNode SourceSection: [3917,4174]`if len(obj) == 0:↵  ...`
                         YesNodeGen SourceSection: None
-                          EqNodeGen SourceSection: [3880,3893]`len(obj) == 0`
-                            PythonCallUnary SourceSection: [3880,3888]`len(obj)`
+                          EqNodeGen SourceSection: [3920,3933]`len(obj) == 0`
+                            PythonCallUnary SourceSection: [3920,3928]`len(obj)`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [3880,3883]`len`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [3920,3923]`len`
                                 Identifier: len
-                              ReadLocalVariableNodeGen SourceSection: [3884,3887]`obj`
-                                Frame: [0,obj,Illegal]
-                            IntegerLiteralNode SourceSection: [3892,3893]`0`
+                              ReadLocalVariableNodeGen SourceSection: [3924,3927]`obj`
+                                Frame: [1,obj,Illegal]
+                            IntegerLiteralNode SourceSection: [3932,3933]`0`
                               Value: 0
-                        FrameReturnNode SourceSection: [4014,4045]`return __getframe__(...`
-                          GetAttributeNode SourceSection: [4021,4045]`__getframe__(1).f_lo...`
+                        FrameReturnNode SourceSection: [4054,4085]`return __getframe__(...`
+                          GetAttributeNode SourceSection: [4061,4085]`__getframe__(1).f_lo...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: f_locals
                               LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                            PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
+                            PythonCallUnary SourceSection: [4061,4076]`__getframe__(1)`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4061,4073]`__getframe__`
                                 Identifier: __getframe__
-                              IntegerLiteralNode SourceSection: [4034,4035]`1`
+                              IntegerLiteralNode SourceSection: [4074,4075]`1`
                                 Value: 1
-                        IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
+                        IfNode SourceSection: [4090,4174]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
-                            NeNodeGen SourceSection: [4055,4068]`len(obj) != 1`
-                              PythonCallUnary SourceSection: [4055,4063]`len(obj)`
+                            NeNodeGen SourceSection: [4095,4108]`len(obj) != 1`
+                              PythonCallUnary SourceSection: [4095,4103]`len(obj)`
                                 CallUnaryMethodNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [4055,4058]`len`
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4095,4098]`len`
                                   Identifier: len
-                                ReadLocalVariableNodeGen SourceSection: [4059,4062]`obj`
-                                  Frame: [0,obj,Illegal]
-                              IntegerLiteralNode SourceSection: [4067,4068]`1`
+                                ReadLocalVariableNodeGen SourceSection: [4099,4102]`obj`
+                                  Frame: [1,obj,Illegal]
+                              IntegerLiteralNode SourceSection: [4107,4108]`1`
                                 Value: 1
-                          RaiseNodeGen SourceSection: [4078,4129]`raise TypeError("var...`
-                            PythonCallUnary SourceSection: [4084,4129]`TypeError("vars() ta...`
+                          RaiseNodeGen SourceSection: [4118,4169]`raise TypeError("var...`
+                            PythonCallUnary SourceSection: [4124,4169]`TypeError("vars() ta...`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [4084,4093]`TypeError`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4124,4133]`TypeError`
                                 Identifier: TypeError
-                              StringLiteralNode SourceSection: [4094,4128]`"vars() takes at mos...`
+                              StringLiteralNode SourceSection: [4134,4168]`"vars() takes at mos...`
                             NoValueNode SourceSection: None
                           BlockNode SourceSection: None
-                      TryFinallyNode SourceSection: [4134,4271]`try:↵        return ...`
+                      TryFinallyNode SourceSection: [4174,4311]`try:↵        return ...`
                         TryExceptNode SourceSection: None
-                          FrameReturnNode SourceSection: [4147,4169]`return obj[0].__dict...`
-                            GetAttributeNode SourceSection: [4154,4169]`obj[0].__dict__`
+                          FrameReturnNode SourceSection: [4187,4209]`return obj[0].__dict...`
+                            GetAttributeNode SourceSection: [4194,4209]`obj[0].__dict__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __dict__
                                 LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                              GetItemNodeGen SourceSection: [4154,4160]`obj[0]`
+                              GetItemNodeGen SourceSection: [4194,4200]`obj[0]`
                                 ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [0,obj,Illegal]
-                                IntegerLiteralNode SourceSection: [4158,4159]`0`
+                                  Frame: [1,obj,Illegal]
+                                IntegerLiteralNode SourceSection: [4198,4199]`0`
                                   Value: 0
                           ExceptNode SourceSection: None
-                            RaiseNodeGen SourceSection: [4205,4268]`raise TypeError("var...`
-                              PythonCallUnary SourceSection: [4211,4268]`TypeError("vars() ar...`
+                            RaiseNodeGen SourceSection: [4245,4308]`raise TypeError("var...`
+                              PythonCallUnary SourceSection: [4251,4308]`TypeError("vars() ar...`
                                 CallUnaryMethodNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [4211,4220]`TypeError`
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4251,4260]`TypeError`
                                   Identifier: TypeError
-                                StringLiteralNode SourceSection: [4221,4267]`"vars() argument mus...`
+                                StringLiteralNode SourceSection: [4261,4307]`"vars() argument mus...`
                               NoValueNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [4181,4195]`AttributeError`
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [4221,4235]`AttributeError`
                               Identifier: AttributeError
                           BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Object]
-      WriteNameNodeGen SourceSection: [4271,4575]`@__graalpython__.bui...`
+                    Frame: [2,<return_val>,Object]
+      WriteNameNodeGen SourceSection: [4311,4623]`@__graalpython__.bui...`
         Identifier: format
-        PythonCallUnary SourceSection: [4271,4295]`@__graalpython__.bui...`
+        PythonCallUnary SourceSection: [4311,4335]`@__graalpython__.bui...`
           CallUnaryMethodNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
@@ -912,64 +946,70 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                 GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: format SourceSection: None
             Arguments:
-              StringLiteralNode SourceSection: [4326,4328]`''`
+              StringLiteralNode SourceSection: [4374,4376]`''`
             KwArguments: None
             Documentation: StringLiteralNode: `Return value.__forma...`
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
-            FunctionRootNode SourceSection: [4296,4575]`def format(value, fo...`
+            FunctionRootNode SourceSection: [4336,4623]`def format(module, v...`
               Name: format
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: value, format_spec
+                Param Names: module, value, format_spec
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [<return_val>, format_spec, value]
+              FrameDescriptor: 4 slots [<return_val>, format_spec, module, value]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [4296,4575]`def format(value, fo...`
-                ReturnTargetNode SourceSection: [4296,4575]`def format(value, fo...`
+              InnerRootNode SourceSection: [4336,4623]`def format(module, v...`
+                ReturnTargetNode SourceSection: [4336,4623]`def format(module, v...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: value
-                        Frame: [0,value,Illegal]
+                        Identifier: module
+                        Frame: [0,module,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: format_spec
-                        Frame: [1,format_spec,Illegal]
+                        Identifier: value
+                        Frame: [1,value,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    FunctionBodyNode SourceSection: [4523,4572]`return type(value)._...`
-                      FrameReturnNode SourceSection: [4523,4572]`return type(value)._...`
-                        PythonCallBinary SourceSection: [4530,4572]`type(value).__format...`
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: format_spec
+                        Frame: [2,format_spec,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 2
+                    FunctionBodyNode SourceSection: [4571,4620]`return type(value)._...`
+                      FrameReturnNode SourceSection: [4571,4620]`return type(value)._...`
+                        PythonCallBinary SourceSection: [4578,4620]`type(value).__format...`
                           CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
-                            PythonCallUnary SourceSection: [4530,4541]`type(value)`
+                            PythonCallUnary SourceSection: [4578,4589]`type(value)`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [4530,4534]`type`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4578,4582]`type`
                                 Identifier: type
-                              ReadLocalVariableNodeGen SourceSection: [4535,4540]`value`
-                                Frame: [0,value,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [4553,4558]`value`
-                            Frame: [0,value,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [4560,4571]`format_spec`
-                            Frame: [1,format_spec,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [4583,4588]`value`
+                                Frame: [1,value,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [4601,4606]`value`
+                            Frame: [1,value,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [4608,4619]`format_spec`
+                            Frame: [2,format_spec,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Object]
+                    Frame: [3,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
-          WriteNameNodeGen SourceSection: [4575,4978]`@__graalpython__.bui...`
+          WriteNameNodeGen SourceSection: [4623,5034]`@__graalpython__.bui...`
             Identifier: sorted
-            PythonCallUnary SourceSection: [4575,4599]`@__graalpython__.bui...`
+            PythonCallUnary SourceSection: [4623,4647]`@__graalpython__.bui...`
               CallUnaryMethodNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
@@ -978,74 +1018,80 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                     GetClassNodeGen SourceSection: None
               FunctionDefinitionNode Name: sorted SourceSection: None
                 Arguments:
-                  ObjectLiteralNode SourceSection: [4625,4629]`None`
-                  BooleanLiteralNode SourceSection: [4639,4644]`False`
+                  ObjectLiteralNode SourceSection: [4681,4685]`None`
+                  BooleanLiteralNode SourceSection: [4695,4700]`False`
                 KwArguments: None
                 Documentation: StringLiteralNode: `Return a new list co...`
                 FreeVarSlots: None
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
-                FunctionRootNode SourceSection: [4600,4978]`def sorted(iterable,...`
+                FunctionRootNode SourceSection: [4648,5034]`def sorted(module, i...`
                   Name: sorted
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: iterable, key, reverse
+                    Param Names: module, iterable, key, reverse
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 5 slots [<return_val>, iterable, key, result, reverse]
+                  FrameDescriptor: 6 slots [<return_val>, iterable, key, module, result, reverse]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
-                  InnerRootNode SourceSection: [4600,4978]`def sorted(iterable,...`
-                    ReturnTargetNode SourceSection: [4600,4978]`def sorted(iterable,...`
+                  InnerRootNode SourceSection: [4648,5034]`def sorted(module, i...`
+                    ReturnTargetNode SourceSection: [4648,5034]`def sorted(module, i...`
                       Body: BlockNode SourceSection: None
                         BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: iterable
-                            Frame: [0,iterable,Illegal]
+                            Identifier: module
+                            Frame: [0,module,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 0
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: key
-                            Frame: [1,key,Illegal]
+                            Identifier: iterable
+                            Frame: [1,iterable,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 1
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: reverse
-                            Frame: [2,reverse,Illegal]
+                            Identifier: key
+                            Frame: [2,key,Illegal]
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
                                 Index: 2
-                        FunctionBodyNode SourceSection: [4894,4977]`result = list(iterab...`
-                          WriteLocalVariableNodeGen SourceSection: [4894,4917]`result = list(iterab...`
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: reverse
+                            Frame: [3,reverse,Illegal]
+                            ArgumentExpressionNode SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 3
+                        FunctionBodyNode SourceSection: [4950,5033]`result = list(iterab...`
+                          WriteLocalVariableNodeGen SourceSection: [4950,4973]`result = list(iterab...`
                             Identifier: result
-                            Frame: [3,result,Illegal]
-                            PythonCallUnary SourceSection: [4903,4917]`list(iterable)`
+                            Frame: [4,result,Illegal]
+                            PythonCallUnary SourceSection: [4959,4973]`list(iterable)`
                               CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [4903,4907]`list`
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4959,4963]`list`
                                 Identifier: list
-                              ReadLocalVariableNodeGen SourceSection: [4908,4916]`iterable`
-                                Frame: [0,iterable,Illegal]
-                          ExpressionStatementNode SourceSection: [4922,4959]`result.sort(key=key,...`
-                            PythonCallNodeGen SourceSection: [4922,4959]`result.sort(key=key,...`
+                              ReadLocalVariableNodeGen SourceSection: [4964,4972]`iterable`
+                                Frame: [1,iterable,Illegal]
+                          ExpressionStatementNode SourceSection: [4978,5015]`result.sort(key=key,...`
+                            PythonCallNodeGen SourceSection: [4978,5015]`result.sort(key=key,...`
                               CallNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
                                 ExecuteKeywordArgumentsNode SourceSection: None
                                   KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNodeGen SourceSection: [4938,4941]`key`
-                                      Frame: [1,key,Illegal]
+                                    ReadLocalVariableNodeGen SourceSection: [4994,4997]`key`
+                                      Frame: [2,key,Illegal]
                                   KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNodeGen SourceSection: [4951,4958]`reverse`
-                                      Frame: [2,reverse,Illegal]
+                                    ReadLocalVariableNodeGen SourceSection: [5007,5014]`reverse`
+                                      Frame: [3,reverse,Illegal]
                                 EmptyNode SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
-                                ReadLocalVariableNodeGen SourceSection: [4922,4928]`result`
-                                  Frame: [3,result,Illegal]
-                          FrameReturnNode SourceSection: [4964,4977]`return result`
-                            ReadLocalVariableNodeGen SourceSection: [4971,4977]`result`
-                              Frame: [3,result,Illegal]
+                                ReadLocalVariableNodeGen SourceSection: [4978,4984]`result`
+                                  Frame: [4,result,Illegal]
+                          FrameReturnNode SourceSection: [5020,5033]`return result`
+                            ReadLocalVariableNodeGen SourceSection: [5027,5033]`result`
+                              Frame: [4,result,Illegal]
                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Object]
+                        Frame: [5,<return_val>,Object]
