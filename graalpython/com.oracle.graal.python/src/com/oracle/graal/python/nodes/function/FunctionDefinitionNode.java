@@ -134,7 +134,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             code = factory().createCode(callTarget);
         }
 
-        PFunction func = withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, code, PArguments.getGlobals(frame),
+        PFunction func = withDocString(frame, factory().createFunction(functionName, qualname, code, PArguments.getGlobals(frame),
                         defaultValues, kwDefaultValues, closure, codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.

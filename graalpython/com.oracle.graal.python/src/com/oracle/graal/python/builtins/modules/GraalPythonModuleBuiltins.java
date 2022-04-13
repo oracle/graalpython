@@ -456,6 +456,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             } else if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).setPythonInternal(true);
             }
+            func.setBuiltin(true);
             return func;
         }
     }
