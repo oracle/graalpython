@@ -10853,7 +10853,7 @@ public final class Parser extends AbstractParser {
                 (a = starred_expression_rule()) != null  // starred_expression
             )
             {
-                _res = a;
+                _res = new KeywordOrStarred(a,false);
                 cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
                 return (KeywordOrStarred)_res;
             }

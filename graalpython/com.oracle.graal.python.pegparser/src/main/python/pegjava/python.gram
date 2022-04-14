@@ -734,7 +734,7 @@ starred_expression[expr_ty]:
     | '*' a=expression { factory.createStarred(a, startToken.startOffset, endToken.endOffset) }
 kwarg_or_starred[KeywordOrStarred*]:
     | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
-    | a=starred_expression { a }
+    | a=starred_expression { new KeywordOrStarred(a, false) }
     | invalid_kwarg
 kwarg_or_double_starred[KeywordOrStarred*]:
     | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
