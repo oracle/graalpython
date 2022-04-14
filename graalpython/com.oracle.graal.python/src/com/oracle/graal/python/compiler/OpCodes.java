@@ -103,7 +103,7 @@ public enum OpCodes {
     // calling
     // args[] => result
     CALL_METHOD_VARARGS(1, 1, 1),
-    CALL_METHOD(2, (oparg, followingArgs, withJump) -> followingArgs[0] + 1, 1),
+    CALL_METHOD(2, (oparg, followingArgs, withJump) -> Byte.toUnsignedInt(followingArgs[0]) + 1, 1),
     CALL_FUNCTION(1, (oparg, followingArgs, withJump) -> oparg + 1, 1),
     // func, args[], keywords[] => result
     CALL_FUNCTION_KW(0, 3, 1),
@@ -111,7 +111,7 @@ public enum OpCodes {
     CALL_FUNCTION_VARARGS(0, 2, 1),
 
     // destructuring bytecodes
-    UNPACK_EX(1, 1, OpCodes::unpackExStackEffect),
+    UNPACK_EX(2, 1, (oparg, followingArgs, withJump) -> oparg + 1 + Byte.toUnsignedInt(followingArgs[0])),
     UNPACK_SEQUENCE(1, 1, (oparg, followingArgs, withJump) -> oparg),
 
     // jumps
@@ -221,16 +221,6 @@ public enum OpCodes {
 
     public int length() {
         return argLength + 1;
-    }
-
-    private static int unpackExStackEffect(int oparg, @SuppressWarnings("unused") byte[] followingArgs, @SuppressWarnings("unused") boolean withJump) {
-        if (oparg <= 0xff) {
-            return (oparg & 0xf) + (oparg >> 4) + 1;
-        } else if (oparg <= 0xffff) {
-            return (oparg & 0xff) + (oparg >> 8) + 1;
-        } else {
-            throw new IllegalStateException("not supported");
-        }
     }
 
     public int getNumberOfConsumedStackItems(int oparg, byte[] followingArgs, boolean withJump) {

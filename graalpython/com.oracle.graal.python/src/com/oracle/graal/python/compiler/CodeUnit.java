@@ -364,6 +364,9 @@ public final class CodeUnit {
                             break;
                     }
                     break;
+                case UNPACK_EX:
+                    line[5] = String.format("%d, %d", oparg, Byte.toUnsignedInt(followingArgs[0]));
+                    break;
                 case JUMP_BACKWARD:
                     oparg = -oparg;
                     // fall through

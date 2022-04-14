@@ -541,6 +541,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testUnpackEx() {
+        doTest("a, *b, c = 1, 2, 3, 4, 5");
+    }
+
+    @Test
     public void testListComprehension() {
         String source = "[str(x) for y in [[1, 2, 3], [4, 5, 6]] for x in y if x < 5]";
         doTest(source);

@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.KwargsMergeNode;
 import com.oracle.graal.python.nodes.bytecode.SendNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
+import com.oracle.graal.python.nodes.bytecode.UnpackExNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -243,6 +244,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
     private static final NodeSupplier<UnpackSequenceNode> NODE_UNPACK_SEQUENCE = UnpackSequenceNode::create;
+    private static final UnpackExNode UNCACHED_UNPACK_EX = UnpackExNode.getUncached();
+    private static final NodeSupplier<UnpackExNode> NODE_UNPACK_EX = UnpackExNode::create;
     private static final PyObjectStrAsObjectNode UNCACHED_STR = PyObjectStrAsObjectNode.getUncached();
     private static final NodeSupplier<PyObjectStrAsObjectNode> NODE_STR = PyObjectStrAsObjectNode::create;
     private static final PyObjectReprAsObjectNode UNCACHED_REPR = PyObjectReprAsObjectNode.getUncached();
@@ -909,8 +912,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case UNPACK_SEQUENCE: {
-                        int count = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeUnpackSequence(virtualFrame, localFrame, stackTop, beginBci, localNodes, count);
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeUnpackSequence(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg);
+                        break;
+                    }
+                    case UNPACK_EX: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        int countAfter = Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeUnpackEx(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, countAfter);
                         break;
                     }
                     case NOP:
@@ -2106,8 +2115,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int bytecodeUnpackSequence(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int count) {
         UnpackSequenceNode unpackNode = insertChildNode(localNodes, bci, UNCACHED_UNPACK_SEQUENCE, NODE_UNPACK_SEQUENCE);
         Object collection = localFrame.getObject(stackTop);
-        unpackNode.execute(virtualFrame, stackTop - 1, localFrame, collection, count);
-        return stackTop - 1 + count;
+        return unpackNode.execute(virtualFrame, stackTop - 1, localFrame, collection, count);
+    }
+
+    private int bytecodeUnpackEx(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int countBefore, int countAfter) {
+        UnpackExNode unpackNode = insertChildNode(localNodes, bci, UNCACHED_UNPACK_EX, NODE_UNPACK_EX);
+        Object collection = localFrame.getObject(stackTop);
+        return unpackNode.execute(virtualFrame, stackTop - 1, localFrame, collection, countBefore, countAfter);
     }
 
     /**

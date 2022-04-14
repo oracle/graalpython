@@ -62,6 +62,13 @@ public class MultiAssignTests {
     }
 
     @Test
+    public void starUnpacking() {
+        String source = "a, *b, c = 1, 2, 3, 4, 5\n" +
+                        "print(a, b, c)";
+        assertPrints("1 [2, 3, 4] 5\n", source);
+    }
+
+    @Test
     public void unpackGenericIterable() {
         String source = "class Iterable:\n" +
                         "    def __iter__(self):\n" +
@@ -70,5 +77,15 @@ public class MultiAssignTests {
                         "a, b = Iterable()\n" +
                         "print(a, b)\n";
         assertPrints("1 2\n", source);
+    }
+
+    @Test
+    public void unpackGenericIterableStar() {
+        String source = "class Iterable:\n" +
+                        "    def __iter__(self):\n" +
+                        "        return iter([1, 2, 3, 4, 5])\n" +
+                        "a, *b, c = Iterable()\n" +
+                        "print(a, b, c)\n";
+        assertPrints("1 [2, 3, 4] 5\n", source);
     }
 }

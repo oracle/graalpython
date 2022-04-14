@@ -26,22 +26,24 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class UnpackSequenceNode extends PNodeWithContext {
-    public abstract void execute(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int count);
+    public abstract int execute(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int count);
 
     @Specialization(guards = {"cannotBeOverridden(sequence, getClassNode)", "!isPString(sequence)"}, limit = "1")
     @ExplodeLoop
-    static void doUnpackSequence(int stackTop, Frame localFrame, PSequence sequence, int count,
+    static int doUnpackSequence(int initialStackTop, Frame localFrame, PSequence sequence, int count,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached BranchProfile errorProfile,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        int resultStackTop = initialStackTop + count;
+        int stackTop = resultStackTop;
         SequenceStorage storage = getSequenceStorageNode.execute(sequence);
         int len = lenNode.execute(storage);
         if (len == count) {
             for (int i = 0; i < count; i++) {
-                localFrame.setObject(stackTop + count - i, getItemNode.execute(storage, i));
+                localFrame.setObject(stackTop--, getItemNode.execute(storage, i));
             }
         } else {
             errorProfile.enter();
@@ -51,17 +53,20 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                 throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
             }
         }
+        return resultStackTop;
     }
 
     @Fallback
     @ExplodeLoop
-    static void doUnpackIterable(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int count,
+    static int doUnpackIterable(Frame virtualFrame, int initialStackTop, Frame localFrame, Object collection, int count,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode getNextNode,
                     @Cached IsBuiltinClassProfile notIterableProfile,
                     @Cached IsBuiltinClassProfile stopIterationProfile1,
                     @Cached IsBuiltinClassProfile stopIterationProfile2,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        int resultStackTop = initialStackTop + count;
+        int stackTop = resultStackTop;
         Object iterator;
         try {
             iterator = getIter.execute(virtualFrame, collection);
@@ -72,7 +77,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
         for (int i = 0; i < count; i++) {
             try {
                 Object item = getNextNode.execute(virtualFrame, iterator);
-                localFrame.setObject(stackTop + count - i, item);
+                localFrame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(stopIterationProfile1);
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
@@ -82,7 +87,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             getNextNode.execute(virtualFrame, iterator);
         } catch (PException e) {
             e.expectStopIteration(stopIterationProfile2);
-            return;
+            return resultStackTop;
         }
         throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
     }

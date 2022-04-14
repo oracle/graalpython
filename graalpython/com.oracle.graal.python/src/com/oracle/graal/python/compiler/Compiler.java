@@ -1037,11 +1037,12 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
                 unpack = true;
                 int n = elements.length;
-                if ((i >= (1 << 8)) || (n - i - 1 >= (Integer.MAX_VALUE >> 8))) {
+                int countAfter = n - i - 1;
+                if (countAfter != (byte) countAfter) {
                     // TODO syntax error
                     throw new IllegalStateException("too many expressions in star-unpacking assignment");
                 }
-                addOp(UNPACK_EX, (i + ((n - i - 1) << 8)));
+                addOp(UNPACK_EX, i, new byte[]{(byte) countAfter});
             }
         }
         if (!unpack) {
