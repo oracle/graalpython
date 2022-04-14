@@ -63,7 +63,9 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -99,11 +101,12 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         return nodes;
     }
 
-    protected abstract static class ConcatDictToStorageNode extends PNodeWithContext {
-        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other);
+    @GenerateUncached
+    public abstract static class ConcatDictToStorageNode extends PNodeWithContext {
+        public abstract HashingStorage execute(Frame frame, HashingStorage dest, Object other);
 
         @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
-        HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
+        static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
@@ -111,7 +114,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         }
 
         @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
-        HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
+        static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
@@ -131,7 +134,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         }
 
         @Fallback
-        HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
+        static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Shared("hasFrame") @Cached ConditionProfile hasFrame,
                         @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
@@ -166,6 +169,14 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         /* CPython tests that tp_iter is dict_iter */
         protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
             return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
+        }
+
+        public static ConcatDictToStorageNode create() {
+            return ConcatKeywordsNodeGen.ConcatDictToStorageNodeGen.create();
+        }
+
+        public static ConcatDictToStorageNode getUncached() {
+            return ConcatKeywordsNodeGen.ConcatDictToStorageNodeGen.getUncached();
         }
     }
 }

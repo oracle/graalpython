@@ -141,6 +141,22 @@ public class ArgumentsTests {
                         "update(42)");
     }
 
+    @Test
+    public void kwargsMerge() {
+        assertPrints("{'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'e': 5})\n");
+    }
+
+    @Test
+    public void kwargsDuplicate() {
+        assertLastLineErrorContains("TypeError: foo() got multiple values for keyword argument 'd'", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'d': 5})\n");
+    }
+
     private static String call(String source, String args) {
         return String.format("%s\nf(%s)", source, args);
     }

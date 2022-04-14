@@ -407,8 +407,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private class KwargsMergingDictCollector extends Collector {
-        public KwargsMergingDictCollector() {
+        public KwargsMergingDictCollector(OpCodes callOp) {
             super(CollectionBits.DICT);
+            /*
+             * We're making assumptions about the stack layout below this instruction to obtain the
+             * callable for error reporting. If we ever add more keywords call instructions, we need
+             * to adjust the implementation to be able to get the callable.
+             */
+            assert callOp == CALL_FUNCTION_KW;
         }
 
         @Override
@@ -477,7 +483,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         collector.finishCollection();
     }
 
-    private void collectKeywords(KeywordTy[] keywords) {
+    private void collectKeywords(KeywordTy[] keywords, OpCodes callOp) {
         boolean hasSplat = false;
         for (KeywordTy k : keywords) {
             if (k.arg == null) {
@@ -501,7 +507,7 @@ public class Compiler implements SSTreeVisitor<Void> {
              * We need to emit bytecodes for proper keywords merging with checking for duplicate
              * keys. We accumulate them in an intermediate dict.
              */
-            Collector collector = new KwargsMergingDictCollector();
+            Collector collector = new KwargsMergingDictCollector(callOp);
             for (KeywordTy k : keywords) {
                 if (k.arg == null) {
                     // splat
@@ -791,7 +797,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
                 if (node.keywords.length > 0) {
                     assert op == CALL_FUNCTION_VARARGS;
-                    collectKeywords(node.keywords);
+                    collectKeywords(node.keywords, CALL_FUNCTION_KW);
                     return addOp(CALL_FUNCTION_KW);
                 } else {
                     return addOp(op, oparg);
@@ -1545,7 +1551,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_FUNCTION_VARARGS);
         } else {
             collectIntoArray(node.bases, CollectionBits.OBJECT, 2);
-            collectKeywords(node.keywords);
+            collectKeywords(node.keywords, CALL_FUNCTION_KW);
             addOp(CALL_FUNCTION_KW);
         }
 
@@ -1670,7 +1676,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                         defs.add(new KeywordTy(mangled, def, arg.getStartOffset(), def.getEndOffset()));
                     }
                 }
-                collectKeywords(defs.toArray(KeywordTy[]::new));
+                collectKeywords(defs.toArray(KeywordTy[]::new), null);
                 flags |= CodeUnit.HAS_KWONLY_DEFAULTS;
             }
         }
