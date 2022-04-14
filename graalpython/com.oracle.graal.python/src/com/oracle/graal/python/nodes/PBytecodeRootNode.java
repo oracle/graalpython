@@ -1217,7 +1217,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case CALL_METHOD: {
-                        String methodName = localNames[Byte.toUnsignedInt(localBC[++bci])];
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        String methodName = localNames[oparg];
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallMethod(virtualFrame, localFrame, stackTop, beginBci, argcount, methodName, localNodes);
                         break;
