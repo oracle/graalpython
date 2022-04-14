@@ -4169,7 +4169,7 @@ public abstract class SequenceStorageNodes {
                         }
                     }
                 }
-                return create().createStorageUninitialized(null, iterator, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached(), len);
+                return create().createStorageUninitialized(null, iterator, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached(), len >= 0 ? len : START_SIZE);
             }
         }
 
