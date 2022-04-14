@@ -89,7 +89,12 @@ public abstract class PyObjectGetAttr extends Node {
             Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name);
             if (result != null) {
                 if (result == PNone.NO_VALUE) {
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+                    Object getattr = lookupGetattr.execute(frame, type, receiver);
+                    if (getattr != PNone.NO_VALUE) {
+                        return callGetattr.executeObject(frame, getattr, receiver, name);
+                    } else {
+                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+                    }
                 }
                 return result;
             }
