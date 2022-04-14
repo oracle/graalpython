@@ -846,11 +846,6 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
 
         cmd_args = [self._harness_path]
 
-        for arg in run_args[:]:
-            if arg.startswith("--harness."):
-                cmd_args.append(arg.replace("harness.", ""))
-                run_args.remove(arg)
-
         # resolve the harness python path (for external python modules, that may be required by the benchmark)
         if self._python_path:
             assert isinstance(self._python_path, list), "python_path must be a list"

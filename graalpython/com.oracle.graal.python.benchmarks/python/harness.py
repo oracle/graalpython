@@ -222,7 +222,7 @@ def _as_int(value):
 
 
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None, mode="exec"):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -232,7 +232,7 @@ class BenchRunner(object):
 
         if bench_args is None:
             bench_args = []
-        self.bench_module = BenchRunner.get_bench_module(bench_file, mode)
+        self.bench_module = BenchRunner.get_bench_module(bench_file)
         self.bench_args = bench_args
 
         _iterations = _as_int(iterations)
@@ -243,7 +243,7 @@ class BenchRunner(object):
         self.startup = startup
 
     @staticmethod
-    def get_bench_module(bench_file, mode):
+    def get_bench_module(bench_file):
         name = bench_file.rpartition("/")[2].partition(".")[0].replace('.py', '')
         directory = bench_file.rpartition("/")[0]
         pkg = []
@@ -264,14 +264,7 @@ class BenchRunner(object):
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
                 bench_module.ccompile = ccompile
-                if GRAALPYTHON:
-                    code = __graalpython__.compile(f.readall(), bench_file, mode)
-                else:
-                    code = compile(f.readall(), bench_file, "exec")
-                    if mode == "pyc":
-                        from dis import dis
-                        dis(code)
-                exec(code, bench_module.__dict__)
+                exec(compile(f.readall(), bench_file, "exec"), bench_module.__dict__)
                 return bench_module
 
     def _get_attr(self, attr_name):
@@ -397,7 +390,6 @@ def run_benchmark(args):
     warmup_runs = 0
     iterations = 1
     startup = None
-    mode = "exec"
     bench_file = None
     bench_args = []
     paths = []
@@ -436,12 +428,6 @@ def run_benchmark(args):
         elif arg.startswith("--path"):
             paths = arg.split("=")[1].split(",")
 
-        elif arg == '--bc':
-            mode = 'pyc'
-
-        elif arg == '--ast':
-            mode = 'exec'
-
         elif bench_file is None:
             bench_file = arg
         else:
@@ -463,7 +449,7 @@ def run_benchmark(args):
     else:
         print("### no extra module search paths specified")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, mode=mode).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup).run()
 
 
 if __name__ == '__main__':
