@@ -244,8 +244,8 @@ public abstract class StringNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
-    public abstract static class CastToJavaStringCheckedNode extends Node {
+    @GenerateUncached
+    public abstract static class CastToJavaStringCheckedNode extends PNodeWithContext {
         public final String cast(Object object, String errMsgFormat, Object... errMsgArgs) {
             return execute(object, errMsgFormat, errMsgArgs);
         }

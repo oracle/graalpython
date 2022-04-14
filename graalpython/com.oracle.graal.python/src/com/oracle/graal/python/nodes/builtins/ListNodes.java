@@ -149,12 +149,10 @@ public abstract class ListNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class FastConstructListNode extends PNodeWithContext {
 
-        @Child private ConstructListNode constructListNode;
-
-        public abstract PSequence execute(VirtualFrame frame, Object value);
+        public abstract PSequence execute(Frame frame, Object value);
 
         @Specialization(guards = "cannotBeOverridden(value, getClassNode)", limit = "1")
         protected static PSequence doPList(PSequence value,
@@ -163,11 +161,8 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        protected PSequence doGeneric(VirtualFrame frame, Object value) {
-            if (constructListNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructListNode = insert(ConstructListNode.create());
-            }
+        protected PSequence doGeneric(VirtualFrame frame, Object value,
+                        @Cached ConstructListNode constructListNode) {
             return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
         }
 
