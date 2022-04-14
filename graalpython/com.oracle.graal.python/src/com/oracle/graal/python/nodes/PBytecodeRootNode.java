@@ -1368,7 +1368,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     localFrame.setInt(bcioffset, beginBci);
                     throw e;
                 } else {
-                    e.setCatchingFrameReference(localFrame, this, bci);
+                    e.setCatchingFrameReference(virtualFrame, this, bci);
                     int stackSizeOnEntry = decodeStackTop((int) newTarget);
                     stackTop = unwindBlock(localFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stacksize, not the top of stack. so the stackTop is
