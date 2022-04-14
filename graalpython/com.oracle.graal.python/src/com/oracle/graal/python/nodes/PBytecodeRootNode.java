@@ -1451,10 +1451,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeEndExcHandler(VirtualFrame virtualFrame, Frame localFrame, int stackTop) {
         Object exception = localFrame.getObject(stackTop);
         Object savedException = localFrame.getObject(stackTop - 1);
-        if (!(savedException instanceof PException)) {
-            throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
+        if (savedException == null) {
+            PArguments.setException(virtualFrame, null);
+        } else {
+            if (!(savedException instanceof PException)) {
+                throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
+            }
+            localFrame.setObject(stackTop, null);
+            PArguments.setException(virtualFrame, (PException) savedException);
         }
-        PArguments.setException(virtualFrame, (PException) savedException);
         if (exception instanceof PException) {
             throw ((PException) exception).getExceptionForReraise();
         } else if (exception instanceof AbstractTruffleException) {
