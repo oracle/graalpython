@@ -642,6 +642,7 @@ public final class Parser extends AbstractParser {
             _res = (ModTy)cache.getResult(_mark, INTERACTIVE_ID);
             return (ModTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // statement_newline
             if (errorIndicator) {
                 return null;
@@ -651,9 +652,11 @@ public final class Parser extends AbstractParser {
                 (a = statement_newline_rule()) != null  // statement_newline
             )
             {
-                // TODO: node.action: _PyAST_Interactive ( a , p -> arena )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Interactive ( a , p -> arena ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createInteractiveModule(a,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, INTERACTIVE_ID, _res);
                 return (ModTy)_res;
             }
@@ -676,6 +679,7 @@ public final class Parser extends AbstractParser {
             _res = (ModTy)cache.getResult(_mark, EVAL_ID);
             return (ModTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // expressions NEWLINE* $
             if (errorIndicator) {
                 return null;
@@ -691,7 +695,11 @@ public final class Parser extends AbstractParser {
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
             {
-                _res = a;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createExpressionModule(a,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, EVAL_ID, _res);
                 return (ModTy)_res;
             }

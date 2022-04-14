@@ -93,6 +93,16 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
+    public ModTy createExpressionModule(ExprTy expression, int startOffset, int endOffset) {
+        return new ModTy.Expression(expression, startOffset, endOffset);
+    }
+
+    @Override
+    public ModTy createInteractiveModule(StmtTy[] body, int startOffset, int endOffset) {
+        return new ModTy.Interactive(body, startOffset, endOffset);
+    }
+
+    @Override
     public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset) {
         return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, startOffset, endOffset);
     }

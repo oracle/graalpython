@@ -67,6 +67,10 @@ public interface NodeFactory {
 
     public ModTy createModule(StmtTy[] statements, int startOffset, int endOffset);
 
+    public ModTy createExpressionModule(ExprTy expression, int startOffset, int endOffset);
+
+    public ModTy createInteractiveModule(StmtTy[] body, int startOffset, int endOffset);
+
     public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset);
 
     public ExprTy createNone(int startOffset, int endOffset);

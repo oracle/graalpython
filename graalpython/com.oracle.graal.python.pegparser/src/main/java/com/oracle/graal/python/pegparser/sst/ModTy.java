@@ -47,7 +47,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class TypeIgnore extends SSTNode {
-        final String tag;
+        public final String tag;
 
         public TypeIgnore(String tag, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -62,7 +62,7 @@ public abstract class ModTy extends SSTNode {
 
     public static final class Module extends ModTy {
         public final StmtTy[] body;
-        final TypeIgnore[] typeIgnores;
+        public final TypeIgnore[] typeIgnores;
 
         public Module(StmtTy[] body, TypeIgnore[] typeIgnores, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -77,7 +77,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class Interactive extends ModTy {
-        final StmtTy[] body;
+        public final StmtTy[] body;
 
         public Interactive(StmtTy[] body, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -91,7 +91,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class Expression extends ModTy {
-        final ExprTy body;
+        public final ExprTy body;
 
         public Expression(ExprTy body, int startOffset, int endOffset) {
             super(startOffset, endOffset);
@@ -105,8 +105,8 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class FunctionType extends ModTy {
-        final ExprTy[] argTypes;
-        final ExprTy returns;
+        public final ExprTy[] argTypes;
+        public final ExprTy returns;
 
         public FunctionType(ExprTy[] argTypes, ExprTy returns, int startOffset, int endOffset) {
             super(startOffset, endOffset);

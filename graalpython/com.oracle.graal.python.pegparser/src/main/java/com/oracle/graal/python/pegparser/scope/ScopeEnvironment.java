@@ -729,7 +729,8 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ModTy.Expression node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.body.accept(this);
+            return null;
         }
 
         @Override
@@ -739,7 +740,8 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ModTy.Interactive node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
