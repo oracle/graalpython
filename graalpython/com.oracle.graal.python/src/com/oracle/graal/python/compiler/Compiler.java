@@ -71,6 +71,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     int nestingLevel = 0;
     CompilationUnit unit;
     Stack<CompilationUnit> stack = new Stack<>();
+    private boolean interactive;
 
     public enum Flags {
     }
@@ -1385,7 +1386,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Expression node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return node.body.accept(this);
     }
 
     @Override
@@ -1395,7 +1396,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Interactive node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        interactive = true;
+        return visitSequence(node.body);
     }
 
     @Override
