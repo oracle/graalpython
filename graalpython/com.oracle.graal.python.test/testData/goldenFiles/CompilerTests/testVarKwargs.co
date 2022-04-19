@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (foo from <module>)
+000000         0 LOAD_CONST                        0    (foo)
 000000         2 MAKE_FUNCTION                     0
 000000         4 STORE_NAME                        0    (foo)
 000000         6 LOAD_NONE

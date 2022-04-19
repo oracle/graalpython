@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (<setcomp> from <module>)
+000000         0 LOAD_CONST                        0    (<setcomp>)
 000000         2 MAKE_FUNCTION                     0
 000016         4 LOAD_NAME                         0    (range)
 000022         6 LOAD_BYTE                         10

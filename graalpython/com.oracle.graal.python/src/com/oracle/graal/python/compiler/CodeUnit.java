@@ -65,7 +65,6 @@ public final class CodeUnit {
 
     public final String name;
     public final String qualname;
-    public final String filename;
 
     public final int argCount;
     public final int kwOnlyArgCount;
@@ -91,7 +90,7 @@ public final class CodeUnit {
 
     public final int startOffset;
 
-    CodeUnit(String name, String qualname, String filename,
+    CodeUnit(String name, String qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
                     byte[] code, byte[] linetable, int flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars, int[] cell2arg,
@@ -99,7 +98,6 @@ public final class CodeUnit {
                     short[] exceptionHandlerRanges, int startOffset) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
-        this.filename = filename;
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
@@ -246,7 +244,7 @@ public final class CodeUnit {
                 case MAKE_KEYWORD: {
                     Object constant = constants[oparg];
                     if (constant instanceof CodeUnit) {
-                        line[5] = ((CodeUnit) constant).qualname + " from " + ((CodeUnit) constant).filename;
+                        line[5] = ((CodeUnit) constant).qualname;
                     } else {
                         if (constant instanceof String) {
                             line[5] = PString.repr((String) constant);

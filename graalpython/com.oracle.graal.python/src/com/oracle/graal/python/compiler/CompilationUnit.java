@@ -170,7 +170,7 @@ public final class CompilationUnit {
         }
     }
 
-    public CodeUnit assemble(String filename, int flags) {
+    public CodeUnit assemble(int flags) {
         addImplicitReturn();
         calculateJumpInstructionArguments();
 
@@ -242,7 +242,7 @@ public final class CompilationUnit {
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
         }
-        return new CodeUnit(name, qualName, filename,
+        return new CodeUnit(name, qualName,
                         argCount, kwOnlyArgCount, positionalOnlyArgCount,
                         varnames.size(), maxStackSize,
                         buf.toByteArray(), srcOffsets.toByteArray(), flags,

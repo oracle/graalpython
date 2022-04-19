@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000000         0 LOAD_BUILD_CLASS
-000000         1 LOAD_CONST                        0    (HandlerTask from <module>)
+000000         1 LOAD_CONST                        0    (HandlerTask)
 000000         3 MAKE_FUNCTION                     0
 000000         5 LOAD_STRING                       1    ('HandlerTask')
 000018         7 LOAD_GLOBAL                       0    (Task)
@@ -14,7 +14,7 @@ Disassembly of HandlerTask:
 000000         2 STORE_NAME                        1    (__module__)
 000000         4 LOAD_STRING                       0    ('HandlerTask')
 000000         6 STORE_NAME                        2    (__qualname__)
-000029         8 LOAD_CONST                        1    (HandlerTask.__init__ from <module>)
+000029         8 LOAD_CONST                        1    (HandlerTask.__init__)
 000029        10 MAKE_FUNCTION                     0
 000029        12 STORE_NAME                        3    (__init__)
 000029        14 LOAD_NONE

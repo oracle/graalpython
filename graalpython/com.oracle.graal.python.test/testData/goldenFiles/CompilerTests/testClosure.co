@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (foo from <module>)
+000000         0 LOAD_CONST                        0    (foo)
 000000         2 MAKE_FUNCTION                     0
 000000         4 STORE_NAME                        0    (foo)
 000000         6 LOAD_NONE
@@ -10,7 +10,7 @@ Disassembly of foo:
 000015         2 STORE_DEREF                       0    (x)
 000025         4 LOAD_CLOSURE                      0    (x)
 000025         6 CLOSURE_FROM_STACK                1
-000025         8 LOAD_CONST                        1    (foo.<locals>.bar from <module>)
+000025         8 LOAD_CONST                        1    (foo.<locals>.bar)
 000025        10 MAKE_FUNCTION                     8
 000025        12 STORE_FAST                        0    (bar)
 000090        14 LOAD_FAST                         0    (bar)

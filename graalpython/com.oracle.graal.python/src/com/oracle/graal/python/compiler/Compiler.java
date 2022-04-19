@@ -63,7 +63,6 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.util.PythonUtils;
 
 public class Compiler implements SSTreeVisitor<Void> {
-    String filename;
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
     int optimizationLevel = 0;
@@ -76,8 +75,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public enum Flags {
     }
 
-    public CompilationUnit compile(ModTy mod, String filename, EnumSet<Flags> flags, int optimizationLevel) {
-        this.filename = filename == null ? "<module>" : filename;
+    public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
         this.env = new ScopeEnvironment(mod);
         this.optimizationLevel = optimizationLevel;
@@ -1017,7 +1015,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             try {
                 node.body.accept(this);
                 addOp(RETURN_VALUE);
-                code = unit.assemble(filename, flags);
+                code = unit.assemble(flags);
             } finally {
                 exitScope();
             }
@@ -1112,7 +1110,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (type != ComprehensionType.GENEXPR) {
                 addOp(RETURN_VALUE);
             }
-            CodeUnit code = unit.assemble(filename, 0);
+            CodeUnit code = unit.assemble(0);
             exitScope();
             makeClosure(code);
             generators[0].iter.accept(this);
@@ -1539,7 +1537,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(LOAD_NONE);
         }
         addOp(RETURN_VALUE);
-        CodeUnit co = unit.assemble(filename, 0);
+        CodeUnit co = unit.assemble(0);
         exitScope();
 
         addOp(LOAD_BUILD_CLASS);
@@ -1644,7 +1642,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             String docString = getDocstring(node.body);
             addObject(unit.constants, docString);
             visitSequence(node.body);
-            code = unit.assemble(filename, flags);
+            code = unit.assemble(flags);
         } finally {
             exitScope();
         }

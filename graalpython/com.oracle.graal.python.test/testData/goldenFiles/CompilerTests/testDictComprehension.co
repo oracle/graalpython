@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (<dictcomp> from <module>)
+000000         0 LOAD_CONST                        0    (<dictcomp>)
 000000         2 MAKE_FUNCTION                     0
 000020         4 LOAD_NAME                         0    (range)
 000026         6 LOAD_BYTE                         10

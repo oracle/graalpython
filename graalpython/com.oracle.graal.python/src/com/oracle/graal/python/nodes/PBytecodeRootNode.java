@@ -352,7 +352,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private final Signature signature;
     private final String name;
-    public final String filename;
     private boolean pythonInternal;
 
     private final int celloffset;
@@ -508,7 +507,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.varnames = co.varnames;
         this.freevars = co.freevars;
         this.cellvars = co.cellvars;
-        this.filename = co.filename;
         this.name = co.name;
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
@@ -1907,7 +1905,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         assert callTarget != null;
         PCode codeobj = factory.createCode(callTarget, newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
-                        newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, newCode.filename, newCode.name,
+                        newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, null, newCode.name,
                         newCode.startOffset, newCode.srcOffsetTable);
         localFrame.setObject(stackTop, factory.createFunction(newCode.name, newCode.qualname, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));
         if (annotations != null) {

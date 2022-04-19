@@ -341,15 +341,15 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testTryFinallyNested() {
         String source = "def foo(obj):\n" +
-                "            for x in obj:\n" +
-                "                print(x)\n" +
-                "            try:\n" +
-                "                try:\n" +
-                "                    print('try')\n" +
-                "                finally:\n" +
-                "                    print('finally1')\n" +
-                "            finally:\n" +
-                "                print('finally2')\n";
+                        "    for x in obj:\n" +
+                        "        print(x)\n" +
+                        "    try:\n" +
+                        "        try:\n" +
+                        "            print('try')\n" +
+                        "        finally:\n" +
+                        "            print('finally1')\n" +
+                        "    finally:\n" +
+                        "        print('finally2')\n";
         doTest(source);
     }
 
@@ -704,10 +704,6 @@ public class CompilerTests extends PythonTests {
     }
 
     private void doTest(String src) {
-        doTest(src, null);
-    }
-
-    private void doTest(String src, String moduleName) {
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
         ParserErrorCallback errorCb = new ParserErrorCallback() {
@@ -726,8 +722,8 @@ public class CompilerTests extends PythonTests {
         Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
         ModTy result = parser.file_rule();
         Compiler compiler = new Compiler();
-        CompilationUnit cu = compiler.compile(result, moduleName, EnumSet.noneOf(Compiler.Flags.class), 2);
-        CodeUnit co = cu.assemble(moduleName, 0);
+        CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
+        CodeUnit co = cu.assemble(0);
         checkCodeUnit(co);
     }
 

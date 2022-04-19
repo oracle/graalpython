@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000000         0 COLLECTION_FROM_STACK             0    (PKeyword[])
-000000         2 LOAD_CONST                        0    (foo from <module>)
+000000         2 LOAD_CONST                        0    (foo)
 000000         4 MAKE_FUNCTION                     2
 000000         6 STORE_NAME                        0    (foo)
 000000         8 LOAD_NONE

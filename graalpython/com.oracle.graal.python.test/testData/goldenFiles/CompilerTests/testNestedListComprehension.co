@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (<listcomp> from <module>)
+000000         0 LOAD_CONST                        0    (<listcomp>)
 000000         2 MAKE_FUNCTION                     0
 000032         4 LOAD_NAME                         0    (range)
 000038         6 LOAD_BYTE                         3
@@ -13,7 +13,7 @@ Disassembly of <listcomp>:
 000000         2 LOAD_FAST                         0    (.0)
 000000   >>    4 FOR_ITER                          21   (to 25)
 000027         6 STORE_FAST                        1    (y)
-000001         8 LOAD_CONST                        0    (<listcomp>.<listcomp> from <module>)
+000001         8 LOAD_CONST                        0    (<listcomp>.<listcomp>)
 000001        10 MAKE_FUNCTION                     0
 000013        12 LOAD_GLOBAL                       0    (range)
 000019        14 LOAD_BYTE                         5
