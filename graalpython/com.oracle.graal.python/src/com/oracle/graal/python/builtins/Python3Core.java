@@ -327,7 +327,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.pegparser.AbstractParser;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1145,7 +1145,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
             if (getContext().getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                return getLanguage().parseForBytecodeInterpreter(getContext(), source, AbstractParser.InputType.FILE, false, 0);
+                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0);
             }
             return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };

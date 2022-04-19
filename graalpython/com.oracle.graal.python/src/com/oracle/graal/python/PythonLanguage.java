@@ -64,8 +64,8 @@ import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
-import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserErrorCallback;
@@ -448,10 +448,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
@@ -463,7 +463,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (!request.getArgumentNames().isEmpty()) {
                 throw new IllegalStateException("Not supported yet");
             }
-            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
@@ -475,25 +475,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.EVAL, false, optimize);
+                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize);
             }
         }
         for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
             if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, optimize);
+                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize);
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, true, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, AbstractParser.InputType.FILE, false, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, AbstractParser.InputType type, boolean topLevel, int optimize) {
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
         ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
