@@ -604,7 +604,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         copyArgs(arguments, localFrame);
         int varIdx = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
         if (co.takesVarArgs()) {
-            localFrame.setObject(varIdx++, factory.createList(PArguments.getVariableArguments(arguments)));
+            localFrame.setObject(varIdx++, factory.createTuple(PArguments.getVariableArguments(arguments)));
         }
         if (co.takesVarKeywordArgs()) {
             localFrame.setObject(varIdx, factory.createDict(PArguments.getKeywordArguments(arguments)));
