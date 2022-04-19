@@ -60,20 +60,9 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
  * allows us to keep the actions and parser generator very similar to CPython for easier updating in
  * the future.
  */
-public abstract class AbstractParser {
+abstract class AbstractParser {
     protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
-
-    /**
-     * Type of input input for the parser
-     */
-    public enum InputType {
-        SINGLE,
-        FILE,
-        EVAL,
-        FUNCTION_TYPE,
-        FSTRING
-    }
 
     /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
