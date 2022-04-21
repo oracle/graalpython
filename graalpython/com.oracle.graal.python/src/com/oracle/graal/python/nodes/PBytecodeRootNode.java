@@ -53,6 +53,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -481,9 +482,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return newBuilder.build();
     }
 
+    private static Signature makeSignature(CodeUnit co) {
+        int posArgCount = co.argCount + co.positionalOnlyArgCount;
+        String[] parameterNames = Arrays.copyOf(co.varnames, posArgCount);
+        String[] kwOnlyNames = Arrays.copyOfRange(co.varnames, posArgCount, posArgCount + co.kwOnlyArgCount);
+        int varArgsIndex = co.takesVarArgs() ? posArgCount : -1;
+        return new Signature(co.positionalOnlyArgCount,
+                        co.takesVarKeywordArgs(),
+                        varArgsIndex,
+                        co.positionalOnlyArgCount > 0,
+                        parameterNames,
+                        kwOnlyNames);
+    }
+
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, CodeUnit co, Source source) {
-        this(language, makeFrameDescriptor(co), sign, co, source);
+    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source) {
+        this(language, makeFrameDescriptor(co), makeSignature(co), co, source);
     }
 
     @TruffleBoundary
@@ -1885,18 +1899,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localFrame.setObject(stackTop--, null);
             defaults = (Object[]) localFrame.getObject(stackTop);
         }
-        int posArgCount = newCode.argCount + newCode.positionalOnlyArgCount;
-        String[] parameterNames = Arrays.copyOf(newCode.varnames, posArgCount);
-        String[] kwOnlyNames = Arrays.copyOfRange(newCode.varnames, posArgCount, posArgCount + newCode.kwOnlyArgCount);
-        int varArgsIndex = newCode.takesVarArgs() ? posArgCount : -1;
-        Signature newSignature = new Signature(newCode.positionalOnlyArgCount,
-                        newCode.takesVarKeywordArgs(),
-                        varArgsIndex,
-                        newCode.positionalOnlyArgCount > 0,
-                        parameterNames,
-                        kwOnlyNames);
         RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(this), newSignature, newCode, source);
+        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(this), newCode, source);
         if (newCode.isGeneratorOrCoroutine()) {
             // TODO what should the frameDescriptor be? does it matter?
             callTarget = new PBytecodeGeneratorFunctionRootNode(PythonLanguage.get(this), bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, newCode.name, signature).getCallTarget();
@@ -1904,7 +1908,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             callTarget = bytecodeRootNode.getCallTarget();
         }
         assert callTarget != null;
-        PCode codeobj = factory.createCode(callTarget, newSignature, newCode.nlocals, newCode.stacksize, newCode.flags,
+        PCode codeobj = factory.createCode(callTarget, bytecodeRootNode.signature, newCode.varnames.length, newCode.stacksize, newCode.flags,
                         newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, null, newCode.name,
                         newCode.startOffset, newCode.srcOffsetTable);
         localFrame.setObject(stackTop, factory.createFunction(newCode.name, newCode.qualname, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));
@@ -2203,6 +2207,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return sourceSection;
         } else if (source == null) {
             return null;
+        } else if (!source.hasCharacters()) {
+            return source.createUnavailableSection();
         } else {
             int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
             for (int bci = 0; bci < co.code.length; bci++) {
@@ -2213,5 +2219,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createSection(min, max - min);
             return sourceSection;
         }
+    }
+
+    @Override
+    protected byte[] extractCode() {
+        return MarshalModuleBuiltins.serializeCodeUnit(co);
     }
 }

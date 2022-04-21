@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -237,6 +238,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
         static final int MAGIC_NUMBER = 21000 + SerializationUtils.VERSION * 10;
+        static final int MAGIC_NUMBER_BYTECODE = 21000 + Compiler.BYTECODE_VERSION * 10;
 
         @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
         @Child private PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().createDispatched(1);
@@ -258,7 +260,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         protected byte[] getMagicNumberBytes(VirtualFrame frame) {
-            PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
+            int magicNumber = MAGIC_NUMBER;
+            if (getContext().getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                magicNumber = MAGIC_NUMBER_BYTECODE;
+            }
+            PBytes magic = toBytesNode.execute(frame, magicNumber, 2, "little", false);
             byte[] magicBytes = bufferLib.getInternalOrCopiedByteArray(magic);
             return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
         }

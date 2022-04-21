@@ -38,6 +38,7 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -47,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -469,8 +469,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
         }
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
-            // byte[] bytes = source.getBytes().toByteArray();
-            throw new IllegalStateException("Unmarshalling bytecode not supported yet");
+            byte[] bytes = source.getBytes().toByteArray();
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
+            // The original file path should be passed as the name
+            if (source.getName() != null && !source.getName().isEmpty()) {
+                try {
+                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(source.getName())).name(code.name).build();
+                } catch (IOException e) {
+                    // Proceed with binary source
+                }
+            }
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
@@ -516,12 +526,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(0);
-
-            Signature signature = new Signature(co.argCount - co.positionalOnlyArgCount,
-                            co.takesVarKeywordArgs(), co.takesVarArgs() ? co.argCount : -1, co.positionalOnlyArgCount > 0,
-                            Arrays.copyOf(co.varnames, co.argCount), // parameter names
-                            Arrays.copyOfRange(co.varnames, co.argCount + (co.takesVarArgs() ? 1 : 0), co.argCount + (co.takesVarArgs() ? 1 : 0) + co.kwOnlyArgCount));
-            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, signature, co, source);
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source);
             GilNode gil = GilNode.getUncached();
             boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
             try {

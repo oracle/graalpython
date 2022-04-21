@@ -243,8 +243,7 @@ public final class CompilationUnit {
             i += rangeElements;
         }
         return new CodeUnit(name, qualName,
-                        argCount, kwOnlyArgCount, positionalOnlyArgCount,
-                        varnames.size(), maxStackSize,
+                        argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
                         buf.toByteArray(), srcOffsets.toByteArray(), flags,
                         orderedKeys(names, new String[0]),
                         orderedKeys(varnames, new String[0]),

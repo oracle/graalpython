@@ -70,7 +70,6 @@ public final class CodeUnit {
     public final int kwOnlyArgCount;
     public final int positionalOnlyArgCount;
 
-    public final int nlocals;
     public final int stacksize;
 
     public final byte[] code;
@@ -90,8 +89,8 @@ public final class CodeUnit {
 
     public final int startOffset;
 
-    CodeUnit(String name, String qualname,
-                    int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int nlocals, int stacksize,
+    public CodeUnit(String name, String qualname,
+                    int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
                     byte[] code, byte[] linetable, int flags,
                     String[] names, String[] varnames, String[] cellvars, String[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
@@ -101,7 +100,6 @@ public final class CodeUnit {
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
-        this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.code = code;
         this.srcOffsetTable = linetable;

@@ -63,6 +63,8 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.util.PythonUtils;
 
 public class Compiler implements SSTreeVisitor<Void> {
+    public static final int BYTECODE_VERSION = 20;
+
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
     int optimizationLevel = 0;

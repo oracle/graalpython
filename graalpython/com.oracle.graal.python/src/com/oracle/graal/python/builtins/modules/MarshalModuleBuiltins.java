@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -57,22 +56,18 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyComplexCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyDictCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyFloatCheckExactNodeGen;
@@ -85,7 +80,6 @@ import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -95,14 +89,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -252,7 +243,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_LIST = '[';
         private static final char TYPE_DICT = '{';
         private static final char TYPE_CODE = 'c';
-        private static final char TYPE_GRAALPYTHON_CODE = 'C';
         private static final char TYPE_UNICODE = 'u';
         private static final char TYPE_UNKNOWN = '?';
         private static final char TYPE_SET = '<';
@@ -263,6 +253,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_SMALL_TUPLE = ')';
         private static final char TYPE_SHORT_ASCII = 'z';
         private static final char TYPE_SHORT_ASCII_INTERNED = 'Z';
+
+        // Following types are GraalPython-specific for serializing our code objects that may use
+        // plain Java objects
+        private static final char TYPE_GRAALPYTHON_CODE = 'C';
+        private static final char TYPE_GRAALPYTHON_CODE_UNIT = 'U';
+        private static final char TYPE_BIG_INTEGER = 'B';
+        private static final char TYPE_ARRAY = ']';
+
+        private static final char ARRAY_TYPE_OBJECT = 'o';
+        private static final char ARRAY_TYPE_INT = 'i';
+        private static final char ARRAY_TYPE_LONG = 'l';
+        private static final char ARRAY_TYPE_DOUBLE = 'd';
+        private static final char ARRAY_TYPE_BYTE = 'b';
+        private static final char ARRAY_TYPE_SHORT = 's';
+        private static final char ARRAY_TYPE_STRING = 'S';
         private static final int MAX_MARSHAL_STACK_DEPTH = 201;
 
         // CPython enforces 15bits per digit when reading/writing large integers for portability
@@ -271,6 +276,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private static final int BYTES_PER_LONG = Long.SIZE / Byte.SIZE;
         private static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
+        private static final int BYTES_PER_SHORT = Short.SIZE / Byte.SIZE;
 
         /**
          * This class exists to throw errors out of the (un)marshalling code, without having to
@@ -498,8 +504,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private void writeShort(short v) {
+            for (int i = 0; i < Short.SIZE; i += Byte.SIZE) {
+                out.write((v >> i) & 0xff);
+            }
+        }
+
         private int readInt() {
             return baSupport.getInt(readNBytes(BYTES_PER_INT), 0);
+        }
+
+        private short readShort() {
+            return baSupport.getShort(readNBytes(BYTES_PER_SHORT), 0);
         }
 
         private void writeLong(long v) {
@@ -618,7 +634,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             // see CPython's w_object
             if (v == null) {
-                writeByte(TYPE_NULL);
+                writeNull();
             } else if (v == PNone.NONE) {
                 writeByte(TYPE_NONE);
             } else if (v == PNone.NO_VALUE) {
@@ -645,11 +661,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_FLOAT);
                     writeDoubleString((Double) v);
                 }
+            } else if (v instanceof BigInteger) {
+                writeByte(TYPE_BIG_INTEGER);
+                writeBigInteger((BigInteger) v);
             } else {
                 writeReferenceOrComplexObject(v);
             }
 
             depth--;
+        }
+
+        private void writeNull() {
+            writeByte(TYPE_NULL);
         }
 
         private void writeComplexObject(Object v, int flag) {
@@ -721,7 +744,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeObject(entry.key);
                         writeObject(entry.value);
                     }
-                    writeByte(TYPE_NULL);
+                    writeNull();
                 } else if (v instanceof PBaseSet && (PySetCheckExactNodeGen.getUncached().execute(v) || PyFrozenSetCheckExactNodeGen.getUncached().execute(v))) {
                     if (PyFrozenSetCheckExactNodeGen.getUncached().execute(v)) {
                         writeByte(TYPE_FROZENSET | flag);
@@ -735,6 +758,34 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     for (DictEntry entry : lib.entries(dictStorage)) {
                         writeObject(entry.key);
                     }
+                } else if (v instanceof int[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_INT);
+                    writeIntArray((int[]) v);
+                } else if (v instanceof long[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_LONG);
+                    writeLongArray((long[]) v);
+                } else if (v instanceof short[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_SHORT);
+                    writeShortArray((short[]) v);
+                } else if (v instanceof double[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_DOUBLE);
+                    writeDoubleArray((double[]) v);
+                } else if (v instanceof byte[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_BYTE);
+                    writeBytes((byte[]) v);
+                } else if (v instanceof String[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_STRING);
+                    writeStringArray((String[]) v);
+                } else if (v instanceof Object[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_OBJECT);
+                    writeObjectArray((Object[]) v);
                 } else if (v instanceof PCode) {
                     // we always store code objects in our format, CPython will not read our
                     // marshalled data when that contains code objects
@@ -749,6 +800,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
                     }
                     writeBytes(lnotab);
+                } else if (v instanceof CodeUnit) {
+                    writeByte(TYPE_GRAALPYTHON_CODE_UNIT | flag);
+                    writeCodeUnit((CodeUnit) v);
                 } else {
                     PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(v);
                     if (acquireLib.hasBuffer(v)) {
@@ -769,6 +823,48 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 }
             } catch (IOException e) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+            }
+        }
+
+        private void writeObjectArray(Object[] a) throws IOException {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeObject(a[i]);
+            }
+        }
+
+        private void writeDoubleArray(double[] a) {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeDouble(a[i]);
+            }
+        }
+
+        private void writeLongArray(long[] a) {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeLong(a[i]);
+            }
+        }
+
+        private void writeIntArray(int[] a) {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeInt(a[i]);
+            }
+        }
+
+        private void writeStringArray(String[] a) throws IOException {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeString(a[i]);
+            }
+        }
+
+        private void writeShortArray(short[] a) throws IOException {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeShort(a[i]);
             }
         }
 
@@ -795,9 +891,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 // TODO: special for now...
                 return readCPythonCode(flag != 0);
             } else {
+                int reference = refList.size();
+                if (flag != 0) {
+                    refList.add(null);
+                }
                 Object retval = readObject(type, (o) -> {
                     if (flag != 0) {
-                        refList.add(o);
+                        refList.set(reference, o);
                     }
                     return o;
                 });
@@ -826,6 +926,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return addRef.run(readInt());
                 case TYPE_INT64:
                     return addRef.run(readLong());
+                case TYPE_BIG_INTEGER:
+                    return readBigInteger();
                 case TYPE_LONG:
                     return addRef.run(factory.createInt(readBigInteger()));
                 case TYPE_FLOAT:
@@ -908,6 +1010,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return set;
                 case TYPE_GRAALPYTHON_CODE:
                     return addRef.run(readCode());
+                case TYPE_GRAALPYTHON_CODE_UNIT:
+                    return addRef.run(readCodeUnit());
+                case TYPE_ARRAY: {
+                    return addRef.run(readJavaArray());
+                }
                 default:
                     throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
@@ -955,6 +1062,133 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 }
                 items[i] = item;
             }
+        }
+
+        private Object readJavaArray() {
+            int type = readByte();
+            switch (type) {
+                case ARRAY_TYPE_BYTE:
+                    return readBytes();
+                case ARRAY_TYPE_INT:
+                    return readIntArray();
+                case ARRAY_TYPE_LONG:
+                    return readLongArray();
+                case ARRAY_TYPE_DOUBLE:
+                    return readDoubleArray();
+                case ARRAY_TYPE_SHORT:
+                    return readShortArray();
+                case ARRAY_TYPE_STRING:
+                    return readStringArray();
+                case ARRAY_TYPE_OBJECT:
+                    return readObjectArray();
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("unknown array type");
+            }
+        }
+
+        private int[] readIntArray() {
+            int length = readInt();
+            int[] a = new int[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readInt();
+            }
+            return a;
+        }
+
+        private long[] readLongArray() {
+            int length = readInt();
+            long[] a = new long[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readLong();
+            }
+            return a;
+        }
+
+        private double[] readDoubleArray() {
+            int length = readInt();
+            double[] a = new double[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readDouble();
+            }
+            return a;
+        }
+
+        private short[] readShortArray() {
+            int length = readInt();
+            short[] a = new short[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readShort();
+            }
+            return a;
+        }
+
+        private String[] readStringArray() {
+            int length = readInt();
+            String[] a = new String[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readString();
+            }
+            return a;
+        }
+
+        private Object[] readObjectArray() {
+            int length = readInt();
+            Object[] a = new Object[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readObject();
+            }
+            return a;
+        }
+
+        private CodeUnit readCodeUnit() {
+            String name = readString();
+            String qualname = readString();
+            int argCount = readInt();
+            int kwOnlyArgCount = readInt();
+            int positionalOnlyArgCount = readInt();
+            int stacksize = readInt();
+            byte[] code = readBytes();
+            byte[] srcOffsetTable = readBytes();
+            int flags = readInt();
+            String[] names = readStringArray();
+            String[] varnames = readStringArray();
+            String[] cellvars = readStringArray();
+            String[] freevars = readStringArray();
+            int[] cell2arg = readIntArray();
+            if (cell2arg.length == 0) {
+                cell2arg = null;
+            }
+            Object[] constants = readObjectArray();
+            long[] primitiveConstants = readLongArray();
+            short[] exceptionHandlerRanges = readShortArray();
+            int startOffset = readInt();
+            return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset);
+        }
+
+        private void writeCodeUnit(CodeUnit code) throws IOException {
+            writeString(code.name);
+            writeString(code.qualname);
+            writeInt(code.argCount);
+            writeInt(code.kwOnlyArgCount);
+            writeInt(code.positionalOnlyArgCount);
+            writeInt(code.stacksize);
+            writeBytes(code.code);
+            writeBytes(code.srcOffsetTable);
+            writeInt(code.flags);
+            writeStringArray(code.names);
+            writeStringArray(code.varnames);
+            writeStringArray(code.cellvars);
+            writeStringArray(code.freevars);
+            if (code.cell2arg != null) {
+                writeIntArray(code.cell2arg);
+            } else {
+                writeIntArray(PythonUtils.EMPTY_INT_ARRAY);
+            }
+            writeObjectArray(code.constants);
+            writeLongArray(code.primitiveConstants);
+            writeShortArray(code.exceptionHandlerRanges);
+            writeInt(code.startOffset);
         }
 
         private PCode readCode() {
@@ -1050,5 +1284,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             return null;
         }
+    }
+
+    public static byte[] serializeCodeUnit(CodeUnit code) {
+        try {
+            Marshal marshal = new Marshal(CURRENT_VERSION, null, null);
+            marshal.writeCodeUnit(code);
+            return marshal.out.toByteArray();
+        } catch (IOException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    public static CodeUnit deserializeCodeUnit(byte[] bytes) {
+        Marshal marshal = new Marshal(bytes, bytes.length);
+        return marshal.readCodeUnit();
     }
 }
