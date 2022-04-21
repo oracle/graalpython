@@ -154,7 +154,6 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
@@ -376,11 +375,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         public int getBci(Frame frame) {
-            try {
-                return frame.getInt(rootNode.bcioffset);
-            } catch (FrameSlotTypeException e) {
+            Integer bci = (Integer) frame.getValue(rootNode.bcioffset);
+            if (bci == null) {
                 return -1;
             }
+            return bci;
         }
 
         public Object getGeneratorReturnValue(Frame frame) {
