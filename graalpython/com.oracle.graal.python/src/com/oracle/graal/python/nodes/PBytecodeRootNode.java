@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -137,6 +139,8 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1376,33 +1380,65 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // prepare next loop
                 oparg = 0;
                 bci++;
-            } catch (PException e) {
+            } catch (Exception | StackOverflowError | AssertionError e) {
+                // TODO interop exceptions
+                PException pe;
+                if (e instanceof PException) {
+                    pe = (PException) e;
+                } else {
+                    pe = wrapJavaExceptionIfApplicable(e);
+                    if (pe == null) {
+                        throw e;
+                    }
+                }
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
-                e.markAsOriginatingFromBytecode();
+                pe.markAsOriginatingFromBytecode();
                 PException exceptionState = PArguments.getException(localFrame);
                 if (exceptionState != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(e.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
                 if (newTarget == -1) {
                     localFrame.setInt(bcioffset, beginBci);
-                    throw e;
+                    if (e == pe) {
+                        throw pe;
+                    } else {
+                        throw pe.getExceptionForReraise();
+                    }
                 } else {
-                    e.setCatchingFrameReference(virtualFrame, this, bci);
+                    pe.setCatchingFrameReference(virtualFrame, this, bci);
                     int stackSizeOnEntry = decodeStackTop((int) newTarget);
                     stackTop = unwindBlock(localFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stacksize, not the top of stack. so the stackTop is
                     // to be replaced with the exception
-                    localFrame.setObject(stackTop, e);
+                    localFrame.setObject(stackTop, pe);
                     bci = decodeBCI((int) newTarget);
                 }
-            } catch (AbstractTruffleException | StackOverflowError e) {
-                throw e;
-            } catch (ControlFlowException | ThreadDeath e) {
-                // do not handle ThreadDeath, result of TruffleContext.closeCancelled()
-                throw e;
             }
         }
+    }
+
+    protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof ControlFlowException) {
+            return null;
+        }
+        if (PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions) && (e instanceof Exception || e instanceof AssertionError)) {
+            return wrapJavaException(e, factory.createBaseException(SystemError, "%m", new Object[]{e}));
+        }
+        if (e instanceof StackOverflowError) {
+            PythonContext.get(this).reacquireGilAfterStackOverflow();
+            return wrapJavaException(e, factory.createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+        }
+        return null;
+    }
+
+    public PException wrapJavaException(Throwable e, PBaseException pythonException) {
+        PException pe = PException.fromObject(pythonException, this, e);
+        pe.setHideLocation(true);
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
+        return pe;
     }
 
     private int bytecodeFormatValue(VirtualFrame virtualFrame, int initialStackTop, int bci, Frame localFrame, Node[] localNodes, int options) {
