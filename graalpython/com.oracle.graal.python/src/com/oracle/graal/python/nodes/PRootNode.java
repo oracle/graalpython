@@ -204,6 +204,7 @@ public abstract class PRootNode extends RootNode {
         this.code = data;
     }
 
+    @TruffleBoundary
     public final byte[] getCode() {
         if (code != null) {
             return code;
