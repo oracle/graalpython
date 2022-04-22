@@ -2230,7 +2230,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @TruffleBoundary
     public int bciToLine(int bci) {
-        if (source != null && bci >= 0) {
+        if (source != null && source.hasCharacters() && bci >= 0) {
             return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
         }
         return -1;
