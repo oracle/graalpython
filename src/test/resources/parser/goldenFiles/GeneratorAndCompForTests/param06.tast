@@ -1,0 +1,24 @@
+Module[0, 78]
+    FunctionDef[0, 78]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[7, 12] files
+                ArgTy[14, 18] dirs
+        ---- Function body of fn ----
+        Assign[23, 78]
+            LHS: Name[23, 24] Value: "a" Store
+            RHS: 
+                ListComp[27, 78]
+                    Element: Call[28, 43]
+                        Target: Name[28, 32] Value: "join"
+                        Args:
+                            Name[33, 36] Value: "dir"
+                            Name[38, 42] Value: "file"
+                    ComprehensionTy[44, 59]
+                        Target: Name[48, 51] Value: "dir" Store
+                        Iterator: Name[55, 59] Value: "dirs"
+                    ComprehensionTy[60, 77]
+                        Target: Name[64, 68] Value: "file" Store
+                        Iterator: Name[72, 77] Value: "files"
+        ---- End of fn function ----

@@ -844,6 +844,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
         if (node_action.startswith('factory')
             or node_action.startswith('new')
+            or node_action.startswith('checkVersion')
             or "ExprTy." in node_action
             or 'SSTNode' in node_action
             or len(node_action) == 1
@@ -866,9 +867,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if len(self.local_variable_names) > 1:
             if is_gather:
                 assert len(self.local_variable_names) == 2
+                element_type = _check_type(self, node.items[0].type)
                 self.print(
                     f"_res = insertInFront("
-                    f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
+                    f"{self.local_variable_names[0]}, {self.local_variable_names[1]}, {element_type}.class);"
                 )
             else:
                 self.printDebug(

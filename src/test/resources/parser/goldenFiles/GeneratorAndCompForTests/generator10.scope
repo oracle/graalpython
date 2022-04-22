@@ -1,0 +1,12 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      non_empty_lines: [DefLocal, Local]
+    Scope non_empty_lines Function
+        Flags: [IsGenerator]
+        Varnames: path
+        Symbols:
+            f: [DefLocal, Use, Local]
+            line: [DefLocal, Use, Local]
+            open: [Use, GlobalImplicit]
+            path: [DefParam, Use, Local]

@@ -1,0 +1,31 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      mro: [DefLocal, Local]
+    Scope mro Function
+        Flags: [HasChildWithFreeVars]
+        Varnames: cls, abcs
+        Symbols:
+            abcs: [DefParam, Use, Cell]
+            abstract_bases: [Use, GlobalImplicit]
+            any: [Use, GlobalImplicit]
+            base: [DefLocal, Use, Cell]
+            cls: [DefParam, Use, Local]
+            other: [DefLocal, Use, Local]
+      Scope genexp Function
+            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  b: [DefLocal, Use, DefCompIter, Local]
+                  base: [Use, Free]
+                  issubclass: [Use, GlobalImplicit]
+      Scope listcomp Function
+            Flags: [HasFreeVars, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  abcs: [Use, Free]
+                  base: [DefLocal, Use, DefCompIter, Local]
+                  mro: [Use, GlobalImplicit]

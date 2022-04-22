@@ -804,7 +804,24 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AsyncFunctionDef node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            addDef(node.name, DefUse.DefLocal);
+            if (node.args != null) {
+                visitSequence(node.args.defaults);
+                visitSequence(node.args.kwDefaults);
+            }
+            visitAnnotations(node, node.args, node.returns);
+            visitSequence(node.decoratorList);
+            enterBlock(node.name, ScopeType.Function, node);
+            try {
+                currentScope.flags.add(ScopeFlags.IsCoroutine);
+                if (node.args != null) {
+                    node.args.accept(this);
+                }
+                visitSequence(node.body);
+            } finally {
+                exitBlock();
+            }
+            return null;
         }
 
         @Override
@@ -1038,8 +1055,18 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(ComprehensionTy aThis) {
-            throw new UnsupportedOperationException("Not supported yet.");
+        public Void visit(ComprehensionTy node) {
+            currentScope.flags.add(ScopeFlags.IsVisitingIterTarget);
+            node.target.accept(this);
+            currentScope.flags.remove(ScopeFlags.IsVisitingIterTarget);
+            currentScope.comprehensionIterExpression++;
+            node.iter.accept(this);
+            currentScope.comprehensionIterExpression--;
+            visitSequence(node.ifs);
+            if (node.isAsync) {
+                currentScope.flags.add(ScopeFlags.IsCoroutine);
+            }
+            return null;
         }
 
         @Override

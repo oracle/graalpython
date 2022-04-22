@@ -60,7 +60,8 @@ public abstract class ExprTy extends SSTNode {
         }
 
         public static enum Type {
-            And, Or;
+            And,
+            Or;
         }
 
         public final Type op;
@@ -90,8 +91,18 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class BinOp extends ExprTy {
         public static enum Operator {
-            ADD, SUB, MULT, MATMULT, DIV, MOD, POW,
-            LSHIFT, RSHIFT, BITOR, BITXOR, BITAND,
+            ADD,
+            SUB,
+            MULT,
+            MATMULT,
+            DIV,
+            MOD,
+            POW,
+            LSHIFT,
+            RSHIFT,
+            BITOR,
+            BITXOR,
+            BITAND,
             FLOORDIV;
         }
 
@@ -114,7 +125,10 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class UnaryOp extends ExprTy {
         public static enum Operator {
-            INVERT, NOT, ADD, SUB;
+            INVERT,
+            NOT,
+            ADD,
+            SUB;
         }
 
         public final Operator op;
@@ -306,8 +320,16 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Compare extends ExprTy {
         public static enum Operator {
-            EQ, NOTEQ, LT, LTE, GT, GTE, IS, ISNOT,
-            IN, NOTIN;
+            EQ,
+            NOTEQ,
+            LT,
+            LTE,
+            GT,
+            GTE,
+            IS,
+            ISNOT,
+            IN,
+            NOTIN;
         }
 
         public final ExprTy left;
@@ -385,7 +407,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Constant extends ExprTy {
-        public static enum Kind {
+        public enum Kind {
             OBJECT,
             NONE,
             ELLIPSIS,
@@ -395,49 +417,16 @@ public abstract class ExprTy extends SSTNode {
             COMPLEX,
             BIGINTEGER,
             RAW,
-            BYTES;
+            BYTES
         }
 
         public final Object value;
-        public final long longValue;
         public final Kind kind;
 
         public Constant(Object value, Kind kind, int startOffset, int endOffset) {
             super(startOffset, endOffset);
             this.value = value;
-            this.longValue = 0;
             this.kind = kind == null ? Kind.OBJECT : kind;
-        }
-
-        public Constant(double value, Kind kind, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = null;
-            this.longValue = Double.doubleToLongBits(value);
-            this.kind = kind;
-        }
-
-        public Constant(long longValue, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = null;
-            this.longValue = longValue;
-            this.kind = Kind.LONG;
-        }
-
-        public Constant(double real, double imag, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
-            this.value = real;
-            this.longValue = Double.doubleToLongBits(imag);
-            this.kind = Kind.COMPLEX;
-        }
-
-        public long getReal() {
-            assert kind == Kind.COMPLEX;
-            return Double.doubleToLongBits((Double)value);
-        }
-
-        public long getImaginary() {
-            assert kind == Kind.COMPLEX;
-            return longValue;
         }
 
         @Override

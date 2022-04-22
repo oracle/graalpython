@@ -1,0 +1,14 @@
+Module[0, 28]
+    DictComp[0, 28]
+        Key: Name[1, 2] Value: "i"
+        Value: BinOp[4, 9]
+            Op: ADD
+            LHS: Name[4, 5] Value: "i"
+            RHS: LONG[8, 9] Value: 1
+        ComprehensionTy[10, 27]
+            Target: Name[14, 15] Value: "i" Store
+            Iterator: 
+                Call[19, 27]
+                    Target: Name[19, 24] Value: "range"
+                    Args:
+                        LONG[25, 26] Value: 3

@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
-import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 
 /**
  * Roughly equivalent to CPython's {@code symtable_entry}.
@@ -196,7 +195,7 @@ public class Scope {
     private List<String> getSortedSymbols() {
         if (sortedSymbols == null) {
             sortedSymbols = new ArrayList<>(symbols.keySet());
-            sortedSymbols.sort((s1,s2) -> s1.compareTo(s2));
+            sortedSymbols.sort((s1, s2) -> s1.compareTo(s2));
         }
         return sortedSymbols;
     }
@@ -215,6 +214,14 @@ public class Scope {
 
     public boolean isModule() {
         return type == ScopeType.Module;
+    }
+
+    public boolean isGenerator() {
+        return flags.contains(ScopeFlags.IsGenerator);
+    }
+
+    public boolean isCoroutine() {
+        return flags.contains(ScopeFlags.IsCoroutine);
     }
 
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {

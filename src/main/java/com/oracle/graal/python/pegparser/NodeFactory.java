@@ -43,7 +43,14 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
 import com.oracle.graal.python.pegparser.AbstractParser.SlashWithDefault;
 import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
-import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.sst.AliasTy;
+import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
 
 public interface NodeFactory {
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset);
@@ -81,7 +88,7 @@ public interface NodeFactory {
     public ExprTy createCall(ExprTy func, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset);
 
     public StmtTy createContinue(int startOffset, int endOffset);
-    
+
     public StmtTy createDelete(ExprTy[] targets, int startOffset, int endOffset);
 
     public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset);
@@ -136,7 +143,9 @@ public interface NodeFactory {
 
     public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset);
 
-    public StmtTy createFunctionDef(StmtTy funcDef, ExprTy[] decorators);
+    public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators);
+
+    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset);
 
     public StmtTy createReturn(ExprTy value, int startOffset, int endOffset);
 
@@ -175,4 +184,6 @@ public interface NodeFactory {
     public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset);
 
     public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset);
+
+    public ExprTy createAwait(ExprTy value, int startOffset, int endOffset);
 }

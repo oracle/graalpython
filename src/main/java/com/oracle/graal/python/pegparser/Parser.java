@@ -907,7 +907,7 @@ public final class Parser extends AbstractParser {
                 (b = expression_rule()) != null  // expression
             )
             {
-                _res = this.appendToEnd(this.singletonSequence(a),b);
+                _res = this.appendToEnd(new ExprTy [ ] {a},b);
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -925,7 +925,7 @@ public final class Parser extends AbstractParser {
                 (a = expression_rule()) != null  // expression
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new ExprTy [ ] {a};
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -943,7 +943,7 @@ public final class Parser extends AbstractParser {
                 (a = expression_rule()) != null  // expression
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new ExprTy [ ] {a};
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -1073,7 +1073,7 @@ public final class Parser extends AbstractParser {
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new StmtTy [ ] {a};
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -1107,7 +1107,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = this.singletonSequence(factory.createPass(startToken.startOffset,endToken.endOffset));
+                _res = new StmtTy [ ] {factory.createPass(startToken.startOffset,endToken.endOffset)};
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -1161,7 +1161,7 @@ public final class Parser extends AbstractParser {
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
             {
-                _res = this.singletonSequence(a);;
+                _res = new StmtTy [ ] {a} ;;
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -2430,7 +2430,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = this.singletonSequence(factory.createAlias("*",null,startToken.startOffset,endToken.endOffset));
+                _res = new AliasTy [ ] {factory.createAlias("*",null,startToken.startOffset,endToken.endOffset)};
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
                 return (AliasTy[])_res;
             }
@@ -2709,7 +2709,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
+                _res = factory.createIf(a,b,new StmtTy [ ] {c},startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, IF_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2807,7 +2807,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createIf(a,b,this.singletonSequence(c),startToken.startOffset,endToken.endOffset);
+                _res = factory.createIf(a,b,new StmtTy [ ] {c},startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -4627,7 +4627,7 @@ public final class Parser extends AbstractParser {
                 ((values = (ExprTy[])maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
             )
             {
-                _res = this.insertInFront(value,(SSTNode [ ])values);
+                _res = this.insertInFront(value,values);
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -5300,7 +5300,7 @@ public final class Parser extends AbstractParser {
                 (f = function_def_raw_rule()) != null  // function_def_raw
             )
             {
-                _res = factory.createFunctionDef(f,d);
+                _res = factory.createFunctionDefWithDecorators(f,d);
                 cache.putResult(_mark, FUNCTION_DEF_ID, _res);
                 return (StmtTy)_res;
             }
@@ -5420,9 +5420,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 5 , 'Async functions are' , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"Async functions are",factory.createAsyncFunctionDef(((ExprTy.Name)n).id,params,b,a,newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset));
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
@@ -6489,7 +6491,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.singletonSequence(a),ExprContext.Load,startToken.startOffset,endToken.endOffset);
+                _res = factory.createTuple(new ExprTy [ ] {a},ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -6895,8 +6897,8 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , new ExprTy [ ] {a} ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , new ExprTy [ ] {a} ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
@@ -7327,9 +7329,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
                 return (SlashWithDefault)_res;
             }
@@ -7352,9 +7352,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b ) to Java !!![0m");
-                _res = null;
+                _res = new SlashWithDefault(a,b);
                 cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
                 return (SlashWithDefault)_res;
             }
@@ -7399,9 +7397,7 @@ public final class Parser extends AbstractParser {
                 ((c = _tmp_138_rule()) != null || true)  // lambda_kwds?
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , a , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(a,b,c);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7425,9 +7421,7 @@ public final class Parser extends AbstractParser {
                 ((c = _tmp_140_rule()) != null || true)  // lambda_kwds?
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , b , c ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,b,c);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7442,9 +7436,7 @@ public final class Parser extends AbstractParser {
                 (a = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
-                // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_star_etc ( p , NULL , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = new StarEtc(null,null,a);
                 cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
                 return (StarEtc)_res;
             }
@@ -7586,9 +7578,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7608,9 +7598,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7650,9 +7638,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -7672,9 +7658,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 11)  // token=':'
             )
             {
-                // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_name_default_pair ( p , a , c , NULL ) to Java !!![0m");
-                _res = null;
+                _res = new NameDefaultPair(factory.createArgument(a.arg,a.annotation,null,a.getStartOffset(),a.getEndOffset()),c);
                 cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
                 return (NameDefaultPair)_res;
             }
@@ -9036,9 +9020,11 @@ public final class Parser extends AbstractParser {
                 (b = factor_rule()) != null  // factor
             )
             {
-                // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "The '@' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'The '@' operator is' , _PyAST_BinOp ( a , MatMult , b , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"The '@' operator is",factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT,a,b,startToken.startOffset,endToken.endOffset));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9230,6 +9216,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, AWAIT_PRIMARY_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // AWAIT primary
             if (errorIndicator) {
                 return null;
@@ -9242,9 +9229,11 @@ public final class Parser extends AbstractParser {
                 (a = primary_rule()) != null  // primary
             )
             {
-                // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( expr_ty , 5 , 'Await expressions are' , _PyAST_Await ( a , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5,"Await expressions are",factory.createAwait(a,startToken.startOffset,endToken.endOffset));
                 cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9353,9 +9342,11 @@ public final class Parser extends AbstractParser {
                 (b = genexp_rule()) != null  // genexp
             )
             {
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createCall(a,new ExprTy [ ] {b},EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11108,7 +11099,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new ExprTy [ ] {a};
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -11937,9 +11928,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( ExprTy [ ] ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createCall(a,new ExprTy [ ] {b},EMPTY_KWDS,startToken.startOffset,endToken.endOffset);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12949,7 +12942,7 @@ public final class Parser extends AbstractParser {
                 (a = (SlashWithDefault)slash_with_default_rule()) != null  // slash_with_default
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new SlashWithDefault [ ] {a};
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 return (Object)_res;
             }
@@ -13037,7 +13030,7 @@ public final class Parser extends AbstractParser {
                 (a = (SlashWithDefault)lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
             )
             {
-                _res = this.singletonSequence(a);
+                _res = new SlashWithDefault [ ] {a};
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 return (Object)_res;
             }
@@ -14108,7 +14101,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_6_rule()) != null  // _loop0_6
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_5_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -14186,7 +14179,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_8_rule()) != null  // _loop0_8
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_7_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -14264,7 +14257,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_10_rule()) != null  // _loop0_10
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_9_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -14342,7 +14335,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_12_rule()) != null  // _loop0_12
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_11_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -14463,7 +14456,7 @@ public final class Parser extends AbstractParser {
                 (seq = (StmtTy[])_loop0_15_rule()) != null  // _loop0_15
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, StmtTy.class);
                 cache.putResult(_mark, _GATHER_14_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -15115,7 +15108,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_30_rule()) != null  // _loop0_30
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_29_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -15193,7 +15186,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_32_rule()) != null  // _loop0_32
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_31_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -15468,7 +15461,7 @@ public final class Parser extends AbstractParser {
                 (seq = (AliasTy[])_loop0_39_rule()) != null  // _loop0_39
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, AliasTy.class);
                 cache.putResult(_mark, _GATHER_38_ID, _res);
                 return (AliasTy[])_res;
             }
@@ -15581,7 +15574,7 @@ public final class Parser extends AbstractParser {
                 (seq = (AliasTy[])_loop0_42_rule()) != null  // _loop0_42
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, AliasTy.class);
                 cache.putResult(_mark, _GATHER_41_ID, _res);
                 return (AliasTy[])_res;
             }
@@ -15918,7 +15911,7 @@ public final class Parser extends AbstractParser {
                 (seq = (StmtTy.With.Item[])_loop0_52_rule()) != null  // _loop0_52
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
                 cache.putResult(_mark, _GATHER_51_ID, _res);
                 return (StmtTy.With.Item[])_res;
             }
@@ -15996,7 +15989,7 @@ public final class Parser extends AbstractParser {
                 (seq = (StmtTy.With.Item[])_loop0_54_rule()) != null  // _loop0_54
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
                 cache.putResult(_mark, _GATHER_53_ID, _res);
                 return (StmtTy.With.Item[])_res;
             }
@@ -16106,7 +16099,7 @@ public final class Parser extends AbstractParser {
                 (seq = (StmtTy.With.Item[])_loop0_57_rule()) != null  // _loop0_57
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
                 cache.putResult(_mark, _GATHER_56_ID, _res);
                 return (StmtTy.With.Item[])_res;
             }
@@ -16184,7 +16177,7 @@ public final class Parser extends AbstractParser {
                 (seq = (StmtTy.With.Item[])_loop0_59_rule()) != null  // _loop0_59
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
                 cache.putResult(_mark, _GATHER_58_ID, _res);
                 return (StmtTy.With.Item[])_res;
             }
@@ -16541,7 +16534,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_68_rule()) != null  // _loop0_68
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_67_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -16790,7 +16783,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_73_rule()) != null  // _loop0_73
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_72_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -16915,7 +16908,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeyValuePair[])_loop0_76_rule()) != null  // _loop0_76
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeyValuePair.class);
                 cache.putResult(_mark, _GATHER_75_ID, _res);
                 return (KeyValuePair[])_res;
             }
@@ -17040,7 +17033,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_79_rule()) != null  // _loop0_79
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_78_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -17118,7 +17111,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeywordTy[])_loop0_81_rule()) != null  // _loop0_81
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeywordTy.class);
                 cache.putResult(_mark, _GATHER_80_ID, _res);
                 return (KeywordTy[])_res;
             }
@@ -18425,7 +18418,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_116_rule()) != null  // _loop0_116
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_115_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -19608,7 +19601,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_147_rule()) != null  // _loop0_147
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_146_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -20195,7 +20188,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeyValuePair[])_loop0_161_rule()) != null  // _loop0_161
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeyValuePair.class);
                 cache.putResult(_mark, _GATHER_160_ID, _res);
                 return (KeyValuePair[])_res;
             }
@@ -20492,7 +20485,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_169_rule()) != null  // _loop0_169
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_168_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -20605,7 +20598,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeywordOrStarred[])_loop0_172_rule()) != null  // _loop0_172
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeywordOrStarred.class);
                 cache.putResult(_mark, _GATHER_171_ID, _res);
                 return (KeywordOrStarred[])_res;
             }
@@ -20683,7 +20676,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeywordOrStarred[])_loop0_174_rule()) != null  // _loop0_174
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeywordOrStarred.class);
                 cache.putResult(_mark, _GATHER_173_ID, _res);
                 return (KeywordOrStarred[])_res;
             }
@@ -20761,7 +20754,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeywordOrStarred[])_loop0_176_rule()) != null  // _loop0_176
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeywordOrStarred.class);
                 cache.putResult(_mark, _GATHER_175_ID, _res);
                 return (KeywordOrStarred[])_res;
             }
@@ -20839,7 +20832,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeywordOrStarred[])_loop0_178_rule()) != null  // _loop0_178
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeywordOrStarred.class);
                 cache.putResult(_mark, _GATHER_177_ID, _res);
                 return (KeywordOrStarred[])_res;
             }
@@ -20989,7 +20982,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_182_rule()) != null  // _loop0_182
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_181_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -21272,7 +21265,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_190_rule()) != null  // _loop0_190
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_189_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -21446,7 +21439,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_195_rule()) != null  // _loop0_195
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_194_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -22651,7 +22644,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_221_rule()) != null  // _loop0_221
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_220_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -22761,7 +22754,7 @@ public final class Parser extends AbstractParser {
                 (seq = (ExprTy[])_loop0_224_rule()) != null  // _loop0_224
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, ExprTy.class);
                 cache.putResult(_mark, _GATHER_223_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -22909,7 +22902,7 @@ public final class Parser extends AbstractParser {
                 (seq = (KeyValuePair[])_loop0_228_rule()) != null  // _loop0_228
             )
             {
-                _res = insertInFront(elem, seq);
+                _res = insertInFront(elem, seq, KeyValuePair.class);
                 cache.putResult(_mark, _GATHER_227_ID, _res);
                 return (KeyValuePair[])_res;
             }
