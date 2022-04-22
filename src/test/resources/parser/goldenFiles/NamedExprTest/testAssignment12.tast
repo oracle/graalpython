@@ -1,0 +1,26 @@
+Module[0, 48]
+    Assign[0, 48]
+        LHS: Name[0, 3] Value: "res" Store
+        RHS: 
+            ListComp[6, 48]
+                Element: List[7, 26]
+                    Values:
+                        NamedExpr[8, 20]
+                            Target: Name[8, 9] Value: "y" Store
+                            Value: 
+                                Call[13, 20]
+                                    Target: Name[13, 17] Value: "spam"
+                                    Args:
+                                        Name[18, 19] Value: "x"
+                        BinOp[22, 25]
+                            Op: DIV
+                            LHS: Name[22, 23] Value: "x"
+                            RHS: Name[24, 25] Value: "y"
+                ComprehensionTy[27, 47]
+                    Target: Name[31, 32] Value: "x" Store
+                    Iterator: 
+                        Call[36, 47]
+                            Target: Name[36, 41] Value: "range"
+                            Args:
+                                LONG[42, 43] Value: 1
+                                LONG[45, 46] Value: 5

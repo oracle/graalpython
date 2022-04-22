@@ -95,6 +95,8 @@ abstract class AbstractParser {
      * Indicates, whether there was found an error
      */
     protected boolean errorIndicator = false;
+    /** Currently used just for idicating, if there was readed something **/
+    protected int fill;
 
     private ExprTy.Name cachedDummyName;
 
@@ -130,6 +132,7 @@ abstract class AbstractParser {
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
         this.flags = flags;
+        this.fill = 0;
     }
 
     public ParserErrorCallback getErrorCallback() {
@@ -145,8 +148,7 @@ abstract class AbstractParser {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
             }
-            int pos = mark();
-            if (pos == 0) {
+            if (this.fill == 0) {
                 raiseSyntaxError("error at start before reading any input");
             } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER ) {
                 // TODO we should handle this in better way. See cpython
@@ -574,6 +576,7 @@ abstract class AbstractParser {
                 }
             }
         }
+        this.fill++;
         return token;
     }
 

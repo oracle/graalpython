@@ -1,0 +1,8 @@
+Module[0, 23]
+    If[0, 23]
+        Test: 
+            NamedExpr[3, 17]
+                Target: Name[3, 7] Value: "spam" Store
+                Value: RAW[11, 17] Value: eggs
+        Then:
+            Pass[19, 23]

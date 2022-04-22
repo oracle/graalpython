@@ -249,7 +249,7 @@ public class ErrorTests extends ParserTestBase {
     
     @Test
     void invalidTargets04() throws Exception {
-//        checkSyntaxErrorMessage("del (,)", "invalid syntax");
+        checkSyntaxErrorMessage("del (,)", "invalid syntax");
         checkSyntaxErrorMessage("del 1", "cannot delete literal");
         checkSyntaxErrorMessage("del (1, 2)", "cannot delete literal");
         checkSyntaxErrorMessage("del None", "cannot delete None");
@@ -296,4 +296,25 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax.Perhaps you forgot a comma?");
     }
     
+    @Test
+    public void invalidNamedExpression01() throws Exception {
+        checkSyntaxErrorMessage("x := 0", "invalid syntax");
+        checkSyntaxErrorMessage("x = y := 0", "invalid syntax");
+        checkSyntaxErrorMessage("y := f(x)", "invalid syntax");
+        checkSyntaxErrorMessage("y0 = y1 := f(x)", "invalid syntax");
+        checkSyntaxErrorMessage("((a, b) := (1, 2))", "cannot use assignment expressions with tuple");
+        checkSyntaxErrorMessage("def spam(a = b := 42): pass", "invalid syntax");
+        checkSyntaxErrorMessage("def spam(a: b := 42 = 5): pass", "invalid syntax");
+        checkSyntaxErrorMessage("spam(a=b := 'c')", "invalid syntax");
+        checkSyntaxErrorMessage("spam(x = y := f(x))", "invalid syntax");
+//TODO        checkSyntaxErrorMessage("spam(a=1, b := 2)", "positional argument follows keyword argument");
+//TODO        checkSyntaxErrorMessage("spam(a=1, (b := 2))", "positional argument follows keyword argument");
+        checkSyntaxErrorMessage("(x := lambda: y := 1)", "invalid syntax");
+        checkSyntaxErrorMessage("(lambda: x := 1)", "cannot use assignment expressions with lambda");
+        checkSyntaxErrorMessage("[i + 1 for i in i := [1,2]]", "invalid syntax");
+        checkSyntaxErrorMessage("[i := 0, j := 1 for i, j in [(1, 2), (3, 4)]]", "did you forget parentheses around the comprehension target?");
+//TODO        checkSyntaxErrorMessage("class Foo():\n" +
+//                "    [(42, 1 + ((( j := i )))) for i in range(5)]", 
+//                "assignment expression within a comprehension cannot be used in a class body");
+    }
 }
