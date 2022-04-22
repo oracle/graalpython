@@ -498,12 +498,12 @@ star_named_expression[expr_ty]:
     | named_expression
 
 named_expression[expr_ty]:
-    | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
+    | a=NAME ':=' ~ b=expression { factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, startToken.startOffset, endToken.endOffset) }
     | invalid_named_expression
     | expression !':='
 
 direct_named_expression[expr_ty]:
-    | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
+    | a=NAME ':=' ~ b=expression { factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, startToken.startOffset, endToken.endOffset) }
     | expression !':='
 
 annotated_rhs[expr_ty]: yield_expr | star_expressions

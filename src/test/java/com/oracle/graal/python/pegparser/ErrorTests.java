@@ -254,7 +254,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("del (1, 2)", "cannot delete literal");
         checkSyntaxErrorMessage("del None", "cannot delete None");
         checkSyntaxErrorMessage("del *x", "cannot delete starred");
-//        checkSyntaxErrorMessage("del (*x)", "cannot use starred expression");
+        checkSyntaxErrorMessage("del (*x)", "cannot use starred expression here");
         checkSyntaxErrorMessage("del (*x,)", "cannot delete starred");
         checkSyntaxErrorMessage("del [*x,]", "cannot delete starred");
         checkSyntaxErrorMessage("del f()", "cannot delete function call");
@@ -264,7 +264,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("del x, f()", "cannot delete function call");
         checkSyntaxErrorMessage("del f(), x", "cannot delete function call");
         checkSyntaxErrorMessage("del [a, b, ((c), (d,), e.f())]", "cannot delete function call");
-//        checkSyntaxErrorMessage("del (a if True else b)", "cannot delete conditional");
+        checkSyntaxErrorMessage("del (a if True else b)", "cannot delete conditional expression");
         checkSyntaxErrorMessage("del +a", "cannot delete expression");
         checkSyntaxErrorMessage("del a, +b", "cannot delete expression");
         checkSyntaxErrorMessage("del a + b", "cannot delete expression");
@@ -274,7 +274,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("del a.b.c[0] + 2", "cannot delete expression");
         checkSyntaxErrorMessage("del (a, b, (c, d.e.f + 2))", "cannot delete expression");
         checkSyntaxErrorMessage("del [a, b, (c, d.e.f[0] + 2)]", "cannot delete expression");
-//        checkSyntaxErrorMessage("del (a := 5)", "cannot delete named expression");
+        checkSyntaxErrorMessage("del (a := 5)", "cannot delete named expression");
     }
 
     @Test
@@ -295,5 +295,5 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax.Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax.Perhaps you forgot a comma?");
     }
-
+    
 }

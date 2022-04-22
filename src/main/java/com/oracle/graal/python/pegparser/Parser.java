@@ -6674,6 +6674,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, NAMED_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             if (errorIndicator) {
                 return null;
@@ -6692,9 +6693,11 @@ public final class Parser extends AbstractParser {
                 (b = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createNamedExp(this.check(this.setExprContext(a,ExprContext.Store)),b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -6752,6 +6755,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, DIRECT_NAMED_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             if (errorIndicator) {
                 return null;
@@ -6770,9 +6774,11 @@ public final class Parser extends AbstractParser {
                 (b = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createNamedExp(this.check(this.setExprContext(a,ExprContext.Store)),b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }

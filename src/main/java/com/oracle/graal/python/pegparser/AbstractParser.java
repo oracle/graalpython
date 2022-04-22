@@ -891,7 +891,18 @@ abstract class AbstractParser {
         return null;
     }
 
-        
+    /**
+     * CHECK
+     * Simple check whether the node is not null.
+     * @return 
+     */
+    <T>T check (T node) {
+        if (node == null) {
+            errorIndicator = true;
+        }
+        return node;
+    }
+    
     @SuppressWarnings("unused")
     // TODO implement the check
     final <T> T checkVersion(int version, String msg, T node) {
