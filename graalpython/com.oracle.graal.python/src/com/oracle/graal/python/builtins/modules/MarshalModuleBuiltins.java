@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyComplexCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyDictCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyFloatCheckExactNodeGen;
@@ -80,6 +83,7 @@ import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -188,7 +192,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return Marshal.loadFile(file);
             } catch (NumberFormatException e) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
                 throw raise(me.type, me.message, me.arguments);
             }
@@ -206,7 +210,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
                 throw raise(me.type, me.message, me.arguments);
             } finally {
@@ -357,9 +361,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             @Override
             public int read() {
                 Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
-                int numRead = asSize.executeExact(null, readIntoResult, PythonBuiltinClassType.ValueError);
+                int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                 if (numRead > 1) {
-                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
+                    throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
                 }
                 return singleByteStore.getIntItemNormalized(0);
             }
@@ -371,9 +375,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 buffer.setSequenceStorage(tempStore);
                 try {
                     Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
-                    int numRead = asSize.executeExact(null, readIntoResult, PythonBuiltinClassType.ValueError);
+                    int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                     if (numRead > len) {
-                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
+                        throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
                     }
                     return numRead;
                 } finally {
@@ -618,7 +622,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private Object readReference() {
             int n = readInt();
             if (n < 0 || n >= refList.size()) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+                throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             Object o = refList.get(n);
             assert o != null;
@@ -629,7 +633,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             depth++;
 
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
+                throw new MarshalError(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             }
 
             // see CPython's w_object
@@ -818,11 +822,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         }
                     } else {
                         writeByte(TYPE_UNKNOWN);
-                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+                        throw new MarshalError(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
                     }
                 }
             } catch (IOException e) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+                throw new MarshalError(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
             }
         }
 
@@ -877,7 +881,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             depth++;
 
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
+                throw new MarshalError(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             }
 
             int code = readByte();
@@ -1016,7 +1020,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return addRef.run(readJavaArray());
                 }
                 default:
-                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+                    throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
         }
 
@@ -1141,6 +1145,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private CodeUnit readCodeUnit() {
+            int version = readByte();
+            if (version != Compiler.BYTECODE_VERSION) {
+                throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, version);
+            }
             String name = readString();
             String qualname = readString();
             int argCount = readInt();
@@ -1167,6 +1175,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
+            writeByte(Compiler.BYTECODE_VERSION);
             writeString(code.name);
             writeString(code.qualname);
             writeInt(code.argCount);
@@ -1292,12 +1301,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             marshal.writeCodeUnit(code);
             return marshal.out.toByteArray();
         } catch (IOException e) {
-            throw CompilerDirectives.shouldNotReachHere();
+            throw CompilerDirectives.shouldNotReachHere(e);
+        } catch (Marshal.MarshalError me) {
+            throw PRaiseNode.getUncached().raise(me.type, me.message, me.arguments);
         }
     }
 
     public static CodeUnit deserializeCodeUnit(byte[] bytes) {
-        Marshal marshal = new Marshal(bytes, bytes.length);
-        return marshal.readCodeUnit();
+        try {
+            Marshal marshal = new Marshal(bytes, bytes.length);
+            return marshal.readCodeUnit();
+        } catch (Marshal.MarshalError me) {
+            throw PRaiseNode.getUncached().raise(me.type, me.message, me.arguments);
+        } catch (NumberFormatException e) {
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+        }
     }
 }

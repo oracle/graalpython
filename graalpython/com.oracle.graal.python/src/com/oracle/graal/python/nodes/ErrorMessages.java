@@ -112,6 +112,7 @@ public abstract class ErrorMessages {
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = "both points must have the same number of dimensions";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
+    public static final String BYTECODE_VERSION_MISMATCH = "Bytecode version mismatch, expected %d actual %d";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
