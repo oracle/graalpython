@@ -115,45 +115,45 @@ public class LambdaInFunctionTests extends ParserTestBase {
     //     checkSyntaxErrorMessage("lambda a = 5, b, /, c: None", "SyntaxError: non-default argument follows default argument");
     // }
 
-    // @Test
-    // public void positionalOnlyArg03() throws Exception {
-    //     checkSyntaxError("lambda *args, /: None");
-    // }
+     @Test
+     public void positionalOnlyArg03() throws Exception {
+         checkSyntaxError("lambda *args, /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg04() throws Exception {
-    //     checkSyntaxError("lambda *args, a, /: None");
-    // }
+     @Test
+     public void positionalOnlyArg04() throws Exception {
+         checkSyntaxError("lambda *args, a, /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg05() throws Exception {
-    //     checkSyntaxError("lambda **kwargs, /: None");
-    // }
+     @Test
+     public void positionalOnlyArg05() throws Exception {
+         checkSyntaxError("lambda **kwargs, /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg06() throws Exception {
-    //     checkSyntaxError("lambda /, a = 1: None");
-    // }
+     @Test
+     public void positionalOnlyArg06() throws Exception {
+         checkSyntaxError("lambda /, a = 1: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg07() throws Exception {
-    //     checkSyntaxError("lambda /, a: None");
-    // }
+     @Test
+     public void positionalOnlyArg07() throws Exception {
+         checkSyntaxError("lambda /, a: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg08() throws Exception {
-    //     checkSyntaxError("lambda /: None");
-    // }
+     @Test
+     public void positionalOnlyArg08() throws Exception {
+         checkSyntaxError("lambda /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg09() throws Exception {
-    //     checkSyntaxError("lambda *, a, /: None");
-    // }
+     @Test
+     public void positionalOnlyArg09() throws Exception {
+         checkSyntaxError("lambda *, a, /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg10() throws Exception {
-    //     checkSyntaxError("lambda *, /, a: None");
-    // }
+     @Test
+     public void positionalOnlyArg10() throws Exception {
+         checkSyntaxError("lambda *, /, a: None");
+     }
 
     // @Test
     // public void positionalOnlyArg11() throws Exception {
@@ -165,24 +165,24 @@ public class LambdaInFunctionTests extends ParserTestBase {
     //     checkSyntaxErrorMessage("lambda a, /, *, a: None", "SyntaxError: duplicate argument 'a' in function definition");
     // }
 
-    // @Test
-    // public void positionalOnlyArg13() throws Exception {
-    //     checkSyntaxError("lambda a, /, b, /: None");
-    // }
+     @Test
+     public void positionalOnlyArg13() throws Exception {
+         checkSyntaxError("lambda a, /, b, /: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg14() throws Exception {
-    //     checkSyntaxError("lambda a, /, b, /, c: None");
-    // }
+     @Test
+     public void positionalOnlyArg14() throws Exception {
+         checkSyntaxError("lambda a, /, b, /, c: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg15() throws Exception {
-    //     checkSyntaxError("lambda a, /, b, /, c, *, d: None");
-    // }
+     @Test
+     public void positionalOnlyArg15() throws Exception {
+         checkSyntaxError("lambda a, /, b, /, c, *, d: None");
+     }
 
-    // @Test
-    // public void positionalOnlyArg16() throws Exception {
-    //     checkSyntaxError("lambda a, *, b, /, c: None");
-    // }
+     @Test
+     public void positionalOnlyArg16() throws Exception {
+         checkSyntaxError("lambda a, *, b, /, c: None");
+     }
 
 }
