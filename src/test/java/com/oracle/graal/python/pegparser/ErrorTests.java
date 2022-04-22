@@ -281,5 +281,19 @@ public class ErrorTests extends ParserTestBase {
     public void while01() throws Exception {
         checkSyntaxErrorMessage("while True\n", "expected ':'");
     }
+    
+    @Test
+    public void invalidKvPair01() throws Exception {
+        checkSyntaxErrorMessage("{1:2, 3:4, 5}", "':' expected after dictionary key");
+    }
+    
+    @Test
+    public void invalidExpression01() throws Exception {
+        // TODO the java generator remove spaces after '.'. After fixing this issue, it should be added the space here. 
+        checkSyntaxErrorMessage("[1, 2 3]", "invalid syntax.Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("{1, 2 3}", "invalid syntax.Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax.Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax.Perhaps you forgot a comma?");
+    }
 
 }

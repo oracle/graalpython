@@ -823,7 +823,7 @@ invalid_expression:
     # !(NAME STRING) is not matched so we don't show this error with some invalid string prefixes like: kf"dsfsdf"
     # Soft keywords need to also be ignored because they can be parsed as NAME NAME
     | !(NAME STRING | SOFT_KEYWORD) a=disjunction expression {
-        RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "invalid syntax. Perhaps you forgot a comma?") }
+         this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax, a, "invalid syntax. Perhaps you forgot a comma?") }
 
 invalid_named_expression:
     | a=expression ':=' expression {
@@ -938,6 +938,6 @@ invalid_double_starred_kvpairs:
     | expression a=':' &('}'|',') { this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }
 invalid_kvpair:
     | a=expression !(':') {
-        RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "':' expected after dictionary key") }
+        this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax, a, "':' expected after dictionary key") }
     | expression ':' a='*' bitwise_or { this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value") }
     | expression a=':' {this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }

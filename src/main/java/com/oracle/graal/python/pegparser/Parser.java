@@ -12346,9 +12346,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , 'invalid syntax. Perhaps you forgot a comma?' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13835,9 +13833,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_230_rule(false)
             )
             {
-                // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "':' expected after dictionary key" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , '':' expected after dictionary key' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"':' expected after dictionary key");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }

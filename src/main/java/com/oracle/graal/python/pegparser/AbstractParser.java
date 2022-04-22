@@ -881,7 +881,17 @@ abstract class AbstractParser {
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
         return null;
     }
+    
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     */
+    SSTNode raiseErrorKnownLocation(ParserErrorCallback.ErrorType typeError, SSTNode where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(typeError, where.getStartOffset(), where.getEndOffset(), msg, argument);
+        return null;
+    }
 
+        
     @SuppressWarnings("unused")
     // TODO implement the check
     final <T> T checkVersion(int version, String msg, T node) {
