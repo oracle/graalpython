@@ -65,17 +65,6 @@ abstract class AbstractParser {
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
     
     /**
-     * Type of input input for the parser
-     */
-    static public enum InputType {
-        SINGLE,
-        FILE,
-        EVAL,
-        FUNCTION_TYPE,
-        FSTRING
-    };
-    
-    /**
      * Corresponds to TARGET_TYPES in CPython
      */
     static public enum TargetsType {
@@ -868,7 +857,7 @@ abstract class AbstractParser {
     /**
      * RAISE_SYNTAX_ERROR
      */
-    SSTNode raiseSyntaxError(String msg, Object... argumetns) {
+    SSTNode raiseSyntaxError(String msg, Object... arguments) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, arguments);
