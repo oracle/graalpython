@@ -246,7 +246,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_TUPLE = '(';
         private static final char TYPE_LIST = '[';
         private static final char TYPE_DICT = '{';
-        private static final char TYPE_CODE = 'c';
         private static final char TYPE_UNICODE = 'u';
         private static final char TYPE_UNKNOWN = '?';
         private static final char TYPE_SET = '<';
@@ -891,9 +890,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (type == TYPE_REF) {
                 depth--;
                 return readReference();
-            } else if (type == TYPE_CODE) {
-                // TODO: special for now...
-                return readCPythonCode(flag != 0);
             } else {
                 int reference = refList.size();
                 if (flag != 0) {
@@ -1220,81 +1216,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] lnoTab = readBytes();
             return CreateCodeNode.createCode(context, flags, codeString, fileName, firstLineNo, lnoTab);
         }
-
-        private Object readCPythonCode(boolean shouldAddRef) {
-            // // TODO: this is a spike, all needs to move to the appropriate places
-
-            // int refidx = -1;
-            // if (shouldAddRef) {
-            // refidx = refList.size();
-            // refList.add(null); // reserve
-            // }
-
-            // GetInternalByteArrayNode getByteAryNode =
-            // SequenceStorageNodes.GetInternalByteArrayNode.getUncached();
-            // GetInternalObjectArrayNode getObjAryNode =
-            // SequenceStorageNodes.GetInternalObjectArrayNode.getUncached();
-            // GetSequenceStorageNode getStoreNode =
-            // SequenceNodes.GetSequenceStorageNode.getUncached();
-            // CastToJavaStringNode castStrNode = CastToJavaStringNode.getUncached();
-
-            // int argcount = readInt();
-            // int posonlyargcount = readInt();
-            // int kwonlyargcount = readInt();
-            // int nlocals = readInt();
-            // int stacksize = readInt();
-            // int flags = readInt();
-            // byte[] bytecode = getByteAryNode.execute(getStoreNode.execute(readObject()));
-            // Object[] consts = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            // Object[] nameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            // String[] names = new String[nameObjs.length];
-            // for (int i = 0; i < nameObjs.length; i++) {
-            // names[i] = castStrNode.execute(nameObjs[i]);
-            // }
-            // Object[] varnameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            // String[] varnames = new String[varnameObjs.length];
-            // for (int i = 0; i < varnameObjs.length; i++) {
-            // varnames[i] = castStrNode.execute(varnameObjs[i]);
-            // }
-            // Object[] freevarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            // String[] freevars = new String[freevarObjs.length];
-            // for (int i = 0; i < freevarObjs.length; i++) {
-            // freevars[i] = castStrNode.execute(freevarObjs[i]);
-            // }
-            // Object[] cellvarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            // String[] cellvars = new String[cellvarObjs.length];
-            // for (int i = 0; i < cellvarObjs.length; i++) {
-            // cellvars[i] = castStrNode.execute(cellvarObjs[i]);
-            // }
-            // String filename = castStrNode.execute(readObject());
-            // String name = castStrNode.execute(readObject());
-            // int firstlineno = readInt();
-            // byte[] lnotab = getByteAryNode.execute(getStoreNode.execute(readObject()));
-
-            // String[] paramaterIds = new String[argcount];
-            // String[] keywordNames = new String[kwonlyargcount];
-            // int positionalOnlyArgIndex = argcount - posonlyargcount;
-            // boolean takesVarArgs = (flags & PCode.FLAG_VAR_ARGS) != 0;
-            // boolean takesVarKeywordArgs = (flags & PCode.FLAG_VAR_KW_ARGS) != 0;
-            // Signature signature = new Signature(positionalOnlyArgIndex, takesVarKeywordArgs,
-            // takesVarArgs ? argcount : -1, false, paramaterIds, keywordNames);
-
-            // PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(null),
-            // signature, bytecode,
-            // filename, name, firstlineno,
-            // consts, names, varnames, freevars, cellvars, stacksize);
-            // RootCallTarget ct = Truffle.getRuntime().createCallTarget(rootNode);
-            // PCode code = factory.createCode(ct, signature, nlocals, stacksize, flags, consts,
-            // nameObjs, varnameObjs, freevars, cellvars, filename, name, firstlineno, lnotab);
-
-            // if (shouldAddRef) {
-            // refList.set(refidx, code);
-            // }
-
-            return null;
-        }
     }
 
+    @TruffleBoundary
     public static byte[] serializeCodeUnit(CodeUnit code) {
         try {
             Marshal marshal = new Marshal(CURRENT_VERSION, null, null);
@@ -1307,6 +1231,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
     public static CodeUnit deserializeCodeUnit(byte[] bytes) {
         try {
             Marshal marshal = new Marshal(bytes, bytes.length);

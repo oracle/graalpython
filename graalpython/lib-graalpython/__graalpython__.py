@@ -158,30 +158,3 @@ def build_java_class(module, ns, name, base):
 
     resultClass.__new__ = classmethod(factory)
     return resultClass
-
-
-# @builtin
-# def compile(codestr, path, mode="pyc"):
-#     bltin_compile = __builtins__["compile"]
-#     if mode in ["pyc", "pyc-nocompile"]:
-#         import os, subprocess, marshal
-#         if isinstance(codestr, bytes):
-#             codestr = codestr.decode()
-#         if not os.path.exists(path):
-#             content = f"'''{codestr}'''"
-#         else:
-#             content = f"open('{path}').read()"
-#         code = f"""if True:
-#         import sys, marshal
-#         sys.stdout.buffer.write(marshal.dumps(compile({content}, '{path}', 'exec')))
-#         """
-#         proc = subprocess.run(["/usr/bin/python3", "-S", "-c", code], capture_output=True)
-#         if proc.returncode == 0:
-#             if mode == "pyc":
-#                 print(f"Loaded {path} via CPython")
-#                 return bltin_compile(marshal.loads(proc.stdout), path, "exec")
-#             else:
-#                 return proc.stdout
-#         raise RuntimeError("CPython bytecode compilation error")
-#     else:
-#         return bltin_compile(codestr, path, mode)
