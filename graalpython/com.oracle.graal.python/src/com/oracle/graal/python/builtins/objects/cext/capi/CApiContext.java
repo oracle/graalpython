@@ -938,10 +938,6 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
-            if (!context.getEnv().isNativeAccessAllowed()) {
-                throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
-            }
-
             Env env = context.getEnv();
 
             String libPythonName = "libpython" + context.getSoAbi();
@@ -968,6 +964,9 @@ public final class CApiContext extends CExtContext {
                  */
                 throw e.getExceptionForReraise();
             } catch (RuntimeException e) {
+                if (!context.getEnv().isNativeAccessAllowed()) {
+                    throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                }
                 throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
             }
         }
