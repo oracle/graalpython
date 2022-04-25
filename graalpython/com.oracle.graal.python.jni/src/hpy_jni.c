@@ -322,7 +322,9 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
 
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
-    if (isBoxedHandle(bits)) {
+    if (!bits) {
+        return;
+    } else if (isBoxedHandle(bits)) {
         return original_Close(ctx, h);
     }
 }
