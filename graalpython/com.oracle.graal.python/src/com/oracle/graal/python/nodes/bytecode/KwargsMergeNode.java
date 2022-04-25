@@ -40,11 +40,11 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
             keywordsError.enter();
             Object functionName = getFunctionName(virtualFrame, stackTop, localFrame, functionStr);
             String keyName = castToStringNode.execute(e.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_ARG, functionName, keyName);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
         } catch (NonMappingException e) {
             keywordsError.enter();
             Object functionName = getFunctionName(virtualFrame, stackTop, localFrame, functionStr);
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
         return stackTop;
     }

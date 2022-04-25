@@ -35,4 +35,8 @@ public abstract class PyObjectFunctionStr extends PNodeWithContext {
         }
         return PString.cat(asStr.execute(frame, qualname), "()");
     }
+
+    public static PyObjectFunctionStr create() {
+        return PyObjectFunctionStrNodeGen.create();
+    }
 }
