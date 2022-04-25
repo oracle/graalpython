@@ -54,7 +54,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
         stackTop = moveItemsToStack(storage, localFrame, stackTop, 0, countBefore, getItemNode);
         PList starList = factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
         localFrame.setObject(stackTop--, starList);
-        moveItemsToStack(storage, localFrame, stackTop, countBefore + starLen, len, getItemNode);
+        moveItemsToStack(storage, localFrame, stackTop, len - countAfter, countAfter, getItemNode);
         return resultStackTop;
     }
 
@@ -92,32 +92,32 @@ public abstract class UnpackExNode extends PNodeWithContext {
             int starLen = lenAfter - countAfter;
             PList starList = factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
             localFrame.setObject(stackTop--, starList);
-            moveItemsToStack(storage, localFrame, stackTop, starLen, lenAfter, getItemNode);
+            moveItemsToStack(storage, localFrame, stackTop, starLen, countAfter, getItemNode);
         }
         return resultStackTop;
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(VirtualFrame virtualFrame, Object iterator, Frame localFrame, int initialStackTop, int start, int stop, int expectedLen, GetNextNode getNextNode,
+    private static int moveItemsToStack(VirtualFrame virtualFrame, Object iterator, Frame localFrame, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
                     IsBuiltinClassProfile stopIterationProfile, PRaiseNode raiseNode) {
         int stackTop = initialStackTop;
-        for (int i = start; i < stop; i++) {
+        for (int i = 0; i < length; i++) {
             try {
                 Object item = getNextNode.execute(virtualFrame, iterator);
                 localFrame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(stopIterationProfile);
-                throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, expectedLen, i);
+                throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
         }
         return stackTop;
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(SequenceStorage storage, Frame localFrame, int initialStackTop, int start, int stop, SequenceStorageNodes.GetItemScalarNode getItemNode) {
+    private static int moveItemsToStack(SequenceStorage storage, Frame localFrame, int initialStackTop, int offset, int length, SequenceStorageNodes.GetItemScalarNode getItemNode) {
         int stackTop = initialStackTop;
-        for (int i = start; i < stop; i++) {
-            localFrame.setObject(stackTop--, getItemNode.execute(storage, i));
+        for (int i = 0; i < length; i++) {
+            localFrame.setObject(stackTop--, getItemNode.execute(storage, offset + i));
         }
         return stackTop;
     }
