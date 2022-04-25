@@ -379,6 +379,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         public int getBci(Frame frame) {
+            /*
+             * Integer values throw FrameSlotTypeException when accessed before being set. The bci
+             * value is set upon exception or in generators, but not on normal return, which is the
+             * most common case, so we use getValue to avoid the exception.
+             * 
+             * TODO when the static slot API is merged, we should use that, the static slots should
+             * be initialized to 0
+             */
             Integer bci = (Integer) frame.getValue(rootNode.bcioffset);
             if (bci == null) {
                 return -1;
@@ -2230,6 +2238,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @TruffleBoundary
     public int bciToLine(int bci) {
         if (source != null && source.hasCharacters() && bci >= 0) {
+            /*
+             * TODO We only store source offsets, which makes it impossible to reconstruct linenos
+             * without the text source. We should store lines and columns separately like CPython.
+             */
             return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
         }
         return -1;
@@ -2242,6 +2254,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else if (source == null) {
             return null;
         } else if (!source.hasCharacters()) {
+            /*
+             * TODO We could still expose the disassembled bytecode for a debugger to have something
+             * to step through.
+             */
             return source.createUnavailableSection();
         } else {
             int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
@@ -2257,6 +2273,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected byte[] extractCode() {
+        /*
+         * CPython exposes individual items of code objects, like constants, as different members of
+         * the code object and the co_code attribute contains just the bytecode. It would be better
+         * if we did the same, however we currently serialize everything into just co_code and
+         * ignore the rest. The reasons are:
+         * 
+         * 1) TruffleLanguage.parsePublic does source level caching but it only accepts bytes or
+         * Strings. We could cache ourselves instead, but we have to come up with a cache key. It
+         * would be impractical to compute a cache key from all the deserialized constants, but we
+         * could just generate a large random number at compile time to serve as a key.
+         * 
+         * 2) The arguments of code object constructor would be different. Some libraries like
+         * cloudpickle (used by pyspark) still rely on particular signature, even though CPython has
+         * changed theirs several times. We would have to match CPython's signature. It's doable,
+         * but it would certainly be more practical to update to 3.11 first to have an attribute for
+         * exception ranges.
+         * 
+         * 3) While the AST interpreter is still in use, we have to share the code in CodeBuiltins,
+         * so it's much simpler to do it in a way that is close to what the AST interpreter is
+         * doing.
+         * 
+         * TODO We should revisit this when the AST interpreter is removed.
+         */
         return MarshalModuleBuiltins.serializeCodeUnit(co);
     }
 }
