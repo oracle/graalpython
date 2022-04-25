@@ -92,7 +92,6 @@ public final class PException extends AbstractTruffleException {
     private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
-    private boolean originatesFromBytecode;
 
     private PException(PBaseException actual, Node node) {
         super(node);
@@ -149,14 +148,6 @@ public final class PException extends AbstractTruffleException {
         PException pException = new PException(pythonException, traceback, wrapped);
         pythonException.setException(pException);
         return pException;
-    }
-
-    public void markAsOriginatingFromBytecode() {
-        originatesFromBytecode = true;
-    }
-
-    public boolean originatesFromBytecode() {
-        return originatesFromBytecode;
     }
 
     @Override

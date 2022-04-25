@@ -144,7 +144,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                      * Bytecode tracebacks pull location data from corresponding stacktrace element.
                      * AST tracebacks pull locations from the call node of the element "above".
                      */
-                    if (usingBytecodeIntepreter || pException.originatesFromBytecode()) {
+                    if (usingBytecodeIntepreter) {
                         if (LazyTraceback.elementWantedForTraceback(element)) {
                             nextElement = element;
                             PFrame pFrame = materializeFrame(element, materializeFrameNode);
@@ -159,7 +159,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            if (usingBytecodeIntepreter || pException.getCatchLocation() instanceof PBytecodeRootNode) {
+            if (usingBytecodeIntepreter) {
                 if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
                     PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
                     tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
