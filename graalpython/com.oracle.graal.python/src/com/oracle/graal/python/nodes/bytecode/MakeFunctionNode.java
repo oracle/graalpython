@@ -1,6 +1,7 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -27,14 +28,16 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     private final CodeUnit code;
     private final Signature signature;
     private final PCode cachedCode;
+    private final String doc;
 
     public abstract int execute(Object globals, int initialStackTop, Frame localFrame, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode) {
+    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode, String doc) {
         this.callTarget = callTarget;
         this.code = code;
         this.signature = signature;
         this.cachedCode = cachedCode;
+        this.doc = doc;
     }
 
     @Specialization
@@ -74,6 +77,9 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         if (annotations != null) {
             dylib.put(function, __ANNOTATIONS__, annotations);
         }
+        if (doc != null) {
+            dylib.put(function, __DOC__, doc);
+        }
         localFrame.setObject(++stackTop, function);
         return stackTop;
     }
@@ -96,6 +102,10 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         if (language.isSingleContext()) {
             cachedCode = createCode(PythonObjectFactory.getUncached(), code, callTarget, bytecodeRootNode.getSignature());
         }
-        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode);
+        String doc = null;
+        if (code.constants.length > 0 && code.constants[0] instanceof String) {
+            doc = (String) code.constants[0];
+        }
+        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode, doc);
     }
 }
