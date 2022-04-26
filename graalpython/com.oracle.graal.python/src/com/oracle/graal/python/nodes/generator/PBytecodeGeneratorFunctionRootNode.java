@@ -58,16 +58,13 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     private final PBytecodeRootNode rootNode;
     private final RootCallTarget callTarget;
     private final String originalName;
-    private final Signature signature;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     @TruffleBoundary
-    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName,
-                    Signature signature) {
+    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName) {
         super(language, frameDescriptor);
         this.rootNode = rootNode;
-        this.signature = signature;
         this.originalName = originalName;
         this.callTarget = rootNode.getCallTarget();
     }
@@ -99,7 +96,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
 
     @Override
     public Signature getSignature() {
-        return signature;
+        return rootNode.getSignature();
     }
 
     @Override

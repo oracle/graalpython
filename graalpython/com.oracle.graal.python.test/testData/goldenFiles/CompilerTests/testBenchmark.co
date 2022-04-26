@@ -1,17 +1,14 @@
 Disassembly of <module>:
-000000         0 LOAD_CONST                        0    (docompute)
-000000         2 MAKE_FUNCTION                     0
-000000         4 STORE_NAME                        0    (docompute)
-000204         6 LOAD_CONST                        1    (measure)
-000204         8 MAKE_FUNCTION                     0
-000204        10 STORE_NAME                        1    (measure)
-000337        12 LOAD_BYTE                         5
-000315        14 COLLECTION_FROM_STACK             1    (Object[])
-000315        16 LOAD_CONST                        2    (__benchmark__)
-000315        18 MAKE_FUNCTION                     1
-000315        20 STORE_NAME                        2    (__benchmark__)
-000315        22 LOAD_NONE
-000315        23 RETURN_VALUE
+000000         0 MAKE_FUNCTION                     0    (docompute)
+000000         3 STORE_NAME                        0    (docompute)
+000204         5 MAKE_FUNCTION                     0    (measure)
+000204         8 STORE_NAME                        1    (measure)
+000337        10 LOAD_BYTE                         5
+000315        12 COLLECTION_FROM_STACK             1    (Object[])
+000315        14 MAKE_FUNCTION                     1    (__benchmark__)
+000315        17 STORE_NAME                        2    (__benchmark__)
+000315        19 LOAD_NONE
+000315        20 RETURN_VALUE
 
 Disassembly of docompute:
 000033         0 LOAD_GLOBAL                       0    (range)

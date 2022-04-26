@@ -257,6 +257,12 @@ public final class CodeUnit {
                     }
                     break;
                 }
+                case MAKE_FUNCTION: {
+                    line[4] = String.format("% 2d", followingArgs[0]);
+                    CodeUnit code = (CodeUnit) constants[oparg];
+                    line[5] = line[5] = code.qualname;
+                    break;
+                }
                 case LOAD_LONG:
                     line[5] = Objects.toString(primitiveConstants[oparg]);
                     break;

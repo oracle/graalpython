@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 
 import java.math.BigInteger;
@@ -57,7 +56,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -72,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -104,6 +101,7 @@ import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
 import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
 import com.oracle.graal.python.nodes.bytecode.ImportNode;
 import com.oracle.graal.python.nodes.bytecode.KwargsMergeNode;
+import com.oracle.graal.python.nodes.bytecode.MakeFunctionNode;
 import com.oracle.graal.python.nodes.bytecode.SendNode;
 import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
 import com.oracle.graal.python.nodes.bytecode.UnpackExNode;
@@ -128,7 +126,6 @@ import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
-import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
@@ -151,7 +148,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -165,8 +161,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -1275,7 +1269,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case MAKE_FUNCTION: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeMakeFunction(localFrame, globals, stackTop, oparg);
+                        int flags = Byte.toUnsignedInt(localBC[++bci]);
+                        CodeUnit codeUnit = (CodeUnit) localConsts[oparg];
+                        MakeFunctionNode makeFunctionNode = insertChildNode(localNodes, beginBci, () -> MakeFunctionNode.create(PythonLanguage.get(this), codeUnit, source));
+                        stackTop = makeFunctionNode.execute(globals, stackTop, localFrame, flags);
                         break;
                     }
                     case MATCH_EXC_OR_JUMP: {
@@ -1914,50 +1911,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(target);
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
-    }
-
-    private int bytecodeMakeFunction(Frame localFrame, Object globals, int lastStackTop, int oparg) {
-        int stackTop = lastStackTop;
-        CodeUnit newCode = (CodeUnit) localFrame.getObject(stackTop);
-
-        PCell[] closure = null;
-        Object annotations = null;
-        PKeyword[] kwdefaults = null;
-        Object[] defaults = null;
-
-        if ((oparg & CodeUnit.HAS_CLOSURE) != 0) {
-            localFrame.setObject(stackTop--, null);
-            closure = (PCell[]) localFrame.getObject(stackTop);
-        }
-        if ((oparg & CodeUnit.HAS_ANNOTATIONS) != 0) {
-            localFrame.setObject(stackTop--, null);
-            annotations = localFrame.getObject(stackTop);
-        }
-        if ((oparg & CodeUnit.HAS_KWONLY_DEFAULTS) != 0) {
-            localFrame.setObject(stackTop--, null);
-            kwdefaults = (PKeyword[]) localFrame.getObject(stackTop);
-        }
-        if ((oparg & CodeUnit.HAS_DEFAULTS) != 0) {
-            localFrame.setObject(stackTop--, null);
-            defaults = (Object[]) localFrame.getObject(stackTop);
-        }
-        RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(this), newCode, source);
-        if (newCode.isGeneratorOrCoroutine()) {
-            // TODO what should the frameDescriptor be? does it matter?
-            callTarget = new PBytecodeGeneratorFunctionRootNode(PythonLanguage.get(this), bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, newCode.name, signature).getCallTarget();
-        } else {
-            callTarget = bytecodeRootNode.getCallTarget();
-        }
-        assert callTarget != null;
-        PCode codeobj = factory.createCode(callTarget, bytecodeRootNode.signature, newCode.varnames.length, newCode.stacksize, newCode.flags,
-                        newCode.constants, newCode.names, newCode.varnames, newCode.freevars, newCode.cellvars, null, newCode.name,
-                        newCode.startOffset, newCode.srcOffsetTable);
-        localFrame.setObject(stackTop, factory.createFunction(newCode.name, newCode.qualname, codeobj, (PythonObject) globals, defaults, kwdefaults, closure));
-        if (annotations != null) {
-            DynamicObjectLibrary.getUncached().put((DynamicObject) localFrame.getObject(stackTop), __ANNOTATIONS__, annotations);
-        }
-        return stackTop;
     }
 
     @ExplodeLoop

@@ -541,9 +541,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
         }
-        addOp(LOAD_CONST, addObject(unit.constants, code));
         int flags = code.flags & (CodeUnit.HAS_DEFAULTS | CodeUnit.HAS_KWONLY_DEFAULTS | CodeUnit.HAS_ANNOTATIONS | CodeUnit.HAS_CLOSURE);
-        addOp(MAKE_FUNCTION, flags);
+        addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) flags});
     }
 
     // visiting
