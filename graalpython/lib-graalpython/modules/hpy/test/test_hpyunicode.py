@@ -174,7 +174,8 @@ class TestUnicode(HPyTest):
             @EXPORT(f)
             @INIT
         """)
-        assert mod.f(b'M\xfcller') == "Müller"
+        res = mod.f(b'M\xfcller')
+        assert res == "Müller"
 
     def test_DecodeASCII(self):
         mod = self.make_module("""
