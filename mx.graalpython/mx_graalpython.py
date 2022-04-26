@@ -674,7 +674,9 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False, cwd=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False, cwd=None, lock=None):
+    if lock:
+        lock.acquire()
     # ensure that the test distribution is up-to-date
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
@@ -737,6 +739,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
+        if lock:
+            lock.release()
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env, cwd=cwd)
 
 
@@ -766,8 +770,31 @@ def run_hpy_unittests(python_binary, args=None):
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
         mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"], nonZeroIsFatal=True, env=env)
+        # parallelize
+        import threading
+        threads = []
+        lock = threading.RLock()
 
-        return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env, use_pytest=True)
+        class RaisingThread(threading.Thread):
+            def run(self):
+                self.exc = None
+                try:
+                    super().run()
+                except Exception as e:
+                    self.exc = e
+
+        for abi in ['cpython', 'universal', 'debug', 'nfi']:
+            env["TEST_HPY_ABI"] = abi
+            threads.append(RaisingThread(target=run_python_unittests, args=(python_binary, ), kwargs={
+                "args": args, "paths": [_hpy_test_root()], "env": env.copy(), "use_pytest": True, "lock": lock,
+            }))
+            threads[-1].start()
+        retval = 0
+        for t in threads:
+            t.join()
+        for t in threads:
+            if t.exc:
+                raise t.exc
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None):

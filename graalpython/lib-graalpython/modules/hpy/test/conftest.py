@@ -20,12 +20,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import os
 import sys
 import pytest
 from .support import ExtensionCompiler, DefaultExtensionTemplate,\
     PythonSubprocessRunner, HPyDebugCapture
 from hpy.debug.leakdetector import LeakDetector
 
+SELECTED_ABI_MODE = os.environ.get("TEST_HPY_ABI", None)
+if SELECTED_ABI_MODE:
+    SELECTED_ABI_MODE = [SELECTED_ABI_MODE]
 IS_VALGRIND_RUN = False
 GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpython' and __graalpython__.platform_id == 'native'
 def pytest_addoption(parser):
@@ -64,7 +68,7 @@ def hpy_devel(request):
     from hpy.devel import HPyDevel
     return HPyDevel()
 
-@pytest.fixture(params=['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal', 'debug'])
+@pytest.fixture(params=SELECTED_ABI_MODE or (['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal', 'debug']))
 def hpy_abi(request):
     abi = request.param
     if abi == 'debug':
