@@ -15,7 +15,10 @@ import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -29,6 +32,9 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     private final Signature signature;
     private final PCode cachedCode;
     private final String doc;
+
+    private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
+    private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public abstract int execute(Object globals, int initialStackTop, Frame localFrame, int flags);
 
@@ -44,8 +50,13 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     int makeFunction(Object globals, int initialStackTop, Frame localFrame, int flags,
                     @Cached PythonObjectFactory factory,
                     @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-        // TODO __doc__
         int stackTop = initialStackTop;
+
+        PCode codeObj = cachedCode;
+        if (codeObj == null) {
+            // Multi-context mode
+            codeObj = createCode(factory, code, callTarget, signature);
+        }
 
         PCell[] closure = null;
         Object annotations = null;
@@ -68,18 +79,25 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             defaults = (Object[]) localFrame.getObject(stackTop);
             localFrame.setObject(stackTop--, null);
         }
-        PCode codeObj = cachedCode;
-        if (codeObj == null) {
-            // Multi-context mode
-            codeObj = createCode(factory, code, callTarget, signature);
+
+        Assumption codeStableAssumption;
+        Assumption defaultsStableAssumption;
+        if (CompilerDirectives.inCompiledCode()) {
+            codeStableAssumption = sharedCodeStableAssumption;
+            defaultsStableAssumption = sharedDefaultsStableAssumption;
+        } else {
+            codeStableAssumption = Truffle.getRuntime().createAssumption();
+            defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
-        PFunction function = factory.createFunction(code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure);
+        PFunction function = factory.createFunction(code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption, defaultsStableAssumption);
+
         if (annotations != null) {
             dylib.put(function, __ANNOTATIONS__, annotations);
         }
         if (doc != null) {
             dylib.put(function, __DOC__, doc);
         }
+
         localFrame.setObject(++stackTop, function);
         return stackTop;
     }
