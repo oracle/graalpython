@@ -1365,7 +1365,10 @@ def _python_checkpatchfiles():
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
         checked = set()
-        allowed_licenses = ["MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0", "MIT license", "PSF"]
+        allowed_licenses = [
+            "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
+            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0"
+        ]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
             if match:
