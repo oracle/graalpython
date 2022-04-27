@@ -780,7 +780,7 @@ def run_hpy_unittests(python_binary, args=None):
                 self.exc = None
                 try:
                     super().run()
-                except Exception as e:
+                except Exception as e: # pylint: disable=broad-except;
                     self.exc = e
 
         for abi in ['cpython', 'universal', 'debug', 'nfi']:
