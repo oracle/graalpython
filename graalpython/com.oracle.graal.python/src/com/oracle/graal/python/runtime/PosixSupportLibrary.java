@@ -242,6 +242,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long[] waitpid(Object receiver, long pid, int options) throws PosixException;
 
+    public abstract void abort(Object receiver);
+
     public abstract boolean wcoredump(Object receiver, int status);
 
     public abstract boolean wifcontinued(Object receiver, int status);

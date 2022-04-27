@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -142,7 +142,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public static final String SURROGATEESCAPE = "surrogateescape";
     public static final String SURROGATEPASS = "surrogatepass";
 
-    static CodingErrorAction convertCodingErrorAction(String errors) {
+    public static CodingErrorAction convertCodingErrorAction(String errors) {
         CodingErrorAction errorAction;
         switch (errors) {
             // TODO: see [GR-10256] to implement the correct handling mechanics

@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -38,7 +38,11 @@ ctx_ListBuilder_New(HPyContext *ctx, HPy_ssize_t initial_size)
     PyObject *lst = PyList_New(initial_size);
     if (lst == NULL)
         PyErr_Clear();   /* delay the MemoryError */
+#ifdef GRAALVM_PYTHON_LLVM
+    return (HPyListBuilder){(void*)lst};
+#else
     return (HPyListBuilder){(HPy_ssize_t)lst};
+#endif
 }
 
 _HPy_HIDDEN void

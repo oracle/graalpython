@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,6 +65,8 @@
 #define _HPyFunc_DECLARE_HPyFunc_OBJOBJPROC(SYM) static int SYM(HPyContext *ctx, HPy, HPy)
 #define _HPyFunc_DECLARE_HPyFunc_GETBUFFERPROC(SYM) static int SYM(HPyContext *ctx, HPy, HPy_buffer *, int)
 #define _HPyFunc_DECLARE_HPyFunc_RELEASEBUFFERPROC(SYM) static void SYM(HPyContext *ctx, HPy, HPy_buffer *)
+#define _HPyFunc_DECLARE_HPyFunc_TRAVERSEPROC(SYM) static int SYM(void *object, HPyFunc_visitproc visit, void *arg)
+#define _HPyFunc_DECLARE_HPyFunc_DESTRUCTOR(SYM) static void SYM(HPyContext *ctx, HPy)
 #define _HPyFunc_DECLARE_HPyFunc_DESTROYFUNC(SYM) static void SYM(void *)
 
 typedef HPy (*HPyFunc_noargs)(HPyContext *ctx, HPy self);
@@ -99,4 +101,6 @@ typedef int (*HPyFunc_setter)(HPyContext *ctx, HPy, HPy, void *);
 typedef int (*HPyFunc_objobjproc)(HPyContext *ctx, HPy, HPy);
 typedef int (*HPyFunc_getbufferproc)(HPyContext *ctx, HPy, HPy_buffer *, int);
 typedef void (*HPyFunc_releasebufferproc)(HPyContext *ctx, HPy, HPy_buffer *);
+typedef int (*HPyFunc_traverseproc)(void *object, HPyFunc_visitproc visit, void *arg);
+typedef void (*HPyFunc_destructor)(HPyContext *ctx, HPy);
 typedef void (*HPyFunc_destroyfunc)(void *);

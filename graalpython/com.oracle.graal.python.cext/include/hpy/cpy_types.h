@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,6 +39,10 @@ typedef PyType_Slot cpy_PyTypeSlot;
 typedef PyGetSetDef cpy_PyGetSetDef;
 typedef PyMemberDef cpy_PyMemberDef;
 typedef struct bufferinfo cpy_Py_buffer;
+typedef int (*cpy_visitproc)(cpy_PyObject *, void *);
+typedef cpy_PyObject *(*cpy_PyCFunction)(cpy_PyObject *, cpy_PyObject *);
+typedef cpy_PyObject *(*cpy_getter)(cpy_PyObject *, void *);
+typedef int (*cpy_setter)(cpy_PyObject *, cpy_PyObject *, void *);
 
 
 #endif /* HPY_UNIVERSAL_CPY_TYPES_H */

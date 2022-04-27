@@ -1,6 +1,6 @@
 /* MIT License
  *  
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. 
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. 
  * Copyright (c) 2019 pyhandle
  *  
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -155,9 +155,9 @@
  *
  */
 
+#include "hpy.h"
 #include <limits.h>
 #include <stdio.h>
-#include "hpy.h"
 
 #define _BREAK_IF_OPTIONAL(current_arg) if (HPy_IsNull(current_arg)) break;
 #define _ERR_STRING_MAX_LENGTH 512

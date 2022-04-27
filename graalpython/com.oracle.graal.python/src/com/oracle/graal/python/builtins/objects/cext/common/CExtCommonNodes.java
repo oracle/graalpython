@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -124,8 +125,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
-    private static final int SIGABRT_EXIT_CODE = 134;
-
     @TruffleBoundary
     public static void fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
         PrintWriter stderr = new PrintWriter(context.getStandardErr());
@@ -143,8 +142,10 @@ public abstract class CExtCommonNodes {
         stderr.flush();
 
         if (status < 0) {
-            // In CPython, this will use 'abort()' which sets a special exit code.
-            throw new PythonExitException(location, SIGABRT_EXIT_CODE);
+            PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+            Object posixSupport = context.getPosixSupport();
+            posixLib.abort(posixSupport);
+            // abort does not return
         }
         throw new PythonExitException(location, status);
     }

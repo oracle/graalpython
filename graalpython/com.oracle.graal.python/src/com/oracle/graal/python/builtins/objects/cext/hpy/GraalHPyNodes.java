@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
@@ -61,6 +63,7 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
@@ -99,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -110,6 +114,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -122,8 +128,12 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -159,7 +169,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -720,7 +732,7 @@ public class GraalHPyNodes {
 
     /**
      * Parser an {@code HPySlot} structure, creates and adds the appropriate function as magic
-     * method.
+     * method. Returns either an HPyProperty if created, or the HPySlot itself.
      *
      * <pre>
      * typedef struct {
@@ -733,10 +745,10 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCreateSlotNode extends PNodeWithContext {
 
-        public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+        public abstract Object execute(GraalHPyContext context, Object enclosingType, Object slotDef);
 
         @Specialization(limit = "1")
-        static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+        static Object doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
                         @CachedLibrary("slotDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -792,6 +804,9 @@ public class GraalHPyNodes {
                 if (enclosingType instanceof PythonClass) {
                     ((PythonClass) enclosingType).hpyDestroyFunc = methodFunctionPointer;
                 }
+            } else if (HPY_TP_TRAVERSE.equals(slot)) {
+                assert methodNames.length == 0;
+                return HPY_TP_TRAVERSE;
             } else {
                 // create properties
                 for (int i = 0; i < methodNames.length; i++) {
@@ -1356,6 +1371,24 @@ public class GraalHPyNodes {
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
+        protected static final byte HANDLE = 0;
+        protected static final byte GLOBAL = 1;
+        protected static final byte FIELD = 2;
+
+        @Override
+        public final GraalHPyHandle execute(CExtContext nativeContext, Object object) {
+            return execute(nativeContext, object, 0, HANDLE);
+        }
+
+        public final GraalHPyHandle executeGlobal(CExtContext nativeContext, Object object, int id) {
+            return execute(nativeContext, object, id, GLOBAL);
+        }
+
+        public final GraalHPyHandle executeField(CExtContext nativeContext, Object object, int id) {
+            return execute(nativeContext, object, id, FIELD);
+        }
+
+        protected abstract GraalHPyHandle execute(CExtContext nativeContext, Object object, int id, int type);
 
         /*
          * NOTE: We *MUST NOT* box values here because we don't know where the handle will be given
@@ -1365,19 +1398,41 @@ public class GraalHPyNodes {
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object) {
+        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object, int id, int type) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"!isNoValue(object)"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doObject(CExtContext hpyContext, Object object) {
+        @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doObject(CExtContext hpyContext, Object object, int id, int type) {
             return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
-        @Specialization(guards = {"!isNoValue(object)"})
-        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object,
+        @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"})
+        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object, int id, int type,
                         @Cached("createClassProfile()") ValueProfile contextProfile) {
             return contextProfile.profile(hpyContext).createHandle(object);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doGlobal(CExtContext hpyContext, Object object, int id, int type) {
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createGlobal(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
+        static GraalHPyHandle doDebugGlobal(GraalHPyContext hpyContext, Object object, int id, int type,
+                        @Cached("createClassProfile()") ValueProfile contextProfile) {
+            return contextProfile.profile(hpyContext).createGlobal(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == FIELD"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doField(CExtContext hpyContext, Object object, int id, int type) {
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createField(object, id);
+        }
+
+        @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
+        static GraalHPyHandle doDebugField(GraalHPyContext hpyContext, Object object, int id, int type,
+                        @Cached("createClassProfile()") ValueProfile contextProfile) {
+            return contextProfile.profile(hpyContext).createField(object, id);
         }
 
         Assumption noDebugModeAssumption() {
@@ -1883,6 +1938,7 @@ public class GraalHPyNodes {
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
+                        @Cached ReadAttributeFromObjectNode readHPyIsPureNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1928,21 +1984,13 @@ public class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
-                if ((flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0) {
-                    throw raiseNode.raise(TypeError, "HPy_TPFLAGS_INTERNAL_PURE should not be used directly, set .legacy=true instead");
-                }
-
                 long legacy = castToLong(valueLib, ptrLib.readMember(typeSpec, "legacy"));
-                if (legacy != 0) {
-                    flags &= ~GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
-                } else {
-                    flags |= GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
-                }
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, legacy == 0);
                 if (newType instanceof PythonClass) {
                     PythonClass clazz = (PythonClass) newType;
                     clazz.basicSize = basicSize;
@@ -1951,6 +1999,7 @@ public class GraalHPyNodes {
                 }
 
                 boolean seenNew = false;
+                boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);
 
                 // process defines
                 Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
@@ -1973,7 +2022,12 @@ public class GraalHPyNodes {
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
                                 Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
-                                property = addSlotNode.execute(context, newType, slotDef);
+                                Object addSlotResult = addSlotNode.execute(context, newType, slotDef);
+                                if (HPY_TP_TRAVERSE.equals(addSlotResult)) {
+                                    needsTpTraverse = false;
+                                } else if (addSlotResult instanceof HPyProperty) {
+                                    property = (HPyProperty) addSlotResult;
+                                }
                                 if (property != null && SpecialMethodNames.__NEW__.equals(property.key)) {
                                     seenNew = true;
                                 }
@@ -1995,6 +2049,10 @@ public class GraalHPyNodes {
                             property.write(writeAttributeToObjectNode, newType);
                         }
                     }
+                }
+
+                if (needsTpTraverse) {
+                    throw raiseNode.raise(ValueError, "traverse function needed for type with HAVE_GC");
                 }
 
                 // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
@@ -2039,7 +2097,7 @@ public class GraalHPyNodes {
                     Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
                     baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
                 }
-                checkInheritanceConstraints(flags, baseFlags, raiseNode);
+                checkInheritanceConstraints(flags, baseFlags, legacy == 0, readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_IS_PURE), raiseNode);
 
                 return newType;
             } catch (CannotCastException | InteropException e) {
@@ -2121,9 +2179,7 @@ public class GraalHPyNodes {
             return new String[]{null, specName};
         }
 
-        private static void checkInheritanceConstraints(long flags, long baseFlags, PRaiseNode raiseNode) {
-            boolean isPure = (flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
-            boolean isBasePure = (baseFlags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
+        private static void checkInheritanceConstraints(long flags, long baseFlags, boolean isPure, Object baseIsPure, PRaiseNode raiseNode) {
             // Pure types may inherit from:
             //
             // * pure types, or
@@ -2134,7 +2190,7 @@ public class GraalHPyNodes {
             //
             // It would be nice to relax these restrictions or check them here.
             // See https://github.com/hpyproject/hpy/issues/169 for details.
-            if (!isPure && isBasePure) {
+            if (!isPure && baseIsPure == Boolean.TRUE) {
                 throw raiseNode.raise(TypeError, "A legacy type should not inherit its memory layout from a pure type");
             }
         }
@@ -2342,6 +2398,7 @@ public class GraalHPyNodes {
                 case HPyFunc_getattrfunc:
                 case HPyFunc_getattrofunc:
                 case HPyFunc_ssizeargfunc:
+                case HPyFunc_traverseproc:
                     return JNIFunctionSignature.PRIMITIVE3;
                 case HPyFunc_varargs:
                 case HPyFunc_ternaryfunc:
@@ -2376,8 +2433,109 @@ public class GraalHPyNodes {
                     return JNIFunctionSignature.RELEASEBUFFERPROC;
                 case HPyFunc_destroyfunc:
                     return JNIFunctionSignature.DESTROYFUNC;
+                case HPyFunc_destructor:
+                    return JNIFunctionSignature.DESTRUCTOR;
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    protected static Object callBuiltinFunction(GraalHPyContext graalHPyContext, String func, Object[] pythonArguments,
+                    ReadAttributeFromObjectNode readAttr,
+                    CallNode callNode) {
+        Object builtinFunction = readAttr.execute(graalHPyContext.getContext().getBuiltins(), func);
+        return callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class RecursiveExceptionMatches extends Node {
+        abstract int execute(GraalHPyContext context, Object err, Object exc);
+
+        @Specialization
+        int tuple(GraalHPyContext context, Object err, PTuple exc,
+                        @Cached RecursiveExceptionMatches recExcMatch,
+                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached LoopConditionProfile loopProfile) {
+            int len = SequenceStorageNodes.LenNode.getUncached().execute(exc.getSequenceStorage());
+            for (int i = 0; loopProfile.profile(i < len); i++) {
+                Object e = getItemNode.execute(exc, i);
+                if (recExcMatch.execute(context, err, e) != 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization(guards = {"!isPTuple(exc)", "isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        int subtuple(GraalHPyContext context, Object err, Object exc,
+                        @Cached RecursiveExceptionMatches recExcMatch,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttr,
+                        @Cached CallNode callNode,
+                        @Cached CastToJavaIntExactNode cast,
+                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached LoopConditionProfile loopProfile) {
+            int len = cast.execute(callBuiltinFunction(context, BuiltinNames.LEN, new Object[]{exc}, readAttr, callNode));
+            for (int i = 0; loopProfile.profile(i < len); i++) {
+                Object e = getItemNode.execute(exc, i);
+                if (recExcMatch.execute(context, err, e) != 0) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
+        int execute(GraalHPyContext context, Object err, Object exc,
+                        @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttr,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached IsNode isNode,
+                        @Cached BranchProfile isBaseExceptionProfile,
+                        @Cached ConditionProfile isExceptionProfile) {
+            Object isInstance = callBuiltinFunction(context,
+                            BuiltinNames.ISINSTANCE,
+                            new Object[]{err, PythonBuiltinClassType.PBaseException},
+                            readAttr, callNode);
+            Object e = err;
+            if (isTrueNode.execute(null, isInstance)) {
+                isBaseExceptionProfile.enter();
+                e = getClassNode.execute(err);
+            }
+            if (isExceptionProfile.profile(
+                            isExceptionClass(context, e, isTypeNode, readAttr, callNode, isTrueNode) &&
+                                            isExceptionClass(context, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
+                return isSubClass(context, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
+            } else {
+                return isNode.execute(exc, e) ? 1 : 0;
+            }
+        }
+
+        protected boolean isTupleSubtype(Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(getClassNode.execute(obj), PythonBuiltinClassType.PTuple);
+        }
+
+        static boolean isSubClass(GraalHPyContext graalHPyContext, Object derived, Object cls,
+                        ReadAttributeFromObjectNode readAttr,
+                        CallNode callNode,
+                        PyObjectIsTrueNode isTrueNode) {
+            return isTrueNode.execute(null, callBuiltinFunction(graalHPyContext,
+                            BuiltinNames.ISSUBCLASS,
+                            new Object[]{derived, cls}, readAttr, callNode));
+
+        }
+
+        private static boolean isExceptionClass(GraalHPyContext nativeContext, Object obj,
+                        IsTypeNode isTypeNode,
+                        ReadAttributeFromObjectNode readAttr,
+                        CallNode callNode,
+                        PyObjectIsTrueNode isTrueNode) {
+            return isTypeNode.execute(obj) && isSubClass(nativeContext, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
         }
     }
 }

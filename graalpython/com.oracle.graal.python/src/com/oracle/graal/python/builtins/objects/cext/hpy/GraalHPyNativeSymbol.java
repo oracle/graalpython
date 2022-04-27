@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,8 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_METH_GET_SIGNATURE("graal_hpy_meth_get_signature"),
     GRAAL_HPY_FROM_HPY_ARRAY("graal_hpy_from_HPy_array"),
     GRAAL_HPY_FROM_STRING("graal_hpy_from_string"),
+    GRAAL_HPY_GET_ERRNO("graal_hpy_get_errno"),
+    GRAAL_HPY_GET_STRERROR("graal_hpy_get_strerror"),
     GRAAL_HPY_STRLEN("graal_hpy_strlen"),
     GRAAL_HPY_ALLOCATE_OUTVAR("graal_hpy_allocate_outvar"),
     GRAAL_HPY_ARRAY_TO_NATIVE("graal_hpy_array_to_native"),
@@ -97,6 +99,10 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME("graal_hpy_legacy_methoddef_get_ml_name"),
     GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME("graal_hpy_legacy_getsetdef_get_name"),
     GRAAL_HPY_SET_DEBUG_CONTEXT("graal_hpy_set_debug_context"),
+    GRAAL_HPY_GET_FIELD_I("graal_hpy_get_field_i"),
+    GRAAL_HPY_SET_FIELD_I("graal_hpy_set_field_i"),
+    GRAAL_HPY_GET_GLOBAL_I("graal_hpy_get_global_i"),
+    GRAAL_HPY_SET_GLOBAL_I("graal_hpy_set_global_i"),
 
     /* C functions for reading native members by offset */
     GRAAL_HPY_READ_S("graal_hpy_read_s"),

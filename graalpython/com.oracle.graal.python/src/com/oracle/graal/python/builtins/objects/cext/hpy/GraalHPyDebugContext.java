@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.util.Arrays;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
     private static final int DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE = 1024;
@@ -64,6 +65,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         trackConstants();
         setHPyContextNativeType(context.getNativeType());
         setHPyNativeType(context.getHPyNativeType());
+        setHPyFieldNativeType(context.getHPyFieldNativeType());
         setHPyArrayNativeType(context.getHPyArrayNativeType());
         setWcharSize(context.getWcharSize());
     }
@@ -96,6 +98,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
                 trackHandle((GraalHPyHandle) member);
             }
         }
+        assert debugHandleInfo.length <= IMMUTABLE_HANDLE_COUNT;
+        debugHandleInfo = Arrays.copyOf(debugHandleInfo, IMMUTABLE_HANDLE_COUNT * 2);
     }
 
     @Override
@@ -165,13 +169,16 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
             return false;
         } else {
             GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
-            super.releaseHPyHandleForObject(handleId);
-            debugHandleInfo[handleId] = -1;
-            if (!closedHandles.isEmpty() && closedHandles.size() >= closedHandlesQueueMaxSize) {
-                closedHandles.removeFirst();
+            if (super.releaseHPyHandleForObject(handleId)) {
+                debugHandleInfo[handleId] = -1;
+                if (!closedHandles.isEmpty() && closedHandles.size() >= closedHandlesQueueMaxSize) {
+                    closedHandles.removeFirst();
+                }
+                closedHandles.add(handle);
+                return true;
+            } else {
+                return false;
             }
-            closedHandles.add(handle);
-            return true;
         }
     }
 

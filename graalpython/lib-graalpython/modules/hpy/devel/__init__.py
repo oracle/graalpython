@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -66,6 +66,7 @@ class HPyDevel:
         """
         return list(map(str, [
             self.src_dir.joinpath('argparse.c'),
+            self.src_dir.joinpath('buildvalue.c'),
             self.src_dir.joinpath('helpers.c'),
         ]))
 
@@ -105,6 +106,7 @@ class HPyDevel:
 
     @staticmethod
     def _ctx_lib_needsBuild(sources, ctx_lib):
+        return True
         if not os.path.exists(ctx_lib):
             log.debug("Building %s (did not exist)", ctx_lib)
             return True
@@ -293,7 +295,9 @@ class build_hpy_ext_mixin:
         ext.hpy_abi = self.distribution.hpy_abi
         ext.include_dirs += self.hpydevel.get_extra_include_dirs()
         ext.sources += self.hpydevel.get_extra_sources()
+        ext.define_macros.append(('HPY', None))
         if ext.hpy_abi == 'cpython':
+            # ext.sources += self.hpydevel.get_ctx_sources()
             ext.extra_objects.append(self.hpydevel.get_ctx_lib())
             ext._hpy_needs_stub = False
         elif ext.hpy_abi == 'universal':

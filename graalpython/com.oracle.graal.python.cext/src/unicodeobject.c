@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -225,6 +225,11 @@ PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
 
 PyObject* PyUnicode_FromString(const char* o) {
     return to_sulong(polyglot_from_string(o, SRC_CS));
+}
+
+UPCALL_ID(PyUnicode_EncodeFSDefault);
+PyObject* PyUnicode_EncodeFSDefault(PyObject* o) {
+    return UPCALL_CEXT_O(_jls_PyUnicode_EncodeFSDefault, native_to_java(o));
 }
 
 PyObject* PyUnicode_DecodeFSDefault(const char* o) {
@@ -582,6 +587,15 @@ PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
 	return PyUnicode_Decode(s, size, "ascii", errors);
+}
+
+PyObject * PyUnicode_DecodeLatin(const char *s, Py_ssize_t size, const char *errors) {
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError,
+                        "Negative size passed to PyUnicode_New");
+        return NULL;
+    }
+    return to_sulong(polyglot_from_string_n(s, size, "latin1"));
 }
 
 UPCALL_ID(PyUnicode_Tailmatch);

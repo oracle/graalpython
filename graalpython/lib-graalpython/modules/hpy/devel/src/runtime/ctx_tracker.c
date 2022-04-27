@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -96,7 +96,11 @@ static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
     return (_HPyTracker_s *) (ht)._i;
 }
 static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
+#ifdef GRAALVM_PYTHON_LLVM
+    return (HPyTracker) {(void*) (hp)};
+#else
     return (HPyTracker) {(HPy_ssize_t) (hp)};
+#endif
 }
 
 

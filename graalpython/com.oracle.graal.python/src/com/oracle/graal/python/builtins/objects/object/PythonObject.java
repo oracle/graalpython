@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -64,6 +64,8 @@ public class PythonObject extends PythonAbstractObject {
     public static final byte HAS_MATERIALIZED_DICT = 0b1000;
 
     private final Object initialPythonClass;
+
+    private Object[] hpyFields;
 
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
@@ -162,5 +164,13 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
+    }
+
+    public Object[] getHpyFields() {
+        return hpyFields;
+    }
+
+    public void setHpyFields(Object[] hpyFields) {
+        this.hpyFields = hpyFields;
     }
 }
