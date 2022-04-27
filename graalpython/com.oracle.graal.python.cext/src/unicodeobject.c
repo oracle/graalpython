@@ -590,7 +590,12 @@ PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *err
 }
 
 PyObject * PyUnicode_DecodeLatin(const char *s, Py_ssize_t size, const char *errors) {
-	return PyUnicode_Decode(s, size, "latin1", errors);
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError,
+                        "Negative size passed to PyUnicode_New");
+        return NULL;
+    }
+    return to_sulong(polyglot_from_string_n(s, size, "latin1"));
 }
 
 UPCALL_ID(PyUnicode_Tailmatch);

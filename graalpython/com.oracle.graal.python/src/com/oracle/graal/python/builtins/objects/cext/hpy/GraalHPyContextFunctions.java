@@ -1472,6 +1472,7 @@ public abstract class GraalHPyContextFunctions {
                 } catch (OverflowException | InteropException ex) {
                     throw CompilerDirectives.shouldNotReachHere(ex);
                 }
+                // TODO: TruffleString - when we have ISO-8859-1, we can just force the encoding and short-circuit the error reading etc
                 String errors = castToJavaStringNode.execute(callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[3], "ascii"));
                 CodingErrorAction errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors);
                 String result = decode(errorAction, bytes);
