@@ -228,6 +228,46 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    # Tests if wrapped Java primitive values do not share the same
+    # native pointer.
+    test_primitive_sharing = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (123.0, ),
+        ),
+        code="""
+        // internal function defined in 'capi.c'
+        int PyTruffle_ToNative(void *);
+        
+        PyObject* primitive_sharing(PyObject* val) {
+            Py_ssize_t val_refcnt = Py_REFCNT(val);
+            // assume val's refcnt is X > 0
+            Py_INCREF(val);
+            // val's refcnt should now be X+1
+
+            double dval = PyFloat_AsDouble(val);
+
+            PyTruffle_ToNative(val);
+
+            // a fresh object with the same value
+            PyObject *val1 = PyFloat_FromDouble(dval);
+            PyTruffle_ToNative(val1);
+
+            // now, kill it
+            Py_DECREF(val1);
+
+            // reset val's refcnt to X
+            Py_DECREF(val);
+
+            return val_refcnt == Py_REFCNT(val) ? Py_True : Py_False;
+        }
+        """,
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* val"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyOS_double_to_string = CPyExtFunction(
         _reference_format_float,
         lambda: (

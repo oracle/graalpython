@@ -212,6 +212,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -232,6 +233,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -241,6 +243,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -267,6 +270,15 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
         builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());
         builtinConstants.put("PyGILState_Release", new PyGILStateRelease());
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        if (!core.getContext().getOption(PythonOptions.EnableDebuggingBuiltins)) {
+            PythonModule mod = core.lookupBuiltinModule(PYTHON_CEXT);
+            mod.setAttribute("PyTruffle_ToNative", PNone.NO_VALUE);
+        }
     }
 
     @FunctionalInterface
@@ -2376,14 +2388,32 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
     @Builtin(name = "PyTruffle_Debug", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class PyTruffleDebugNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object doIt(Object[] args,
+        static Object doIt(Object[] args,
                         @Cached DebugNode debugNode) {
             debugNode.execute(args);
+            return PNone.NONE;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyTruffle_ToNative", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyTruffleToNativeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doIt(Object object) {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            if ("native".equals(toolchain.getIdentifier())) {
+                InteropLibrary.getUncached().toNative(object);
+            }
             return PNone.NONE;
         }
     }
