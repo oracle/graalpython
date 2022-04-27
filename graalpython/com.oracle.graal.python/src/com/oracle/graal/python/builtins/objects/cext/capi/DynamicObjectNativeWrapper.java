@@ -2137,14 +2137,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @ExportMessage
         TriState isIdenticalOrUndefined(Object obj) {
             if (obj instanceof PrimitiveNativeWrapper) {
-                // This basically emulates singletons for boxed values. However, we need to do
-                // so to
-                // preserve the invariant that storing an object into a list and getting it out
-                // (in
-                // the same critical region) returns the same object.
+                /*
+                 * This basically emulates singletons for boxed values. However, we need to do so to
+                 * preserve the invariant that storing an object into a list and getting it out (in
+                 * the same critical region) returns the same object.
+                 */
                 PrimitiveNativeWrapper other = (PrimitiveNativeWrapper) obj;
-                return TriState.valueOf(other.state == state && other.value == value &&
-                                (other.dvalue == dvalue || Double.isNaN(dvalue) && Double.isNaN(other.dvalue)));
+                if (other.state == state && other.value == value && (other.dvalue == dvalue || Double.isNaN(dvalue) && Double.isNaN(other.dvalue))) {
+                    /*
+                     * n.b.: in the equals, we also require the native pointer to be the same. The
+                     * reason for this is to avoid native pointer sharing. Handles are shared if the
+                     * objects are equal but in this case we must not share because otherwise we
+                     * would mess up the reference counts.
+                     */
+                    return TriState.valueOf(GetNativePointer.getGenericPtr(this) == GetNativePointer.getGenericPtr(other));
+                }
+                return TriState.FALSE;
             } else {
                 return TriState.UNDEFINED;
             }
