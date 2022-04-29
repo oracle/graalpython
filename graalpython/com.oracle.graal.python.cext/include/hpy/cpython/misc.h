@@ -126,9 +126,13 @@ struct _HPyContext_s {
     HPy h_BoolType;
     HPy h_LongType;
     HPy h_FloatType;
+    HPy h_ComplexType;
     HPy h_UnicodeType;
+    HPy h_BytesType;
     HPy h_TupleType;
     HPy h_ListType;
+    HPy h_MemoryViewType;
+    HPy h_CapsuleType;
 };
 
 /* XXX! should be defined only once, not once for every .c! */
@@ -216,9 +220,13 @@ HPyAPI_FUNC HPyContext * _HPyGetContext(void) {
         ctx->h_BoolType = _py2h((PyObject *)&PyBool_Type);
         ctx->h_LongType = _py2h((PyObject *)&PyLong_Type);
         ctx->h_FloatType = _py2h((PyObject *)&PyFloat_Type);
+        ctx->h_ComplexType = _py2h((PyObject *)&PyComplex_Type);
         ctx->h_UnicodeType = _py2h((PyObject *)&PyUnicode_Type);
+        ctx->h_BytesType = _py2h((PyObject *)&PyBytes_Type);
         ctx->h_TupleType = _py2h((PyObject *)&PyTuple_Type);
         ctx->h_ListType = _py2h((PyObject *)&PyList_Type);
+        ctx->h_MemoryViewType = _py2h((PyObject *)&PyMemoryView_Type);
+        ctx->h_CapsuleType = _py2h((PyObject *)&PyCapsule_Type);
     }
     return ctx;
 }
@@ -329,6 +337,11 @@ HPyAPI_FUNC int HPy_TypeCheck(HPyContext *ctx, HPy h_obj, HPy h_type)
     return ctx_TypeCheck(ctx, h_obj, h_type);
 }
 
+HPyAPI_FUNC int HPyType_IsSubtype(HPyContext *ctx, HPy h_sub, HPy h_type)
+{
+    return ctx_Type_IsSubtype(ctx, h_sub, h_type);
+}
+
 HPyAPI_FUNC int HPy_Is(HPyContext *ctx, HPy h_obj, HPy h_other)
 {
     return ctx_Is(ctx, h_obj, h_other);
@@ -423,6 +436,100 @@ HPyAPI_FUNC HPy HPyBytes_FromStringAndSize(HPyContext *ctx, const char *v, HPy_s
 
 HPyAPI_FUNC int HPyErr_Occurred(HPyContext *ctx) {
     return ctx_Err_Occurred(ctx);
+}
+
+HPyAPI_FUNC int HPyContextVar_Get(HPyContext *ctx, HPy context_var, HPy default_value, HPy *result) {
+    PyObject *py_result;
+    int ret = PyContextVar_Get(_h2py(context_var), _h2py(default_value), &py_result);
+    *result = _py2h(py_result);
+    return ret;
+}
+
+HPyAPI_FUNC HPy HPyCapsule_New(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor)
+{
+    return ctx_Capsule_New(ctx, pointer, name, destructor);
+}
+
+HPyAPI_FUNC void * HPyCapsule_GetPointer(HPyContext *ctx, HPy capsule, const char *name)
+{
+    return PyCapsule_GetPointer(_h2py(capsule), name);
+}
+
+HPyAPI_FUNC const char * HPyCapsule_GetName(HPyContext *ctx, HPy capsule)
+{
+    return PyCapsule_GetName(_h2py(capsule));
+}
+
+HPyAPI_FUNC void * HPyCapsule_GetContext(HPyContext *ctx, HPy capsule)
+{
+    return PyCapsule_GetContext(_h2py(capsule));
+}
+
+HPyAPI_FUNC HPyCapsule_Destructor HPyCapsule_GetDestructor(HPyContext *ctx, HPy capsule)
+{
+    return ctx_Capsule_GetDestructor(ctx, capsule);
+}
+
+HPyAPI_FUNC int HPyCapsule_SetPointer(HPyContext *ctx, HPy capsule, void *pointer)
+{
+    return PyCapsule_SetPointer(_h2py(capsule), pointer);
+}
+
+HPyAPI_FUNC int HPyCapsule_SetName(HPyContext *ctx, HPy capsule, const char *name)
+{
+    return PyCapsule_SetName(_h2py(capsule), name);
+}
+
+HPyAPI_FUNC int HPyCapsule_SetContext(HPyContext *ctx, HPy capsule, void *context)
+{
+    return PyCapsule_SetContext(_h2py(capsule), context);
+}
+
+HPyAPI_FUNC int HPyCapsule_SetDestructor(HPyContext *ctx, HPy capsule, HPyCapsule_Destructor destructor)
+{
+    return ctx_Capsule_SetDestructor(ctx, capsule, destructor);
+}
+
+// TODO: define helper "private" functions in hpy/deve/include/hpy/runtime/inline.h and use those also in universal
+HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value) {
+    // TODO: it would be cleaner to call the impl from ctx_type, but this feels like performance critical operation,
+    // which on CPython boils down to just memory read(s) and comparison of two addresses
+    PyObject *result = _h2py(type);
+    struct _typeobject* t = ((struct _typeobject*) result);
+    char msg[256];
+    switch (value->slot.slot) {
+        case HPy_nb_inplace_add:
+            return t->tp_as_number != NULL && t->tp_as_number->nb_inplace_add == value->slot.cpy_trampoline;
+        case HPy_nb_power:
+            // TODO: this needs proper cast for C++
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_power == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_subtract:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_subtract == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_true_divide:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_true_divide == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_add:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_add == (void*) value->slot.cpy_trampoline;
+        default:
+            snprintf(msg, 256, "Unsupported slot in HPyTypeSlot_Is: %d", value->slot.slot);
+            Py_FatalError(msg);
+    }
+}
+
+HPyAPI_FUNC HPy HPy_MaybeGetAttr_s(HPyContext *ctx, HPy obj, const char *name) {
+    PyObject *pyobj = _h2py(obj);
+    struct _typeobject* t = Py_TYPE(pyobj);
+    if (t->tp_getattr == NULL && t->tp_getattro == NULL) {
+        return HPy_NULL;
+    }
+    PyObject *res = PyObject_GetAttrString(pyobj, name);
+    if (res == NULL && PyErr_Occurred()) {
+        PyErr_Clear();
+    }
+    return _py2h(res);
+}
+
+HPyAPI_FUNC HPy HPyDict_GetItem(HPyContext *ctx, HPy op, HPy key) {
+    return ctx_Dict_GetItem(ctx, op, key);
 }
 
 #endif /* !HPY_CPYTHON_MISC_H */

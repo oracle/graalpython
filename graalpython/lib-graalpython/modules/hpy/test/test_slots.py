@@ -227,7 +227,29 @@ class TestSlots(HPyTest):
             MYSLOT(inplace_true_divide)
             MYSLOT(inplace_xor)
             MYSLOT(inplace_matrix_multiply)
+            
+            HPyDef_SLOT(other_inplace_add, other_inplace_add_impl, HPy_nb_inplace_add);
+            static HPy other_inplace_add_impl(HPyContext *ctx, HPy self, HPy other)
+            {
+                return HPy_NULL;
+            }
+            
+            HPyDef_METH(test_slot_is_inplace_add_true, "test_slot_is_inplace_add_true",
+                test_slot_is_inplace_add_true_impl, HPyFunc_O)
+            static HPy test_slot_is_inplace_add_true_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                return HPyLong_FromLong(ctx, HPyType_CheckSlot(ctx, arg, &p_inplace_add));
+            }
+            
+            HPyDef_METH(test_slot_is_inplace_add_false, "test_slot_is_inplace_add_false",
+                test_slot_is_inplace_add_false_impl, HPyFunc_O)
+            static HPy test_slot_is_inplace_add_false_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                return HPyLong_FromLong(ctx, HPyType_CheckSlot(ctx, arg, &other_inplace_add));
+            }
 
+            @EXPORT(test_slot_is_inplace_add_true)
+            @EXPORT(test_slot_is_inplace_add_false)
             @EXPORT_POINT_TYPE(&p_inplace_add, &p_inplace_and, &p_inplace_floor_divide, &p_inplace_lshift, &p_inplace_multiply, &p_inplace_or, &p_inplace_remainder, &p_inplace_rshift, &p_inplace_subtract, &p_inplace_true_divide, &p_inplace_xor, &p_inplace_matrix_multiply)
             @INIT
         """)
@@ -248,6 +270,9 @@ class TestSlots(HPyTest):
         tmp = p
         tmp = operator.imatmul(p, 42)
         assert tmp == (p, "inplace_matrix_multiply", 42)
+
+        assert mod.test_slot_is_inplace_add_true(type(p))
+        assert not mod.test_slot_is_inplace_add_false(type(p))
 
     def test_nb_ops_unary(self):
         mod = self.make_module(r"""

@@ -199,11 +199,14 @@ class TestBasic(HPyTest):
                     case 10: h = ctx->h_BoolType; break;
                     case 11: h = ctx->h_LongType; break;
                     case 12: h = ctx->h_FloatType; break;
-                    case 13: h = ctx->h_UnicodeType; break;
-                    case 14: h = ctx->h_TupleType; break;
-                    case 15: h = ctx->h_ListType; break;
-                    case 16: h = ctx->h_NotImplemented; break;
-                    case 17: h = ctx->h_Ellipsis; break;
+                    case 13: h = ctx->h_ComplexType; break;
+                    case 14: h = ctx->h_UnicodeType; break;
+                    case 15: h = ctx->h_BytesType; break;
+                    case 16: h = ctx->h_TupleType; break;
+                    case 17: h = ctx->h_ListType; break;
+                    case 18: h = ctx->h_MemoryViewType; break;
+                    case 19: h = ctx->h_NotImplemented; break;
+                    case 20: h = ctx->h_Ellipsis; break;
                     default:
                         HPyErr_SetString(ctx, ctx->h_ValueError, "invalid choice");
                         return HPy_NULL;
@@ -215,7 +218,7 @@ class TestBasic(HPyTest):
         """)
         builtin_objs = (
             '<NULL>', None, False, True, ValueError, TypeError, IndexError,
-            SystemError, object, type, bool, int, float, str, tuple, list, NotImplemented, Ellipsis,
+            SystemError, object, type, bool, int, float, complex, str, bytes, tuple, list, memoryview, NotImplemented, Ellipsis,
         )
         for i, obj in enumerate(builtin_objs):
             if i == 0:

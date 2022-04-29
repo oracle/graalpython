@@ -404,6 +404,19 @@ HPyAPI_FUNC HPy HPy_Type(HPyContext *ctx, HPy obj)
     return _py2h(PyObject_Type(_h2py(obj)));
 }
 
+HPyAPI_FUNC int HPy_SetType(HPyContext *ctx, HPy obj, HPy type)
+{
+        assert(PyType_Check(_h2py(type)));
+        _h2py(obj)->ob_type = (PyTypeObject*) _h2py(type);
+        return 0;
+}
+
+HPyAPI_FUNC const char *HPyType_GetName(HPyContext *ctx, HPy type)
+{
+        assert(PyType_Check(_h2py(type)));
+        return ((PyTypeObject*) _h2py(type))->tp_name;
+}
+
 HPyAPI_FUNC HPy HPy_Repr(HPyContext *ctx, HPy obj)
 {
     return _py2h(PyObject_Repr(_h2py(obj)));
@@ -534,6 +547,21 @@ HPyAPI_FUNC HPy HPyUnicode_DecodeLatin1(HPyContext *ctx, const char *s, HPy_ssiz
     return _py2h(PyUnicode_DecodeLatin1(s, size, errors));
 }
 
+HPyAPI_FUNC HPy HPyUnicode_FromEncodedObject(HPyContext *ctx, HPy obj, const char *encoding, const char *errors)
+{
+    return _py2h(PyUnicode_FromEncodedObject(_h2py(obj), encoding, errors));
+}
+
+HPyAPI_FUNC HPy HPyUnicode_InternFromString(HPyContext *ctx, const char *str)
+{
+    return _py2h(PyUnicode_InternFromString(str));
+}
+
+HPyAPI_FUNC HPy HPyUnicode_Substring(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end)
+{
+    return _py2h(PyUnicode_Substring(_h2py(obj), start, end));
+}
+
 HPyAPI_FUNC int HPyList_Check(HPyContext *ctx, HPy h)
 {
     return PyList_Check(_h2py(h));
@@ -559,14 +587,34 @@ HPyAPI_FUNC HPy HPyDict_New(HPyContext *ctx)
     return _py2h(PyDict_New());
 }
 
+HPyAPI_FUNC HPy HPyDict_Keys(HPyContext *ctx, HPy h)
+{
+    return _py2h(PyDict_Keys(_h2py(h)));
+}
+
 HPyAPI_FUNC int HPyTuple_Check(HPyContext *ctx, HPy h)
 {
     return PyTuple_Check(_h2py(h));
 }
 
+HPyAPI_FUNC HPy HPyContextVar_New(HPyContext *ctx, const char *name, HPy default_value)
+{
+    return _py2h(PyContextVar_New(name, _h2py(default_value)));
+}
+
+HPyAPI_FUNC HPy HPyContextVar_Set(HPyContext *ctx, HPy context_var, HPy value)
+{
+    return _py2h(PyContextVar_Set(_h2py(context_var), _h2py(value)));
+}
+
 HPyAPI_FUNC HPy HPyImport_ImportModule(HPyContext *ctx, const char *name)
 {
     return _py2h(PyImport_ImportModule(name));
+}
+
+HPyAPI_FUNC int HPyCapsule_IsValid(HPyContext *ctx, HPy capsule, const char *name)
+{
+    return PyCapsule_IsValid(_h2py(capsule), name);
 }
 
 HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
