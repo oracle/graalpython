@@ -569,6 +569,8 @@ static int check_unknown_params(HPyType_SpecParam *params, const char *name)
             case HPyType_SpecParam_BasesTuple:
                 found_basestuple++;
                 break;
+            case HPyType_SpecParam_Metaclass:
+                break;
 
             default:
                 PyErr_Format(PyExc_TypeError,
@@ -695,6 +697,9 @@ static PyObject *build_bases_from_params(HPyType_SpecParam *params)
                 tup = _h2py(p->object);
                 Py_INCREF(tup);
                 return tup;
+            case HPyType_SpecParam_Metaclass:
+                // intentionally ignored
+                break;
         }
     }
     if (found_base == 0)
@@ -716,7 +721,23 @@ static PyObject *build_bases_from_params(HPyType_SpecParam *params)
     return tup;
 }
 
-_HPy_HIDDEN HPy
+_HPy_HIDDEN struct _typeobject *get_metatype(HPyType_SpecParam *params) {
+    if (params != NULL) {
+        for (HPyType_SpecParam *p = params; p->kind != 0; p++) {
+            switch (p->kind) {
+                case HPyType_SpecParam_Metaclass:
+                    return (struct _typeobject*) _h2py(p->object);
+                    break;
+                default:
+                    // other values are intentionally ignored
+                    break;
+            }
+        }
+    }
+    return &PyType_Type;
+}
+
+HPy
 ctx_Type_FromSpec(HPyContext *ctx, HPyType_Spec *hpyspec,
                   HPyType_SpecParam *params)
 {
@@ -781,7 +802,13 @@ ctx_Type_FromSpec(HPyContext *ctx, HPyType_Spec *hpyspec,
         PyMem_Free(spec);
         return HPy_NULL;
     }
-    PyObject *result = PyType_FromSpecWithBases(spec, bases);
+    struct _typeobject *metatype = get_metatype(params);
+
+    // PyType_FromSpecWithBases does not support passing a metaclass,
+    // so we have to use a patched CPython with PyType_FromSpecWithBasesAndMeta
+    // See also: https://bugs.python.org/issue15870
+    PyObject *result = PyType_FromSpecWithBasesAndMeta(spec, bases, metatype);
+
     /* note that we do NOT free the memory which was allocated by
        create_method_defs, because that one is referenced internally by
        CPython (which probably assumes it's statically allocated) */
@@ -871,6 +898,28 @@ ctx_Type_GenericNew(HPyContext *ctx, HPy h_type, HPy *args, HPy_ssize_t nargs, H
 
     PyObject *res = ((PyTypeObject*) tp)->tp_alloc((PyTypeObject*) tp, 0);
     return _py2h(res);
+}
+
+_HPy_HIDDEN int
+ctx_Type_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value) {
+    PyObject *result = _h2py(type);
+    struct _typeobject* t = ((struct _typeobject*) result);
+    char msg[256];
+    switch (value->slot.slot) {
+        case HPy_nb_inplace_add:
+            return t->tp_as_number != NULL && t->tp_as_number->nb_inplace_add == value->slot.cpy_trampoline;
+        case HPy_nb_power:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_power == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_subtract:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_subtract == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_true_divide:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_true_divide == (void*) value->slot.cpy_trampoline;
+        case HPy_nb_add:
+            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_add == (void*) value->slot.cpy_trampoline;
+        default:
+            snprintf(msg, 256, "Unsupported slot in HPyTypeSlot_Is: %d", value->slot.slot);
+            Py_FatalError(msg);
+    }
 }
 
 _HPy_HIDDEN void*

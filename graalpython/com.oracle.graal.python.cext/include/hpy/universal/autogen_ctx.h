@@ -128,9 +128,13 @@ struct _HPyContext_s {
     _HPyConst h_BoolType;
     _HPyConst h_LongType;
     _HPyConst h_FloatType;
+    _HPyConst h_ComplexType;
     _HPyConst h_UnicodeType;
+    _HPyConst h_BytesType;
     _HPyConst h_TupleType;
     _HPyConst h_ListType;
+    _HPyConst h_MemoryViewType;
+    _HPyConst h_CapsuleType;
     HPy (*ctx_Module_Create)(HPyContext *ctx, HPyModuleDef *def);
     HPy (*ctx_Dup)(HPyContext *ctx, HPy h);
     void (*ctx_Close)(HPyContext *ctx, HPy h);
@@ -209,6 +213,7 @@ struct _HPyContext_s {
     HPy (*ctx_Type_GenericNew)(HPyContext *ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw);
     HPy (*ctx_GetAttr)(HPyContext *ctx, HPy obj, HPy name);
     HPy (*ctx_GetAttr_s)(HPyContext *ctx, HPy obj, const char *name);
+    HPy (*ctx_MaybeGetAttr_s)(HPyContext *ctx, HPy obj, const char *name);
     int (*ctx_HasAttr)(HPyContext *ctx, HPy obj, HPy name);
     int (*ctx_HasAttr_s)(HPyContext *ctx, HPy obj, const char *name);
     int (*ctx_SetAttr)(HPyContext *ctx, HPy obj, HPy name, HPy value);
@@ -222,6 +227,9 @@ struct _HPyContext_s {
     int (*ctx_SetItem_s)(HPyContext *ctx, HPy obj, const char *key, HPy value);
     HPy (*ctx_Type)(HPyContext *ctx, HPy obj);
     int (*ctx_TypeCheck)(HPyContext *ctx, HPy obj, HPy type);
+    int (*ctx_SetType)(HPyContext *ctx, HPy obj, HPy type);
+    int (*ctx_Type_IsSubtype)(HPyContext *ctx, HPy sub, HPy type);
+    const char *(*ctx_Type_GetName)(HPyContext *ctx, HPy type);
     int (*ctx_Is)(HPyContext *ctx, HPy obj, HPy other);
     void *(*ctx_AsStruct)(HPyContext *ctx, HPy h);
     void *(*ctx_AsStructLegacy)(HPyContext *ctx, HPy h);
@@ -253,14 +261,26 @@ struct _HPyContext_s {
     HPy_UCS4 (*ctx_Unicode_ReadChar)(HPyContext *ctx, HPy h, HPy_ssize_t index);
     HPy (*ctx_Unicode_DecodeASCII)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
     HPy (*ctx_Unicode_DecodeLatin1)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors);
+    HPy (*ctx_Unicode_FromEncodedObject)(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
+    HPy (*ctx_Unicode_InternFromString)(HPyContext *ctx, const char *str);
+    HPy (*ctx_Unicode_Substring)(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end);
     int (*ctx_List_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_List_New)(HPyContext *ctx, HPy_ssize_t len);
     int (*ctx_List_Append)(HPyContext *ctx, HPy h_list, HPy h_item);
     int (*ctx_Dict_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Dict_New)(HPyContext *ctx);
+    HPy (*ctx_Dict_Keys)(HPyContext *ctx, HPy h);
+    HPy (*ctx_Dict_GetItem)(HPyContext *ctx, HPy op, HPy key);
     int (*ctx_Tuple_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Tuple_FromArray)(HPyContext *ctx, _HPyPtr items, HPy_ssize_t n);
+    HPy (*ctx_ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value);
+    int (*ctx_ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, _HPyPtr result);
+    HPy (*ctx_ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value);
     HPy (*ctx_Import_ImportModule)(HPyContext *ctx, const char *name);
+    HPy (*ctx_Capsule_New)(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor);
+    void *(*ctx_Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name);
+    int (*ctx_Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *name);
+    int (*ctx_Capsule_Set)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value);
     HPy (*ctx_FromPyObject)(HPyContext *ctx, cpy_PyObject *obj);
     cpy_PyObject *(*ctx_AsPyObject)(HPyContext *ctx, HPy h);
     void (*ctx_CallRealFunctionFromTrampoline)(HPyContext *ctx, HPyFunc_Signature sig, HPyCFunction func, void *args);
@@ -283,6 +303,7 @@ struct _HPyContext_s {
     void (*ctx_Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h);
     HPy (*ctx_Global_Load)(HPyContext *ctx, HPyGlobal global);
     void (*ctx_Dump)(HPyContext *ctx, HPy h);
+    int (*ctx_Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *expected);
 };
 
 #ifdef GRAALVM_PYTHON_LLVM

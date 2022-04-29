@@ -162,6 +162,9 @@ typedef struct { void* _i; } HPyThreadState;
 #define HPy_IsNull(h) ((h)._i == NULL)
 #endif
 
+#define HPyListBuilder_IsNull(h) ((h)._lst == 0)
+#define HPyTupleBuilder_IsNull(h) ((h)._tup == 0)
+
 #define HPyField_NULL _hfconv(0)
 #define HPyField_IsNull(f) ((f)._i == 0)
 
@@ -185,11 +188,22 @@ typedef struct _HPyContext_s HPyContext;
     typedef intptr_t HPy_ssize_t;
     typedef intptr_t HPy_hash_t;
     typedef uint32_t HPy_UCS4;
+
+    /* HPyCapsule field keys */
+    typedef enum {
+        HPyCapsule_key_Pointer = 0,
+        HPyCapsule_key_Name = 1,
+        HPyCapsule_key_Context = 2,
+        HPyCapsule_key_Destructor = 3,
+    } _HPyCapsule_key;
+
 #else
     typedef Py_ssize_t HPy_ssize_t;
     typedef Py_hash_t HPy_hash_t;
     typedef Py_UCS4 HPy_UCS4;
 #endif
+
+typedef void (*HPyCapsule_Destructor)(const char *name, void *pointer, void *context);
 
 
 /* ~~~~~~~~~~~~~~~~ Additional #includes ~~~~~~~~~~~~~~~~ */
@@ -203,6 +217,7 @@ typedef struct _HPyContext_s HPyContext;
 #include "hpy/runtime/argparse.h"
 #include "hpy/runtime/buildvalue.h"
 #include "hpy/runtime/helpers.h"
+#include "hpy/runtime/structseq.h"
 
 #ifdef HPY_UNIVERSAL_ABI
 #   include "hpy/universal/autogen_ctx.h"

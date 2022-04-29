@@ -45,6 +45,14 @@ class LegacyPointTemplate(PointTemplate):
         HPyType_LEGACY_HELPERS({struct_name})
     """
 
+    _TYPE_STRUCT_BEGIN_FORMAT = """
+        #include <Python.h>
+        typedef struct {{
+            PyHeapTypeObject super;
+    """
+
+    _TYPE_STRUCT_END_FORMAT = _STRUCT_END_FORMAT
+
     _IS_LEGACY = ".legacy = true,"
 
 
@@ -165,6 +173,178 @@ class TestLegacyType(_TestType):
             mod = self.make_module(mod_src)
         assert "legacy tp_dealloc" in str(err.value)
 
+    # Metaclass tests:
+    #
+    # Note: both the class (Dummy) and the metaclass (DummyMeta) must be at
+    # least legacy HPy types for now.
+    #
+    # The metaclass must inherit from PyType_Type, so it must embed in it
+    # PyHeapTypeObject, but HPyType_FromSpec assumes that the total size
+    # is ~ sizeof(PyObject) + spec->basicsize. HPy it could use base size
+    # instead of sizeof(PyObject), but that may be problematic w.r.t.
+    # the alignment of the result.
+    #
+    # The class itself must be legacy: The following seems to be CPython
+    # limitation/bug:
+    #
+    #   - (A) if we have custom metatype, then typeobject.c:mro_invoke checks:
+    #       assert(base->tp_basicsize < type->tp_basicsize)
+    #   - (B) if tp_basicsize == 0, then CPython fixes it by:
+    #       type->tp_basicsize = base->tp_basicsize // typeobject.c:inherit_special
+    #   - but (B) happens only after (A)
+    #
+    # Either the contract of PyType_Ready is such that if you have a metaclass,
+    # you must provide tp_basicsize (including sizeof(PyObject) for the trivial
+    # case), or this is a bug. With HPy pure types this could be also workaround
+    # by setting some basicsize, even just one byte.
+
+    def _metaclass_test(self, metatype_setup_code):
+        mod = self.make_module("""
+            #include <Python.h>
+            #include <structmember.h>
+
+            typedef struct {
+                PyHeapTypeObject super;
+                int meta_magic;
+                int meta_member;
+                char some_more[64];
+            } DummyMeta;
+            
+            typedef struct {
+                PyObject_HEAD
+                int member;
+            } DummyData;
+
+            static PyMemberDef members[] = {
+                    {"member", T_INT, offsetof(DummyData, member), 0, NULL},
+                    {NULL, 0, 0, 0, NULL},
+            };
+
+            static PyType_Slot DummySlots[] = {
+                {Py_tp_members, members},
+                {0, NULL},
+            };
+            
+            static HPyType_Spec Dummy_spec = {
+                .name = "mytest.Dummy",
+                .basicsize = sizeof(DummyData),
+                .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_BASETYPE,
+                .legacy = true,
+                .legacy_slots = DummySlots,
+            };
+            
+            // Defined by each test:
+            bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta);
+            
+            void setup_types(HPyContext *ctx, HPy module) {
+                HPy h_DummyMeta;
+                if (!setup_metatype(ctx, module, &h_DummyMeta))
+                    return;
+            
+                HPyType_SpecParam param[] = {
+                    { HPyType_SpecParam_Metaclass, h_DummyMeta },
+                    { 0 }
+                };
+                HPy h_Dummy = HPyType_FromSpec(ctx, &Dummy_spec, param);
+                if (!HPy_IsNull(h_Dummy)) {
+                    HPy_SetAttr_s(ctx, module, "Dummy", h_Dummy);
+                    HPy_SetAttr_s(ctx, module, "DummyMeta", h_DummyMeta);
+                }
+                
+                HPy_Close(ctx, h_Dummy);
+                HPy_Close(ctx, h_DummyMeta);
+            }
+        
+            HPyDef_METH(set_meta_data, "set_meta_data", set_meta_data_impl, HPyFunc_O)
+            static HPy set_meta_data_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                DummyMeta *data = (DummyMeta*) HPy_AsStructLegacy(ctx, arg);
+                data->meta_magic = 42;
+                data->meta_member = 11;
+                for (size_t i = 0; i < 64; ++i)
+                    data->some_more[i] = (char) i;
+                return HPy_Dup(ctx, ctx->h_None);
+            }
+
+            HPyDef_METH(get_meta_data, "get_meta_data", get_meta_data_impl, HPyFunc_O)
+            static HPy get_meta_data_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                DummyMeta *data = (DummyMeta*) HPy_AsStructLegacy(ctx, arg);
+                for (size_t i = 0; i < 64; ++i) {
+                    if (data->some_more[i] != (char) i) {
+                        HPyErr_SetString(ctx, ctx->h_RuntimeError, "some_more got mangled");
+                        return HPy_NULL;
+                    }
+                }
+                return HPyLong_FromLong(ctx, data->meta_magic + data->meta_member);
+            }
+
+            HPyDef_METH(set_member, "set_member", set_member_impl, HPyFunc_O)
+            static HPy set_member_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                DummyData *data = (DummyData*) HPy_AsStructLegacy(ctx, arg);
+                data->member = 123614;
+                return HPy_Dup(ctx, ctx->h_None);
+            }
+
+            @EXPORT(set_meta_data)
+            @EXPORT(get_meta_data)
+            @EXPORT(set_member)
+            @EXTRA_INIT_FUNC(setup_types)
+            @INIT
+        """ + metatype_setup_code)
+
+        assert isinstance(mod.Dummy, type)
+        assert mod.DummyMeta is type(mod.Dummy)
+        assert mod.set_meta_data(mod.Dummy) is None
+        assert mod.get_meta_data(mod.Dummy) == 42 + 11
+
+        d = mod.Dummy()
+        mod.set_member(d)
+        assert d.member == 123614
+
+    def test_metatype_as_legacy_static_type(self):
+        self._metaclass_test("""
+            static PyTypeObject DummyMetaType = {
+                PyVarObject_HEAD_INIT(&PyType_Type, 0)
+                .tp_base = &PyType_Type,
+                .tp_name = "mytest.DummyMeta",
+                .tp_basicsize = sizeof(DummyMeta),
+                .tp_flags = Py_TPFLAGS_DEFAULT,
+            };
+        
+            bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta) {
+                if (PyType_Ready(&DummyMetaType))
+                    return false;
+                *h_DummyMeta = HPy_FromPyObject(ctx, (PyObject*) &DummyMetaType);
+                return true;
+            }
+        """)
+
+    # Ideally this test should be in the super class and parametrized by
+    # @IS_LEGACY for both the metatype and the class itself, but we cannot
+    # do pure HPy types in this scenario - see the comment above.
+    def test_metatype_as_legacy_hpy_type(self):
+        self._metaclass_test("""
+            static HPyType_Spec DummyMeta_spec = {
+                .name = "mytest.DummyMeta",
+                .basicsize = sizeof(DummyMeta),
+                .flags = HPy_TPFLAGS_DEFAULT,
+                .legacy = true,
+            };
+            
+            bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta)
+            {
+                HPy h_py_type = HPy_FromPyObject(ctx, (PyObject*) &PyType_Type);                                
+                HPyType_SpecParam meta_param[] = {
+                    { HPyType_SpecParam_Base, h_py_type },
+                    { 0 }
+                };
+                *h_DummyMeta = HPyType_FromSpec(ctx, &DummyMeta_spec, meta_param);
+                HPy_Close(ctx, h_py_type);                
+                return !HPy_IsNull(*h_DummyMeta);
+            }
+        """)
 
 @pytest.mark.usefixtures('skip_nfi')
 class TestCustomLegacyFeatures(HPyTest):
