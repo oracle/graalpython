@@ -599,7 +599,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, arguments);
             }
 
-            return executeOSR(virtualFrame, encodeBCI(0) | encodeStackTop(stackoffset - 1), arguments);
+            return executeInner(virtualFrame, false, 0, stackoffset - 1);
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -775,30 +775,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop + 1;
     }
 
-    /**
-     * @param target - encodes bci (16bit), stackTop (12bit), and blockstackTop (4bit)
-     */
     @Override
+    public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
+        return executeInner(osrFrame, true, target, (Integer) interpreterState);
+    }
+
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    public Object executeOSR(VirtualFrame virtualFrame, int target, Object originalArgsObject) {
-        Object[] originalArgs = (Object[]) originalArgsObject;
+    public Object executeInner(VirtualFrame virtualFrame, boolean resumingAfterOSR, int initialBci, int initialStackTop) {
         boolean inInterpreter = CompilerDirectives.inInterpreter();
 
-        Object globals = PArguments.getGlobals(originalArgs);
-        Object locals = PArguments.getSpecialArgument(originalArgs);
+        Object globals = PArguments.getGlobals(virtualFrame);
+        Object locals = PArguments.getSpecialArgument(virtualFrame);
 
         int loopCount = 0;
-        int stackTop = decodeStackTop(target);
-        int bci = decodeBCI(target);
+        int stackTop = initialStackTop;
+        int bci = initialBci;
 
         Frame localFrame = virtualFrame;
         boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
         if (isGeneratorOrCoroutine) {
-            localFrame = PArguments.getGeneratorFrame(originalArgs);
-            /* Check if we're resuming the generator or resuming after OSR */
-            if (bci == 0) {
+            localFrame = PArguments.getGeneratorFrame(virtualFrame);
+            if (!resumingAfterOSR) {
                 bci = localFrame.getInt(bcioffset);
                 stackTop = localFrame.getInt(generatorStackTopOffset);
             }
@@ -811,7 +810,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         String[] localNames = names;
         Node[] localNodes = adoptedNodes;
 
-        verifyBeforeLoop(target, stackTop, bci, localBC);
+        verifyBeforeLoop(stackTop, bci, localBC);
 
         int oparg = 0;
         while (true) {
@@ -1211,9 +1210,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (inInterpreter) {
                             loopCount++;
                             if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                // we're in the interpreter, so the unboxed storage for locals
-                                // is not used
-                                Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(bci) | encodeStackTop(stackTop), originalArgsObject, null, virtualFrame);
+                                /*
+                                 * Beware of race conditions when adding more things to the
+                                 * interpreterState argument. It gets stored already at this point,
+                                 * but the compilation runs in parallel. The compiled code may get
+                                 * entered from a different invocation of this root, using the
+                                 * interpreterState that was saved here. Don't put any data specific
+                                 * to particular invocation in there (like python-level arguments or
+                                 * variables) or it will get mixed up. To retain such state, put it
+                                 * into the frame instead.
+                                 */
+                                Object osrResult = BytecodeOSRNode.tryOSR(this, bci, stackTop, null, virtualFrame);
                                 if (osrResult != null) {
                                     LoopNode.reportLoopCount(this, loopCount);
                                     return osrResult;
@@ -1844,11 +1851,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void initCellVars(Frame locaFrame) {
+    private void initCellVars(Frame localFrame) {
         if (cellvars.length <= 32) {
-            initCellVarsExploded(locaFrame);
+            initCellVarsExploded(localFrame);
         } else {
-            initCellVarsLoop(locaFrame);
+            initCellVarsLoop(localFrame);
         }
     }
 
@@ -1906,9 +1913,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(stackTop);
     }
 
-    private void verifyBeforeLoop(int target, int stackTop, int bci, byte[] localBC) {
+    private void verifyBeforeLoop(int stackTop, int bci, byte[] localBC) {
         CompilerAsserts.partialEvaluationConstant(localBC);
-        CompilerAsserts.partialEvaluationConstant(target);
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
     }
