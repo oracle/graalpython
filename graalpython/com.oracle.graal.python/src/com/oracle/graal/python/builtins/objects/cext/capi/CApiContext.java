@@ -935,6 +935,8 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    static Object nfiLib;
+
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
@@ -953,6 +955,12 @@ public final class CApiContext extends CExtContext {
                 // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
+
+                // HACK
+                SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"/home/tim/Dev/analysis/numpytest/numpyhackjob/repo/cpython/libpython3.8d.so\"", libPythonName);
+                // SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", libPythonName);
+                nfiLib = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
+                // END HACK
 
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
