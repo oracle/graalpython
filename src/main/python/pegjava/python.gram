@@ -498,12 +498,12 @@ star_named_expression[expr_ty]:
     | named_expression
 
 named_expression[expr_ty]:
-    | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
+    | a=NAME ':=' ~ b=expression { factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, startToken.startOffset, endToken.endOffset) }
     | invalid_named_expression
     | expression !':='
 
 direct_named_expression[expr_ty]:
-    | a=NAME ':=' ~ b=expression { _PyAST_NamedExpr(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, EXTRA) }
+    | a=NAME ':=' ~ b=expression { factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, startToken.startOffset, endToken.endOffset) }
     | expression !':='
 
 annotated_rhs[expr_ty]: yield_expr | star_expressions
@@ -823,7 +823,7 @@ invalid_expression:
     # !(NAME STRING) is not matched so we don't show this error with some invalid string prefixes like: kf"dsfsdf"
     # Soft keywords need to also be ignored because they can be parsed as NAME NAME
     | !(NAME STRING | SOFT_KEYWORD) a=disjunction expression {
-        RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "invalid syntax. Perhaps you forgot a comma?") }
+         this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax, a, "invalid syntax. Perhaps you forgot a comma?") }
 
 invalid_named_expression:
     | a=expression ':=' expression {
@@ -847,7 +847,7 @@ invalid_assignment:
     | a=expression ':' expression {
         this.raiseSyntaxErrorKnownLocation(a, "illegal target for annotation") }
     | (star_targets '=')* a=star_expressions '=' {
-        RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
+        this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS, a) }
     | (star_targets '=')* a=yield_expr '=' { this.raiseSyntaxErrorKnownLocation(a, "assignment to yield expression not possible") }
     | a=star_expressions augassign (yield_expr | star_expressions) {
         this.raiseSyntaxErrorKnownLocation(
@@ -861,7 +861,7 @@ invalid_ann_assign_target[expr_ty]:
     | '(' a=invalid_ann_assign_target ')' { a }
 invalid_del_stmt:
     | 'del' a=star_expressions {
-        RAISE_SYNTAX_ERROR_INVALID_TARGET(DEL_TARGETS, a) }
+        this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS, a) }
 invalid_block:
     | NEWLINE !INDENT { RAISE_INDENTATION_ERROR("expected an indented block") }
 invalid_primary:
@@ -896,11 +896,11 @@ invalid_double_type_comments:
         this.raiseSyntaxError("Cannot have two type comments on def") }
 invalid_with_item:
     | expression 'as' a=expression &(',' | ')' | ':') {
-        RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
+        this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS, a) }
 
 invalid_for_target:
     | ASYNC? 'for' a=star_expressions {
-        RAISE_SYNTAX_ERROR_INVALID_TARGET(FOR_TARGETS, a) }
+        this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS, a) }
 
 invalid_group:
     | '(' a=starred_expression ')' {
@@ -938,6 +938,6 @@ invalid_double_starred_kvpairs:
     | expression a=':' &('}'|',') { this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }
 invalid_kvpair:
     | a=expression !(':') {
-        RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "':' expected after dictionary key") }
+        this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax, a, "':' expected after dictionary key") }
     | expression ':' a='*' bitwise_or { this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value") }
     | expression a=':' {this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'") }

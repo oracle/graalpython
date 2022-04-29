@@ -357,6 +357,12 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.NamedExpr node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNewLineIndented(sb, "Target: ");
+        putOnSameLineIfShort(sb, node.target);
+        appendNewLineIndented(sb, "Value: ");
+        putOnSameLineIfShort(sb, node.value);
+        level--;
         return sb.toString();
 
     }

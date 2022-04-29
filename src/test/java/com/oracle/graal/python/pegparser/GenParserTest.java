@@ -20,7 +20,7 @@ public class GenParserTest {
         String text = "a = 1";
         ParserTokenizer tokenizer = new ParserTokenizer(text);
         Parser parser = new Parser(tokenizer, new NodeFactoryImp(), null, null);
-        Object result = parser.parse(AbstractParser.InputType.FILE);
+        Object result = parser.parse(InputType.FILE);
         System.out.println("#Result of the parsing: " + result);
     }
 

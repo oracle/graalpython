@@ -1,0 +1,9 @@
+Module[0, 19]
+    NamedExpr[1, 18]
+        Target: Name[1, 5] Value: "info" Store
+        Value: 
+            Tuple[9, 18]
+                Values:
+                    LONG[10, 11] Value: 1
+                    LONG[13, 14] Value: 2
+                    LONG[16, 17] Value: 3

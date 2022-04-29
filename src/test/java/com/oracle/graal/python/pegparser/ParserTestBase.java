@@ -113,11 +113,11 @@ public class ParserTestBase {
             @Override
             public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
-                return (ExprTy)new Parser(tok, factory, this).parse(AbstractParser.InputType.FSTRING);
+                return (ExprTy)new Parser(tok, factory, this).parse(InputType.FSTRING);
             }
         };
         Parser parser = new Parser(tokenizer, factory, fexpParser);
-        ModTy result = (ModTy)parser.parse(AbstractParser.InputType.FILE);
+        ModTy result = (ModTy)parser.parse(InputType.FILE);
         lastParserErrorCallback = parser.getErrorCallback();
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
 //        lastSST = ((PythonParserImpl) parser).getLastSST();
@@ -268,11 +268,11 @@ public class ParserTestBase {
             @Override
             public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
-                return (ExprTy)new Parser(tok, factory, this, errorCb).parse(AbstractParser.InputType.FSTRING);
+                return (ExprTy)new Parser(tok, factory, this, errorCb).parse(InputType.FSTRING);
             }
         };
         Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        parser.parse(AbstractParser.InputType.FILE);
+        parser.parse(InputType.FILE);
         assertEquals(Arrays.asList(expectedErrors), errors);
     }
 
