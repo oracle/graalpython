@@ -303,7 +303,7 @@ class TestMisc(CPyExtTestCase):
             tuple(),
         ),
         code="""
-        PyObject* wrap_PyEval_GetBuiltins() {
+        PyObject* wrap_PyEval_GetBuiltins(void) {
             return (PyObject *) Py_TYPE(PyEval_GetBuiltins());
         }
         """,
