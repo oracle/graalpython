@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -127,6 +128,8 @@ public class AsyncHandler {
                     PythonUtils.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
                     PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
                     PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
+                    // Avoid pointless stack walks in random places
+                    PArguments.setException(args, PException.NO_EXCEPTION);
 
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
