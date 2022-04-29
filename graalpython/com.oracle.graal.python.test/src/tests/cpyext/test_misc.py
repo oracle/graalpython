@@ -236,8 +236,15 @@ class TestMisc(CPyExtTestCase):
             (123.0, ),
         ),
         code="""
+        #ifdef GRAALVM_PYTHON
         // internal function defined in 'capi.c'
         int PyTruffle_ToNative(void *);
+        #else
+        // nothing to do on CPython
+        static inline int PyTruffle_ToNative(void *arg) {
+            return 0;
+        }
+        #endif
         
         PyObject* primitive_sharing(PyObject* val) {
             Py_ssize_t val_refcnt = Py_REFCNT(val);
