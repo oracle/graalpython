@@ -1398,7 +1398,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
-                PException exceptionState = PArguments.getException(localFrame);
+                PException exceptionState = PArguments.getException(virtualFrame);
                 if (exceptionState != null) {
                     ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
