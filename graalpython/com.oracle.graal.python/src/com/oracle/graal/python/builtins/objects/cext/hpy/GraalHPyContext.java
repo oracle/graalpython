@@ -157,6 +157,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheck;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGetName;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeIsSubtype;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnaryArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsCharsetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8AndSize;
@@ -562,6 +564,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE("ctx_Type"),
         CTX_TYPECHECK("ctx_TypeCheck", signature(Long, HPy, HPy)),
+        CTX_TYPE_ISSUBTYPE("ctx_Type_IsSubtype"),
+        CTX_TYPE_GETNAME("ctx_Type_GetName"),
         CTX_IS("ctx_Is"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
@@ -2213,6 +2217,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_GLOBAL_LOAD.ordinal()] = new GraalHPyGlobalLoad();
         members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
 
+        members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
+        members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {
                 Object m = members[i];

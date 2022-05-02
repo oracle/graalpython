@@ -3237,4 +3237,54 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTypeIsSubtype extends GraalHPyContextFunction {
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asSubtype,
+                        @Cached HPyAsPythonObjectNode asBasetype,
+                        @Cached IsSubtypeNode isSubtype,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                try {
+                    return isSubtype.execute(asSubtype.execute(context, arguments[1]),
+                                    asBasetype.execute(context, arguments[2])) ? 1 : 0;
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTypeGetName extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asType,
+                        @Cached GetNameNode getName,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 2);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object type = asType.execute(context, arguments[1]);
+                String name = getName.execute(type);
+                byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, CodecsModuleBuiltins.STRICT);
+                return new CByteArrayWrapper(result);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
 }
