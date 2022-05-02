@@ -529,9 +529,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         H_BOOLTYPE("h_BoolType"),
         H_LONGTYPE("h_LongType"),
         H_FLOATTYPE("h_FloatType"),
+        H_COMPLEXTYPE("h_ComplexType"),
         H_UNICODETYPE("h_UnicodeType"),
+        H_BYTESTYPE("h_BytesType"),
         H_TUPLETYPE("h_TupleType"),
         H_LISTTYPE("h_ListType"),
+        H_MEMORYVIEWTYPE("h_MemoryViewType"),
+        H_CAPSULETYPE("h_CapsuleType"),
 
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup", signature(HPy, HPy)),
