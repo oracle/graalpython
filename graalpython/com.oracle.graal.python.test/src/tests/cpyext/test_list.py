@@ -41,12 +41,6 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-
-def raise_Py6_SystemError():
-    if sys.version_info.minor >= 6:
-        raise SystemError
-    else:
-        return -1
     
 def _reference_new_list(args):
     n = args[0]
@@ -73,14 +67,13 @@ def _reference_setitem(args):
     listObj[pos] = newitem
     return listObj
 
+
 def _reference_setslice(args):
     if not isinstance(args[0], list):
-        raise_Py6_SystemError()
-    try:        
-        args[0][args[1]:args[2]] = args[3]
-        return 0;
-    except:
-        return raise_Py6_SystemError()
+        raise SystemError
+    args[0][args[1]:args[2]] = args[3]
+    return 0;
+
 
 def _reference_reverse(args):
     args[0].reverse()

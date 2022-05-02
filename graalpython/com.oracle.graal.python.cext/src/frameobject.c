@@ -41,9 +41,7 @@
 
 #include "capi.h"
 
-PyTypeObject PyFrame_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("frame", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject), sizeof(PyObject *));
 
-UPCALL_ID(PyTruffleFrame_New);
-PyFrameObject* PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals, PyObject *locals) {
-    return (PyFrameObject*)(UPCALL_CEXT_O(_jls_PyTruffleFrame_New, native_to_java((PyObject*)tstate), native_to_java((PyObject*)code), native_to_java(globals), native_to_java(locals)));
+void _PyFrame_SetLineNumber(PyFrameObject *frame, int line) {
+	set_PyFrameObject_f_lineno(frame, line);
 }

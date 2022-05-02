@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -50,33 +51,31 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
 
+    /**
+     * Reference count of an object that is only referenced by the Java heap - this is larger than 1
+     * since native code sometimes special cases for low refcounts.
+     */
+    public static final long MANAGED_REFCNT = 10;
+
+    public static final long IMMORTAL_REFCNT = 256 * 256;
+
     private static final long UNINITIALIZED = -1;
 
     private Object delegate;
     private long nativePointer = UNINITIALIZED;
 
     /**
-     * Equivalent to {@code ob_refcnt}. We also need to maintain the reference count for native
-     * wrappers because otherwise we can never free the handles. The initial value is set to
-     * {@code 1} because each object has just one wrapper and when the wrapper is created, the
-     * object already exists which means in CPython the {@code PyObject_Init} would already have
-     * been called. The object init function sets the reference count to one.
+     * Equivalent to {@code ob_refcnt}.
      */
-    private long refCount = 1;
+    private long refCount = MANAGED_REFCNT;
+
+    public PythonObjectReference ref;
 
     public PythonNativeWrapper() {
     }
 
     public PythonNativeWrapper(Object delegate) {
         this.delegate = delegate;
-    }
-
-    public final void increaseRefCount() {
-        refCount++;
-    }
-
-    public final long decreaseRefCount() {
-        return --refCount;
     }
 
     public final long getRefCount() {

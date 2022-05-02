@@ -40,17 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
  * of the corresponding native type {@code struct _typeobject}.
  */
+@ExportLibrary(InteropLibrary.class)
 public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
 
@@ -81,9 +87,15 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
             obj.setNativeWrapper(nativeWrapper);
         } else {
             // it already existed, so we need to increase the reference count
-            nativeWrapper.increaseRefCount();
+            CApiTransitions.incRef(nativeWrapper, 1);
         }
         return nativeWrapper;
+    }
+
+    @ExportMessage
+    protected void toNative(
+                    @Cached ToNativeTypeNode toNativeNode) {
+        toNativeNode.execute(this);
     }
 
     @Override

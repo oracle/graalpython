@@ -266,12 +266,12 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
                 if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
                     if (newStore.getCapacity() > initialCapacity.estimate()) {
                         initialCapacity.updateFrom(newStore.getCapacity());
-                        LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.getCapacity(),
+                        LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection(), newStore.getCapacity(),
                                         initialCapacity.estimate()));
                     }
                     if (newStore.getElementType().generalizesFrom(type)) {
                         type = newStore.getElementType();
-                        LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name()));
+                        LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection(), type.name()));
                     }
                 }
             }

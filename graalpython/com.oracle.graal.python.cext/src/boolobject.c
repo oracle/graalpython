@@ -40,10 +40,6 @@
  */
 #include "capi.h"
 
-#include <stdarg.h>
-
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(struct _longobject));
-
 // taken from CPython "Python/Objects/boolobject.c"
 PyObject *PyBool_FromLong(long ok) {
     PyObject *result;

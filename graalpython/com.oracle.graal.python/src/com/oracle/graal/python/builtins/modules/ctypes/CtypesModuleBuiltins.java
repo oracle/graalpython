@@ -104,7 +104,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
@@ -811,7 +811,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object py_dl_close(Object h,
-                        @Cached PyLongAsVoidPtr asVoidPtr) {
+                        @Cached PyLong_AsVoidPtr asVoidPtr) {
             Object handle = asVoidPtr.execute(h);
 
             if (!dlclose(handle, getContext())) {
@@ -822,7 +822,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     protected static DLHandler getHandleFromLongObject(Object obj, PythonContext context,
-                    PyLongAsVoidPtr asVoidPtr,
+                    PyLong_AsVoidPtr asVoidPtr,
                     PRaiseNode raiseNode) {
         Object h = null;
         try {
@@ -838,7 +838,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     protected static NativeFunction getFunctionFromLongObject(Object obj, PythonContext context,
-                    PyLongAsVoidPtr asVoidPtr) {
+                    PyLong_AsVoidPtr asVoidPtr) {
         if (obj instanceof NativeFunction) {
             return (NativeFunction) obj;
         }
@@ -884,7 +884,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object py_dl_sym(VirtualFrame frame, Object obj, Object name,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached AuditNode auditNode,
                         @Cached CtypesDlSymNode dlSymNode) {
             auditNode.audit("ctypes.dlsym/handle", obj, name);
@@ -1081,7 +1081,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached CallProcNode callProcNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached PyLongAsVoidPtr asVoidPtr) {
+                        @Cached PyLong_AsVoidPtr asVoidPtr) {
             // Object func = _parse_voidp(tuple[0]);
             NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
             auditNode.audit("ctypes.call_function", func, arguments);
@@ -1131,7 +1131,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached CallProcNode callProcNode,
-                        @Cached PyLongAsVoidPtr asVoidPtr) {
+                        @Cached PyLong_AsVoidPtr asVoidPtr) {
             // Object func = _parse_voidp(tuple[0]);
             NativeFunction func = (NativeFunction) getObjectAt(getContext(), asVoidPtr.execute(f));
             auditNode.audit("ctypes.call_function", func, arguments);
@@ -2086,6 +2086,19 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 // else PyBytes_FromStringAndSize(ptr, strlen(ptr));
             } else {
                 throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("string_at doesn't support some storage types yet."));
+            }
+            return factory.createBytes(bytes);
+        }
+
+        @Specialization
+        static Object string_at(PBytes ptr, int size,
+                        @Cached GetInternalByteArrayNode getBytes,
+                        @Cached PythonObjectFactory factory,
+                        @Cached AuditNode auditNode) {
+            auditNode.audit("ctypes.string_at", ptr, size);
+            byte[] bytes = getBytes.execute(ptr.getSequenceStorage());
+            if (size != -1) {
+                bytes = PythonUtils.arrayCopyOf(bytes, size);
             }
             return factory.createBytes(bytes);
         }

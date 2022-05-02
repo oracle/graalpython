@@ -79,23 +79,13 @@ def _reference_set_item(args):
         d[args[1]] = args[2]
         return 0
     except:
-
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+        raise SystemError
 
 
 def _reference_del_item(args):
-    try:
-        d = args[0]
-        del d[args[1]]
-        return 0
-    except:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+    d = args[0]
+    del d[args[1]]
+    return 0
 
 
 def _reference_next(args):
@@ -118,22 +108,13 @@ def _reference_copy(args):
 
 
 def _reference_contains(args):
-    try:
-        return args[1] in args[0]
-    except:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+    return args[1] in args[0]
 
 
 def _reference_clear(args):
-    try:
-        d = args[0]
-        d.clear()
-        return d
-    except:
-        raise SystemError
+    d = args[0]
+    d.clear()
+    return d
 
 
 def _reference_merge(args):
@@ -147,10 +128,7 @@ def _reference_merge(args):
                     a[k] = b[k]
         return 0
     except:        
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+        raise AttributeError("'int' object has no attribute 'keys'")
 
 class SubDict(dict):
     pass

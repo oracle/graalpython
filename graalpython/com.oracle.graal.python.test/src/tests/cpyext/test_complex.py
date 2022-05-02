@@ -61,10 +61,7 @@ def _reference_realasdouble(args):
     try:
         return n.__float__()
     except:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1.0
+        raise TypeError
         
 def _reference_fromdoubles(args):
     if isinstance(args[0], float) and isinstance(args[1], float):
@@ -133,7 +130,7 @@ class TestPyComplex(CPyExtTestCase):
         code='''
         PyObject* wrap_PyComplex_cval(PyObject* obj) {
             if (PyComplex_CheckExact(obj)) {
-                Py_complex res = ((PyComplexObject *)obj)->cval;
+                Py_complex res = PyComplex_AsCComplex(obj);
                 return PyTuple_Pack(2, PyFloat_FromDouble(res.real), PyFloat_FromDouble(res.imag));
             }
             return Py_None;

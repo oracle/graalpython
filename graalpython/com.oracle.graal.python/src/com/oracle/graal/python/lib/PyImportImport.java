@@ -64,8 +64,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public abstract class PyImportImport extends PNodeWithState {
 
-    private static final TruffleString T_LEVEL = tsLiteral("level");
-    private static final TruffleString T_FROMLIST = tsLiteral("fromlist");
+    public static final TruffleString T_LEVEL = tsLiteral("level");
+    public static final TruffleString T_FROMLIST = tsLiteral("fromlist");
 
     public abstract Object execute(VirtualFrame frame, TruffleString name);
 

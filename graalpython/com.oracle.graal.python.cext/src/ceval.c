@@ -43,7 +43,6 @@
 #ifndef Py_DEFAULT_RECURSION_LIMIT
 #define Py_DEFAULT_RECURSION_LIMIT 1000
 #endif
-int _Py_CheckRecursionLimit = Py_DEFAULT_RECURSION_LIMIT;
 
 
 PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
@@ -58,40 +57,8 @@ int PyEval_ThreadsInitialized() {
     return 1;
 }
 
-typedef PyThreadState* (*save_thread_fun_t)();
-UPCALL_TYPED_ID(PyEval_SaveThread, save_thread_fun_t);
-PyThreadState* PyEval_SaveThread() {
-    return _jls_PyEval_SaveThread();
-}
-
-typedef void (*restore_thread_fun_t)();
-UPCALL_TYPED_ID(PyEval_RestoreThread, restore_thread_fun_t);
-void PyEval_RestoreThread(PyThreadState *ptr) {
-    return _jls_PyEval_RestoreThread();
-}
-
-UPCALL_ID(PyEval_GetBuiltins);
-PyObject* PyEval_GetBuiltins() {
-	return UPCALL_CEXT_O(_jls_PyEval_GetBuiltins);
-}
-
 int PyEval_MergeCompilerFlags(PyCompilerFlags *cf) {
     return 0;
-}
-
-UPCALL_ID(PyThread_allocate_lock);
-void* PyThread_allocate_lock() {
-    return UPCALL_CEXT_O(_jls_PyThread_allocate_lock);
-}
-
-UPCALL_ID(PyThread_acquire_lock);
-int PyThread_acquire_lock(PyThread_type_lock aLock, int waitflag) {
-    return UPCALL_CEXT_I(_jls_PyThread_acquire_lock, native_to_java(aLock), waitflag ? -1 : 0);
-}
-
-UPCALL_ID(PyThread_release_lock);
-void PyThread_release_lock(PyThread_type_lock aLock) {
-    UPCALL_CEXT_O(_jls_PyThread_release_lock, native_to_java(aLock));
 }
 
 
@@ -109,12 +76,6 @@ PyEval_EvalCode(PyObject *co, PyObject *globals, PyObject *locals)
                       NULL, NULL);
 }
 
-typedef PyObject *(*eval_code_ex_fun_t)(PyObject *_co, PyObject *globals, PyObject *locals,
-                  PyObject *const *args,
-                  PyObject *const *kws,
-                  PyObject *const *defs,
-                  PyObject *kwdefs, PyObject *closure);
-UPCALL_TYPED_ID(PyEval_EvalCodeEx, eval_code_ex_fun_t);
 PyObject *
 PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                   PyObject *const *args, int argcount,
@@ -126,11 +87,11 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
         PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
         return NULL;
     }
-    return _jls_PyEval_EvalCodeEx(native_to_java(_co), native_to_java(globals), native_to_java(locals != NULL ? locals : Py_None),
+    return Graal_PyTruffleEval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,
                                   polyglot_from_PyObjectPtr_array(args, argcount),
                                   polyglot_from_PyObjectPtr_array(kws, kwcount * 2),
                                   polyglot_from_PyObjectPtr_array(defs, defcount),
-                                  native_to_java(kwdefs), native_to_java(closure));
+                                  kwdefs, closure);
 }
 
 #undef Py_EnterRecursiveCall

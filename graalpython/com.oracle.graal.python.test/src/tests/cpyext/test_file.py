@@ -47,17 +47,8 @@ tmp_write_file = None
 
 def _reference_write_object(args):
     if args[1] is None:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
-    try:    
-        args[1].write(args[0])
-    except Exception as e:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise e
+        raise AttributeError
+    args[1].write(args[0])
     return 0
 
 class TestPyFile(CPyExtTestCase):

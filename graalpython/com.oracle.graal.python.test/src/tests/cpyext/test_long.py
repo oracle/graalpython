@@ -41,20 +41,12 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-def raise_Py6_SystemError():
-    if sys.version_info.minor >= 6:
-        raise SystemError
-    else:
-        return -1
-    
+
 def _reference_aslong(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = int(args[0])
     if n > 0x7fffffff:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+        raise OverflowError
     return n
 
 
@@ -62,12 +54,7 @@ def _reference_as_unsigned_long(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = args[0]
     if n > 0xffffffff or n < 0:
-        if sys.version_info.minor >= 6:
-            exc = SystemError()
-            exc.__cause__ = OverflowError()
-            raise exc
-        else:
-            return -1
+        raise OverflowError
     return int(n)
 
 
@@ -75,10 +62,7 @@ def _reference_aslong_overflow(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = args[0]
     if n > 0x7fffffff:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return (-1, 1)
+        raise OverflowError
     return (int(n), 0)
 
 

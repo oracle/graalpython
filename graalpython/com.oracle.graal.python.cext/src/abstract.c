@@ -63,26 +63,16 @@ int PyIter_Check(PyObject *obj) {
             ((PyObject *)tp->tp_iternext) != Py_NotImplemented);
 }
 
-UPCALL_ID(PyNumber_Check);
-int PyNumber_Check(PyObject *o) {
-    return UPCALL_CEXT_I(_jls_PyNumber_Check, native_to_java(o));
-}
-
-typedef PyObject *(*unaryop_fun_t)(PyObject *, int32_t);
-UPCALL_TYPED_ID(PyNumber_UnaryOp, unaryop_fun_t);
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
-    return _jls_PyNumber_UnaryOp(native_to_java(v), (int32_t)unaryop);
+    return GraalPyTruffleNumber_UnaryOp(v, (int) unaryop);
 }
 
-typedef PyObject *(*binop_fun_t)(PyObject *, PyObject *, int32_t);
-UPCALL_TYPED_ID(PyNumber_BinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return _jls_PyNumber_BinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
+    return GraalPyTruffleNumber_BinOp(v, w, (int) binop);
 }
 
-UPCALL_TYPED_ID(PyNumber_InPlaceBinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return _jls_PyNumber_InPlaceBinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
+    return GraalPyTruffleNumber_InPlaceBinOp(v, w, (int) binop);
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
@@ -146,10 +136,6 @@ PyObject * PyNumber_Invert(PyObject *o) {
 	return do_unaryop(o, INVERT);
 }
 
-PyObject * PyNumber_Power(PyObject *v, PyObject *w, PyObject *z) {
-    return UPCALL_O(PY_BUILTIN, polyglot_from_string("pow", SRC_CS), native_to_java(v), native_to_java(w), native_to_java(z));
-}
-
 PyObject* PyNumber_InPlaceAdd(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, ADD);
 }
@@ -178,12 +164,6 @@ PyObject* PyNumber_InPlaceRemainder(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, MOD);
 }
 
-typedef PyObject *(*ipow_fun_t)(PyObject *, PyObject *, PyObject *);
-UPCALL_TYPED_ID(PyNumber_InPlacePower, ipow_fun_t);
-PyObject* PyNumber_InPlacePower(PyObject *o1, PyObject *o2, PyObject *o3) {
-    return _jls_PyNumber_InPlacePower(native_to_java(o1), native_to_java(o2), native_to_java(o3));
-}
-
 PyObject* PyNumber_InPlaceLshift(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, LSHIFT);
 }
@@ -204,25 +184,7 @@ PyObject* PyNumber_InPlaceOr(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, OR);
 }
 
-UPCALL_ID(PyIndex_Check)
-int PyIndex_Check(PyObject *obj) {
-    return UPCALL_CEXT_I(_jls_PyIndex_Check, native_to_java(obj));
-}
-
-UPCALL_ID(PyNumber_Index);
-PyObject* _PyNumber_Index(PyObject *o) {
-    if (o == NULL) {
-        return null_error();
-    }
-    return UPCALL_CEXT_O(_jls_PyNumber_Index, native_to_java(o));
-}
-
-PyObject* PyNumber_Index(PyObject *o) {
-    return _PyNumber_Index(o);
-}
-
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
-    item = native_pointer_to_java(item);
     Py_ssize_t result;
     PyObject *runerr;
     PyObject *value = PyNumber_Index(item);
@@ -264,63 +226,18 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
     return -1;
 }
 
-UPCALL_ID(PyNumber_Long);
-PyObject * PyNumber_Long(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyNumber_Long, native_to_java(o));
-}
-
-UPCALL_ID(PyNumber_Float);
-PyObject * PyNumber_Float(PyObject *o) {
-    return ((PyObject* (*)(void*))_jls_PyNumber_Float)(native_to_java(o));
-}
-
-UPCALL_ID(PyNumber_Absolute);
-PyObject * PyNumber_Absolute(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyNumber_Absolute, native_to_java(o));
-}
-
-UPCALL_ID(PyNumber_Divmod);
-PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
-    return UPCALL_CEXT_O(_jls_PyNumber_Divmod, native_to_java(a), native_to_java(b));
-}
-
-UPCALL_ID(PyNumber_ToBase);
-PyObject * PyNumber_ToBase(PyObject *n, int base) {
-    return UPCALL_CEXT_O(_jls_PyNumber_ToBase, native_to_java(n), base);
-}
-
-UPCALL_ID(PyIter_Next);
-PyObject * PyIter_Next(PyObject *iter) {
-    return UPCALL_CEXT_O(_jls_PyIter_Next, native_to_java(iter));
-}
-
-UPCALL_ID(PySequence_Check);
-int PySequence_Check(PyObject *s) {
-    if (s == NULL) {
-        return 0;
-    }
-    return UPCALL_CEXT_I(_jls_PySequence_Check, native_to_java(s));
-}
-
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PySequence_Check()"
 int PyTruffle_PySequence_Check(PyObject *s) {
-    s = native_pointer_to_java(s);
     if (PyDict_Check(s))
         return 0;
     PySequenceMethods* seq = Py_TYPE(s)->tp_as_sequence;
     return seq && seq->sq_item != NULL;
 }
 
-UPCALL_ID(PySequence_Size);
-Py_ssize_t PySequence_Size(PyObject *s) {
-    return UPCALL_CEXT_L(_jls_PySequence_Size, native_to_java(s));
-}
-
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
 Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
-    s = native_pointer_to_java(s);
     PySequenceMethods *seq;
     PyMappingMethods *m;
 
@@ -345,45 +262,7 @@ Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
     return -1;    
 }
 
-UPCALL_ID(PySequence_Contains);
-int PySequence_Contains(PyObject *seq, PyObject *obj) {
-    return UPCALL_CEXT_I(_jls_PySequence_Contains, native_to_java(seq), native_to_java(obj));
-}
-
-// taken from CPython "Objects/abstract.c"
-#undef PySequence_Length
-Py_ssize_t PySequence_Length(PyObject *s) {
-    return PySequence_Size(s);
-}
-#define PySequence_Length PySequence_Size
-
-UPCALL_TYPED_ID(PySequence_GetItem, ssizeargfunc);
-PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-    return _jls_PySequence_GetItem(native_to_java(s), i);
-}
-
-UPCALL_ID(PySequence_SetItem);
-int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
-    return UPCALL_CEXT_I(_jls_PySequence_SetItem, native_to_java(s), i, native_to_java(o));
-}
-
-UPCALL_ID(PySequence_GetSlice);
-PyObject* PySequence_GetSlice(PyObject *s, Py_ssize_t i1, Py_ssize_t i2) {
-	return UPCALL_CEXT_O(_jls_PySequence_GetSlice, native_to_java(s), i1, i2);
-}
-
-UPCALL_ID(PySequence_Tuple);
-PyObject* PySequence_Tuple(PyObject *v) {
-    return UPCALL_CEXT_O(_jls_PySequence_Tuple, native_to_java(v));
-}
-
-UPCALL_ID(PySequence_List);
-PyObject* PySequence_List(PyObject *v) {
-    return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
-}
-
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
-    v = native_pointer_to_java(v);
     PyObject *res;
     if (v == NULL) {
         return null_error();
@@ -394,24 +273,16 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-    return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+    return GraalPySequence_List(v);
 }
 
-typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
-UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
-}
-
-UPCALL_ID(PyObject_Size);
-Py_ssize_t PyObject_Size(PyObject *o) {
-    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
+    return GraalPyTruffleObject_GetItemString(o, truffleString(key));
 }
 
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/PyObject_Size"
 Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
-    o = native_pointer_to_java(o);
     PySequenceMethods *m;
 
     if (o == NULL) {
@@ -429,29 +300,6 @@ Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
     return PyMapping_Size(o);
 }
 
-UPCALL_ID(PyMapping_Keys);
-PyObject * PyMapping_Keys(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
-}
-
-UPCALL_ID(PyMapping_Items);
-PyObject * PyMapping_Items(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyMapping_Items, native_to_java(o));
-}
-
-UPCALL_ID(PyMapping_Values);
-PyObject * PyMapping_Values(PyObject *o) {
-    if (o == NULL) {
-        return null_error();
-    }
-    return UPCALL_CEXT_O(_jls_PyMapping_Values, native_to_java(o));
-}
-
-UPCALL_ID(PyMapping_Check);
-int PyMapping_Check(PyObject *o) {
-    return UPCALL_CEXT_I(_jls_PyMapping_Check, native_to_java(o));
-}
-
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PyMapping_Check"
 int PyTruffle_PyMapping_Check(PyObject *o) {
@@ -466,8 +314,7 @@ int PyObject_CheckBuffer(PyObject *obj) {
 
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
-    obj = native_pointer_to_java(obj);
-    PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
+    PyBufferProcs *pb = PyTypeObject_tp_as_buffer(Py_TYPE(obj));
 
     if (pb == NULL || pb->bf_getbuffer == NULL) {
         PyErr_Format(PyExc_TypeError,
@@ -480,7 +327,7 @@ int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
 
 // taken from CPython "Objects/abstract.c"
 void PyBuffer_Release(Py_buffer *view) {
-    PyObject *obj = native_pointer_to_java(view->obj);
+    PyObject *obj = view->obj;
     PyBufferProcs *pb;
     if (obj == NULL)
         return;
@@ -529,10 +376,6 @@ int PyBuffer_FillInfo(Py_buffer *view, PyObject *obj, void *buf, Py_ssize_t len,
     return 0;
 }
 
-UPCALL_ID(PySequence_DelItem);
-int PySequence_DelItem(PyObject *s, Py_ssize_t i) {
-    return UPCALL_CEXT_I(_jls_PySequence_DelItem, native_to_java(s), i);
-}
 // taken from CPython "Objects/abstract.c"
 static int _IsFortranContiguous(const Py_buffer *view) {
     Py_ssize_t sd, dim;
@@ -612,15 +455,9 @@ int PyBuffer_IsContiguous(const Py_buffer *view, char order) {
     return 0;
 }
 
-UPCALL_ID(PyMapping_Size);
-Py_ssize_t PyMapping_Size(PyObject *s) {
-    return UPCALL_CEXT_L(_jls_PyMapping_Size, native_to_java(s));
-}
-
 // PyMapping_Size downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
 Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
-    o = native_pointer_to_java(o);
     PyMappingMethods *m;
 
     if (o == NULL) {
@@ -639,22 +476,22 @@ Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
     return -1;
 }
 
-UPCALL_ID(PySequence_Repeat);
-PyObject* PySequence_Repeat(PyObject *o, Py_ssize_t count) {
-	return UPCALL_CEXT_O(_jls_PySequence_Repeat, native_to_java(o), count);
+PyObject ** _PySequence_Fast_ITEMS(PyObject *o) {
+    return PyList_Check(o) ? PyListObject_ob_item(o) : PyTupleObject_ob_item(o);
 }
 
-UPCALL_ID(PySequence_Concat);
-PyObject* PySequence_Concat(PyObject *s, PyObject *o) {
-	return UPCALL_CEXT_O(_jls_PySequence_Concat, native_to_java(s), native_to_java(o));
+int _PyIter_Check(PyObject* obj) {
+	iternextfunc func = PyTypeObject_tp_iternext(Py_TYPE(obj));
+	return func != NULL && func != &_PyObject_NextNotImplemented;
+
+}
+int _PyIndex_Check(PyObject* obj) {
+	PyNumberMethods* methods = PyTypeObject_tp_as_number(Py_TYPE(obj));
+	return methods != NULL && PyNumberMethods_nb_index(methods) != NULL;
+
+}
+PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index) {
+	PySequenceMethods* methods = PyTypeObject_tp_as_sequence(Py_TYPE(obj));
+	return PySequenceMethods_sq_item(methods)(obj, index);
 }
 
-UPCALL_ID(PySequence_InPlaceRepeat);
-PyObject* PySequence_InPlaceRepeat(PyObject *o, Py_ssize_t count) {
-	return UPCALL_CEXT_O(_jls_PySequence_InPlaceRepeat, native_to_java(o), count);
-}
-
-UPCALL_ID(PySequence_InPlaceConcat);
-PyObject* PySequence_InPlaceConcat(PyObject *s, PyObject *o) {
-	return UPCALL_CEXT_O(_jls_PySequence_InPlaceConcat, native_to_java(s), native_to_java(o));
-}

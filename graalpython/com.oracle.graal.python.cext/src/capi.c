@@ -39,7 +39,10 @@
  * SOFTWARE.
  */
 #include "capi.h"
+#include <stdio.h>
+#include <time.h>
 
+#define ASSERTIONS
 
 typedef struct arrayobject {
     PyObject_VAR_HEAD
@@ -50,14 +53,20 @@ typedef struct arrayobject {
     int ob_exports;  /* Number of exported buffers */
 } arrayobject;
 
-PyTypeObject Arraytype = PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_SEQUENCE, sizeof(arrayobject));
-
 typedef struct {
     PyObject_HEAD
     Py_ssize_t index;
     arrayobject *ao;
     PyObject* (*getitem)(struct arrayobject *, Py_ssize_t);
 } arrayiterobject;
+
+// taken from CPython "Objects/typeobject.c"
+typedef struct {
+    PyObject_HEAD
+    PyTypeObject *type;
+    PyObject *obj;
+    PyTypeObject *obj_type;
+} superobject;
 
 // add structure hint for declaring PyCapsule type
 /* Internal structure of PyCapsule */
@@ -69,74 +78,114 @@ typedef struct {
     PyCapsule_Destructor destructor;
 } PyCapsule;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *ns_dict;
+} _PyNamespaceObject;
 
-PyTypeObject PyArrayIter_Type = PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
+// taken from CPython "Objects/descrobject.c"
+typedef struct {
+    PyObject_HEAD
+    PyObject *mapping;
+} mappingproxyobject;
 
-void *PY_TRUFFLE_CEXT;
-void *PY_BUILTIN;
-void *PY_SYS;
-void *Py_NoValue;
+static void object_dealloc(PyObject *self) {
+    Py_TYPE(self)->tp_free(self);
+}
 
-void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
+// taken from CPython "Objects/bytesobject.c"
+#define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
-void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
-void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
-void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_CEXT_LANDING_BORROWED)(void* name, ...);
-PyObject*(*PY_TRUFFLE_CEXT_LANDING_NEWREF)(void* name, ...);
-void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
-void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
-void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
+/* prototype */
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
+
+PyAPI_DATA(PyTypeObject) PyBuffer_Type;
+PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
+PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
+
+PyTypeObject _PyExc_BaseException = 		PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
+PyTypeObject _PyExc_StopIteration = 		PY_TRUFFLE_TYPE("StopIteration", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyStopIterationObject));
+PyTypeObject _PyNamespace_Type = 			PY_TRUFFLE_TYPE("SimpleNamespace", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(_PyNamespaceObject));
+PyTypeObject _PyNone_Type = 				PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
+PyTypeObject _PyNotImplemented_Type = 		PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
+PyTypeObject _PyWeakref_CallableProxyType = PY_TRUFFLE_TYPE("weakcallableproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
+PyTypeObject _PyWeakref_ProxyType = 		PY_TRUFFLE_TYPE("weakproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWeakReference));
+PyTypeObject _PyWeakref_RefType = 			PY_TRUFFLE_TYPE("weakref", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyWeakReference));
+PyTypeObject Arraytype = 					PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_SEQUENCE, sizeof(arrayobject));
+PyTypeObject PyArrayIter_Type = 			PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
+PyTypeObject PyBaseObject_Type = 			PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
+PyTypeObject PyBool_Type = 					PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(struct _longobject));
+PyTypeObject PyBuffer_Type = 				PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
+PyTypeObject PyByteArray_Type = 			PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyByteArrayObject));
+PyTypeObject PyBytes_Type = 				PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, PyBytesObject_SIZE, sizeof(char));
+PyTypeObject PyCapsule_Type = 				PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
+PyTypeObject PyCFunction_Type = 			PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
+PyTypeObject PyCMethod_Type = 				PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_method", &PyCFunction_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
+PyTypeObject PyCode_Type = 					PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
+PyTypeObject PyComplex_Type = 				PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyComplexObject));
+PyTypeObject PyDict_Type = 					PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_MAPPING, sizeof(PyDictObject));
+PyTypeObject PyDictProxy_Type = 			PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_MAPPING, sizeof(mappingproxyobject));
+PyTypeObject PyEllipsis_Type = 				PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
+PyTypeObject PyFloat_Type = 				PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyFloatObject));
+PyTypeObject PyFrame_Type = 				PY_TRUFFLE_TYPE_WITH_ITEMSIZE("frame", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject), sizeof(PyObject *));
+PyTypeObject PyFrozenSet_Type = 			PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_MATCH_SELF, sizeof(PySetObject));
+PyTypeObject PyFunction_Type = 				PY_TRUFFLE_TYPE_WITH_VECTORCALL("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyFunctionObject), offsetof(PyFunctionObject, vectorcall));
+PyTypeObject PyGen_Type = 					PY_TRUFFLE_TYPE("generator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGenObject));
+PyTypeObject PyGetSetDescr_Type = 			PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
+PyTypeObject PyInstanceMethod_Type = 		PY_TRUFFLE_TYPE("instancemethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyInstanceMethodObject));
+PyTypeObject PyList_Type = 					PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyListObject));
+PyTypeObject PyLong_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, offsetof(PyLongObject, ob_digit), sizeof(PyObject *));
+PyTypeObject PyMemberDescr_Type = 			PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
+PyTypeObject PyMemoryView_Type = 			PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
+PyTypeObject PyMethod_Type = 				PY_TRUFFLE_TYPE_WITH_VECTORCALL("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodObject), offsetof(PyMethodObject, vectorcall));
+PyTypeObject PyMethodDescr_Type = 			PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
+PyTypeObject PyModule_Type = 				PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
+PyTypeObject PyModuleDef_Type = 			PY_TRUFFLE_TYPE("moduledef", &PyType_Type, 0, sizeof(struct PyModuleDef));
+PyTypeObject PyProperty_Type = 				PY_TRUFFLE_TYPE("property", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(propertyobject));
+PyTypeObject PySet_Type = 					PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_MATCH_SELF, sizeof(PySetObject));
+PyTypeObject PySlice_Type = 				PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PySliceObject));
+PyTypeObject PyStaticMethod_Type = 			PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
+PyTypeObject PySuper_Type = 				PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
+PyTypeObject PyTraceBack_Type = 			PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
+PyTypeObject PyTuple_Type = 				PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0, 0);
+PyTypeObject PyType_Type = 					PY_TRUFFLE_TYPE_WITH_ITEMSIZE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyHeapTypeObject), sizeof(PyMemberDef));
+PyTypeObject PyUnicode_Type = 				PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
+/* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
+PyTypeObject PyWrapperDescr_Type = 			PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
+
+
+#define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
+CAPI_BUILTINS
+#undef BUILTIN
 
 uint32_t Py_Truffle_Options;
 
-
-ptr_cache_t ptr_cache;
-ptr_cache_t ptr_cache_stealing;
-type_ptr_cache_t type_ptr_cache;
-
-alloc_upcall_fun_t alloc_upcall;
-free_upcall_fun_t free_upcall;
+cache_query_t points_to_py_handle_space;
+ptr_cache_t pythonToNative;
+void_ptr_cache_t javaStringToTruffleString;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
-    PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
-    PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
-    PY_SYS = (void*)polyglot_eval("python", "import sys\nsys");
+	clock_t t;
+	t = clock();
 
-    pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
+    void* PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
 
-    PY_TRUFFLE_LANDING_BORROWED = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_Borrowed", SRC_CS)));
-    PY_TRUFFLE_LANDING_NEWREF = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_NewRef", SRC_CS)));
-    PY_TRUFFLE_LANDING_L = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
-    PY_TRUFFLE_LANDING_D = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
-    PY_TRUFFLE_LANDING_PTR = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING_BORROWED = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_Borrowed", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING_NEWREF = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_NewRef", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING_L = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING_D = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING_PTR = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
+	pythonToNative = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 12);
+	javaStringToTruffleString = (void_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 20);
+	points_to_py_handle_space = (cache_query_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleResolver_Create", 2);
 
-    Py_Truffle_Options = (uint32_t) polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Native_Options"));
+#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetBuiltin", truffleString(#NAME));
+CAPI_BUILTINS
+#undef BUILTIN
 
-    Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
-
-    alloc_upcall = (alloc_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Alloc", SRC_CS));
-    free_upcall = (free_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Free", SRC_CS));
-}
-
-__attribute__((constructor (__COUNTER__)))
-static void initialize_handle_cache() {
-    ptr_cache = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
-    ptr_cache_stealing = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
-    type_ptr_cache = (type_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
+    Py_Truffle_Options = GraalPyTruffle_Native_Options();
+	PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "initialize_upcall_functions: %fs\n", ((double) (clock() - t)) / CLOCKS_PER_SEC);
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
     // Store the Sulong struct type id to be used for instances of this class
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, tid);
+    GraalPyTruffle_Set_SulongType(ptype, tid);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -148,31 +197,31 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     PyBufferProcs* as_buffer = structure->tp_as_buffer;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
-    type_handle->tp_flags = original_flags | Py_TPFLAGS_READY | Py_TPFLAGS_IMMUTABLETYPE;
-    type_handle->tp_basicsize = basicsize;
-    type_handle->tp_itemsize = itemsize;
+    set_PyTypeObject_tp_flags(type_handle, original_flags | Py_TPFLAGS_READY | Py_TPFLAGS_IMMUTABLETYPE);
+    set_PyTypeObject_tp_basicsize(type_handle, basicsize);
+    set_PyTypeObject_tp_itemsize(type_handle, itemsize);
     if (alloc_fun) {
-        type_handle->tp_alloc = alloc_fun;
+    	set_PyTypeObject_tp_alloc(type_handle, alloc_fun);
     }
     if (dealloc_fun) {
-        type_handle->tp_dealloc = dealloc_fun;
+    	set_PyTypeObject_tp_dealloc(type_handle, dealloc_fun);
     }
     if (free_fun) {
-        type_handle->tp_free = free_fun;
+    	set_PyTypeObject_tp_free(type_handle, free_fun);
     }
     if (free_fun) {
-        type_handle->tp_free = free_fun;
+    	set_PyTypeObject_tp_free(type_handle, free_fun);
     }
     if (vectorcall_offset) {
-        type_handle->tp_vectorcall_offset = vectorcall_offset;
+    	set_PyTypeObject_tp_vectorcall_offset (type_handle, vectorcall_offset);
     }
     if (as_buffer) {
-        type_handle->tp_as_buffer = as_buffer;
+    	set_PyTypeObject_tp_as_buffer(type_handle, as_buffer);
     }
 }
 
 static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
-    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
+    PyTypeObject* ptype = GraalPyTruffle_Type(truffleString(typname));
     initialize_type_structure(structure, ptype, tid);
 }
 
@@ -218,7 +267,7 @@ declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
 declare_type(PyCMethod_Type, builtin_method, PyCMethodObject);
 declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
-declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
+declare_type(PyCapsule_Type, capsule, PyCapsule);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
 // that the dynamic type for method_descriptor is always going to be
@@ -334,55 +383,64 @@ PyObject* _PyTruffle_Zero;
 PyObject* _PyTruffle_One;
 
 static void initialize_globals() {
-    // register native NULL
-    wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
+    GraalPyTruffle_Register_NULL(NULL);
 
-    // None
-    _Py_NoneStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_None", SRC_CS));
-
-    // NotImplemented
-    _Py_NotImplementedStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_NotImplemented", SRC_CS));
-
-    // Ellipsis
-    _Py_EllipsisObjectReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_Ellipsis", SRC_CS));
-
-    // True, False
-    _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
-    _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
-
-    _PyTruffle_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 0, 1);
-    _PyTruffle_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 1, 1);
+    _Py_NoneStructReference = GraalPyTruffle_None();
+    _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
+    _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
+    _Py_TrueStructReference = (struct _longobject*)GraalPyTruffle_True();
+    _Py_FalseStructReference = (struct _longobject*)GraalPyTruffle_False();
+    _PyTruffle_Zero = GraalPyTruffleLong_Zero();
+    _PyTruffle_One = GraalPyTruffleLong_One();
 }
+
+/* internal functions to avoid unnecessary managed <-> native conversions */
+
+/* BYTES, BYTEARRAY */
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
+
+/* MEMORYVIEW, BUFFERDECORATOR */
+int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
+int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags);
+void memoryview_releasebuffer(PyMemoryViewObject *self, Py_buffer *view);
 
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
         (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
-    PyBytes_Type.tp_as_buffer = &bytes_as_buffer;
+    set_PyTypeObject_tp_as_buffer(&PyBytes_Type, &bytes_as_buffer);
 
     static PyBufferProcs bytearray_as_buffer = {
         (getbufferproc)bytearray_getbuffer,          /* bf_getbuffer */
         (releasebufferproc)bytearray_releasebuffer,  /* bf_releasebuffer */
     };
-    PyByteArray_Type.tp_as_buffer = &bytearray_as_buffer;
+    set_PyTypeObject_tp_as_buffer(&PyByteArray_Type, &bytearray_as_buffer);
 
     static PyBufferProcs buffer_as_buffer = {
         (getbufferproc)bufferdecorator_getbuffer,    /* bf_getbuffer */
         (releasebufferproc)NULL,                     /* bf_releasebuffer */
     };
-    PyBuffer_Type.tp_as_buffer = &buffer_as_buffer;
+    set_PyTypeObject_tp_as_buffer(&PyBuffer_Type, &buffer_as_buffer);
 
     static PyBufferProcs memory_as_buffer = {
         (getbufferproc)memoryview_getbuffer,         /* bf_getbuffer */
         (releasebufferproc)memoryview_releasebuffer, /* bf_releasebuffer */
     };
-    PyMemoryView_Type.tp_as_buffer = &memory_as_buffer;
+    set_PyTypeObject_tp_as_buffer(&PyMemoryView_Type, &memory_as_buffer);
 }
 
 static void initialize_filesystemencoding() {
-    Py_FileSystemDefaultEncoding = (const char *)to_sulong(polyglot_invoke(PY_SYS, "getfilesystemencoding"));
+	// TODO: initialize during cext initialization doesn't work at the moment
+    Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyTruffle_FileSystemDefaultEncoding()));
 }
+
+// defined in 'exceptions.c'
+void initialize_exceptions();
+// defined in 'pyhash.c'
+void initialize_hashes();
 
 __attribute__((constructor (20000)))
 static void initialize_capi() {
@@ -394,41 +452,14 @@ static void initialize_capi() {
     initialize_filesystemencoding();
 }
 
-// Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
-// that it is guaranteed to return a pointer object.
-void* native_long_to_java(uint64_t val) {
-	PyObject* obj = (PyObject*) val;
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (points_to_handle_space(obj)) {
-        return resolve_handle((void*) obj);
-    }
-    return obj;
-}
-
-MUST_INLINE
-void* to_java(PyObject* obj) {
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "to_java", native_to_java(obj));
-}
-
-void* to_java_type(PyTypeObject* cls) {
-    return to_java((PyObject*)cls);
-}
-
-PyObject* to_sulong(void *o) {
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
-}
-
 /** to be used from Java code only; reads native fields */
 #define TYPE_FIELD_GETTER(RECEIVER, NAME) \
-PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {                   \
-    return native_type_to_java(obj->NAME);          \
+PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {  \
+    return obj->NAME;                     \
 }
 #define OBJECT_FIELD_GETTER(RECEIVER, NAME) \
-PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {                   \
-    return native_to_java((PyObject*) obj->NAME);          \
+PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {        \
+    return (PyObject*) obj->NAME;           \
 }
 #define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
 PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
@@ -453,7 +484,13 @@ PRIMITIVE_FIELD_GETTER(PyTypeObject*, destructor, tp_dealloc)
 PRIMITIVE_FIELD_GETTER(PyTypeObject*, freefunc, tp_free)
 PRIMITIVE_FIELD_GETTER(PyTypeObject*, PyBufferProcs*, tp_as_buffer)
 PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
+PRIMITIVE_FIELD_GETTER(PyModuleDef_Base*, Py_ssize_t, m_index)
+PRIMITIVE_FIELD_GETTER(PyModuleDef*, Py_ssize_t, m_size)
+PRIMITIVE_FIELD_GETTER(PyModuleDef*, const char*, m_doc)
 
+char* get_ob_sval(PyObject* op) {
+	return ((PyBytesObject *)(op))->ob_sval;
+}
 
 /**
  * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
@@ -524,12 +561,42 @@ PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
 }
 
 /** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
-    return (obj->ob_refcnt += value);
+PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(unsigned long ptr, Py_ssize_t value) {
+	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
+#ifdef ASSERTIONS
+	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
+		char buf[1024];
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		Py_FatalError(buf);
+	}
+	if ((obj->ob_refcnt + value) <= 0) {
+		char buf[1024];
+		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		Py_FatalError(buf);
+	}
+//	printf("refcnt value during managed adjustment for %p (%li %p + %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+#endif // ASSERTIONS
+
+	return (obj->ob_refcnt += value);
 }
 
 /** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(unsigned long ptr, Py_ssize_t value) {
+	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
+#ifdef ASSERTIONS
+	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
+		char buf[1024];
+		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		Py_FatalError(buf);
+	}
+	if ((obj->ob_refcnt - value) < 0) {
+		char buf[1024];
+		sprintf(buf, "refcnt below zero during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+		Py_FatalError(buf);
+	}
+//	printf("refcnt value during managed adjustment for %p (%li %p - %li)\n", obj, obj->ob_refcnt, (void*) obj->ob_refcnt, value);
+#endif // ASSERTIONS
+
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
     if (new_value == 0) {
         _Py_Dealloc(obj);
@@ -577,12 +644,7 @@ PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 PyAPI_FUNC(void) PyTruffle_Free(unsigned long val) {
-	void *obj = (void*) val;
-    if (points_to_handle_space(obj) && is_handle(obj)) {
-        release_handle(obj);
-    } else {
-        PyMem_RawFree(obj);
-    }
+    PyMem_RawFree((void*) val);
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
@@ -610,7 +672,7 @@ PyAPI_FUNC(const char*) PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
 /* Use this function to decode a C char array to a Java string using the source file encoding. */
 PyAPI_FUNC(void*) PyTruffle_CstrToString(void* o) {
-    return polyglot_from_string(o, SRC_CS);
+    return truffleString(o);
 }
 
 /* Use this function to decode a C ASCII string to a Java string. */
@@ -622,7 +684,233 @@ PyAPI_FUNC(void*) PyTruffle_AsciiToString(void* ptr) {
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
 PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
-    return native_to_java_stealing(dominatingNativeClass->tp_alloc(cls, 0));
+    return dominatingNativeClass->tp_alloc(cls, 0);
+}
+
+PyAPI_FUNC(void) PyTruffle_PatchType(PyTypeObject* result, PyTypeObject* base) {
+	result->tp_base = base;
+}
+
+PyAPI_FUNC(void*) PyTruffle_ConvertToPointer(uint64_t value) {
+	return (void*) value;
+}
+
+PyAPI_FUNC(void) PyTruffle_PopulateType(PyTypeObject* result, PyTypeObject* type, int isType) {
+    result->ob_base.ob_base.ob_refcnt = GraalPy_get_PyObject_ob_refcnt(_PyObject_CAST(type));
+    if (isType) {
+    	// self-reference
+    	result->ob_base.ob_base.ob_type = result;
+    } else {
+    	result->ob_base.ob_base.ob_type = GraalPy_get_PyObject_ob_type(_PyObject_CAST(type));
+    }
+	result->ob_base.ob_size = GraalPy_get_PyVarObject_ob_size(_PyVarObject_CAST(type));
+
+#define COPY_SLOT(NAME) result->NAME = GraalPy_get_PyTypeObject_##NAME(type);
+	COPY_SLOT(tp_name)
+	COPY_SLOT(tp_basicsize)
+	COPY_SLOT(tp_itemsize)
+	COPY_SLOT(tp_dealloc)
+	COPY_SLOT(tp_vectorcall_offset)
+	COPY_SLOT(tp_getattr)
+	COPY_SLOT(tp_setattr)
+	COPY_SLOT(tp_repr)
+	COPY_SLOT(tp_hash)
+	COPY_SLOT(tp_call)
+	COPY_SLOT(tp_str)
+	COPY_SLOT(tp_getattro)
+	COPY_SLOT(tp_setattro)
+	COPY_SLOT(tp_flags)
+	COPY_SLOT(tp_doc)
+	COPY_SLOT(tp_traverse)
+	COPY_SLOT(tp_clear)
+	COPY_SLOT(tp_richcompare)
+	COPY_SLOT(tp_weaklistoffset)
+	COPY_SLOT(tp_iter)
+	COPY_SLOT(tp_iternext)
+	COPY_SLOT(tp_methods)
+	COPY_SLOT(tp_members)
+	COPY_SLOT(tp_getset)
+	if (!isType) {
+		COPY_SLOT(tp_base)
+	}
+	COPY_SLOT(tp_dict)
+	COPY_SLOT(tp_descr_get)
+	COPY_SLOT(tp_descr_set)
+	COPY_SLOT(tp_dictoffset)
+	COPY_SLOT(tp_init)
+	COPY_SLOT(tp_alloc)
+	COPY_SLOT(tp_new)
+	COPY_SLOT(tp_free)
+	COPY_SLOT(tp_is_gc)
+	COPY_SLOT(tp_bases)
+	COPY_SLOT(tp_mro)
+	COPY_SLOT(tp_cache)
+	COPY_SLOT(tp_subclasses)
+	COPY_SLOT(tp_weaklist)
+	COPY_SLOT(tp_del)
+	COPY_SLOT(tp_version_tag)
+	COPY_SLOT(tp_finalize)
+	COPY_SLOT(tp_vectorcall)
+//	COPY_SLOT(tp_print)
+#undef COPY_SLOT
+	PyAsyncMethods* async = GraalPy_get_PyTypeObject_tp_as_async(type);
+	if (async == NULL) {
+		result->tp_as_async = NULL;
+	} else {
+		result->tp_as_async = (PyAsyncMethods*) malloc(sizeof(PyAsyncMethods));
+#define COPY_SLOT(NAME) result->tp_as_async->NAME = GraalPy_get_PyAsyncMethods_##NAME(async);
+		COPY_SLOT(am_await)
+		COPY_SLOT(am_aiter)
+		COPY_SLOT(am_anext)
+#undef COPY_SLOT
+	}
+	PyNumberMethods* number = GraalPy_get_PyTypeObject_tp_as_number(type);
+	if (number == NULL) {
+		result->tp_as_number = NULL;
+	} else {
+		result->tp_as_number = (PyNumberMethods*) malloc(sizeof(PyNumberMethods));
+#define COPY_SLOT(NAME) result->tp_as_number->NAME = GraalPy_get_PyNumberMethods_##NAME(number);
+		COPY_SLOT(nb_add)
+		COPY_SLOT(nb_subtract)
+		COPY_SLOT(nb_multiply)
+		COPY_SLOT(nb_remainder)
+		COPY_SLOT(nb_divmod)
+		COPY_SLOT(nb_power)
+		COPY_SLOT(nb_negative)
+		COPY_SLOT(nb_positive)
+		COPY_SLOT(nb_absolute)
+		COPY_SLOT(nb_bool)
+		COPY_SLOT(nb_invert)
+		COPY_SLOT(nb_lshift)
+		COPY_SLOT(nb_rshift)
+		COPY_SLOT(nb_and)
+		COPY_SLOT(nb_xor)
+		COPY_SLOT(nb_or)
+		COPY_SLOT(nb_int)
+		COPY_SLOT(nb_float)
+		COPY_SLOT(nb_inplace_add)
+		COPY_SLOT(nb_inplace_subtract)
+		COPY_SLOT(nb_inplace_multiply)
+		COPY_SLOT(nb_inplace_remainder)
+		COPY_SLOT(nb_inplace_power)
+		COPY_SLOT(nb_inplace_lshift)
+		COPY_SLOT(nb_inplace_rshift)
+		COPY_SLOT(nb_inplace_and)
+		COPY_SLOT(nb_inplace_xor)
+		COPY_SLOT(nb_inplace_or)
+		COPY_SLOT(nb_floor_divide)
+		COPY_SLOT(nb_true_divide)
+		COPY_SLOT(nb_inplace_floor_divide)
+		COPY_SLOT(nb_inplace_true_divide)
+		COPY_SLOT(nb_index)
+		COPY_SLOT(nb_matrix_multiply)
+		COPY_SLOT(nb_inplace_matrix_multiply)
+#undef COPY_SLOT
+	}
+	PySequenceMethods* sequence = GraalPy_get_PyTypeObject_tp_as_sequence(type);
+	if (sequence == NULL) {
+		result->tp_as_sequence = NULL;
+	} else {
+		result->tp_as_sequence = (PySequenceMethods*) malloc(sizeof(PySequenceMethods));
+#define COPY_SLOT(NAME) result->tp_as_sequence->NAME = GraalPy_get_PySequenceMethods_##NAME(sequence);
+		COPY_SLOT(sq_length)
+		COPY_SLOT(sq_concat)
+		COPY_SLOT(sq_repeat)
+		COPY_SLOT(sq_item)
+		COPY_SLOT(sq_ass_item)
+		COPY_SLOT(sq_contains)
+		COPY_SLOT(sq_inplace_concat)
+		COPY_SLOT(sq_inplace_repeat)
+#undef COPY_SLOT
+	}
+	PyMappingMethods* mapping = GraalPy_get_PyTypeObject_tp_as_mapping(type);
+	if (mapping == NULL) {
+		result->tp_as_mapping = NULL;
+	} else {
+		result->tp_as_mapping = (PyMappingMethods*) malloc(sizeof(PyMappingMethods));
+#define COPY_SLOT(NAME) result->tp_as_mapping->NAME = GraalPy_get_PyMappingMethods_##NAME(mapping);
+		COPY_SLOT(mp_length)
+		COPY_SLOT(mp_subscript)
+		COPY_SLOT(mp_ass_subscript)
+#undef COPY_SLOT
+	}
+	PyBufferProcs* buffer = GraalPy_get_PyTypeObject_tp_as_buffer(type);
+	if (buffer == NULL) {
+		result->tp_as_buffer = NULL;
+	} else {
+		result->tp_as_buffer = buffer; // is always a native pointer
+
+//		result->tp_as_buffer = (PyBufferProcs*) malloc(sizeof(PyBufferProcs));
+//#define COPY_SLOT(NAME) result->tp_as_buffer->NAME = GraalPy_get_PyBufferProcs_##NAME(buffer);
+//		COPY_SLOT(bf_getbuffer)
+//		COPY_SLOT(bf_releasebuffer)
+//#undef COPY_SLOT
+	}
+}
+
+PyAPI_FUNC(PyTypeObject*) PyTruffle_AllocateType(PyTypeObject* type) {
+	return (PyTypeObject*) PyMem_RawMalloc(sizeof(PyTypeObject));
+}
+
+PyAPI_FUNC(PyMethodDef*) PyTruffle_AllocateMethodDef(PyMethodDef* type) {
+	PyMethodDef* result = (PyMethodDef*) PyMem_RawMalloc(sizeof(PyMethodDef));
+
+#define COPY_SLOT(NAME) result->NAME = type->NAME;
+	COPY_SLOT(ml_name)
+	COPY_SLOT(ml_meth)
+	COPY_SLOT(ml_flags)
+	COPY_SLOT(ml_doc)
+#undef COPY_SLOT
+	return result;
+}
+
+PyAPI_FUNC(PyDateTime_CAPI*) PyTruffle_AllocateDateTimeAPI(PyDateTime_CAPI* api) {
+	PyDateTime_CAPI* result = (PyDateTime_CAPI*) PyMem_RawMalloc(sizeof(PyDateTime_CAPI));
+
+#define COPY_SLOT(NAME) result->NAME = api->NAME;
+	COPY_SLOT(DateType)
+	COPY_SLOT(DateTimeType)
+	COPY_SLOT(TimeType)
+	COPY_SLOT(DeltaType)
+	COPY_SLOT(TZInfoType)
+	COPY_SLOT(TimeZone_UTC)
+	COPY_SLOT(Date_FromDate)
+	COPY_SLOT(DateTime_FromDateAndTime)
+	COPY_SLOT(Time_FromTime)
+	COPY_SLOT(Delta_FromDelta)
+	COPY_SLOT(TimeZone_FromTimeZone)
+	COPY_SLOT(DateTime_FromTimestamp)
+	COPY_SLOT(Date_FromTimestamp)
+	COPY_SLOT(DateTime_FromDateAndTimeAndFold)
+	COPY_SLOT(Time_FromTimeAndFold)
+#undef COPY_SLOT
+	return result;
+}
+
+PyAPI_FUNC(PyMemoryViewObject*) PyTruffle_AllocateMemoryView(PyMemoryViewObject* view) {
+	PyMemoryViewObject* result = (PyMemoryViewObject*) PyMem_RawMalloc(sizeof(PyMemoryViewObject));
+
+	result->ob_base.ob_base.ob_refcnt = 0x1000; // TODO: immortal for now
+	result->ob_base.ob_base.ob_type = Py_TYPE(view);
+#define COPY_SLOT(NAME) result->NAME = view->NAME;
+//	COPY_SLOT(mbuf)
+//	COPY_SLOT(hash)
+	COPY_SLOT(flags)
+	COPY_SLOT(exports)
+//	COPY_SLOT(weakreflist)
+	COPY_SLOT(view.buf)
+	COPY_SLOT(view.obj)
+	COPY_SLOT(view.len)
+	COPY_SLOT(view.itemsize)
+	COPY_SLOT(view.readonly)
+	COPY_SLOT(view.ndim)
+	COPY_SLOT(view.format)
+	COPY_SLOT(view.shape)
+	COPY_SLOT(view.strides)
+	COPY_SLOT(view.suboffsets)
+	COPY_SLOT(view.internal)
+#undef COPY_SLOT
+	return result;
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
@@ -675,7 +963,7 @@ PyAPI_FUNC(double) ReadDoubleMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
-void* ReadStringMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(void*) ReadStringMember(PyObject* object, Py_ssize_t offset) {
     char *ptr = ReadMember(object, offset, char*);
     if (ptr != NULL) {
     	return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
@@ -683,19 +971,19 @@ void* ReadStringMember(PyObject* object, Py_ssize_t offset) {
     return NULL;
 }
 
-void* ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(void*) ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
     char *addr = (char*) (((char*)object) + offset);
     return polyglot_from_string(addr, "utf-8");
 }
 
 
-PyObject* ReadObjectMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(PyObject*) ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         member = Py_None;
     }
     Py_INCREF(member);
-    return native_to_java(member);
+    return member;
 }
 
 PyAPI_FUNC(int) ReadCharMember(PyObject* object, Py_ssize_t offset) {
@@ -724,7 +1012,7 @@ PyAPI_FUNC(PyObject*) ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
         return NULL;
     } else {
         Py_INCREF(member);
-        return native_to_java(member);
+        return member;
     }
 }
 
@@ -852,28 +1140,8 @@ PyAPI_FUNC(int) WritePySSizeT(PyObject* object, Py_ssize_t offset, Py_ssize_t va
 
 PyObject* wrapped_null;
 
-PyObject marker_struct = {
-    _PyObject_EXTRA_INIT
-    1, &PyBaseObject_Type
-};
-
 #undef ReadMember
 #undef WriteMember
-
-PyAPI_FUNC(int) PyTruffle_Debug(void *arg) {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
-    return 0;
-}
-
-PyAPI_FUNC(int) PyTruffle_ToNative(void *arg) {
-	if (polyglot_has_member(PY_TRUFFLE_CEXT, "PyTruffle_ToNative")) {
-		polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ToNative", arg);
-		return 0;
-	} else {
-		printf("PyTruffle_ToNative is not enabled - enable with --python.EnableDebuggingBuiltins\n");
-		return 1;
-	}
-}
 
 PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {
     switch (op) {
@@ -892,6 +1160,10 @@ PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {
     default:
         return -1;
     }
+}
+
+PyAPI_FUNC(void*) truffle_ptr_convert(size_t value) {
+	return (void*) value;
 }
 
 PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
@@ -913,14 +1185,11 @@ PyAPI_FUNC(int32_t) get_long_bits_in_digit() {
 
 PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
     if (getsets || members) {
-        polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
+        GraalPyTruffle_Set_Native_Slots(managed_class, getsets, members);
     }
 }
 
 PyAPI_FUNC(PyObject*) truffle_create_datetime_capsule(void *object) {
-    if (PyType_Ready(&PyCapsule_Type) < 0) {
-        return NULL;
-    }
     return PyCapsule_New(object, "datetime.datetime_CAPI", NULL);
 }
 
@@ -943,3 +1212,969 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
 PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
     type->tp_flags = flags;
 }
+
+int truffle_BASETYPE_check(PyObject* type) {
+    return PyType_HasFeature(Py_TYPE(type), Py_TPFLAGS_BASETYPE);
+}
+
+void* truffle_get_constant(int entry) {
+	// this needs to correspond to CApiContext.resolveConstant
+	switch(entry) {
+	case 0:
+		return _Py_ascii_whitespace;
+	case 1:
+		return _Py_ctype_table;
+	case 2:
+		return _Py_ctype_tolower;
+	case 3:
+		return _Py_ctype_toupper;
+	case 4:
+		return &_Py_tracemalloc_config;
+	case 5:
+		return &_Py_HashSecret;
+	case 6:
+		return &Py_DebugFlag;
+	case 7:
+		return &Py_VerboseFlag;
+	case 8:
+		return &Py_QuietFlag;
+	case 9:
+		return &Py_InteractiveFlag;
+	case 10:
+		return &Py_InspectFlag;
+	case 11:
+		return &Py_OptimizeFlag;
+	case 12:
+		return &Py_NoSiteFlag;
+	case 13:
+		return &Py_BytesWarningFlag;
+	case 14:
+		return &Py_FrozenFlag;
+	case 15:
+		return &Py_IgnoreEnvironmentFlag;
+	case 16:
+		return &Py_DontWriteBytecodeFlag;
+	case 17:
+		return &Py_NoUserSiteDirectory;
+	case 18:
+		return &Py_UnbufferedStdioFlag;
+	case 19:
+		return &Py_HashRandomizationFlag;
+	case 20:
+		return &Py_IsolatedFlag;
+	}
+	return NULL;
+}
+
+
+// {{start CAPI_BUILTINS}}
+// GENERATED CODE - see PythonCextBuiltins
+#undef PyByteArray_Resize
+PyAPI_FUNC(int) PyByteArray_Resize(PyObject* a, Py_ssize_t b) {
+    return GraalPyByteArray_Resize(a, b);
+}
+#undef PyBytes_FromObject
+PyAPI_FUNC(PyObject*) PyBytes_FromObject(PyObject* a) {
+    return GraalPyBytes_FromObject(a);
+}
+#undef PyBytes_Size
+PyAPI_FUNC(Py_ssize_t) PyBytes_Size(PyObject* a) {
+    return GraalPyBytes_Size(a);
+}
+#undef PyCallIter_New
+PyAPI_FUNC(PyObject*) PyCallIter_New(PyObject* a, PyObject* b) {
+    return GraalPyCallIter_New(a, b);
+}
+#undef PyCallable_Check
+PyAPI_FUNC(int) PyCallable_Check(PyObject* a) {
+    return GraalPyCallable_Check(a);
+}
+#undef PyCapsule_GetContext
+PyAPI_FUNC(void*) PyCapsule_GetContext(PyObject* a) {
+    return GraalPyCapsule_GetContext(a);
+}
+#undef PyCapsule_GetDestructor
+PyAPI_FUNC(PyCapsule_Destructor) PyCapsule_GetDestructor(PyObject* a) {
+    return GraalPyCapsule_GetDestructor(a);
+}
+#undef PyCapsule_GetName
+PyAPI_FUNC(const char*) PyCapsule_GetName(PyObject* a) {
+    return GraalPyCapsule_GetName(a);
+}
+#undef PyCapsule_GetPointer
+PyAPI_FUNC(void*) PyCapsule_GetPointer(PyObject* a, const char* b) {
+    return GraalPyCapsule_GetPointer(a, truffleString(b));
+}
+#undef PyCapsule_Import
+PyAPI_FUNC(void*) PyCapsule_Import(const char* a, int b) {
+    return GraalPyCapsule_Import(truffleString(a), b);
+}
+#undef PyCapsule_IsValid
+PyAPI_FUNC(int) PyCapsule_IsValid(PyObject* a, const char* b) {
+    return GraalPyCapsule_IsValid(a, truffleString(b));
+}
+#undef PyCapsule_New
+PyAPI_FUNC(PyObject*) PyCapsule_New(void* a, const char* b, PyCapsule_Destructor c) {
+    return GraalPyCapsule_New(a, truffleString(b), c);
+}
+#undef PyCapsule_SetContext
+PyAPI_FUNC(int) PyCapsule_SetContext(PyObject* a, void* b) {
+    return GraalPyCapsule_SetContext(a, b);
+}
+#undef PyCapsule_SetDestructor
+PyAPI_FUNC(int) PyCapsule_SetDestructor(PyObject* a, PyCapsule_Destructor b) {
+    return GraalPyCapsule_SetDestructor(a, b);
+}
+#undef PyCapsule_SetName
+PyAPI_FUNC(int) PyCapsule_SetName(PyObject* a, const char* b) {
+    return GraalPyCapsule_SetName(a, truffleString(b));
+}
+#undef PyCapsule_SetPointer
+PyAPI_FUNC(int) PyCapsule_SetPointer(PyObject* a, void* b) {
+    return GraalPyCapsule_SetPointer(a, b);
+}
+#undef PyClassMethod_New
+PyAPI_FUNC(PyObject*) PyClassMethod_New(PyObject* a) {
+    return GraalPyClassMethod_New(a);
+}
+#undef PyCode_New
+PyAPI_FUNC(PyCodeObject*) PyCode_New(int a, int b, int c, int d, int e, PyObject* f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, int n, PyObject* o) {
+    return GraalPyCode_New(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
+}
+#undef PyCode_NewEmpty
+PyAPI_FUNC(PyCodeObject*) PyCode_NewEmpty(const char* a, const char* b, int c) {
+    return GraalPyCode_NewEmpty(truffleString(a), truffleString(b), c);
+}
+#undef PyCode_NewWithPosOnlyArgs
+PyAPI_FUNC(PyCodeObject*) PyCode_NewWithPosOnlyArgs(int a, int b, int c, int d, int e, int f, PyObject* g, PyObject* h, PyObject* i, PyObject* j, PyObject* k, PyObject* l, PyObject* m, PyObject* n, int o, PyObject* p) {
+    return GraalPyCode_NewWithPosOnlyArgs(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+}
+#undef PyComplex_FromDoubles
+PyAPI_FUNC(PyObject*) PyComplex_FromDoubles(double a, double b) {
+    return GraalPyComplex_FromDoubles(a, b);
+}
+#undef PyComplex_ImagAsDouble
+PyAPI_FUNC(double) PyComplex_ImagAsDouble(PyObject* a) {
+    return GraalPyComplex_ImagAsDouble(a);
+}
+#undef PyComplex_RealAsDouble
+PyAPI_FUNC(double) PyComplex_RealAsDouble(PyObject* a) {
+    return GraalPyComplex_RealAsDouble(a);
+}
+#undef PyContextVar_New
+PyAPI_FUNC(PyObject*) PyContextVar_New(const char* a, PyObject* b) {
+    return GraalPyContextVar_New(truffleString(a), b);
+}
+#undef PyContextVar_Set
+PyAPI_FUNC(PyObject*) PyContextVar_Set(PyObject* a, PyObject* b) {
+    return GraalPyContextVar_Set(a, b);
+}
+#undef PyDictProxy_New
+PyAPI_FUNC(PyObject*) PyDictProxy_New(PyObject* a) {
+    return GraalPyDictProxy_New(a);
+}
+#undef PyDict_Clear
+PyAPI_FUNC(void) PyDict_Clear(PyObject* a) {
+    GraalPyDict_Clear(a);
+}
+#undef PyDict_Contains
+PyAPI_FUNC(int) PyDict_Contains(PyObject* a, PyObject* b) {
+    return GraalPyDict_Contains(a, b);
+}
+#undef PyDict_Copy
+PyAPI_FUNC(PyObject*) PyDict_Copy(PyObject* a) {
+    return GraalPyDict_Copy(a);
+}
+#undef PyDict_DelItem
+PyAPI_FUNC(int) PyDict_DelItem(PyObject* a, PyObject* b) {
+    return GraalPyDict_DelItem(a, b);
+}
+#undef PyDict_GetItem
+PyAPI_FUNC(PyObject*) PyDict_GetItem(PyObject* a, PyObject* b) {
+    return GraalPyDict_GetItem(a, b);
+}
+#undef PyDict_GetItemWithError
+PyAPI_FUNC(PyObject*) PyDict_GetItemWithError(PyObject* a, PyObject* b) {
+    return GraalPyDict_GetItemWithError(a, b);
+}
+#undef PyDict_Keys
+PyAPI_FUNC(PyObject*) PyDict_Keys(PyObject* a) {
+    return GraalPyDict_Keys(a);
+}
+#undef PyDict_Merge
+PyAPI_FUNC(int) PyDict_Merge(PyObject* a, PyObject* b, int c) {
+    return GraalPyDict_Merge(a, b, c);
+}
+#undef PyDict_New
+PyAPI_FUNC(PyObject*) PyDict_New() {
+    return GraalPyDict_New();
+}
+#undef PyDict_SetDefault
+PyAPI_FUNC(PyObject*) PyDict_SetDefault(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPyDict_SetDefault(a, b, c);
+}
+#undef PyDict_SetItem
+PyAPI_FUNC(int) PyDict_SetItem(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPyDict_SetItem(a, b, c);
+}
+#undef PyDict_Size
+PyAPI_FUNC(Py_ssize_t) PyDict_Size(PyObject* a) {
+    return GraalPyDict_Size(a);
+}
+#undef PyDict_Update
+PyAPI_FUNC(int) PyDict_Update(PyObject* a, PyObject* b) {
+    return GraalPyDict_Update(a, b);
+}
+#undef PyDict_Values
+PyAPI_FUNC(PyObject*) PyDict_Values(PyObject* a) {
+    return GraalPyDict_Values(a);
+}
+#undef PyErr_Display
+PyAPI_FUNC(void) PyErr_Display(PyObject* a, PyObject* b, PyObject* c) {
+    GraalPyErr_Display(a, b, c);
+}
+#undef PyErr_GivenExceptionMatches
+PyAPI_FUNC(int) PyErr_GivenExceptionMatches(PyObject* a, PyObject* b) {
+    return GraalPyErr_GivenExceptionMatches(a, b);
+}
+#undef PyErr_NewException
+PyAPI_FUNC(PyObject*) PyErr_NewException(const char* a, PyObject* b, PyObject* c) {
+    return GraalPyErr_NewException(truffleString(a), b, c);
+}
+#undef PyErr_NewExceptionWithDoc
+PyAPI_FUNC(PyObject*) PyErr_NewExceptionWithDoc(const char* a, const char* b, PyObject* c, PyObject* d) {
+    return GraalPyErr_NewExceptionWithDoc(truffleString(a), truffleString(b), c, d);
+}
+#undef PyErr_Occurred
+PyAPI_FUNC(PyObject*) PyErr_Occurred() {
+    return GraalPyErr_Occurred();
+}
+#undef PyErr_PrintEx
+PyAPI_FUNC(void) PyErr_PrintEx(int a) {
+    GraalPyErr_PrintEx(a);
+}
+#undef PyErr_Restore
+PyAPI_FUNC(void) PyErr_Restore(PyObject* a, PyObject* b, PyObject* c) {
+    GraalPyErr_Restore(a, b, c);
+}
+#undef PyErr_SetExcInfo
+PyAPI_FUNC(void) PyErr_SetExcInfo(PyObject* a, PyObject* b, PyObject* c) {
+    GraalPyErr_SetExcInfo(a, b, c);
+}
+#undef PyEval_GetBuiltins
+PyAPI_FUNC(PyObject*) PyEval_GetBuiltins() {
+    return GraalPyEval_GetBuiltins();
+}
+#undef PyEval_RestoreThread
+PyAPI_FUNC(void) PyEval_RestoreThread(PyThreadState* a) {
+    GraalPyEval_RestoreThread(a);
+}
+#undef PyEval_SaveThread
+PyAPI_FUNC(PyThreadState*) PyEval_SaveThread() {
+    return GraalPyEval_SaveThread();
+}
+#undef PyException_GetContext
+PyAPI_FUNC(PyObject*) PyException_GetContext(PyObject* a) {
+    return GraalPyException_GetContext(a);
+}
+#undef PyException_SetCause
+PyAPI_FUNC(void) PyException_SetCause(PyObject* a, PyObject* b) {
+    GraalPyException_SetCause(a, b);
+}
+#undef PyException_SetContext
+PyAPI_FUNC(void) PyException_SetContext(PyObject* a, PyObject* b) {
+    GraalPyException_SetContext(a, b);
+}
+#undef PyException_SetTraceback
+PyAPI_FUNC(int) PyException_SetTraceback(PyObject* a, PyObject* b) {
+    return GraalPyException_SetTraceback(a, b);
+}
+#undef PyFile_WriteObject
+PyAPI_FUNC(int) PyFile_WriteObject(PyObject* a, PyObject* b, int c) {
+    return GraalPyFile_WriteObject(a, b, c);
+}
+#undef PyFloat_AsDouble
+PyAPI_FUNC(double) PyFloat_AsDouble(PyObject* a) {
+    return GraalPyFloat_AsDouble(a);
+}
+#undef PyFloat_FromDouble
+PyAPI_FUNC(PyObject*) PyFloat_FromDouble(double a) {
+    return GraalPyFloat_FromDouble(a);
+}
+#undef PyFrame_New
+PyAPI_FUNC(PyFrameObject*) PyFrame_New(PyThreadState* a, PyCodeObject* b, PyObject* c, PyObject* d) {
+    return GraalPyFrame_New(a, b, c, d);
+}
+#undef PyFrozenSet_New
+PyAPI_FUNC(PyObject*) PyFrozenSet_New(PyObject* a) {
+    return GraalPyFrozenSet_New(a);
+}
+#undef PyGILState_Ensure
+PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
+    return GraalPyGILState_Ensure();
+}
+#undef PyGILState_Release
+PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE a) {
+    GraalPyGILState_Release(a);
+}
+#undef PyImport_GetModuleDict
+PyAPI_FUNC(PyObject*) PyImport_GetModuleDict() {
+    return GraalPyImport_GetModuleDict();
+}
+#undef PyImport_Import
+PyAPI_FUNC(PyObject*) PyImport_Import(PyObject* a) {
+    return GraalPyImport_Import(a);
+}
+#undef PyImport_ImportModule
+PyAPI_FUNC(PyObject*) PyImport_ImportModule(const char* a) {
+    return GraalPyImport_ImportModule(truffleString(a));
+}
+#undef PyImport_ImportModuleLevelObject
+PyAPI_FUNC(PyObject*) PyImport_ImportModuleLevelObject(PyObject* a, PyObject* b, PyObject* c, PyObject* d, int e) {
+    return GraalPyImport_ImportModuleLevelObject(a, b, c, d, e);
+}
+#undef PyImport_ImportModuleNoBlock
+PyAPI_FUNC(PyObject*) PyImport_ImportModuleNoBlock(const char* a) {
+    return GraalPyImport_ImportModuleNoBlock(truffleString(a));
+}
+#undef PyIndex_Check
+PyAPI_FUNC(int) PyIndex_Check(PyObject* a) {
+    return GraalPyIndex_Check(a);
+}
+#undef PyInstanceMethod_New
+PyAPI_FUNC(PyObject*) PyInstanceMethod_New(PyObject* a) {
+    return GraalPyInstanceMethod_New(a);
+}
+#undef PyIter_Next
+PyAPI_FUNC(PyObject*) PyIter_Next(PyObject* a) {
+    return GraalPyIter_Next(a);
+}
+#undef PyList_Append
+PyAPI_FUNC(int) PyList_Append(PyObject* a, PyObject* b) {
+    return GraalPyList_Append(a, b);
+}
+#undef PyList_AsTuple
+PyAPI_FUNC(PyObject*) PyList_AsTuple(PyObject* a) {
+    return GraalPyList_AsTuple(a);
+}
+#undef PyList_GetItem
+PyAPI_FUNC(PyObject*) PyList_GetItem(PyObject* a, Py_ssize_t b) {
+    return GraalPyList_GetItem(a, b);
+}
+#undef PyList_GetSlice
+PyAPI_FUNC(PyObject*) PyList_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
+    return GraalPyList_GetSlice(a, b, c);
+}
+#undef PyList_Insert
+PyAPI_FUNC(int) PyList_Insert(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return GraalPyList_Insert(a, b, c);
+}
+#undef PyList_New
+PyAPI_FUNC(PyObject*) PyList_New(Py_ssize_t a) {
+    return GraalPyList_New(a);
+}
+#undef PyList_Reverse
+PyAPI_FUNC(int) PyList_Reverse(PyObject* a) {
+    return GraalPyList_Reverse(a);
+}
+#undef PyList_SetItem
+PyAPI_FUNC(int) PyList_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return GraalPyList_SetItem(a, b, c);
+}
+#undef PyList_SetSlice
+PyAPI_FUNC(int) PyList_SetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c, PyObject* d) {
+    return GraalPyList_SetSlice(a, b, c, d);
+}
+#undef PyList_Size
+PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject* a) {
+    return GraalPyList_Size(a);
+}
+#undef PyList_Sort
+PyAPI_FUNC(int) PyList_Sort(PyObject* a) {
+    return GraalPyList_Sort(a);
+}
+#undef PyLong_AsVoidPtr
+PyAPI_FUNC(void*) PyLong_AsVoidPtr(PyObject* a) {
+    return GraalPyLong_AsVoidPtr(a);
+}
+#undef PyLong_FromDouble
+PyAPI_FUNC(PyObject*) PyLong_FromDouble(double a) {
+    return GraalPyLong_FromDouble(a);
+}
+#undef PyLong_FromLong
+PyAPI_FUNC(PyObject*) PyLong_FromLong(long a) {
+    return GraalPyLong_FromLong(a);
+}
+#undef PyLong_FromLongLong
+PyAPI_FUNC(PyObject*) PyLong_FromLongLong(long long a) {
+    return GraalPyLong_FromLongLong(a);
+}
+#undef PyLong_FromSize_t
+PyAPI_FUNC(PyObject*) PyLong_FromSize_t(size_t a) {
+    return GraalPyLong_FromSize_t(a);
+}
+#undef PyLong_FromSsize_t
+PyAPI_FUNC(PyObject*) PyLong_FromSsize_t(Py_ssize_t a) {
+    return GraalPyLong_FromSsize_t(a);
+}
+#undef PyLong_FromUnsignedLong
+PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLong(unsigned long a) {
+    return GraalPyLong_FromUnsignedLong(a);
+}
+#undef PyLong_FromUnsignedLongLong
+PyAPI_FUNC(PyObject*) PyLong_FromUnsignedLongLong(unsigned long long a) {
+    return GraalPyLong_FromUnsignedLongLong(a);
+}
+#undef PyMapping_Check
+PyAPI_FUNC(int) PyMapping_Check(PyObject* a) {
+    return GraalPyMapping_Check(a);
+}
+#undef PyMapping_Items
+PyAPI_FUNC(PyObject*) PyMapping_Items(PyObject* a) {
+    return GraalPyMapping_Items(a);
+}
+#undef PyMapping_Keys
+PyAPI_FUNC(PyObject*) PyMapping_Keys(PyObject* a) {
+    return GraalPyMapping_Keys(a);
+}
+#undef PyMapping_Size
+PyAPI_FUNC(Py_ssize_t) PyMapping_Size(PyObject* a) {
+    return GraalPyMapping_Size(a);
+}
+#undef PyMapping_Values
+PyAPI_FUNC(PyObject*) PyMapping_Values(PyObject* a) {
+    return GraalPyMapping_Values(a);
+}
+#undef PyMemoryView_FromObject
+PyAPI_FUNC(PyObject*) PyMemoryView_FromObject(PyObject* a) {
+    return GraalPyMemoryView_FromObject(a);
+}
+#undef PyMemoryView_GetContiguous
+PyAPI_FUNC(PyObject*) PyMemoryView_GetContiguous(PyObject* a, int b, char c) {
+    return GraalPyMemoryView_GetContiguous(a, b, c);
+}
+#undef PyMethod_New
+PyAPI_FUNC(PyObject*) PyMethod_New(PyObject* a, PyObject* b) {
+    return GraalPyMethod_New(a, b);
+}
+#undef PyModule_AddIntConstant
+PyAPI_FUNC(int) PyModule_AddIntConstant(PyObject* a, const char* b, long c) {
+    return GraalPyModule_AddIntConstant(a, truffleString(b), c);
+}
+#undef PyModule_AddObjectRef
+PyAPI_FUNC(int) PyModule_AddObjectRef(PyObject* a, const char* b, PyObject* c) {
+    return GraalPyModule_AddObjectRef(a, truffleString(b), c);
+}
+#undef PyModule_GetNameObject
+PyAPI_FUNC(PyObject*) PyModule_GetNameObject(PyObject* a) {
+    return GraalPyModule_GetNameObject(a);
+}
+#undef PyModule_New
+PyAPI_FUNC(PyObject*) PyModule_New(const char* a) {
+    return GraalPyModule_New(truffleString(a));
+}
+#undef PyModule_NewObject
+PyAPI_FUNC(PyObject*) PyModule_NewObject(PyObject* a) {
+    return GraalPyModule_NewObject(a);
+}
+#undef PyModule_SetDocString
+PyAPI_FUNC(int) PyModule_SetDocString(PyObject* a, const char* b) {
+    return GraalPyModule_SetDocString(a, truffleString(b));
+}
+#undef PyNumber_Absolute
+PyAPI_FUNC(PyObject*) PyNumber_Absolute(PyObject* a) {
+    return GraalPyNumber_Absolute(a);
+}
+#undef PyNumber_Check
+PyAPI_FUNC(int) PyNumber_Check(PyObject* a) {
+    return GraalPyNumber_Check(a);
+}
+#undef PyNumber_Divmod
+PyAPI_FUNC(PyObject*) PyNumber_Divmod(PyObject* a, PyObject* b) {
+    return GraalPyNumber_Divmod(a, b);
+}
+#undef PyNumber_Float
+PyAPI_FUNC(PyObject*) PyNumber_Float(PyObject* a) {
+    return GraalPyNumber_Float(a);
+}
+#undef PyNumber_InPlacePower
+PyAPI_FUNC(PyObject*) PyNumber_InPlacePower(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPyNumber_InPlacePower(a, b, c);
+}
+#undef PyNumber_Index
+PyAPI_FUNC(PyObject*) PyNumber_Index(PyObject* a) {
+    return GraalPyNumber_Index(a);
+}
+#undef PyNumber_Long
+PyAPI_FUNC(PyObject*) PyNumber_Long(PyObject* a) {
+    return GraalPyNumber_Long(a);
+}
+#undef PyNumber_Power
+PyAPI_FUNC(PyObject*) PyNumber_Power(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPyNumber_Power(a, b, c);
+}
+#undef PyNumber_ToBase
+PyAPI_FUNC(PyObject*) PyNumber_ToBase(PyObject* a, int b) {
+    return GraalPyNumber_ToBase(a, b);
+}
+#undef PyOS_FSPath
+PyAPI_FUNC(PyObject*) PyOS_FSPath(PyObject* a) {
+    return GraalPyOS_FSPath(a);
+}
+#undef PyObject_ASCII
+PyAPI_FUNC(PyObject*) PyObject_ASCII(PyObject* a) {
+    return GraalPyObject_ASCII(a);
+}
+#undef PyObject_AsFileDescriptor
+PyAPI_FUNC(int) PyObject_AsFileDescriptor(PyObject* a) {
+    return GraalPyObject_AsFileDescriptor(a);
+}
+#undef PyObject_Bytes
+PyAPI_FUNC(PyObject*) PyObject_Bytes(PyObject* a) {
+    return GraalPyObject_Bytes(a);
+}
+#undef PyObject_ClearWeakRefs
+PyAPI_FUNC(void) PyObject_ClearWeakRefs(PyObject* a) {
+    GraalPyObject_ClearWeakRefs(a);
+}
+#undef PyObject_DelItem
+PyAPI_FUNC(int) PyObject_DelItem(PyObject* a, PyObject* b) {
+    return GraalPyObject_DelItem(a, b);
+}
+#undef PyObject_Dir
+PyAPI_FUNC(PyObject*) PyObject_Dir(PyObject* a) {
+    return GraalPyObject_Dir(a);
+}
+#undef PyObject_Format
+PyAPI_FUNC(PyObject*) PyObject_Format(PyObject* a, PyObject* b) {
+    return GraalPyObject_Format(a, b);
+}
+#undef PyObject_GC_Track
+PyAPI_FUNC(void) PyObject_GC_Track(void* a) {
+    GraalPyObject_GC_Track(a);
+}
+#undef PyObject_GC_UnTrack
+PyAPI_FUNC(void) PyObject_GC_UnTrack(void* a) {
+    GraalPyObject_GC_UnTrack(a);
+}
+#undef PyObject_GetDoc
+PyAPI_FUNC(const char*) PyObject_GetDoc(PyObject* a) {
+    return GraalPyObject_GetDoc(a);
+}
+#undef PyObject_GetItem
+PyAPI_FUNC(PyObject*) PyObject_GetItem(PyObject* a, PyObject* b) {
+    return GraalPyObject_GetItem(a, b);
+}
+#undef PyObject_GetIter
+PyAPI_FUNC(PyObject*) PyObject_GetIter(PyObject* a) {
+    return GraalPyObject_GetIter(a);
+}
+#undef PyObject_HasAttr
+PyAPI_FUNC(int) PyObject_HasAttr(PyObject* a, PyObject* b) {
+    return GraalPyObject_HasAttr(a, b);
+}
+#undef PyObject_HasAttrString
+PyAPI_FUNC(int) PyObject_HasAttrString(PyObject* a, const char* b) {
+    return GraalPyObject_HasAttrString(a, truffleString(b));
+}
+#undef PyObject_Hash
+PyAPI_FUNC(Py_hash_t) PyObject_Hash(PyObject* a) {
+    return GraalPyObject_Hash(a);
+}
+#undef PyObject_HashNotImplemented
+PyAPI_FUNC(Py_hash_t) PyObject_HashNotImplemented(PyObject* a) {
+    return GraalPyObject_HashNotImplemented(a);
+}
+#undef PyObject_IsInstance
+PyAPI_FUNC(int) PyObject_IsInstance(PyObject* a, PyObject* b) {
+    return GraalPyObject_IsInstance(a, b);
+}
+#undef PyObject_IsSubclass
+PyAPI_FUNC(int) PyObject_IsSubclass(PyObject* a, PyObject* b) {
+    return GraalPyObject_IsSubclass(a, b);
+}
+#undef PyObject_IsTrue
+PyAPI_FUNC(int) PyObject_IsTrue(PyObject* a) {
+    return GraalPyObject_IsTrue(a);
+}
+#undef PyObject_LengthHint
+PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject* a, Py_ssize_t b) {
+    return GraalPyObject_LengthHint(a, b);
+}
+#undef PyObject_Repr
+PyAPI_FUNC(PyObject*) PyObject_Repr(PyObject* a) {
+    return GraalPyObject_Repr(a);
+}
+#undef PyObject_RichCompare
+PyAPI_FUNC(PyObject*) PyObject_RichCompare(PyObject* a, PyObject* b, int c) {
+    return GraalPyObject_RichCompare(a, b, c);
+}
+#undef PyObject_SetDoc
+PyAPI_FUNC(int) PyObject_SetDoc(PyObject* a, const char* b) {
+    return GraalPyObject_SetDoc(a, truffleString(b));
+}
+#undef PyObject_SetItem
+PyAPI_FUNC(int) PyObject_SetItem(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPyObject_SetItem(a, b, c);
+}
+#undef PyObject_Size
+PyAPI_FUNC(Py_ssize_t) PyObject_Size(PyObject* a) {
+    return GraalPyObject_Size(a);
+}
+#undef PyObject_Str
+PyAPI_FUNC(PyObject*) PyObject_Str(PyObject* a) {
+    return GraalPyObject_Str(a);
+}
+#undef PyObject_Type
+PyAPI_FUNC(PyObject*) PyObject_Type(PyObject* a) {
+    return GraalPyObject_Type(a);
+}
+#undef PyRun_StringFlags
+PyAPI_FUNC(PyObject*) PyRun_StringFlags(const char* a, int b, PyObject* c, PyObject* d, PyCompilerFlags* e) {
+    return GraalPyRun_StringFlags(truffleString(a), b, c, d, e);
+}
+#undef PySeqIter_New
+PyAPI_FUNC(PyObject*) PySeqIter_New(PyObject* a) {
+    return GraalPySeqIter_New(a);
+}
+#undef PySequence_Check
+PyAPI_FUNC(int) PySequence_Check(PyObject* a) {
+    return GraalPySequence_Check(a);
+}
+#undef PySequence_Concat
+PyAPI_FUNC(PyObject*) PySequence_Concat(PyObject* a, PyObject* b) {
+    return GraalPySequence_Concat(a, b);
+}
+#undef PySequence_Contains
+PyAPI_FUNC(int) PySequence_Contains(PyObject* a, PyObject* b) {
+    return GraalPySequence_Contains(a, b);
+}
+#undef PySequence_DelItem
+PyAPI_FUNC(int) PySequence_DelItem(PyObject* a, Py_ssize_t b) {
+    return GraalPySequence_DelItem(a, b);
+}
+#undef PySequence_GetItem
+PyAPI_FUNC(PyObject*) PySequence_GetItem(PyObject* a, Py_ssize_t b) {
+    return GraalPySequence_GetItem(a, b);
+}
+#undef PySequence_GetSlice
+PyAPI_FUNC(PyObject*) PySequence_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
+    return GraalPySequence_GetSlice(a, b, c);
+}
+#undef PySequence_InPlaceConcat
+PyAPI_FUNC(PyObject*) PySequence_InPlaceConcat(PyObject* a, PyObject* b) {
+    return GraalPySequence_InPlaceConcat(a, b);
+}
+#undef PySequence_InPlaceRepeat
+PyAPI_FUNC(PyObject*) PySequence_InPlaceRepeat(PyObject* a, Py_ssize_t b) {
+    return GraalPySequence_InPlaceRepeat(a, b);
+}
+#undef PySequence_Length
+PyAPI_FUNC(Py_ssize_t) PySequence_Length(PyObject* a) {
+    return GraalPySequence_Length(a);
+}
+#undef PySequence_List
+PyAPI_FUNC(PyObject*) PySequence_List(PyObject* a) {
+    return GraalPySequence_List(a);
+}
+#undef PySequence_Repeat
+PyAPI_FUNC(PyObject*) PySequence_Repeat(PyObject* a, Py_ssize_t b) {
+    return GraalPySequence_Repeat(a, b);
+}
+#undef PySequence_SetItem
+PyAPI_FUNC(int) PySequence_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return GraalPySequence_SetItem(a, b, c);
+}
+#undef PySequence_Size
+PyAPI_FUNC(Py_ssize_t) PySequence_Size(PyObject* a) {
+    return GraalPySequence_Size(a);
+}
+#undef PySequence_Tuple
+PyAPI_FUNC(PyObject*) PySequence_Tuple(PyObject* a) {
+    return GraalPySequence_Tuple(a);
+}
+#undef PySet_Add
+PyAPI_FUNC(int) PySet_Add(PyObject* a, PyObject* b) {
+    return GraalPySet_Add(a, b);
+}
+#undef PySet_Clear
+PyAPI_FUNC(int) PySet_Clear(PyObject* a) {
+    return GraalPySet_Clear(a);
+}
+#undef PySet_Contains
+PyAPI_FUNC(int) PySet_Contains(PyObject* a, PyObject* b) {
+    return GraalPySet_Contains(a, b);
+}
+#undef PySet_Discard
+PyAPI_FUNC(int) PySet_Discard(PyObject* a, PyObject* b) {
+    return GraalPySet_Discard(a, b);
+}
+#undef PySet_New
+PyAPI_FUNC(PyObject*) PySet_New(PyObject* a) {
+    return GraalPySet_New(a);
+}
+#undef PySet_Pop
+PyAPI_FUNC(PyObject*) PySet_Pop(PyObject* a) {
+    return GraalPySet_Pop(a);
+}
+#undef PySet_Size
+PyAPI_FUNC(Py_ssize_t) PySet_Size(PyObject* a) {
+    return GraalPySet_Size(a);
+}
+#undef PySlice_New
+PyAPI_FUNC(PyObject*) PySlice_New(PyObject* a, PyObject* b, PyObject* c) {
+    return GraalPySlice_New(a, b, c);
+}
+#undef PyStaticMethod_New
+PyAPI_FUNC(PyObject*) PyStaticMethod_New(PyObject* a) {
+    return GraalPyStaticMethod_New(a);
+}
+#undef PyStructSequence_New
+PyAPI_FUNC(PyObject*) PyStructSequence_New(PyTypeObject* a) {
+    return GraalPyStructSequence_New(a);
+}
+#undef PySys_GetObject
+PyAPI_FUNC(PyObject*) PySys_GetObject(const char* a) {
+    return GraalPySys_GetObject(truffleString(a));
+}
+#undef PyThreadState_Get
+PyAPI_FUNC(PyThreadState*) PyThreadState_Get() {
+    return GraalPyThreadState_Get();
+}
+#undef PyThread_acquire_lock
+PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock a, int b) {
+    return GraalPyThread_acquire_lock(a, b);
+}
+#undef PyThread_allocate_lock
+PyAPI_FUNC(PyThread_type_lock) PyThread_allocate_lock() {
+    return GraalPyThread_allocate_lock();
+}
+#undef PyThread_release_lock
+PyAPI_FUNC(void) PyThread_release_lock(PyThread_type_lock a) {
+    GraalPyThread_release_lock(a);
+}
+#undef PyTraceBack_Here
+PyAPI_FUNC(int) PyTraceBack_Here(PyFrameObject* a) {
+    return GraalPyTraceBack_Here(a);
+}
+#undef PyTraceMalloc_Track
+PyAPI_FUNC(int) PyTraceMalloc_Track(unsigned int a, uintptr_t b, size_t c) {
+    return GraalPyTraceMalloc_Track(a, b, c);
+}
+#undef PyTraceMalloc_Untrack
+PyAPI_FUNC(int) PyTraceMalloc_Untrack(unsigned int a, uintptr_t b) {
+    return GraalPyTraceMalloc_Untrack(a, b);
+}
+#undef PyTruffle_Debug
+PyAPI_FUNC(int) PyTruffle_Debug(void* a) {
+    return GraalPyTruffle_Debug(a);
+}
+#undef PyTruffle_DebugTrace
+PyAPI_FUNC(void) PyTruffle_DebugTrace() {
+    GraalPyTruffle_DebugTrace();
+}
+#undef PyTruffle_ToNative
+PyAPI_FUNC(int) PyTruffle_ToNative(void* a) {
+    return GraalPyTruffle_ToNative(a);
+}
+#undef PyTuple_GetItem
+PyAPI_FUNC(PyObject*) PyTuple_GetItem(PyObject* a, Py_ssize_t b) {
+    return GraalPyTuple_GetItem(a, b);
+}
+#undef PyTuple_GetSlice
+PyAPI_FUNC(PyObject*) PyTuple_GetSlice(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
+    return GraalPyTuple_GetSlice(a, b, c);
+}
+#undef PyTuple_New
+PyAPI_FUNC(PyObject*) PyTuple_New(Py_ssize_t a) {
+    return GraalPyTuple_New(a);
+}
+#undef PyTuple_SetItem
+PyAPI_FUNC(int) PyTuple_SetItem(PyObject* a, Py_ssize_t b, PyObject* c) {
+    return GraalPyTuple_SetItem(a, b, c);
+}
+#undef PyTuple_Size
+PyAPI_FUNC(Py_ssize_t) PyTuple_Size(PyObject* a) {
+    return GraalPyTuple_Size(a);
+}
+#undef PyType_IsSubtype
+PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
+    return GraalPyType_IsSubtype(a, b);
+}
+#undef PyUnicode_AsEncodedString
+PyAPI_FUNC(PyObject*) PyUnicode_AsEncodedString(PyObject* a, const char* b, const char* c) {
+    return GraalPyUnicode_AsEncodedString(a, truffleString(b), truffleString(c));
+}
+#undef PyUnicode_AsUnicodeEscapeString
+PyAPI_FUNC(PyObject*) PyUnicode_AsUnicodeEscapeString(PyObject* a) {
+    return GraalPyUnicode_AsUnicodeEscapeString(a);
+}
+#undef PyUnicode_Compare
+PyAPI_FUNC(int) PyUnicode_Compare(PyObject* a, PyObject* b) {
+    return GraalPyUnicode_Compare(a, b);
+}
+#undef PyUnicode_Concat
+PyAPI_FUNC(PyObject*) PyUnicode_Concat(PyObject* a, PyObject* b) {
+    return GraalPyUnicode_Concat(a, b);
+}
+#undef PyUnicode_Contains
+PyAPI_FUNC(int) PyUnicode_Contains(PyObject* a, PyObject* b) {
+    return GraalPyUnicode_Contains(a, b);
+}
+#undef PyUnicode_DecodeFSDefault
+PyAPI_FUNC(PyObject*) PyUnicode_DecodeFSDefault(const char* a) {
+    return GraalPyUnicode_DecodeFSDefault(truffleString(a));
+}
+#undef PyUnicode_EncodeFSDefault
+PyAPI_FUNC(PyObject*) PyUnicode_EncodeFSDefault(PyObject* a) {
+    return GraalPyUnicode_EncodeFSDefault(a);
+}
+#undef PyUnicode_FindChar
+PyAPI_FUNC(Py_ssize_t) PyUnicode_FindChar(PyObject* a, Py_UCS4 b, Py_ssize_t c, Py_ssize_t d, int e) {
+    return GraalPyUnicode_FindChar(a, b, c, d, e);
+}
+#undef PyUnicode_Format
+PyAPI_FUNC(PyObject*) PyUnicode_Format(PyObject* a, PyObject* b) {
+    return GraalPyUnicode_Format(a, b);
+}
+#undef PyUnicode_FromEncodedObject
+PyAPI_FUNC(PyObject*) PyUnicode_FromEncodedObject(PyObject* a, const char* b, const char* c) {
+    return GraalPyUnicode_FromEncodedObject(a, truffleString(b), truffleString(c));
+}
+#undef PyUnicode_FromObject
+PyAPI_FUNC(PyObject*) PyUnicode_FromObject(PyObject* a) {
+    return GraalPyUnicode_FromObject(a);
+}
+#undef PyUnicode_FromOrdinal
+PyAPI_FUNC(PyObject*) PyUnicode_FromOrdinal(int a) {
+    return GraalPyUnicode_FromOrdinal(a);
+}
+#undef PyUnicode_FromString
+PyAPI_FUNC(PyObject*) PyUnicode_FromString(const char* a) {
+    return GraalPyUnicode_FromString(truffleString(a));
+}
+#undef PyUnicode_GetLength
+PyAPI_FUNC(Py_ssize_t) PyUnicode_GetLength(PyObject* a) {
+    return GraalPyUnicode_GetLength(a);
+}
+#undef PyUnicode_Join
+PyAPI_FUNC(PyObject*) PyUnicode_Join(PyObject* a, PyObject* b) {
+    return GraalPyUnicode_Join(a, b);
+}
+#undef PyUnicode_ReadChar
+PyAPI_FUNC(Py_UCS4) PyUnicode_ReadChar(PyObject* a, Py_ssize_t b) {
+    return GraalPyUnicode_ReadChar(a, b);
+}
+#undef PyUnicode_Replace
+PyAPI_FUNC(PyObject*) PyUnicode_Replace(PyObject* a, PyObject* b, PyObject* c, Py_ssize_t d) {
+    return GraalPyUnicode_Replace(a, b, c, d);
+}
+#undef PyUnicode_Split
+PyAPI_FUNC(PyObject*) PyUnicode_Split(PyObject* a, PyObject* b, Py_ssize_t c) {
+    return GraalPyUnicode_Split(a, b, c);
+}
+#undef PyUnicode_Substring
+PyAPI_FUNC(PyObject*) PyUnicode_Substring(PyObject* a, Py_ssize_t b, Py_ssize_t c) {
+    return GraalPyUnicode_Substring(a, b, c);
+}
+#undef PyUnicode_Tailmatch
+PyAPI_FUNC(Py_ssize_t) PyUnicode_Tailmatch(PyObject* a, PyObject* b, Py_ssize_t c, Py_ssize_t d, int e) {
+    return GraalPyUnicode_Tailmatch(a, b, c, d, e);
+}
+#undef PyWeakref_GetObject
+PyAPI_FUNC(PyObject*) PyWeakref_GetObject(PyObject* a) {
+    return GraalPyWeakref_GetObject(a);
+}
+#undef PyWeakref_NewRef
+PyAPI_FUNC(PyObject*) PyWeakref_NewRef(PyObject* a, PyObject* b) {
+    return GraalPyWeakref_NewRef(a, b);
+}
+#undef Py_AtExit
+PyAPI_FUNC(int) Py_AtExit(void (*a)(void)) {
+    return GraalPy_AtExit(a);
+}
+#undef Py_GenericAlias
+PyAPI_FUNC(PyObject*) Py_GenericAlias(PyObject* a, PyObject* b) {
+    return GraalPy_GenericAlias(a, b);
+}
+#undef _PyBytes_Join
+PyAPI_FUNC(PyObject*) _PyBytes_Join(PyObject* a, PyObject* b) {
+    return Graal_PyBytes_Join(a, b);
+}
+#undef _PyDict_Pop
+PyAPI_FUNC(PyObject*) _PyDict_Pop(PyObject* a, PyObject* b, PyObject* c) {
+    return Graal_PyDict_Pop(a, b, c);
+}
+#undef _PyDict_SetItem_KnownHash
+PyAPI_FUNC(int) _PyDict_SetItem_KnownHash(PyObject* a, PyObject* b, PyObject* c, Py_hash_t d) {
+    return Graal_PyDict_SetItem_KnownHash(a, b, c, d);
+}
+#undef _PyErr_BadInternalCall
+PyAPI_FUNC(void) _PyErr_BadInternalCall(const char* a, int b) {
+    Graal_PyErr_BadInternalCall(truffleString(a), b);
+}
+#undef _PyErr_CreateAndSetException
+PyAPI_FUNC(void) _PyErr_CreateAndSetException(PyObject* a, PyObject* b) {
+    Graal_PyErr_CreateAndSetException(a, b);
+}
+#undef _PyErr_WriteUnraisableMsg
+PyAPI_FUNC(void) _PyErr_WriteUnraisableMsg(const char* a, PyObject* b) {
+    Graal_PyErr_WriteUnraisableMsg(truffleString(a), b);
+}
+#undef _PyList_Extend
+PyAPI_FUNC(PyObject*) _PyList_Extend(PyListObject* a, PyObject* b) {
+    return Graal_PyList_Extend(a, b);
+}
+#undef _PyLong_Sign
+PyAPI_FUNC(int) _PyLong_Sign(PyObject* a) {
+    return Graal_PyLong_Sign(a);
+}
+#undef _PyNamespace_New
+PyAPI_FUNC(PyObject*) _PyNamespace_New(PyObject* a) {
+    return Graal_PyNamespace_New(a);
+}
+#undef _PyNumber_Index
+PyAPI_FUNC(PyObject*) _PyNumber_Index(PyObject* a) {
+    return Graal_PyNumber_Index(a);
+}
+#undef _PyObject_Call1
+PyAPI_FUNC(PyObject*) _PyObject_Call1(PyObject* a, PyObject* b, PyObject* c, int d) {
+    return Graal_PyObject_Call1(a, b, c, d);
+}
+#undef _PyObject_CallMethod1
+PyAPI_FUNC(PyObject*) _PyObject_CallMethod1(PyObject* a, const char* b, PyObject* c, int d) {
+    return Graal_PyObject_CallMethod1(a, truffleString(b), c, d);
+}
+#undef _PyObject_Dump
+PyAPI_FUNC(void) _PyObject_Dump(PyObject* a) {
+    Graal_PyObject_Dump(a);
+}
+#undef _PyTraceMalloc_NewReference
+PyAPI_FUNC(int) _PyTraceMalloc_NewReference(PyObject* a) {
+    return Graal_PyTraceMalloc_NewReference(a);
+}
+#undef _PyTraceback_Add
+PyAPI_FUNC(void) _PyTraceback_Add(const char* a, const char* b, int c) {
+    Graal_PyTraceback_Add(truffleString(a), truffleString(b), c);
+}
+#undef _PyType_Lookup
+PyAPI_FUNC(PyObject*) _PyType_Lookup(PyTypeObject* a, PyObject* b) {
+    return Graal_PyType_Lookup(a, b);
+}
+#undef _PyUnicode_AsASCIIString
+PyAPI_FUNC(PyObject*) _PyUnicode_AsASCIIString(PyObject* a, const char* b) {
+    return Graal_PyUnicode_AsASCIIString(a, truffleString(b));
+}
+#undef _PyUnicode_AsLatin1String
+PyAPI_FUNC(PyObject*) _PyUnicode_AsLatin1String(PyObject* a, const char* b) {
+    return Graal_PyUnicode_AsLatin1String(a, truffleString(b));
+}
+#undef _PyUnicode_AsUTF8String
+PyAPI_FUNC(PyObject*) _PyUnicode_AsUTF8String(PyObject* a, const char* b) {
+    return Graal_PyUnicode_AsUTF8String(a, truffleString(b));
+}
+#undef _Py_HashDouble
+PyAPI_FUNC(Py_hash_t) _Py_HashDouble(PyObject* a, double b) {
+    return Graal_Py_HashDouble(a, b);
+}
+// {{end CAPI_BUILTINS}}

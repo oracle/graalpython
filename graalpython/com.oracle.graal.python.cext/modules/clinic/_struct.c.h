@@ -31,12 +31,18 @@ Struct___init__(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject * const *fastargs;
     Py_ssize_t nargs = PyTuple_GET_SIZE(args);
     PyObject *format;
+    PyObject **argsArray = (PyObject**) malloc(sizeof(PyObject*) * nargs);
+    for (Py_ssize_t i = 0; i < nargs; i++) {
+    	argsArray[i] = PyTuple_GetItem(args, i);
+    }
 
-    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser, 1, 1, 0, argsbuf);
+    fastargs = _PyArg_UnpackKeywords(argsArray, nargs, kwargs, NULL, &_parser, 1, 1, 0, argsbuf);
     if (!fastargs) {
+    	free(argsArray);
         goto exit;
     }
     format = fastargs[0];
+	free(argsArray);
     return_value = Struct___init___impl((PyStructObject *)self, format);
 
 exit:

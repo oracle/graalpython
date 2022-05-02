@@ -26,9 +26,10 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
 
 #define PyTuple_GET_SIZE(op)    Py_SIZE(_PyTuple_CAST(op))
 
-#define PyTuple_GET_ITEM(op, i) (_PyTuple_CAST(op)->ob_item[i])
+#define PyTuple_GET_ITEM(op, i) PyTuple_GetItem(_PyObject_CAST(op), (i))
 
 /* Macro, *only* to be used to fill in brand new tuples */
-#define PyTuple_SET_ITEM(op, i, v) ((void)(_PyTuple_CAST(op)->ob_item[i] = v))
+// LS: Py_SetItem behaves differently wrt. the existing element...
+#define PyTuple_SET_ITEM(op, i, v) PyTuple_SetItem(_PyObject_CAST(op), (i), (v))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

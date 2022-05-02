@@ -331,10 +331,11 @@ PyAPI_FUNC(void) PyBuffer_Release(Py_buffer *view);
 
 /* === Sequence protocol ================================================ */
 
+PyObject* _PySequence_ITEM(PyObject* obj, Py_ssize_t index);
+
 /* Assume tp_as_sequence and sq_item exist and that 'i' does not
    need to be corrected for a negative index. */
-#define PySequence_ITEM(o, i)\
-    ( Py_TYPE(o)->tp_as_sequence->sq_item(o, i) )
+#define PySequence_ITEM(o, i) _PySequence_ITEM((o), (i))
 
 #define PY_ITERSEARCH_COUNT    1
 #define PY_ITERSEARCH_INDEX    2

@@ -160,6 +160,9 @@ public enum NativeMember {
     MD_DEF("md_def"),
     MD_DICT("md_dict", OBJECT),
 
+    // PyModuleDef_Base
+    M_INDEX("m_index", PRIMITIVE),
+
     BUF_DELEGATE("buf_delegate"),
     BUF_READONLY("readonly", PRIMITIVE),
 

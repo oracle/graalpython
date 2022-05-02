@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
@@ -134,6 +135,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -633,16 +635,24 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, TruffleString errors) {
+            return decodeBytes(bytes, bytes.length, errors);
+        }
+
         @Specialization(limit = "3")
         Object decode(VirtualFrame frame, Object buffer, TruffleString errors,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                ByteArrayBuffer result = doDecode(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
-                return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
+        }
+
+        private Object decodeBytes(byte[] bytes, int len, TruffleString errors) {
+            ByteArrayBuffer result = doDecode(bytes, len, errors);
+            return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
         }
 
         @TruffleBoundary
@@ -1012,6 +1022,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyCodec_StrictErrors", minNumOfPositionalArgs = 1, parameterNames = {"exc"})
+    @GenerateNodeFactory
+    abstract static class StrictErrors extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object register(@SuppressWarnings("unused") Object exception) {
+            throw CompilerDirectives.shouldNotReachHere("'strict' not implemented");
+        }
+    }
+
     @Builtin(name = "lookup_error", minNumOfPositionalArgs = 1, parameterNames = {"name"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
@@ -1034,6 +1055,10 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object get(PythonContext ctx, TruffleString name) {
+            switch (name.toJavaStringUncached()) {
+                case "strict":
+                    return ctx.lookupBuiltinModule(BuiltinNames.T__CODECS).getAttribute(PythonUtils.tsLiteral("PyCodec_StrictErrors"));
+            }
             return ctx.getCodecErrorRegistry().get(name);
         }
     }

@@ -40,17 +40,13 @@
  */
 #include "capi.h"
 
-UPCALL_ID(_PyErr_Warn);
-
 // partially taken from CPython "Python/_warnings.c"
 MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_level, PyObject *source) {
-    PyObject *res;
-
     if (category == NULL) {
         category = PyExc_RuntimeWarning;
     }
 
-    PyObject* result = UPCALL_CEXT_O(_jls__PyErr_Warn, native_to_java(message), native_to_java(category), stack_level, native_to_java(source));
+    PyObject* result = Graal_PyTruffleErr_Warn(message, category, stack_level, source);
     if(result == NULL) {
     	return -1;
     }
@@ -60,11 +56,10 @@ MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ss
 
 // taken from CPython "Python/_warnings.c"
 int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
-    int ret;
     PyObject *message = PyUnicode_FromString(text);
     if (message == NULL)
         return -1;
-    ret = warn_unicode(category, message, stack_level, NULL);
+    int ret = warn_unicode(category, message, stack_level, NULL);
     Py_DECREF(message);
     return ret;
 }
@@ -72,16 +67,20 @@ int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
 NO_INLINE int PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    PyObject* result = PyUnicode_FromFormatV(format, args);
+    PyObject* message = PyUnicode_FromFormatV(format, args);
     va_end(args);
-    return warn_unicode(category, result, stack_level, Py_None);
+    int ret = warn_unicode(category, message, stack_level, Py_None);
+    Py_DECREF(message);
+    return ret;
 }
 
 int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    PyObject* result = PyUnicode_FromFormatV(format, args);
+    PyObject* message = PyUnicode_FromFormatV(format, args);
     va_end(args);
-    return warn_unicode(PyExc_ResourceWarning, result, stack_level, source);
+    int ret = warn_unicode(PyExc_ResourceWarning, message, stack_level, source);
+    Py_DECREF(message);
+    return ret;
 }
 

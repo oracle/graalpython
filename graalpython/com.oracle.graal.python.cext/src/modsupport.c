@@ -42,6 +42,17 @@
 
 #include <stdio.h>
 
+
+// export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
+PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
+PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject *, const char *, ...);
+PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
+                                                  const char *, char **, ...);
+PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
+PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
+                                                  const char *, char **, va_list);
+
+
 #define FLAG_SIZE_T 1
 typedef double va_double;
 
@@ -102,15 +113,6 @@ Py_ssize_t convertbuffer(PyObject *arg, const void **p) {
     return count;
 }
 
-typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, void* kwdnames, void* varargs);
-
-static parseargs_func PyTruffle_Arg_ParseTupleAndKeywords;
-
-__attribute__((constructor))
-static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {
-	PyTruffle_Arg_ParseTupleAndKeywords = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Arg_ParseTupleAndKeywords", SRC_CS));
-}
-
 typedef char* char_ptr_t;
 POLYGLOT_DECLARE_TYPE(char_ptr_t);
 
@@ -121,21 +123,21 @@ POLYGLOT_DECLARE_TYPE(char_ptr_t);
     	for (; (__kwdnames__)[__kwdnames_cnt] != NULL ; __kwdnames_cnt++); \
     } \
     va_start(__vl, __offset__); \
-    __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), polyglot_from_char_ptr_t_array(__kwdnames__, __kwdnames_cnt), &__vl); \
+    __res__ = GraalPyTruffle_Arg_ParseTupleAndKeywords((__args__), (__kwds__), truffleString((__fmt__)), polyglot_from_char_ptr_t_array(__kwdnames__, __kwdnames_cnt), &__vl); \
     va_end(__vl);
 
 
 #define CallParseTupleWithPolyglotArgs(__res__, __offset__, __args__, __fmt__) \
     va_list __vl; \
     va_start(__vl, __offset__); \
-    __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, &__vl); \
+    __res__ = GraalPyTruffle_Arg_ParseTupleAndKeywords((__args__), NULL, truffleString((__fmt__)), NULL, &__vl); \
     va_end(__vl);
 
 
 #define CallParseStackWithPolyglotArgs(__res__, __offset__, __args__, __nargs__, __fmt__) \
     va_list __vl; \
     va_start(__vl, __offset__); \
-    __res__ = PyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, &__vl); \
+    __res__ = GraalPyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), NULL, truffleString((__fmt__)), NULL, &__vl); \
     va_end(__vl);
 
 /* argparse */
@@ -148,7 +150,7 @@ int PyArg_VaParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *fo
     if(kwdnames != NULL) {
     	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
     }
-    res = PyTruffle_Arg_ParseTupleAndKeywords(native_to_java(argv), native_to_java(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_char_ptr_t_array(kwdnames, __kwdnames_cnt), &lva);
+    res = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, truffleString(format), polyglot_from_char_ptr_t_array(kwdnames, __kwdnames_cnt), &lva);
     va_end(lva);
     return res;
 }
@@ -161,19 +163,19 @@ int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const c
     if(kwdnames != NULL) {
     	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
     }
-    res = PyTruffle_Arg_ParseTupleAndKeywords(native_to_java(argv), native_to_java(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_char_ptr_t_array(kwdnames, __kwdnames_cnt), &lva);
+    res = GraalPyTruffle_Arg_ParseTupleAndKeywords(argv, kwds, truffleString(format), polyglot_from_char_ptr_t_array(kwdnames, __kwdnames_cnt), &lva);
     va_end(lva);
     return res;
 }
 
 int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, kwdnames, native_to_java(argv), native_to_java(kwds), format, kwdnames);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, kwdnames, argv, kwds, format, kwdnames);
     return result;
 }
 
 
 int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, kwdnames, native_to_java(argv), native_to_java(kwds), format, kwdnames);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, kwdnames, argv, kwds, format, kwdnames);
     return result;
 }
 
@@ -198,25 +200,25 @@ int _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, s
 }
 
 int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, parser, native_to_java(args), native_to_java(kwargs), parser->format, parser->keywords);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, parser, args, kwargs, parser->format, parser->keywords);
     return result;
 }
 
 int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, parser, native_to_java(args), native_to_java(kwargs), parser->format, parser->keywords);
+	CallParseTupleAndKeywordsWithPolyglotArgs(int result, parser, args, kwargs, parser->format, parser->keywords);
     return result;
 }
 
 
 NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, format, native_to_java(args), format);
+	CallParseTupleWithPolyglotArgs(int result, format, args, format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, format, native_to_java(args), format);
+	CallParseTupleWithPolyglotArgs(int result, format, args, format);
 	return result;
 }
 
@@ -230,19 +232,14 @@ int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
 
 NO_INLINE
 int PyArg_Parse(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, format, native_to_java(PyTuple_Pack(1, args)), format);
+	CallParseTupleWithPolyglotArgs(int result, format, PyTuple_Pack(1, args), format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleWithPolyglotArgs(int result, format, native_to_java(PyTuple_Pack(1, args)), format);
+	CallParseTupleWithPolyglotArgs(int result, format, PyTuple_Pack(1, args), format);
     return result;
-}
-
-UPCALL_ID(PyModule_AddObjectRef);
-int PyModule_AddObjectRef(PyObject *mod, const char *name, PyObject *value) {
-    return UPCALL_CEXT_I(_jls_PyModule_AddObjectRef, native_to_java(mod), polyglot_from_string(name, SRC_CS), native_to_java(value));
 }
 
 // taken from CPython "Python/modsupport.c"
@@ -251,17 +248,6 @@ int PyModule_AddObject(PyObject *mod, const char *name, PyObject *value) {
     if (res == 0) {
         Py_DECREF(value);
     }
-    return res;
-}
-
-// taken from CPython "Python/modsupport.c"
-int PyModule_AddIntConstant(PyObject *m, const char *name, long value) {
-    PyObject *obj = PyLong_FromLong(value);
-    if (!obj) {
-        return -1;
-    }
-    int res = PyModule_AddObjectRef(m, name, obj);
-    Py_DECREF(obj);
     return res;
 }
 
@@ -434,7 +420,7 @@ int _PyArg_NoPositional(const char *funcname, PyObject *args) {
     return 0;
 }
 
-// paritally taken from CPython "Python/getargs.c", removed format processing as in our code, it should only be called with format == NULL
+// partially taken from CPython "Python/getargs.c", removed format processing as in our code, it should only be called with format == NULL
 static int
 parser_init(struct _PyArg_Parser *parser)
 {
@@ -527,8 +513,6 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
     PyObject *current_arg;
     PyObject * const *kwstack = NULL;
 
-    kwnames = native_pointer_to_java(kwnames);
-
     assert(kwargs == NULL || PyDict_Check(kwargs));
     assert(kwargs == NULL || kwnames == NULL);
 
@@ -550,7 +534,7 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
         return NULL;
     }
 
-    kwtuple = native_pointer_to_java(parser->kwtuple);
+    kwtuple = parser->kwtuple;
     posonly = parser->pos;
     minposonly = Py_MIN(posonly, minpos);
     maxargs = posonly + (int)PyTuple_GET_SIZE(kwtuple);
@@ -622,7 +606,7 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
     /* copy keyword args using kwtuple to drive process */
     for (i = Py_MAX((int)nargs, posonly); i < maxargs; i++) {
         if (nkwargs) {
-            keyword = native_pointer_to_java(PyTuple_GET_ITEM(kwtuple, i - posonly));
+            keyword = PyTuple_GET_ITEM(kwtuple, i - posonly);
             if (kwargs != NULL) {
                 current_arg = PyDict_GetItemWithError(kwargs, keyword);
                 if (!current_arg && PyErr_Occurred()) {

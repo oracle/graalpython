@@ -42,20 +42,10 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
-def raise_Py6_SystemError():
-    if sys.version_info.minor >= 6:
-        raise SystemError
-    else:
-        return -1
-    
-
 def _reference_contains(args):
     if not (isinstance(args[0], set) or isinstance(args[0], frozenset)):
         raise SystemError
-    try:
-        return args[1] in args[0]
-    except TypeError:
-        return raise_Py6_SystemError()
+    return args[1] in args[0]
 
 
 def _reference_clear(args):
@@ -75,25 +65,25 @@ def _reference_next(args):
     except:
         return (0, None, 0)
 
+
 def _reference_pop(args):
+    s = args[0]
     try:
-        s = args[0]    
         return s.pop()
     except AttributeError:
-        return raise_Py6_SystemError()
+        raise SystemError
+
     
 def _reference_discard(args):
-    try:
-        s = args[0]
-        if not (isinstance(s, set)):
-            raise SystemError
-        
-        if args[1] in s:
-            s.discard(args[1])
-            return 1
-        return 0
-    except AttributeError:
-        return raise_Py6_SystemError()
+    s = args[0]
+    if not (isinstance(s, set)):
+        raise SystemError
+    
+    if args[1] in s:
+        s.discard(args[1])
+        return 1
+    return 0
+
     
 class FrozenSetSubclass(frozenset):
     pass

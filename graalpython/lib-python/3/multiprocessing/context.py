@@ -287,9 +287,11 @@ if sys.platform != 'win32':
         _start_method = 'spawn'
         @staticmethod
         def _Popen(process_obj):
+            from .popen_spawn_posix import Popen
+            return Popen(process_obj)
             # Begin Truffle change
-            from multiprocessing.popen_truffleprocess import Popen
-            return Popen(process_obj)    
+            # from multiprocessing.popen_truffleprocess import Popen
+            # return Popen(process_obj)    
             # End Truffle change
             
         @staticmethod

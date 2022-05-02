@@ -110,7 +110,9 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtParseArgumentsNode {
     static final int FORMAT_LOWER_S = 's';
@@ -704,7 +706,7 @@ public abstract class CExtParseArgumentsNode {
                 Object typeObject = typeToJavaNode.execute(argValue);
                 assert PGuards.isClass(typeObject, lib);
                 if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
-                    raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, typeObject, arg);
+                    raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_P_GOT_P, typeObject, arg);
                     throw ParseArgumentsException.raise();
                 }
                 writeOutVarNode.writePyObject(varargs, toNativeNode.execute(arg));
@@ -891,7 +893,7 @@ public abstract class CExtParseArgumentsNode {
             // TODO(tfel) we could use CStringWrapper to do the copying lazily
             writeOutVarNode.writePyObject(varargs, asCharPointerNode.execute(arg));
             if (la2 == '#') {
-                final int size = sizeNode.execute(null, argToJavaNode.execute(PythonContext.get(this).getCApiContext(), arg));
+                final int size = sizeNode.execute(null, argToJavaNode.execute(arg));
                 writeOutVarNode.writeInt64(varargs, size);
             }
         }
@@ -986,9 +988,24 @@ public abstract class CExtParseArgumentsNode {
     @GenerateUncached
     abstract static class ExecuteConverterNode extends Node {
 
+        private static final Source NFI_SIGNATURE = Source.newBuilder("nfi", "(POINTER,POINTER):SINT32", "exec").build();
+
         public abstract void execute(Object converter, Object inputArgument, Object outputArgument);
 
-        @Specialization(limit = "5")
+        @Specialization(guards = "!converterLib.isExecutable(converter)")
+        static void doExecuteConverterNative(Object converter, Object inputArgument, Object outputArgument,
+                        @Cached(value = "parseSignature()", allowUncached = true) Object signature,
+                        @CachedLibrary("signature") SignatureLibrary signatureLib,
+                        @CachedLibrary(limit = "1") InteropLibrary converterLib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
+                        @Exclusive @Cached PRaiseNativeNode raiseNode,
+                        @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
+            Object boundConverter = signatureLib.bind(signature, converter);
+            doExecuteConverterGeneric(boundConverter, inputArgument, outputArgument, converterLib, resultLib, toNativeNode, raiseNode, checkResultNode);
+        }
+
+        @Specialization(limit = "5", guards = "converterLib.isExecutable(converter)")
         static void doExecuteConverterGeneric(Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
@@ -1017,12 +1034,16 @@ public abstract class CExtParseArgumentsNode {
             throw ParseArgumentsException.raise();
         }
 
-        CExtToNativeNode createTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().createToNativeNode();
+        static Object parseSignature() {
+            return PythonContext.get(null).getEnv().parseInternal(NFI_SIGNATURE).call();
         }
 
-        CExtToNativeNode getUncachedTN() {
-            return PythonContext.get(this).getCApiContext().getSupplier().getUncachedToNativeNode();
+        static CExtToNativeNode createTN() {
+            return PythonContext.get(null).getCApiContext().getSupplier().createToNativeNode();
+        }
+
+        static CExtToNativeNode getUncachedTN() {
+            return PythonContext.get(null).getCApiContext().getSupplier().getUncachedToNativeNode();
         }
     }
 

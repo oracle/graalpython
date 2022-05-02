@@ -91,32 +91,31 @@ class TestPySlice(CPyExtTestCase):
             raise ValueError("slice step cannot be zero")
         return (0, start, stop, step)
 
-    if sys.version_info.minor >= 6:
-        test_PySlice_Unpack = CPyExtFunction(
-            lambda arg: TestPySlice.reference_unpack(*arg),
-            lambda: (
-                (slice(0,1,2),),
-                (slice(0,-1),),
-                (slice(None,-1,0),),
-                (slice(0,1,-1),),
-                (slice(1,-1),),
-                (slice(1),),
-            ),
-            code='''PyObject* wrapper_SliceUnpack(PyObject* slice) {
-            Py_ssize_t start, stop, step;
-            int result = PySlice_Unpack(slice, &start, &stop, &step);
-            if (result < 0) {
-                 return NULL;
-            }
-            return Py_BuildValue("iiii", result, start, stop, step);
+    test_PySlice_Unpack = CPyExtFunction(
+        lambda arg: TestPySlice.reference_unpack(*arg),
+        lambda: (
+            (slice(0,1,2),),
+            (slice(0,-1),),
+            (slice(None,-1,0),),
+            (slice(0,1,-1),),
+            (slice(1,-1),),
+            (slice(1),),
+        ),
+        code='''PyObject* wrapper_SliceUnpack(PyObject* slice) {
+        Py_ssize_t start, stop, step;
+        int result = PySlice_Unpack(slice, &start, &stop, &step);
+        if (result < 0) {
+             return NULL;
         }
-        ''',
-            resultspec="O",
-            argspec='O',
-            callfunction="wrapper_SliceUnpack",
-            arguments=["PyObject* slice"],
-            cmpfunc=unhandled_error_compare
-        )
+        return Py_BuildValue("iiii", result, start, stop, step);
+    }
+    ''',
+        resultspec="O",
+        argspec='O',
+        callfunction="wrapper_SliceUnpack",
+        arguments=["PyObject* slice"],
+        cmpfunc=unhandled_error_compare
+    )
 
     def reference_adjust(length, start, stop, step):
         slicelength = -1
@@ -147,30 +146,29 @@ class TestPySlice(CPyExtTestCase):
         return 0, start, stop
 
 
-    if sys.version_info.minor >= 6:
-        test_PySlice_AdjustIndices = CPyExtFunction(
-            lambda arg: TestPySlice.reference_adjust(*arg),
-            lambda: (
-                (3,0,-1,1),
-                (3,1,-1,1),
-                (12,-1,-1,-1),
-                (12,-1,0,-1),
-                (12,-1,0,-2),
-                (3,1,-1,2),
-            ),
-            code='''PyObject* Slice_AdjustIndices(int length, int sta, int sto, int step) {
-            Py_ssize_t start = sta;
-            Py_ssize_t stop = sto;
-            int slicelength = PySlice_AdjustIndices(length, &start, &stop, step);
-            return Py_BuildValue("iii", slicelength, start, stop);
-        }
-        ''',
-            resultspec="O",
-            argspec='iiii',
-            callfunction="Slice_AdjustIndices",
-            arguments=["int length", "int start", "int stop", "int step"],
-            cmpfunc=unhandled_error_compare
-        )
+    test_PySlice_AdjustIndices = CPyExtFunction(
+        lambda arg: TestPySlice.reference_adjust(*arg),
+        lambda: (
+            (3,0,-1,1),
+            (3,1,-1,1),
+            (12,-1,-1,-1),
+            (12,-1,0,-1),
+            (12,-1,0,-2),
+            (3,1,-1,2),
+        ),
+        code='''PyObject* Slice_AdjustIndices(int length, int sta, int sto, int step) {
+        Py_ssize_t start = sta;
+        Py_ssize_t stop = sto;
+        int slicelength = PySlice_AdjustIndices(length, &start, &stop, step);
+        return Py_BuildValue("iii", slicelength, start, stop);
+    }
+    ''',
+        resultspec="O",
+        argspec='iiii',
+        callfunction="Slice_AdjustIndices",
+        arguments=["int length", "int start", "int stop", "int step"],
+        cmpfunc=unhandled_error_compare
+    )
 
     def reference_new_slice(args):
         return slice(args[0], args[1], args[2])

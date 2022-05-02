@@ -2711,6 +2711,23 @@ def no_return(fn):
     return inner
 
 
+def generate_capi_forwards(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
+    vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
+    if extra_dists:
+        dists += extra_dists
+    vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk, cp_prefix=cp_prefix, cp_suffix=cp_suffix)
+    if not jdk:
+        jdk = get_jdk()
+    vm_args += ['-ea', '-esa']
+
+    if extra_vm_args:
+        vm_args += extra_vm_args
+
+    vm_args.append("com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins")
+    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2742,4 +2759,5 @@ mx.update_commands(SUITE, {
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
+    'python-capi-forwards': [generate_capi_forwards, ''],
 })

@@ -40,4 +40,18 @@
  */
 #include "capi.h"
 
+int Py_DebugFlag = 0;
+int Py_VerboseFlag = 0;
+int Py_QuietFlag = 0;
+int Py_InteractiveFlag = 0;
+int Py_InspectFlag = 0;
 int Py_OptimizeFlag = 0;
+int Py_NoSiteFlag = 0;
+int Py_BytesWarningFlag = 0;
+int Py_FrozenFlag = 0;
+int Py_IgnoreEnvironmentFlag = 0;
+int Py_DontWriteBytecodeFlag = 0;
+int Py_NoUserSiteDirectory;
+int Py_UnbufferedStdioFlag = 0;
+int Py_HashRandomizationFlag = 0;
+int Py_IsolatedFlag = 0;

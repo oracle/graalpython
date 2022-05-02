@@ -40,16 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
+
+import java.util.concurrent.ConcurrentLinkedDeque;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
@@ -57,12 +64,20 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wrappers for methods used by native code.
  */
 public abstract class ManagedMethodWrappers {
+
+    /*
+     * TODO: hack to keep the closures alive - we need to store the closures in a place that keep
+     * them alive with the underlying delegate.
+     */
+    private static final ConcurrentLinkedDeque<Object> closures = new ConcurrentLinkedDeque<>();
 
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
@@ -86,12 +101,19 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public void toNative(
-                        @Exclusive @Cached ToPyObjectNode toPyObjectNode) {
-            if (!isNative()) {
-                setNativePointer(toPyObjectNode.execute(this));
+        @TruffleBoundary
+        public void toNative() {
+            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", getSignature(), "exec").build()).call();
+            Object result = SignatureLibrary.getUncached().createClosure(signature, this);
+            closures.add(result);
+            try {
+                setNativePointer(InteropLibrary.getUncached(result).asPointer(result));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
+
+        protected abstract CharSequence getSignature();
 
         @ExportMessage
         @SuppressWarnings("static-method")
@@ -125,6 +147,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
@@ -133,20 +156,32 @@ public abstract class ManagedMethodWrappers {
                     throw ArityException.create(3, 3, arguments.length);
                 }
 
-                // convert args
-                Object receiver = toJavaNode.execute(arguments[0]);
-                Object starArgs = toJavaNode.execute(arguments[1]);
-                Object kwArgs = toJavaNode.execute(arguments[2]);
+                try {
+                    // convert args
+                    Object receiver = toJavaNode.execute(arguments[0]);
+                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                    Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 
-                // execute
-                return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+                    // execute
+                    return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return PythonContext.get(callNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);
             }
+        }
+
+        @Override
+        protected CharSequence getSignature() {
+            return "(POINTER,POINTER,POINTER):POINTER";
         }
     }
 
@@ -157,6 +192,7 @@ public abstract class ManagedMethodWrappers {
             super(method, null);
         }
 
+        @SuppressWarnings("static-method")
         @ExportMessage
         protected boolean isExecutable() {
             return true;
@@ -167,21 +203,34 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
+                        @Exclusive @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 1) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw ArityException.create(1, 1, arguments.length);
                 }
-
-                // convert args
-                Object varArgs = toJavaNode.execute(arguments[0]);
-                return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
+                try {
+                    // convert args
+                    Object varArgs = toJavaNode.execute(arguments[0]);
+                    return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return PythonContext.get(toJavaNode).getNativeNull().getPtr();
             } finally {
                 gil.release(mustRelease);
             }
         }
+
+        @Override
+        protected CharSequence getSignature() {
+            return "(POINTER):POINTER";
+        }
+
     }
 
     /**

@@ -107,7 +107,12 @@ public final class InstrumentationSupport extends Node {
                 InstrumentedBytecodeStatement statement = getStatement(line);
                 if (statement == null) {
                     statement = InstrumentedBytecodeStatement.create();
-                    statement.setSourceSection(rootNode.getSource().createSection(line));
+                    try {
+                        statement.setSourceSection(rootNode.getSource().createSection(line));
+                    } catch (IllegalArgumentException e) {
+                        // happens if source file is not available
+                        statement.setSourceSection(rootNode.getSource().createUnavailableSection());
+                    }
                     setStatement(line, statement);
                 }
                 statement.coversBci(bci, op.length());

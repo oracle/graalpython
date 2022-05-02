@@ -80,7 +80,7 @@ class TestPythonRun(CPyExtTestCase):
             ("globals().update({'python_run_test_result':42})", 256, globals(), 'locals()', 0),            
         ),
         resultspec="O",
-        argspec='siOOi',
+        argspec='siOOk',
         arguments=["char* source", "int type", "PyObject* globals", "PyObject* locals", "PyCompilerFlags* ignored"],
         cmpfunc=unhandled_error_compare
     )

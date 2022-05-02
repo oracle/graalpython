@@ -161,6 +161,11 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -215,6 +220,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -923,6 +929,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static String defaultCharsetName() {
             return Charset.defaultCharset().name();
+        }
+    }
+
+    @Builtin(name = "getrefcount", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetrefcountNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        protected long doGeneric(PythonAbstractObject object,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
+            if (object instanceof PythonAbstractNativeObject) {
+                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ((PythonAbstractNativeObject) object).getPtr()));
+            }
+
+            DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+            if (wrapper == null) {
+                return -1;
+            } else {
+                return wrapper.getRefCount();
+            }
+        }
+
+        @Fallback
+        protected long doGeneric(@SuppressWarnings("unused") Object object) {
+            return -1;
         }
     }
 

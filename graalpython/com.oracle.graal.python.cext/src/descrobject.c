@@ -40,62 +40,37 @@
  */
 #include "capi.h"
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
-
-PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
-/* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
-PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
-PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_MAPPING, sizeof(mappingproxyobject));
-PyTypeObject PyProperty_Type = PY_TRUFFLE_TYPE("property", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(propertyobject));
-
-POLYGLOT_DECLARE_TYPE(mappingproxyobject);
-
-/* Dicts */
-UPCALL_ID(PyDictProxy_New);
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
-}
-
-typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(PyMethodDef* methodDef,
-                                                    void* name,
-                                                    const char* doc,
-                                                    int flags,
-                                                    int wrapper,
-                                                    void* methObj,
-                                                    void* primary);
-UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
-	method = native_pointer_to_java(method);
-    int flags = method->ml_flags;
-    return _jls_PyDescr_NewClassMethod(method,
-                    polyglot_from_string(method->ml_name, SRC_CS),
-                    method->ml_doc,
+    int flags = PyMethodDef_ml_flags(method);
+    return GraalPyTruffleDescr_NewClassMethod(method,
+                    truffleString(PyMethodDef_ml_name(method)),
+					PyMethodDef_ml_doc(method),
                     flags,
                     get_method_flags_wrapper(flags),
-                    native_pointer_to_java(method->ml_meth),
+					PyMethodDef_ml_meth(method),
                     type);
 }
 
-typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name,
-                                                    PyTypeObject *type,
-                                                    void *get,
-                                                    void *set,
-                                                    const char* doc,
-                                                    void *closure);
-UPCALL_TYPED_ID(PyDescr_NewGetSet, PyDescr_NewGetSet_fun_t);
 PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
-    getter getter_fun = getset->get;
-    setter setter_fun = getset->set;
-    return _jls_PyDescr_NewGetSet(polyglot_from_string(getset->name, SRC_CS),
+    getter getter_fun = PyGetSetDef_get(getset);
+    setter setter_fun = PyGetSetDef_set(getset);
+    return GraalPyTruffleDescr_NewGetSet(truffleString(PyGetSetDef_name(getset)),
                     type,
                     getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
                     setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
-                    getset->doc,
-                    getset->closure);
+                    PyGetSetDef_doc(getset),
+					PyGetSetDef_closure(getset));
+}
+
+
+PyMethodDef* PyMethodDescrObject_GetMethod(PyObject* descr) {
+	return PyMethodDescrObject_d_method(descr);
+}
+
+PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
+	return PyDescrObject_d_type(descr);
+}
+
+PyObject* PyDescrObject_GetName(PyObject* descr) {
+	return PyDescrObject_d_name(descr);
 }

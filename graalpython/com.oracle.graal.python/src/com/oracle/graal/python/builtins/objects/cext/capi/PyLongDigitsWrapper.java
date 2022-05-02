@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_UINT32_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_UINT32_T_ARRAY_TYPE_ID;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
@@ -236,7 +236,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     abstract static class GetNativeType {
 
         static Object callGetUInt32ArrayTypeIDUncached(@SuppressWarnings("unused") PyLongDigitsWrapper digitsWrapper) {
-            return PCallCapiFunction.getUncached().call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
+            return PCallCapiFunction.getUncached().call(FUN_GET_UINT32_T_ARRAY_TYPE_ID, 0);
         }
 
         @Specialization(guards = "isSingleContext()")
@@ -248,7 +248,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         @Specialization(replaces = "doByteArray")
         static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PyLongDigitsWrapper object,
                         @Cached PCallCapiFunction callGetTypeIDNode) {
-            return callGetTypeIDNode.call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
+            return callGetTypeIDNode.call(FUN_GET_UINT32_T_ARRAY_TYPE_ID, 0);
         }
 
         protected static boolean isSingleContext() {

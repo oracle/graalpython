@@ -83,6 +83,10 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
 
     public abstract Object execute(Frame frame, Object object);
 
+    public final Object execute(Object object) {
+        return execute(null, object);
+    }
+
     @Specialization
     static Object repr(VirtualFrame frame, Object obj,
                     @Cached GetClassNode getClassNode,

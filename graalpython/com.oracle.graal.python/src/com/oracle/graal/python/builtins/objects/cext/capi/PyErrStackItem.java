@@ -42,16 +42,16 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -117,6 +117,26 @@ public final class PyErrStackItem extends PythonNativeWrapper {
         return toSulongNode.execute(result);
     }
 
+    // TO POINTER / AS POINTER / TO NATIVE
+
+    @ExportMessage
+    protected boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    public long asPointer() {
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    protected void toNative(
+                    @Cached ConditionProfile isNativeProfile) {
+        if (!isNative(isNativeProfile)) {
+            CApiTransitions.firstToNative(this);
+        }
+    }
+
     @ExportMessage
     @SuppressWarnings("static-method")
     protected boolean hasNativeType() {
@@ -129,21 +149,5 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     Object getNativeType() {
         // TODO implement native type
         return null;
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() {
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    void toNative(
-                    @Exclusive @Cached ToPyObjectNode toPyObjectNode) {
-        setNativePointer(toPyObjectNode.execute(this));
     }
 }

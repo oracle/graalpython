@@ -114,7 +114,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                 if (SQ_REPEAT.getMemberNameJavaString().equals(member)) {
                     result = toSulongNode.execute(lookup.execute(getPythonClass(), T___MUL__));
                 } else if (SQ_ITEM.getMemberNameJavaString().equals(member)) {
-                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(), T___GETITEM__), true);
+                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(), T___GETITEM__));
                 } else if (SQ_CONCAT.getMemberNameJavaString().equals(member)) {
                     result = toSulongNode.execute(lookup.execute(getPythonClass(), T___ADD__));
                 } else if (SQ_LENGTH.getMemberNameJavaString().equals(member)) {

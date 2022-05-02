@@ -43,7 +43,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, offsetof(PyLongObject, ob_digit), sizeof(PyObject *));
 
 /* 
  * There are 4 different modes for 'PyLong_AsPrimitive:
@@ -64,10 +63,8 @@ PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py
 #define MODE_PINT_SIGNED 3
 #define MODE_COERCE_MASK 4
 
-typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
-UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
 long PyLong_AsLong(PyObject *obj) {
-    return (long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -75,7 +72,7 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    long result = GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
@@ -85,7 +82,7 @@ long long PyLong_AsLongLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return -1;
     }
-    return (long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    return (long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
@@ -99,7 +96,7 @@ unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long long) -1;
     }
-    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
 }
 
 unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
@@ -107,7 +104,7 @@ unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long long) -1;
     }
-    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
+    return (unsigned long long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
 }
 
 unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
@@ -115,7 +112,7 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long) -1;
     }
-    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
+    return (unsigned long) GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
 }
 
 unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
@@ -123,69 +120,27 @@ unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long) -1;
     }
-    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
-}
-
-PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
-	return PyLong_FromLongLong(n);
-}
-
-UPCALL_ID(PyLong_FromDouble);
-PyObject * PyLong_FromDouble(double n) {
-    return UPCALL_CEXT_O(_jls_PyLong_FromDouble, n);
+    return (unsigned long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
 
 size_t PyLong_AsSize_t(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(size_t));
+    return GraalPyTruffleLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(size_t));
 }
 
-typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);
-UPCALL_TYPED_ID(PyLong_FromLongLong, from_long_fun_t);
-PyObject * PyLong_FromLong(long n)  {
-    return _jls_PyLong_FromLongLong(n, 1);
-}
-
-PyObject * PyLong_FromLongLong(long long n)  {
-    return _jls_PyLong_FromLongLong(n, 1);
-}
-
-PyObject * PyLong_FromUnsignedLong(unsigned long n) {
-	return PyLong_FromUnsignedLongLong(n);
-}
-
-PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
-    return _jls_PyLong_FromLongLong(n, 0);
-}
-
-typedef PyObject* (*fromVoidPtr_fun_t)(void*, int32_t);
+typedef PyObject* (*fromVoidPtr_fun_t)(void*);
 PyObject * PyLong_FromVoidPtr(void *p) {
 	// directly do the upcall to avoid a cast to primitive and reference counting
-    return ((fromVoidPtr_fun_t)_jls_PyLong_FromLongLong)(p, 0);
-}
-
-UPCALL_ID(PyLong_AsVoidPtr);
-void * PyLong_AsVoidPtr(PyObject *obj){
-    return (void *)UPCALL_CEXT_PTR(_jls_PyLong_AsVoidPtr, native_to_java(obj));
-}
-
-UPCALL_ID(_PyLong_Sign);
-int _PyLong_Sign(PyObject *vv) {
-    return UPCALL_CEXT_I(_jls__PyLong_Sign, native_to_java(vv));
-}
-
-PyObject * PyLong_FromSize_t(size_t n)  {
-	return PyLong_FromUnsignedLongLong(n);
+    return ((fromVoidPtr_fun_t)GraalPyLong_FromUnsignedLongLong)(p);
 }
 
 double PyLong_AsDouble(PyObject *v)  {
     return (double)PyLong_AsLongLong(v);
 }
 
-UPCALL_ID(PyLong_FromString);
 // partially taken from CPython 3.7.0 "Objects/longobject.c"
 PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     int negative = 0, error_if_nonzero = 0;
@@ -247,7 +202,7 @@ PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
         *pend = str;
     }
 
-    return UPCALL_CEXT_O(_jls_PyLong_FromString, polyglot_from_string_n(numberStart, digits, "ascii"), base, negative);
+    return GraalPyTruffleLong_FromString(polyglot_from_string_n(numberStart, digits, "ascii"), base, negative);
 
  error:
     PyErr_Format(PyExc_ValueError,
@@ -295,8 +250,6 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
     unsigned char* p;           /* pointer to next byte in bytes */
     int pincr;                  /* direction to move p */
 
-    v = native_pointer_to_java(v);
-
     assert(v != NULL && PyLong_Check(v));
 
     if (Py_SIZE(v) < 0) {
@@ -326,13 +279,14 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
        It's crucial that every Python digit except for the MSD contribute
        exactly PyLong_SHIFT bits to the total, so first assert that the int is
        normalized. */
-    assert(ndigits == 0 || v->ob_digit[ndigits - 1] != 0);
+    digit* digits = PyLongObject_ob_digit(v);
+    assert(ndigits == 0 || digits[ndigits - 1] != 0);
     j = 0;
     accum = 0;
     accumbits = 0;
     carry = do_twos_comp ? 1 : 0;
     for (i = 0; i < ndigits; ++i) {
-        digit thisdigit = v->ob_digit[i];
+        digit thisdigit = digits[i];
         if (do_twos_comp) {
             thisdigit = (thisdigit ^ PyLong_MASK) + carry;
             carry = thisdigit >> PyLong_SHIFT;

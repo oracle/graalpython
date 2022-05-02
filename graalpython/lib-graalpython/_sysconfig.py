@@ -55,8 +55,14 @@ def _get_posix_vars():
     else:
         so_ext = ".so"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
+    
+    if 'NATIVE_TOOLCHAIN' in os.environ:
+        def get_toolchain(name):
+            return dict(CC='cc',CXX='c++',AR='ar',RANLIB='ranlib',LD='ld',NM='nm')[name]
+    else:
+        get_toolchain = __graalpython__.get_toolchain_tool_path
 
-    toolchain_cxx = __graalpython__.get_toolchain_tool_path('CXX')
+    toolchain_cxx = get_toolchain('CXX')
     have_cxx = toolchain_cxx is not None
 
     python_inc = os.path.join(
@@ -68,8 +74,8 @@ def _get_posix_vars():
     fpic = "" if win32_native else "-fPIC"
 
     g = {}
-    g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
-    g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
+    g['CC'] = get_toolchain('CC')
+    g['CXX'] = toolchain_cxx if have_cxx else get_toolchain('CC') + ' --driver-mode=g++'
     g['OPT'] = "-stdlib=libc++ -DNDEBUG"
     g['INCLUDEPY'] = python_inc
     g['CONFINCLUDEPY'] = python_inc
@@ -83,9 +89,9 @@ def _get_posix_vars():
     g['CFLAGS'] = cflags_default + " " + gnu_source
     g['LDFLAGS'] = ""
     g['CCSHARED'] = fpic
-    g['LDSHARED_LINUX'] = "%s -shared %s" % (__graalpython__.get_toolchain_tool_path('CC'), fpic)
+    g['LDSHARED_LINUX'] = "%s -shared %s" % (get_toolchain('CC'), fpic)
     if darwin_native:
-        g['LDSHARED'] = __graalpython__.get_toolchain_tool_path('CC') + " -bundle -undefined dynamic_lookup"
+        g['LDSHARED'] = get_toolchain('CC') + " -bundle -undefined dynamic_lookup"
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
     elif win32_native:
         g['LDFLAGS'] = f"-L{__graalpython__.capi_home.replace(os.path.sep, '/')} -llibpython.{so_abi}"
@@ -97,15 +103,15 @@ def _get_posix_vars():
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
     g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
-    g['AR'] = __graalpython__.get_toolchain_tool_path('AR')
-    g['RANLIB'] = __graalpython__.get_toolchain_tool_path('RANLIB')
+    g['AR'] = get_toolchain('AR')
+    g['RANLIB'] = get_toolchain('RANLIB')
     g['ARFLAGS'] = "rc"
-    g['LD'] = __graalpython__.get_toolchain_tool_path('LD')
+    g['LD'] = get_toolchain('LD')
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
     g['VERSION'] = ".".join(sys.version.split(".")[:2])
     g['Py_HASH_ALGORITHM'] = 0 # does not give any specific info about the hashing algorithm
-    g['NM'] = __graalpython__.get_toolchain_tool_path('NM')
+    g['NM'] = get_toolchain('NM')
     g['MULTIARCH'] = sys.implementation._multiarch
     g['ABIFLAGS'] = ""
     g['Py_DEBUG'] = 0

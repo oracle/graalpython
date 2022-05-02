@@ -44,9 +44,5 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 
 public abstract class CExtToNativeNode extends PNodeWithContext {
 
-    public final Object execute(Object object) {
-        return execute(CExtContext.LAZY_CONTEXT, object);
-    }
-
-    public abstract Object execute(CExtContext nativeContext, Object object);
+    public abstract Object execute(Object object);
 }

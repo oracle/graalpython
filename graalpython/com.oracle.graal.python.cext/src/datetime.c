@@ -92,6 +92,12 @@ PyAPI_FUNC(polyglot_typeid) set_PyDateTime_typeids(PyTypeObject* dateType, PyTyp
     return polyglot_PyDateTime_CAPI_typeid();
 }
 
+
+/** to be used from Java code only; returns a type's basic size */
+#define BASICSIZE_GETTER(__typename__) PyAPI_FUNC(Py_ssize_t) get_ ## __typename__ ## _basicsize() { \
+	return sizeof(__typename__); \
+}
+
 BASICSIZE_GETTER(PyDateTime_Date);
 BASICSIZE_GETTER(PyDateTime_Time);
 BASICSIZE_GETTER(PyDateTime_DateTime);

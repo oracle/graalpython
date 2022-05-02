@@ -87,6 +87,9 @@ index 0000000..d41572c
 +    """
 +    import re
 +    import subprocess
++    import autopatch_capi
++
++    autopatch_capi.auto_patch_tree(location)
 +
 +    # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
 +    # some packages may have only major.minor or just major version

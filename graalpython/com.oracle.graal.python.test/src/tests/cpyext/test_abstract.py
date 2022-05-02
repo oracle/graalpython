@@ -86,13 +86,7 @@ def _reference_asssize_t(args):
     v = args[0]
     err = args[1]
     result = -1
-    try:
-        return _reference_index((v,))
-    except BaseException:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1
+    return _reference_index((v,))
 
 
 def _reference_next(args):
@@ -106,10 +100,7 @@ def _reference_next(args):
         raise SystemError
 
 def raise_type_error():
-    if sys.version_info.minor >= 6:
-        raise SystemError
-    else:
-        raise TypeError
+    raise TypeError
 
 def _reference_seq_size(args):
     seq = args[0]
@@ -120,12 +111,7 @@ def _reference_seq_size(args):
         # a subclass with overriden __len__ is 
         raise_type_error()  
         
-    try:
-        return len(seq)
-    except:
-        pass
-    
-    raise_type_error()
+    return len(seq)
 
 def _reference_mapping_size(args):
     m = args[0]
@@ -412,7 +398,11 @@ class TestAbstractWithNative(object):
                                  return 10;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                                 Py_ssize_t res = PySequence_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -429,7 +419,11 @@ class TestAbstractWithNative(object):
                                  return -1;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                                 Py_ssize_t res = PySequence_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -438,7 +432,7 @@ class TestAbstractWithNative(object):
         tester = TestSequenceSizeErr()        
         try:
             tester.callSize(tester)
-        except SystemError:
+        except TypeError:
             assert True
         else:
             assert False
@@ -451,7 +445,11 @@ class TestAbstractWithNative(object):
                                  return -2;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                                 Py_ssize_t res = PySequence_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -460,7 +458,7 @@ class TestAbstractWithNative(object):
         tester = TestSequenceSizeErr2()        
         try:
             tester.callSize(tester)
-        except SystemError:
+        except TypeError:
             assert True
         else:
             assert False            
@@ -489,7 +487,11 @@ class TestAbstractWithNative(object):
                                  return 11;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PyMapping_Size(a));
+                                 Py_ssize_t res = PyMapping_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -506,7 +508,11 @@ class TestAbstractWithNative(object):
                                  return -1;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PyMapping_Size(a));
+                                 Py_ssize_t res = PyMapping_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -515,7 +521,7 @@ class TestAbstractWithNative(object):
         tester = TestMappingSizeErr()   
         try:
             tester.callSize(tester)
-        except SystemError:
+        except TypeError:
             assert True
         else:
             assert False
@@ -527,7 +533,11 @@ class TestAbstractWithNative(object):
                                  return 12;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                                 Py_ssize_t res = PyObject_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -543,7 +553,11 @@ class TestAbstractWithNative(object):
                                  return 13;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                                 Py_ssize_t res = PyObject_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -560,7 +574,11 @@ class TestAbstractWithNative(object):
                                  return -1;
                              }
                              PyObject* callSize(PyObject* a) {
-                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                                 Py_ssize_t res = PyObject_Size(a);
+                                 if (PyErr_Occurred()) {
+                                     return NULL;
+                                 }
+                                 return PyLong_FromSsize_t(res);
                              }
                              """,
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
@@ -569,7 +587,7 @@ class TestAbstractWithNative(object):
         tester = TestObjectSizeErr()
         try:
             tester.callSize(tester)
-        except SystemError:
+        except TypeError:
             assert True
         else:
             assert False         
@@ -1020,6 +1038,7 @@ class TestAbstract(CPyExtTestCase):
             PyObject **items = PySequence_Fast_ITEMS(sequence);
             PyObject* result = PyList_New(n);
             for (i = 0; i < n; i++) {
+                Py_INCREF(items[i]);
                 PyList_SetItem(result, i, items[i]);
             }
             return result;

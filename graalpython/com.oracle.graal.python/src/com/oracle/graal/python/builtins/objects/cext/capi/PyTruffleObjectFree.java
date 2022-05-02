@@ -44,6 +44,8 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleReleaser;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleTester;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -96,10 +98,10 @@ public class PyTruffleObjectFree implements TruffleObject {
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
-            if (nativeWrapper.getRefCount() > 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("deallocating native object with refcnt > 0");
-            }
+            // if (nativeWrapper.getRefCount() > 0) {
+            // CompilerDirectives.transferToInterpreterAndInvalidate();
+            // throw new IllegalStateException("deallocating native object with refcnt > 0");
+            // }
 
             // clear native wrapper
             Object delegate = nativeWrapper.getDelegate();
@@ -143,9 +145,13 @@ public class PyTruffleObjectFree implements TruffleObject {
                 // necessary distinction.
                 long nativePointer = nativeWrapper.getNativePointer();
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(() -> PythonUtils.formatJString("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
+                    LOGGER.finer(() -> PythonUtils.formatJString("Releasing handle: %x (object: %s)", nativePointer, nativeWrapper));
                 }
-                callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
+                if (HandleTester.pointsToPyHandleSpace(nativePointer)) {
+                    HandleReleaser.release(nativePointer);
+                } else {
+                    callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
+                }
             }
         }
     }

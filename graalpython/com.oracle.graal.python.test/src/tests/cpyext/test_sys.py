@@ -45,10 +45,7 @@ def _reference_get_object(args):
     try:
         return getattr(sys, args[0])
     except AttributeError:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise KeyError(args[0])            
+        raise SystemError # raised by PyBuildValue(..., NULL)
         
 class TestPySys(CPyExtTestCase):
     

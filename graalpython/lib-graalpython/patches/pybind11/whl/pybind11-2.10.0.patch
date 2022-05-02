@@ -1,0 +1,27 @@
+diff -u -r a/pybind11/include/pybind11/pybind11.h b/pybind11/include/pybind11/pybind11.h
+--- a/pybind11/include/pybind11/pybind11.h	2022-10-11 16:04:20.000000000 +0200
++++ b/pybind11/include/pybind11/pybind11.h	2022-10-11 16:04:20.000000000 +0200
+@@ -466,7 +466,7 @@
+ 
+         detail::function_record *chain = nullptr, *chain_start = rec;
+         if (rec->sibling) {
+-            if (PyCFunction_Check(rec->sibling.ptr())) {
++            if (PyCFunction_Check(rec->sibling.ptr()) && PyCapsule_CheckExact(PyCFunction_GET_SELF(rec->sibling.ptr()))) {
+                 auto *self = PyCFunction_GET_SELF(rec->sibling.ptr());
+                 capsule rec_capsule = isinstance<capsule>(self) ? reinterpret_borrow<capsule>(self)
+                                                                 : capsule(self);
+@@ -597,10 +597,10 @@
+ 
+         /* Install docstring */
+         auto *func = (PyCFunctionObject *) m_ptr;
+-        std::free(const_cast<char *>(func->m_ml->ml_doc));
+-        // Install docstring if it's non-empty (when at least one option is enabled)
+-        func->m_ml->ml_doc
+-            = signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str());
++//        std::free(const_cast<char *>(func->m_ml->ml_doc));
++//        // Install docstring if it's non-empty (when at least one option is enabled)
++//        func->m_ml->ml_doc
++//            = signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str());
+ 
+         if (rec->is_method) {
+             m_ptr = PYBIND11_INSTANCE_METHOD_NEW(m_ptr, rec->scope.ptr());

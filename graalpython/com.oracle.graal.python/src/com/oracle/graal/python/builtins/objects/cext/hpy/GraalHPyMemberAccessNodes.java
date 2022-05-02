@@ -358,7 +358,7 @@ public class GraalHPyMemberAccessNodes {
                 // exception state. So, we don't need to setup an indirect call.
                 nativeResult = ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset);
                 if (asPythonObjectNode != null) {
-                    return asPythonObjectNode.execute(hPyContext, nativeResult);
+                    return asPythonObjectNode.execute(nativeResult);
                 }
             }
             // We still need to use 'PForeignToPTypeNode' to ensure that we do not introduce unknown
@@ -511,7 +511,7 @@ public class GraalHPyMemberAccessNodes {
                     // to prepare an indirect call.
                     Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
-                        nativeValue = toNativeNode.execute(hPyContext, newValue);
+                        nativeValue = toNativeNode.execute(newValue);
                     } finally {
                         IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }

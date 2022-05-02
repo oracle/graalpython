@@ -77,6 +77,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
+    public Object procsWrapper;
+
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         super(cls, shape);
         this.name = name;

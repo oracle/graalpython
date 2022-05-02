@@ -155,6 +155,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         try {
+            CompilerDirectives.shouldNotReachHere("refcnt operation");
             if (OB_REFCNT.getMemberNameJavaString().equals(member)) {
                 Object delegate = getDelegate();
                 writeNativeMemberNode.execute(delegate, this, member, value);

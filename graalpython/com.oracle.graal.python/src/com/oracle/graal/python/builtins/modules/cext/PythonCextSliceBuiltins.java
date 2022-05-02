@@ -40,43 +40,26 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import java.util.List;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.lib.PySliceNew;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextSliceBuiltins extends PythonBuiltins {
+public final class PythonCextSliceBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextSliceBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PySlice_New", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {
+    public abstract static class PySlice_New extends CApiTernaryBuiltinNode {
         @Specialization
         public static Object slice(Object start, Object stop, Object step,
                         @Cached PySliceNew sliceNode) {
@@ -91,9 +74,9 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_Ellipsis")
+    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
     @GenerateNodeFactory
-    public abstract static class PyEllipsisNode extends PythonBuiltinNode {
+    public abstract static class PyTruffle_Ellipsis extends CApiNullaryBuiltinNode {
         @Specialization
         static Object run() {
             return PEllipsis.INSTANCE;

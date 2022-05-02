@@ -900,9 +900,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * Used from doWarn. On the fast path.
          */
         private void setupContext(VirtualFrame frame, int stackLevel, TruffleString[] filename, int[] lineno, TruffleString[] module, Object[] registry) {
-            PFrame f = getCallerFrame(frame, stackLevel - 1); // the stack level for the
-                                                              // intrinsified version is off-by-one
-                                                              // compared to the Python version
+            // the stack level for the intrinsified version is off-by-one compared to the Python
+            // version
+            PFrame f = frame == null ? null : getCallerFrame(frame, stackLevel - 1);
             PDict globals;
             if (f == null || f.getGlobals() == null) {
                 globals = getSysDict();

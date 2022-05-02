@@ -40,92 +40,57 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 
-import java.util.List;
-
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextDescrBuiltinsClinicProviders.PyDescrNewGetSetNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextDescrBuiltins extends PythonBuiltins {
+public final class PythonCextDescrBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextDescrBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyDictProxy_New extends CApiUnaryBuiltinNode {
         @Specialization
-        public static Object values(VirtualFrame frame, Object obj,
+        public static Object values(Object obj,
                         @Cached BuiltinConstructors.MappingproxyNode mappingNode) {
-            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
+            return mappingNode.execute(null, PythonBuiltinClassType.PMappingproxy, obj);
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewGetSet", minNumOfPositionalArgs = 6, parameterNames = {"name", "cls", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
     @GenerateNodeFactory
-    abstract static class PyDescrNewGetSetNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PyDescrNewGetSetNodeClinicProviderGen.INSTANCE;
-        }
+    abstract static class PyTruffleDescr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
         Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached PythonCextBuiltins.CreateGetSetNode createGetSetNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
-                            getLanguage(), factory());
-            return toSulongNode.execute(descr);
+                        @Cached PythonCextBuiltins.CreateGetSetNode createGetSetNode) {
+            return createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", parameterNames = {"methodDefPtr", "name", "doc", "flags", "wrapper", "cfunc", "primary"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
     @GenerateNodeFactory
-    abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PyDescrNewClassMethodClinicProviderGen.INSTANCE;
-        }
+    abstract static class PyTruffleDescr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached PythonCextBuiltins.NewClassMethodNode newClassMethodNode,
-                        @Cached CExtNodes.ToNewRefNode newRefNode) {
-            Object type = asPythonObjectNode.execute(primary);
+        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
+                        @Cached PythonCextBuiltins.NewClassMethodNode newClassMethodNode) {
             Object func = newClassMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, type, doc, factory());
             if (!isClassOrStaticMethod(flags)) {
                 /*
@@ -134,7 +99,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
                  */
                 func = factory().createClassmethodFromCallableObj(func);
             }
-            return newRefNode.execute(func);
+            return func;
         }
     }
 }

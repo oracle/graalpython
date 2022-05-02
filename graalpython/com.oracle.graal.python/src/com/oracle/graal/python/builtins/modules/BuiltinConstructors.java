@@ -1984,6 +1984,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @CompilationFinal private ConditionProfile isPStringProfile;
         @Child private CastToTruffleStringNode castToTruffleStringNode;
 
+        public final Object executeWith(Object arg) {
+            return executeWith(null, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
         public final Object executeWith(VirtualFrame frame, Object arg) {
             return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
         }

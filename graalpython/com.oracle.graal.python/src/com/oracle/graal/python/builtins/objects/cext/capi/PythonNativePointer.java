@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+// skip GIL
+package com.oracle.graal.python.builtins.objects.cext.capi;
 
-UPCALL_ID(Py_GenericAlias)
-PyObject* Py_GenericAlias(PyObject *origin, PyObject *args) {
-    return UPCALL_CEXT_O(_jls_Py_GenericAlias, native_to_java(origin), native_to_java(args));
+import com.oracle.truffle.api.interop.TruffleObject;
+
+/**
+ * A simple wrapper around native pointers, also used for {@code NULL}.
+ */
+public final class PythonNativePointer implements TruffleObject {
+    private Object ptr;
+
+    public PythonNativePointer(Object ptr) {
+        this.ptr = ptr;
+    }
+
+    public void setPtr(Object object) {
+        this.ptr = object;
+    }
+
+    public Object getPtr() {
+        return ptr;
+    }
 }

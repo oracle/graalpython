@@ -63,6 +63,8 @@ public final class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
+    public Object procsWrapper;
+
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
         this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }

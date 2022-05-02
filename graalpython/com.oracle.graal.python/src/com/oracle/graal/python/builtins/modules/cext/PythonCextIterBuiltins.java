@@ -40,60 +40,37 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import java.util.List;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextIterBuiltins extends PythonBuiltins {
+public final class PythonCextIterBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextIterBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyTruffle_SeqIter_New", minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class SeqIterNewNode extends PythonBuiltinNode {
+    public abstract static class PySeqIter_New extends CApiUnaryBuiltinNode {
         @Specialization
         PSequenceIterator call(Object seq) {
             return factory().createSequenceIterator(seq);
         }
     }
 
-    @Builtin(name = "PyCallIter_New", minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCallIterNewNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCallIter_New extends CApiBinaryBuiltinNode {
         @Specialization
-        public Object getItem(VirtualFrame frame, Object it, Object sentinel,
-                        @Cached IterNode iterNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return iterNode.execute(frame, it, sentinel);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object getItem(Object it, Object sentinel,
+                        @Cached IterNode iterNode) {
+            return iterNode.execute(null, it, sentinel);
         }
     }
 }

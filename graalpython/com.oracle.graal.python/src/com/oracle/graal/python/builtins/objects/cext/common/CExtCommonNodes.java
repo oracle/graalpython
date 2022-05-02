@@ -708,14 +708,10 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
-        public abstract double executeDouble(CExtContext cExtContext, Object arg);
-
-        public final double executeDouble(Object arg) {
-            return executeDouble(CExtContext.LAZY_CONTEXT, arg);
-        }
+        public abstract double executeDouble(Object arg);
 
         @Specialization(guards = "!isNativeWrapper(value)")
-        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
+        static double runGeneric(Object value,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -723,12 +719,12 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
@@ -1165,20 +1161,20 @@ public abstract class CExtCommonNodes {
     public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
         @Specialization
-        static TruffleString doJavaString(@SuppressWarnings("unused") CExtContext hpyContext, String value,
+        static TruffleString doJavaString(String value,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             // TODO review with GR-37896
             return fromJavaStringNode.execute(value, TS_ENCODING);
         }
 
         @Specialization
-        static TruffleString doTruffleString(@SuppressWarnings("unused") CExtContext hpyContext, TruffleString value) {
+        static TruffleString doTruffleString(TruffleString value) {
             return value;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "interopLib.isNull(value)", limit = "3")
-        static Object doGeneric(CExtContext hpyContext, Object value,
+        static Object doGeneric(Object value,
                         @CachedLibrary("value") InteropLibrary interopLib) {
             return PNone.NONE;
         }
@@ -1191,24 +1187,24 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
-        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+        static Object doByte(byte b) {
             return b != 0;
         }
 
         @Specialization
-        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+        static Object doShort(short i) {
             return i != 0;
         }
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+        static Object doLong(long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
             // sematics as we should just read a single byte.
             return l != 0;
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
                 try {
@@ -1229,7 +1225,7 @@ public abstract class CExtCommonNodes {
     public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
 
         @Specialization
-        static TruffleString doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b,
+        static TruffleString doByte(byte b,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
@@ -1238,7 +1234,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static TruffleString doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i,
+        static TruffleString doShort(short i,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
@@ -1247,13 +1243,13 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static TruffleString doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l,
+        static TruffleString doLong(long l,
                         @Cached TruffleString.FromLongNode fromLongNode) {
             return fromLongNode.execute(l, TS_ENCODING, true);
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @CachedLibrary("n") InteropLibrary lib,
                         @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -1280,12 +1276,12 @@ public abstract class CExtCommonNodes {
     public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization(guards = "n >= 0")
-        static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+        static int doUnsignedIntPositive(int n) {
             return n;
         }
 
         @Specialization(replaces = "doUnsignedIntPositive")
-        static long doUnsignedInt(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+        static long doUnsignedInt(int n) {
             if (n < 0) {
                 return n & 0xffffffffL;
             }
@@ -1293,32 +1289,32 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "n >= 0")
-        static long doUnsignedLongPositive(@SuppressWarnings("unused") CExtContext hpyContext, long n) {
+        static long doUnsignedLongPositive(long n) {
             return n;
         }
 
         @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(@SuppressWarnings("unused") CExtContext hpyContext, long n,
+        static Object doUnsignedLongNegative(long n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(PInt.longToUnsignedBigInteger(n));
         }
 
         @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
-        static Object doGeneric(CExtContext hpyContext, Object n,
+        static Object doGeneric(Object n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             if (n instanceof Integer) {
                 int i = (int) n;
                 if (i >= 0) {
                     return i;
                 } else {
-                    return doUnsignedInt(hpyContext, i);
+                    return doUnsignedInt(i);
                 }
             } else if (n instanceof Long) {
                 long l = (long) n;
                 if (l >= 0) {
                     return l;
                 } else {
-                    return doUnsignedLongNegative(hpyContext, l, factory);
+                    return doUnsignedLongNegative(l, factory);
                 }
             }
             throw CompilerDirectives.shouldNotReachHere();
@@ -1334,7 +1330,7 @@ public abstract class CExtCommonNodes {
     public abstract static class AsNativeCharNode extends CExtToNativeNode {
 
         @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        static byte doGeneric(Object value,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached PRaiseNode raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
@@ -1353,7 +1349,7 @@ public abstract class CExtCommonNodes {
     public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
 
         @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        static byte doGeneric(Object value,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1382,7 +1378,7 @@ public abstract class CExtCommonNodes {
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        Object doGeneric(Object value,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }

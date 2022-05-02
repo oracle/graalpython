@@ -19,7 +19,7 @@ typedef enum
     ACCESS_COPY
 } access_mode;
 
-typedef struct {
+typedef struct mmap_object {
     PyObject_HEAD
     char *      data;
     Py_ssize_t  size;
@@ -51,7 +51,7 @@ static PyTypeObject mmap_object_type = PY_TRUFFLE_TYPE("mmap.mmap", NULL, Py_TPF
 
 int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
-    return PyBuffer_FillInfo(view, (PyObject*)self, ((mmap_object *)self)->data, PyObject_Size((PyObject *)self), 0, flags);
+    return PyBuffer_FillInfo(view, (PyObject*)self, mmap_object_data(self), PyObject_Size((PyObject *)self), 0, flags);
 }
 
 static PyObject* mmap_init_bufferprotocol(PyObject* self, PyObject* mmap_type) {
@@ -62,7 +62,7 @@ static PyObject* mmap_init_bufferprotocol(PyObject* self, PyObject* mmap_type) {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	mmap_object_type.tp_as_buffer = &mmap_as_buffer;
+	set_PyTypeObject_tp_as_buffer(&mmap_object_type, &mmap_as_buffer);
 
 	return Py_None;
 }

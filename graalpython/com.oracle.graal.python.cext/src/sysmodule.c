@@ -40,7 +40,3 @@
  */
 #include "capi.h"
 
-UPCALL_ID(PySys_GetObject);
-PyObject *PySys_GetObject(const char *name) {
-    return UPCALL_CEXT_BORROWED(_jls_PySys_GetObject, polyglot_from_string(name, SRC_CS));
-}

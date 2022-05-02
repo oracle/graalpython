@@ -70,7 +70,8 @@ class TestPyObject(CPyExtTestCase):
 
     test_Py_TYPE = CPyExtFunction(
         type,
-        lambda: ([], 12, sys.modules)
+        lambda: ([], 12, sys.modules),
+        resulttype = "PyTypeObject*"
     )
         
     # Below are the PyObject_* identifiers that we know are used in numpy
@@ -214,14 +215,8 @@ class TestPyObject(CPyExtTestCase):
     )
 
     def forgiving_set_item(args):
-        try:
-            args[0][args[1]] = args[2]
-            return 0
-        except:
-            if sys.version_info.minor >= 6:
-                raise SystemError
-            else:
-                return -1
+        args[0][args[1]] = args[2]
+        return 0
 
     test_PyObject_SetItem = CPyExtFunction(
         forgiving_set_item,
@@ -368,14 +363,8 @@ class TestPyObject(CPyExtTestCase):
     )
 
     def setattrstring(args):
-        try:
-            setattr(*args)
-            return 0
-        except:
-            if sys.version_info.minor >= 6:
-                raise SystemError
-            else:
-                return -1
+        setattr(*args)
+        return 0
 
     test_PyObject_SetAttrString = CPyExtFunction(
         setattrstring,
@@ -413,10 +402,7 @@ class TestPyObject(CPyExtTestCase):
     )
     
     def _ref_hash_not_implemented(args):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
+        raise TypeError
     
     test_PyObject_HashNotImplemented = CPyExtFunction(
         _ref_hash_not_implemented,

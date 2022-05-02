@@ -135,6 +135,7 @@ class TestModsupport(CPyExtTestCase):
             Py_buffer buf;
             PyObject* args = PyTuple_New(1);
             char *ptr = NULL;
+            Py_INCREF(bytesLike);
             PyTuple_SetItem(args, 0, bytesLike);
             Py_INCREF(args);
             if (PyArg_ParseTuple(args, "w*", &buf) == 0) {
@@ -656,6 +657,22 @@ class TestModsupport(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* argTuple"],
         callfunction="wrap_PyArg_VaParseTupleAndKeywords_SizeT",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # ensure that allocations are aligned to 16 bytes
+    test_aligned_malloc = CPyExtFunction(
+        lambda args: 0,
+        lambda: ((1,), (16,), (64,), (63,), (15,), (31,), (7,), (9,)),
+        code='''
+        static int wrap_PyObject_Malloc(int size) {
+            return ((int) (long) PyObject_Malloc(size)) & 0xf;
+        }
+        ''',
+        resultspec="i",
+        argspec="i",
+        arguments=["int size"],
+        callfunction="wrap_PyObject_Malloc",
         cmpfunc=unhandled_error_compare
     )
 

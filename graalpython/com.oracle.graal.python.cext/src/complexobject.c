@@ -5,20 +5,23 @@
  */
 #include "capi.h"
 
-PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyComplexObject));
 
 static Py_complex c_error = {-1., 0.};
 
-UPCALL_ID(PyComplex_AsCComplex);
 Py_complex PyComplex_AsCComplex(PyObject *op) {
-	PyObject* parts = UPCALL_CEXT_O(_jls_PyComplex_AsCComplex, native_to_java(op));
+	PyObject* parts = GraalPyTruffleComplex_AsCComplex(op);
 	Py_complex result;
 	if(parts != NULL) {
 		result.real = PyFloat_AsDouble(PyTuple_GetItem(parts, 0));
 		result.imag = PyFloat_AsDouble(PyTuple_GetItem(parts, 1));
+		Py_DecRef(parts);
 		return result;
 	}
 	return c_error;
+}
+
+PyObject * PyComplex_FromCComplex(Py_complex cval) {
+	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
 }
 
 // Below is taken from CPython
@@ -230,23 +233,4 @@ _Py_c_abs(Py_complex z)
     else
         errno = 0;
     return result;
-}
-
-UPCALL_ID(PyComplex_RealAsDouble);
-double PyComplex_RealAsDouble(PyObject *op) {
-	return UPCALL_CEXT_D(_jls_PyComplex_RealAsDouble, native_to_java(op));
-}
-
-UPCALL_ID(PyComplex_ImagAsDouble);
-double PyComplex_ImagAsDouble(PyObject *op) {
-	return UPCALL_CEXT_D(_jls_PyComplex_ImagAsDouble, native_to_java(op));
-}
-
-UPCALL_ID(PyComplex_FromDoubles);
-PyObject * PyComplex_FromDoubles(double real, double imag) {
-	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, real, imag);
-}
-
-PyObject * PyComplex_FromCComplex(Py_complex cval) {
-	return UPCALL_CEXT_O(_jls_PyComplex_FromDoubles, cval.real, cval.imag);
 }

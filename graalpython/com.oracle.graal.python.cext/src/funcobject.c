@@ -41,14 +41,3 @@
 
 #include "capi.h"
 
-PyTypeObject PyFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyFunctionObject), offsetof(PyFunctionObject, vectorcall));
-PyTypeObject PyStaticMethod_Type = PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
-
-UPCALL_ID(PyStaticMethod_New)
-PyObject* PyStaticMethod_New(PyObject *callable) {
-    return UPCALL_CEXT_O(_jls_PyStaticMethod_New, native_to_java(callable));
-}
-
-PyObject* PyClassMethod_New(PyObject* method) {
-    return UPCALL_O(PY_BUILTIN, polyglot_from_string("classmethod", SRC_CS), native_to_java(method));
-}

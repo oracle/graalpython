@@ -89,7 +89,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLong_AsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.KeepRefNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CallProcNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
@@ -184,7 +184,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
         Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             Object ptr = asVoidPtr.execute(args[0]);
             CDataObject ob = factory().createPyCFuncPtrObject(type);
@@ -452,7 +452,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         @Specialization
         Object PyCFuncPtr_call(VirtualFrame frame, PyCFuncPtrObject self, Object[] inargs, PKeyword[] kwds,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached CallNode callNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -759,7 +759,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         Object PyCFuncPtr_FromDll(VirtualFrame frame, Object type, Object[] args, PythonContext context, PythonObjectFactory factory,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CtypesDlSymNode dlSymNode,
-                        @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyLong_AsVoidPtr asVoidPtr,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached CastToTruffleStringNode toString,

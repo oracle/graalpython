@@ -53,7 +53,7 @@ PyAPI_FUNC(PyObject *) PyFloat_FromDouble(double);
    speed. */
 PyAPI_FUNC(double) PyFloat_AsDouble(PyObject *);
 #ifndef Py_LIMITED_API
-#define PyFloat_AS_DOUBLE(op) (((PyFloatObject *)(op))->ob_fval)
+#define PyFloat_AS_DOUBLE(op) PyFloat_AsDouble((PyObject*)(void*)(op))
 #endif
 
 #ifndef Py_LIMITED_API

@@ -40,20 +40,14 @@
  */
 #include "capi.h"
 
-PyTypeObject PyGen_Type = PY_TRUFFLE_TYPE("generator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGenObject));
 
 PyObject *
-PyGen_New(struct _frame *frame)
-{
+PyGen_New(struct _frame *frame) {
 	return NULL;
 }
 
 PyObject * PyGen_NewWithQualName(struct _frame *frame, PyObject *name, PyObject *qualname) {
 	return NULL;
-}
-
-int PyGen_NeedsFinalizing(PyGenObject *gen) {
-	return -1;
 }
 
 int _PyGen_SetStopIterationValue(PyObject *gen) {

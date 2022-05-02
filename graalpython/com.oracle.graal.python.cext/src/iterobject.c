@@ -39,17 +39,3 @@
  * SOFTWARE.
  */
 #include "capi.h"
-
-UPCALL_ID(PyTruffle_SeqIter_New);
-PyObject* PySeqIter_New(PyObject *seq) {
-    if (!PySequence_Check(seq)) {
-        PyErr_BadInternalCall();
-        return NULL;
-    }
-    return UPCALL_CEXT_O(_jls_PyTruffle_SeqIter_New, native_to_java(seq));
-}
-
-UPCALL_ID(PyCallIter_New);
-PyObject * PyCallIter_New(PyObject *callable, PyObject *sentinel) {
-	return UPCALL_CEXT_O(_jls_PyCallIter_New, native_to_java(callable), native_to_java(sentinel));
-}

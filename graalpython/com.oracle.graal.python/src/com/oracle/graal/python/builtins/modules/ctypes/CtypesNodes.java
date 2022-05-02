@@ -51,12 +51,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleT
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -146,17 +144,6 @@ public class CtypesNodes {
             Object clazz = getClassNode.execute(receiver);
             // IsSameTypeNode.execute(clazz, type) is done within IsSubtypeNode
             return isSubtypeNode.execute(clazz, type);
-        }
-    }
-
-    @GenerateUncached
-    protected abstract static class DeRefHandleNode extends Node {
-        public abstract Object execute(Object wrapper);
-
-        @Specialization
-        static Object doObject(Object wrapper,
-                        @Cached PCallCapiFunction callNativeUnary) {
-            return callNativeUnary.call(FUN_DEREF_HANDLE, wrapper);
         }
     }
 

@@ -55,9 +55,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -220,15 +221,15 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         Object timezoneType = getAttr.execute(null, datetime, T_TIMEZONE);
         wrapper.timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, T_UTC));
 
-        wrapper.dateFromDateWrapper = new ConstructorWrapper();
-        wrapper.datetimeFromDateAndTimeWrapper = new ConstructorWrapper();
-        wrapper.timeFromTimeWrapper = new ConstructorWrapper();
-        wrapper.deltaFromDeltaWrapper = new DeltaConstructorWrapper();
-        wrapper.timezoneFromTimezoneWrapper = new TimeZoneWrapper(timezoneType);
-        wrapper.datetimeFromTimestamp = new FromTimestampWrapper();
-        wrapper.dateFromTimestamp = new FromTimestampWrapper();
-        wrapper.datetimeFromDateAndTimeAdFoldWrapper = new FoldConstructorWrapper();
-        wrapper.timeFromTimeAndFold = new FoldConstructorWrapper();
+        wrapper.dateFromDateWrapper = new ConstructorWrapper("(SINT32,SINT32,SINT32,POINTER):POINTER");
+        wrapper.datetimeFromDateAndTimeWrapper = new ConstructorWrapper("(SINT32,SINT32,SINT32,SINT32,SINT32,SINT32,SINT32,POINTER,POINTER):POINTER");
+        wrapper.timeFromTimeWrapper = new ConstructorWrapper("(SINT32,SINT32,SINT32,SINT32,POINTER,POINTER):POINTER");
+        wrapper.deltaFromDeltaWrapper = new DeltaConstructorWrapper("(SINT32,SINT32,SINT32,SINT32,POINTER):POINTER");
+        wrapper.timezoneFromTimezoneWrapper = new TimeZoneWrapper(timezoneType, "(POINTER,POINTER):POINTER");
+        wrapper.datetimeFromTimestamp = new FromTimestampWrapper("(POINTER,POINTER,POINTER):POINTER");
+        wrapper.dateFromTimestamp = new FromTimestampWrapper("(POINTER,POINTER):POINTER");
+        wrapper.datetimeFromDateAndTimeAdFoldWrapper = new FoldConstructorWrapper("(SINT32,SINT32,SINT32,SINT32,SINT32,SINT32,SINT32,POINTER,SINT32,POINTER):POINTER");
+        wrapper.timeFromTimeAndFold = new FoldConstructorWrapper("(SINT32,SINT32,SINT32,SINT32,POINTER,SINT32,POINTER):POINTER");
 
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
@@ -322,15 +323,12 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
     }
 
-    @SuppressWarnings("unused")
     @ExportMessage
     Object invokeMember(String member, Object[] args,
                     @Exclusive @Cached GilNode gil,
                     @Cached AllToJavaNode allToJavaNode,
                     @Cached CallVarargsMethodNode callNode,
-                    @Cached PyObjectLookupAttr lookupNode,
-                    @Cached CExtNodes.AddRefCntNode incRefNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached ToNewRefNode toSulongNode,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached CExtNodes.PRaiseNativeNode raiseNode,
                     @Cached ConditionProfile profile,
@@ -339,7 +337,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         try {
             Object m = getMember(member);
             if (profile.profile(m instanceof AbstractWrapper)) {
-                return ((AbstractWrapper) m).call(args, allToJavaNode, callNode, toSulongNode, incRefNode);
+                return ((AbstractWrapper) m).call(args, allToJavaNode, callNode, toSulongNode);
             } else {
                 return lib.execute(m, args);
             }
@@ -439,31 +437,33 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    void toNative(
-                    @Exclusive @Cached ToPyObjectNode toPyObjectNode) {
-        setNativePointer(toPyObjectNode.execute(this));
+    protected void toNative(
+                    @Cached ToNativeOtherNode toNativeNode) {
+        toNativeNode.execute(this, NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_DATETIME_API);
     }
 
     @ExportLibrary(InteropLibrary.class)
     abstract static class AbstractWrapper extends PyProcsWrapper {
 
-        public AbstractWrapper() {
+        private final String signature;
+
+        public AbstractWrapper(String signature) {
             super(null);
+            this.signature = signature;
         }
 
-        protected abstract Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode);
+        protected abstract Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode);
 
         @ExportMessage
         protected Object execute(Object[] args,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached ToNewRefNode toSulongNode,
                         @Cached AllToJavaNode allToJavaNode,
                         @Cached CallVarargsMethodNode callNode,
-                        @Cached CExtNodes.AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                return call(args, allToJavaNode, callNode, toSulongNode, incRefNode);
+                return call(args, allToJavaNode, callNode, toSulongNode);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
                 return toSulongNode.execute(PythonContext.get(gil).getNativeNull());
@@ -471,56 +471,78 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                 gil.release(mustRelease);
             }
         }
+
+        @Override
+        protected String getSignature() {
+            return signature;
+        }
     }
 
     static class ConstructorWrapper extends AbstractWrapper {
+        public ConstructorWrapper(String signature) {
+            super(signature);
+        }
+
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, convertedArgs.length - 1);
             Object type = convertedArgs[convertedArgs.length - 1];
-            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, type, callArgs, PKeyword.EMPTY_KEYWORDS)));
+            return toSulongNode.execute(callNode.execute(null, type, callArgs, PKeyword.EMPTY_KEYWORDS));
         }
     }
 
     static class DeltaConstructorWrapper extends AbstractWrapper {
+        public DeltaConstructorWrapper(String signature) {
+            super(signature);
+        }
+
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             // see _datetime.c/new_delta_ex() - construct delta from days, seconds, microseconds
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, 3);
             Object type = convertedArgs[convertedArgs.length - 1];
-            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, type, callArgs, PKeyword.EMPTY_KEYWORDS)));
+            return toSulongNode.execute(callNode.execute(null, type, callArgs, PKeyword.EMPTY_KEYWORDS));
         }
     }
 
     static class FoldConstructorWrapper extends AbstractWrapper {
+        public FoldConstructorWrapper(String signature) {
+            super(signature);
+        }
+
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, convertedArgs.length - 2);
             Object type = convertedArgs[convertedArgs.length - 1];
             Object fold = convertedArgs[convertedArgs.length - 2];
-            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, type, callArgs, new PKeyword[]{new PKeyword(T_FOLD, fold)})));
+            return toSulongNode.execute(callNode.execute(null, type, callArgs, new PKeyword[]{new PKeyword(T_FOLD, fold)}));
         }
     }
 
     static class TimeZoneWrapper extends AbstractWrapper {
         private final Object timezoneType;
 
-        public TimeZoneWrapper(Object timezoneType) {
+        public TimeZoneWrapper(Object timezoneType, String signature) {
+            super(signature);
             this.timezoneType = timezoneType;
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
             Object[] convertedArgs = allToJavaNode.execute(args);
-            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, timezoneType, convertedArgs, PKeyword.EMPTY_KEYWORDS)));
+            return toSulongNode.execute(callNode.execute(null, timezoneType, convertedArgs, PKeyword.EMPTY_KEYWORDS));
         }
     }
 
     @ExportLibrary(InteropLibrary.class)
     static class FromTimestampWrapper extends AbstractWrapper {
+        public FromTimestampWrapper(String signature) {
+            super(signature);
+        }
+
         @ExportMessage
         protected Object execute(Object[] args,
                         @Cached ToSulongNode toSulongNode,
@@ -553,7 +575,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         }
 
         @Override
-        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode) {
+        protected Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToNewRefNode toSulongNode) {
             throw new IllegalStateException();
         }
     }

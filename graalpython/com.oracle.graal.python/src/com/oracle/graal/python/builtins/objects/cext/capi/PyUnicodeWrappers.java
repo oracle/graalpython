@@ -53,8 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.UN
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
@@ -84,21 +84,23 @@ public abstract class PyUnicodeWrappers {
             return (PString) getDelegate();
         }
 
+        // TO POINTER / AS POINTER / TO NATIVE
+
         @ExportMessage
-        boolean isPointer() {
+        protected boolean isPointer() {
             return isNative();
         }
 
         @ExportMessage
-        long asPointer() {
+        public long asPointer() {
             return getNativePointer();
         }
 
         @ExportMessage
-        void toNative(
-                        @Cached ToPyObjectNode toPyObjectNode) {
-            if (!isNative()) {
-                setNativePointer(toPyObjectNode.execute(this));
+        protected void toNative(
+                        @Cached ConditionProfile isNativeProfile) {
+            if (!isNative(isNativeProfile)) {
+                CApiTransitions.firstToNative(this);
             }
         }
 

@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -71,6 +73,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
@@ -78,8 +81,10 @@ import com.oracle.truffle.api.utilities.TriState;
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final Object object;
+    public NativeObjectReference ref;
 
     public PythonAbstractNativeObject(Object object) {
+        assert !(object instanceof Number || object instanceof PythonNativeWrapper || object instanceof String || object instanceof TruffleString);
         this.object = object;
     }
 
@@ -137,21 +142,42 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     int identityHashCode(@CachedLibrary("this.object") InteropLibrary lib) throws UnsupportedMessageException {
-        return lib.identityHashCode(object);
+        if (lib.isPointer(object)) {
+            return Long.hashCode(lib.asPointer(object));
+        } else {
+            return lib.identityHashCode(object);
+        }
     }
 
     @ExportMessage
     boolean isIdentical(Object other, InteropLibrary otherInterop,
                     @Cached("createClassProfile()") ValueProfile otherProfile,
                     @CachedLibrary(limit = "1") InteropLibrary thisLib,
-                    @CachedLibrary("this.object") InteropLibrary objLib,
-                    @CachedLibrary(limit = "1") InteropLibrary otherObjLib,
+                    @CachedLibrary(limit = "3") InteropLibrary lib1,
+                    @CachedLibrary(limit = "3") InteropLibrary lib2,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object profiled = otherProfile.profile(other);
             if (profiled instanceof PythonAbstractNativeObject) {
-                return objLib.isIdentical(object, ((PythonAbstractNativeObject) profiled).object, otherObjLib);
+                Object otherPtr = ((PythonAbstractNativeObject) other).getPtr();
+                if (lib1.isPointer(getPtr())) {
+                    if (lib2.isPointer(otherPtr)) {
+                        try {
+                            return lib1.asPointer(getPtr()) == lib2.asPointer(otherPtr);
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    if (lib2.isPointer(otherPtr)) {
+                        return false;
+                    } else {
+                        return lib1.isIdentical(getPtr(), otherPtr, lib2);
+                    }
+                }
             }
             return otherInterop.isIdentical(profiled, this, thisLib);
         } finally {
@@ -164,9 +190,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     static final class IsIdenticalOrUndefined {
         @Specialization
         static TriState doPythonAbstractNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
-                        @CachedLibrary("receiver.object") InteropLibrary objLib,
+                        @CachedLibrary("receiver") InteropLibrary objLib,
                         @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
-            return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
+            return TriState.valueOf(objLib.isIdentical(receiver, other, otherObjectLib));
         }
 
         @Fallback

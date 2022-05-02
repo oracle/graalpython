@@ -136,7 +136,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
     }
 
     // TODO: remove once we removed PythonModule globals
-    private void writeAttribute(VirtualFrame frame, Object globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
+    private static void writeAttribute(VirtualFrame frame, Object globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
         if (globals instanceof PDict || globals instanceof PMappingproxy) {
             setItemNode.execute(frame, globals, name, value);
         } else {
@@ -161,7 +161,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private boolean isDunder(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
+    private static boolean isDunder(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
         return cpLenNode.execute(s, TS_ENCODING) >= 2 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_' && cpAtIndexNode.execute(s, 1, TS_ENCODING) == '_';
     }
 

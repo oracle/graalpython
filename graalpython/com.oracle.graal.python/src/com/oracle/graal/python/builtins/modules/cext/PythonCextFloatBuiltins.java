@@ -41,87 +41,57 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
-import java.util.List;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextFloatBuiltins extends PythonBuiltins {
+public final class PythonCextFloatBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextFloatBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    ///////////// float /////////////
-
-    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
     @GenerateNodeFactory
-    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
+    abstract static class PyFloat_FromDouble extends CApiUnaryBuiltinNode {
 
         @Specialization
         static double fromDouble(double d) {
             return d;
         }
 
-        @Specialization(guards = {"!isDouble(obj)"})
-        public static Object fromDouble(VirtualFrame frame, Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
+        @Specialization(guards = "!isDouble(obj)")
+        public Object fromDouble(Object obj,
+                        @Cached StrNode strNode) {
             // cpython PyFloat_FromDouble takes only 'double'
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
     }
 
-    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
+    abstract static class PyFloat_AsDouble extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
+        @Specialization
+        static double doLongNativeWrapper(long object) {
+            return object;
         }
 
         @Specialization
-        static double doGenericErr(VirtualFrame frame, Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1.0;
-            }
+        static double doDoubleNativeWrapper(double object) {
+            return object;
+        }
+
+        @Specialization(guards = {"!isLong(object)", "!isDouble(object)"})
+        static double doGenericErr(Object object,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            return asDoubleNode.execute(null, object);
         }
     }
-
 }

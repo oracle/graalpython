@@ -114,6 +114,14 @@ public abstract class ExceptionStateNodes {
             return ensure(e);
         }
 
+        public PException executeFromNative() {
+            PException e = fromStackWalk();
+            if (e == null) {
+                e = PException.NO_EXCEPTION;
+            }
+            return ensure(e);
+        }
+
         private PException getFromContext() {
             // contextRef acts as a branch profile
             if (getThreadStateNode == null) {

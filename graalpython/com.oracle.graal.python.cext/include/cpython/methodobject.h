@@ -14,16 +14,10 @@ PyAPI_DATA(PyTypeObject) PyCMethod_Type;
 
 /* Macros for direct access to these values. Type checks are *not*
    done, so use with care. */
-#define PyCFunction_GET_FUNCTION(func) \
-        (((PyCFunctionObject *)func) -> m_ml -> ml_meth)
-#define PyCFunction_GET_SELF(func) \
-        (((PyCFunctionObject *)func) -> m_ml -> ml_flags & METH_STATIC ? \
-         NULL : ((PyCFunctionObject *)func) -> m_self)
-#define PyCFunction_GET_FLAGS(func) \
-        (((PyCFunctionObject *)func) -> m_ml -> ml_flags)
-#define PyCFunction_GET_CLASS(func) \
-    (((PyCFunctionObject *)func) -> m_ml -> ml_flags & METH_METHOD ? \
-         ((PyCMethodObject *)func) -> mm_class : NULL)
+#define PyCFunction_GET_FUNCTION(func) PyCFunction_GetFunction(_PyObject_CAST(func))
+#define PyCFunction_GET_SELF(func) PyCFunction_GetSelf(_PyObject_CAST(func))
+#define PyCFunction_GET_FLAGS(func) PyCFunction_GetFlags(_PyObject_CAST(func))
+#define PyCFunction_GET_CLASS(func) PyCFunction_GetClass(_PyObject_CAST(func))
 
 typedef struct {
     PyObject_HEAD

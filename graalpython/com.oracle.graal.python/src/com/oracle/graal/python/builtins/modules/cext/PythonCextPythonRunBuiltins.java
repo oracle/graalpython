@@ -41,82 +41,76 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPILER_FLAGS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COMPILE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
+import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isString;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextPythonRunBuiltins extends PythonBuiltins {
+public final class PythonCextPythonRunBuiltins {
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextPythonRunBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PyRun_String", minNumOfPositionalArgs = 4)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int, PyObject, PyObject, PY_COMPILER_FLAGS}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyRunStringNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
+
+        // from compile.h
+        private static final int Py_single_input = 256;
+        private static final int Py_file_input = 257;
+        private static final int Py_eval_input = 258;
 
         @Specialization(guards = "checkArgs(source, globals, locals, isMapping)")
-        public Object run(VirtualFrame frame, Object source, Object stype, Object globals, Object locals,
+        public Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
                         @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallNode callNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                PythonModule builtins = getCore().getBuiltins();
-                Object compileCallable = lookupNode.execute(frame, builtins, T_COMPILE);
-                Object code = callNode.execute(frame, compileCallable, source, stype, stype);
-                Object execCallable = lookupNode.execute(frame, builtins, T_EXEC);
-                return callNode.execute(frame, execCallable, code, globals, locals);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
+                        @Cached CallNode callNode) {
+            PythonModule builtins = getCore().getBuiltins();
+            Object compileCallable = lookupNode.execute(null, builtins, T_COMPILE);
+            TruffleString stype;
+            if (type == Py_single_input) {
+                stype = StringLiterals.T_SINGLE;
+            } else if (type == Py_file_input) {
+                stype = StringLiterals.T_EXEC;
+            } else if (type == Py_eval_input) {
+                stype = StringLiterals.T_EVAL;
+            } else {
+                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
+            Object code = callNode.execute(compileCallable, source, stype, stype);
+            Object execCallable = lookupNode.execute(null, builtins, T_EXEC);
+            return callNode.execute(execCallable, code, globals, locals);
         }
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
-        public Object run(VirtualFrame frame, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object stype, @SuppressWarnings("unused") Object globals,
-                        @SuppressWarnings("unused") Object locals,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        public Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
+                        @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") Object flags) {
+            throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
 
         @Specialization(guards = {"isString(source)", "isDict(globals)", "!isMapping.execute(locals)"})
-        public Object run(VirtualFrame frame, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object stype, @SuppressWarnings("unused") Object globals, Object locals,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raise(frame, getContext().getNativeNull(), TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
+        public Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals, Object locals,
+                        @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") @Cached PyMappingCheckNode isMapping) {
+            throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, locals);
         }
 
         protected boolean checkArgs(Object source, Object globals, Object locals, PyMappingCheckNode isMapping) {

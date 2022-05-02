@@ -217,16 +217,19 @@ public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
         return (PythonManagedClass) getDelegate();
     }
 
+    @SuppressWarnings("static-method")
     @ExportMessage
     protected boolean hasMembers() {
         return true;
     }
 
+    @SuppressWarnings("static-method")
     @ExportMessage
     protected boolean isMemberReadable(String member) {
         return isValidMember(member);
     }
 
+    @SuppressWarnings("static-method")
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();

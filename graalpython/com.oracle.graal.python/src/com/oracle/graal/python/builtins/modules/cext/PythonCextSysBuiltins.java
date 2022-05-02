@@ -40,55 +40,51 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+public final class PythonCextSysBuiltins {
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextSysBuiltins extends PythonBuiltins {
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextSysBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PySys_GetObject", minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {ConstCharPtrAsTruffleString}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PySysGetObjectNode extends PythonUnaryBuiltinNode {
+    public abstract static class PySys_GetObject extends CApiUnaryBuiltinNode {
+
         @Specialization
-        public Object writeStr(VirtualFrame frame, TruffleString name,
-                        @Cached PyObjectLookupAttr lookupNode) {
+        public Object getObject(TruffleString name,
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached PyObjectLookupAttr lookupNode,
+                        @Cached PyObjectSetAttr setAttrNode) {
             try {
-                Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule(T_SYS), name);
+                PythonModule sys = getCore().lookupBuiltinModule(T_SYS);
+                Object value = lookupNode.execute(null, sys, name);
                 if (value == PNone.NO_VALUE) {
-                    return getContext().getNativeNull();
+                    return getNativeNull();
+                }
+                Object promotedValue = promoteNode.execute(value);
+                if (promotedValue != null) {
+                    setAttrNode.execute(sys, name, promotedValue);
+                    return promotedValue;
                 }
                 return value;
             } catch (PException e) {
                 // PySys_GetObject delegates to PyDict_GetItem
                 // which suppresses all exceptions for historical reasons
-                return getContext().getNativeNull();
+                return getNativeNull();
             }
         }
     }

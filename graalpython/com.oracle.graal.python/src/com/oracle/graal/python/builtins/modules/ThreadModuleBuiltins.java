@@ -210,7 +210,6 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,

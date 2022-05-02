@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_M_INDEX;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
@@ -65,33 +67,42 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTypeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -122,14 +133,17 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class CApiContext extends CExtContext {
+
     public static final String LOGGER_CAPI_NAME = "capi";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
+
+    private static final boolean TRACE = Boolean.getBoolean("CAPITrace");
 
     /**
      * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
@@ -162,9 +176,6 @@ public final class CApiContext extends CExtContext {
      */
     @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
 
-    /** Just used for integrity checks if assertions are enabled. */
-    @CompilationFinal private InteropLibrary interoplibrary;
-
     /**
      * Required to emulate PyLongObject's ABI; number of bits per digit (equal to
      * {@code PYLONG_BITS_IN_DIGIT}.
@@ -182,6 +193,9 @@ public final class CApiContext extends CExtContext {
 
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
+    public final HashMap<Long, PLock> locks = new HashMap<>();
+    public final AtomicLong lockId = new AtomicLong();
+
     /**
      * Thread local storage for PyThread_tss_* APIs
      */
@@ -190,6 +204,8 @@ public final class CApiContext extends CExtContext {
      * Next key that will be allocated byt PyThread_tss_create
      */
     private final AtomicLong nextTssKey = new AtomicLong();
+
+    private final PExternalFunctionWrapper w = PExternalFunctionWrapper.DELITEM;
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
@@ -222,7 +238,7 @@ public final class CApiContext extends CExtContext {
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
             PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
-            nativeWrapper.increaseRefCount();
+            CApiTransitions.incRef(nativeWrapper, PythonNativeWrapper.IMMORTAL_REFCNT);
             primitiveNativeWrapperCache[i] = nativeWrapper;
         }
 
@@ -311,7 +327,7 @@ public final class CApiContext extends CExtContext {
         return traceMallocDomains[domainIdx];
     }
 
-    public int findOrCreateTraceMallocDomain(long id) {
+    public int findOrCreateTraceMallocDomain(int id) {
         int oldLength;
         if (traceMallocDomains != null) {
             for (int i = 0; i < traceMallocDomains.length; i++) {
@@ -357,7 +373,6 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
         assert CApiGuards.isSmallInteger(i);
         PrimitiveNativeWrapper primitiveNativeWrapper = primitiveNativeWrapperCache[i + 5];
-        primitiveNativeWrapper.increaseRefCount();
         assert primitiveNativeWrapper.getRefCount() > 0;
         return primitiveNativeWrapper;
     }
@@ -551,6 +566,7 @@ public final class CApiContext extends CExtContext {
 
         @Override
         public void execute(PythonContext context) {
+            System.out.println("CApiReferenceCleanerAction");
             Object[] pArguments = PArguments.create(1);
             PArguments.setArgument(pArguments, 0, nativeObjectReferences);
             GenericInvokeNode.getUncached().execute(context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
@@ -561,92 +577,17 @@ public final class CApiContext extends CExtContext {
         return nativeObjectWrapperList.get(idx);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
-                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, AttachLLVMTypeNode attachLLVMTypeNode) {
-        return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false, attachLLVMTypeNode);
-    }
-
-    public PythonAbstractNativeObject getPythonNativeObject(Object nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
-                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
-        CompilerAsserts.partialEvaluationConstant(addRefCntNode);
-        CompilerAsserts.partialEvaluationConstant(steal);
-
-        int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(this, nativePtr));
-
-        NativeObjectReference ref;
-
-        // If there is no mapping, we need to create a new one.
-        if (newRefProfile.profile(id == 0)) {
-            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
-        } else if (validRefProfile.profile(id > 0)) {
-            ref = lookupNativeObjectReference(id);
-            if (ref != null) {
-                PythonAbstractNativeObject nativeObject = ref.get();
-                if (resurrectProfile.profile(nativeObject == null)) {
-                    // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
-                    // mapping. Therefore, we need to cancel the cleaner action and set a new native
-                    // object reference.
-                    ref.markAsResurrected();
-                    nativeObject = new PythonAbstractNativeObject(nativePtr);
-                    assert id == ref.id;
-
-                    ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount, id);
-                    NativeObjectReference old = nativeObjectWrapperList.resurrect(id, ref);
-                    assert isReferenceToSameNativeObject(old, ref) : "resurrected native object reference does not point to same native object";
-                }
-                if (steal) {
-                    ref.managedRefCount++;
-                }
-                return nativeObject;
-            }
-            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
-        } else {
-            LOGGER.warning(() -> PythonUtils.formatJString("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
-        }
-        return new PythonAbstractNativeObject(nativePtr);
-    }
-
-    PythonAbstractNativeObject createPythonAbstractNativeObject(Object nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
-        PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(attachLLVMTypeNode.execute(nativePtr));
-        int nativeRefID = nativeObjectWrapperList.reserve();
-        assert nativeRefID != -1;
-
-        long nativeRefCnt = CApiContext.idToRefCnt(nativeRefID);
-        assert nativeRefCnt >= REFERENCE_COUNT_MARKER;
-        NativeObjectReference ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, nativeRefCnt + (steal ? 1L : 0L), nativeRefID);
-
-        addRefCntNode.execute(nativePtr, nativeRefCnt);
-        nativeObjectWrapperList.commit(nativeRefID, ref);
-        return nativeObject;
-    }
-
     /**
      * Checks if the given {@link NativeObjectReference} objects point to the same native object.
-     * This method lazily initializes {@link #interoplibrary} as a side-effect.
      */
-    private boolean isReferenceToSameNativeObject(NativeObjectReference old, NativeObjectReference ref) {
-        if (interoplibrary == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            interoplibrary = InteropLibrary.getFactory().getUncached();
-        }
-        return interoplibrary.isIdentical(old.ptrObject, ref.ptrObject, interoplibrary);
-    }
-
-    static int idFromRefCnt(long refCnt) {
-        long idx = refCnt >> REFERENCE_COUNT_BITS;
-        assert idx >= 0;
-        return (int) idx;
+    private static boolean isReferenceToSameNativeObject(NativeObjectReference old, NativeObjectReference ref) {
+        return InteropLibrary.getUncached().isIdentical(old.ptrObject, ref.ptrObject, InteropLibrary.getUncached());
     }
 
     static long idToRefCnt(int id) {
         long nativeRefCnt = (long) id << REFERENCE_COUNT_BITS;
         assert nativeRefCnt >= REFERENCE_COUNT_MARKER;
         return nativeRefCnt;
-    }
-
-    @TruffleBoundary
-    public void traceFree(Object ptr) {
-        traceFree(ptr, null, null);
     }
 
     @TruffleBoundary
@@ -746,6 +687,7 @@ public final class CApiContext extends CExtContext {
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
+            CApiTransitions.pollReferenceQueue();
             PythonContext.triggerAsyncActions((Node) caller);
             if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
@@ -827,10 +769,10 @@ public final class CApiContext extends CExtContext {
     }
 
     public static final class TraceMallocDomain {
-        private final long id;
+        private final int id;
         private final EconomicMap<Object, Long> allocatedMemory;
 
-        public TraceMallocDomain(long id) {
+        public TraceMallocDomain(int id) {
             this.id = id;
             this.allocatedMemory = EconomicMap.create();
         }
@@ -850,7 +792,7 @@ public final class CApiContext extends CExtContext {
             return 0;
         }
 
-        public long getId() {
+        public int getId() {
             return id;
         }
     }
@@ -967,6 +909,7 @@ public final class CApiContext extends CExtContext {
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
+                LOGGER.config(() -> "loading CAPI from " + capiFile);
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
                 // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
@@ -978,6 +921,7 @@ public final class CApiContext extends CExtContext {
                     nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
                 }
 
+                assert CApiFunction.assertBuiltins(capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
                 return cApiContext;
@@ -998,30 +942,34 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object llvmLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
+    public Object initCApiModule(Node location, Object sharedLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
+        CApiContext cApiContext = context.getCApiContext();
         Object pyinitFunc;
         try {
-            pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
+            pyinitFunc = llvmInteropLib.readMember(sharedLibrary, initFuncName.toJavaStringUncached());
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
         Object nativeResult;
         try {
-            nativeResult = pyInitFuncLib.execute(pyinitFunc);
+            nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
+        } catch (UnsupportedMessageException e) {
+            Object signature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder("nfi", "():POINTER", "exec").build()).call();
+            Object bound = SignatureLibrary.getUncached().bind(signature, pyinitFunc);
+            nativeResult = InteropLibrary.getUncached().execute(bound);
         } catch (ArityException e) {
             // In case of multi-phase init, the init function may take more than one argument.
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
             Object[] arguments = new Object[e.getExpectedMinArity()];
             Arrays.fill(arguments, PNone.NO_VALUE);
-            nativeResult = pyInitFuncLib.execute(pyinitFunc, arguments);
+            nativeResult = InteropLibrary.getUncached().execute(pyinitFunc, arguments);
         }
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);
 
-        Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
+        Object result = CApiTransitions.nativeToPython(nativeResult, false);
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 
@@ -1037,11 +985,12 @@ public final class CApiContext extends CExtContext {
                 throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
+            return CreateModuleNodeGen.getUncached().execute(cApiContext, spec, result, sharedLibrary);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;
             module.setAttribute(T___FILE__, spec.path);
+            module.setAttribute(T___LIBRARY__, sharedLibrary);
 
             // add to 'sys.modules'
             PDict sysModules = context.getSysModules();
@@ -1049,15 +998,14 @@ public final class CApiContext extends CExtContext {
 
             // _PyState_AddModule
             Object moduleDef = module.getNativeModuleDef();
-            InteropLibrary moduleDefLib = InteropLibrary.getUncached(moduleDef);
             try {
-                Object mIndexObject = moduleDefLib.readMember(moduleDefLib.readMember(moduleDef, "m_base"), "m_index");
+                Object mIndexObject = PCallCapiFunction.getUncached().call(cApiContext, FUN_GET_M_INDEX, moduleDef);
                 int mIndex = InteropLibrary.getUncached().asInt(mIndexObject);
                 while (modulesByIndex.size() <= mIndex) {
                     modulesByIndex.add(null);
                 }
                 modulesByIndex.set(mIndex, module);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+            } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
@@ -1067,4 +1015,182 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    private final HashMap<String, Long> typeStorePointers = new HashMap<>();
+
+    public static void setTypeStore(String typename, long ptr) {
+        if (!"unimplemented".equals(typename)) {
+            CApiContext context = PythonContext.get(null).getCApiContext();
+            assert !context.typeStorePointers.containsKey(typename) : typename;
+            context.typeStorePointers.put(typename, ptr);
+        }
+    }
+
+    public Long getTypeStore(String typename) {
+        return typeStorePointers.get(typename);
+    }
+
+    public static void initJNI() {
+        GraalHPyContext.loadJNIBackend();
+        initJNIForward();
+    }
+
+    @TruffleBoundary
+    private static native int initJNIForward();
+
+    public static long getAPI(String name) {
+        try {
+            Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+            CApiBuiltinExecutable builtin = PythonCextBuiltins.capiBuiltins.get(name);
+            Object result;
+            if (builtin != null) {
+                result = builtin;
+                assert builtin.getAnnotation().call() == CApiCallPath.Direct || !InteropLibrary.getUncached().isMemberReadable(llvmLibrary, name) : "name clash in builtin vs. CAPI library: " + name;
+            } else {
+                result = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+            }
+            InteropLibrary.getUncached().toNative(result);
+            long pointer = InteropLibrary.getUncached().asPointer(result);
+            LOGGER.finer((builtin != null ? "getAPI(builtin) " : "getAPI(library) ") + name + " -> " + java.lang.Long.toHexString(pointer));
+            return pointer;
+        } catch (Throwable e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final TruffleString[] LOOKUP_MODULES = tsArray(new String[]{
+                    PythonCextBuiltins.PYTHON_CEXT,
+                    "_weakref",
+                    "builtins"
+    });
+
+    public static long getType(String typename) {
+        Object result = null;
+        try {
+            Python3Core core = PythonContext.get(null).getCore();
+            Object llvmLibrary = PythonContext.get(null).getCApiContext().getLLVMLibrary();
+            switch (typename) {
+                case "Py_False":
+                    result = false;
+                    break;
+                case "Py_True":
+                    result = true;
+                    break;
+                case "PyLong_One":
+                case "_PyTruffle_One":
+                    result = 1;
+                    break;
+                case "PyLong_Zero":
+                case "_PyTruffle_Zero":
+                    result = 0;
+                    break;
+                case "Py_NotImplemented":
+                    result = PNotImplemented.NOT_IMPLEMENTED;
+                    break;
+                case "Py_Ellipsis":
+                    result = PEllipsis.INSTANCE;
+                    break;
+                case "Py_None":
+                    result = PNone.NONE;
+                    break;
+                case "capsule":
+                    result = InteropLibrary.getUncached().readMember(llvmLibrary, "getPyCapsuleTypeReference");
+                    result = InteropLibrary.getUncached().execute(result);
+                    result = ToJavaNodeGen.getUncached().execute(result);
+                    break;
+            }
+            if (result == null) {
+                for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+                    if (type.getName().toJavaStringUncached().equals(typename)) {
+                        result = core.lookupType(type);
+                        break;
+                    }
+                }
+            }
+            if (result == null) {
+                TruffleString tsTypename = PythonUtils.toTruffleStringUncached(typename);
+                for (TruffleString module : LOOKUP_MODULES) {
+                    Object attribute = core.lookupBuiltinModule(module).getAttribute(tsTypename);
+                    if (attribute instanceof PBuiltinMethod) {
+                        attribute = CallNode.getUncached().execute(attribute);
+                    }
+                    if (attribute != PNone.NO_VALUE) {
+                        result = attribute;
+                        break;
+                    }
+                }
+            }
+            if (result == null && resolveConstant(typename) != -1) {
+                // get symbols allocated in bitcode
+                result = InteropLibrary.getUncached().invokeMember(llvmLibrary, "truffle_get_constant", resolveConstant(typename));
+                InteropLibrary.getUncached().toNative(result);
+                return InteropLibrary.getUncached().asPointer(result);
+            }
+            if (result != null) {
+                result = ToNewRefNodeGen.getUncached().execute(result);
+                long l;
+                if (result instanceof Long) {
+                    l = (long) result;
+                } else {
+                    InteropLibrary.getUncached().toNative(result);
+                    l = InteropLibrary.getUncached().asPointer(result);
+                }
+                LOGGER.finer("getType " + typename + " -> " + java.lang.Long.toHexString(l));
+                return l;
+            }
+            throw new RuntimeException("type " + typename + " not found");
+        } catch (Throwable e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static int resolveConstant(String typename) {
+        // this needs to correspond to truffle_get_constant in capi.c
+        switch (typename) {
+            case "_Py_ascii_whitespace":
+                return 0;
+            case "_Py_ctype_table":
+                return 1;
+            case "_Py_ctype_tolower":
+                return 2;
+            case "_Py_ctype_toupper":
+                return 3;
+            case "_Py_tracemalloc_config":
+                return 4;
+            case "_Py_HashSecret":
+                return 5;
+            case "Py_DebugFlag":
+                return 6;
+            case "Py_VerboseFlag":
+                return 7;
+            case "Py_QuietFlag":
+                return 8;
+            case "Py_InteractiveFlag":
+                return 9;
+            case "Py_InspectFlag":
+                return 10;
+            case "Py_OptimizeFlag":
+                return 11;
+            case "Py_NoSiteFlag":
+                return 12;
+            case "Py_BytesWarningFlag":
+                return 13;
+            case "Py_FrozenFlag":
+                return 14;
+            case "Py_IgnoreEnvironmentFlag":
+                return 15;
+            case "Py_DontWriteBytecodeFlag":
+                return 16;
+            case "Py_NoUserSiteDirectory":
+                return 17;
+            case "Py_UnbufferedStdioFlag":
+                return 18;
+            case "Py_HashRandomizationFlag":
+                return 19;
+            case "Py_IsolatedFlag":
+                return 20;
+        }
+        return -1;
+    }
 }

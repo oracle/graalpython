@@ -57,7 +57,11 @@ class TestExceptionobject(object):
                                  PyObject* val;
                                  PyObject* tb;
                                  PyErr_GetExcInfo(&typ, &val, &tb);
-                                 Py_INCREF(typ);
+                                 Py_XDECREF(val);
+                                 Py_XDECREF(tb);
+                                 if (typ == NULL) {
+                                     Py_RETURN_NONE;
+                                }
                                  return typ;
                              }
                              """,

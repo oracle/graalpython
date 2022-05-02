@@ -54,7 +54,7 @@ public abstract class CApiGuards {
     }
 
     public static boolean isNativeNull(Object object) {
-        return object instanceof PythonNativeNull;
+        return object instanceof PythonNativePointer;
     }
 
     public static boolean isSpecialSingleton(Object delegate) {

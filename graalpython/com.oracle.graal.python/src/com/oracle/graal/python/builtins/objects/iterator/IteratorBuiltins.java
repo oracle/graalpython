@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -211,6 +212,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         Object nextHashingStorageIter(PHashingStorageIterator self,
                         @Cached ConditionProfile sizeChanged,
+                        @Cached ConditionProfile isLocals,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
@@ -219,8 +221,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             final HashingStorageIterator it = self.getIterator();
             if (profile.profile(nextNode.execute(storage, it))) {
                 if (sizeChanged.profile(self.checkSizeChanged(lenNode))) {
-                    String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
-                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
+                    if (!isLocals.profile(self.getHashingStorage() instanceof LocalsStorage)) {
+                        String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
+                        throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
+                    }
                 }
                 self.index++;
                 return itValueNode.execute(self, storage, it);

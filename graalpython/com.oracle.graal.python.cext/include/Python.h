@@ -145,4 +145,7 @@
 #include "cpython/pyfpe.h"
 #include "tracemalloc.h"
 
+// helper macro for quick printf debugging
+#define __PD {printf("%i \t%s\n", __LINE__, __func__); }
+
 #endif /* !Py_PYTHON_H */

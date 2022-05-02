@@ -119,6 +119,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
@@ -851,6 +852,9 @@ public abstract class ObjectNodes {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object moduleNameObject = lookupAttr.execute(frame, cls, T___MODULE__);
             Object qualNameObject = lookupAttr.execute(frame, cls, T___QUALNAME__);
+            if (qualNameObject == PNone.NO_VALUE) {
+                return StringLiterals.T_VALUE_UNKNOWN;
+            }
             TruffleString qualName = cast.execute(qualNameObject);
             if (moduleNameObject == PNone.NO_VALUE) {
                 return qualName;

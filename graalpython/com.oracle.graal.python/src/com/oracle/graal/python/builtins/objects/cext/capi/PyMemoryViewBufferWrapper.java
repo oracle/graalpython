@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -278,6 +280,8 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
     }
 
+    // TO POINTER / AS POINTER / TO NATIVE
+
     @ExportMessage
     protected boolean isPointer() {
         return isNative();
@@ -290,9 +294,9 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-                    @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode) {
-        if (!isNative()) {
-            setNativePointer(toPyObjectNode.execute(this));
+                    @Cached ConditionProfile isNativeProfile) {
+        if (!isNative(isNativeProfile)) {
+            CApiTransitions.firstToNative(this);
         }
     }
 

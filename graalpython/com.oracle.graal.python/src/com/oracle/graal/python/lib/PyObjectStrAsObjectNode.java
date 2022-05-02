@@ -80,6 +80,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
+    public final Object execute(Object object) {
+        return execute(null, object);
+    }
+
     @Specialization
     static Object str(TruffleString obj) {
         return obj;

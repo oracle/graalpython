@@ -71,6 +71,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyObjectGetAttr extends Node {
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
+    public final Object execute(Object receiver, Object name) {
+        return execute(null, receiver, name);
+    }
+
     @Specialization(guards = "name == cachedName", limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,

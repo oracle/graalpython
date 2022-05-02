@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
@@ -1047,14 +1046,6 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyWithContextNode extends PNodeWithContext {
 
-        protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
-            if (hpyContext == null) {
-                return getContext().getHPyContext();
-            } else {
-                return hpyContext;
-            }
-        }
-
         static long asPointer(Object handle, InteropLibrary lib) {
             try {
                 return lib.asPointer(handle);
@@ -1068,51 +1059,50 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyEnsureHandleNode extends HPyWithContextNode {
 
-        public abstract GraalHPyHandle execute(GraalHPyContext hpyContext, Object object);
+        public abstract GraalHPyHandle execute(Object object);
 
         @Specialization
-        static GraalHPyHandle doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+        static GraalHPyHandle doHandle(GraalHPyHandle handle) {
             return handle;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static GraalHPyHandle doOtherBoxedHandle(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        GraalHPyHandle doOtherBoxedHandle(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
-                        @Bind("asPointer(value, lib)") long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
-            return doLong(hpyContext, bits, context);
+                        @Bind("asPointer(value, lib)") long bits) {
+            return doLong(bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
         @SuppressWarnings("unused")
-        static GraalHPyHandle doOtherNull(GraalHPyContext hpyContext, Object value,
+        static GraalHPyHandle doOtherNull(Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits) || isBoxedDouble(bits)"})
-        static GraalHPyHandle doOtherBoxedPrimitive(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        GraalHPyHandle doOtherBoxedPrimitive(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return doBoxedPrimitive(hpyContext, bits);
+            return doBoxedPrimitive(bits);
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doLongNull(GraalHPyContext hpyContext, long bits) {
+        static GraalHPyHandle doLongNull(long bits) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"hpyContext == null", "isBoxedHandle(bits)"}, replaces = "doLongNull")
-        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
-            return hpyContext.createHandle(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
+        @Specialization(guards = {"isBoxedHandle(bits)"}, replaces = "doLongNull")
+        GraalHPyHandle doLong(long bits) {
+            GraalHPyContext context = getContext().getHPyContext();
+            return context.createHandle(context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
         }
 
         @Specialization(guards = "isBoxedInt(bits) || isBoxedDouble(bits)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long bits) {
+        GraalHPyHandle doBoxedPrimitive(long bits) {
             /*
              * In this case, the long value is a boxed primitive and we cannot resolve it to a
              * GraalHPyHandle instance (because no instance has ever been created). We create a
@@ -1126,7 +1116,7 @@ public class GraalHPyNodes {
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            return hpyContext.createHandle(delegate);
+            return getContext().getHPyContext().createHandle(delegate);
         }
     }
 
@@ -1134,62 +1124,60 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyCloseHandleNode extends HPyWithContextNode {
 
-        public abstract void execute(GraalHPyContext hpyContext, Object object);
+        public abstract void execute(Object object);
 
         @Specialization(guards = "!handle.isAllocated()")
         @SuppressWarnings("unused")
-        static void doHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+        static void doHandle(GraalHPyHandle handle) {
             // nothing to do
         }
 
         @Specialization(guards = "handle.isAllocated()")
-        void doHandleAllocated(GraalHPyContext hpyContext, GraalHPyHandle handle) {
-            handle.closeAndInvalidate(ensureContext(hpyContext));
+        void doHandleAllocated(GraalHPyHandle handle) {
+            handle.closeAndInvalidate(getContext().getHPyContext());
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
-        static void doNullLong(GraalHPyContext hpyContext, long bits) {
+        static void doNullLong(long bits) {
             // nothing to do
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static void doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+        void doLong(long bits) {
             /*
              * Since we have a long and it is in the "boxed handle" range, we know that the handle
              * *MUST* be allocated.
              */
             int id = GraalHPyBoxing.unboxHandle(bits);
             assert GraalHPyHandle.isAllocated(id);
-            context.releaseHPyHandleForObject(id);
+            getContext().getHPyContext().releaseHPyHandleForObject(id);
         }
 
         @Specialization(guards = "!isBoxedHandle(bits)")
         @SuppressWarnings("unused")
-        static void doLongDouble(GraalHPyContext hpyContext, long bits) {
+        static void doLongDouble(long bits) {
             // nothing to do
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
         @SuppressWarnings("unused")
-        static void doNullOther(GraalHPyContext hpyContext, Object value,
+        static void doNullOther(Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             // nothing to do
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static void doOther(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        void doOther(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
-                        @Bind("asPointer(value, lib)") long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
-            doLong(hpyContext, bits, context);
+                        @Bind("asPointer(value, lib)") long bits) {
+            doLong(bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedHandle(bits)"})
         @SuppressWarnings("unused")
-        static void doOtherDouble(GraalHPyContext hpyContext, Object value,
+        static void doOtherDouble(Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             // nothing to do
@@ -1199,48 +1187,48 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCloseAndGetHandleNode extends HPyWithContextNode {
 
-        public abstract Object execute(GraalHPyContext hpyContext, Object object);
+        public abstract Object execute(Object object);
 
-        public abstract Object execute(GraalHPyContext hpyContext, long object);
+        public abstract Object execute(long object);
 
         @Specialization(guards = "!handle.isAllocated()")
-        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+        static Object doHandle(GraalHPyHandle handle) {
             return handle.getDelegate();
         }
 
         @Specialization(guards = "handle.isAllocated()")
-        Object doHandleAllocated(GraalHPyContext hpyContext, GraalHPyHandle handle) {
-            handle.closeAndInvalidate(ensureContext(hpyContext));
+        Object doHandleAllocated(GraalHPyHandle handle) {
+            handle.closeAndInvalidate(getContext().getHPyContext());
             return handle.getDelegate();
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
-        static Object doNullLong(GraalHPyContext hpyContext, long bits) {
+        static Object doNullLong(long bits) {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+        Object doLong(long bits) {
             /*
              * Since we have a long and it is in the "boxed handle" range, we know that the handle
              * *MUST* be allocated.
              */
             int id = GraalHPyBoxing.unboxHandle(bits);
             assert GraalHPyHandle.isAllocated(id);
+            GraalHPyContext context = getContext().getHPyContext();
             Object delegate = context.getObjectForHPyHandle(id);
             context.releaseHPyHandleForObject(id);
             return delegate;
         }
 
         @Specialization(guards = "isBoxedDouble(bits)")
-        static double doLongDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+        static double doLongDouble(long bits) {
             return GraalHPyBoxing.unboxDouble(bits);
         }
 
         @Specialization(guards = "isBoxedInt(bits)")
-        static int doLongInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+        static int doLongInt(long bits) {
             return GraalHPyBoxing.unboxInt(bits);
         }
 
@@ -1254,29 +1242,28 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
         @SuppressWarnings("unused")
-        static Object doNullOther(GraalHPyContext hpyContext, Object value,
+        static Object doNullOther(Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static Object doOther(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        Object doOther(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
-                        @Bind("asPointer(value, lib)") long bits,
-                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
-            return doLong(hpyContext, bits, context);
+                        @Bind("asPointer(value, lib)") long bits) {
+            return doLong(bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
-        static double doOtherDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        static double doOtherDouble(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxDouble(bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits)"})
-        static int doOtherInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        static int doOtherInt(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxInt(bits);
@@ -1287,40 +1274,31 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
-        protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
-            if (hpyContext == null) {
-                return getContext().getHPyContext();
-            } else {
-                return hpyContext;
-            }
-        }
-
-        public abstract Object execute(GraalHPyContext hpyContext, long bits);
+        public abstract Object execute(long bits);
 
         @Specialization
-        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+        static Object doHandle(GraalHPyHandle handle) {
             return handle.getDelegate();
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
-        static Object doNullLong(GraalHPyContext hpyContext, long bits) {
+        static Object doNullLong(long bits) {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
-                        @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context) {
-            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+        Object doLong(long bits) {
+            return getContext().getHPyContext().getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         }
 
         @Specialization(guards = "isBoxedDouble(bits)")
-        static double doLongDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+        static double doLongDouble(long bits) {
             return GraalHPyBoxing.unboxDouble(bits);
         }
 
         @Specialization(guards = "isBoxedInt(bits)")
-        static int doLongInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+        static int doLongInt(long bits) {
             return GraalHPyBoxing.unboxInt(bits);
         }
 
@@ -1333,29 +1311,28 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
-        static Object doNullOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        static Object doNullOther(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits) {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
-        static Object doOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        Object doOther(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
-                        @Bind("asPointer(value, lib)") long bits,
-                        @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context) {
-            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+                        @Bind("asPointer(value, lib)") long bits) {
+            return getContext().getHPyContext().getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
-        static double doOtherDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        static double doOtherDouble(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxDouble(bits);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits)"})
-        static int doOtherInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+        static int doOtherInt(@SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxInt(bits);
@@ -1365,7 +1342,7 @@ public class GraalHPyNodes {
                         "doNullLong", "doLong", "doLongDouble", "doLongInt", //
                         "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
         })
-        Object doGeneric(GraalHPyContext hpyContext, Object value,
+        Object doGeneric(Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
             if (value instanceof GraalHPyHandle) {
                 return ((GraalHPyHandle) value).getDelegate();
@@ -1389,7 +1366,7 @@ public class GraalHPyNodes {
                 return GraalHPyBoxing.unboxDouble(bits);
             } else {
                 assert GraalHPyBoxing.isBoxedHandle(bits);
-                return ensureContext(hpyContext).getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+                return getContext().getHPyContext().getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
             }
         }
     }
@@ -1402,19 +1379,19 @@ public class GraalHPyNodes {
         protected static final byte FIELD = 2;
 
         @Override
-        public final GraalHPyHandle execute(CExtContext nativeContext, Object object) {
-            return execute(nativeContext, object, 0, HANDLE);
+        public final GraalHPyHandle execute(Object object) {
+            return execute(object, 0, HANDLE);
         }
 
-        public final GraalHPyHandle executeGlobal(CExtContext nativeContext, Object object, int id) {
-            return execute(nativeContext, object, id, GLOBAL);
+        public final GraalHPyHandle executeGlobal(Object object, int id) {
+            return execute(object, id, GLOBAL);
         }
 
-        public final GraalHPyHandle executeField(CExtContext nativeContext, Object object, int id) {
-            return execute(nativeContext, object, id, FIELD);
+        public final GraalHPyHandle executeField(Object object, int id) {
+            return execute(object, id, FIELD);
         }
 
-        protected abstract GraalHPyHandle execute(CExtContext nativeContext, Object object, int id, int type);
+        protected abstract GraalHPyHandle execute(Object object, int id, int type);
 
         /*
          * NOTE: We *MUST NOT* box values here because we don't know where the handle will be given
@@ -1424,23 +1401,23 @@ public class GraalHPyNodes {
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object, int id, int type) {
+        static GraalHPyHandle doNoValue(PNone object, int id, int type) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"})
-        static GraalHPyHandle doObject(GraalHPyContext hpyContext, Object object, @SuppressWarnings("unused") int id, @SuppressWarnings("unused") int type) {
-            return hpyContext.createHandle(object);
+        GraalHPyHandle doObject(Object object, @SuppressWarnings("unused") int id, @SuppressWarnings("unused") int type) {
+            return getContext().getHPyContext().createHandle(object);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
-        static GraalHPyHandle doGlobal(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
+        static GraalHPyHandle doGlobal(Object object, int id, @SuppressWarnings("unused") int type) {
             return GraalHPyHandle.createGlobal(object, id);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
-        static GraalHPyHandle doField(GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
-            return hpyContext.createField(object, id);
+        GraalHPyHandle doField(Object object, int id, @SuppressWarnings("unused") int type) {
+            return getContext().getHPyContext().createField(object, id);
         }
     }
 
@@ -1453,7 +1430,7 @@ public class GraalHPyNodes {
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        Object doGeneric(Object value,
                         @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, 1, Long.BYTES);
         }
@@ -1461,22 +1438,22 @@ public class GraalHPyNodes {
 
     public abstract static class HPyConvertArgsToSulongNode extends PNodeWithContext {
 
-        public abstract void executeInto(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset);
+        public abstract void executeInto(VirtualFrame frame, Object[] args, int argsOffset, Object[] dest, int destOffset);
 
         abstract HPyCloseArgHandlesNode createCloseHandleNode();
     }
 
     public abstract static class HPyCloseArgHandlesNode extends PNodeWithContext {
 
-        public abstract void executeInto(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset);
+        public abstract void executeInto(VirtualFrame frame, Object[] args, int argsOffset);
     }
 
     public abstract static class HPyVarargsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode selfAsHandleNode) {
-            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = selfAsHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
         }
@@ -1493,11 +1470,11 @@ public class GraalHPyNodes {
     public abstract static class HPyVarargsHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            closeHandleNode.execute(hpyContext, dest[destOffset]);
-            closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
+            closeHandleNode.execute(dest[destOffset]);
+            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
         }
     }
 
@@ -1507,22 +1484,22 @@ public class GraalHPyNodes {
     public abstract static class HPySelfHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeHandleNode) {
-            closeHandleNode.execute(hpyContext, dest[destOffset]);
+            closeHandleNode.execute(dest[destOffset]);
         }
     }
 
     public abstract static class HPyKeywordsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode selfAsHandleNode,
                         @Cached HPyAsHandleNode kwAsHandleNode) {
-            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = selfAsHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
-            dest[destOffset + 3] = kwAsHandleNode.execute(hpyContext, args[argsOffset + 3]);
+            dest[destOffset + 3] = kwAsHandleNode.execute(args[argsOffset + 3]);
         }
 
         @Override
@@ -1537,13 +1514,13 @@ public class GraalHPyNodes {
     public abstract static class HPyKeywordsHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
-            closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
-            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 3]);
+            closeFirstHandleNode.execute(dest[destOffset]);
+            closeArrayWrapperNode.execute((HPyArrayWrapper) dest[destOffset + 1]);
+            closeSecondHandleNode.execute(dest[destOffset + 3]);
         }
     }
 
@@ -1559,26 +1536,26 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"args.length == argsOffset"})
         @SuppressWarnings("unused")
-        static void cached0(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset) {
+        static void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
         }
 
         @Specialization(guards = {"args.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, argsOffset, 8)"}, limit = "1", replaces = "cached0")
         @ExplodeLoop
-        static void cachedLoop(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void cachedLoop(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached("args.length") int cachedLength,
                         @Cached HPyAsHandleNode toSulongNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - argsOffset; i++) {
-                dest[destOffset + i] = toSulongNode.execute(hpyContext, args[argsOffset + i]);
+                dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
             }
         }
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
-        static void uncached(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void uncached(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode toSulongNode) {
             int len = args.length;
             for (int i = 0; i < len - argsOffset; i++) {
-                dest[destOffset + i] = toSulongNode.execute(hpyContext, args[argsOffset + i]);
+                dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
             }
         }
 
@@ -1595,26 +1572,26 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"dest.length == destOffset"})
         @SuppressWarnings("unused")
-        static void cached0(GraalHPyContext hpyContext, Object[] dest, int destOffset) {
+        static void cached0(Object[] dest, int destOffset) {
         }
 
         @Specialization(guards = {"dest.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, destOffset, 8)"}, limit = "1", replaces = "cached0")
         @ExplodeLoop
-        static void cachedLoop(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void cachedLoop(Object[] dest, int destOffset,
                         @Cached("dest.length") int cachedLength,
                         @Cached HPyCloseHandleNode closeHandleNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - destOffset; i++) {
-                closeHandleNode.execute(hpyContext, dest[destOffset + i]);
+                closeHandleNode.execute(dest[destOffset + i]);
             }
         }
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
-        static void uncached(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void uncached(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeHandleNode) {
             int len = dest.length;
             for (int i = 0; i < len - destOffset; i++) {
-                closeHandleNode.execute(hpyContext, dest[destOffset + i]);
+                closeHandleNode.execute(dest[destOffset + i]);
             }
         }
 
@@ -1630,9 +1607,9 @@ public class GraalHPyNodes {
     public abstract static class HPyGetSetGetterToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode selfAsHandleNode) {
-            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = selfAsHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
         }
 
@@ -1649,10 +1626,10 @@ public class GraalHPyNodes {
     public abstract static class HPyGetSetSetterToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode) {
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
+            dest[destOffset + 1] = asHandleNode.execute(args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -1668,11 +1645,11 @@ public class GraalHPyNodes {
     public abstract static class HPyGetSetSetterHandleCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
-            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 1]);
+            closeFirstHandleNode.execute(dest[destOffset]);
+            closeSecondHandleNode.execute(dest[destOffset + 1]);
         }
     }
 
@@ -1682,7 +1659,7 @@ public class GraalHPyNodes {
     public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached SubRefCntNode subRefCntNode) {
             subRefCntNode.dec(dest[destOffset + 1]);
         }
@@ -1694,29 +1671,29 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
-        static void doHandleSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
         }
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
-        static void doHandleSsizeTSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeTSsizeT(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
             dest[destOffset + 2] = asSsizeTNode.execute(args[argsOffset + 2], 1, Long.BYTES);
         }
 
         @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
-        static void doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doGeneric(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             for (int i = 1; i < args.length - argsOffset; i++) {
                 dest[destOffset + i] = asSsizeTNode.execute(args[argsOffset + i], 1, Long.BYTES);
             }
@@ -1739,13 +1716,13 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeObjArgProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
-            dest[destOffset + 2] = asHandleNode.execute(hpyContext, args[argsOffset + 2]);
+            dest[destOffset + 2] = asHandleNode.execute(args[argsOffset + 2]);
         }
 
         @Override
@@ -1761,11 +1738,11 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeObjArgProcCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
-            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 2]);
+            closeFirstHandleNode.execute(dest[destOffset]);
+            closeSecondHandleNode.execute(dest[destOffset + 2]);
         }
     }
 
@@ -1776,11 +1753,11 @@ public class GraalHPyNodes {
     public abstract static class HPyRichcmpFuncArgsToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
+            dest[destOffset + 1] = asHandleNode.execute(args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -1796,11 +1773,11 @@ public class GraalHPyNodes {
     public abstract static class HPyRichcmptFuncArgsCloseNode extends HPyCloseArgHandlesNode {
 
         @Specialization
-        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+        static void doConvert(Object[] dest, int destOffset,
                         @Cached HPyCloseHandleNode closeFirstHandleNode,
                         @Cached HPyCloseHandleNode closeSecondHandleNode) {
-            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
-            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 1]);
+            closeFirstHandleNode.execute(dest[destOffset]);
+            closeSecondHandleNode.execute(dest[destOffset + 1]);
         }
     }
 
@@ -1812,11 +1789,11 @@ public class GraalHPyNodes {
     public abstract static class HPyGetBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConversion(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConversion(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached AsNativePrimitiveNode asIntNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = asIntNode.execute(args[argsOffset + 2], 1, Integer.BYTES, true);
         }
@@ -1834,10 +1811,10 @@ public class GraalHPyNodes {
     public abstract static class HPyReleaseBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConversion(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConversion(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
-            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset] = asHandleNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
         }
 
@@ -1849,44 +1826,44 @@ public class GraalHPyNodes {
 
     @GenerateUncached
     abstract static class HPyLongFromLong extends Node {
-        public abstract Object execute(GraalHPyContext context, int value, boolean signed);
+        public abstract Object execute(int value, boolean signed);
 
-        public abstract Object execute(GraalHPyContext context, long value, boolean signed);
+        public abstract Object execute(long value, boolean signed);
 
-        public abstract Object execute(GraalHPyContext context, Object value, boolean signed);
+        public abstract Object execute(Object value, boolean signed);
 
         @Specialization(guards = "signed")
-        static Object doSignedInt(GraalHPyContext hpyContext, int n, @SuppressWarnings("unused") boolean signed,
+        static Object doSignedInt(int n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(hpyContext, n);
+            return asHandleNode.execute(n);
         }
 
         @Specialization(guards = "!signed")
-        static Object doUnsignedInt(GraalHPyContext hpyContext, int n, @SuppressWarnings("unused") boolean signed,
+        static Object doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
             if (n < 0) {
-                return asHandleNode.execute(hpyContext, n & 0xFFFFFFFFL);
+                return asHandleNode.execute(n & 0xFFFFFFFFL);
             }
-            return asHandleNode.execute(hpyContext, n);
+            return asHandleNode.execute(n);
         }
 
         @Specialization(guards = "signed")
-        static Object doSignedLong(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+        static Object doSignedLong(long n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(hpyContext, n);
+            return asHandleNode.execute(n);
         }
 
         @Specialization(guards = {"!signed", "n >= 0"})
-        static Object doUnsignedLongPositive(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            return asHandleNode.execute(hpyContext, n);
+            return asHandleNode.execute(n);
         }
 
         @Specialization(guards = {"!signed", "n < 0"})
-        static Object doUnsignedLongNegative(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+        static Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(hpyContext, factory.createInt(convertToBigInteger(n)));
+            return asHandleNode.execute(factory.createInt(convertToBigInteger(n)));
         }
 
         @TruffleBoundary
@@ -1895,10 +1872,10 @@ public class GraalHPyNodes {
         }
 
         @Specialization
-        static Object doPointer(GraalHPyContext hpyContext, PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
+        static Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return asHandleNode.execute(hpyContext, factory.createNativeVoidPtr(n.getPtr()));
+            return asHandleNode.execute(factory.createNativeVoidPtr(n.getPtr()));
         }
     }
 
@@ -2177,7 +2154,7 @@ public class GraalHPyNodes {
                 // TODO(fa): directly read member as soon as this is supported by Sulong.
                 // Currently, we cannot pass struct-by-value via interop.
                 int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
-                Object specParamObject = asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                Object specParamObject = asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
 
                 switch (specParamKind) {
                     case GraalHPyDef.HPyType_SPEC_PARAM_BASE:
@@ -2221,7 +2198,7 @@ public class GraalHPyNodes {
 
                     switch (specParamKind) {
                         case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
-                            return asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                            return asPythonObjectNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
                         default:
                             // intentionally ignored
                             break;

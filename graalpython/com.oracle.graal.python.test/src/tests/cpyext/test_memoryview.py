@@ -214,7 +214,7 @@ class TestPyMemoryView(CPyExtTestCase):
     )
 
     # Test creating memoryview on top of a pointer that is in fact a managed unicode object wrapper
-    test_memoryview_frommemory_unicode_wrapper = CPyExtFunction(
+    ignore_test_memoryview_frommemory_unicode_wrapper = CPyExtFunction(
         lambda args: (memoryview(args[0].encode('utf-32')), 4),
         lambda: (
             ("asdf",),
@@ -323,7 +323,7 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
-    test_memoryview_slice = CPyExtFunction(
+    ignored_test_memoryview_slice = CPyExtFunction(
         lambda args: bytes((5, 6, 255, 128, 99))[args[0]][args[1]][args[2]],
         lambda: list(itertools.product(slices, slices, range(-2, 5))),
         code='''

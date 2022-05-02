@@ -242,6 +242,9 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static String getSourceSectionFileName(SourceSection src) {
+        if (src == null) {
+            return null;
+        }
         String path = src.getSource().getPath();
         if (path == null) {
             return src.getSource().getName();
@@ -554,13 +557,6 @@ public final class PCode extends PythonBuiltinObject {
 
     public boolean takesVarKeywordArgs() {
         return PCode.takesVarKeywordArgs(getFlags());
-    }
-
-    private Signature getSignature() {
-        if (signature == null) {
-            initializeSignature(getRootCallTarget());
-        }
-        return signature;
     }
 
     @TruffleBoundary

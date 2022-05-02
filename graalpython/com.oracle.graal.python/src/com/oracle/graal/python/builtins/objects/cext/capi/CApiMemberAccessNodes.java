@@ -512,12 +512,11 @@ public class CApiMemberAccessNodes {
                 Object nativeValue;
                 if (toNativeNode != null) {
                     PythonContext context = getContext();
-                    CApiContext cApiContext = context.getCApiContext();
                     // The conversion to a native primitive may call arbitrary user code. So we need
                     // to prepare an indirect call.
                     Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
-                        nativeValue = toNativeNode.execute(cApiContext, newValue);
+                        nativeValue = toNativeNode.execute(newValue);
                     } catch (PException e) {
                         /*
                          * Special case for T_LONG, T_ULONG, T_PYSSIZET: if conversion raises an

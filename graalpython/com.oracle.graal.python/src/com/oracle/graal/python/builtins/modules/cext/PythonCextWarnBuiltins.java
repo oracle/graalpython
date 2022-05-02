@@ -40,55 +40,31 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnBuiltinNode;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextWarnBuiltins extends PythonBuiltins {
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextWarnBuiltinsFactory.getFactories();
-    }
+public final class PythonCextWarnBuiltins {
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "_PyErr_Warn", minNumOfPositionalArgs = 4)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Py_ssize_t, PyObject}, call = Ignored)
     @GenerateNodeFactory
-    abstract static class PyErrWarnNode extends PythonQuaternaryBuiltinNode {
+    abstract static class _PyTruffleErr_Warn extends CApiQuaternaryBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object warn(VirtualFrame frame, Object message, Object category, long stackLevel, Object source,
-                        @Cached WarnBuiltinNode warnNode,
-                        @Cached CExtNodes.TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                // TODO: pass source again once we update to newer lib-python
-                warnNode.execute(frame, getCore().lookupBuiltinModule(T__WARNINGS), message, category, (int) stackLevel, PNone.NONE);
-                return PNone.NONE;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return getContext().getNativeNull();
-            }
+        Object warn(Object message, Object category, long stackLevel, @SuppressWarnings("unused") Object source,
+                        @Cached WarnBuiltinNode warnNode) {
+            // TODO: pass source again once we update to newer lib-python
+            warnNode.execute(null, getCore().lookupBuiltinModule(T__WARNINGS), message, category, (int) stackLevel, PNone.NONE);
+            return PNone.NONE;
         }
     }
 }

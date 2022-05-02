@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toLower;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toUpper;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DECODE;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -214,7 +216,7 @@ public class BytesBuiltins extends PythonBuiltins {
         throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
-    public static CodingErrorAction toCodingErrorAction(TruffleString errors, PythonBuiltinBaseNode n, TruffleString.EqualNode eqNode) {
+    public static CodingErrorAction toCodingErrorAction(TruffleString errors, CApiBuiltinNode n, TruffleString.EqualNode eqNode) {
         // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
         CodingErrorAction action = toCodingErrorAction(errors, eqNode);
         if (action != null) {
@@ -319,7 +321,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object decode(VirtualFrame frame, PBytesLike self, TruffleString encoding, TruffleString errors,
+        public Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached IsInstanceNode isInstanceNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
@@ -2272,6 +2274,11 @@ public class BytesBuiltins extends PythonBuiltins {
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
+        }
+
+        @Fallback
+        Object strip(Object self, Object object) {
+            throw raise(SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
         }
 
         int mod() {

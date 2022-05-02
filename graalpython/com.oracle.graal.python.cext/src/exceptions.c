@@ -42,10 +42,8 @@
 
 #include <pyerrors.h>
 
-PyTypeObject _PyExc_BaseException = PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
-PyTypeObject _PyExc_StopIteration = PY_TRUFFLE_TYPE("StopIteration", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyStopIterationObject));
 
-#define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(__EXC_NAME__, SRC_CS)))
+#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*) GraalPyTruffle_Type(truffleString(__EXC_NAME__)))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;
@@ -187,27 +185,3 @@ void initialize_exceptions() {
     PyExc_ResourceWarning = PY_EXCEPTION("ResourceWarning");
 }
 
-
-int PyException_SetTraceback(PyObject *self, PyObject *tb) {
-    PyObject* result = UPCALL_O(native_to_java(self), polyglot_from_string("with_traceback", SRC_CS), native_to_java(tb));
-    if (result == NULL) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
-UPCALL_ID(PyException_SetCause);
-void PyException_SetCause(PyObject *self, PyObject *cause) {
-	UPCALL_CEXT_VOID(_jls_PyException_SetCause, native_to_java(self), native_to_java(cause));
-}
-
-UPCALL_ID(PyException_GetContext);
-PyObject * PyException_GetContext(PyObject *self) {
-    return UPCALL_CEXT_O(_jls_PyException_GetContext, native_to_java(self));
-}
-
-UPCALL_ID(PyException_SetContext);
-void PyException_SetContext(PyObject *self, PyObject *context) {
-    UPCALL_CEXT_VOID(_jls_PyException_SetContext, native_to_java(self), native_to_java(context));
-}

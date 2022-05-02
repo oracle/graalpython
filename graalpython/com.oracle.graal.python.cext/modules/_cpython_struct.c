@@ -1307,7 +1307,6 @@ align(Py_ssize_t size, char c, const formatdef *e)
 static int
 prepare_s(PyStructObject *self)
 {
-	self = native_pointer_to_java(self);
     const formatdef *f;
     const formatdef *e;
     formatcode *codes;
@@ -1317,7 +1316,7 @@ prepare_s(PyStructObject *self)
     char c;
     Py_ssize_t size, len, num, itemsize;
     size_t ncodes;
-    PyObject* self_format = native_pointer_to_java(self->s_format);
+    PyObject* self_format = self->s_format;
 
     _structmodulestate *state = get_struct_state_structinst(self);
 
@@ -1661,7 +1660,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
                      buffer->len);
         return NULL;
     }
-    return s_unpack_internal(self, (char*)native_pointer_to_java(buffer->buf) + offset, state);
+    return s_unpack_internal(self, (char*)buffer->buf + offset, state);
 }
 
 

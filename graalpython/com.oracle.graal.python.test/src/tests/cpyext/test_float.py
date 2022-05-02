@@ -58,13 +58,7 @@ def _reference_asdouble(args):
     n = args[0]
     if isinstance(n, float):
         return n
-    try:
-        return float(n)
-    except:
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            return -1.0
+    return float(n)
 
 
 class DummyNonFloat():

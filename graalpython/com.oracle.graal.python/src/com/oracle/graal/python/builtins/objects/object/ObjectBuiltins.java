@@ -775,29 +775,28 @@ public class ObjectBuiltins extends PythonBuiltins {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
         @CompilationFinal private boolean seenNonBoolean = false;
 
-        static BinaryComparisonNode createOp(TruffleString op) {
-            switch (op.toJavaStringUncached()) {
-                case "<":
+        static BinaryComparisonNode createOp(int op) {
+            switch (op) {
+                case 0:
                     return BinaryComparisonNodeFactory.LtNodeGen.create();
-                case ">":
+                case 4:
                     return BinaryComparisonNodeFactory.GtNodeGen.create();
-                case "==":
+                case 2:
                     return BinaryComparisonNodeFactory.EqNodeGen.create();
-                case ">=":
+                case 5:
                     return BinaryComparisonNodeFactory.GeNodeGen.create();
-                case "<=":
+                case 1:
                     return BinaryComparisonNodeFactory.LeNodeGen.create();
-                case "<>":
-                case "!=":
+                case 3:
                     return BinaryComparisonNodeFactory.NeNodeGen.create();
+                default:
+                    throw new RuntimeException("unexpected operation: " + op);
             }
-            throw new RuntimeException("unexpected operation: " + op);
         }
 
-        @Specialization(guards = "stringEquals(op, cachedOp, equalNode)", limit = "NO_SLOW_PATH")
-        boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") TruffleString op,
-                        @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode,
-                        @SuppressWarnings("unused") @Cached("op") TruffleString cachedOp,
+        @Specialization(guards = "op == cachedOp", limit = "NO_SLOW_PATH")
+        boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
+                        @SuppressWarnings("unused") @Cached("op") int cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
             if (!seenNonBoolean) {

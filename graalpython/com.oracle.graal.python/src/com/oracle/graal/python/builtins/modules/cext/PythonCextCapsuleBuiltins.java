@@ -44,66 +44,48 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleIsValidNode.PyCapsuleIsValid;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsule_IsValid.PyCapsuleIsValid;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INVALID_PY_CAPSULE_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.PY_CAPSULE_IMPORT_S_IS_NOT_VALID;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
-
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextCapsuleBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
+public final class PythonCextCapsuleBuiltins {
 
     public abstract static class NameMatchesNode extends Node {
         abstract boolean execute(Object name1, Object name2);
 
         @Specialization(guards = "ignoredName2 == null")
-        static boolean common(PNone ignoredName1, Object ignoredName2) {
+        static boolean common(@SuppressWarnings("unused") PNone ignoredName1, @SuppressWarnings("unused") Object ignoredName2) {
             return true;
         }
 
@@ -137,33 +119,23 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor)
-    @Builtin(name = "PyCapsule_New", maxNumOfPositionalArgs = 3, minNumOfPositionalArgs = 3)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleNewNode extends PythonTernaryBuiltinNode {
+    public abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
         public Object doit(Object pointer, Object name, Object destructor,
-                        @Cached CExtNodes.ToNewRefNode toSulongNode,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (interopLibrary.isNull(pointer)) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
-                }
-                Object n = interopLibrary.isNull(name) ? null : name;
-                PyCapsule capsule = factory().createCapsule(pointer, n, destructor);
-                return toSulongNode.execute(capsule);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toSulongNode.execute(getContext().getNativeNull());
+                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
+            if (interopLibrary.isNull(pointer)) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
             }
+            Object n = interopLibrary.isNull(name) ? null : name;
+            return factory().createCapsule(pointer, n, destructor);
         }
     }
 
-    // PyCapsule_IsValid(PyObject *o, const char *name)
-    @Builtin(name = "PyCapsule_IsValid", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleIsValidNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         public static int PyCapsuleIsValid(PyCapsule o, TruffleString name,
                         @Cached NameMatchesNode nameMatchesNode) {
@@ -177,195 +149,131 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo, Object ignoredname) {
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
             return 0;
         }
     }
 
-    // PyCapsule_GetPointer(PyObject *o, const char *name)
-    @Builtin(name = "PyCapsule_GetPointer", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleGetPointerNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         public Object doit(PyCapsule o, Object name,
-                        @Cached NameMatchesNode nameMatchesNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-                }
-                if (!nameMatchesNode.execute(name, o.getName())) {
-                    throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
-                }
-                return o.getPointer();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
+                        @Cached NameMatchesNode nameMatchesNode) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
             }
+            if (!nameMatchesNode.execute(name, o.getName())) {
+                throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
+            }
+            return o.getPointer();
         }
 
         @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo, Object ignoredname) {
-            try {
-                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-            } catch (PException e) {
-                CExtNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
-    // PyCapsule_GetName(PyObject *o)
-    @Builtin(name = "PyCapsule_GetName", maxNumOfPositionalArgs = 1, minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleGetNameNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object doit(PyCapsule o,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
-                }
-                if (o.getName() == null) {
-                    return getContext().getNativeNull();
-                }
-                if (o.getName() instanceof TruffleString) {
-                    return new CArrayWrappers.CStringWrapper((TruffleString) o.getName());
-                }
-                return o.getName();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
-        }
-
-        @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo) {
-            try {
+        public Object doit(PyCapsule o) {
+            if (o.getPointer() == null) {
                 throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
-            } catch (PException e) {
-                CExtNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(e);
-                return getContext().getNativeNull();
             }
-        }
-    }
-
-    // PyCapsule_GetDestructor(PyObject *o)
-    @Builtin(name = "PyCapsule_GetDestructor", maxNumOfPositionalArgs = 1, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class PyCapsuleGetDestructorNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object doit(PyCapsule o,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
-                }
-                if (o.getDestructor() == null) {
-                    return getContext().getNativeNull();
-                }
-                return o.getDestructor();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
+            if (o.getName() == null) {
+                return getNULL();
             }
+            if (o.getName() instanceof TruffleString) {
+                return new CArrayWrappers.CStringWrapper((TruffleString) o.getName());
+            }
+            return o.getName();
         }
 
         @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo) {
-            try {
-                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-            } catch (PException e) {
-                CExtNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object doit(@SuppressWarnings("unused") Object o) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
         }
     }
 
-    // PyCapsule_GetContext(PyObject *o)
-    @Builtin(name = "PyCapsule_GetContext", maxNumOfPositionalArgs = 1, minNumOfPositionalArgs = 1)
+    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleGetContextNode extends PythonUnaryBuiltinNode {
+    public abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
         @Specialization
-        public Object doit(PyCapsule o,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
-                }
-                if (o.getContext() == null) {
-                    return getContext().getNativeNull();
-                }
-                return o.getContext();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
+        public Object doit(PyCapsule o) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
             }
+            if (o.getDestructor() == null) {
+                return getNULL();
+            }
+            return o.getDestructor();
         }
 
         @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo) {
-            try {
-                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-            } catch (PException e) {
-                CExtNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(e);
-                return getContext().getNativeNull();
-            }
+        public Object doit(@SuppressWarnings("unused") Object o) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
-    // PyCapsule_SetPointer(PyObject *o, void *pointer)
-    @Builtin(name = "PyCapsule_SetPointer", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleSetPointerNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
-        public int doit(Object obj, Object pointer,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object p = asPythonObjectNode.execute(obj);
-                if (!(p instanceof PyCapsule)) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
-                }
-                if (interopLibrary.isNull(pointer)) {
-                    throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
-                }
-
-                PyCapsule o = (PyCapsule) p;
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
-                }
-
-                o.setPointer(pointer);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+        public Object doit(PyCapsule o) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
             }
+            if (o.getContext() == null) {
+                return getNULL();
+            }
+            return o.getContext();
+        }
+
+        @Fallback
+        public Object doit(@SuppressWarnings("unused") Object o) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
-    // PyCapsule_SetName(PyObject *o, const char *name)
-    @Builtin(name = "PyCapsule_SetName", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleSetNameNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
+        @Specialization
+        public int doit(PyCapsule o, Object pointer,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
+            if (interopLibrary.isNull(pointer)) {
+                throw raise(ValueError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID);
+            }
+
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
+            }
+
+            o.setPointer(pointer);
+            return 0;
+        }
+
+        @Fallback
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @GenerateNodeFactory
+    public abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
         public int doit(PyCapsule o, TruffleString name,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
-                }
-                Object n = lib.isNull(name) ? null : name;
-                o.setName(n);
-                return 0;
-
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
             }
+            Object n = lib.isNull(name) ? null : name;
+            o.setName(n);
+            return 0;
         }
 
         @Specialization(guards = "isNoValue(name)")
@@ -384,156 +292,92 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object doit(VirtualFrame ignoredFrame, Object ignoredo, Object ignored) {
-            try {
-                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
-            } catch (PException e) {
-                CExtNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(e);
-                return -1;
-            }
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
         }
     }
 
-    // PyCapsule_SetDestructor(PyObject *o, PyCapsule_Destructor destructor)
-    @Builtin(name = "PyCapsule_SetDestructor", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleSetDestructorNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
         @Specialization
-        public int doit(Object obj, Object destructor,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object p = asPythonObjectNode.execute(obj);
-                if (!(p instanceof PyCapsule)) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
-                }
-                PyCapsule o = (PyCapsule) p;
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
-                }
-                o.setDestructor(destructor);
-                return 0;
-
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+        public int doit(PyCapsule o, Object destructor) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
             }
+            o.setDestructor(destructor);
+            return 0;
+        }
+
+        @Fallback
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
         }
     }
 
-    // PyCapsule_SetContext(PyObject *o, void *context)
-    @Builtin(name = "PyCapsule_SetContext", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleSetContextNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
-        public int doit(Object obj, Object context,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                Object p = asPythonObjectNode.execute(obj);
-                if (!(p instanceof PyCapsule)) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
-                }
-                PyCapsule o = (PyCapsule) p;
-                if (o.getPointer() == null) {
-                    throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
-                }
-                o.setContext(context);
-                return 0;
-
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
+        public int doit(PyCapsule o, Object context) {
+            if (o.getPointer() == null) {
+                throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
             }
+            o.setContext(context);
+            return 0;
+        }
+
+        @Fallback
+        public Object doit(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
         }
     }
 
     static final TruffleString dotChar = tsLiteral(".");
 
-    // PyCapsule_Import(const char *name, int no_block)
-    @Builtin(name = "PyCapsule_Import", maxNumOfPositionalArgs = 2, minNumOfPositionalArgs = 2)
+    @CApiBuiltin(ret = Pointer, args = {ConstCharPtrAsTruffleString, Int}, call = Direct)
     @GenerateNodeFactory
-    public abstract static class PyCapsuleImportNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         public Object doit(TruffleString name, int noBlock,
                         @Cached NameMatchesNode nameMatchesNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                TruffleString trace = name;
-                Object object = null;
-                while (trace != null) {
-                    int traceLen = codePointLengthNode.execute(trace, TS_ENCODING);
-                    int dotIdx = indexOfStringNode.execute(trace, dotChar, 0, traceLen, TS_ENCODING);
-                    TruffleString dot = null;
-                    if (dotIdx >= 0) {
-                        dot = substringNode.execute(trace, dotIdx + 1, traceLen - dotIdx - 1, TS_ENCODING, false);
-                        trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
-                    }
-                    if (object == null) {
-                        if (noBlock == 1) {
-                            // object = PyImport_ImportModuleNoBlock(trace);
-                            throw raise(SystemError, NOT_IMPLEMENTED);
-                        } else {
-                            object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
-                            if (object == PNone.NO_VALUE) {
-                                throw raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
-                            }
-                        }
+                        @Cached ReadAttributeFromObjectNode getAttrNode) {
+            TruffleString trace = name;
+            Object object = null;
+            while (trace != null) {
+                int traceLen = codePointLengthNode.execute(trace, TS_ENCODING);
+                int dotIdx = indexOfStringNode.execute(trace, dotChar, 0, traceLen, TS_ENCODING);
+                TruffleString dot = null;
+                if (dotIdx >= 0) {
+                    dot = substringNode.execute(trace, dotIdx + 1, traceLen - dotIdx - 1, TS_ENCODING, false);
+                    trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
+                }
+                if (object == null) {
+                    if (noBlock == 1) {
+                        // object = PyImport_ImportModuleNoBlock(trace);
+                        throw raise(SystemError, NOT_IMPLEMENTED);
                     } else {
-                        object = getAttrNode.execute(object, trace);
+                        object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
+                        if (object == PNone.NO_VALUE) {
+                            throw raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
+                        }
                     }
-                    trace = dot;
-                }
-
-                /* compare attribute name to module.name by hand */
-                PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
-                if (capsule != null && PyCapsuleIsValid(capsule, name, nameMatchesNode) == 1) {
-                    return capsule.getPointer();
                 } else {
-                    throw raise(AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
+                    object = getAttrNode.execute(object, trace);
                 }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
-        }
-    }
-
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-
-        public static TruffleString getNameAsTruffleString(Object name,
-                        CastToTruffleStringNode cast,
-                        CExtNodes.FromCharPointerNode fromCharPtr) {
-            if (name == null) {
-                return null;
+                trace = dot;
             }
 
-            if (name instanceof TruffleString) {
-                return (TruffleString) name;
-            }
-            return cast.execute(fromCharPtr.execute(name));
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public static TruffleString repr(PyCapsule self,
-                        @Cached CastToTruffleStringNode cast,
-                        @Cached CExtNodes.FromCharPointerNode fromCharPtr) {
-            String quote, n;
-            if (self.getName() != null) {
-                quote = "\"";
-                n = getNameAsTruffleString(self.getName(), cast, fromCharPtr).toJavaStringUncached();
+            /* compare attribute name to module.name by hand */
+            PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
+            if (capsule != null && PyCapsuleIsValid(capsule, name, nameMatchesNode) == 1) {
+                return capsule.getPointer();
             } else {
-                quote = "";
-                n = "NULL";
+                throw raise(AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
             }
-            return tsLiteral(String.format("<capsule object %s%s%s at %x>", quote, n, quote, self.hashCode()));
         }
     }
 }

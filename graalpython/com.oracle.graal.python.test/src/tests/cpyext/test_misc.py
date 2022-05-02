@@ -197,7 +197,7 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PointerEquality_Primitive = CPyExtFunction(
+    ignored_test_PointerEquality_Primitive = CPyExtFunction(
         lambda args: True,
         lambda: (
             (True, lambda arg0, *args: arg0),
@@ -278,7 +278,7 @@ class TestMisc(CPyExtTestCase):
 
             // reset val's refcnt to X
             Py_DECREF(val);
-
+            
             return val_refcnt == Py_REFCNT(val) ? Py_True : Py_False;
         }
         """,

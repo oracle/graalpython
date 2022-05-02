@@ -56,6 +56,7 @@ public final class PythonModule extends PythonObject {
      * multi-phase extension module initialization mechanism.
      */
     private Object nativeModuleDef;
+    private Object nativeModuleState;
 
     private PythonBuiltins builtins;
 
@@ -118,4 +119,13 @@ public final class PythonModule extends PythonObject {
     public void setNativeModuleDef(Object nativeModuleDef) {
         this.nativeModuleDef = nativeModuleDef;
     }
+
+    public Object getNativeModuleState() {
+        return nativeModuleState;
+    }
+
+    public void setNativeModuleState(Object nativeModuleState) {
+        this.nativeModuleState = nativeModuleState;
+    }
+
 }

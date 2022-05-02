@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -76,8 +77,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
@@ -88,6 +91,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class CExtContext {
+
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
     public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
         @Override
@@ -276,6 +281,21 @@ public abstract class CExtContext {
         return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
     }
 
+    private static boolean moduleMatches(String name, String[] modules) {
+        for (String module : modules) {
+            module = module.trim();
+            if (!module.isEmpty()) {
+                if (name.equals(module)) {
+                    return true;
+                }
+                if (name.length() > module.length() && name.startsWith(module) && name.charAt(module.length()) == '.') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * This method loads a C extension module (C API or HPy API) and will initialize the
      * corresponding native contexts if necessary.
@@ -298,10 +318,30 @@ public abstract class CExtContext {
     @TruffleBoundary
     public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode, HPyCheckFunctionResultNode checkHPyResultNode)
                     throws IOException, ApiInitException, ImportException {
+
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        Object llvmLibrary = loadLLVMLibrary(location, context, spec.name, spec.path);
+        GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
+        GraalHPyContext.loadJNIBackend();
+        Object llvmLibrary;
 
+        String nativeModuleOption = context.getOption(PythonOptions.NativeModules);
+        String name = spec.name.toJavaStringUncached();
+        if (!isForcedLLVM(name) && (nativeModuleOption.equals("all") || moduleMatches(name, nativeModuleOption.split(",")))) {
+            LOGGER.config("loading " + spec.path + " as native");
+            llvmLibrary = GraalHPyContext.evalNFI(context, "load \"" + spec.path + "\"", "load " + spec.name);
+        } else {
+            llvmLibrary = loadLLVMLibrary(location, context, spec.name, spec.path);
+            try {
+                if (InteropLibrary.getUncached(llvmLibrary).getLanguage(llvmLibrary).toString().startsWith("class com.oracle.truffle.nfi")) {
+                    LOGGER.config("loading " + spec.path + " as native (no bitcode found)");
+                } else {
+                    LOGGER.config("loading " + spec.path + " as llvm bitcode");
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
         InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
 
         // Now, try to detect the C extension's API by looking for the appropriate init
@@ -309,13 +349,24 @@ public abstract class CExtContext {
         TruffleString hpyInitFuncName = spec.getInitFunctionName(true);
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
-                GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
-                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
+                try {
+                    // try reading - NFI says "yes" to all isMemberExisting
+                    llvmInteropLib.readMember(llvmLibrary, hpyInitFuncName.toJavaStringUncached());
+
+                    GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
+                    return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
+                } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+                    // not hpy...
+                }
             }
             return cApiContext.initCApiModule(location, llvmLibrary, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
+    }
+
+    private static boolean isForcedLLVM(String name) {
+        return "_mmap".equals(name);
     }
 
     protected static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {

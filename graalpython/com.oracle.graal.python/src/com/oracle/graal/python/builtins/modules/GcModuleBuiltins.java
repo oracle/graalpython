@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -82,6 +83,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             }
             // collect some weak references now
             PythonContext.triggerAsyncActions(this);
+            CApiTransitions.pollReferenceQueue();
             return 0;
         }
     }

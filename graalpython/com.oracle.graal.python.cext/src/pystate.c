@@ -46,9 +46,8 @@ PyObject * PyThreadState_GetDict() {
 }
 
 PyThreadState *
-_PyThreadState_UncheckedGet(void)
-{
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+_PyThreadState_UncheckedGet(void) {
+    return GraalPyThreadState_Get();
 }
 
 PyThreadState * PyThreadState_Get() {
@@ -61,10 +60,13 @@ void PyThreadState_Clear(PyThreadState *tstate) {
 void PyThreadState_DeleteCurrent(void) {
 }
 
-int64_t
-PyInterpreterState_GetID(PyInterpreterState *interp)
+int64_t PyInterpreterState_GetID(PyInterpreterState *interp)
 {
     return 0;
+}
+
+int64_t PyInterpreterState_GetIDFromThreadState(PyThreadState *state) {
+	return 0;
 }
 
 PyInterpreterState* PyInterpreterState_Main()
@@ -73,25 +75,11 @@ PyInterpreterState* PyInterpreterState_Main()
     return NULL;
 }
 
-typedef PyGILState_STATE (*py_gil_state_ensure_fun_t)();
-UPCALL_TYPED_ID(PyGILState_Ensure, py_gil_state_ensure_fun_t);
-PyGILState_STATE PyGILState_Ensure() {
-    return _jls_PyGILState_Ensure();
-}
-
-typedef void (*py_gil_state_release_fun_t)(PyGILState_STATE);
-UPCALL_TYPED_ID(PyGILState_Release, py_gil_state_release_fun_t);
-void PyGILState_Release(PyGILState_STATE oldstate) {
-    _jls_PyGILState_Release(oldstate);
-}
-
 PyThreadState* PyGILState_GetThisThreadState(void) {
     // TODO this should return NULL when called from a thread that is not known to python
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+    return GraalPyThreadState_Get();
 }
 
-typedef PyObject* (*find_module_fun_t)(long index);
-UPCALL_TYPED_ID(PyState_FindModule, find_module_fun_t);
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
     Py_ssize_t index = module->m_base.m_index;
     if (module->m_slots) {
@@ -99,7 +87,7 @@ PyObject* PyState_FindModule(struct PyModuleDef* module) {
     } else if (index == 0) {
         return NULL;
     } else {
-        return _jls_PyState_FindModule(index);
+        return GraalPyTruffleState_FindModule(index);
     }
 }
 

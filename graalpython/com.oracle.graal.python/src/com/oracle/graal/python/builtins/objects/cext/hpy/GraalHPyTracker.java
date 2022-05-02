@@ -70,10 +70,10 @@ public final class GraalHPyTracker {
         handles = Arrays.copyOf(handles, PythonUtils.multiplyExact(handles.length, 2) - 1);
     }
 
-    public void free(GraalHPyContext nativeContext, HPyCloseHandleNode closeHandleNode) {
+    public void free(HPyCloseHandleNode closeHandleNode) {
         assert cursor <= handles.length;
         for (int i = 0; i < cursor; i++) {
-            closeHandleNode.execute(nativeContext, handles[i]);
+            closeHandleNode.execute(handles[i]);
         }
         cursor = 0;
     }

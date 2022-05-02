@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeOtherNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -208,7 +209,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                     return kwDefaults[i].getValue();
                 }
             }
-            return toSulongNode.execute(object);
+            return createFunctionWrapper(object, toSulongNode);
         }
 
         @Specialization(guards = {"eq(J_ML_METH, key)"}, replaces = {"getMethFromBuiltinMethod", "getMethFromBuiltinFunction"})
@@ -314,6 +315,22 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             writeAttrToDynamicObjectNode.execute(object, T___DOC__, fromCharPointerNode.execute(value));
             writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return isNative();
+    }
+
+    @ExportMessage
+    long asPointer() {
+        return getNativePointer();
+    }
+
+    @ExportMessage
+    protected void toNative(
+                    @Cached ToNativeOtherNode toNativeNode) {
+        toNativeNode.execute(this, NativeCAPISymbol.FUN_PYTRUFFLE_ALLOCATE_METHOD_DEF);
     }
 
     @ExportMessage
