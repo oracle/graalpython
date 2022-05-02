@@ -63,7 +63,7 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
 abstract class AbstractParser {
     protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
     protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
-    
+
     /**
      * Corresponds to TARGET_TYPES in CPython
      */
@@ -72,8 +72,7 @@ abstract class AbstractParser {
         DEL_TARGETS,
         FOR_TARGETS
     };
-    
-    
+
     /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
      */
@@ -150,11 +149,11 @@ abstract class AbstractParser {
             }
             if (this.fill == 0) {
                 raiseSyntaxError("error at start before reading any input");
-            } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER ) {
+            } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER) {
                 // TODO we should handle this in better way. See cpython
                 raiseSyntaxError("unexpected EOF while parsing");
             } else {
-                // TODO check indentation errors 
+                // TODO check indentation errors
                 raiseSyntaxError("invalid syntax");
             }
         }
@@ -795,7 +794,7 @@ abstract class AbstractParser {
             return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
         }
     }
-    
+
     private ExprTy visitContainer(ExprTy[] elements, TargetsType type) {
         if (elements == null) {
             return null;
@@ -809,16 +808,16 @@ abstract class AbstractParser {
         }
         return null;
     }
-    
-    private ExprTy getInvalidTarget (ExprTy expr, TargetsType type) {
+
+    private ExprTy getInvalidTarget(ExprTy expr, TargetsType type) {
         if (expr == null) {
             return null;
         }
         if (expr instanceof ExprTy.List) {
-            return visitContainer(((ExprTy.List)expr).elements, type);
+            return visitContainer(((ExprTy.List) expr).elements, type);
         }
         if (expr instanceof ExprTy.Tuple) {
-            return visitContainer(((ExprTy.Tuple)expr).elements, type);
+            return visitContainer(((ExprTy.Tuple) expr).elements, type);
         }
         if (expr instanceof ExprTy.Starred) {
             if (type == TargetsType.DEL_TARGETS) {
@@ -836,27 +835,26 @@ abstract class AbstractParser {
             }
             return expr;
         }
-        if (expr instanceof ExprTy.Name 
-                || expr instanceof ExprTy.Subscript
-                || expr instanceof ExprTy.Attribute) {
+        if (expr instanceof ExprTy.Name || expr instanceof ExprTy.Subscript || expr instanceof ExprTy.Attribute) {
             return null;
         }
         return expr;
     }
-    
+
     /**
      * RAISE_SYNTAX_ERROR_INVALID_TARGET
      */
     SSTNode raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {
         ExprTy invalidTarget = getInvalidTarget(expr, type);
         if (invalidTarget != null) {
-            String message = (type == TargetsType.STAR_TARGETS || type == TargetsType.FOR_TARGETS) 
-                    ? "cannot assign to %s" : "cannot delete %s";
+            String message = (type == TargetsType.STAR_TARGETS || type == TargetsType.FOR_TARGETS)
+                            ? "cannot assign to %s"
+                            : "cannot delete %s";
             raiseSyntaxErrorKnownLocation(invalidTarget, message, getExprName(invalidTarget));
         }
         return raiseSyntaxError("invalid syntax");
     }
-    
+
     /**
      * RAISE_SYNTAX_ERROR
      */
@@ -884,7 +882,7 @@ abstract class AbstractParser {
         errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
         return null;
     }
-    
+
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
@@ -895,17 +893,17 @@ abstract class AbstractParser {
     }
 
     /**
-     * CHECK
-     * Simple check whether the node is not null.
-     * @return 
+     * CHECK Simple check whether the node is not null.
+     * 
+     * @return
      */
-    <T>T check (T node) {
+    <T> T check(T node) {
         if (node == null) {
             errorIndicator = true;
         }
         return node;
     }
-    
+
     @SuppressWarnings("unused")
     // TODO implement the check
     final <T> T checkVersion(int version, String msg, T node) {

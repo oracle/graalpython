@@ -545,7 +545,7 @@ public class NodeFactoryImp implements NodeFactory {
     public ExprTy createAwait(ExprTy value, int startOffset, int endOffset) {
         return new ExprTy.Await(value, startOffset, endOffset);
     }
-    
+
     @Override
     public ExprTy.NamedExpr createNamedExp(ExprTy target, ExprTy value, int startOffset, int endOffset) {
         return new ExprTy.NamedExpr(target, value, startOffset, endOffset);
