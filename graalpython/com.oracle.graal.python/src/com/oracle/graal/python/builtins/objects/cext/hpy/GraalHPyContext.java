@@ -168,6 +168,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharsetAndSizeAndErrors;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeInternFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeReadChar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
@@ -660,6 +661,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
         CTX_UNICODE_DECODEASCII("ctx_Unicode_DecodeASCII"),
         CTX_UNICODE_DECODELATIN1("ctx_Unicode_DecodeLatin1"),
+        CTX_UNICODE_INTERNFROMSTRING("ctx_Unicode_InternFromString"),
         CTX_UNICODE_DECODEFSDEFAULT("ctx_Unicode_DecodeFSDefault"),
         CTX_UNICODE_DECODEFSDEFAULTANDSIZE("ctx_Unicode_DecodeFSDefaultAndSize"),
         CTX_UNICODE_ENCODEFSDEFAULT("ctx_Unicode_EncodeFSDefault"),
@@ -2223,6 +2225,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
 
         members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();
+
+        members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
 
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {

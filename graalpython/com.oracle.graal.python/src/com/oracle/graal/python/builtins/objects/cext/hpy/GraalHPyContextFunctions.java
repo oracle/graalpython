@@ -129,6 +129,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -3303,6 +3305,38 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object dict = asDict.execute(context, arguments[1]);
                 return asHandleNode.execute(context, keysNode.execute((PDict) dict));
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeInternFromString extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached InternStringNode internStringNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 2);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object string = fromCharPointerNode.execute(arguments[1]);
+                PString interned = internStringNode.execute(string);
+                if (interned == null) {
+                    try {
+                        throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_INTERN_P, string);
+                    } catch (PException e) {
+                        transformExceptionToNativeNode.execute(context, e);
+                        return GraalHPyHandle.NULL_HANDLE;
+                    }
+                }
+                return asHandleNode.execute(context, interned);
             } finally {
                 gil.release(mustRelease);
             }
