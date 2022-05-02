@@ -130,7 +130,8 @@ import com.oracle.truffle.api.source.SourceSection;
                 dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
-                fileTypeDetectors = PythonFileDetector.class)
+                fileTypeDetectors = PythonFileDetector.class, //
+                website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,
                 StandardTags.StatementTag.class,

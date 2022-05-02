@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,14 +87,30 @@ public final class GraalHPyHandle implements TruffleObject {
     private int id;
 
     private GraalHPyHandle() {
-        this.delegate = NULL_HANDLE_DELEGATE;
-        this.id = 0;
+        this(NULL_HANDLE_DELEGATE, 0);
     }
 
-    GraalHPyHandle(Object delegate) {
+    private GraalHPyHandle(Object delegate) {
+        this(delegate, UNINITIALIZED);
+    }
+
+    private GraalHPyHandle(Object delegate, int id) {
         assert delegate != null : "HPy handles to Java null are not allowed";
+        assert delegate != NULL_HANDLE_DELEGATE || id == 0 : "must not not create more than on HPy_NULL";
         this.delegate = delegate;
-        this.id = UNINITIALIZED;
+        this.id = id;
+    }
+
+    public static GraalHPyHandle create(Object delegate) {
+        return new GraalHPyHandle(delegate);
+    }
+
+    public static GraalHPyHandle createField(Object delegate, int idx) {
+        return new GraalHPyHandle(delegate, idx);
+    }
+
+    public static GraalHPyHandle createGlobal(Object delegate, int idx) {
+        return new GraalHPyHandle(delegate, idx);
     }
 
     /**
@@ -257,6 +273,16 @@ public final class GraalHPyHandle implements TruffleObject {
         if (hpyContext.releaseHPyHandleForObject(id)) {
             id = -id;
         }
+    }
+
+    int getGlobalId() {
+        assert id > 0 : "any HPyGlobal handle already has an id";
+        return id;
+    }
+
+    int getFieldId() {
+        assert id >= 0 : "any HPyField handle already has an id";
+        return id;
     }
 
     public GraalHPyHandle copy() {

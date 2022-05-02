@@ -184,6 +184,10 @@ PyObject * PyLong_FromSize_t(size_t n)  {
 	return PyLong_FromUnsignedLongLong(n);
 }
 
+double PyLong_AsDouble(PyObject *v)  {
+    return (double)PyLong_AsLongLong(v);
+}
+
 UPCALL_ID(PyLong_FromString);
 // partially taken from CPython 3.7.0 "Objects/longobject.c"
 PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {

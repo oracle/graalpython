@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -529,6 +530,16 @@ public abstract class PGuards {
     public static int expectInteger(Object result) throws UnexpectedResultException {
         if (result instanceof Integer) {
             return (Integer) result;
+        }
+        throw new UnexpectedResultException(result);
+    }
+
+    public static int expectInt(Object result) throws UnexpectedResultException, OverflowException {
+        if (result instanceof Integer) {
+            return (Integer) result;
+        }
+        if (result instanceof Long) {
+            return PInt.intValueExact((Long) result);
         }
         throw new UnexpectedResultException(result);
     }

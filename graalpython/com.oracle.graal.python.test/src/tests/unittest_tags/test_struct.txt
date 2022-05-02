@@ -13,6 +13,7 @@
 *graalpython.lib-python.3.test.test_struct.StructTest.test_integers
 *graalpython.lib-python.3.test.test_struct.StructTest.test_isbigendian
 *graalpython.lib-python.3.test.test_struct.StructTest.test_issue29802
+*graalpython.lib-python.3.test.test_struct.StructTest.test_issue35714
 *graalpython.lib-python.3.test.test_struct.StructTest.test_nN_code
 *graalpython.lib-python.3.test.test_struct.StructTest.test_new_features
 *graalpython.lib-python.3.test.test_struct.StructTest.test_p_code

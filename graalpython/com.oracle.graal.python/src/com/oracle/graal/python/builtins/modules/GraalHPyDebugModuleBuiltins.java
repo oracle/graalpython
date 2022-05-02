@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -234,10 +234,13 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         PNone doInt(VirtualFrame frame, Object callback,
                         @Cached PyCallableCheckNode callableCheckNode) {
             GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
-            if (!callableCheckNode.execute(callback)) {
+            if (callback == PNone.NONE) {
+                hpyDebugContext.setOnInvalidHandleCallback(null);
+            } else if (!callableCheckNode.execute(callback)) {
                 throw raise(TypeError, "Expected a callable object");
+            } else {
+                hpyDebugContext.setOnInvalidHandleCallback(callback);
             }
-            hpyDebugContext.setOnInvalidHandleCallback(callback);
             return PNone.NONE;
         }
     }

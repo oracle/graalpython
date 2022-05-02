@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,6 +124,7 @@ public abstract class GraalHPyDef {
 
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
+    public static final HiddenKey TYPE_HPY_IS_PURE = new HiddenKey("hpy_is_pure");
     public static final HiddenKey OBJECT_HPY_NATIVE_SPACE = new HiddenKey("hpy_native_space");
 
     /* enum values of 'HPyDef_Kind' */
@@ -260,6 +261,8 @@ public abstract class GraalHPyDef {
         DESCR_SET(LLVMType.HPyFunc_descrsetfunc),
         DESCR_DELETE(LLVMType.HPyFunc_descrsetfunc),
         DESTROYFUNC(LLVMType.HPyFunc_destroyfunc),
+        TRAVERSE(LLVMType.HPyFunc_traverseproc),
+        DESTRUCTOR(LLVMType.HPyFunc_destructor),
         GETBUFFER(LLVMType.HPyFunc_getbufferproc),
         RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc);
 
@@ -307,14 +310,17 @@ public abstract class GraalHPyDef {
 
     /* type flags according to 'hpytype.h' */
     public static final long _Py_TPFLAGS_HEAPTYPE = (1L << 9);
-    public static final long HPy_TPFLAGS_INTERNAL_PURE = (1L << 8);
     public static final long HPy_TPFLAGS_BASETYPE = (1L << 10);
+    public static final long HPy_TPFLAGS_HAVE_GC = (1L << 14);
     public static final long HPy_TPFLAGS_DEFAULT = _Py_TPFLAGS_HEAPTYPE;
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
         HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
         HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, TypeBuiltins.TYPE_RELEASEBUFFER),
+        HPY_MP_ASS_SUBSCRRIPT(3, HPySlotWrapper.OBJOBJARGPROC, __SETITEM__, __DELITEM__),
+        HPY_MP_LENGTH(4, HPySlotWrapper.LENFUNC, __LEN__),
+        HPY_MP_SUBSCRIPT(5, HPySlotWrapper.BINARYFUNC, __GETITEM__),
         HPY_NB_ABSOLUTE(6, HPySlotWrapper.UNARYFUNC, __ABS__),
         HPY_NB_ADD(7, HPySlotWrapper.BINARYFUNC_L, __ADD__, HPySlotWrapper.BINARYFUNC_R, __RADD__),
         HPY_NB_AND(8, HPySlotWrapper.BINARYFUNC_L, __AND__, HPySlotWrapper.BINARYFUNC_R, __RAND__),
@@ -360,8 +366,10 @@ public abstract class GraalHPyDef {
         HPY_TP_NEW(65, HPySlotWrapper.NULL, __NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, __REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__)),
+        HPY_TP_TRAVERSE(71, HPySlotWrapper.TRAVERSE),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, __MATMUL__, HPySlotWrapper.BINARYFUNC_R, __RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, __IMATMUL__),
+        HPY_TP_FINALIZE(80, HPySlotWrapper.DESTRUCTOR),
         HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC);
 
         /** The corresponding C enum value. */
@@ -395,9 +403,7 @@ public abstract class GraalHPyDef {
             this.attributeKeys = attributeKeys;
             if (attributeKeys.length > 0) {
                 this.signatures = new HPySlotWrapper[attributeKeys.length];
-                for (int i = 0; i < this.signatures.length; i++) {
-                    this.signatures[i] = signature;
-                }
+                Arrays.fill(this.signatures, signature);
             } else {
                 this.signatures = new HPySlotWrapper[]{signature};
             }

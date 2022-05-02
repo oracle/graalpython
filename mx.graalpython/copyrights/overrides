@@ -600,7 +600,6 @@ graalpython/lib-graalpython/modules/hpy/test/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/check_py27_compat.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/conftest.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/support.py,hpy.copyright
-graalpython/lib-graalpython/modules/hpy/test/debug/test_handles.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_argparse.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_00_basic.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_call.py,hpy.copyright

@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -41,7 +41,7 @@ ROOT = py.path.local(__file__).join('..', '..')
 TEST_DIRS = [ROOT / 'test', ROOT / 'test' / 'debug']
 
 # PyPy does NOT import these files using py2
-PY3_ONLY = ['test_support.py', 'test_handles.py']
+PY3_ONLY = ['test_support.py', 'test_handles_invalid.py', 'test_handles_leak.py']
 
 def try_import(name):
     try:

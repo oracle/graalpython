@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,15 +37,15 @@
 // this is defined by HPy_MODINIT
 extern HPyContext *_ctx_for_trampolines;
 
-#define HPyModuleDef_HEAD_INIT NULL
-
 typedef struct {
-    void *dummy; // this is needed because we put a comma after HPyModuleDef_HEAD_INIT :(
-    const char* m_name;
-    const char* m_doc;
-    HPy_ssize_t m_size;
+    const char* name;
+    const char* doc;
+    HPy_ssize_t size;
     cpy_PyMethodDef *legacy_methods;
     HPyDef **defines;   /* points to an array of 'HPyDef *' */
+    /* array with pointers to statically allocated HPyGlobal,
+     * with NULL at the end as a sentinel. */
+    HPyGlobal **globals;
 } HPyModuleDef;
 
 

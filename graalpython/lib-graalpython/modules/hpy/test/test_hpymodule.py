@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,9 +30,9 @@ class TestModule(HPyTest):
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 HPyModuleDef def = {
-                    .m_name = "foo",
-                    .m_doc = "Some doc",
-                    .m_size = -1,
+                    .name = "foo",
+                    .doc = "Some doc",
+                    .size = -1,
                 };
                 return HPyModule_Create(ctx, &def);
             }

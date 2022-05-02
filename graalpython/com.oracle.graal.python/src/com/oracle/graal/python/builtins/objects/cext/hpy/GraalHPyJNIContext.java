@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -117,7 +117,8 @@ final class GraalHPyJNIContext implements TruffleObject {
         FREEFUNC(2),
         GETBUFFERPROC(4),
         RELEASEBUFFERPROC(3),
-        RICHCOMPAREFUNC(4);
+        RICHCOMPAREFUNC(4),
+        DESTRUCTOR(2);
 
         final int arity;
 
@@ -237,6 +238,10 @@ final class GraalHPyJNIContext implements TruffleObject {
                     case RICHCOMPAREFUNC:
                         result = GraalHPyContext.executeRichcomparefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                        break;
+                    case DESTRUCTOR:
+                        GraalHPyContext.executeDestructor(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                        result = 0;
                         break;
                     default:
                         throw CompilerDirectives.shouldNotReachHere();

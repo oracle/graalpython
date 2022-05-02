@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -148,3 +148,50 @@ def test_itertools_cycle():
             break
     assert r == [1,2,3,1,2,3,1,2,3,1,2], r
     assert [x for x in cycle([])] == []
+
+
+def test_class_with_contains():
+    class HasContains():
+        def __contains__(self, x):
+            return True
+    assert 1 in HasContains()
+
+
+def test_class_with_odd_contains():
+    class HasContains():
+        def __contains__(self, x):
+            return 12
+    assert 1 in HasContains()
+
+
+def test_class_with_none_contains():
+    class HasContains():
+        __contains__ = None
+    try:
+        1 in HasContains()
+    except Exception as e:
+        assert type(e) == TypeError, type(e)
+
+
+def test_class_with_iter_no_contains():
+    class HasIter():
+        def __iter__(self):
+            self.i = 0
+            return self
+        def __next__(self):
+            self.i += 1
+            return self.i
+
+    assert 2 in HasIter()
+
+
+def test_class_with_iter_no_contains_no_next():
+    class HasIter():
+        def __iter__(self):
+            self.i = 0
+            return self
+
+    try:
+        2 in HasIter()
+    except Exception as e:
+        assert type(e) is TypeError

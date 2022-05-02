@@ -202,6 +202,7 @@ public final class NFIPosixSupport extends PosixSupport {
         set_blocking("(sint32, sint32):sint32"),
         get_terminal_size("(sint32, [sint32]):sint32"),
         call_kill("(sint64, sint32):sint32"),
+        call_abort("():void"),
         call_waitpid("(sint64, [sint32], sint32):sint64"),
         call_wcoredump("(sint32):sint32"),
         call_wifcontinued("(sint32):sint32"),
@@ -1016,6 +1017,11 @@ public final class NFIPosixSupport extends PosixSupport {
     public boolean wcoredump(int status,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(this, PosixNativeFunction.call_wcoredump, status) != 0;
+    }
+
+    @ExportMessage
+    public void abort(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        invokeNode.call(this, PosixNativeFunction.call_abort);
     }
 
     @ExportMessage
