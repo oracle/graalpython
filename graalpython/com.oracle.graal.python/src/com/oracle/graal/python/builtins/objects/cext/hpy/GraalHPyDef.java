@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
@@ -362,6 +363,7 @@ public abstract class GraalHPyDef {
         HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, __GETITEM__),
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, __LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, __MUL__, __RMUL__),
+        HPY_TP_CALL(50, HPySlotWrapper.NULL, __CALL__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, __INIT__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, __NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, __REPR__),
