@@ -141,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsPrimitive;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyMaybeGetAttrS;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNewException;
@@ -634,6 +635,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
         CTX_GETATTR("ctx_GetAttr"),
         CTX_GETATTR_S("ctx_GetAttr_s"),
+        CTX_MAYBEGETATTR_S("ctx_MaybeGetAttr_s"),
         CTX_HASATTR("ctx_HasAttr"),
         CTX_HASATTR_S("ctx_HasAttr_s"),
         CTX_SETATTR("ctx_SetAttr"),
@@ -2170,6 +2172,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
         members[HPyContextMember.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
         members[HPyContextMember.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
+        members[HPyContextMember.CTX_MAYBEGETATTR_S.ordinal()] = new GraalHPyMaybeGetAttrS();
         members[HPyContextMember.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
         members[HPyContextMember.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
         members[HPyContextMember.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);

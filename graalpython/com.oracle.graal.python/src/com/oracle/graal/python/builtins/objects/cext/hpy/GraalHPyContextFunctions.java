@@ -145,6 +145,7 @@ import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -1713,6 +1714,30 @@ public abstract class GraalHPyContextFunctions {
                     transformExceptionToNativeNode.execute(context, e);
                     return GraalHPyHandle.NULL_HANDLE;
                 }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class GraalHPyMaybeGetAttrS extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
+                Object key = fromCharPointerNode.execute(arguments[2]);
+                return asHandleNode.execute(context, lookupAttr.execute(null, receiver, key));
             } finally {
                 gil.release(mustRelease);
             }
