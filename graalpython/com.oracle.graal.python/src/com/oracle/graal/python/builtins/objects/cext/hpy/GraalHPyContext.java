@@ -567,8 +567,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE("ctx_Type"),
         CTX_TYPECHECK("ctx_TypeCheck", signature(Long, HPy, HPy)),
+        CTX_SETTYPE("ctx_SetType"),
         CTX_TYPE_ISSUBTYPE("ctx_Type_IsSubtype"),
         CTX_TYPE_GETNAME("ctx_Type_GetName"),
+        CTX_TYPE_CHECKSLOT("ctx_Type_CheckSlot"),
         CTX_IS("ctx_Is"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
@@ -663,7 +665,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
         CTX_UNICODE_DECODEASCII("ctx_Unicode_DecodeASCII"),
         CTX_UNICODE_DECODELATIN1("ctx_Unicode_DecodeLatin1"),
+        CTX_UNICODE_FROMENCODEDOBJECT("ctx_Unicode_FromEncodedObject"),
         CTX_UNICODE_INTERNFROMSTRING("ctx_Unicode_InternFromString"),
+        CTX_UNICODE_SUBSTRING("ctx_Unicode_Substring"),
         CTX_UNICODE_DECODEFSDEFAULT("ctx_Unicode_DecodeFSDefault"),
         CTX_UNICODE_DECODEFSDEFAULTANDSIZE("ctx_Unicode_DecodeFSDefaultAndSize"),
         CTX_UNICODE_ENCODEFSDEFAULT("ctx_Unicode_EncodeFSDefault"),
@@ -709,6 +713,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_REENTERPYTHONEXECUTION("ctx_ReenterPythonExecution", signature(Void, HPyThreadState)),
         CTX_GLOBAL_STORE("ctx_Global_Store", signature(Void, _HPyGlobalPtr, HPy)),
         CTX_GLOBAL_LOAD("ctx_Global_Load", signature(Void, HPyGlobal, HPy)),
+        CTX_CONTEXTVAR_NEW("ctx_ContextVar_New"),
+        CTX_CONTEXTVAR_GET("ctx_ContextVar_Get"),
+        CTX_CONTEXTVAR_SET("ctx_ContextVar_Set"),
+        CTX_CAPSULE_NEW("ctx_Capsule_New"),
+        CTX_CAPSULE_GET("ctx_Capsule_Get"),
+        CTX_CAPSULE_ISVALID("ctx_Capsule_IsValid"),
+        CTX_CAPSULE_SET("ctx_Capsule_Set"),
         CTX_DUMP("ctx_Dump");
 
         final String name;
@@ -2047,6 +2058,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         createTypeConstant(members, HPyContextMember.H_TUPLETYPE, context, PythonBuiltinClassType.PTuple);
         createTypeConstant(members, HPyContextMember.H_LISTTYPE, context, PythonBuiltinClassType.PList);
 
+        createTypeConstant(members, HPyContextMember.H_COMPLEXTYPE, context, PythonBuiltinClassType.PComplex);
+        createTypeConstant(members, HPyContextMember.H_BYTESTYPE, context, PythonBuiltinClassType.PBytes);
+        createTypeConstant(members, HPyContextMember.H_MEMORYVIEWTYPE, context, PythonBuiltinClassType.PMemoryView);
+        createTypeConstant(members, HPyContextMember.H_CAPSULETYPE, context, PythonBuiltinClassType.PythonObject); // TODO: proper type
+
         members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
@@ -2226,10 +2242,22 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
         members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
+        members[HPyContextMember.CTX_SETTYPE.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_TYPE_CHECKSLOT.ordinal()] = new GraalHPyDump();
 
         members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();
 
+        members[HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT.ordinal()] = new GraalHPyDump();
         members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
+        members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyDump();
+
+        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CAPSULE_NEW.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CAPSULE_GET.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CAPSULE_ISVALID.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CAPSULE_SET.ordinal()] = new GraalHPyDump();
 
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {

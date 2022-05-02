@@ -1399,6 +1399,70 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 	UPCALL_VOID(ctx_Dump, ctx, h);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(MaybeGetAttr_s)(HPyContext *ctx, HPy obj, const char *name) {
+    return UPCALL_HPY(ctx_MaybeGetAttr_s, ctx, obj, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(SetType)(HPyContext *ctx, HPy obj, HPy type) {
+    return (int) UPCALL_I32(ctx_SetType, ctx, obj, type);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Type_IsSubtype)(HPyContext *ctx, HPy sub, HPy type) {
+    return (int) UPCALL_I32(ctx_Type_IsSubtype, ctx, sub, type);
+}
+
+HPyAPI_STORAGE const char* _HPy_IMPL_NAME(Type_GetName)(HPyContext *ctx, HPy type) {
+    return UPCALL_CHARPTR(ctx_Type_GetName, ctx, type);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_FromEncodedObject)(HPyContext *ctx, HPy obj, const char *encoding, const char *errors) {
+    return UPCALL_HPY(ctx_Unicode_FromEncodedObject, ctx, obj, encoding, errors);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_InternFromString)(HPyContext *ctx, const char *str) {
+    return UPCALL_HPY(ctx_Unicode_InternFromString, ctx, str);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_Substring)(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end) {
+    return UPCALL_HPY(ctx_Unicode_Substring, ctx, obj, start, end);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Dict_Keys)(HPyContext *ctx, HPy h) {
+    return UPCALL_HPY(ctx_Dict_Keys, ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value) {
+    return UPCALL_HPY(ctx_ContextVar_New, ctx, name, default_value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, _HPyPtr result) {
+    return (int) UPCALL_I32(ctx_ContextVar_Get, ctx, context_var, default_value, result);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value) {
+    return UPCALL_HPY(ctx_ContextVar_Set, ctx, context_var, value);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Capsule_New)(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
+    return UPCALL_HPY(ctx_Capsule_New, ctx, pointer, name, destructor);
+}
+
+HPyAPI_STORAGE void *_HPy_IMPL_NAME(Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name) {
+    return UPCALL_HPY(ctx_Capsule_Get, ctx, capsule, key, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *name) {
+    return (int) UPCALL_I32(ctx_Capsule_IsValid, ctx, capsule, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Capsule_Set)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value) {
+    return (int) UPCALL_I32(ctx_Capsule_Set, ctx, capsule, key, value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *expected) {
+    return (int) UPCALL_I32(ctx_Type_CheckSlot, ctx, type, expected);
+}
+
 #undef HPy
 #undef HPyListBuilder
 #undef HPyTupleBuilder
@@ -1498,6 +1562,10 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     COPY(h_UnicodeType);
     COPY(h_TupleType);
     COPY(h_ListType);
+    COPY(h_ComplexType);
+    COPY(h_BytesType);
+    COPY(h_MemoryViewType);
+    COPY(h_CapsuleType);
 #undef COPY
 
 #define HPY_CTX_UPCALL(__fun) { void* v = overrides->__fun; if (v != NULL) native_context->__fun = v; else native_context->__fun = __fun; }
@@ -1652,6 +1720,22 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Unicode_ReadChar);
     HPY_CTX_UPCALL(ctx_Unicode_DecodeLatin1);
     HPY_CTX_UPCALL(ctx_Unicode_DecodeASCII);
+    HPY_CTX_UPCALL(ctx_MaybeGetAttr_s);
+    HPY_CTX_UPCALL(ctx_SetType);
+    HPY_CTX_UPCALL(ctx_Type_IsSubtype);
+    HPY_CTX_UPCALL(ctx_Type_GetName);
+    HPY_CTX_UPCALL(ctx_Unicode_FromEncodedObject);
+    HPY_CTX_UPCALL(ctx_Unicode_InternFromString);
+    HPY_CTX_UPCALL(ctx_Unicode_Substring);
+    HPY_CTX_UPCALL(ctx_Dict_Keys);
+    HPY_CTX_UPCALL(ctx_ContextVar_New);
+    HPY_CTX_UPCALL(ctx_ContextVar_Get);
+    HPY_CTX_UPCALL(ctx_ContextVar_Set);
+    HPY_CTX_UPCALL(ctx_Capsule_New);
+    HPY_CTX_UPCALL(ctx_Capsule_Get);
+    HPY_CTX_UPCALL(ctx_Capsule_IsValid);
+    HPY_CTX_UPCALL(ctx_Capsule_Set);
+    HPY_CTX_UPCALL(ctx_Type_CheckSlot);
 
 #undef HPY_CTX_UPCALL
 
