@@ -5,8 +5,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 
 public class BasicTests extends ParserTestBase {
 
@@ -40,55 +39,55 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("yield from f");
     }
 
-//    @Test
-//    public void moduleDoc01() throws Exception {
-//        checkTreeFromFile();
-//    }
+// @Test
+// public void moduleDoc01() throws Exception {
+// checkTreeFromFile();
+// }
 //
-//    @Test
-//    public void moduleDoc02() throws Exception {
-//        checkTreeFromFile();
-//    }
+// @Test
+// public void moduleDoc02() throws Exception {
+// checkTreeFromFile();
+// }
 //
-//    @Test
-//    public void moduleDoc03() throws Exception {
-//        // testing new lines after the module doc
-//        checkTreeFromFile();
-//    }
+// @Test
+// public void moduleDoc03() throws Exception {
+// // testing new lines after the module doc
+// checkTreeFromFile();
+// }
 //
-//    @Test
-//    public void moduleDoc04() throws Exception {
-//        checkTreeFromFile();
-//    }
+// @Test
+// public void moduleDoc04() throws Exception {
+// checkTreeFromFile();
+// }
 //
-//    @Test
-//    public void moduleWithLincense() throws Exception {
-//        checkTreeResult(
-//                        "# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.\n" +
-//                                        "# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.\n" +
-//                                        "\"\"\"MODULE A DOC\"\"\"\n" +
-//                                        "print(\"module A\")");
-//    }
+// @Test
+// public void moduleWithLincense() throws Exception {
+// checkTreeResult(
+// "# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.\n" +
+// "# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.\n" +
+// "\"\"\"MODULE A DOC\"\"\"\n" +
+// "print(\"module A\")");
+// }
 //
-//    @Test
-//    public void leadingIndent1() throws Exception {
-//        checkSyntaxErrorMessage(" 1", "IndentationError: unexpected indent");
-//    }
+// @Test
+// public void leadingIndent1() throws Exception {
+// checkSyntaxErrorMessage(" 1", "IndentationError: unexpected indent");
+// }
 //
-//    @Test
-//    public void leadingIndent2() throws Exception {
-//        checkTreeResult(" # foo\npass");
-//    }
+// @Test
+// public void leadingIndent2() throws Exception {
+// checkTreeResult(" # foo\npass");
+// }
 
     @Test
     public void annAssign01() throws Exception {
         checkTreeResult("a: int = 1");
     }
 
-//    @Test
-//    public void annAssign02() throws Exception {
-//        checkTreeResult("a: 1");
-//    }
+// @Test
+// public void annAssign02() throws Exception {
+// checkTreeResult("a: 1");
+// }
 
     @Test
     public void assert01() throws Exception {
@@ -101,27 +100,27 @@ public class BasicTests extends ParserTestBase {
                         "def avg(marks):\n" +
                                         "    assert len(marks) != 0,\"List is empty.\"");
     }
-  
+
     @Test
     public void assert03() throws Exception {
         checkTreeResult(
                         "def avg():\n" +
                                         "    assert len != 0, getMessage(len)");
     }
-    
+
     @Test
     public void assert04() throws Exception {
         checkTreeResult("assert not hascased");
     }
 //
-//    @Test
-//    public void inline01() throws Exception {
-//        FrameDescriptor fd = new FrameDescriptor(44);
-//        fd.addFrameSlot("a");
-//        fd.addFrameSlot("b");
-//        Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
-//        checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
-//    }
+// @Test
+// public void inline01() throws Exception {
+// FrameDescriptor fd = new FrameDescriptor(44);
+// fd.addFrameSlot("a");
+// fd.addFrameSlot("b");
+// Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
+// checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
+// }
 
     @Test
     public void simpleExpression01() throws Exception {
@@ -155,13 +154,13 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void simpleExpression07() throws Exception {
-        checkTreeResult( "");
+        checkTreeResult("");
     }
 
-//    @Test
-//    public void simpleExpression08() throws Exception {
-//        checkTreeResult("\"\\uD800\"", PythonParser.ParserMode.Eval);
-//    }
+// @Test
+// public void simpleExpression08() throws Exception {
+// checkTreeResult("\"\\uD800\"", PythonParser.ParserMode.Eval);
+// }
 
     @Test
     public void longString01() throws Exception {
@@ -193,25 +192,25 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("3 ** 2 ** 2");
     }
 
-   @Test
-   public void comparision01() throws Exception {
-       checkTreeResult("3 < 10");
-   }
+    @Test
+    public void comparision01() throws Exception {
+        checkTreeResult("3 < 10");
+    }
 
-   @Test
-   public void comparision02() throws Exception {
-       checkTreeResult("1 < '10' > True");
-   }
+    @Test
+    public void comparision02() throws Exception {
+        checkTreeResult("1 < '10' > True");
+    }
 
     @Test
     public void comparision03() throws Exception {
         checkTreeResult("1 < '10' > True != 1.0");
     }
 
-   @Test
-   public void comparision04() throws Exception {
-       checkScopeAndTree("x < y() <= z");
-   }
+    @Test
+    public void comparision04() throws Exception {
+        checkScopeAndTree("x < y() <= z");
+    }
 
     @Test
     public void comparision05() throws Exception {
@@ -223,73 +222,73 @@ public class BasicTests extends ParserTestBase {
         checkScopeAndTree("x() < y() < y() <= z()");
     }
 
-   @Test
-   public void comparision07() throws Exception {
-       checkScopeAndTree("x is y");
-   }
+    @Test
+    public void comparision07() throws Exception {
+        checkScopeAndTree("x is y");
+    }
 
-   @Test
-   public void comparision08() throws Exception {
-       checkScopeAndTree("x is not y");
-   }
+    @Test
+    public void comparision08() throws Exception {
+        checkScopeAndTree("x is not y");
+    }
 
-   @Test
-   public void comparision09() throws Exception {
-       checkScopeAndTree("x in y");
-   }
+    @Test
+    public void comparision09() throws Exception {
+        checkScopeAndTree("x in y");
+    }
 
-   @Test
-   public void comparision10() throws Exception {
-       checkScopeAndTree("x not in y");
-   }
+    @Test
+    public void comparision10() throws Exception {
+        checkScopeAndTree("x not in y");
+    }
 
-   @Test
-   public void comparision11() throws Exception {
-       checkScopeAndTree("x >= y");
-   }
-   
-   @Test
-   public void comparision12() throws Exception {
-       checkScopeAndTree("x == y");
-   }
-   
-   @Test
-   public void comparision13() throws Exception {
-       checkScopeAndTree("x != y");
-   }
+    @Test
+    public void comparision11() throws Exception {
+        checkScopeAndTree("x >= y");
+    }
 
-   @Test
-   public void if01() throws Exception {
-       checkTreeResult(
-                       "if False: \n" + "  10");
-   }
+    @Test
+    public void comparision12() throws Exception {
+        checkScopeAndTree("x == y");
+    }
 
-   @Test
-   public void if02() throws Exception {
-       checkTreeResult(
-                       "if False: \n" + "  10\n" + "else :\n" + "  a");
-   }
+    @Test
+    public void comparision13() throws Exception {
+        checkScopeAndTree("x != y");
+    }
 
-   @Test
-   public void if03() throws Exception {
-       checkTreeResult("10 if False else 11");
-   }
+    @Test
+    public void if01() throws Exception {
+        checkTreeResult(
+                        "if False: \n" + "  10");
+    }
 
-   @Test
-   public void if04() throws Exception {
-       checkTreeResult("predicate = func if func is not None else lambda a: a");
-   }
+    @Test
+    public void if02() throws Exception {
+        checkTreeResult(
+                        "if False: \n" + "  10\n" + "else :\n" + "  a");
+    }
 
-   @Test
-   public void if05() throws Exception {
-       checkTreeResult("if not i: pass");
-   }
+    @Test
+    public void if03() throws Exception {
+        checkTreeResult("10 if False else 11");
+    }
 
-   @Test
-   public void elif01() throws Exception {
-       checkTreeResult(
-                       "var = 100\n" + "if var == 200:\n" + "  print (2)\n" + "elif var == 150:\n" + "  print (1.5)\n" + "elif var == 100:\n" + "  print (1)");
-   }
+    @Test
+    public void if04() throws Exception {
+        checkTreeResult("predicate = func if func is not None else lambda a: a");
+    }
+
+    @Test
+    public void if05() throws Exception {
+        checkTreeResult("if not i: pass");
+    }
+
+    @Test
+    public void elif01() throws Exception {
+        checkTreeResult(
+                        "var = 100\n" + "if var == 200:\n" + "  print (2)\n" + "elif var == 150:\n" + "  print (1.5)\n" + "elif var == 100:\n" + "  print (1)");
+    }
 
     @Test
     public void call01() throws Exception {
@@ -351,15 +350,15 @@ public class BasicTests extends ParserTestBase {
         checkSyntaxError("foo(**mydict1, *mylist)");
     }
 
-//    @Test
-//    public void call14() throws Exception {
-//        checkSyntaxError("foo(**mydict1, 1)");
-//    }
+// @Test
+// public void call14() throws Exception {
+// checkSyntaxError("foo(**mydict1, 1)");
+// }
 
-//    @Test
-//    public void call15() throws Exception {
-//        checkSyntaxError("foo(arg1=1, 1)");
-//    }
+// @Test
+// public void call15() throws Exception {
+// checkSyntaxError("foo(arg1=1, 1)");
+// }
 
     @Test
     public void call16() throws Exception {
@@ -385,11 +384,12 @@ public class BasicTests extends ParserTestBase {
     public void call20() throws Exception {
         checkScopeAndTree("def fn(name): \"in\".format(name=name)");
     }
+
 //
-//    @Test
-//    public void call21() throws Exception {
-//        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
-//    }
+// @Test
+// public void call21() throws Exception {
+// checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
+// }
 //
     @Test
     public void del01() throws Exception {
@@ -405,21 +405,21 @@ public class BasicTests extends ParserTestBase {
     public void del03() throws Exception {
         checkTreeResult("del (x, y, z)");
     }
-    
+
     @Test
     public void del04() throws Exception {
         checkTreeResult("del [x, y, z]");
     }
 
-   @Test
-   public void for01() throws Exception {
-       checkTreeResult("for i in 'ahoj':\n" + "  pass");
-   }
+    @Test
+    public void for01() throws Exception {
+        checkTreeResult("for i in 'ahoj':\n" + "  pass");
+    }
 
-   @Test
-   public void for02() throws Exception {
-       checkTreeResult("for i in range(210):\n" + "  print(i)");
-   }
+    @Test
+    public void for02() throws Exception {
+        checkTreeResult("for i in range(210):\n" + "  print(i)");
+    }
 
     @Test
     public void for03() throws Exception {
@@ -437,16 +437,17 @@ public class BasicTests extends ParserTestBase {
                                         "    if x == 1:\n" +
                                         "      break\n");
     }
+
 //
-//    @Test
-//    public void for05() throws Exception {
-//        checkScopeAndTree();
-//    }
+// @Test
+// public void for05() throws Exception {
+// checkScopeAndTree();
+// }
 //
-//    @Test
-//    public void for06() throws Exception {
-//        checkScopeAndTree();
-//    }
+// @Test
+// public void for06() throws Exception {
+// checkScopeAndTree();
+// }
 //
     @Test
     public void for07() throws Exception {
@@ -467,7 +468,6 @@ public class BasicTests extends ParserTestBase {
                                         "        continue\n" +
                                         "    print(x)");
     }
-
 
     @Test
     public void for09() throws Exception {
@@ -491,18 +491,18 @@ public class BasicTests extends ParserTestBase {
                                         "      pass");
     }
 
-   @Test
-   public void for11() throws Exception {
-       checkTreeResult("for i, b in (): pass");
-   }
+    @Test
+    public void for11() throws Exception {
+        checkTreeResult("for i, b in (): pass");
+    }
 
-   @Test
-   public void for12() throws Exception {
-       checkScopeAndTree(
-                       "def fn():\n" +
-                                       "  for a, b in ((1,2), (3,4)):\n" +
-                                       "    print(a)");
-   }
+    @Test
+    public void for12() throws Exception {
+        checkScopeAndTree(
+                        "def fn():\n" +
+                                        "  for a, b in ((1,2), (3,4)):\n" +
+                                        "    print(a)");
+    }
 
     @Test
     public void for13() throws Exception {
@@ -517,116 +517,116 @@ public class BasicTests extends ParserTestBase {
                                         "                count = 1");
     }
 
-   @Test
-   public void for14() throws Exception {
-       checkScopeAndTree(
-                       "def merge(sequences):\n" +
-                                       "    for s1 in sequences:\n" +
-                                       "        for s2 in sequences:\n" +
-                                       "            if candidate in s2[1:]:\n" +
-                                       "                break\n" +
-                                       "        else:\n" +
-                                       "            break");
-   }
+    @Test
+    public void for14() throws Exception {
+        checkScopeAndTree(
+                        "def merge(sequences):\n" +
+                                        "    for s1 in sequences:\n" +
+                                        "        for s2 in sequences:\n" +
+                                        "            if candidate in s2[1:]:\n" +
+                                        "                break\n" +
+                                        "        else:\n" +
+                                        "            break");
+    }
 
-  @Test
-  public void for15() throws Exception {
-      checkScopeAndTree(
-                      "def formatyear():\n" +
-                                      "        for (i, row) in something:\n" +
-                                      "            pass\n" +
-                                      "        return 10");
-  }
+    @Test
+    public void for15() throws Exception {
+        checkScopeAndTree(
+                        "def formatyear():\n" +
+                                        "        for (i, row) in something:\n" +
+                                        "            pass\n" +
+                                        "        return 10");
+    }
 
-//    @Test
-//    public void for16() throws Exception {
-//        checkSyntaxError(
-//                        "for i in range(10):\n" +
-//                                        "    def foo():\n" +
-//                                        "        continue\n");
-//    }
+// @Test
+// public void for16() throws Exception {
+// checkSyntaxError(
+// "for i in range(10):\n" +
+// " def foo():\n" +
+// " continue\n");
+// }
 //
-//    @Test
-//    public void for17() throws Exception {
-//        checkSyntaxError(
-//                        "for i in range(10):\n" +
-//                                        "    class foo:\n" +
-//                                        "        break\n");
-//    }
+// @Test
+// public void for17() throws Exception {
+// checkSyntaxError(
+// "for i in range(10):\n" +
+// " class foo:\n" +
+// " break\n");
+// }
 
-   @Test
-   public void global01() throws Exception {
-       checkScopeAndTree("c = 0 # global variable\n" +
-                       "\n" +
-                       "def add():\n" +
-                       "    global c\n" +
-                       "    c = c + 2 # increment by 2\n" +
-                       "    print('Inside add():', c)\n" +
-                       "\n" +
-                       "add()\n" +
-                       "print('In main:', c)");
-   }
+    @Test
+    public void global01() throws Exception {
+        checkScopeAndTree("c = 0 # global variable\n" +
+                        "\n" +
+                        "def add():\n" +
+                        "    global c\n" +
+                        "    c = c + 2 # increment by 2\n" +
+                        "    print('Inside add():', c)\n" +
+                        "\n" +
+                        "add()\n" +
+                        "print('In main:', c)");
+    }
 
-   @Test
-   public void global02() throws Exception {
-       checkTreeResult("global x");
-   }
+    @Test
+    public void global02() throws Exception {
+        checkTreeResult("global x");
+    }
 
-   @Test
-   public void nonlocal01() throws Exception {
-       checkScopeAndTree("def outer():\n" +
-                       "    x = 'local'\n" +
-                       "    \n" +
-                       "    def inner():\n" +
-                       "        nonlocal x\n" +
-                       "        x = 'nonlocal'\n" +
-                       "        print('inner:', x)\n" +
-                       "    \n" +
-                       "    inner()\n" +
-                       "    print('outer:', x)\n" +
-                       "\n" +
-                       "outer()\n");
-   }
+    @Test
+    public void nonlocal01() throws Exception {
+        checkScopeAndTree("def outer():\n" +
+                        "    x = 'local'\n" +
+                        "    \n" +
+                        "    def inner():\n" +
+                        "        nonlocal x\n" +
+                        "        x = 'nonlocal'\n" +
+                        "        print('inner:', x)\n" +
+                        "    \n" +
+                        "    inner()\n" +
+                        "    print('outer:', x)\n" +
+                        "\n" +
+                        "outer()\n");
+    }
 
-   @Test
-   public void or01() throws Exception {
-       checkTreeResult("a or b");
-   }
+    @Test
+    public void or01() throws Exception {
+        checkTreeResult("a or b");
+    }
 
-   @Test
-   public void and01() throws Exception {
-       checkTreeResult("a and b");
-   }
+    @Test
+    public void and01() throws Exception {
+        checkTreeResult("a and b");
+    }
 
-//    @Test
-//    public void not01() throws Exception {
-//        checkTreeResult("not a");
-//    }
+// @Test
+// public void not01() throws Exception {
+// checkTreeResult("not a");
+// }
 //
-//    @Test
-//    public void nonlocal02() throws Exception {
-//        checkSyntaxError("nonlocal x");
-//    }
+// @Test
+// public void nonlocal02() throws Exception {
+// checkSyntaxError("nonlocal x");
+// }
 //
-   @Test
-   public void raise01() throws Exception {
-       checkTreeResult("raise");
-   }
+    @Test
+    public void raise01() throws Exception {
+        checkTreeResult("raise");
+    }
 
-   @Test
-   public void raise02() throws Exception {
-       checkTreeResult("raise NameError");
-   }
+    @Test
+    public void raise02() throws Exception {
+        checkTreeResult("raise NameError");
+    }
 
-   @Test
-   public void raise03() throws Exception {
-       checkTreeResult("raise NameError('Pavel')");
-   }
+    @Test
+    public void raise03() throws Exception {
+        checkTreeResult("raise NameError('Pavel')");
+    }
 
-   @Test
-   public void raise04() throws Exception {
-       checkTreeResult("raise NameError('Pavel') from exc");
-   }
+    @Test
+    public void raise04() throws Exception {
+        checkTreeResult("raise NameError('Pavel') from exc");
+    }
 
     @Test
     public void try01() throws Exception {
@@ -745,72 +745,72 @@ public class BasicTests extends ParserTestBase {
                                         "        print(err)");
     }
 
-   @Test
-   public void tuple01() throws Exception {
-       checkTreeResult("(1, 2, 3)");
-   }
+    @Test
+    public void tuple01() throws Exception {
+        checkTreeResult("(1, 2, 3)");
+    }
 
-   @Test
-   public void tuple02() throws Exception {
-       checkTreeResult("(1, call01((1,2,)), 'ahoj')");
-   }
+    @Test
+    public void tuple02() throws Exception {
+        checkTreeResult("(1, call01((1,2,)), 'ahoj')");
+    }
 
-   @Test
-   public void tuple03() throws Exception {
-       checkTreeResult("t = ()");
-   }
+    @Test
+    public void tuple03() throws Exception {
+        checkTreeResult("t = ()");
+    }
 
-   @Test
-   public void tuple04() throws Exception {
-       checkTreeResult("t = (2)");
-   }
+    @Test
+    public void tuple04() throws Exception {
+        checkTreeResult("t = (2)");
+    }
 
-   @Test
-   public void tuple05() throws Exception {
-       checkTreeResult("t = (2,)");
-   }
+    @Test
+    public void tuple05() throws Exception {
+        checkTreeResult("t = (2,)");
+    }
 
-   @Test
-   public void tuple06() throws Exception {
-       checkTreeResult("t = ('strange,')");
-   }
+    @Test
+    public void tuple06() throws Exception {
+        checkTreeResult("t = ('strange,')");
+    }
 
-   @Test
-   public void tuple07() throws Exception {
-       checkTreeResult("1,2,3");
-   }
+    @Test
+    public void tuple07() throws Exception {
+        checkTreeResult("1,2,3");
+    }
 
-   @Test
-   public void tuple08() throws Exception {
-       checkTreeResult("1,");
-   }
+    @Test
+    public void tuple08() throws Exception {
+        checkTreeResult("1,");
+    }
 
-   @Test
-   public void tuple09() throws Exception {
-       checkTreeResult("1, call1()");
-   }
+    @Test
+    public void tuple09() throws Exception {
+        checkTreeResult("1, call1()");
+    }
 
-   @Test
-   public void tuple10() throws Exception {
-       checkTreeResult("t = 1, call1()");
-   }
+    @Test
+    public void tuple10() throws Exception {
+        checkTreeResult("t = 1, call1()");
+    }
 
-   @Test
-   public void tuple11() throws Exception {
-       checkTreeResult("a += 1,2,3");
-   }
+    @Test
+    public void tuple11() throws Exception {
+        checkTreeResult("a += 1,2,3");
+    }
 
-   @Test
-   public void tuple12() throws Exception {
-       checkTreeResult("a[1,3,4]");
-   }
+    @Test
+    public void tuple12() throws Exception {
+        checkTreeResult("a[1,3,4]");
+    }
 
-   @Test
-   public void tuple13() throws Exception {
-       checkTreeResult("b = (\n" +
-                       "  (0x69, 0x131), # iı\n" +
-                       ")");
-   }
+    @Test
+    public void tuple13() throws Exception {
+        checkTreeResult("b = (\n" +
+                        "  (0x69, 0x131), # iı\n" +
+                        ")");
+    }
 
     @Test
     public void unary01() throws Exception {
@@ -842,76 +842,76 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("a().b.c(x).d.f()");
     }
 
-   @Test
-   public void while01() throws Exception {
-       checkTreeResult("while True:\n" + "  pass");
-   }
+    @Test
+    public void while01() throws Exception {
+        checkTreeResult("while True:\n" + "  pass");
+    }
 
-   @Test
-   public void while02() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    continue\n" + "  pass");
-   }
+    @Test
+    public void while02() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    continue\n" + "  pass");
+    }
 
-   @Test
-   public void while03() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  pass");
-   }
+    @Test
+    public void while03() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  pass");
+    }
 
-   @Test
-   public void while04() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    break\n" + "  pass");
-   }
+    @Test
+    public void while04() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    break\n" + "  pass");
+    }
 
-   @Test
-   public void while05() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    continue\n" + "  pass");
-   }
+    @Test
+    public void while05() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    continue\n" + "  pass");
+    }
 
-   @Test
-   public void while06() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  pass\n" + "else:\n" + "  pass");
-   }
+    @Test
+    public void while06() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  pass\n" + "else:\n" + "  pass");
+    }
 
-   @Test
-   public void while07() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    break\n" + "  pass\n" + "else:\n" + "  pass");
-   }
+    @Test
+    public void while07() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    break\n" + "  pass\n" + "else:\n" + "  pass");
+    }
 
-   @Test
-   public void while08() throws Exception {
-       checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    continue\n" + "  pass\n" + "else:\n" + "  print('done')");
-   }
+    @Test
+    public void while08() throws Exception {
+        checkTreeResult("while True:\n" + "  if False:\n" + "    break\n" + "  if True:\n" + "    continue\n" + "  pass\n" + "else:\n" + "  print('done')");
+    }
 
-   @Test
-   public void while09() throws Exception {
-       checkTreeResult("while True:\n" + "  pass\n" + "else:\n" + "  pass");
-   }
+    @Test
+    public void while09() throws Exception {
+        checkTreeResult("while True:\n" + "  pass\n" + "else:\n" + "  pass");
+    }
 
-   @Test
-   public void while10() throws Exception {
-       checkTreeResult("while tb is not None: pass");
-   }
+    @Test
+    public void while10() throws Exception {
+        checkTreeResult("while tb is not None: pass");
+    }
 
-   @Test
-   public void while11() throws Exception {
-       checkTreeResult(
-                       "iters = 0\n" +
-                                       "while iters < 40:\n" +
-                                       "    while iters < 10:\n" +
-                                       "        if False:\n" +
-                                       "            break\n" +
-                                       "        iters += 1\n" +
-                                       "    else:\n" +
-                                       "        iters += 1\n" +
-                                       "        break");
-   }
+    @Test
+    public void while11() throws Exception {
+        checkTreeResult(
+                        "iters = 0\n" +
+                                        "while iters < 40:\n" +
+                                        "    while iters < 10:\n" +
+                                        "        if False:\n" +
+                                        "            break\n" +
+                                        "        iters += 1\n" +
+                                        "    else:\n" +
+                                        "        iters += 1\n" +
+                                        "        break");
+    }
 
 // @Test
 // public void while12() throws Exception {
-//     checkSyntaxError(
-//                     "while False:\n" +
-//                                     "    def foo():\n" +
-//                                     "        break");
+// checkSyntaxError(
+// "while False:\n" +
+// " def foo():\n" +
+// " break");
 // }
 
     @Test
@@ -966,52 +966,51 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("x=5 ");
     }
 
-//    @Test
-//    public void isIdentifier() throws Exception {
-//        Assert.assertTrue(StringUtils.isIdentifier("hello"));
-//        Assert.assertTrue(StringUtils.isIdentifier("_"));
-//        Assert.assertTrue(StringUtils.isIdentifier("b0"));
-//        Assert.assertTrue(StringUtils.isIdentifier("bc"));
-//        Assert.assertTrue(StringUtils.isIdentifier("b_"));
-//        Assert.assertTrue(StringUtils.isIdentifier("µ"));
+// @Test
+// public void isIdentifier() throws Exception {
+// Assert.assertTrue(StringUtils.isIdentifier("hello"));
+// Assert.assertTrue(StringUtils.isIdentifier("_"));
+// Assert.assertTrue(StringUtils.isIdentifier("b0"));
+// Assert.assertTrue(StringUtils.isIdentifier("bc"));
+// Assert.assertTrue(StringUtils.isIdentifier("b_"));
+// Assert.assertTrue(StringUtils.isIdentifier("µ"));
 //
-//        Assert.assertTrue(StringUtils.isIdentifier("for"));
-//        Assert.assertTrue(StringUtils.isIdentifier("break"));
-//        Assert.assertTrue(StringUtils.isIdentifier("while"));
-//        Assert.assertTrue(StringUtils.isIdentifier("return"));
-//        Assert.assertTrue(StringUtils.isIdentifier("def"));
+// Assert.assertTrue(StringUtils.isIdentifier("for"));
+// Assert.assertTrue(StringUtils.isIdentifier("break"));
+// Assert.assertTrue(StringUtils.isIdentifier("while"));
+// Assert.assertTrue(StringUtils.isIdentifier("return"));
+// Assert.assertTrue(StringUtils.isIdentifier("def"));
 //
-//        Assert.assertFalse(StringUtils.isIdentifier(" hello"));
-//        Assert.assertFalse(StringUtils.isIdentifier("hello "));
-//        Assert.assertFalse(StringUtils.isIdentifier("hel lo"));
-//        Assert.assertFalse(StringUtils.isIdentifier("hel?o"));
-//        Assert.assertFalse(StringUtils.isIdentifier("hel!o"));
+// Assert.assertFalse(StringUtils.isIdentifier(" hello"));
+// Assert.assertFalse(StringUtils.isIdentifier("hello "));
+// Assert.assertFalse(StringUtils.isIdentifier("hel lo"));
+// Assert.assertFalse(StringUtils.isIdentifier("hel?o"));
+// Assert.assertFalse(StringUtils.isIdentifier("hel!o"));
 //
-//        Assert.assertFalse(StringUtils.isIdentifier(" "));
-//        Assert.assertFalse(StringUtils.isIdentifier("["));
-//        Assert.assertFalse(StringUtils.isIdentifier("©"));
-//        Assert.assertFalse(StringUtils.isIdentifier("0"));
-//    }
+// Assert.assertFalse(StringUtils.isIdentifier(" "));
+// Assert.assertFalse(StringUtils.isIdentifier("["));
+// Assert.assertFalse(StringUtils.isIdentifier("©"));
+// Assert.assertFalse(StringUtils.isIdentifier("0"));
+// }
 //
-//    @Test
-//    public void issueGR28345() throws Exception {
-//        // wrong node offsets when unicode with various length is used in a comment
-//        checkTreeResult("def test_isidentifier():\n" +
-//                        "  # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
-//                        "  self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
-//                        "                                                           'rld', 'lowo'), 3)");
-//    }
+// @Test
+// public void issueGR28345() throws Exception {
+// // wrong node offsets when unicode with various length is used in a comment
+// checkTreeResult("def test_isidentifier():\n" +
+// " # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
+// " self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
+// " 'rld', 'lowo'), 3)");
+// }
 
-//    private void checkScopeAndTree() throws Exception {
-//        File testFile = getTestFileFromTestAndTestMethod();
-//        checkScopeFromFile(testFile, true);
-//        checkTreeFromFile(testFile, true);
-//    }
+// private void checkScopeAndTree() throws Exception {
+// File testFile = getTestFileFromTestAndTestMethod();
+// checkScopeFromFile(testFile, true);
+// checkTreeFromFile(testFile, true);
+// }
 //
-//    private void checkTreeFromFile() throws Exception {
-//        File testFile = getTestFileFromTestAndTestMethod();
-//        checkTreeFromFile(testFile, true);
-//    }
-
+// private void checkTreeFromFile() throws Exception {
+// File testFile = getTestFileFromTestAndTestMethod();
+// checkTreeFromFile(testFile, true);
+// }
 
 }

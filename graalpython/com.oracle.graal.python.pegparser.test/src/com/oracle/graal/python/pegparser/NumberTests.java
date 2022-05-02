@@ -5,8 +5,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 
 public class NumberTests extends ParserTestBase {
 

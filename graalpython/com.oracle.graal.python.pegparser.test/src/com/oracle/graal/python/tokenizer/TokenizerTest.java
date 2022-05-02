@@ -5,32 +5,34 @@
  */
 package com.oracle.graal.python.tokenizer;
 
-import com.oracle.graal.python.pegparser.ParserTokenizer;
-import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
-import com.oracle.graal.python.pegparser.tokenizer.Token;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
 public class TokenizerTest {
 
-    public TestInfo testInfo;
-    
-    private static HashSet<Integer> opTypes = new HashSet();
+    @Rule public TestName name = new TestName();
 
-    {
+    private static HashSet<Integer> opTypes = new HashSet<>();
+
+    static {
         opTypes.add(Token.Kind.PERCENT);
         opTypes.add(Token.Kind.AMPER);
         opTypes.add(Token.Kind.LPAR);
@@ -67,7 +69,6 @@ public class TokenizerTest {
         opTypes.add(Token.Kind.COLONEQUAL);
         opTypes.add(Token.Kind.LEFTSHIFT);
         opTypes.add(Token.Kind.LESSEQUAL);
-        opTypes.add(Token.Kind.NOTEQUAL);
         opTypes.add(Token.Kind.EQEQUAL);
         opTypes.add(Token.Kind.GREATEREQUAL);
         opTypes.add(Token.Kind.RIGHTSHIFT);
@@ -84,20 +85,10 @@ public class TokenizerTest {
     public TokenizerTest() {
     }
 
-    @BeforeEach
-    public void setUp(TestInfo testInfo) {
-        this.testInfo = testInfo;
-    }
-
-    @AfterEach
-    public void tearDown() {
-
-    }
-
     private static void assertToken(String code, int kind) {
         assertEquals(kind, new ParserTokenizer(code).getToken().type);
     }
-    
+
     @Test
     public void testAsync() {
         assertToken("async", Token.Kind.ASYNC);
@@ -119,65 +110,64 @@ public class TokenizerTest {
     }
 
     // TODO: fix this test, this identifier should not be accepted
-    @Test
+    @Test(expected = AssertionError.class)
     public void testIllegalUnicodeIdentifier() {
-        assertThrows(AssertionError.class, () -> {assertToken("€", Token.Kind.ERRORTOKEN);});
+        assertToken("€", Token.Kind.ERRORTOKEN);
     }
 
     @Test
     public void testTypeComment() throws Exception {
-        checkTokensFromtestDataFile();
-    }
-    
-    @Test
-    public void testInt() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
     @Test
-    public void testLong() throws Exception{
-        checkTokensFromtestDataFile();
+    public void testInt() throws Exception {
+        checkTokensFromTestDataFile();
+    }
+
+    @Test
+    public void testLong() throws Exception {
+        checkTokensFromTestDataFile();
     }
 
     @Test
     public void testFloat() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
     @Test
     public void testUnderscoreLiterals() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
     @Test
-    public void testInvalidUnderscoreLiterals() throws Exception{
+    public void testInvalidUnderscoreLiterals() throws Exception {
         String[] invalid = new String[]{
-            // Trailing underscores:
-            "0_", "42_", /*"1.4j_",*/ "0x_", "0b1_", "0xf_", "0o5_", "0 if 1_Else 1",
-            // Underscores in the base selector:
-            "0_b0", "0_xf", "0_o5",
-            // Old-style octal, still disallowed:
-            /*"0_7", "09_99",*/
-            // Multiple consecutive underscores:
-            "4_______2", "0.1__4", "0.1__4j", "0b1001__0100", "0xffff__ffff", "0x___",
-            "0o5__77", "1e1__0", "1e1__0j",
-            // Underscore right before a dot:
-            "1_.4", "1_.4j",
-            // Underscore right after a dot:
-            //TODO            "1._4", "1._4j", "._5", "._5j",
-            // Underscore right after a sign:
-            "1.0e+_1", "1.0e+_1j",
-            // Underscore right before j:
-            "1.4_j", "1.4e5_j",
-            // Underscore right before e:
-            "1_e1", "1.4_e1", "1.4_e1j",
-            // Underscore right after e:
-            //TODO            "1e_1", "1.4e_1", "1.4e_1j",
-            // Complex cases with parens:
-            "(1+1.5_j_)", "(1+1.5_j)",};
+                        // Trailing underscores:
+                        "0_", "42_", /* "1.4j_", */ "0x_", "0b1_", "0xf_", "0o5_", "0 if 1_Else 1",
+                        // Underscores in the base selector:
+                        "0_b0", "0_xf", "0_o5",
+                        // Old-style octal, still disallowed:
+                        /* "0_7", "09_99", */
+                        // Multiple consecutive underscores:
+                        "4_______2", "0.1__4", "0.1__4j", "0b1001__0100", "0xffff__ffff", "0x___",
+                        "0o5__77", "1e1__0", "1e1__0j",
+                        // Underscore right before a dot:
+                        "1_.4", "1_.4j",
+                        // Underscore right after a dot:
+                        // TODO "1._4", "1._4j", "._5", "._5j",
+                        // Underscore right after a sign:
+                        "1.0e+_1", "1.0e+_1j",
+                        // Underscore right before j:
+                        "1.4_j", "1.4e5_j",
+                        // Underscore right before e:
+                        "1_e1", "1.4_e1", "1.4_e1j",
+                        // Underscore right after e:
+                        // TODO "1e_1", "1.4e_1", "1.4e_1j",
+                        // Complex cases with parens:
+                        "(1+1.5_j_)", "(1+1.5_j)",};
 
         for (String code : invalid) {
-            //System.out.println(code);
             Token[] tokens = getTokens(code);
 
             boolean wasError = false;
@@ -192,56 +182,54 @@ public class TokenizerTest {
     }
 
     @Test
-    public void testNumbers() throws Exception{
-        checkTokensFromtestDataFile();
+    public void testNumbers() throws Exception {
+        checkTokensFromTestDataFile();
     }
 
     @Test
     public void testString() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
     @Test
     public void testFunction() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
     @Test
     public void testComparison() throws Exception {
-        checkTokensFromtestDataFile();
+        checkTokensFromTestDataFile();
     }
 
-    //Test
+    // Test
     public void testNewLines() {
-        checkTokens("a = 1\n"
-                + "b = 2", new String[]{
-                    "Token NAME [0, 1] (1, 0) (1, 1) 'a'",
-                    "Token EQUAL [2, 3] (1, 2) (1, 3) '='",
-                    "Token NUMBER [4, 5] (2, -1) (2, 0) '1'",
-                    "Token NEWLINE [5, 6] (3, 0) (3, 1) '\n'",
-                    "Token NAME [6, 7] (3, 1) (3, 2) 'b'",
-                    "Token EQUAL [8, 9] (3, 3) (3, 4) '='",
-                    "Token NUMBER [10, 11] (3, 5) (3, 6) '2'"});
+        checkTokens("a = 1\n" + "b = 2", new String[]{
+                        "Token NAME [0, 1] (1, 0) (1, 1) 'a'",
+                        "Token EQUAL [2, 3] (1, 2) (1, 3) '='",
+                        "Token NUMBER [4, 5] (2, -1) (2, 0) '1'",
+                        "Token NEWLINE [5, 6] (3, 0) (3, 1) '\n'",
+                        "Token NAME [6, 7] (3, 1) (3, 2) 'b'",
+                        "Token EQUAL [8, 9] (3, 3) (3, 4) '='",
+                        "Token NUMBER [10, 11] (3, 5) (3, 6) '2'"});
     }
 
     private Token[] getTokens(String code) {
         Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token;
 
-        ArrayList<Token> tokens = new ArrayList();
+        ArrayList<Token> tokens = new ArrayList<>();
 
         do {
             token = tokenizer.next();
-            System.out.println(tokenizer.toString(token));
             tokens.add(token);
         } while (token.type != Token.Kind.ENDMARKER);
         return tokens.toArray(new Token[tokens.size()]);
     }
 
     private String getFileName() {
-        return testInfo.getTestMethod().get().getName();
+        return name.getMethodName();
     }
-    
+
     private void checkTokens(String code, String[] tokens) {
         Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token = tokenizer.next();
@@ -270,8 +258,7 @@ public class TokenizerTest {
                 token = tokenizer.next();
             }
             sb.append("}");
-            System.out.println(sb.toString());
-            assertTrue(false);
+            fail(sb.toString());
         }
 
     }
@@ -402,7 +389,7 @@ public class TokenizerTest {
         return -1;
     }
 
-    private void checkTokensFromtestDataFile() throws Exception {
+    private void checkTokensFromTestDataFile() throws Exception {
         String testText = getTestFile();
         String[] testTextLines = testText.split("\n");
 
@@ -416,9 +403,9 @@ public class TokenizerTest {
 
         String goldenText = getGoldenFile();
         String[] goldenTextLines = goldenText.split("\n");
-        HashMap<String, List<String>> goldenTokens = new HashMap();
+        HashMap<String, List<String>> goldenTokens = new HashMap<>();
 
-        ArrayList<String> goldenTextTokens = new ArrayList();
+        ArrayList<String> goldenTextTokens = new ArrayList<>();
 
         for (String line : goldenTextLines) {
             boolean isToken = line.startsWith("Token");
@@ -426,22 +413,22 @@ public class TokenizerTest {
             if (isToken) {
                 goldenTextTokens.add(line);
             } else if (!line.trim().isEmpty()) {
-                goldenTextTokens = new ArrayList();
+                goldenTextTokens = new ArrayList<>();
                 goldenTokens.put(line, goldenTextTokens);
             }
         }
-        assertEquals(goldenTokens.size(), testLines.size(), "The count of tested lines is different from count of lines  in golden file.");
+        assertEquals("The count of tested lines is different from count of lines  in golden file.", goldenTokens.size(), testLines.size());
 
         for (String line : testLines) {
-            assertTrue(goldenTokens.containsKey(line), "Was not found golden result for line: '" + line + "'");
+            assertTrue("Was not found golden result for line: '" + line + "'", goldenTokens.containsKey(line));
             List<String> goldenResult = goldenTokens.get(line);
             int goldenResultIndex = 0;
             Tokenizer tokenizer = new Tokenizer(line, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
             Token token;
             do {
-                token  = tokenizer.next();
+                token = tokenizer.next();
                 boolean isOP = opTypes.contains(token.type);
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 sb.append("Token type:").append(isOP ? getCPythonValueOfTokenType(Token.Kind.OP) : getCPythonValueOfTokenType(token.type));
                 sb.append(" (").append(isOP ? "OP" : token.typeName()).append(") ");
                 if (isOP) {
@@ -451,22 +438,19 @@ public class TokenizerTest {
                 sb.append("start:[").append(token.startLine).append(", ").append(token.startColumn).append("] ");
                 sb.append("end:[").append(token.endLine).append(", ").append(token.endColumn).append("] ");
                 sb.append("string:'").append(tokenizer.getTokenString(token)).append("'");
-                String goldenToken = goldenResult.get(goldenResultIndex);         
-                assertEquals(goldenToken, sb.toString(), "Code: '" + line + "'");
+                String goldenToken = goldenResult.get(goldenResultIndex);
+                assertEquals("Code: '" + line + "'", goldenToken, sb.toString());
                 goldenResultIndex++;
             } while (token.type != Token.Kind.ENDMARKER);
             assertEquals(goldenResultIndex, goldenResult.size());
         }
     }
 
-    private String getGoldenFile() {
-        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/goldenFiles/" + getFileName() + ".token");
-        return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
+    private String getGoldenFile() throws IOException {
+        return Files.readString(Path.of("graalpython/com.oracle.graal.python.pegparser.test/testData/tokenizer/goldenFiles", getFileName() + ".token"));
     }
 
-    private String getTestFile() {
-        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/testFiles/" + getFileName() + ".data");
-        return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
+    private String getTestFile() throws IOException {
+        return Files.readString(Path.of("graalpython/com.oracle.graal.python.pegparser.test/testData/tokenizer/testFiles", getFileName() + ".data"));
     }
-
 }

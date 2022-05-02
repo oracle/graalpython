@@ -41,117 +41,111 @@
 
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-public class DictAndSetTests extends ParserTestBase {
+public class ListAndSlicingTests extends ParserTestBase {
 
     @Test
-    public void dict01() throws Exception {
-        checkTreeResult("{}");
+    public void list01() throws Exception {
+        checkTreeResult("[1,2,3,4]");
     }
 
     @Test
-    public void dict02() throws Exception {
-        checkTreeResult("{a:b}");
+    public void list02() throws Exception {
+        checkTreeResult("list = [1,2,3,4]");
     }
 
     @Test
-    public void dict03() throws Exception {
-        checkTreeResult("{a:b,}");
+    public void list03() throws Exception {
+        checkTreeResult("[]");
     }
 
     @Test
-    public void dict04() throws Exception {
-        checkTreeResult("{a:b, c:d}");
+    public void list04() throws Exception {
+        checkTreeResult("l = []");
     }
 
     @Test
-    public void dict05() throws Exception {
-        checkTreeResult("{a:b, c:d, }");
+    public void list05() throws Exception {
+        checkTreeResult("[*{2}, 3, *[4]]");
     }
 
     @Test
-    public void dict06() throws Exception {
-        checkTreeResult("{**{}}");
+    public void slice01() throws Exception {
+        checkTreeResult("a[::]");
     }
 
     @Test
-    public void dict07() throws Exception {
-        checkTreeResult("{**{}, 3:4, **{5:6, 7:8}}");
+    public void slice02() throws Exception {
+        checkTreeResult("a[1::]");
     }
 
     @Test
-    public void dict08() throws Exception {
-        checkTreeResult("{1:2, **{}, 3:4, **{5:6, 7:8}}");
+    public void slice03() throws Exception {
+        checkTreeResult("a[:1:]");
     }
 
     @Test
-    public void dict09() throws Exception {
-        checkTreeResult("{**{}, 3:4}");
+    public void slice04() throws Exception {
+        checkTreeResult("a[::1]");
     }
 
     @Test
-    public void dict10() throws Exception {
-        checkTreeResult("{**{\"a\": \"hello\", \"b\": \"world\"}, **{3:4, 5:6}}");
+    public void slice05() throws Exception {
+        checkTreeResult("a()[b():c():d()]");
     }
 
     @Test
-    public void dict11() throws Exception {
-        checkTreeResult("{**{\"a\": \"hello\", \"b\": \"world\"}, 1:2,  **{3:4, 5:6}}");
+    public void starExpr01() throws Exception {
+        checkTreeResult("[*[1,2,3]]");
+    }
+//
+// @Test
+// public void starExpr02() throws Exception {
+// checkSyntaxErrorMessageContains("*[1,2,3]", "can't use starred expression here");
+// }
+//
+// @Test
+// public void starExpr03() throws Exception {
+// checkSyntaxErrorMessageContains("*a = range(5)", "starred assignment target must be in a list or
+// tuple");
+// }
+
+    @Test
+    public void starExpr04() throws Exception {
+        checkTreeResult("*a, = range(5)");
     }
 
     @Test
-    public void dict12() throws Exception {
-        checkTreeResult("{'a':'b',}");
+    public void starExpr05() throws Exception {
+        checkTreeResult("a, *b, c = range(5)");
     }
 
     @Test
-    public void dict13() throws Exception {
-        checkTreeResult("{'a':'b'}");
+    public void starExpr06() throws Exception {
+        checkTreeResult("first, *rest = seq");
     }
 
     @Test
-    public void dict14() throws Exception {
-        checkTreeResult("{'a':'b','c':14}");
+    public void starExpr07() throws Exception {
+        checkTreeResult("[a, *b, c] = seq");
     }
 
     @Test
-    public void dict15() throws Exception {
-        checkTreeResult("{1:'b','c':14}");
+    public void starExpr08() throws Exception {
+        checkTreeResult("for a, *b in [(1, 2, 3), (4, 5, 6, 7)]:\n" +
+                        "    print(b)");
     }
 
-    @Test
-    public void dict16() throws Exception {
-        checkTreeResult("{'a':'b',c:14}");
-    }
+// @Test
+// public void starExpr09() throws Exception {
+// checkSyntaxErrorMessageContains("b = *a", "can't use starred expression here");
+// }
+//
+// @Test
+// public void starExpr10() throws Exception {
+// checkSyntaxErrorMessageContains("[*item for item in l]", "iterable unpacking cannot be used in
+// comprehension");
+// }
 
-    @Test
-    public void dict17() throws Exception {
-        checkTreeResult("{'a':'b','c':14,'d':1234,'g':h}");
-    }
-
-    @Test
-    public void set01() throws Exception {
-        checkTreeResult("{2}");
-    }
-
-    @Test
-    public void set02() throws Exception {
-        checkTreeResult("{2,}");
-    }
-
-    @Test
-    public void set03() throws Exception {
-        checkTreeResult("{2, 3}");
-    }
-
-    @Test
-    public void set04() throws Exception {
-        checkTreeResult("{2, 3,}");
-    }
-
-    @Test
-    public void set05() throws Exception {
-        checkTreeResult("{*{2}, 3, *[4]}");
-    }
 }

@@ -41,7 +41,7 @@
 
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class AssignmentTests extends ParserTestBase {
 
@@ -49,7 +49,7 @@ public class AssignmentTests extends ParserTestBase {
     public void assignment01() throws Exception {
         checkTreeResult("a = 1");
     }
-    
+
     @Test
     public void assignmentWithTypeComment01() throws Exception {
         checkTreeResult("a = 1 # type: int");
@@ -99,7 +99,7 @@ public class AssignmentTests extends ParserTestBase {
     public void assignment10() throws Exception {
         checkTreeResult("i, j, k = x = a");
     }
-    
+
     @Test
     public void assignment11() throws Exception {
         checkScopeAndTree("def fn():\n  a.b.c.d = 1222");
@@ -176,28 +176,29 @@ public class AssignmentTests extends ParserTestBase {
                         "def _method(*args, **keywords):\n" +
                                         "    cls_or_self, *rest = args");
     }
+
 //
-//    @Test
-//    public void nonLocal01() throws Exception {
-//        checkSyntaxErrorMessage(
-//                        "def outer():\n" +
-//                                        "  x = 'local in outer'\n" +
-//                                        "  def inner():\n" +
-//                                        "    x = 10\n" +
-//                                        "    nonlocal x\n" +
-//                                        "  inner()\n",
-//                        "SyntaxError: name 'x' is assigned to before nonlocal declaration");
-//    }
+// @Test
+// public void nonLocal01() throws Exception {
+// checkSyntaxErrorMessage(
+// "def outer():\n" +
+// " x = 'local in outer'\n" +
+// " def inner():\n" +
+// " x = 10\n" +
+// " nonlocal x\n" +
+// " inner()\n",
+// "SyntaxError: name 'x' is assigned to before nonlocal declaration");
+// }
 //
-//    @Test
-//    public void annotationType01() throws Exception {
-//        checkTreeResult("j: int");
-//    }
+// @Test
+// public void annotationType01() throws Exception {
+// checkTreeResult("j: int");
+// }
 //
-//    @Test
-//    public void annotationType02() throws Exception {
-//        checkScopeAndTree("def fn():\n" + "  index : int = 0\n");
-//    }
+// @Test
+// public void annotationType02() throws Exception {
+// checkScopeAndTree("def fn():\n" + " index : int = 0\n");
+// }
 //
     @Test
     public void annotationType03() throws Exception {

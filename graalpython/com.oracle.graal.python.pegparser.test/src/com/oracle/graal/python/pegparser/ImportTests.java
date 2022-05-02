@@ -41,8 +41,7 @@
 
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 
 public class ImportTests extends ParserTestBase {
 
@@ -203,7 +202,7 @@ public class ImportTests extends ParserTestBase {
 
     // @Test
     // public void fromImportInFn01() throws Exception {
-    //     checkSyntaxError("def fn():\n  from sys.path import *");
+    // checkSyntaxError("def fn():\n from sys.path import *");
     // }
 
     @Test

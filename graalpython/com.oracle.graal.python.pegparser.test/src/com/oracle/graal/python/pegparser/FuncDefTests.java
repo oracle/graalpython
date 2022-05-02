@@ -41,8 +41,7 @@
 
 package com.oracle.graal.python.pegparser;
 
-import java.io.File;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class FuncDefTests extends ParserTestBase {
 
@@ -53,12 +52,13 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void args02() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
+    // checkSyntaxErrorMessage("def f(a, a): pass", "SyntaxError: duplicate argument 'a' in function
+    // definition");
     // }
 
     // @Test
     // public void functionDoc01() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     @Test
@@ -68,7 +68,7 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void functionDef03() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     @Test
@@ -88,13 +88,13 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void functionDef07() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
-     @Test
-     public void functionDef08() throws Exception {
-         checkSyntaxError("def foo8(par1='ahoj', par2): \n" + "  return par1 * par2");
-     }
+    @Test
+    public void functionDef08() throws Exception {
+        checkSyntaxError("def foo8(par1='ahoj', par2): \n" + "  return par1 * par2");
+    }
 
     @Test
     public void functionDef09() throws Exception {
@@ -108,17 +108,17 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void functionDef11() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     // @Test
     // public void functionDef12() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     // @Test
     // public void functionDef13() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     @Test
@@ -132,13 +132,13 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void functionDef15() throws Exception {
-    //     checkScopeAndTree(
-    //                     "SOMETHING = NONE\n" +
-    //                                     "def setup():\n" +
-    //                                     "  global SOMETHING\n" +
-    //                                     "  if True : SOMETHING = True\n" +
-    //                                     "def install():\n" +
-    //                                     "  if SOMETHING : pass");
+    // checkScopeAndTree(
+    // "SOMETHING = NONE\n" +
+    // "def setup():\n" +
+    // " global SOMETHING\n" +
+    // " if True : SOMETHING = True\n" +
+    // "def install():\n" +
+    // " if SOMETHING : pass");
     // }
 
     @Test
@@ -205,35 +205,35 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void decorator01() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     // @Test
     // public void decorator02() throws Exception {
-    //     checkScopeAndTree();
+    // checkScopeAndTree();
     // }
 
     // @Test
     // public void decorator03() throws Exception {
-    //     checkScopeAndTree("@some.path.to.decorator\n" + "def fn(): pass");
+    // checkScopeAndTree("@some.path.to.decorator\n" + "def fn(): pass");
     // }
 
     // @Test
     // public void decorator04() throws Exception {
-    //     checkScopeAndTree(
-    //                     "def outer():\n" +
-    //                                     "  @decorator1\n" +
-    //                                     "  def inner(): pass");
+    // checkScopeAndTree(
+    // "def outer():\n" +
+    // " @decorator1\n" +
+    // " def inner(): pass");
     // }
 
     // @Test
     // public void decorator05() throws Exception {
-    //     checkScopeAndTree(
-    //                     "def outer():\n" +
-    //                                     "  def decorator1(fn):\n" +
-    //                                     "    pass\n" +
-    //                                     "  @decorator1\n" +
-    //                                     "  def inner(): pass");
+    // checkScopeAndTree(
+    // "def outer():\n" +
+    // " def decorator1(fn):\n" +
+    // " pass\n" +
+    // " @decorator1\n" +
+    // " def inner(): pass");
     // }
 
     @Test
@@ -284,222 +284,239 @@ public class FuncDefTests extends ParserTestBase {
 
     // @Test
     // public void positionalOnlyArg07() throws Exception {
-    //     checkSyntaxErrorMessage("def name(p1, p2=None, /, p_or_kw, *, kw): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def name(p1, p2=None, /, p_or_kw, *, kw): pass", "SyntaxError:
+    // non-default argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg08() throws Exception {
-    //     checkSyntaxErrorMessage("def name(p1=None, p2, /, p_or_kw=None, *, kw): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def name(p1=None, p2, /, p_or_kw=None, *, kw): pass", "SyntaxError:
+    // non-default argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg09() throws Exception {
-    //     checkSyntaxErrorMessage("def name(p1=None, p2, /): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def name(p1=None, p2, /): pass", "SyntaxError: non-default argument
+    // follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg10() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a, b = 5, /, c): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def f(a, b = 5, /, c): pass", "SyntaxError: non-default argument
+    // follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg11() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a = 5, b, /, c): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def f(a = 5, b, /, c): pass", "SyntaxError: non-default argument
+    // follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg12() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a = 5, b=1, /, c, *, d=2): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def f(a = 5, b=1, /, c, *, d=2): pass", "SyntaxError: non-default
+    // argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg13() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a = 5, b, /): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("def f(a = 5, b, /): pass", "SyntaxError: non-default argument
+    // follows default argument");
     // }
 
-     @Test
-     public void positionalOnlyArg14() throws Exception {
-         checkSyntaxError("def f(*args, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg14() throws Exception {
+        checkSyntaxError("def f(*args, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg15() throws Exception {
-         checkSyntaxError("def f(*args, a, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg15() throws Exception {
+        checkSyntaxError("def f(*args, a, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg16() throws Exception {
-         checkSyntaxError("def f(**kwargs, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg16() throws Exception {
+        checkSyntaxError("def f(**kwargs, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg17() throws Exception {
-         checkSyntaxError("def f(/, a = 1): pass");
-     }
+    @Test
+    public void positionalOnlyArg17() throws Exception {
+        checkSyntaxError("def f(/, a = 1): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg18() throws Exception {
-         checkSyntaxError("def f(/, a): pass");
-     }
+    @Test
+    public void positionalOnlyArg18() throws Exception {
+        checkSyntaxError("def f(/, a): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg19() throws Exception {
-         checkSyntaxError("def f(/): pass");
-     }
+    @Test
+    public void positionalOnlyArg19() throws Exception {
+        checkSyntaxError("def f(/): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg20() throws Exception {
-         checkSyntaxError("def f(*, a, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg20() throws Exception {
+        checkSyntaxError("def f(*, a, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg21() throws Exception {
-         checkSyntaxError("def f(*, /, a): pass");
-     }
+    @Test
+    public void positionalOnlyArg21() throws Exception {
+        checkSyntaxError("def f(*, /, a): pass");
+    }
 
     // @Test
     // public void positionalOnlyArg22() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a, /, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
+    // checkSyntaxErrorMessage("def f(a, /, a): pass", "SyntaxError: duplicate argument 'a' in
+    // function definition");
     // }
 
     // @Test
     // public void positionalOnlyArg23() throws Exception {
-    //     checkSyntaxErrorMessage("def f(a, /, *, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
+    // checkSyntaxErrorMessage("def f(a, /, *, a): pass", "SyntaxError: duplicate argument 'a' in
+    // function definition");
     // }
 
-     @Test
-     public void positionalOnlyArg24() throws Exception {
-         checkSyntaxError("def f(a, b/2, c): pass");
-     }
+    @Test
+    public void positionalOnlyArg24() throws Exception {
+        checkSyntaxError("def f(a, b/2, c): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg25() throws Exception {
-         checkSyntaxError("def f(a, /, c, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg25() throws Exception {
+        checkSyntaxError("def f(a, /, c, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg26() throws Exception {
-         checkSyntaxError("def f(a, /, c, /, d): pass");
-     }
+    @Test
+    public void positionalOnlyArg26() throws Exception {
+        checkSyntaxError("def f(a, /, c, /, d): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg27() throws Exception {
-         checkSyntaxError("def f(a, /, c, /, d, *, e): pass");
-     }
+    @Test
+    public void positionalOnlyArg27() throws Exception {
+        checkSyntaxError("def f(a, /, c, /, d, *, e): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg28() throws Exception {
-         checkSyntaxError("def f(a, *, c, /, d, e): pass");
-     }
+    @Test
+    public void positionalOnlyArg28() throws Exception {
+        checkSyntaxError("def f(a, *, c, /, d, e): pass");
+    }
 
     // @Test
     // public void positionalOnlyArg29() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a, b = 5, /, c): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("async def f(a, b = 5, /, c): pass", "SyntaxError: non-default
+    // argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg30() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a = 5, b, /, c): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("async def f(a = 5, b, /, c): pass", "SyntaxError: non-default
+    // argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg31() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a = 5, b=1, /, c, d=2): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("async def f(a = 5, b=1, /, c, d=2): pass", "SyntaxError: non-default
+    // argument follows default argument");
     // }
 
     // @Test
     // public void positionalOnlyArg32() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a = 5, b, /): pass", "SyntaxError: non-default argument follows default argument");
+    // checkSyntaxErrorMessage("async def f(a = 5, b, /): pass", "SyntaxError: non-default argument
+    // follows default argument");
     // }
 
-     @Test
-     public void positionalOnlyArg33() throws Exception {
-         checkSyntaxError("async def f(*args, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg33() throws Exception {
+        checkSyntaxError("async def f(*args, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg34() throws Exception {
-         checkSyntaxError("async def f(*args, a, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg34() throws Exception {
+        checkSyntaxError("async def f(*args, a, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg35() throws Exception {
-         checkSyntaxError("async def f(**kwargs, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg35() throws Exception {
+        checkSyntaxError("async def f(**kwargs, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg36() throws Exception {
-         checkSyntaxError("async def f(/, a = 1): pass");
-     }
+    @Test
+    public void positionalOnlyArg36() throws Exception {
+        checkSyntaxError("async def f(/, a = 1): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg37() throws Exception {
-         checkSyntaxError("async def f(/, a): pass");
-     }
+    @Test
+    public void positionalOnlyArg37() throws Exception {
+        checkSyntaxError("async def f(/, a): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg38() throws Exception {
-         checkSyntaxError("async def f(/): pass");
-     }
+    @Test
+    public void positionalOnlyArg38() throws Exception {
+        checkSyntaxError("async def f(/): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg39() throws Exception {
-         checkSyntaxError("async def f(*, a, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg39() throws Exception {
+        checkSyntaxError("async def f(*, a, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg40() throws Exception {
-         checkSyntaxError("async def f(*, /, a): pass");
-     }
+    @Test
+    public void positionalOnlyArg40() throws Exception {
+        checkSyntaxError("async def f(*, /, a): pass");
+    }
 
     // @Test
     // public void positionalOnlyArg41() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a, /, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
+    // checkSyntaxErrorMessage("async def f(a, /, a): pass", "SyntaxError: duplicate argument 'a' in
+    // function definition");
     // }
 
     // @Test
     // public void positionalOnlyArg42() throws Exception {
-    //     checkSyntaxErrorMessage("async def f(a, /, *, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
+    // checkSyntaxErrorMessage("async def f(a, /, *, a): pass", "SyntaxError: duplicate argument 'a'
+    // in function definition");
     // }
 
-     @Test
-     public void positionalOnlyArg43() throws Exception {
-         checkSyntaxError("async def f(a, b/2, c): pass");
-     }
+    @Test
+    public void positionalOnlyArg43() throws Exception {
+        checkSyntaxError("async def f(a, b/2, c): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg44() throws Exception {
-         checkSyntaxError("async def f(a, /, c, /): pass");
-     }
+    @Test
+    public void positionalOnlyArg44() throws Exception {
+        checkSyntaxError("async def f(a, /, c, /): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg45() throws Exception {
-         checkSyntaxError("async def f(a, /, c, /, d): pass");
-     }
+    @Test
+    public void positionalOnlyArg45() throws Exception {
+        checkSyntaxError("async def f(a, /, c, /, d): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg46() throws Exception {
-         checkSyntaxError("async def f(a, /, c, /, d, *, e): pass");
-     }
+    @Test
+    public void positionalOnlyArg46() throws Exception {
+        checkSyntaxError("async def f(a, /, c, /, d, *, e): pass");
+    }
 
-     @Test
-     public void positionalOnlyArg47() throws Exception {
-         checkSyntaxError("async def f(a, *, c, /, d, e): pass");
-     }
+    @Test
+    public void positionalOnlyArg47() throws Exception {
+        checkSyntaxError("async def f(a, *, c, /, d, e): pass");
+    }
 
     // @Test
     // public void positionalOnlyArg48() throws Exception {
-    //     checkSyntaxErrorMessage("def f(p1, *k1, k1=100): pass ", "SyntaxError: duplicate argument 'k1' in function definition");
+    // checkSyntaxErrorMessage("def f(p1, *k1, k1=100): pass ", "SyntaxError: duplicate argument
+    // 'k1' in function definition");
     // }
 
     // @Test
     // public void positionalOnlyArg49() throws Exception {
-    //     checkSyntaxErrorMessage("def f(p1, *, k1, **k1): pass ", "SyntaxError: duplicate argument 'k1' in function definition");
+    // checkSyntaxErrorMessage("def f(p1, *, k1, **k1): pass ", "SyntaxError: duplicate argument
+    // 'k1' in function definition");
     // }
 
     // @Test
     // public void issue21351() throws Exception {
-    //     // parser test for GR-21351
-    //     checkScopeAndTree();
+    // // parser test for GR-21351
+    // checkScopeAndTree();
     // }
 }

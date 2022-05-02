@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
+import org.junit.Test;
 
 public class GeneratorAndCompForTests extends ParserTestBase {
 
@@ -302,9 +300,9 @@ public class GeneratorAndCompForTests extends ParserTestBase {
 
     // @Test
     // public void genFromPip() throws Exception {
-    //     File testFile = getTestFileFromTestAndTestMethod();
-    //     checkScopeFromFile(testFile, true);
-    //     checkTreeFromFile(testFile, true);
+    // File testFile = getTestFileFromTestAndTestMethod();
+    // checkScopeFromFile(testFile, true);
+    // checkTreeFromFile(testFile, true);
     // }
 
     @Test

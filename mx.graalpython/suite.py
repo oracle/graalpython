@@ -226,11 +226,21 @@ suite = {
 
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
-            "sourceDirs": ["src/main/java"],
+            "sourceDirs": ["src"],
             "javaCompliance": "11+",
             "dependencies": [
                 "truffle:ICU4J",
-                "truffle:ICU4J-CHARSET",
+            ],
+        },
+
+        "com.oracle.graal.python.pegparser.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "11+",
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+                "mx:JUNIT",
             ],
         },
 
@@ -567,6 +577,7 @@ suite = {
             "description": "unit tests",
             "dependencies": [
                 "com.oracle.graal.python.test",
+                "com.oracle.graal.python.pegparser.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [

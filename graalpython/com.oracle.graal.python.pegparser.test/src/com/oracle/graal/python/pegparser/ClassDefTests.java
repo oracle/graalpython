@@ -41,8 +41,7 @@
 
 package com.oracle.graal.python.pegparser;
 
-import java.io.File;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class ClassDefTests extends ParserTestBase {
 
@@ -240,11 +239,11 @@ public class ClassDefTests extends ParserTestBase {
 
     // @Test
     // public void metaclass01() throws Exception {
-    //     checkScopeAndTree(
-    //                     "class A:\n" +
-    //                                     "    class B:\n" +
-    //                                     "        pass\n",
-    //                     PythonParser.ParserMode.Statement);
+    // checkScopeAndTree(
+    // "class A:\n" +
+    // " class B:\n" +
+    // " pass\n",
+    // PythonParser.ParserMode.Statement);
     // }
 
     @Test

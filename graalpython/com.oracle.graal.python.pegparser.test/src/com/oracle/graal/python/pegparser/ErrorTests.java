@@ -40,14 +40,15 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
- * Testing invalid rules. If the test method has the same names, but different
- * number, then it tests different alts in the rule.
+ * Testing invalid rules. If the test method has the same names, but different number, then it tests
+ * different alts in the rule.
  */
 public class ErrorTests extends ParserTestBase {
-    // TODO due to the bad conversion of strings in java generator, there are not spaces after , and . in some messages
+    // TODO due to the bad conversion of strings in java generator, there are not spaces after , and
+    // . in some messages
 
     @Test
     public void invalidArguments01() throws Exception {
@@ -64,7 +65,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("f(x for x in L, *[])", "Generator expression must be parenthesized");
         checkSyntaxErrorMessage("f(x for x in L, **{})", "Generator expression must be parenthesized");
         // TODO
-//        checkSyntaxErrorMessage("f(L, x for x in L)", "Generator expression must be parenthesized");
+// checkSyntaxErrorMessage("f(L, x for x in L)", "Generator expression must be parenthesized");
         checkSyntaxErrorMessage("f(x for x in L, y for y in L)", "Generator expression must be parenthesized");
 
     }
@@ -114,7 +115,8 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("[x,y for x,y in range(100)]", "did you forget parentheses around the comprehension target?");
         checkSyntaxErrorMessage("{x,y for x,y in range(100)}", "did you forget parentheses around the comprehension target?");
         // TODO
-//        checkSyntaxErrorMessage("[i := 0, j := 1 for i, j in [(1, 2), (3, 4)]]", "did you forget parentheses around the comprehension target?");        
+// checkSyntaxErrorMessage("[i := 0, j := 1 for i, j in [(1, 2), (3, 4)]]", "did you forget
+// parentheses around the comprehension target?");
     }
 
     @Test
@@ -132,24 +134,24 @@ public class ErrorTests extends ParserTestBase {
     @Test
     public void invalidExceptionBlock01() throws Exception {
         checkSyntaxErrorMessage("try:\n" +
-                "  pass\n" +
-                "except A, B:\n" +
-                "   pass", "exception group must be parenthesized");
-        // TODO uncomment, when it will be possible. 
-//        checkSyntaxErrorMessage("try:\n" +
-//                "  pass\n" +
-//                "except A, B, C:\n" +
-//                "   pass", "exception group must be parenthesized");
-//        checkSyntaxErrorMessage("try:\n" +
-//                "  pass\n" +
-//                "except A, B, C as blech:\n" +
-//                "   pass", "exception group must be parenthesized");
-//        checkSyntaxErrorMessage("try:\n" +
-//                "  pass\n" +
-//                "except A, B, C as blech:\n" +
-//                "   pass\n" +
-//                "finally:\n" +
-//                "   pass", "exception group must be parenthesized");
+                        "  pass\n" +
+                        "except A, B:\n" +
+                        "   pass", "exception group must be parenthesized");
+        // TODO uncomment, when it will be possible.
+// checkSyntaxErrorMessage("try:\n" +
+// " pass\n" +
+// "except A, B, C:\n" +
+// " pass", "exception group must be parenthesized");
+// checkSyntaxErrorMessage("try:\n" +
+// " pass\n" +
+// "except A, B, C as blech:\n" +
+// " pass", "exception group must be parenthesized");
+// checkSyntaxErrorMessage("try:\n" +
+// " pass\n" +
+// "except A, B, C as blech:\n" +
+// " pass\n" +
+// "finally:\n" +
+// " pass", "exception group must be parenthesized");
     }
 
     @Test
@@ -170,17 +172,17 @@ public class ErrorTests extends ParserTestBase {
     @Test
     public void invalidNameExpression01() throws Exception {
         checkSyntaxErrorMessage("if x = 3:\n" +
-            "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");     
+                        "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
         checkSyntaxErrorMessage("while x = 3:\n" +
-            "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");     
+                        "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
     }
 
     @Test
     public void invalidNameExpression02() throws Exception {
         checkSyntaxErrorMessage("if x.a = 3:\n" +
-            "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");     
+                        "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");
         checkSyntaxErrorMessage("while x.a = 3:\n" +
-            "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");     
+                        "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");
     }
 
     @Test
@@ -196,38 +198,39 @@ public class ErrorTests extends ParserTestBase {
     }
 
     @Test
-    void invalidTargets01() throws Exception {
+    public void invalidTargets01() throws Exception {
         checkSyntaxErrorMessage("None = 1", "cannot assign to None");
         checkSyntaxErrorMessage("True = 1", "cannot assign to True");
-        //checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
-        //checkSyntaxErrorMessage("__debug__ = 1", "cannot assign to __debug__");
+        // checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
+        // checkSyntaxErrorMessage("__debug__ = 1", "cannot assign to __debug__");
         checkSyntaxErrorMessage("(x for x in x) = 1", "cannot assign to generator expression");
-        //checkSyntaxErrorMessage("`1` = 1", "cannot assign to True");
+        // checkSyntaxErrorMessage("`1` = 1", "cannot assign to True");
         checkSyntaxErrorMessage("(a, \"b\", c) = (1, 2, 3)", "cannot assign to literal");
         checkSyntaxErrorMessage("(a, True, c) = (1, 2, 3)", "cannot assign to True");
-        //checkSyntaxErrorMessage("(a, __debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
+        // checkSyntaxErrorMessage("(a, __debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
         checkSyntaxErrorMessage("(a, *True, c) = (1, 2, 3)", "cannot assign to True");
-        //checkSyntaxErrorMessage("(a, *__debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
+        // checkSyntaxErrorMessage("(a, *__debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
         checkSyntaxErrorMessage("[a, b, c + 1] = [1, 2, 3]", "cannot assign to expression");
         checkSyntaxErrorMessage("[a, b[1], c + 1] = [1, 2, 3]", "cannot assign to expression");
         checkSyntaxErrorMessage("[a, b.c.d, c + 1] = [1, 2, 3]", "cannot assign to expression");
         checkSyntaxErrorMessage("a if 1 else b = 1", "cannot assign to conditional expression");
         checkSyntaxErrorMessage("True = True = 3", "cannot assign to True");
         checkSyntaxErrorMessage("x = y = True = z = 3", "cannot assign to True");
-//        checkSyntaxErrorMessage("p = p =", "invalid syntax");
-//        checkSyntaxErrorMessage("f(__debug__=1)", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("__debug__: int", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("__debug__ += 1", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("def f(*, x=lambda __debug__:0): pass", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("def f(*args:(lambda __debug__:0)): pass", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("def f(**kwargs:(lambda __debug__:0)): pass", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("def f(**__debug__): pass", "cannot assign to __debug__");
-//        checkSyntaxErrorMessage("def f(*xx, __debug__): pass", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("p = p =", "invalid syntax");
+// checkSyntaxErrorMessage("f(__debug__=1)", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("__debug__: int", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("__debug__ += 1", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("def f(*, x=lambda __debug__:0): pass", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("def f(*args:(lambda __debug__:0)): pass", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("def f(**kwargs:(lambda __debug__:0)): pass", "cannot assign to
+// __debug__");
+// checkSyntaxErrorMessage("def f(**__debug__): pass", "cannot assign to __debug__");
+// checkSyntaxErrorMessage("def f(*xx, __debug__): pass", "cannot assign to __debug__");
         checkSyntaxErrorMessage("(y for y in (1,2)) = 10", "cannot assign to generator expression");
     }
 
     @Test
-    void invalidTargets02() throws Exception {
+    public void invalidTargets02() throws Exception {
         checkSyntaxErrorMessage("for a() in b: pass", "cannot assign to function call");
         checkSyntaxErrorMessage("for (a, b()) in b: pass", "cannot assign to function call");
         checkSyntaxErrorMessage("for [a, b()] in b: pass", "cannot assign to function call");
@@ -238,7 +241,7 @@ public class ErrorTests extends ParserTestBase {
     }
 
     @Test
-    void invalidTargets03() throws Exception {
+    public void invalidTargets03() throws Exception {
         checkSyntaxErrorMessage("with a as b(): pass", "cannot assign to function call");
         checkSyntaxErrorMessage("with a as (b, c()): pass", "cannot assign to function call");
         checkSyntaxErrorMessage("with a as [b, c()]: pass", "cannot assign to function call");
@@ -246,9 +249,9 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("with a as (x, *(y, z.d())): pass", "cannot assign to function call");
         checkSyntaxErrorMessage("with a as b, c as d(): pass", "cannot assign to function call");
     }
-    
+
     @Test
-    void invalidTargets04() throws Exception {
+    public void invalidTargets04() throws Exception {
         checkSyntaxErrorMessage("del (,)", "invalid syntax");
         checkSyntaxErrorMessage("del 1", "cannot delete literal");
         checkSyntaxErrorMessage("del (1, 2)", "cannot delete literal");
@@ -281,21 +284,22 @@ public class ErrorTests extends ParserTestBase {
     public void while01() throws Exception {
         checkSyntaxErrorMessage("while True\n", "expected ':'");
     }
-    
+
     @Test
     public void invalidKvPair01() throws Exception {
         checkSyntaxErrorMessage("{1:2, 3:4, 5}", "':' expected after dictionary key");
     }
-    
+
     @Test
     public void invalidExpression01() throws Exception {
-        // TODO the java generator remove spaces after '.'. After fixing this issue, it should be added the space here. 
+        // TODO the java generator remove spaces after '.'. After fixing this issue, it should be
+        // added the space here.
         checkSyntaxErrorMessage("[1, 2 3]", "invalid syntax.Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("{1, 2 3}", "invalid syntax.Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax.Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax.Perhaps you forgot a comma?");
     }
-    
+
     @Test
     public void invalidNamedExpression01() throws Exception {
         checkSyntaxErrorMessage("x := 0", "invalid syntax");
@@ -307,14 +311,16 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("def spam(a: b := 42 = 5): pass", "invalid syntax");
         checkSyntaxErrorMessage("spam(a=b := 'c')", "invalid syntax");
         checkSyntaxErrorMessage("spam(x = y := f(x))", "invalid syntax");
-//TODO        checkSyntaxErrorMessage("spam(a=1, b := 2)", "positional argument follows keyword argument");
-//TODO        checkSyntaxErrorMessage("spam(a=1, (b := 2))", "positional argument follows keyword argument");
+// TODO checkSyntaxErrorMessage("spam(a=1, b := 2)", "positional argument follows keyword
+// argument");
+// TODO checkSyntaxErrorMessage("spam(a=1, (b := 2))", "positional argument follows keyword
+// argument");
         checkSyntaxErrorMessage("(x := lambda: y := 1)", "invalid syntax");
         checkSyntaxErrorMessage("(lambda: x := 1)", "cannot use assignment expressions with lambda");
         checkSyntaxErrorMessage("[i + 1 for i in i := [1,2]]", "invalid syntax");
         checkSyntaxErrorMessage("[i := 0, j := 1 for i, j in [(1, 2), (3, 4)]]", "did you forget parentheses around the comprehension target?");
-//TODO        checkSyntaxErrorMessage("class Foo():\n" +
-//                "    [(42, 1 + ((( j := i )))) for i in range(5)]", 
-//                "assignment expression within a comprehension cannot be used in a class body");
+// TODO checkSyntaxErrorMessage("class Foo():\n" +
+// " [(42, 1 + ((( j := i )))) for i in range(5)]",
+// "assignment expression within a comprehension cannot be used in a class body");
     }
 }
