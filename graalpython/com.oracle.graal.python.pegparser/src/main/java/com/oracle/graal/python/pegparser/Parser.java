@@ -6682,6 +6682,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, NAMED_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             if (errorIndicator) {
                 return null;
@@ -6700,9 +6701,11 @@ public final class Parser extends AbstractParser {
                 (b = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createNamedExp(this.check(this.setExprContext(a,ExprContext.Store)),b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -6760,6 +6763,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, DIRECT_NAMED_EXPRESSION_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             if (errorIndicator) {
                 return null;
@@ -6778,9 +6782,11 @@ public final class Parser extends AbstractParser {
                 (b = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createNamedExp(this.check(this.setExprContext(a,ExprContext.Store)),b,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12354,9 +12360,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , 'invalid syntax. Perhaps you forgot a comma?' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12558,9 +12562,7 @@ public final class Parser extends AbstractParser {
                 (_literal = (Token)expect(22)) != null  // token='='
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a);
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12705,9 +12707,7 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a);
                 cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13232,9 +13232,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_218_rule(true)
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a);
                 cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13272,9 +13270,7 @@ public final class Parser extends AbstractParser {
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a);
                 cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13851,9 +13847,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_230_rule(false)
             )
             {
-                // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "':' expected after dictionary key" )
-                debugMessageln("[33;5;7m!!! TODO: Convert RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , '':' expected after dictionary key' ) to Java !!![0m");
-                _res = null;
+                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"':' expected after dictionary key");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }

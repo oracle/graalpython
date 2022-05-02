@@ -190,4 +190,6 @@ public interface NodeFactory {
     public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset);
 
     public ExprTy createAwait(ExprTy value, int startOffset, int endOffset);
+    
+    public ExprTy.NamedExpr createNamedExp(ExprTy target, ExprTy value, int startOffset, int endOffset);
 }

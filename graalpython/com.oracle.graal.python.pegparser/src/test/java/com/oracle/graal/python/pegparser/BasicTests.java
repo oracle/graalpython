@@ -306,16 +306,16 @@ public class BasicTests extends ParserTestBase {
         checkScopeAndTree("foo(arg = 1)");
     }
 
-//    @Test
-//    public void call04() throws Exception {
-//        checkSyntaxError("foo(1+arg = 1)");
-//    }
-//
-//    @Test
-//    public void call05() throws Exception {
-//        checkSyntaxError("foo(arg + 1 = 1)");
-//    }
-//
+    @Test
+    public void call04() throws Exception {
+        checkSyntaxError("foo(1+arg = 1)");
+    }
+
+    @Test
+    public void call05() throws Exception {
+        checkSyntaxError("foo(arg + 1 = 1)");
+    }
+
     @Test
     public void call06() throws Exception {
         checkTreeResult("foo(arg1 = 1, arg2 = 2)");
@@ -346,21 +346,21 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("foo(**mydict1, **mydict2)");
     }
 
-//    @Test
-//    public void call13() throws Exception {
-//        checkSyntaxError("foo(**mydict1, *mylist)");
-//    }
-//
+    @Test
+    public void call13() throws Exception {
+        checkSyntaxError("foo(**mydict1, *mylist)");
+    }
+
 //    @Test
 //    public void call14() throws Exception {
 //        checkSyntaxError("foo(**mydict1, 1)");
 //    }
-//
+
 //    @Test
 //    public void call15() throws Exception {
 //        checkSyntaxError("foo(arg1=1, 1)");
 //    }
-//
+
     @Test
     public void call16() throws Exception {
         checkTreeResult("a.b.c.foo()");
