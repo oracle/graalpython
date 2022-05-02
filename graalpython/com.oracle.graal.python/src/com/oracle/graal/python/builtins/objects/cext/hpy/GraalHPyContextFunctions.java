@@ -136,6 +136,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyDictKeys;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
@@ -3287,4 +3288,24 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyDictKeys extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asDict,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PyDictKeys keysNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 2);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object dict = asDict.execute(context, arguments[1]);
+                return asHandleNode.execute(context, keysNode.execute((PDict) dict));
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
 }

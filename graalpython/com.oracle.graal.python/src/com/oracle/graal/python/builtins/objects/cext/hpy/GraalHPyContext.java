@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContains;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictKeys;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDump;
@@ -667,6 +668,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_LIST_APPEND("ctx_List_Append"),
         CTX_DICT_CHECK("ctx_Dict_Check"),
         CTX_DICT_NEW("ctx_Dict_New"),
+        CTX_DICT_KEYS("ctx_Dict_Keys"),
         CTX_DICT_SETITEM("ctx_Dict_SetItem"),
         CTX_DICT_GETITEM("ctx_Dict_GetItem"),
         CTX_FROMPYOBJECT("ctx_FromPyObject"),
@@ -2219,6 +2221,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
         members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
+
+        members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();
+
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {
                 Object m = members[i];
