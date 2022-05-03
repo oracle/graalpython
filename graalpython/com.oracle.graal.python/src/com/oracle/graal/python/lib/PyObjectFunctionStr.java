@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,21 +60,22 @@ public abstract class PyObjectFunctionStr extends PNodeWithContext {
 
     @Specialization
     String str(VirtualFrame frame, Object function,
-                    @Cached PyObjectLookupAttr lookupQualname,
-                    @Cached PyObjectLookupAttr lookupModule,
+                    @Cached PyObjectLookupAttr lookupName,
                     @Cached PyObjectStrAsJavaStringNode asStr) {
-        Object qualname = lookupQualname.execute(frame, function, __QUALNAME__);
-        if (qualname == PNone.NO_VALUE) {
-            return asStr.execute(function);
-        }
-        Object module = lookupModule.execute(frame, function, __MODULE__);
-        if (!(module instanceof PNone)) {
-            String moduleStr = asStr.execute(frame, module);
-            if (!"builtins".equals(moduleStr)) {
-                return PString.cat(moduleStr, ".", asStr.execute(frame, qualname), "()");
-            }
-        }
-        return PString.cat(asStr.execute(frame, qualname), "()");
+        return PString.cat(asStr.execute(lookupName.execute(frame, function, __NAME__)), "()");
+        // The following code is for 3.11
+        // Object qualname = lookupQualname.execute(frame, function, __QUALNAME__);
+        // if (qualname == PNone.NO_VALUE) {
+        // return asStr.execute(function);
+        // }
+        // Object module = lookupModule.execute(frame, function, __MODULE__);
+        // if (!(module instanceof PNone)) {
+        // String moduleStr = asStr.execute(frame, module);
+        // if (!"builtins".equals(moduleStr)) {
+        // return PString.cat(moduleStr, ".", asStr.execute(frame, qualname), "()");
+        // }
+        // }
+        // return PString.cat(asStr.execute(frame, qualname), "()");
     }
 
     public static PyObjectFunctionStr create() {
