@@ -53,4 +53,5 @@ Follow these steps to update HPy.
       - Adding `GraalHPyContextFunction` implementations for the new APIs
       - Updating the `createMembers` method to assign the appropriate
         implementations to the context members
+      - Updating hpy.c to assign new context members to their native locations
 
