@@ -2429,11 +2429,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private void mirrorNativeSpacePointerToNative(GraalHPyHandle handleObject, int handleID) {
         assert isPointer();
         assert useNativeFastPaths;
-        Object nativeSpace = PNone.NO_VALUE;
         Object delegate = handleObject.getDelegate();
-        if (delegate instanceof PythonHPyObject) {
-            nativeSpace = ((PythonHPyObject) delegate).getHPyNativeSpace();
-        }
+        Object nativeSpace = HPyGetNativeSpacePointerNodeGen.getUncached().execute(delegate);
         try {
             long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
             unsafe.putLong(nativeSpacePointers + handleID * SIZEOF_LONG, l);
@@ -2587,7 +2584,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      *            {@code null}; in this case, bare {@code free} will be used).
      */
     @TruffleBoundary
-    final void createHandleReference(PythonObject pythonObject, Object dataPtr, Object destroyFunc) {
+    final void createHandleReference(Object pythonObject, Object dataPtr, Object destroyFunc) {
         GraalHPyHandleReference newHead = new GraalHPyHandleReference(pythonObject, ensureReferenceQueue(), dataPtr, destroyFunc);
         references.getAndAccumulate(newHead, (prev, x) -> {
             x.next = prev;

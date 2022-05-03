@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import java.math.BigInteger;
 import java.util.ArrayList;
 
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1955,10 +1956,12 @@ public class GraalHPyNodes {
         static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
+                        @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached PCallHPyFunction callMallocNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached CallNode callTypeNewNode,
@@ -2003,8 +2006,20 @@ public class GraalHPyNodes {
                 }
 
                 // create the type object
-                Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.TYPE);
-                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, namespace);
+                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                // TODO: check if metatype is a type
+                Object newType = callTypeNewNode.execute(PythonBuiltinClassType.PythonClass, names[1], bases, namespace);
+                // allocate additional memory for the metatype and add it
+                if (metatype != null) {
+                    // get basicsize of metatype and allocate it into GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
+                    PythonClass clazz = ((PythonClass) metatype);
+                    long basicSize = clazz.basicSize;
+                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                    writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                    Object destroyFunc = clazz.hpyDestroyFunc;
+                    context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                    ((PythonObject) newType).setPythonClass(metatype, dylib);
+                }
 
                 // determine and set the correct module attribute
                 String value = names[0];
@@ -2189,11 +2204,44 @@ public class GraalHPyNodes {
                         // away any other single base classes or subsequent params.
                         assert PGuards.isPTuple(specParamObject) : "type spec param claims to be a tuple but isn't";
                         return (PTuple) specParamObject;
+                    case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
+                        // intentionally ignored
+                        break;
                     default:
                         assert false : "unknown type spec param kind";
                 }
             }
             return factory.createTuple(basesList.toArray());
+        }
+
+        /**
+         * Reference implementation can be found in {@code ctx_type.c:get_metatype}
+         */
+        @TruffleBoundary
+        private static Object getMetatype(GraalHPyContext context, Object typeSpecParamArray,
+                        InteropLibrary ptrLib,
+                        CastToJavaIntLossyNode castToJavaIntNode,
+                        PCallHPyFunction callHelperFunctionNode,
+                        HPyAsPythonObjectNode asPythonObjectNode) throws InteropException {
+            if (!ptrLib.isNull(typeSpecParamArray)) {
+                long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
+                ArrayList<Object> basesList = new ArrayList<>();
+                for (long i = 0; i < nSpecParam; i++) {
+                    Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
+                    // TODO(fa): directly read member as soon as this is supported by Sulong.
+                    // Currently, we cannot pass struct-by-value via interop.
+                    int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
+
+                    switch (specParamKind) {
+                        case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
+                            return asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                        default:
+                            // intentionally ignored
+                            break;
+                    }
+                }
+            }
+            return null;
         }
 
         /**

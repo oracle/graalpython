@@ -308,6 +308,7 @@ public abstract class GraalHPyDef {
     /* enum values of 'HPyType_SpecParam_Kind' */
     public static final int HPyType_SPEC_PARAM_BASE = 1;
     public static final int HPyType_SPEC_PARAM_BASES_TUPLE = 2;
+    public static final int HPyType_SPEC_PARAM_METACLASS = 3;
 
     /* type flags according to 'hpytype.h' */
     public static final long _Py_TPFLAGS_HEAPTYPE = (1L << 9);
