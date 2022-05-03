@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -3362,6 +3363,169 @@ public abstract class GraalHPyContextFunctions {
                     }
                 }
                 return asHandleNode.execute(context, interned);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    // see _HPyCapsule_key in the HPy API
+    static final class CapsuleKey {
+        private static final byte Pointer = 0;
+        private static final byte Name = 1;
+        private static final byte Context = 2;
+        private static final byte Destructor = 3;
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
+        protected static Object argument2(Object[] arguments) {
+            return arguments[2];
+        }
+
+        @ExportMessage(limit = "3")
+        Object execute(Object[] arguments,
+                        @CachedLibrary("argument2(arguments)") InteropLibrary nameLib,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                PyCapsule result = new PyCapsule();
+                result.setPointer(arguments[1]);
+                try {
+                    if (!nameLib.isPointer(arguments[2]) || nameLib.asPointer(arguments[2]) != 0) {
+                        result.setName(castStr.execute(fromCharPointerNode.execute(arguments[2])));
+                    }
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                result.setDestructor(arguments[3]);
+                return asHandleNode.execute(context, result);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCapsuleGet extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asCapsule,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToJavaIntExactNode castInt,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object capsule = asCapsule.execute(context, arguments[1]);
+                if (!(capsule instanceof PyCapsule)) {
+                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                }
+                PyCapsule pyCapsule = (PyCapsule) capsule;
+                String name = castStr.execute(fromCharPointerNode.execute(arguments[3]));
+                if (!pyCapsule.getName().equals(name)) {
+                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                }
+                int key = castInt.execute(arguments[2]);
+                Object result;
+                switch (key) {
+                    case CapsuleKey.Pointer:
+                        result = pyCapsule.getPointer();
+                        break;
+                    case CapsuleKey.Context:
+                        result = pyCapsule.getContext();
+                        break;
+                    case CapsuleKey.Name:
+                        result = new CByteArrayWrapper(pyCapsule.getName().getBytes());
+                        break;
+                    case CapsuleKey.Destructor:
+                        result = pyCapsule.getDestructor();
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                }
+                return result;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCapsuleSet extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asCapsule,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToJavaIntExactNode castInt,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object capsule = asCapsule.execute(context, arguments[1]);
+                if (!(capsule instanceof PyCapsule)) {
+                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                }
+                PyCapsule pyCapsule = (PyCapsule) capsule;
+                int key = castInt.execute(arguments[2]);
+                switch (key) {
+                    case CapsuleKey.Pointer:
+                        pyCapsule.setPointer(arguments[3]);
+                        break;
+                    case CapsuleKey.Context:
+                        pyCapsule.setContext(arguments[3]);
+                        break;
+                    case CapsuleKey.Name:
+                        pyCapsule.setName(castStr.execute(fromCharPointerNode.execute(arguments[3])));
+                        break;
+                    case CapsuleKey.Destructor:
+                        pyCapsule.setDestructor(arguments[3]);
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                }
+                return 0;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCapsuleIsValid extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asCapsule,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object capsule = asCapsule.execute(context, arguments[1]);
+                if (!(capsule instanceof PyCapsule)) {
+                    return 0;
+                }
+                PyCapsule pyCapsule = (PyCapsule) capsule;
+                String name = castStr.execute(fromCharPointerNode.execute(arguments[3]));
+                if (!pyCapsule.getName().equals(name)) {
+                    return 0;
+                }
+                return 1;
             } finally {
                 gil.release(mustRelease);
             }
