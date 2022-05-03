@@ -1366,6 +1366,39 @@ public class GraalHPyNodes {
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxInt(bits);
         }
+
+        @Specialization(replaces = { //
+                            "doHandle", "doValidHandle", //
+                            "doNullLong", "doLong", "doLongDouble", "doLongInt", //
+                            "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
+                        })
+        Object doGeneric(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (value instanceof GraalHPyHandle) {
+                return doValidHandle(hpyContext, (GraalHPyHandle) value);
+            }
+            long bits;
+            if (value instanceof Long) {
+                bits = (Long) value;
+            } else {
+                lib.toNative(value);
+                try {
+                    bits = lib.asPointer(value);
+                } catch (UnsupportedMessageException ex) {
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
+            }
+            if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+                return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+            } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+                return GraalHPyBoxing.unboxInt(bits);
+            } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+                return GraalHPyBoxing.unboxDouble(bits);
+            } else {
+                assert GraalHPyBoxing.isBoxedHandle(bits);
+                return ensureContext(hpyContext).getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+            }
+        }
     }
 
     @GenerateUncached
