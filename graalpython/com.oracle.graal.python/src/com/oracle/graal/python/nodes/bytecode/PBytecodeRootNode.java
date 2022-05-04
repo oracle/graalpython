@@ -780,6 +780,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @Override
+    public Object[] storeParentFrameInArguments(VirtualFrame parentFrame) {
+        Object[] arguments = parentFrame.getArguments();
+        PArguments.setOSRFrame(arguments, parentFrame);
+        return arguments;
+    }
+
+    @Override
+    public Frame restoreParentFrameFromArguments(Object[] arguments) {
+        return PArguments.getOSRFrame(arguments);
+    }
+
+    @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
         return executeInner(osrFrame, true, target, (Integer) interpreterState);
     }
