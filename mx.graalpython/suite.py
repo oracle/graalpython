@@ -203,7 +203,13 @@ suite = {
         "com.oracle.graal.python.frozen": {
             "type": "python",
             "path": "graalpython/com.oracle.graal.python.frozen",
-        }
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.pegparser.generator",
+            "source": [],
+        },
     },
 
     "projects": {
@@ -231,6 +237,9 @@ suite = {
             "dependencies": [
                 "truffle:ICU4J",
             ],
+            "buildDependencies": [
+                "com.oracle.graal.python.pegparser.generator",
+            ],
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -242,6 +251,11 @@ suite = {
                 "com.oracle.graal.python.pegparser",
                 "mx:JUNIT",
             ],
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "subDir": "graalpython",
+            "native": True,
         },
 
         "com.oracle.graal.python.shell": {
