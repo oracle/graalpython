@@ -1,3 +1,7 @@
+# Copyright (c) 2022, Oracle and/or its affiliates.
+# Copyright (C) 1996-2022 Python Software Foundation
+#
+# Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 """
 Copy-parse of ast.dump, removing the `isinstance` checks. This is needed,
 because testing pegen requires generating a C extension module, which contains
