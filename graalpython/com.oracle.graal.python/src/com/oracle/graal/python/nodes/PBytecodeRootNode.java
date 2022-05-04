@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.compiler.OpCodesConstants.*;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 
@@ -80,6 +79,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
@@ -821,76 +821,76 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
             try {
                 switch (bc) {
-                    case LOAD_NONE:
+                    case OpCodesConstants.LOAD_NONE:
                         localFrame.setObject(++stackTop, PNone.NONE);
                         break;
-                    case LOAD_ELLIPSIS:
+                    case OpCodesConstants.LOAD_ELLIPSIS:
                         localFrame.setObject(++stackTop, PEllipsis.INSTANCE);
                         break;
-                    case LOAD_TRUE:
+                    case OpCodesConstants.LOAD_TRUE:
                         localFrame.setObject(++stackTop, true);
                         break;
-                    case LOAD_FALSE:
+                    case OpCodesConstants.LOAD_FALSE:
                         localFrame.setObject(++stackTop, false);
                         break;
-                    case LOAD_BYTE:
+                    case OpCodesConstants.LOAD_BYTE:
                         localFrame.setObject(++stackTop, (int) localBC[++bci]); // signed!
                         break;
-                    case LOAD_LONG: {
+                    case OpCodesConstants.LOAD_LONG: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(++stackTop, localLongConsts[oparg]);
                         break;
                     }
-                    case LOAD_DOUBLE: {
+                    case OpCodesConstants.LOAD_DOUBLE: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(++stackTop, Double.longBitsToDouble(localLongConsts[oparg]));
                         break;
                     }
-                    case LOAD_BIGINT: {
+                    case OpCodesConstants.LOAD_BIGINT: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(++stackTop, factory.createInt((BigInteger) localConsts[oparg]));
                         break;
                     }
-                    case LOAD_STRING:
-                    case LOAD_CONST: {
+                    case OpCodesConstants.LOAD_STRING:
+                    case OpCodesConstants.LOAD_CONST: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(++stackTop, localConsts[oparg]);
                         break;
                     }
-                    case LOAD_BYTES: {
+                    case OpCodesConstants.LOAD_BYTES: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
                         break;
                     }
-                    case LOAD_COMPLEX: {
+                    case OpCodesConstants.LOAD_COMPLEX: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         double[] num = (double[]) localConsts[oparg];
                         localFrame.setObject(++stackTop, factory.createComplex(num[0], num[1]));
                         break;
                     }
-                    case MAKE_KEYWORD: {
+                    case OpCodesConstants.MAKE_KEYWORD: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         String key = (String) localConsts[oparg];
                         Object value = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop, new PKeyword(key, value));
                         break;
                     }
-                    case BUILD_SLICE: {
+                    case OpCodesConstants.BUILD_SLICE: {
                         int count = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeBuildSlice(localFrame, stackTop, beginBci, count, localNodes);
                         break;
                     }
-                    case FORMAT_VALUE: {
+                    case OpCodesConstants.FORMAT_VALUE: {
                         int options = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeFormatValue(virtualFrame, stackTop, beginBci, localFrame, localNodes, options);
                         break;
                     }
-                    case COLLECTION_FROM_COLLECTION: {
+                    case OpCodesConstants.COLLECTION_FROM_COLLECTION: {
                         int type = Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeCollectionFromCollection(virtualFrame, localFrame, type, stackTop, localNodes, beginBci);
                         break;
                     }
-                    case COLLECTION_ADD_COLLECTION: {
+                    case OpCodesConstants.COLLECTION_ADD_COLLECTION: {
                         /*
                          * The first collection must be in the target format already, the second one
                          * is a python object.
@@ -899,14 +899,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeCollectionAddCollection(virtualFrame, localFrame, type, stackTop, localNodes, beginBci);
                         break;
                     }
-                    case COLLECTION_FROM_STACK: {
+                    case OpCodesConstants.COLLECTION_FROM_STACK: {
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
                         int type = CollectionBits.elementType(countAndType);
                         stackTop = bytecodeCollectionFromStack(virtualFrame, localFrame, type, count, stackTop, localNodes, beginBci);
                         break;
                     }
-                    case COLLECTION_ADD_STACK: {
+                    case OpCodesConstants.COLLECTION_ADD_STACK: {
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
                         int type = CollectionBits.elementType(countAndType);
@@ -915,32 +915,32 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeCollectionAddCollection(virtualFrame, localFrame, type, stackTop, localNodes, beginBci + 1);
                         break;
                     }
-                    case ADD_TO_COLLECTION: {
+                    case OpCodesConstants.ADD_TO_COLLECTION: {
                         int depthAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int depth = CollectionBits.elementCount(depthAndType);
                         int type = CollectionBits.elementType(depthAndType);
                         stackTop = bytecodeAddToCollection(virtualFrame, localFrame, stackTop, beginBci, localNodes, depth, type);
                         break;
                     }
-                    case KWARGS_DICT_MERGE: {
+                    case OpCodesConstants.KWARGS_DICT_MERGE: {
                         KwargsMergeNode mergeNode = insertChildNode(localNodes, bci, UNCACHED_KWARGS_MERGE, NODE_KWARGS_MERGE);
                         stackTop = mergeNode.execute(virtualFrame, stackTop, localFrame);
                         break;
                     }
-                    case UNPACK_SEQUENCE: {
+                    case OpCodesConstants.UNPACK_SEQUENCE: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeUnpackSequence(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg);
                         break;
                     }
-                    case UNPACK_EX: {
+                    case OpCodesConstants.UNPACK_EX: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         int countAfter = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeUnpackEx(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, countAfter);
                         break;
                     }
-                    case NOP:
+                    case OpCodesConstants.NOP:
                         break;
-                    case LOAD_FAST: {
+                    case OpCodesConstants.LOAD_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         Object value = localFrame.getObject(oparg);
                         if (value == null) {
@@ -956,55 +956,55 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(++stackTop, value);
                         break;
                     }
-                    case LOAD_CLOSURE: {
+                    case OpCodesConstants.LOAD_CLOSURE: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
                         localFrame.setObject(++stackTop, cell);
                         break;
                     }
-                    case CLOSURE_FROM_STACK: {
+                    case OpCodesConstants.CLOSURE_FROM_STACK: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeClosureFromStack(localFrame, stackTop, oparg);
                         break;
                     }
-                    case LOAD_DEREF: {
+                    case OpCodesConstants.LOAD_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeLoadDeref(localFrame, stackTop, beginBci, localNodes, oparg);
                         break;
                     }
-                    case STORE_DEREF: {
+                    case OpCodesConstants.STORE_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreDeref(localFrame, stackTop, oparg);
                         break;
                     }
-                    case DELETE_DEREF: {
+                    case OpCodesConstants.DELETE_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg);
                         break;
                     }
-                    case STORE_FAST: {
+                    case OpCodesConstants.STORE_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         localFrame.setObject(oparg, localFrame.getObject(stackTop));
                         localFrame.setObject(stackTop--, null);
                         break;
                     }
-                    case POP_TOP:
+                    case OpCodesConstants.POP_TOP:
                         localFrame.setObject(stackTop--, null);
                         break;
-                    case ROT_TWO: {
+                    case OpCodesConstants.ROT_TWO: {
                         Object top = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop, localFrame.getObject(stackTop - 1));
                         localFrame.setObject(stackTop - 1, top);
                         break;
                     }
-                    case ROT_THREE: {
+                    case OpCodesConstants.ROT_THREE: {
                         Object top = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop, localFrame.getObject(stackTop - 1));
                         localFrame.setObject(stackTop - 1, localFrame.getObject(stackTop - 2));
                         localFrame.setObject(stackTop - 2, top);
                         break;
                     }
-                    case ROT_FOUR: {
+                    case OpCodesConstants.ROT_FOUR: {
                         Object top = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop, localFrame.getObject(stackTop - 1));
                         localFrame.setObject(stackTop - 1, localFrame.getObject(stackTop - 2));
@@ -1012,11 +1012,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(stackTop - 3, top);
                         break;
                     }
-                    case DUP_TOP:
+                    case OpCodesConstants.DUP_TOP:
                         localFrame.setObject(stackTop + 1, localFrame.getObject(stackTop));
                         stackTop++;
                         break;
-                    case UNARY_OP: {
+                    case OpCodesConstants.UNARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
                         UnaryOpNode opNode = insertChildNode(localNodes, bci, UNARY_OP_FACTORY, op);
                         Object value = localFrame.getObject(stackTop);
@@ -1024,7 +1024,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(stackTop, result);
                         break;
                     }
-                    case BINARY_OP: {
+                    case OpCodesConstants.BINARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
                         BinaryOp opNode = (BinaryOp) insertChildNode(localNodes, bci, BINARY_OP_FACTORY, op);
                         Object right = localFrame.getObject(stackTop);
@@ -1034,27 +1034,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(stackTop, result);
                         break;
                     }
-                    case BINARY_SUBSCR: {
+                    case OpCodesConstants.BINARY_SUBSCR: {
                         GetItemNode getItemNode = insertChildNode(localNodes, bci, NODE_GET_ITEM);
                         Object slice = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         localFrame.setObject(stackTop, getItemNode.execute(virtualFrame, localFrame.getObject(stackTop), slice));
                         break;
                     }
-                    case STORE_SUBSCR: {
+                    case OpCodesConstants.STORE_SUBSCR: {
                         stackTop = bytecodeStoreSubscr(virtualFrame, localFrame, stackTop, beginBci, localNodes);
                         break;
                     }
-                    case DELETE_SUBSCR: {
+                    case OpCodesConstants.DELETE_SUBSCR: {
                         stackTop = bytecodeDeleteSubscr(virtualFrame, localFrame, stackTop, beginBci, localNodes);
                         break;
                     }
-                    case RAISE_VARARGS: {
+                    case OpCodesConstants.RAISE_VARARGS: {
                         int count = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeRaiseVarargs(virtualFrame, localFrame, stackTop, beginBci, count, localNodes);
                         break;
                     }
-                    case RETURN_VALUE: {
+                    case OpCodesConstants.RETURN_VALUE: {
                         if (inInterpreter) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
@@ -1069,86 +1069,86 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             return value;
                         }
                     }
-                    case LOAD_BUILD_CLASS: {
+                    case OpCodesConstants.LOAD_BUILD_CLASS: {
                         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, beginBci, UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS);
                         localFrame.setObject(++stackTop, read.read(virtualFrame, globals, __BUILD_CLASS__));
                         break;
                     }
-                    case LOAD_ASSERTION_ERROR: {
+                    case OpCodesConstants.LOAD_ASSERTION_ERROR: {
                         localFrame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
                         break;
                     }
-                    case STORE_NAME: {
+                    case OpCodesConstants.STORE_NAME: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreName(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
-                    case DELETE_NAME: {
+                    case OpCodesConstants.DELETE_NAME: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeDeleteName(virtualFrame, globals, locals, beginBci, oparg, localNames, localNodes);
                         break;
                     }
-                    case STORE_ATTR: {
+                    case OpCodesConstants.STORE_ATTR: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreAttr(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case DELETE_ATTR: {
+                    case OpCodesConstants.DELETE_ATTR: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeDeleteAttr(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case STORE_GLOBAL: {
+                    case OpCodesConstants.STORE_GLOBAL: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreGlobal(virtualFrame, localFrame, globals, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case DELETE_GLOBAL: {
+                    case OpCodesConstants.DELETE_GLOBAL: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeDeleteGlobal(virtualFrame, globals, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case LOAD_NAME: {
+                    case OpCodesConstants.LOAD_NAME: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeLoadName(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case LOAD_GLOBAL: {
+                    case OpCodesConstants.LOAD_GLOBAL: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeLoadGlobal(virtualFrame, localFrame, globals, stackTop, beginBci, localNames[oparg], localNodes);
                         break;
                     }
-                    case DELETE_FAST: {
+                    case OpCodesConstants.DELETE_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeDeleteFast(localFrame, beginBci, localNodes, oparg);
                         break;
                     }
-                    case LOAD_ATTR: {
+                    case OpCodesConstants.LOAD_ATTR: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeLoadAttr(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes, localNames);
                         break;
                     }
-                    case IMPORT_NAME: {
+                    case OpCodesConstants.IMPORT_NAME: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeImportName(virtualFrame, localFrame, globals, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
-                    case IMPORT_FROM: {
+                    case OpCodesConstants.IMPORT_FROM: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeImportFrom(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
-                    case IMPORT_STAR: {
+                    case OpCodesConstants.IMPORT_STAR: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeImportStar(virtualFrame, localFrame, stackTop, beginBci, oparg, localNames, localNodes);
                         break;
                     }
-                    case JUMP_FORWARD:
+                    case OpCodesConstants.JUMP_FORWARD:
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci += oparg;
                         oparg = 0;
                         continue;
-                    case POP_AND_JUMP_IF_FALSE: {
+                    case OpCodesConstants.POP_AND_JUMP_IF_FALSE: {
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
@@ -1162,7 +1162,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case POP_AND_JUMP_IF_TRUE: {
+                    case OpCodesConstants.POP_AND_JUMP_IF_TRUE: {
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
@@ -1176,7 +1176,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case JUMP_IF_FALSE_OR_POP: {
+                    case OpCodesConstants.JUMP_IF_FALSE_OR_POP: {
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         if (!isTrue.execute(localFrame, cond)) {
@@ -1190,7 +1190,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case JUMP_IF_TRUE_OR_POP: {
+                    case OpCodesConstants.JUMP_IF_TRUE_OR_POP: {
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE);
                         Object cond = localFrame.getObject(stackTop);
                         if (isTrue.execute(virtualFrame, cond)) {
@@ -1204,7 +1204,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case JUMP_BACKWARD: {
+                    case OpCodesConstants.JUMP_BACKWARD: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
                         if (inInterpreter) {
@@ -1230,12 +1230,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg = 0;
                         continue;
                     }
-                    case GET_ITER: {
+                    case OpCodesConstants.GET_ITER: {
                         PyObjectGetIter getIter = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_ITER, NODE_OBJECT_GET_ITER);
                         localFrame.setObject(stackTop, getIter.execute(virtualFrame, localFrame.getObject(stackTop)));
                         break;
                     }
-                    case FOR_ITER: {
+                    case OpCodesConstants.FOR_ITER: {
                         Object next = insertChildNode(localNodes, beginBci, UNCACHED_GET_NEXT, NODE_GET_NEXT).execute(virtualFrame, localFrame.getObject(stackTop));
                         if (next != null) {
                             localFrame.setObject(++stackTop, next);
@@ -1249,32 +1249,32 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case CALL_METHOD: {
+                    case OpCodesConstants.CALL_METHOD: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         String methodName = localNames[oparg];
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallMethod(virtualFrame, localFrame, stackTop, beginBci, argcount, methodName, localNodes);
                         break;
                     }
-                    case CALL_METHOD_VARARGS: {
+                    case OpCodesConstants.CALL_METHOD_VARARGS: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         bytecodeCallMethodVarargs(virtualFrame, localFrame, stackTop, beginBci, localNames, oparg, localNodes);
                         break;
                     }
-                    case CALL_FUNCTION: {
+                    case OpCodesConstants.CALL_FUNCTION: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallFunction(virtualFrame, localFrame, stackTop, beginBci, oparg, localNodes);
                         break;
                     }
-                    case CALL_FUNCTION_VARARGS: {
+                    case OpCodesConstants.CALL_FUNCTION_VARARGS: {
                         stackTop = bytecodeCallFunctionVarargs(virtualFrame, localFrame, stackTop, beginBci, localNodes);
                         break;
                     }
-                    case CALL_FUNCTION_KW: {
+                    case OpCodesConstants.CALL_FUNCTION_KW: {
                         stackTop = bytecodeCallFunctionKw(virtualFrame, localFrame, stackTop, beginBci, localNodes);
                         break;
                     }
-                    case MAKE_FUNCTION: {
+                    case OpCodesConstants.MAKE_FUNCTION: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         int flags = Byte.toUnsignedInt(localBC[++bci]);
                         CodeUnit codeUnit = (CodeUnit) localConsts[oparg];
@@ -1282,7 +1282,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = makeFunctionNode.execute(globals, stackTop, localFrame, flags);
                         break;
                     }
-                    case MATCH_EXC_OR_JUMP: {
+                    case OpCodesConstants.MATCH_EXC_OR_JUMP: {
                         Object exception = localFrame.getObject(stackTop - 1);
                         Object matchType = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
@@ -1297,7 +1297,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case UNWRAP_EXC: {
+                    case OpCodesConstants.UNWRAP_EXC: {
                         Object exception = localFrame.getObject(stackTop);
                         if (exception instanceof PException) {
                             localFrame.setObject(stackTop, ((PException) exception).getEscapedException());
@@ -1305,17 +1305,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         // Let interop exceptions be
                         break;
                     }
-                    case SETUP_WITH: {
+                    case OpCodesConstants.SETUP_WITH: {
                         SetupWithNode setupWithNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_WITH_NODE, NODE_SETUP_WITH);
                         stackTop = setupWithNode.execute(virtualFrame, stackTop, localFrame);
                         break;
                     }
-                    case EXIT_WITH: {
+                    case OpCodesConstants.EXIT_WITH: {
                         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, NODE_EXIT_WITH);
                         stackTop = exitWithNode.execute(virtualFrame, stackTop, localFrame);
                         break;
                     }
-                    case PUSH_EXC_INFO: {
+                    case OpCodesConstants.PUSH_EXC_INFO: {
                         Object exception = localFrame.getObject(stackTop);
                         if (!(exception instanceof PException)) {
                             throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
@@ -1325,7 +1325,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(stackTop, exception);
                         break;
                     }
-                    case POP_EXCEPT: {
+                    case OpCodesConstants.POP_EXCEPT: {
                         Object savedException = localFrame.getObject(stackTop);
                         if (savedException == null) {
                             stackTop--;
@@ -1339,10 +1339,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case END_EXC_HANDLER: {
+                    case OpCodesConstants.END_EXC_HANDLER: {
                         bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
                     }
-                    case YIELD_VALUE: {
+                    case OpCodesConstants.YIELD_VALUE: {
                         if (inInterpreter) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
@@ -1352,7 +1352,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setInt(generatorStackTopOffset, stackTop);
                         return value;
                     }
-                    case RESUME_YIELD: {
+                    case OpCodesConstants.RESUME_YIELD: {
                         Object sendValue = PArguments.getSpecialArgument(virtualFrame);
                         if (sendValue == null) {
                             sendValue = PNone.NONE;
@@ -1363,7 +1363,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(++stackTop, sendValue);
                         break;
                     }
-                    case SEND: {
+                    case OpCodesConstants.SEND: {
                         Object value = localFrame.getObject(stackTop);
                         Object obj = localFrame.getObject(stackTop - 1);
                         SendNode sendNode = insertChildNode(localNodes, beginBci, NODE_SEND);
@@ -1379,7 +1379,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             continue;
                         }
                     }
-                    case EXTENDED_ARG: {
+                    case OpCodesConstants.EXTENDED_ARG: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         oparg <<= 8;
                         bci++;
