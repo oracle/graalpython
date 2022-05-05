@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -89,7 +88,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -198,25 +196,6 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     abstract static class PyTupleGetSliceNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        Object getSlice(VirtualFrame frame, PTuple tuple, long iLow, long iHigh,
-                        @Cached GetItemNode getItemNode,
-                        @Cached PySliceNew sliceNode,
-                        @Cached BranchProfile isIntRangeProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
-                    isIntRangeProfile.enter();
-                    return getItemNode.execute(frame, tuple, sliceNode.execute((int) iLow, (int) iHigh, PNone.NONE));
-                }
-                return getItemNode.execute(frame, tuple, sliceNode.execute(iLow, iHigh, PNone.NONE));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
-        }
-
         @Specialization
         Object getSlice(VirtualFrame frame, PTuple tuple, Object iLow, Object iHigh,
                         @Cached GetItemNode getItemNode,
