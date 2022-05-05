@@ -199,11 +199,14 @@ print its path as the last output, if successful.
 If you made changes to the parser, you may have to regenerate the golden files
 like so:
 
-    find graalpython -name *.scope -delete
-    find graalpython -name *.tast -delete
-    find graalpython -name *.co -delete
+    find graalpython -name '*.scope' -delete
+    find graalpython -name '*.tast' -delete
     mx punittest com.oracle.graal.python.test.parser
 
+If you made changes to the bytecode compiler, you may have to regenerate its golden files:
+
+    find graalpython -name '*.co' -delete
+    mx punittest com.oracle.graal.python.test.compiler
 
 ### Benchmarking
 
