@@ -67,11 +67,11 @@ abstract class AbstractParser {
     /**
      * Corresponds to TARGET_TYPES in CPython
      */
-    static public enum TargetsType {
+    public enum TargetsType {
         STAR_TARGETS,
         DEL_TARGETS,
         FOR_TARGETS
-    };
+    }
 
     /**
      * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
@@ -94,7 +94,7 @@ abstract class AbstractParser {
      * Indicates, whether there was found an error
      */
     protected boolean errorIndicator = false;
-    /** Currently used just for idicating, if there was readed something **/
+    /** Currently used just for indicating, if something was read **/
     protected int fill;
 
     private ExprTy.Name cachedDummyName;
@@ -220,7 +220,7 @@ abstract class AbstractParser {
 
     /**
      * Check if the next token that'll be read is if the expected kind. This has does not advance
-     * the tokenizer, in contrast to {@link expect(int)}.
+     * the tokenizer, in contrast to {@link #expect(int)}.
      */
     protected boolean lookahead(boolean match, int kind) {
         int pos = mark();
@@ -231,7 +231,7 @@ abstract class AbstractParser {
 
     /**
      * Check if the next token that'll be read is if the expected kind. This has does not advance
-     * the tokenizer, in contrast to {@link expect(String)}.
+     * the tokenizer, in contrast to {@link #expect(String)}.
      */
     protected boolean lookahead(boolean match, String text) {
         int pos = mark();
@@ -242,9 +242,6 @@ abstract class AbstractParser {
 
     /**
      * Shortcut to Tokenizer.getText(Token)
-     * 
-     * @param token
-     * @return
      */
     public String getText(Token token) {
         if (token == null) {
@@ -362,10 +359,10 @@ abstract class AbstractParser {
     /**
      * _PyPegen_expect_forced_token
      */
-    public Token expect_forced_token(int kind, String msg) {
+    public Token expect_forced_token(int kind, String expected) {
         Token t = getAndInitializeToken();
         if (t.type != kind) {
-            // TODO: raise error
+            raiseSyntaxErrorKnownLocation(t, "expected '%s'", expected);
             return null;
         }
         tokenizer.getToken(); // advance
@@ -400,7 +397,7 @@ abstract class AbstractParser {
     /**
      * _PyPegen_dummy_name
      */
-    public ExprTy.Name dummyName(Object... args) {
+    public ExprTy.Name dummyName(@SuppressWarnings("unused") Object... args) {
         if (cachedDummyName != null) {
             return cachedDummyName;
         }
@@ -532,11 +529,8 @@ abstract class AbstractParser {
                 case NONE:
                     return "None";
                 case BOOLEAN:
-                    Boolean value = (Boolean) constant.value;
-                    if (value.booleanValue()) {
-                        return "True";
-                    }
-                    return "False";
+                    boolean value = (Boolean) constant.value;
+                    return value ? "True" : "False";
                 case ELLIPSIS:
                     return "Ellipsis";
             }
@@ -598,7 +592,7 @@ abstract class AbstractParser {
             return a;
         }
 
-        if (a != null && b != null) {
+        if (a != null) {
             T[] result = Arrays.copyOf(a, a.length + b.length);
             System.arraycopy(b, 0, result, a.length, b.length);
             return result;
@@ -624,22 +618,11 @@ abstract class AbstractParser {
         }
     }
 
-    void debugMessage(String text) {
-        debugMessage(text, true);
-    }
-
-    void debugMessage(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        indent(sb);
-        sb.append(text);
-        System.out.print(sb.toString());
-    }
-
     void debugMessageln(String text, Object... args) {
         StringBuffer sb = new StringBuffer();
         indent(sb);
         sb.append(String.format(text, args));
-        System.out.println(sb.toString());
+        System.out.println(sb);
     }
 
     // Helper classes that are not really meaningful parts of the AST, just containers to move the
@@ -894,8 +877,6 @@ abstract class AbstractParser {
 
     /**
      * CHECK Simple check whether the node is not null.
-     * 
-     * @return
      */
     <T> T check(T node) {
         if (node == null) {
@@ -906,7 +887,7 @@ abstract class AbstractParser {
 
     @SuppressWarnings("unused")
     // TODO implement the check
-    final <T> T checkVersion(int version, String msg, T node) {
+    static <T> T checkVersion(int version, String msg, T node) {
         return node;
     }
 }

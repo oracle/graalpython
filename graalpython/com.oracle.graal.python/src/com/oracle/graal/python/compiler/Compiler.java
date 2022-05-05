@@ -40,12 +40,94 @@
  */
 package com.oracle.graal.python.compiler;
 
-import static com.oracle.graal.python.compiler.OpCodes.*;
+import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
+import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
+import static com.oracle.graal.python.compiler.OpCodes.BINARY_SUBSCR;
+import static com.oracle.graal.python.compiler.OpCodes.BUILD_SLICE;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_KW;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_VARARGS;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_METHOD;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_METHOD_VARARGS;
+import static com.oracle.graal.python.compiler.OpCodes.CLOSURE_FROM_STACK;
+import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_COLLECTION;
+import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_STACK;
+import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_COLLECTION;
+import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_STACK;
+import static com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_ATTR;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_DEREF;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_FAST;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_GLOBAL;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_NAME;
+import static com.oracle.graal.python.compiler.OpCodes.DELETE_SUBSCR;
+import static com.oracle.graal.python.compiler.OpCodes.DUP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
+import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
+import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
+import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
+import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
+import static com.oracle.graal.python.compiler.OpCodes.IMPORT_NAME;
+import static com.oracle.graal.python.compiler.OpCodes.IMPORT_STAR;
+import static com.oracle.graal.python.compiler.OpCodes.JUMP_BACKWARD;
+import static com.oracle.graal.python.compiler.OpCodes.JUMP_FORWARD;
+import static com.oracle.graal.python.compiler.OpCodes.JUMP_IF_FALSE_OR_POP;
+import static com.oracle.graal.python.compiler.OpCodes.JUMP_IF_TRUE_OR_POP;
+import static com.oracle.graal.python.compiler.OpCodes.KWARGS_DICT_MERGE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_ASSERTION_ERROR;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_ATTR;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_BIGINT;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_BUILD_CLASS;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_BYTE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_BYTES;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLASSDEREF;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLOSURE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_COMPLEX;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_CONST;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_DEREF;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_DOUBLE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_ELLIPSIS;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_FALSE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_FAST;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_GLOBAL;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_LONG;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
+import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
+import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
+import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
+import static com.oracle.graal.python.compiler.OpCodes.POP_EXCEPT;
+import static com.oracle.graal.python.compiler.OpCodes.POP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.PUSH_EXC_INFO;
+import static com.oracle.graal.python.compiler.OpCodes.RAISE_VARARGS;
+import static com.oracle.graal.python.compiler.OpCodes.RESUME_YIELD;
+import static com.oracle.graal.python.compiler.OpCodes.RETURN_VALUE;
+import static com.oracle.graal.python.compiler.OpCodes.ROT_THREE;
+import static com.oracle.graal.python.compiler.OpCodes.ROT_TWO;
+import static com.oracle.graal.python.compiler.OpCodes.SEND;
+import static com.oracle.graal.python.compiler.OpCodes.SETUP_WITH;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_ATTR;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_DEREF;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_FAST;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_GLOBAL;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_NAME;
+import static com.oracle.graal.python.compiler.OpCodes.STORE_SUBSCR;
+import static com.oracle.graal.python.compiler.OpCodes.UNARY_OP;
+import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
+import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
+import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
+import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Stack;
+import java.util.List;
 
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope;
@@ -71,7 +153,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     boolean isInteractive = false;
     int nestingLevel = 0;
     CompilationUnit unit;
-    Stack<CompilationUnit> stack = new Stack<>();
+    List<CompilationUnit> stack = new ArrayList<>();
     private boolean interactive;
 
     public enum Flags {
@@ -141,7 +223,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void exitScope() {
         nestingLevel--;
         if (!stack.isEmpty()) {
-            unit = stack.pop();
+            unit = stack.remove(stack.size() - 1);
         } else {
             unit = null;
         }

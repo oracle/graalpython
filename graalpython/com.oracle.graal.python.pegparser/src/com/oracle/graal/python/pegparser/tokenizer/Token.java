@@ -178,7 +178,7 @@ public class Token {
                         "<NL>",
                         "<ENCODING>"
         };
-    };
+    }
 
     public int type;
     public final int startOffset;

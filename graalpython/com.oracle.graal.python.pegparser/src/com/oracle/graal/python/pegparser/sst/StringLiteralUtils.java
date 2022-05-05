@@ -41,17 +41,16 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.ibm.icu.lang.UCharacter;
-
-import com.oracle.graal.python.pegparser.FExprParser;
-import com.oracle.graal.python.pegparser.NodeFactory;
-import com.oracle.graal.python.pegparser.ParserErrorCallback;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import com.ibm.icu.lang.UCharacter;
+import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.ParserErrorCallback;
 
 public abstract class StringLiteralUtils {
     private static final ExprTy[] EMPTY_SST_ARRAY = new ExprTy[0];
@@ -78,7 +77,7 @@ public abstract class StringLiteralUtils {
         }
     }
 
-    public static ExprTy createStringLiteral(String[] values, int startOffset, int endOffset, NodeFactory nodeFactory, FExprParser exprParser, ParserErrorCallback errorCallback) {
+    public static ExprTy createStringLiteral(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCallback) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
@@ -166,8 +165,7 @@ public abstract class StringLiteralUtils {
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues, startOffset + startPartOffsetInValues + strStartIndex, nodeFactory, exprParser,
-                                    errorCallback);
+                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues + strStartIndex, exprParser, errorCallback);
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
@@ -244,8 +242,8 @@ public abstract class StringLiteralUtils {
             }
         }
 
-        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource,
-                        NodeFactory nodeFactory, ParserErrorCallback errorCallback, FExprParser exprParser) {
+        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int textOffsetInSource,
+                        ParserErrorCallback errorCallback, FExprParser exprParser) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
@@ -269,8 +267,7 @@ public abstract class StringLiteralUtils {
 
                 for (i = 0; i < specTokensCount; i++) {
                     specToken = tokens.get(specifierTokenStartIndex + i);
-                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, isRawString, partOffsetInSource, textOffsetInSource,
-                                    nodeFactory, errorCallback, exprParser);
+                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, isRawString, textOffsetInSource, errorCallback, exprParser);
                     i = i + specToken.formatTokensCount;
                 }
 
@@ -309,8 +306,7 @@ public abstract class StringLiteralUtils {
          * Parses f-string into an array of {@link ExprTy}. The nodes can end up being
          * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
-        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, NodeFactory nodeFactory, FExprParser exprParser,
-                        ParserErrorCallback errorCallback) {
+        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int textOffsetInSource, FExprParser exprParser, ParserErrorCallback errorCallback) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -335,7 +331,7 @@ public abstract class StringLiteralUtils {
 
             while (tokenIndex < tokens.size()) {
                 token = tokens.get(tokenIndex);
-                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, partOffsetInSource, textOffsetInSource, nodeFactory, errorCallback, exprParser);
+                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, textOffsetInSource, errorCallback, exprParser);
                 formatStringParts.add(part);
                 tokenIndex = tokenIndex + 1 + token.formatTokensCount;
             }
@@ -1163,6 +1159,8 @@ public abstract class StringLiteralUtils {
         return -1;
     }
 
+    // TODO
+    @SuppressWarnings("unused")
     public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {
         // errorCallback.warn("invalid escape sequence '\\%c'", nextChar);
     }
@@ -1176,5 +1174,4 @@ public abstract class StringLiteralUtils {
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
     private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
     private static final String INVALID_ESCAPE_AT = "invalid %s escape at position %d";
-    private static final String INVALID_ESCAPE_SEQ_AT = "invalid escape sequence '\\%s' at position %d";
 }

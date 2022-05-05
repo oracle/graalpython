@@ -1340,7 +1340,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.END_EXC_HANDLER: {
-                        bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
+                        throw bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
                         if (inInterpreter) {
@@ -1515,7 +1515,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeEndExcHandler(VirtualFrame virtualFrame, Frame localFrame, int stackTop) {
+    private PException bytecodeEndExcHandler(VirtualFrame virtualFrame, Frame localFrame, int stackTop) {
         Object exception = localFrame.getObject(stackTop);
         Object savedException = localFrame.getObject(stackTop - 1);
         if (savedException == null) {

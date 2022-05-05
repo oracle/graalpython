@@ -41,9 +41,10 @@
 package com.oracle.graal.python.pegparser;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
+
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
-import java.util.EnumSet;
 
 public class ParserTokenizer {
     private int pos; // position of the mark
@@ -84,9 +85,9 @@ public class ParserTokenizer {
         return tokens.get(pos);
     }
 
-    protected Token peekToken(int pos) {
-        assert pos < tokens.size();
-        return tokens.get(pos);
+    protected Token peekToken(int position) {
+        assert position < tokens.size();
+        return tokens.get(position);
     }
 
     public String getText(Token token) {

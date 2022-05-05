@@ -87,7 +87,7 @@ class RuleResultCache<T> {
             posCache = new HashMap<>();
             mainCache.put(pos, posCache);
         }
-        posCache.put(ruleId, new CachedItem<T>(node, parser.mark()));
+        posCache.put(ruleId, new CachedItem<>(node, parser.mark()));
         return node;
     }
 

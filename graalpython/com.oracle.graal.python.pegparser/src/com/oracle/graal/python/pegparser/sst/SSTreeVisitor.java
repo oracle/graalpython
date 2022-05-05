@@ -42,7 +42,7 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public interface SSTreeVisitor<T> {
-    default <T> T visitSequence(SSTNode[] sequence) {
+    default <U> U visitSequence(SSTNode[] sequence) {
         if (sequence != null) {
             for (SSTNode n : sequence) {
                 if (n != null) {

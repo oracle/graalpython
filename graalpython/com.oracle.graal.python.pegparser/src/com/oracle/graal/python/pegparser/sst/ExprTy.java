@@ -48,7 +48,7 @@ public abstract class ExprTy extends SSTNode {
         super(startOffset, endOffset);
     }
 
-    public ExprTy copyWithContext(ExprContext newContext) {
+    public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContext newContext) {
         return this;
     }
 
@@ -59,9 +59,9 @@ public abstract class ExprTy extends SSTNode {
             this.values = values;
         }
 
-        public static enum Type {
+        public enum Type {
             And,
-            Or;
+            Or
         }
 
         public final Type op;
@@ -90,7 +90,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BinOp extends ExprTy {
-        public static enum Operator {
+        public enum Operator {
             ADD,
             SUB,
             MULT,
@@ -103,7 +103,7 @@ public abstract class ExprTy extends SSTNode {
             BITOR,
             BITXOR,
             BITAND,
-            FLOORDIV;
+            FLOORDIV
         }
 
         public final ExprTy left;
@@ -124,11 +124,11 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class UnaryOp extends ExprTy {
-        public static enum Operator {
+        public enum Operator {
             INVERT,
             NOT,
             ADD,
-            SUB;
+            SUB
         }
 
         public final Operator op;
@@ -319,7 +319,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Compare extends ExprTy {
-        public static enum Operator {
+        public enum Operator {
             EQ,
             NOTEQ,
             LT,
@@ -329,7 +329,7 @@ public abstract class ExprTy extends SSTNode {
             IS,
             ISNOT,
             IN,
-            NOTIN;
+            NOTIN
         }
 
         public final ExprTy left;
@@ -372,7 +372,7 @@ public abstract class ExprTy extends SSTNode {
             STR,
             REPR,
             ASCII,
-            NONE;
+            NONE
         }
 
         public final ExprTy value;

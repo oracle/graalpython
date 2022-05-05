@@ -102,8 +102,8 @@ public abstract class StmtTy extends SSTNode {
             return visitor.visit(this);
         }
 
-        public FunctionDef copyWithDecorators(ExprTy[] decoratorList) {
-            return new FunctionDef(name, args, body, decoratorList, returns, typeComment, startOffset, endOffset);
+        public FunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
+            return new FunctionDef(name, args, body, newDecoratorList, returns, typeComment, startOffset, endOffset);
         }
     }
 
@@ -118,8 +118,8 @@ public abstract class StmtTy extends SSTNode {
         }
 
         @Override
-        public AsyncFunctionDef copyWithDecorators(ExprTy[] decoratorList) {
-            return new AsyncFunctionDef(name, args, body, decoratorList, returns, typeComment, startOffset, endOffset);
+        public AsyncFunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
+            return new AsyncFunctionDef(name, args, body, newDecoratorList, returns, typeComment, startOffset, endOffset);
         }
     }
 

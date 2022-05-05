@@ -46,16 +46,17 @@ import static com.oracle.graal.python.compiler.CompilationScope.Function;
 import static com.oracle.graal.python.compiler.CompilationScope.Lambda;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.Stack;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.pegparser.scope.Scope;
@@ -271,10 +272,10 @@ public final class CompilationUnit {
     private static final EnumSet<OpCodes> UNCONDITIONAL_JUMP_OPCODES = EnumSet.of(OpCodes.JUMP_BACKWARD, OpCodes.JUMP_FORWARD, OpCodes.RETURN_VALUE, OpCodes.RAISE_VARARGS, OpCodes.END_EXC_HANDLER);
 
     private void computeStackLevels() {
-        Stack<Block> todo = new Stack<>();
+        Deque<Block> todo = new ArrayDeque<>();
         todo.add(startBlock);
         startBlock.stackLevel = 0;
-        while (!todo.empty()) {
+        while (!todo.isEmpty()) {
             Block block = todo.pop();
             int level = block.stackLevel;
             assert level >= 0;
@@ -307,10 +308,10 @@ public final class CompilationUnit {
         }
     }
 
-    private void computeStackLevels(Block block, int level, Stack<Block> todo) {
+    private void computeStackLevels(Block block, int level, Deque<Block> todo) {
         if (block.stackLevel == -1) {
             block.stackLevel = level;
-            todo.add(block);
+            todo.push(block);
         } else {
             assert block.stackLevel == level;
         }

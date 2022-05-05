@@ -64,7 +64,7 @@ public class Scope {
         Function,
         Class,
         Module,
-        Annotation;
+        Annotation
     }
 
     public enum DefUse {
@@ -86,7 +86,7 @@ public class Scope {
         Cell;
 
         static EnumSet<DefUse> DefBound = EnumSet.of(DefLocal, DefParam, DefImport);
-    };
+    }
 
     HashMap<String, EnumSet<DefUse>> symbols = new HashMap<>();
     private List<String> sortedSymbols; // for lazy sorting
@@ -120,7 +120,7 @@ public class Scope {
         HasVarKeywords,
         ReturnsAValue,
         NeedsClassClosure,
-        IsVisitingIterTarget;
+        IsVisitingIterTarget
     }
 
     EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
@@ -177,11 +177,11 @@ public class Scope {
         return sb.toString();
     }
 
-    void recordDirective(String name, int startOffset, int endOffset) {
+    void recordDirective(String directiveName, int directiveStartOffset, int directiveEndOffset) {
         if (directives == null) {
             directives = new ArrayList<>();
         }
-        directives.add(new Directive(name, startOffset, endOffset));
+        directives.add(new Directive(directiveName, directiveStartOffset, directiveEndOffset));
     }
 
     public String getName() {
@@ -195,7 +195,7 @@ public class Scope {
     private List<String> getSortedSymbols() {
         if (sortedSymbols == null) {
             sortedSymbols = new ArrayList<>(symbols.keySet());
-            sortedSymbols.sort((s1, s2) -> s1.compareTo(s2));
+            sortedSymbols.sort(String::compareTo);
         }
         return sortedSymbols;
     }
@@ -224,20 +224,20 @@ public class Scope {
         return flags.contains(ScopeFlags.IsCoroutine);
     }
 
-    public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> flags, int start) {
+    public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> expectedFlags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();
         for (String key : getSortedSymbols()) {
             EnumSet<DefUse> keyFlags = getUseOfName(key);
-            if (!Collections.disjoint(flags, keyFlags)) {
+            if (!Collections.disjoint(expectedFlags, keyFlags)) {
                 mapping.put(key, i++);
             }
         }
         return mapping;
     }
 
-    public EnumSet<DefUse> getUseOfName(String name) {
-        return symbols.get(name);
+    public EnumSet<DefUse> getUseOfName(String usedName) {
+        return symbols.get(usedName);
     }
 
     public ArrayList<Scope> getChildren() {

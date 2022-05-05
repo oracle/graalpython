@@ -176,7 +176,7 @@ public class TokenizerTest {
     }
 
     @Test
-    public void testInvalidUnderscoreLiterals() throws Exception {
+    public void testInvalidUnderscoreLiterals() {
         String[] invalid = new String[]{
                         // Trailing underscores:
                         "0_", "42_", /* "1.4j_", */ "0x_", "0b1_", "0xf_", "0o5_", "0 if 1_Else 1",
@@ -248,7 +248,7 @@ public class TokenizerTest {
                         "Token NUMBER [10, 11] (3, 5) (3, 6) '2'"});
     }
 
-    private Token[] getTokens(String code) {
+    private static Token[] getTokens(String code) {
         Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token;
 
@@ -265,7 +265,7 @@ public class TokenizerTest {
         return name.getMethodName();
     }
 
-    private void checkTokens(String code, String[] tokens) {
+    private static void checkTokens(String code, String[] tokens) {
         Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token = tokenizer.next();
         int index = 0;

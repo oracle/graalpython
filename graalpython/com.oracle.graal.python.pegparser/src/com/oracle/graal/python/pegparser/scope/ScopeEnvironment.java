@@ -85,10 +85,7 @@ public class ScopeEnvironment {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ScopeEnvironment\n");
-        sb.append(topScope.toString(1));
-        return sb.toString();
+        return "ScopeEnvironment\n" + topScope.toString(1);
     }
 
     private void addScope(SSTNode node, Scope scope) {
@@ -99,7 +96,7 @@ public class ScopeEnvironment {
         return blocks.get(node);
     }
 
-    private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
+    private static void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
         HashSet<String> local = new HashSet<>();
         HashMap<String, DefUse> scopes = new HashMap<>();
         HashSet<String> newGlobal = new HashSet<>();
@@ -166,7 +163,7 @@ public class ScopeEnvironment {
         }
     }
 
-    private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
+    private static void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
                     HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
@@ -211,7 +208,7 @@ public class ScopeEnvironment {
         }
     }
 
-    private void analyzeCells(HashMap<String, DefUse> scopes, HashSet<String> free) {
+    private static void analyzeCells(HashMap<String, DefUse> scopes, HashSet<String> free) {
         for (Entry<String, DefUse> e : scopes.entrySet()) {
             if (e.getValue() != DefUse.Local) {
                 continue;
@@ -225,13 +222,13 @@ public class ScopeEnvironment {
         }
     }
 
-    private void dropClassFree(Scope scope, HashSet<String> free) {
+    private static void dropClassFree(Scope scope, HashSet<String> free) {
         if (free.remove("__class__")) {
             scope.flags.add(ScopeFlags.NeedsClassClosure);
         }
     }
 
-    private void updateSymbols(HashMap<String, EnumSet<DefUse>> symbols, HashMap<String, DefUse> scopes, HashSet<String> bound, HashSet<String> free, boolean isClass) {
+    private static void updateSymbols(HashMap<String, EnumSet<DefUse>> symbols, HashMap<String, DefUse> scopes, HashSet<String> bound, HashSet<String> free, boolean isClass) {
         for (Entry<String, EnumSet<DefUse>> e : symbols.entrySet()) {
             String name = e.getKey();
             DefUse vScope = scopes.get(name);
@@ -270,7 +267,7 @@ public class ScopeEnvironment {
         return "_" + className.substring(offset) + name;
     }
 
-    private final class FirstPassVisitor implements SSTreeVisitor<Void> {
+    private static final class FirstPassVisitor implements SSTreeVisitor<Void> {
         private final Stack<Scope> stack;
         private final HashMap<String, EnumSet<DefUse>> globals;
         private final ScopeEnvironment env;

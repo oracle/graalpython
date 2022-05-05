@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.processor;
 
-import com.oracle.graal.python.processor.CodeWriter.Block;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Set;
+
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -56,6 +55,8 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
+
+import com.oracle.graal.python.processor.CodeWriter.Block;
 
 @SupportedAnnotationTypes("com.oracle.graal.python.annotations.GenerateEnumConstants")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)

@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;

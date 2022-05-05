@@ -68,7 +68,6 @@ public class ParserTestBase {
     private static final String SCOPE_FILE_EXT = ".scope";
 
     protected boolean printDifferenceDetails = false;
-    protected boolean printFormatStringLiteralValues = false;
     protected int printOnlyDiffIfLenIsBigger = 1000;
 
     private static final boolean REGENERATE_TREE = false;
@@ -76,8 +75,6 @@ public class ParserTestBase {
     protected ParserErrorCallback lastParserErrorCallback;
 
     @Rule public TestName name = new TestName();
-
-    private SSTNode lastSST;
 
     public ParserTestBase() {
     }
@@ -91,6 +88,8 @@ public class ParserTestBase {
 // return PythonLanguage.newSource(context, src, getFileName(testFile));
 // }
 
+    // TODO
+    @SuppressWarnings("unused")
     public ModTy parse(String src, String moduleName, int mode) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
@@ -106,8 +105,6 @@ public class ParserTestBase {
         Parser parser = new Parser(tokenizer, factory, fexpParser);
         ModTy result = (ModTy) parser.parse(InputType.FILE);
         lastParserErrorCallback = parser.getErrorCallback();
-// lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
-// lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
     }
 
@@ -123,18 +120,14 @@ public class ParserTestBase {
 // return result;
 // }
 
-    protected SSTNode getLastSST() {
-        return lastSST;
-    }
-
-    public void checkSyntaxError(String source) throws Exception {
+    public void checkSyntaxError(String source) {
         parse(source, getFileName(), 1);
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ParserErrorCallback.ErrorType.Syntax);
     }
 
-    public void checkSyntaxErrorMessageContains(String source, String expectedMessage) throws Exception {
+    public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
         parse(source, getFileName(), 1);
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -143,18 +136,13 @@ public class ParserTestBase {
         assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.getMessage() + "\"", error.getMessage().contains(expectedMessage));
     }
 
-    public void checkSyntaxErrorMessage(String source, String expectedMessage) throws Exception {
+    public void checkSyntaxErrorMessage(String source, String expectedMessage) {
         parse(source, getFileName(), 1);
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
         assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ParserErrorCallback.ErrorType.Syntax);
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
-    }
-
-    protected static boolean isSyntaxError(Exception e) throws Exception {
-// return InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR;
-        return false;
     }
 
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
@@ -254,10 +242,6 @@ public class ParserTestBase {
 // }
 
     protected String printTreeToString(SSTNode node) {
-        return printTreeToString(node, true);
-    }
-
-    protected String printTreeToString(SSTNode node, boolean printTmpSlots) {
         SSTTreePrinterVisitor visitor = new SSTTreePrinterVisitor();
         return node.accept(visitor);
     }
@@ -277,7 +261,7 @@ public class ParserTestBase {
         assertDescriptionMatches(actual, expected, goldenFile.getName());
     }
 
-    protected void assertDescriptionMatches(String actual, String expected, String someName) throws Exception {
+    protected void assertDescriptionMatches(String actual, String expected, String someName) {
         final String expectedTrimmed = expected.trim();
         final String actualTrimmed = actual.trim();
 
@@ -322,8 +306,7 @@ public class ParserTestBase {
         if (!testDir.exists()) {
             testDir.mkdir();
         }
-        File testFile = new File(testDir, getFileName() + ".py");
-        return testFile;
+        return new File(testDir, getFileName() + ".py");
     }
 
     public File getGoldenDataDir() {

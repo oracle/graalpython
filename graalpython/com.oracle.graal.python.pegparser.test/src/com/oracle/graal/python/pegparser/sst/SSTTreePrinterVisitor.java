@@ -57,7 +57,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         return sb.toString();
     }
 
-    private String addHeader(SSTNode node) {
+    private static String addHeader(SSTNode node) {
         StringBuilder sb = new StringBuilder();
         sb.append(node.getClass().getSimpleName()).append("[").append(node.getStartOffset());
         sb.append(", ").append(node.getEndOffset()).append("]");
@@ -229,10 +229,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         sb.append(" Value: ");
         switch (node.kind) {
             case LONG:
-                sb.append((Long) node.value);
+                sb.append((long) node.value);
                 break;
             case DOUBLE:
-                sb.append((Double) node.value);
+                sb.append((double) node.value);
                 break;
             case COMPLEX:
                 double[] val = (double[]) node.value;

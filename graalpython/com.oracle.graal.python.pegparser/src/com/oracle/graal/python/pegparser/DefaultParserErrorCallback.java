@@ -42,9 +42,7 @@
 package com.oracle.graal.python.pegparser;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class DefaultParserErrorCallback implements ParserErrorCallback {
 

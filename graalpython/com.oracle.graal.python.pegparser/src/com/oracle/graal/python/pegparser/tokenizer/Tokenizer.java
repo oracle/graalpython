@@ -42,7 +42,7 @@ public class Tokenizer {
 
     private static final int TABSIZE = 8;
 
-    public static enum Flag {
+    public enum Flag {
         EXECT_INPUT,
         INTERACTIVE,
         TYPE_COMMENT
@@ -56,7 +56,7 @@ public class Tokenizer {
     private static final byte[] TYPE_COMMENT_PREFIX = "# type: ".getBytes(StandardCharsets.US_ASCII);
     private static final int[] IGNORE_BYTES = charsToCodePoints("ignore".toCharArray());
 
-    public static enum StatusCode {
+    public enum StatusCode {
         OK,
         EOF,
         INTERRUPTED,
@@ -72,7 +72,7 @@ public class Tokenizer {
         UNICODE_DECODE_ERROR,
         LINE_CONTINUATION_ERROR,
         BAD_SINGLE_STATEMENT,
-        INTERACTIVE_STOP;
+        INTERACTIVE_STOP
     }
 
     // tok_new initialization is taken care of here
@@ -111,13 +111,15 @@ public class Tokenizer {
     /** {@code tok_state->parencolstack} */
     private final int[] parensColumnsStack = new int[MAXLEVEL];
     /** {@code tok_state->filename} */
-    private final String filename = null;
+    // TODO
+    @SuppressWarnings("unused") private final String filename = null;
     /** {@code tok_state->altindstack} */
     private final int[] altIndentationStack = new int[MAXINDENT];
     /** {@code tok_state->enc, tok_state->encoding} */
     private Charset fileEncoding = null;
     /** {@code tok_state->cont_line} */
-    private boolean inContinuationLine = false;
+    // TODO
+    @SuppressWarnings("unused") private boolean inContinuationLine = false;
     /** {@code tok_state->line_start} */
     private int lineStartIndex = 0;
     /** {@code tok_state->multi_line_start} */
@@ -419,7 +421,7 @@ public class Tokenizer {
     }
 
     // TODO: parser_warn
-    private void parserWarn(String warning) {
+    private void parserWarn(@SuppressWarnings("unused") String warning) {
         // TODO
     }
 
@@ -486,7 +488,7 @@ public class Tokenizer {
      * 
      * @return {@code null} if valid, else an error message
      */
-    private String verifyIdentifier(String tokenString) {
+    private static String verifyIdentifier(String tokenString) {
         // inlined the logic from _PyUnicode_ScanIdentifier
         int invalid = tokenString.length();
         if (!Character.isJavaIdentifierStart(tokenString.codePointAt(0))) {
@@ -1222,7 +1224,7 @@ public class Tokenizer {
      * Public API to expose how the tokenizer decides on the encoding of a file.
      *
      * @param channel - the data stream to read from
-     * @throws {@link IOException} if a read error occurs in the {@code channel}
+     * @throws IOException if a read error occurs in the {@code channel}
      * @return the {@link Charset} the Tokenizer will use for this data.
      */
     public static Charset findEncodingForFilename(SeekableByteChannel channel) throws IOException {
@@ -1242,7 +1244,7 @@ public class Tokenizer {
                 totalBytesRead += bytesRead;
                 ary = buf.array();
                 while (i < totalBytesRead) {
-                    if (ary[i] == '\n') {
+                    if (ary[i++] == '\n') {
                         newlines++;
                         if (newlines == 2) {
                             break;
@@ -1256,7 +1258,7 @@ public class Tokenizer {
     }
 
     // isxdigit
-    private boolean isHexDigit(int c) {
+    private static boolean isHexDigit(int c) {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
