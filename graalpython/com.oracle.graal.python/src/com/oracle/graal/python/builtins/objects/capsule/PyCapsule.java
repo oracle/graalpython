@@ -1,6 +1,13 @@
 package com.oracle.graal.python.builtins.objects.capsule;
 
-public final class PyCapsule {
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+
+@ExportLibrary(InteropLibrary.class)
+public final class PyCapsule implements TruffleObject {
     private Object pointer;
     private String name;
     private Object context;
@@ -36,5 +43,19 @@ public final class PyCapsule {
 
     public void setDestructor(Object destructor) {
         this.destructor = destructor;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
+        String quote, n;
+        if (name != null) {
+            quote = "\"";
+            n = name;
+        } else {
+            quote = "";
+            n = "NULL";
+        }
+        return String.format("<capsule object %s%s%s at %x>", quote, n, quote, hashCode());
     }
 }
