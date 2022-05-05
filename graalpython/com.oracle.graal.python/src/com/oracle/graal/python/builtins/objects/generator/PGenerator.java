@@ -54,7 +54,6 @@ public final class PGenerator extends PythonBuiltinObject {
     private String name;
     private String qualname;
     private boolean usesBytecode;
-    private int bci;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can

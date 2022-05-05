@@ -333,8 +333,12 @@ public class PythonTests {
         }
     }
 
+    public static boolean usingBytecodeCompiler() {
+        return System.getProperty("useBytecodeCompiler") != null;
+    }
+
     private static org.graalvm.polyglot.Source.Builder configureBuilder(org.graalvm.polyglot.Source.Builder builder) {
-        if (System.getProperty("useBytecodeCompiler") != null) {
+        if (usingBytecodeCompiler()) {
             return builder.mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE);
         }
         return builder;

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
