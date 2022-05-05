@@ -95,6 +95,7 @@ struct _HPyContext_s {
     HPy h_ListType;
     HPy h_MemoryViewType;
     HPy h_CapsuleType;
+    HPy h_SliceType;
     HPy (*ctx_Module_Create)(HPyContext *ctx, HPyModuleDef *def);
     HPy (*ctx_Dup)(HPyContext *ctx, HPy h);
     void (*ctx_Close)(HPyContext *ctx, HPy h);
@@ -118,6 +119,7 @@ struct _HPyContext_s {
     double (*ctx_Float_AsDouble)(HPyContext *ctx, HPy h);
     HPy (*ctx_Bool_FromLong)(HPyContext *ctx, long v);
     HPy_ssize_t (*ctx_Length)(HPyContext *ctx, HPy h);
+    int (*ctx_Sequence_Check)(HPyContext *ctx, HPy h);
     int (*ctx_Number_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Add)(HPyContext *ctx, HPy h1, HPy h2);
     HPy (*ctx_Subtract)(HPyContext *ctx, HPy h1, HPy h2);
@@ -233,6 +235,7 @@ struct _HPyContext_s {
     HPy (*ctx_Dict_GetItem)(HPyContext *ctx, HPy op, HPy key);
     int (*ctx_Tuple_Check)(HPyContext *ctx, HPy h);
     HPy (*ctx_Tuple_FromArray)(HPyContext *ctx, HPy items[], HPy_ssize_t n);
+    int (*ctx_Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
     HPy (*ctx_ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value);
     int (*ctx_ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, HPy *result);
     HPy (*ctx_ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value);

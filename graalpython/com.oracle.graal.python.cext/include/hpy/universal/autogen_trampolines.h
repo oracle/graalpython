@@ -102,6 +102,10 @@ HPyAPI_FUNC HPy_ssize_t HPy_Length(HPyContext *ctx, HPy h) {
      return ctx->ctx_Length ( ctx, h ); 
 }
 
+HPyAPI_FUNC int HPySequence_Check(HPyContext *ctx, HPy h) {
+     return ctx->ctx_Sequence_Check ( ctx, h ); 
+}
+
 HPyAPI_FUNC int HPyNumber_Check(HPyContext *ctx, HPy h) {
      return ctx->ctx_Number_Check ( ctx, h ); 
 }
@@ -552,6 +556,10 @@ HPyAPI_FUNC int HPyTuple_Check(HPyContext *ctx, HPy h) {
 
 HPyAPI_FUNC HPy HPyTuple_FromArray(HPyContext *ctx, HPy items[], HPy_ssize_t n) {
      return ctx->ctx_Tuple_FromArray ( ctx, items, n ); 
+}
+
+HPyAPI_FUNC int HPySlice_Unpack(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step) {
+     return ctx->ctx_Slice_Unpack ( ctx, slice, start, stop, step ); 
 }
 
 HPyAPI_FUNC HPy HPyContextVar_New(HPyContext *ctx, const char *name, HPy default_value) {

@@ -207,6 +207,7 @@ class TestBasic(HPyTest):
                     case 18: h = ctx->h_MemoryViewType; break;
                     case 19: h = ctx->h_NotImplemented; break;
                     case 20: h = ctx->h_Ellipsis; break;
+                    case 21: h = ctx->h_SliceType; break;
                     default:
                         HPyErr_SetString(ctx, ctx->h_ValueError, "invalid choice");
                         return HPy_NULL;
@@ -218,7 +219,8 @@ class TestBasic(HPyTest):
         """)
         builtin_objs = (
             '<NULL>', None, False, True, ValueError, TypeError, IndexError,
-            SystemError, object, type, bool, int, float, complex, str, bytes, tuple, list, memoryview, NotImplemented, Ellipsis,
+            SystemError, object, type, bool, int, float, complex, str, bytes, tuple,
+            list, memoryview, NotImplemented, Ellipsis, slice
         )
         for i, obj in enumerate(builtin_objs):
             if i == 0:

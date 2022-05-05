@@ -110,6 +110,11 @@ HPyAPI_FUNC HPy_ssize_t HPy_Length(HPyContext *ctx, HPy h)
     return PyObject_Length(_h2py(h));
 }
 
+HPyAPI_FUNC int HPySequence_Check(HPyContext *ctx, HPy h)
+{
+    return PySequence_Check(_h2py(h));
+}
+
 HPyAPI_FUNC int HPyNumber_Check(HPyContext *ctx, HPy h)
 {
     return PyNumber_Check(_h2py(h));
@@ -595,6 +600,11 @@ HPyAPI_FUNC HPy HPyDict_Keys(HPyContext *ctx, HPy h)
 HPyAPI_FUNC int HPyTuple_Check(HPyContext *ctx, HPy h)
 {
     return PyTuple_Check(_h2py(h));
+}
+
+HPyAPI_FUNC int HPySlice_Unpack(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step)
+{
+    return PySlice_Unpack(_h2py(slice), start, stop, step);
 }
 
 HPyAPI_FUNC HPy HPyContextVar_New(HPyContext *ctx, const char *name, HPy default_value)
