@@ -3562,4 +3562,29 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyContextVarNew extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached HPyAsPythonObjectNode asObject,
+                        @Cached CallNode callContextvar,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                String name = castStr.execute(fromCharPointerNode.execute(arguments[1]));
+                Object def = asObject.execute(context, arguments[2]);
+                callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
+                return 0;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
 }

@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContains;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictKeys;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
@@ -2256,7 +2257,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
         members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyDump();
 
-        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyContextVarNew();
         members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = new GraalHPyDump();
         members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = new GraalHPyDump();
         members[HPyContextMember.CTX_CAPSULE_NEW.ordinal()] = new GraalHPyCapsuleNew();
