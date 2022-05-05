@@ -153,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTernaryArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerCleanup;
@@ -2246,7 +2247,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
         members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
-        members[HPyContextMember.CTX_SETTYPE.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_SETTYPE.ordinal()] = new GraalHPySetType();
         members[HPyContextMember.CTX_TYPE_CHECKSLOT.ordinal()] = new GraalHPyDump();
 
         members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();

@@ -133,6 +133,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -214,6 +215,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import java.nio.ByteBuffer;
@@ -3526,6 +3528,35 @@ public abstract class GraalHPyContextFunctions {
                     return 0;
                 }
                 return 1;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPySetType extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asObject,
+                        @Cached HPyAsPythonObjectNode asType,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object object = asObject.execute(context, arguments[1]);
+                if (!(object instanceof PythonObject)) {
+                    return -1;
+                }
+                Object type = asType.execute(context, arguments[2]);
+                if (!(type instanceof PythonAbstractClass)) {
+                    return -1;
+                }
+                ((PythonObject) object).setPythonClass(type, dylib);
+                return 0;
             } finally {
                 gil.release(mustRelease);
             }
