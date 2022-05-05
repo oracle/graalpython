@@ -582,23 +582,21 @@ public abstract class PythonObjectFactory extends Node {
         return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
     }
 
-    public final PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(getLanguage(), name, name, enclosingClassName, code, globals, closure));
+    public final PFunction createFunction(String name, PCode code, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(getLanguage(), name, name, code, globals, closure));
     }
 
-    public final PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        return trace(new PFunction(getLanguage(), name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
+    public final PFunction createFunction(String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+        return trace(new PFunction(getLanguage(), name, qualname, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public final PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        return trace(new PFunction(getLanguage(), name, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
+    public final PFunction createFunction(String name, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+        return trace(new PFunction(getLanguage(), name, name, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public final PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(new PFunction(getLanguage(), name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure,
+    public final PFunction createFunction(String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure,
+                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+        return trace(new PFunction(getLanguage(), name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
                         codeStableAssumption, defaultsStableAssumption));
     }
 

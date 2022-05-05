@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -88,10 +87,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -115,7 +111,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -131,9 +126,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 
@@ -448,56 +441,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
-            /*
-             * (tfel): To be compatible with CPython, builtin module functions must be bound to
-             * their respective builtin module. We ignore that builtin functions should really be
-             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
-             * however, is if they are not bound, because then using these functions in class field
-             * won't work when they are called from an instance of that class due to the implicit
-             * currying with "self".
-             */
-            Signature signature = GetSignatureNode.getUncached().execute(func);
-            PFunction builtinFunc;
-            FunctionRootNode functionRootNode = (FunctionRootNode) CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
-            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
-                /*
-                 * If the first parameter is called self, we assume the function does explicitly
-                 * declare the module argument
-                 */
-                builtinFunc = func;
-                functionRootNode.setPythonInternal(true);
-            } else {
-                RootCallTarget callTarget = PythonLanguage.get(functionRootNode).createCachedCallTarget(
-                                r -> {
-                                    /*
-                                     * Otherwise, we create a new function with a signature that
-                                     * requires one extra argument in front. We actually modify the
-                                     * function's AST here, so the original PFunction cannot be used
-                                     * anymore (its signature won't agree with it's indexed
-                                     * parameter reads).
-                                     */
-                                    assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
-                                    return functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
-
-                                        @Override
-                                        public boolean visit(Node node) {
-                                            if (node instanceof ReadVarArgsNode) {
-                                                node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).isBuiltin()));
-                                            } else if (node instanceof ReadIndexedArgumentNode) {
-                                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                                            }
-                                            return true;
-                                        }
-                                    }, x -> x);
-                                }, functionRootNode);
-
-                String name = func.getName();
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                factory().createCode(callTarget),
-                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
-            }
-
-            return builtinFunc;
+            FunctionRootNode rootNode = (FunctionRootNode) CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
+            rootNode.setPythonInternal(true);
+            func.setBuiltin(true);
+            return func;
         }
     }
 

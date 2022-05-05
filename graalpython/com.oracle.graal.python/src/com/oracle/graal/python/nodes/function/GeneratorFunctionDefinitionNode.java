@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -85,7 +85,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, qualname, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
     public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonLanguage language) {

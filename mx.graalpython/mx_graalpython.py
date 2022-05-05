@@ -1942,9 +1942,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         return 'Building project {}'.format(self.subject.name)
 
     def build(self):
-        if not self.args.force and not self.args.all and not self.needsBuild(None)[0]:
-            mx.log(f"Refusing build of {self.subject.name}. Use e.g. `mx -f --only {self.subject.name}' to force a build.")
-            return True
         args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in self.subject.args]
         return self.run(args)
 
@@ -1982,34 +1979,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
 
     def src_dir(self):
         return self.subject.dir
-
-    def needsBuild(self, newestInput):
-        tsNewest = 0
-        newestFile = None
-        for root, _, files in os.walk(self.src_dir()):
-            for f in files:
-                ts = os.path.getmtime(os.path.join(root, f))
-                if tsNewest < ts:
-                    tsNewest = ts
-                    newestFile = f
-        tsOldest = sys.maxsize
-        oldestFile = None
-        for root, _, files in os.walk(self.subject.get_output_root()):
-            for f in files:
-                ts = os.path.getmtime(os.path.join(root, f))
-                if tsOldest > ts:
-                    tsOldest = ts
-                    oldestFile = f
-        if tsOldest == sys.maxsize:
-            tsOldest = 0
-        if tsOldest < tsNewest:
-            self.clean(forBuild="reallyForBuild") # we clean here, because setuptools doesn't check timestamps
-            if newestFile and oldestFile:
-                return (True, "rebuild needed, %s newer than %s" % (newestFile, oldestFile))
-            else:
-                return (True, "build needed")
-        else:
-            return (False, "up to date")
 
     def newestOutput(self):
         return None

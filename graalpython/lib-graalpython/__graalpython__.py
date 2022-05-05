@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
 import sys
 
 @builtin
-def import_current_as_named_module(name, owner_globals=None):
+def import_current_as_named_module(module, name, owner_globals=None):
     """
     load a builtin anonymous module which does not have a Truffle land builtin module counter part
 
@@ -62,7 +62,7 @@ def import_current_as_named_module(name, owner_globals=None):
 
 
 @builtin
-def lazy_attributes_from_delegate(delegate_name, attributes, owner_module, on_import_error):
+def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_module, on_import_error):
     """
     used to lazily load attributes defined in another module via the __getattr__ mechanism.
     This will only cache the attributes in the caller module.
@@ -99,7 +99,7 @@ def lazy_attributes_from_delegate(delegate_name, attributes, owner_module, on_im
 
 
 @builtin
-def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
+def auto_wrap_methods(module, delegate_name, delegate_attributes, owner_globals):
     func_type = type(import_current_as_named_module)
 
     new_globals = dict(**owner_globals)
@@ -117,7 +117,7 @@ def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
         if attr in delegate_attributes:
             def make_wrapper(attribute, method):
                 @__graalpython__.builtin
-                def wrapper(*args, **kwargs):
+                def wrapper(module, *args, **kwargs):
                     try:
                         return method(*args, **kwargs)
                     except NotImplementedError:
@@ -131,7 +131,7 @@ def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
 
 
 @builtin
-def import_current_as_named_module_with_delegate(module_name, delegate_name, delegate_attributes=None,
+def import_current_as_named_module_with_delegate(module, module_name, delegate_name, delegate_attributes=None,
                                                  owner_globals=None, wrap_methods=True, on_import_error=None):
     owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
     if wrap_methods and owner_globals:
@@ -142,7 +142,7 @@ def import_current_as_named_module_with_delegate(module_name, delegate_name, del
 
 
 @builtin
-def build_java_class(ns, name, base):
+def build_java_class(module, ns, name, base):
     ns['__super__'] = None  # place where store the original java class when instance is created
     ExtenderClass = type("PythonJavaExtenderClass", (object, ), ns)
     HostAdapter = __graalpython__.extend(base)

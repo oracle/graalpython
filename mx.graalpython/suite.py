@@ -198,6 +198,11 @@ suite = {
                 "modules"
             ],
         },
+
+        "com.oracle.graal.python.frozen": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.frozen",
+        }
     },
 
     "projects": {
@@ -272,7 +277,7 @@ suite = {
             ],
             "platformDependent": False,
             "buildDependencies": [
-                # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist
+                # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
                 "GRAALPYTHON_JNI",
@@ -283,6 +288,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+                "GRAALPYTHON_PYTHON_LIB",
             ],
         },
 

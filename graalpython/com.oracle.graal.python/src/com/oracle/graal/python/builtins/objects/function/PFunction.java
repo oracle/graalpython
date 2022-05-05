@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -54,32 +54,30 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PFunction extends PythonObject {
     private String name;
     private String qualname;
-    private final String enclosingClassName;
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
+    @CompilationFinal private boolean isBuiltin;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        this(lang, name, qualname, enclosingClassName, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, PCell[] closure) {
+        this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        this(lang, name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
+        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+    public PFunction(PythonLanguage lang, String name, String qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure,
+                    Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         assert code != null;
         this.code = code;
-        this.enclosingClassName = enclosingClassName;
         this.globals = globals;
         this.defaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
@@ -120,6 +118,14 @@ public final class PFunction extends PythonObject {
         return closure;
     }
 
+    public boolean isBuiltin() {
+        return isBuiltin;
+    }
+
+    public void setBuiltin(boolean builtin) {
+        isBuiltin = builtin;
+    }
+
     @Override
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
@@ -135,10 +141,6 @@ public final class PFunction extends PythonObject {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
         this.code = code;
-    }
-
-    public String getEnclosingClassName() {
-        return enclosingClassName;
     }
 
     public Object[] getDefaults() {

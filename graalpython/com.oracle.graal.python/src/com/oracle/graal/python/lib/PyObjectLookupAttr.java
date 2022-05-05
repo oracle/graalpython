@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -254,7 +254,14 @@ public abstract class PyObjectLookupAttr extends Node {
             // It pays to try this in the uncached case, avoiding a full call to __getattribute__
             Object result = readAttributeQuickly(type, getattribute, receiver, name);
             if (result != null) {
-                return result;
+                if (result == PNone.NO_VALUE) {
+                    Object getattr = lookupGetattr.execute(frame, type, receiver);
+                    if (getattr != PNone.NO_VALUE) {
+                        return callGetattr.executeObject(frame, getattr, receiver, name);
+                    } else {
+                        return null;
+                    }
+                }
             }
         }
         try {
@@ -296,7 +303,8 @@ public abstract class PyObjectLookupAttr extends Node {
      * ModuleBuiltins.GetAttributeNode}. This method returns {@code PNone.NO_VALUE} when the
      * attribute is not found and the original would've raised an AttributeError. It returns {@code
      * null} when no shortcut was applicable. If {@code PNone.NO_VALUE} was returned, name is
-     * guaranteed to be a {@code java.lang.String}.
+     * guaranteed to be a {@code java.lang.String}. Note it is often necessary to call
+     * {@code __getattr__} if this returns {@code PNone.NO_VALUE}.
      */
     static final Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name) {
         if (name instanceof String) {
