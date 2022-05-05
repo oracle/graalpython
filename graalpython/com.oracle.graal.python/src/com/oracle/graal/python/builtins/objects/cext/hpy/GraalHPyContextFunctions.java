@@ -3572,7 +3572,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CastToJavaStringNode castStr,
                         @Cached HPyAsPythonObjectNode asObject,
                         @Cached CallNode callContextvar,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached HPyAsHandleNode asHandleNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 3);
             boolean mustRelease = gil.acquire();
@@ -3580,8 +3580,7 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 String name = castStr.execute(fromCharPointerNode.execute(arguments[1]));
                 Object def = asObject.execute(context, arguments[2]);
-                callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
-                return 0;
+                return asHandleNode.execute(context, callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def));
             } finally {
                 gil.release(mustRelease);
             }

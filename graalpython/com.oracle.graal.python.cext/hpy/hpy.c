@@ -1463,6 +1463,14 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Type_CheckSlot)(HPyContext *ctx, HPy type, HPy
     return (int) UPCALL_I32(ctx_Type_CheckSlot, ctx, type, expected);
 }
 
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Sequence_Check)(HPyContext *ctx, HPy obj) {
+    return (int) UPCALL_I32(ctx_Sequence_Check, ctx, obj);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step) {
+    return (int) UPCALL_I32(ctx_Slice_Unpack, ctx, slice, start, stop, step);
+}
+
 #undef HPy
 #undef HPyListBuilder
 #undef HPyTupleBuilder
@@ -1566,6 +1574,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     COPY(h_BytesType);
     COPY(h_MemoryViewType);
     COPY(h_CapsuleType);
+    COPY(h_SliceType);
 #undef COPY
 
 #define HPY_CTX_UPCALL(__fun) { void* v = overrides->__fun; if (v != NULL) native_context->__fun = v; else native_context->__fun = __fun; }
@@ -1736,6 +1745,8 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Capsule_IsValid);
     HPY_CTX_UPCALL(ctx_Capsule_Set);
     HPY_CTX_UPCALL(ctx_Type_CheckSlot);
+    HPY_CTX_UPCALL(ctx_Sequence_Check);
+    HPY_CTX_UPCALL(ctx_Slice_Unpack);
 
 #undef HPY_CTX_UPCALL
 

@@ -547,6 +547,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         H_LISTTYPE("h_ListType"),
         H_MEMORYVIEWTYPE("h_MemoryViewType"),
         H_CAPSULETYPE("h_CapsuleType"),
+        H_SLICETYPE("h_SliceType"),
 
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup", signature(HPy, HPy)),
@@ -726,7 +727,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_CAPSULE_GET("ctx_Capsule_Get"),
         CTX_CAPSULE_ISVALID("ctx_Capsule_IsValid"),
         CTX_CAPSULE_SET("ctx_Capsule_Set"),
-        CTX_DUMP("ctx_Dump");
+        CTX_DUMP("ctx_Dump"),
+        CTX_SEQUENCE_CHECK("ctx_Sequence_Check"),
+        CTX_SLICE_UNPACK("ctx_Slice_Unpack");
 
         final String name;
 
@@ -2068,6 +2071,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         createTypeConstant(members, HPyContextMember.H_BYTESTYPE, context, PythonBuiltinClassType.PBytes);
         createTypeConstant(members, HPyContextMember.H_MEMORYVIEWTYPE, context, PythonBuiltinClassType.PMemoryView);
         createTypeConstant(members, HPyContextMember.H_CAPSULETYPE, context, PythonBuiltinClassType.Capsule);
+        createTypeConstant(members, HPyContextMember.H_SLICETYPE, context, PythonBuiltinClassType.PSlice);
 
         members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
@@ -2264,6 +2268,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_CAPSULE_GET.ordinal()] = new GraalHPyCapsuleGet();
         members[HPyContextMember.CTX_CAPSULE_ISVALID.ordinal()] = new GraalHPyCapsuleIsValid();
         members[HPyContextMember.CTX_CAPSULE_SET.ordinal()] = new GraalHPyCapsuleSet();
+
+        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = new GraalHPyDump();
 
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {
