@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Enco
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
@@ -92,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -409,7 +409,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isString(s) || isStringSubtype(frame, s, getClassNode, isSubtypeNode)"})
         public Object find(VirtualFrame frame, Object s, long start, long end,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceNodes.CreateSliceNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -510,7 +510,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction > 0"})
         public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceNodes.CreateSliceNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
                         @Cached EndsWithNode endsWith,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
@@ -529,7 +529,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isAnyString(frame, string, getClassNode, isSubtypeNode)", "isAnyString(frame, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
         public static int tailmatch(VirtualFrame frame, Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceNodes.CreateSliceNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
                         @Cached StartsWithNode endsWith,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,

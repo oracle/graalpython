@@ -117,7 +117,7 @@ def auto_wrap_methods(module, delegate_name, delegate_attributes, owner_globals)
         if attr in delegate_attributes:
             def make_wrapper(attribute, method):
                 @__graalpython__.builtin
-                def wrapper(*args, **kwargs):
+                def wrapper(module, *args, **kwargs):
                     try:
                         return method(*args, **kwargs)
                     except NotImplementedError:

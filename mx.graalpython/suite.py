@@ -149,7 +149,6 @@ suite = {
               "version" : "RELEASE120-1",
             },
         },
-
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -323,7 +322,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
-                "python-lib",
+                "GRAALPYTHON_PYTHON_LIB",
             ],
         },
 

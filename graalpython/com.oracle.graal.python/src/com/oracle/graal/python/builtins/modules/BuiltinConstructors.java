@@ -164,7 +164,6 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -198,6 +197,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -3248,13 +3248,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(second)"})
         @SuppressWarnings("unused")
         static Object singleArg(Object cls, Object first, Object second, Object third,
-                        @Cached SliceNodes.CreateSliceNode sliceNode) {
+                        @Cached PySliceNew sliceNode) {
             return sliceNode.execute(PNone.NONE, first, PNone.NONE);
         }
 
+        @Specialization(guards = {"!isNoValue(stop)", "isNoValue(step)"})
+        @SuppressWarnings("unused")
+        static Object twoArgs(Object cls, Object start, Object stop, Object step,
+                        @Cached PySliceNew sliceNode) {
+            return sliceNode.execute(start, stop, PNone.NONE);
+        }
+
         @Fallback
-        static Object moreArgs(Object cls, Object start, Object stop, Object step,
-                        @Cached SliceNodes.CreateSliceNode sliceNode) {
+        static Object threeArgs(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+                        @Cached PySliceNew sliceNode) {
             return sliceNode.execute(start, stop, step);
         }
     }
