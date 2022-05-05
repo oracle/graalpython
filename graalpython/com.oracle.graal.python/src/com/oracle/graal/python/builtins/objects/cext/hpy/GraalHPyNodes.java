@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -109,13 +110,16 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1953,10 +1957,9 @@ public class GraalHPyNodes {
         abstract Object execute(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray);
 
         @Specialization
-        static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
+        Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
-                        @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
@@ -1964,7 +1967,7 @@ public class GraalHPyNodes {
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
-                        @Cached CallNode callTypeNewNode,
+                        @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
@@ -2006,19 +2009,18 @@ public class GraalHPyNodes {
                 }
 
                 // create the type object
-                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
-                // TODO: check if metatype is a type
-                Object newType = callTypeNewNode.execute(PythonBuiltinClassType.PythonClass, names[1], bases, namespace);
-                // allocate additional memory for the metatype and add it
+                PythonClass metatype = (PythonClass) getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, "PyTruffle_CreateType",
+                                names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
+                // allocate additional memory for the metatype and set it
                 if (metatype != null) {
                     // get basicsize of metatype and allocate it into GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
-                    PythonClass clazz = ((PythonClass) metatype);
-                    long basicSize = clazz.basicSize;
+                    long basicSize = metatype.basicSize;
                     Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
                     writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
-                    Object destroyFunc = clazz.hpyDestroyFunc;
+                    Object destroyFunc = metatype.hpyDestroyFunc;
                     context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
-                    ((PythonObject) newType).setPythonClass(metatype, dylib);
                 }
 
                 // determine and set the correct module attribute
