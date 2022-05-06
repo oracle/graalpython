@@ -333,7 +333,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
-                "com.oracle.graal.python.pegparser",
+                "GRAALPYTHON_PEGPARSER",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -539,6 +539,16 @@ suite = {
             },
             "description": "Contains the native library needed by HPy JNI backend.",
             "maven": True,
+        },
+
+        "GRAALPYTHON_PEGPARSER": {
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+            ],
+            "exclude": [
+                "truffle:ICU4J",
+            ],
+            "description": "GraalPython PEG parser",
         },
 
         "GRAALPYTHON": {
