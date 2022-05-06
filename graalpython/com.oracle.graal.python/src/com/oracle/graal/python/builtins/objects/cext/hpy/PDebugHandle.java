@@ -66,7 +66,7 @@ public final class PDebugHandle extends PythonBuiltinObject {
 
     @TruffleBoundary
     public long getId() {
-        return GraalHPyBoxing.boxHandle(handle.getDebugId());
+        return GraalHPyBoxing.boxLocal(handle.getDebugId());
     }
 
     @TruffleBoundary

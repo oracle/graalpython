@@ -201,7 +201,11 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
 #define NAN_BOXING_MASK (0xFFFF000000000000llu)
 #define NAN_BOXING_INT (0x0001000000000000llu)
 #define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
+#define NAN_BOXING_MAX_HANDLE (0x00000000FFFFFFFFllu)
+#define NAN_BOXING_MAX_LOCAL (0x00000000000FFFFFllu)
+#define NAN_BOXING_FIELD_BASE (0x0000000000100000llu)
+#define NAN_BOXING_FIELD_MASK (0xFFFFFFFFFFF00000llu)
+#define NAN_BOXING_FIELD_SHIFT 20
 #define IMMUTABLE_HANDLES (0x0000000000000100llu)
 
 static bool isBoxedDouble(uint64_t value) {
@@ -210,6 +214,10 @@ static bool isBoxedDouble(uint64_t value) {
 
 static bool isBoxedHandle(uint64_t value) {
     return value <= NAN_BOXING_MAX_HANDLE;
+}
+
+static bool isBoxedLocal(uint64_t value) {
+    return value <= NAN_BOXING_MAX_LOCAL;
 }
 
 static bool isBoxedInt(uint64_t value) {
@@ -227,8 +235,16 @@ static uint64_t boxDouble(double value) {
     return doubleBits + NAN_BOXING_BASE;
 }
 
-static uint64_t unboxHandle(uint64_t value) {
+static uint64_t unboxLocal(uint64_t value) {
     return value;
+}
+
+static uint64_t unboxField(uint64_t value) {
+    return (value & NAN_BOXING_FIELD_MASK) >> NAN_BOXING_FIELD_SHIFT;
+}
+
+static uint64_t boxField(uint64_t owner, uint64_t field) {
+    return (field << NAN_BOXING_FIELD_SHIFT) | owner;
 }
 
 static uint64_t boxHandle(uint64_t handle) {
@@ -244,6 +260,11 @@ static uint64_t boxInt(int32_t value) {
 }
 
 static inline uint64_t toBits(HPy ptr) {
+    /* return * ((uint64_t*) &ptr._i); */
+    return (uint64_t) (ptr._i);
+}
+
+static inline uint64_t toFieldBits(HPyField ptr) {
     /* return * ((uint64_t*) &ptr._i); */
     return (uint64_t) (ptr._i);
 }
@@ -269,12 +290,17 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static HPy (*original_Field_Load)(HPyContext *ctx, HPy owner, HPyField field);
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
-    if (isBoxedHandle(bits)) {
+    if (isBoxedLocal(bits)) {
         void** space = (void**)ctx->_private;
-        return space[unboxHandle(bits)];
+        return space[unboxLocal(bits)];
+    } else if (isBoxedHandle(bits)) {
+        // if we didn't yet resolve the field, we might not have the struct in
+        // our local space and have to do an upcall
+        return original_AsStruct(ctx, h);
     } else {
         return NULL;
     }
@@ -441,6 +467,15 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
 }
 
 
+static HPy augment_Field_Load(HPyContext *ctx, HPy owner, HPyField field) {
+    uint64_t bits = toBits(owner);
+    if (isBoxedLocal(bits)) {
+        return toPtr(boxField(bits, toFieldBits(field)));
+    } else {
+        return original_Field_Load(ctx, owner, field);
+    }
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -483,6 +518,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
+
+    original_Field_Load = context->ctx_Field_Load;
+    context->ctx_Field_Load = augment_Field_Load;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {

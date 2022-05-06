@@ -1100,7 +1100,9 @@ public class GraalHPyNodes {
         @Specialization(guards = {"hpyContext == null", "isBoxedHandle(bits)"}, replaces = "doLongNull")
         static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
                         @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
-            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+            // note: this is used to get the actual GraalHPyHandle associated with these bits, so
+            // it doesn't matter if it's a field
+            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxLocal(bits));
         }
 
         @Specialization(guards = "isBoxedInt(bits) || isBoxedDouble(bits)")
@@ -1149,7 +1151,7 @@ public class GraalHPyNodes {
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
         static void doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Bind("context.getObjectForHPyHandle(unboxLocal(bits))") GraalHPyHandle handle,
                         @Cached ConditionProfile isAllocated) {
             if (isAllocated.profile(handle.isAllocated())) {
                 handle.closeAndInvalidate(context);
@@ -1175,7 +1177,7 @@ public class GraalHPyNodes {
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Bind("context.getObjectForHPyHandle(unboxLocal(bits))") GraalHPyHandle handle,
                         @Cached ConditionProfile isAllocated) {
             if (isAllocated.profile(handle.isAllocated())) {
                 handle.closeAndInvalidate(context);
@@ -1215,15 +1217,26 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
-        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedLocal(bits)"})
         static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
-                        @Cached ConditionProfile isAllocated) {
+                        @Shared("isAllocated") @Cached ConditionProfile isAllocated) {
+            GraalHPyHandle handle = context.getObjectForHPyHandle(GraalHPyBoxing.unboxLocal(bits));
             if (isAllocated.profile(handle.isAllocated())) {
                 handle.closeAndInvalidate(context);
             }
             return handle.getDelegate();
+        }
+
+        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedField(bits)"})
+        static Object doLongField(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Shared("isAllocated") @Cached ConditionProfile isAllocated) {
+            GraalHPyHandle handle = context.getObjectForHPyHandle(GraalHPyBoxing.unboxLocal(bits));
+            if (isAllocated.profile(handle.isAllocated())) {
+                handle.closeAndInvalidate(context);
+            }
+            return ((PythonObject) handle.getDelegate()).getHpyFields()[GraalHPyBoxing.unboxField(bits) - 1];
         }
 
         @Specialization(guards = "isBoxedDouble(bits)")
@@ -1252,17 +1265,22 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
-        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedLocal(bits)"})
         static Object doOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
-                        @Cached ConditionProfile isAllocated) {
-            if (isAllocated.profile(handle.isAllocated())) {
-                handle.closeAndInvalidate(context);
-            }
-            return handle.getDelegate();
+                        @Shared("isAllocated") @Cached ConditionProfile isAllocated) {
+            return doLong(hpyContext, bits, context, isAllocated);
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedField(bits)"})
+        static Object doOtherField(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Shared("isAllocated") @Cached ConditionProfile isAllocated) {
+            return doLongField(hpyContext, bits, context, isAllocated);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
@@ -1320,8 +1338,8 @@ public class GraalHPyNodes {
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
         static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle) {
-            return handle.getDelegate();
+                        @Shared("isLocal") @Cached("createCountingProfile()") ConditionProfile isLocal) {
+            return context.getPythonObjectForHPyHandle(bits, isLocal);
         }
 
         @Specialization(guards = "isBoxedDouble(bits)")
@@ -1354,8 +1372,8 @@ public class GraalHPyNodes {
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
                         @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context,
-                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle) {
-            return handle.getDelegate();
+                        @Shared("isLocal") @Cached("createCountingProfile()") ConditionProfile isLocal) {
+            return doLong(hpyContext, bits, context, isLocal);
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
@@ -1378,7 +1396,8 @@ public class GraalHPyNodes {
                             "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
                         })
         Object doGeneric(GraalHPyContext hpyContext, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Shared("isLocal") @Cached("createCountingProfile()") ConditionProfile isLocal) {
             if (value instanceof GraalHPyHandle) {
                 return doValidHandle(hpyContext, (GraalHPyHandle) value);
             }
@@ -1401,7 +1420,7 @@ public class GraalHPyNodes {
                 return GraalHPyBoxing.unboxDouble(bits);
             } else {
                 assert GraalHPyBoxing.isBoxedHandle(bits);
-                return ensureContext(hpyContext).getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+                return ensureContext(hpyContext).getPythonObjectForHPyHandle(bits, isLocal);
             }
         }
     }

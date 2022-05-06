@@ -3141,8 +3141,9 @@ public abstract class GraalHPyContextFunctions {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
+                    // Important: this is called with the actual index, so use unboxLocal
                     if (GraalHPyBoxing.isBoxedHandle(bits)) {
-                        idx = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+                        idx = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxLocal(bits)).getGlobalId();
                     }
                 }
 
@@ -3197,7 +3198,7 @@ public abstract class GraalHPyContextFunctions {
                         // if asHandleNode wasn't used above, it acts as a branch profile
                         // here. otherwise we're probably already pulling in a lot of code
                         // and are a bit too polymorphic
-                        return asHandleNode.execute(context, context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate());
+                        return asHandleNode.execute(context, context.getObjectForHPyGlobal(GraalHPyBoxing.unboxLocal(bits)).getDelegate());
                     } else {
                         // tagged handles can be returned directly
                         return bits;
