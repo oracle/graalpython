@@ -46,8 +46,7 @@
  */
 
 
-#include <stddef.h>
-#include "hpy.h"
+#include "hpy_jni.h"
 
 typedef struct {
     HPy_ssize_t capacity;  // allocated handles
@@ -121,11 +120,7 @@ ctx_TupleBuilder_Build(HPyContext *ctx, HPyTupleBuilder builder)
         HPyErr_NoMemory(ctx);
         return HPy_NULL;
     }
-    /* TODO(fa): we could have an internal upcall that steals the references */
-    HPy res = HPyTuple_FromArray(ctx, hb->handles, hb->capacity);
-    for (HPy_ssize_t i = 0; i < hb->capacity; i++) {
-        HPy_Close(ctx, hb->handles[i]);
-    }
+    HPy res = upcallTupleFromArray(ctx, hb->handles, hb->capacity, JNI_TRUE);
     free(hb);
     return res;
 }

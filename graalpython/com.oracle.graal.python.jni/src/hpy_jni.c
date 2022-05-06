@@ -39,7 +39,8 @@
  * SOFTWARE.
  */
 
-#include <hpy.h>
+#include "hpy_jni.h"
+
 #include <wchar.h>
 #include <assert.h>
 #include <stdio.h>
@@ -59,7 +60,6 @@
 
 #include "com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext.h"
 #include "hpynative.h"
-#include <jni.h>
 
 /* definitions for HPyTracker */
 #include "hpy/runtime/ctx_funcs.h"
@@ -430,7 +430,7 @@ static HPy augment_UnicodeFromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ss
     }
 }
 
-static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal) {
     jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
     jlong *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jLongArray, 0);
     HPy_ssize_t i;
@@ -438,8 +438,13 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
         content[i] = (jlong) toBits(items[i]);
     }
     (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jLongArray, content, 0);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, JNI_FALSE);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, steal);
 }
+
+static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
+}
+
 
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
