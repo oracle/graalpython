@@ -187,6 +187,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -1369,7 +1370,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallUnicodeFromWideChar,
         UpcallUnicodeFromJCharArray,
         UpcallDictNew,
-        UpcallListNew;
+        UpcallListNew,
+        UpcallTupleFromArray;
 
         long count;
 
@@ -1535,11 +1537,18 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         throw CompilerDirectives.shouldNotReachHere("not implemented");
     }
 
-    public final void ctxClose(long handle) {
-        Counter.UpcallClose.increment();
+    /**
+     * Close a native handle received from a JNI upcall (hence represented by a Java {code long}).
+     */
+    private void closeNativeHandle(long handle) {
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).closeAndInvalidate(this);
         }
+    }
+
+    public final void ctxClose(long handle) {
+        Counter.UpcallClose.increment();
+        closeNativeHandle(handle);
     }
 
     public final long ctxDup(long handle) {
@@ -1843,13 +1852,33 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             int len = CastToJavaIntExactNode.getUncached().execute(llen);
             Object[] data = new Object[len];
             Arrays.fill(data, PNone.NONE);
-            PList list = PythonObjectFactory.getUncached().createList(data);
+            PList list = getSlowPathFactory().createList(data);
             return createHandle(list).getId(this, ConditionProfile.getUncached());
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             // NULL handle
             return 0;
         }
+    }
+
+    /**
+     * Implementation of context function {@code ctx_Tuple_FromArray} (JNI upcall). This method can
+     * optionally steal the item handles in order to avoid repeated upcalls just to close them. This
+     * is useful to implement, e.g., tuple builder.
+     */
+    public final long ctxTupleFromArray(long[] hItems, boolean steal) {
+        Counter.UpcallTupleFromArray.increment();
+
+        Object[] objects = new Object[hItems.length];
+        for (int i = 0; i < hItems.length; i++) {
+            long hBits = hItems[i];
+            objects[i] = HPyAsPythonObjectNodeGen.getUncached().execute(this, hBits);
+            if (steal) {
+                closeNativeHandle(hBits);
+            }
+        }
+        PTuple tuple = getSlowPathFactory().createTuple(objects);
+        return createHandle(tuple).getId(this, ConditionProfile.getUncached());
     }
 
     @ExportMessage

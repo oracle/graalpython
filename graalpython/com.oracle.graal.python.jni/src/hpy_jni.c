@@ -88,6 +88,7 @@ static JNIEnv* jniEnv;
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
+    UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -267,6 +268,7 @@ static int (*original_NumberCheck)(HPyContext *ctx, HPy h);
 static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
+static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -428,6 +430,17 @@ static HPy augment_UnicodeFromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ss
     }
 }
 
+static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
+    jlong *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jLongArray, 0);
+    HPy_ssize_t i;
+    for (i = 0; i < nitems; i++) {
+        content[i] = (jlong) toBits(items[i]);
+    }
+    (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jLongArray, content, 0);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, JNI_FALSE);
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -437,10 +450,10 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_FloatAsDouble = context->ctx_Float_AsDouble;
     context->ctx_Float_AsDouble = augment_FloatAsDouble;
-    
+
     original_LongAsLong = context->ctx_Long_AsLong;
     context->ctx_Long_AsLong = augment_LongAsLong;
-    
+
     original_LongAsDouble = context->ctx_Long_AsDouble;
     context->ctx_Long_AsDouble = augment_LongAsDouble;
 
@@ -467,6 +480,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_UnicodeFromWideChar = context->ctx_Unicode_FromWideChar;
     context->ctx_Unicode_FromWideChar = augment_UnicodeFromWideChar;
+
+    original_TupleFromArray = context->ctx_Tuple_FromArray;
+    context->ctx_Tuple_FromArray = augment_TupleFromArray;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -524,11 +540,13 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_SIZE_T "J"
 #define SIG_PTR "J"
 #define SIG_VOID "V"
+#define SIG_BOOL "Z"
 #define SIG_INT "I"
 #define SIG_LONG "J"
 #define SIG_DOUBLE "D"
 #define SIG_TRACKER "J"
 #define SIG_JCHARARRAY "[C"
+#define SIG_JLONGARRAY "[J"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
