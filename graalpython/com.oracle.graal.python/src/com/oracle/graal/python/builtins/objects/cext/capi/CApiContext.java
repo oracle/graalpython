@@ -935,7 +935,8 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    static Object nfiLib;
+    // XXX: We have to hold on to this so that NFI doesn't unload the library again
+    static Object nativeLibpython;
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
@@ -956,11 +957,11 @@ public final class CApiContext extends CExtContext {
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
 
-                // HACK
-                SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"/home/tim/Dev/analysis/numpytest/numpyhackjob/repo/cpython/libpython3.8d.so\"", libPythonName);
-                // SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", libPythonName);
-                nfiLib = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
-                // END HACK
+                String libpython = System.getProperty("LibPythonNativeLibrary");
+                if (libpython != null) {
+                    SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", libPythonName);
+                    nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
+                }
 
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
