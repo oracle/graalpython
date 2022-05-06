@@ -1,8 +1,10 @@
 QUIETLY$(MX_VERBOSE) = @
 
 PARSER_PATH ?= ../com.oracle.graal.python.pegparser/src/com/oracle/graal/python/pegparser
-ifdef PYTHON3_HOME
-PYTHON ?= ${PYTHON3_HOME}/python
+ifdef MX_PYTHON
+PYTHON ?= ${MX_PYTHON}
+else ifdef MX_PYTHON_VERSION
+PYTHON ?= python${MX_PYTHON_VERSION}
 else
 PYTHON ?= python3
 endif
