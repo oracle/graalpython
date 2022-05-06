@@ -280,7 +280,27 @@ import sun.misc.Unsafe;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    private static final boolean TRACE = Boolean.getBoolean("HPyTraceUpcalls");
+    private static final boolean TRACE;
+    private static final int TRACE_SLEEP_TIME;
+    static {
+        String prop = System.getProperty("HPyTraceUpcalls");
+        boolean doTrace = false;
+        int sleepTime = 5000;
+        if (prop != null) {
+            if (prop.equals("true")) {
+                doTrace = true;
+            } else {
+                try {
+                    sleepTime = Integer.parseInt(prop);
+                    doTrace = true;
+                } catch (NumberFormatException e) {
+                    // pass
+                }
+            }
+        }
+        TRACE = doTrace;
+        TRACE_SLEEP_TIME = sleepTime;
+    }
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
@@ -1419,7 +1439,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
                 while (true) {
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(TRACE_SLEEP_TIME);
                     } catch (InterruptedException e) {
                         // fall through
                     }
@@ -2294,7 +2314,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 public void run() {
                     while (true) {
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(TRACE_SLEEP_TIME);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
