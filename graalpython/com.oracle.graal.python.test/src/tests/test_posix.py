@@ -530,8 +530,9 @@ class ScandirTests(unittest.TestCase):
             dir2 = os.scandir(fd)
             next(dir1)
             dir1.close()
-            # ScandirIterator.close() must rewind
-            self.assertEqual(1, len([x for x in dir2]))
+            if sys.platform != 'darwin':
+                # ScandirIterator.close() must rewind
+                self.assertEqual(1, len([x for x in dir2]))
 
     def test_scandir_default_arg(self):
         with os.scandir() as dir:
