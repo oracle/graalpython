@@ -1268,7 +1268,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 System.load(pythonJNIPath);
                 jniBackendLoaded = true;
             } catch (NullPointerException | UnsatisfiedLinkError e) {
-                LOGGER.fine("HPy JNI backend library could not be found: " + pythonJNIPath);
+                LOGGER.severe("HPy JNI backend library could not be found: " + pythonJNIPath);
+                LOGGER.severe("Error was: " + e);
             }
         }
     }
