@@ -533,6 +533,11 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll;
     context->ctx_Tracker_Close = ctx_Tracker_Close;
 
+    context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
+    context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;
+    context->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
+    context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
+
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
