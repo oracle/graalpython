@@ -2,11 +2,11 @@ QUIETLY$(MX_VERBOSE) = @
 
 PARSER_PATH ?= ../com.oracle.graal.python.pegparser/src/com/oracle/graal/python/pegparser
 ifdef MX_PYTHON
-PYTHON ?= ${MX_PYTHON}
+PYTHON_EXE ?= ${MX_PYTHON}
 else ifdef MX_PYTHON_VERSION
-PYTHON ?= python${MX_PYTHON_VERSION}
+PYTHON_EXE ?= python${MX_PYTHON_VERSION}
 else
-PYTHON ?= python3
+PYTHON_EXE ?= python3
 endif
 
 TARGET=${PARSER_PATH}/Parser.java
@@ -22,7 +22,7 @@ STAMP=${GRAMMAR}.stamp
 default: ${STAMP}
 
 ${STAMP}: ${GRAMMAR} ${TOKENS} ${PEGEN_FILES} main_parser_gen.py
-	$(QUIETLY) ${PYTHON} main_parser_gen.py ${GRAMMAR} ${TOKENS} ${TARGET}
+	$(QUIETLY) ${PYTHON_EXE} main_parser_gen.py ${GRAMMAR} ${TOKENS} ${TARGET}
 	$(QUIETLY) touch $@
 
 clean:
