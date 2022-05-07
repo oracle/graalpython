@@ -549,6 +549,7 @@ suite = {
                 "truffle:ICU4J",
             ],
             "description": "GraalPython PEG parser",
+            "internal": True,
         },
 
         "GRAALPYTHON": {
