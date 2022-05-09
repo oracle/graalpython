@@ -1426,7 +1426,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallUnicodeFromJCharArray,
         UpcallDictNew,
         UpcallListNew,
-        UpcallTupleFromArray;
+        UpcallTupleFromArray,
+        UpcallFieldLoad,
+        UpcallFieldStore,
+        UpcallGlobalLoad,
+        UpcallGlobalStore;
 
         long count;
 
@@ -1945,6 +1949,52 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         PTuple tuple = getSlowPathFactory().createTuple(objects);
         return createHandle(tuple).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxFieldLoad(long bits, long idx) {
+        Counter.UpcallFieldLoad.increment();
+        Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx - 1];
+        return createHandle(referent).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxFieldStore(long bits, long idx, long value) {
+        Counter.UpcallFieldStore.increment();
+        PythonObject owner = (PythonObject) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+        Object referent = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value)).getDelegate();
+
+        Object[] hpyFields = owner.getHpyFields();
+        if (idx == 0) {
+            if (hpyFields == null) {
+                idx = 1;
+                hpyFields = new Object[]{referent};
+            } else {
+                idx = hpyFields.length + 1;
+                hpyFields = PythonUtils.arrayCopyOf(hpyFields, (int) idx);
+                hpyFields[(int) idx - 1] = referent;
+            }
+            owner.setHpyFields(hpyFields);
+        } else {
+            hpyFields[(int) idx - 1] = referent;
+        }
+        return idx;
+    }
+
+    public final long ctxGlobalLoad(long bits) {
+        Counter.UpcallGlobalLoad.increment();
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return createHandle(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate()).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxGlobalStore(long bits, long v) {
+        Counter.UpcallGlobalStore.increment();
+        Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)).getDelegate();
+        int idx = 0;
+        if (bits > 0) {
+            idx = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+        }
+        GraalHPyHandle newHandle = createGlobal(value, idx);
+        return newHandle.getGlobalId();
     }
 
     @ExportMessage

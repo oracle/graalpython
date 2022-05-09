@@ -90,6 +90,10 @@ static JNIEnv* jniEnv;
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
     UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
+    UPCALL(GlobalLoad, SIG_HPYGLOBAL, SIG_HPY) \
+    UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
+    UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
+    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T)
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -195,6 +199,22 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
+static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal h) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GlobalLoad, HPY_UP(h));
+}
+
+static void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *h, HPy v) {
+    h->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), GlobalStore, h->_i, HPY_UP(v));
+}
+
+static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy owner, HPyField field) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), FieldLoad, HPY_UP(owner), HPY_UP(field));
+}
+
+static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy value) {
+    field->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), FieldStore, HPY_UP(owner), field->_i, HPY_UP(value));
+}
+
 //*************************
 // BOXING
 
@@ -249,6 +269,16 @@ static inline uint64_t toBits(HPy ptr) {
     return (uint64_t) (ptr._i);
 }
 
+static inline uint64_t toBitsGlobal(HPyGlobal ptr) {
+    /* return * ((uint64_t*) &ptr._i); */
+    return (uint64_t) (ptr._i);
+}
+
+static inline uint64_t toBitsField(HPyField ptr) {
+    /* return * ((uint64_t*) &ptr._i); */
+    return (uint64_t) (ptr._i);
+}
+
 static inline HPy toPtr(uint64_t ptr) {
     /* return * ((void**) &ptr); */
     return (HPy) { (HPy_ssize_t) ptr };
@@ -272,6 +302,10 @@ static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, 
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
 static int (*original_Tracker_Add)(HPyContext *ctx, HPyTracker ht, HPy h);
 static void (*original_Tracker_Close)(HPyContext *ctx, HPyTracker ht);
+static void (*original_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
+static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
+static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
+static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -484,6 +518,42 @@ void augment_Tracker_Close(HPyContext *ctx, HPyTracker ht) {
     free(hp);
 }
 
+HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
+    long bits = toBitsGlobal(global);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Global_Load(ctx, global);
+    } else {
+        return toPtr(bits);
+    }
+}
+
+void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
+    long bits = toBits(h);
+    if (bits && isBoxedHandle(bits)) {
+        original_Global_Store(ctx, global, h);
+    } else {
+        global->_i = h._i;
+    }
+}
+
+HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
+    long bits = toBitsField(source_field);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Field_Load(ctx, source_object, source_field);
+    } else {
+        return toPtr(bits);
+    }
+}
+
+void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
+    long bits = toBits(h);
+    if (bits && isBoxedHandle(bits)) {
+        original_Field_Store(ctx, target_object, target_field, h);
+    } else {
+        target_field->_i = h._i;
+    }
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -532,6 +602,18 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_Tracker_Close = context->ctx_Tracker_Close;
     context->ctx_Tracker_Close = augment_Tracker_Close;
+
+    original_Global_Load = context->ctx_Global_Load;
+    context->ctx_Global_Load = augment_Global_Load;
+
+    original_Global_Store = context->ctx_Global_Store;
+    context->ctx_Global_Store = augment_Global_Store;
+
+    original_Field_Load = context->ctx_Field_Load;
+    context->ctx_Field_Load = augment_Field_Load;
+
+    original_Field_Store = context->ctx_Field_Store;
+    context->ctx_Field_Store = augment_Field_Store;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -587,10 +669,17 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
     context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
 
+    context->ctx_Global_Load = ctx_Global_Load_jni;
+    context->ctx_Global_Store = ctx_Global_Store_jni;
+    context->ctx_Field_Load = ctx_Field_Load_jni;
+    context->ctx_Field_Store = ctx_Field_Store_jni;
+
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
 #define SIG_HPY "J"
+#define SIG_HPYFIELD "J"
+#define SIG_HPYGLOBAL "J"
 #define SIG_SIZE_T "J"
 #define SIG_PTR "J"
 #define SIG_VOID "V"
