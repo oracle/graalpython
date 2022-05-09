@@ -64,12 +64,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -93,7 +92,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -265,32 +263,13 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     abstract static class PyListGetSliceNode extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh,
-                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
-                        @Cached BranchProfile isIntRangeProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
-                    isIntRangeProfile.enter();
-                    return getItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE));
-                }
-                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
-        }
-
         @Specialization
         Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return getItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -325,31 +304,12 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
     abstract static class PyListSetSliceNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        static Object getSlice(VirtualFrame frame, PList list, long iLow, long iHigh, Object s,
-                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
-                        @Cached SliceLiteralNode sliceNode,
-                        @Cached BranchProfile isIntRangeProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                if (PInt.isIntRange(iLow) && PInt.isIntRange(iHigh)) {
-                    isIntRangeProfile.enter();
-                    setItemNode.execute(frame, list, sliceNode.execute(frame, (int) iLow, (int) iHigh, PNone.NONE), s);
-                }
-                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
-                return 0;
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return -1;
-            }
-        }
-
-        @Specialization
         static Object getSlice(VirtualFrame frame, PList list, Object iLow, Object iHigh, Object s,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setItemNode.execute(frame, list, sliceNode.execute(frame, iLow, iHigh, PNone.NONE), s);
+                setItemNode.execute(frame, list, sliceNode.execute(iLow, iHigh, PNone.NONE), s);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

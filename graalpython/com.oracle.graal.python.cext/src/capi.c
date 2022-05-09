@@ -876,6 +876,11 @@ int PyTruffle_Debug(void *arg) {
     return 0;
 }
 
+int PyTruffle_ToNative(void *arg) {
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ToNative", arg);
+    return 0;
+}
+
 int truffle_ptr_compare(void* x, void* y, int op) {
     switch (op) {
     case Py_LT:

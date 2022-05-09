@@ -40,25 +40,26 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_MAPPING_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_OBJECT_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_PY_SEQUENCE_SIZE;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -113,7 +115,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -750,12 +751,12 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         Object getSlice(VirtualFrame frame, Object obj, long iLow, long iHigh,
                         @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SliceLiteralNode sliceNode,
+                        @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, obj, __GETITEM__);
-                return callNode.execute(getItemCallable, sliceNode.execute(frame, iLow, iHigh, PNone.NONE));
+                return callNode.execute(getItemCallable, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();

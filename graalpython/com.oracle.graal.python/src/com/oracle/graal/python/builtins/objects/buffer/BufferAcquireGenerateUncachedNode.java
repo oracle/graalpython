@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
 /**
  * Helper node for using {@link PythonBufferAcquireLibrary} and {@link PythonBufferAccessLibrary} in
@@ -205,12 +204,12 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
 
         @Override
         public Assumption needNotPassFrameAssumption() {
-            return NeverValidAssumption.INSTANCE;
+            return Assumption.NEVER_VALID;
         }
 
         @Override
         public Assumption needNotPassExceptionAssumption() {
-            return NeverValidAssumption.INSTANCE;
+            return Assumption.NEVER_VALID;
         }
 
         @Override

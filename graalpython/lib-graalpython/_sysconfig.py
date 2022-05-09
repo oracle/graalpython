@@ -82,6 +82,7 @@ def _get_posix_vars():
     g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
     g['OPT'] = "-stdlib=libc++ -DNDEBUG"
+    g['INCLUDEPY'] = get_python_inc()
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
     gnu_source = "-D_GNU_SOURCE=1"
@@ -114,4 +115,6 @@ def _get_posix_vars():
     g['ABIFLAGS'] = ""
     g['Py_DEBUG'] = 0
     g['Py_ENABLE_SHARED'] = 0
+    g['LIBDIR'] = __graalpython__.capi_home
+    g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
     return g

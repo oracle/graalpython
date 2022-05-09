@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_BAD_NAME;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_DISABLED;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_EXCLUDED;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
@@ -54,11 +53,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -86,15 +80,17 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.module.FrozenModules;
+import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
-import com.oracle.graal.python.builtins.objects.module.FrozenModules;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -102,6 +98,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -116,6 +113,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -123,6 +121,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_imp", isEager = true)
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -470,7 +469,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!getContext().getOption(PythonOptions.PythonPath).isEmpty() && "site".equals(name)) {
                 return false;
             } else {
-                return findFrozen(name).status == FROZEN_OKAY;
+                return findFrozen(getContext(), name).status == FROZEN_OKAY;
             }
         }
     }
@@ -489,9 +488,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean run(String name,
+        boolean run(String name,
                         @Cached PRaiseNode raiseNode) {
-            FrozenResult result = findFrozen(name);
+            FrozenResult result = findFrozen(getContext(), name);
             if (result.status != FROZEN_EXCLUDED) {
                 raiseFrozenError(result.status, name, raiseNode);
             }
@@ -530,7 +529,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     raiseFrozenError(FROZEN_INVALID, name, raiseNode);
                 }
             } else {
-                FrozenResult result = findFrozen(name);
+                FrozenResult result = findFrozen(getContext(), name);
                 FrozenStatus status = result.status;
                 info = result.info;
                 raiseFrozenError(status, name, raiseNode);
@@ -579,7 +578,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, String name, boolean withData,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached PRaiseNode raiseNode) {
-            FrozenResult result = findFrozen(name);
+            FrozenResult result = findFrozen(getContext(), name);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
 
@@ -643,7 +642,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
      */
     @TruffleBoundary
     public static PythonModule importFrozenModuleObject(Python3Core core, String name, boolean doRaise, PythonModule globals) {
-        FrozenResult result = findFrozen(name);
+        FrozenResult result = findFrozen(core.getContext(), name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
 
@@ -680,10 +679,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     /*
      * CPython's version of this accepts any object and casts, but all Python-level callers use
-     * argument clinic to convert the name first. The only exeption is
+     * argument clinic to convert the name first. The only exception is
      * PyImport_ImportFrozenModuleObject, which we don't expose as C API and handle differently_
      */
-    private static FrozenResult findFrozen(String name) {
+    private static FrozenResult findFrozen(PythonContext context, String name) {
+        if (context.getOption(PythonOptions.DisableFrozenModules)) {
+            return new FrozenResult(FROZEN_DISABLED);
+        }
         PythonFrozenModule module = FrozenModules.lookup(name);
 
         if (module == null) {

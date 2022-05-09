@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,11 +31,11 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
@@ -93,7 +93,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Children protected final ExpressionNode[] argumentNodes;
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
-    @Child private GetAttributeNode getNameAttributeNode;
+    @Child private PyObjectFunctionStr pyObjectFunctionStr;
     @Child private StringNodes.CastToJavaStringCheckedNode castToStringNode;
 
     protected final String calleeName;
@@ -322,23 +322,24 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToStringNode = insert(StringNodes.CastToJavaStringCheckedNode.create());
                 }
-                Object functionName = getNameAttributeNode().executeObject(frame, callable);
+                String functionName = getFunctionName(frame, callable);
                 String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, functionName, keyName);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, getNameAttributeNode().executeObject(frame, callable), ex.getObject());
+                String functionName = getFunctionName(frame, callable);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, ex.getObject());
             }
         }
         return result;
     }
 
-    private GetAttributeNode getNameAttributeNode() {
-        if (getNameAttributeNode == null) {
+    private String getFunctionName(VirtualFrame frame, Object callable) {
+        if (pyObjectFunctionStr == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__));
+            pyObjectFunctionStr = insert(PyObjectFunctionStr.create());
         }
-        return getNameAttributeNode;
+        return pyObjectFunctionStr.execute(frame, callable);
     }
 
     @ImportStatic({PythonOptions.class})

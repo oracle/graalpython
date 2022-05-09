@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -617,9 +618,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         public PNone clear(VirtualFrame frame, PByteArray byteArray,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached SliceLiteralNode slice) {
+                        @Cached PySliceNew sliceNode) {
             byteArray.checkCanResize(this);
-            deleteNode.execute(frame, byteArray.getSequenceStorage(), slice.execute(frame, PNone.NONE, PNone.NONE, 1));
+            deleteNode.execute(frame, byteArray.getSequenceStorage(), sliceNode.execute(PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
         }
     }
