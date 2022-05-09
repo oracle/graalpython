@@ -22,7 +22,8 @@
     {"name":"ctxTypeCheck","parameterTypes":["long", "long"] },
     {"name":"ctxTypeGenericNew","parameterTypes":["long"] },
     {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] }, 
-    {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] }
+    {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] },
+    {"name":"ctxTupleFromArray","parameterTypes":["long[]", "boolean"] }
   ]
 }
 ]

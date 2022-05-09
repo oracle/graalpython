@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
 @GenerateUncached
 public abstract class GenericInvokeNode extends InvokeNode {
@@ -76,12 +75,12 @@ public abstract class GenericInvokeNode extends InvokeNode {
 
     @Override
     public Assumption needNotPassExceptionAssumption() {
-        return NeverValidAssumption.INSTANCE;
+        return Assumption.NEVER_VALID;
     }
 
     @Override
     public Assumption needNotPassFrameAssumption() {
-        return NeverValidAssumption.INSTANCE;
+        return Assumption.NEVER_VALID;
     }
 
     /**
