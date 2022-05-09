@@ -432,12 +432,7 @@ static HPy augment_UnicodeFromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ss
 
 _HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal) {
     jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
-    jlong *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jLongArray, 0);
-    HPy_ssize_t i;
-    for (i = 0; i < nitems; i++) {
-        content[i] = (jlong) toBits(items[i]);
-    }
-    (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jLongArray, content, 0);
+    (*jniEnv)->SetLongArrayRegion(jniEnv, jLongArray, 0, (jsize) nitems, (const jlong *)items);
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, steal);
 }
 
