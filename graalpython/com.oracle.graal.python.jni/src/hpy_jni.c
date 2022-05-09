@@ -270,6 +270,8 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static int (*original_Tracker_Add)(HPyContext *ctx, HPyTracker ht, HPy h);
+static void (*original_Tracker_Close)(HPyContext *ctx, HPyTracker ht);
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -454,6 +456,34 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
     return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
 }
 
+int augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h) {
+    uint64_t bits = toBits(h);
+    if (!isBoxedHandle(bits)) {
+        return 0;
+    } else if (bits < IMMUTABLE_HANDLES) {
+        return 0;
+    }
+    return original_Tracker_Add(ctx, ht, h);
+}
+
+// XXX: copy from ctx_tracker.c
+typedef struct {
+    HPy_ssize_t capacity;  // allocated handles
+    HPy_ssize_t length;    // used handles
+    HPy *handles;
+} _HPyTracker_s;
+
+static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
+    return (_HPyTracker_s *) (ht)._i;
+}
+
+void augment_Tracker_Close(HPyContext *ctx, HPyTracker ht) {
+    _HPyTracker_s *hp = _ht2hp(ht);
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, hp->handles, hp->length);
+    free(hp->handles);
+    free(hp);
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -496,6 +526,12 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
+
+    original_Tracker_Add = context->ctx_Tracker_Add;
+    context->ctx_Tracker_Add = augment_Tracker_Add;
+
+    original_Tracker_Close = context->ctx_Tracker_Close;
+    context->ctx_Tracker_Close = augment_Tracker_Close;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
