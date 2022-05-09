@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 
 import java.io.PrintWriter;
@@ -3581,6 +3582,69 @@ public abstract class GraalHPyContextFunctions {
                 String name = castStr.execute(fromCharPointerNode.execute(arguments[1]));
                 Object def = asObject.execute(context, arguments[2]);
                 return asHandleNode.execute(context, callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def));
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyContextVarGet extends GraalHPyContextFunction {
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asVar,
+                        @Cached HPyAsPythonObjectNode asDef,
+                        @Cached PyObjectCallMethodObjArgs callGet,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PCallHPyFunction callWriteHPyNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object var = asVar.execute(context, arguments[1]);
+                Object def = asDef.execute(context, arguments[2]);
+                Object outPtr = arguments[3];
+                try {
+                    Object result = callGet.execute(null, var, "get", def);
+                    callWriteHPyNode.call(context, GRAAL_HPY_WRITE_HPY, outPtr, 0L, asHandleNode.execute(context, result));
+                    return 0;
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyContextVarSet extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asVar,
+                        @Cached HPyAsPythonObjectNode asVal,
+                        @Cached PyObjectCallMethodObjArgs callSet,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object var = asVar.execute(context, arguments[1]);
+                Object val = asVal.execute(context, arguments[2]);
+                try {
+                    Object result = callSet.execute(null, var, "set", val);
+                    return asHandleNode.execute(context, result);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return -1;
+                }
             } finally {
                 gil.release(mustRelease);
             }
