@@ -52,19 +52,9 @@ public class GraalHPyBoxing {
      * [fff9_0000_0000_0000 - ffff_ffff_ffff_ffff], which are non-standard
      * quiet NaNs with sign bit - these don't appear in normal calculations.
      *
-     * The range [0 - ffff_ffff] is currently used for all HPy local handles
-     * and loaded HPy handles for HPyFields. The range [0001_0000_0000_0000 -
-     * 0001_0000_ffff_ffff] is currently used to represent primitive
-     * integers.
-     *
-     * In the handle range, 0 - 000f_ffff is used for HPy handles - this
-     * gives room 2**20 active handles. Since these are supposed to be short
-     * lived, this seems plenty, even for generated code. The range 0010_0000
-     * to ffff_ffff is reserved to encode fields and their owners. The lower
-     * 20 bits are the owner handle, the upper 12 bits are the field. This
-     * gives room for 2**12-1 fields, which hopefully is plenty even for
-     * generated structures. Important note: NULL handles for either fields
-     * or local handles are just 0.
+     * The range [0 - 7fff_ffff] is currently used for HPy handles,
+     * and the range [0001_0000_0000_0000 - 0001_0000_ffff_ffff] is currently
+     * used to represent primitive integers.
      *
      * There is space left to add other types and extend the bit size of
      * handles and integers.
@@ -75,12 +65,7 @@ public class GraalHPyBoxing {
     private static final long NAN_BOXING_INT = 0x0001_0000_0000_0000L;
 
     private static final long NAN_BOXING_INT_MASK = 0x00000000FFFFFFFFL;
-
-    private static final long NAN_BOXING_MAX_HANDLE  = 0x0000_0000_FFFF_FFFFL;
-    private static final long NAN_BOXING_MAX_LOCAL   = 0x0000_0000_000F_FFFFL;
-    private static final long NAN_BOXING_FIELD_BASE  = 0x0000_0000_0010_0000L;
-    private static final long NAN_BOXING_FIELD_MASK  = 0xFFFF_FFFF_FFF0_0000L;
-    private static final long NAN_BOXING_FIELD_SHIFT = 20;
+    private static final long NAN_BOXING_MAX_HANDLE = Integer.MAX_VALUE;
 
     public static boolean isBoxedDouble(long value) {
         return Long.compareUnsigned(value, NAN_BOXING_BASE) >= 0;
@@ -88,14 +73,6 @@ public class GraalHPyBoxing {
 
     public static boolean isBoxedHandle(long value) {
         return Long.compareUnsigned(value, NAN_BOXING_MAX_HANDLE) <= 0;
-    }
-
-    public static boolean isBoxedLocal(long value) {
-        return Long.compareUnsigned(value, NAN_BOXING_MAX_LOCAL) <= 0;
-    }
-
-    public static boolean isBoxedField(long value) {
-        return (value & NAN_BOXING_FIELD_MASK) == NAN_BOXING_FIELD_BASE;
     }
 
     public static boolean isBoxedInt(long value) {
@@ -106,21 +83,12 @@ public class GraalHPyBoxing {
         return value == 0;
     }
 
-    public static int unboxLocal(long value) {
-        return (int) (value & NAN_BOXING_MAX_LOCAL);
+    public static int unboxHandle(long value) {
+        return (int) value;
     }
 
-    public static long boxLocal(int handle) {
-        assert handle < NAN_BOXING_MAX_LOCAL;
+    public static long boxHandle(int handle) {
         return handle;
-    }
-
-    public static int unboxField(long value) {
-        return (int) ((value - NAN_BOXING_FIELD_BASE) >> NAN_BOXING_FIELD_SHIFT);
-    }
-
-    public static long boxField(int handle, int fieldIdx) {
-        return (((long) fieldIdx) << NAN_BOXING_FIELD_SHIFT) | boxLocal(handle);
     }
 
     public static double unboxDouble(long value) {

@@ -158,7 +158,7 @@ public final class GraalHPyHandle implements TruffleObject {
             throw UnsupportedMessageException.create();
         }
         if (id != UNINITIALIZED) {
-            return GraalHPyBoxing.boxLocal(id);
+            return GraalHPyBoxing.boxHandle(id);
         } else if (delegate instanceof Integer) {
             return GraalHPyBoxing.boxInt((Integer) delegate);
         } else if (delegate instanceof Double) {
@@ -220,7 +220,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     Object getNativePointer(
                     @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxLocal(id) : null;
+        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxHandle(id) : null;
     }
 
     @ExportMessage
