@@ -42,6 +42,7 @@ package com.oracle.graal.python.compiler;
 
 import com.oracle.graal.python.annotations.GenerateEnumConstants;
 
+/** Operation identifiers for {@link OpCodes#BINARY_OP}. */
 @GenerateEnumConstants
 public enum BinaryOps {
     ADD,

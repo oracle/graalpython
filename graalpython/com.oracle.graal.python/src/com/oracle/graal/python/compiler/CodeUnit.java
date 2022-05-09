@@ -51,6 +51,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.util.PythonUtils;
 
+/**
+ * A context-independent representation of code for bytecode interpreter. Contains the actual
+ * bytecode and all the related data, like constants or exception handler ranges. It doesn't contain
+ * the filename to make it easier to keep in native images.
+ */
 public final class CodeUnit {
     public static final int HAS_DEFAULTS = 0x1;
     public static final int HAS_KWONLY_DEFAULTS = 0x2;

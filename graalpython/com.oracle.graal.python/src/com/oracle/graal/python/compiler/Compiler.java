@@ -144,6 +144,9 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.util.PythonUtils;
 
+/**
+ * Compiler for bytecode interpreter.
+ */
 public class Compiler implements SSTreeVisitor<Void> {
     public static final int BYTECODE_VERSION = 20;
 

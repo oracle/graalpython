@@ -42,6 +42,10 @@ package com.oracle.graal.python.compiler;
 
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 
+/**
+ * Linked stack of block-related information needed to unwind execution before {@code break},
+ * {@code continue} or {@code return}.
+ */
 class BlockInfo {
     BlockInfo outer;
 

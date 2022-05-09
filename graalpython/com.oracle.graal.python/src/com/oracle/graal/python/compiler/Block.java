@@ -43,6 +43,9 @@ package com.oracle.graal.python.compiler;
 import java.util.ArrayList;
 import java.util.EnumSet;
 
+/**
+ * Block of instructions. Not always exactly like basic block, we allow having jumps in the middle.
+ */
 final class Block {
     ArrayList<Instruction> instr = new ArrayList<>();
     Block next;

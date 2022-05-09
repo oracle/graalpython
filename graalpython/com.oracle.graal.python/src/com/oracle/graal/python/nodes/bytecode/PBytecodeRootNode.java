@@ -159,6 +159,9 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
+/**
+ * Root node with main bytecode interpreter loop.
+ */
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
     private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
@@ -355,6 +358,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int selfIndex;
     private final int classcellIndex;
 
+    private final CodeUnit co;
+    private final Source source;
+    private SourceSection sourceSection;
+
+    @CompilationFinal(dimensions = 1) private final byte[] bytecode;
+    @CompilationFinal(dimensions = 1) private final Object[] consts;
+    @CompilationFinal(dimensions = 1) private final long[] longConsts;
+    @CompilationFinal(dimensions = 1) private final String[] names;
+    @CompilationFinal(dimensions = 1) private final String[] varnames;
+    @CompilationFinal(dimensions = 1) private final String[] freevars;
+    @CompilationFinal(dimensions = 1) private final String[] cellvars;
+    @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
+
+    @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
+    @CompilationFinal(dimensions = 1) private final int[] extraArgs;
+
+    @Children private final Node[] adoptedNodes;
+    @Child private CalleeContext calleeContext = CalleeContext.create();
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @CompilationFinal private LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
+    @CompilationFinal private LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
+    @CompilationFinal private Object osrMetadata;
+
+    private static final Node MARKER_NODE = new Node() {
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+    };
+
     public static final class FrameInfo {
         @CompilationFinal PBytecodeRootNode rootNode;
 
@@ -421,43 +454,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
     }
-
-    private final CodeUnit co;
-
-    private final Source source;
-    private SourceSection sourceSection;
-
-    @CompilationFinal(dimensions = 1) private final byte[] bytecode;
-    @CompilationFinal(dimensions = 1) private final Object[] consts;
-    @CompilationFinal(dimensions = 1) private final long[] longConsts;
-    @CompilationFinal(dimensions = 1) private final String[] names;
-    @CompilationFinal(dimensions = 1) private final String[] varnames;
-    @CompilationFinal(dimensions = 1) private final String[] freevars;
-    @CompilationFinal(dimensions = 1) private final String[] cellvars;
-
-    @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
-
-    @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
-
-    /**
-     * PE-final store for quickened bytecodes.
-     */
-    @CompilationFinal(dimensions = 1) private final int[] extraArgs;
-
-    @Children private final Node[] adoptedNodes;
-    @Child private CalleeContext calleeContext = CalleeContext.create();
-    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-    @CompilationFinal private LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
-    @CompilationFinal private LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
-
-    @CompilationFinal private Object osrMetadata;
-
-    private static final Node MARKER_NODE = new Node() {
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-    };
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(4);
@@ -574,56 +570,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public void setPythonInternal(boolean pythonInternal) {
         this.pythonInternal = pythonInternal;
-    }
-
-    @ExplodeLoop
-    private void copyArgs(Object[] args, Frame localFrame) {
-        for (int i = 0; i < PArguments.getUserArgumentLength(args); i++) {
-            // we can set these as object, since they're already boxed
-            localFrame.setObject(i, args[i + PArguments.USER_ARGUMENTS_OFFSET]);
-        }
-    }
-
-    @Override
-    public Object execute(VirtualFrame virtualFrame) {
-        calleeContext.enter(virtualFrame);
-        try {
-            Object[] arguments = virtualFrame.getArguments();
-            if (!co.isGeneratorOrCoroutine()) {
-                copyArgsAndCells(virtualFrame, arguments);
-            }
-
-            return executeInner(virtualFrame, false, 0, stackoffset - 1);
-        } finally {
-            calleeContext.exit(virtualFrame, this);
-        }
-    }
-
-    public void createGeneratorFrame(Object[] arguments) {
-        Object[] generatorFrameArguments = PArguments.create();
-        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
-        PArguments.setGeneratorFrame(arguments, generatorFrame);
-        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
-        // The invoking node will set these two to the correct value only when the callee requests
-        // it, otherwise they stay at the initial value, which we must set to null here
-        PArguments.setException(arguments, null);
-        PArguments.setCallerFrameInfo(arguments, null);
-        generatorFrame.setInt(bcioffset, 0);
-        generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
-        copyArgsAndCells(generatorFrame, arguments);
-    }
-
-    private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
-        copyArgs(arguments, localFrame);
-        int varIdx = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
-        if (co.takesVarArgs()) {
-            localFrame.setObject(varIdx++, factory.createTuple(PArguments.getVariableArguments(arguments)));
-        }
-        if (co.takesVarKeywordArgs()) {
-            localFrame.setObject(varIdx, factory.createDict(PArguments.getKeywordArguments(arguments)));
-        }
-        initCellVars(localFrame);
-        initFreeVars(localFrame, arguments);
     }
 
     @FunctionalInterface
@@ -769,6 +715,56 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop + 1;
     }
 
+    @ExplodeLoop
+    private void copyArgs(Object[] args, Frame localFrame) {
+        for (int i = 0; i < PArguments.getUserArgumentLength(args); i++) {
+            // we can set these as object, since they're already boxed
+            localFrame.setObject(i, args[i + PArguments.USER_ARGUMENTS_OFFSET]);
+        }
+    }
+
+    public void createGeneratorFrame(Object[] arguments) {
+        Object[] generatorFrameArguments = PArguments.create();
+        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
+        PArguments.setGeneratorFrame(arguments, generatorFrame);
+        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
+        // The invoking node will set these two to the correct value only when the callee requests
+        // it, otherwise they stay at the initial value, which we must set to null here
+        PArguments.setException(arguments, null);
+        PArguments.setCallerFrameInfo(arguments, null);
+        generatorFrame.setInt(bcioffset, 0);
+        generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
+        copyArgsAndCells(generatorFrame, arguments);
+    }
+
+    private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
+        copyArgs(arguments, localFrame);
+        int varIdx = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
+        if (co.takesVarArgs()) {
+            localFrame.setObject(varIdx++, factory.createTuple(PArguments.getVariableArguments(arguments)));
+        }
+        if (co.takesVarKeywordArgs()) {
+            localFrame.setObject(varIdx, factory.createDict(PArguments.getKeywordArguments(arguments)));
+        }
+        initCellVars(localFrame);
+        initFreeVars(localFrame, arguments);
+    }
+
+    @Override
+    public Object execute(VirtualFrame virtualFrame) {
+        calleeContext.enter(virtualFrame);
+        try {
+            Object[] arguments = virtualFrame.getArguments();
+            if (!co.isGeneratorOrCoroutine()) {
+                copyArgsAndCells(virtualFrame, arguments);
+            }
+
+            return executeInner(virtualFrame, false, 0, stackoffset - 1);
+        } finally {
+            calleeContext.exit(virtualFrame, this);
+        }
+    }
+
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
         return executeInner(osrFrame, true, target, (Integer) interpreterState);
@@ -777,7 +773,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    public Object executeInner(VirtualFrame virtualFrame, boolean resumingAfterOSR, int initialBci, int initialStackTop) {
+    private Object executeInner(VirtualFrame virtualFrame, boolean resumingAfterOSR, int initialBci, int initialStackTop) {
         boolean inInterpreter = CompilerDirectives.inInterpreter();
 
         Object globals = PArguments.getGlobals(virtualFrame);
@@ -996,14 +992,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         localFrame.setObject(stackTop, localFrame.getObject(stackTop - 1));
                         localFrame.setObject(stackTop - 1, localFrame.getObject(stackTop - 2));
                         localFrame.setObject(stackTop - 2, top);
-                        break;
-                    }
-                    case OpCodesConstants.ROT_FOUR: {
-                        Object top = localFrame.getObject(stackTop);
-                        localFrame.setObject(stackTop, localFrame.getObject(stackTop - 1));
-                        localFrame.setObject(stackTop - 1, localFrame.getObject(stackTop - 2));
-                        localFrame.setObject(stackTop - 2, localFrame.getObject(stackTop - 3));
-                        localFrame.setObject(stackTop - 3, top);
                         break;
                     }
                     case OpCodesConstants.DUP_TOP:

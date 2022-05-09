@@ -41,11 +41,32 @@
 package com.oracle.graal.python.compiler;
 
 public abstract class FormatOptions {
+    /**
+     * Mask to extract just the conversion type flags.
+     */
     public static final int FVC_MASK = 0x3;
+    /**
+     * No conversion (identity function).
+     */
     public static final int FVC_NONE = 0x0;
+    /**
+     * Conversion equivalent to builtin {@code str}
+     */
     public static final int FVC_STR = 0x1;
+    /**
+     * Conversion equivalent to builtin {@code repr}
+     */
     public static final int FVC_REPR = 0x2;
+    /**
+     * Conversion equivalent to builtin {@code ascii}
+     */
     public static final int FVC_ASCII = 0x3;
+    /**
+     * Mask to extract just the spec flag.
+     */
     public static final int FVS_MASK = 0x4;
+    /**
+     * Whether a format spec is present.
+     */
     public static final int FVS_HAVE_SPEC = 0x4;
 }
