@@ -2453,13 +2453,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private int resizeHandleTable() {
         CompilerAsserts.neverPartOfCompilation();
         assert nextHandle == hpyHandleTable.length;
-        int newSize = Math.max(16, hpyHandleTable.length * 2);
+        int newSize = Math.max(16, hpyHandleTable.length * 4);
         LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
         hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
+        // go backwards to find start of last free handle range
+        for (int i = nextHandle - 1; i >= 1; i--) {
+            if (hpyHandleTable[i] != null) {
+                nextHandle = i + 1;
+                break;
+            }
+        }
         if (useNativeFastPaths && isPointer()) {
             reallocateNativeSpacePointersMirror();
         }
-        return nextHandle++;
+        return nextHandle;
     }
 
     public final int getHPyHandleForObject(GraalHPyHandle object) {
@@ -2467,12 +2474,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         int handle = freeStack.pop();
         if (handle == -1) {
-            if (nextHandle < hpyHandleTable.length) {
-                handle = nextHandle++;
-            } else {
+            if (nextHandle >= hpyHandleTable.length) {
                 CompilerDirectives.transferToInterpreter();
-                handle = resizeHandleTable();
+                nextHandle = resizeHandleTable();
             }
+            handle = nextHandle++;
         }
 
         assert 0 <= handle && handle < hpyHandleTable.length;
@@ -2600,29 +2606,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     void onInvalidHandle(@SuppressWarnings("unused") int id) {
         // nothing to do in the universal context
-    }
-
-    private static final class HandleStack {
-        private int[] handles;
-        private int top = 0;
-
-        public HandleStack(int initialCapacity) {
-            handles = new int[initialCapacity];
-        }
-
-        void push(int i) {
-            if (top >= handles.length) {
-                handles = Arrays.copyOf(handles, handles.length * 2);
-            }
-            handles[top++] = i;
-        }
-
-        int pop() {
-            if (top <= 0) {
-                return -1;
-            }
-            return handles[--top];
-        }
     }
 
     /**
