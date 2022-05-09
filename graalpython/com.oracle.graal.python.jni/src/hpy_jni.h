@@ -48,4 +48,29 @@
 #include <hpy.h>
 #include <jni.h>
 
+//*************************
+// BOXING
+
+#define NAN_BOXING_BASE (0x0007000000000000llu)
+#define NAN_BOXING_MASK (0xFFFF000000000000llu)
+#define NAN_BOXING_INT (0x0001000000000000llu)
+#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
+#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
+#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+
+#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
+#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
+#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+
+#define unboxHandle(value) (value)
+#define boxHandle(handle) (handle)
+
+#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
+#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+
+#define toBits(ptr) ((uint64_t) ((ptr)._i))
+#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+
 _HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
+
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);

@@ -198,25 +198,6 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
 //*************************
 // BOXING
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
-
-static bool isBoxedDouble(uint64_t value) {
-    return value >= NAN_BOXING_BASE;
-}
-
-static bool isBoxedHandle(uint64_t value) {
-    return value <= NAN_BOXING_MAX_HANDLE;
-}
-
-static bool isBoxedInt(uint64_t value) {
-    return (value & NAN_BOXING_MASK) == NAN_BOXING_INT;
-}
-
 static double unboxDouble(uint64_t value) {
     uint64_t doubleBits = value - NAN_BOXING_BASE;
     return * ((double*) &doubleBits);
@@ -226,32 +207,6 @@ static uint64_t boxDouble(double value) {
     // assumes that value doesn't contain non-standard silent NaNs
     uint64_t doubleBits = * ((uint64_t*) &value);
     return doubleBits + NAN_BOXING_BASE;
-}
-
-static uint64_t unboxHandle(uint64_t value) {
-    return value;
-}
-
-static uint64_t boxHandle(uint64_t handle) {
-    return handle;
-}
-
-static int32_t unboxInt(uint64_t value) {
-    return (int32_t) (value - NAN_BOXING_INT);
-}
-
-static uint64_t boxInt(int32_t value) {
-    return (value & NAN_BOXING_INT_MASK) + NAN_BOXING_INT;
-}
-
-static inline uint64_t toBits(HPy ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline HPy toPtr(uint64_t ptr) {
-    /* return * ((void**) &ptr); */
-    return (HPy) { (HPy_ssize_t) ptr };
 }
 
 //*************************
@@ -325,7 +280,7 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
 
 #define MAX_UNCLOSED_HANDLES 32
 static int32_t unclosedHandleTop = 0;
-static uint64_t unclosedHandles[MAX_UNCLOSED_HANDLES] = { 0 };
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -336,9 +291,9 @@ static void augment_Close(HPyContext *ctx, HPy h) {
             return;
         }
         if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
-            unclosedHandles[unclosedHandleTop++] = bits;
+            unclosedHandles[unclosedHandleTop++] = h;
         } else {
-            DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, unclosedHandles, unclosedHandleTop);
+            upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
             memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
             unclosedHandleTop = 0;
         }
@@ -454,6 +409,9 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
     return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
 }
 
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
+}
 
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
