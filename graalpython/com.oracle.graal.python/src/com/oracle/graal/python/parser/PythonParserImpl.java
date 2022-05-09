@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.graalvm.nativeimage.ImageInfo;
@@ -313,11 +314,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
 
         Node result;
+        MaterializedFrame materializedFrame = currentFrame != null ? currentFrame.materialize() : null;
         if (timeStatistics <= 0) {
-            result = parseN(mode, optimizeLevel, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, materializedFrame, argumentNames);
         } else {
             long start = System.currentTimeMillis();
-            result = parseN(mode, optimizeLevel, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, materializedFrame, argumentNames);
             long end = System.currentTimeMillis();
             if (timeStatistics > 0) {
                 timeInParser = timeInParser + (end - start);
@@ -419,7 +421,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @TruffleBoundary
-    public Node parseN(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
+    public Node parseN(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, MaterializedFrame currentFrame, String[] argumentNames) {
         ArrayList<String> warnings = new ArrayList<>();
         // this wrapper tracks the warnings in a list instead of raising them immediately
         ParserErrorCallback collectWarnings = new ParserErrorCallback() {

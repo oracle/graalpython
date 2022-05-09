@@ -85,6 +85,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -619,7 +620,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    static PrivateKey getPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader reader, char[] password, X509Certificate cert)
+    static PrivateKey getPrivateKey(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader reader, char[] password, X509Certificate cert)
                     throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NeedsPasswordException {
         PEMParser pemParser = new PEMParser(reader);
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
