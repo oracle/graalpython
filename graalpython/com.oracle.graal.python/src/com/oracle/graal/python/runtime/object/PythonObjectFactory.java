@@ -190,7 +190,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
-import com.oracle.graal.python.nodes.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;

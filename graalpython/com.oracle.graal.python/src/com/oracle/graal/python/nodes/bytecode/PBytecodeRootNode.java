@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
@@ -93,19 +93,13 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.bytecode.ExitWithNode;
-import com.oracle.graal.python.nodes.bytecode.ImportFromNode;
-import com.oracle.graal.python.nodes.bytecode.ImportNode;
-import com.oracle.graal.python.nodes.bytecode.KwargsMergeNode;
-import com.oracle.graal.python.nodes.bytecode.MakeFunctionNode;
-import com.oracle.graal.python.nodes.bytecode.SendNode;
-import com.oracle.graal.python.nodes.bytecode.SetupWithNode;
-import com.oracle.graal.python.nodes.bytecode.UnpackExNode;
-import com.oracle.graal.python.nodes.bytecode.UnpackSequenceNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;

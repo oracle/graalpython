@@ -33,7 +33,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.generator.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;

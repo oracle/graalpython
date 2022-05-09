@@ -57,7 +57,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
