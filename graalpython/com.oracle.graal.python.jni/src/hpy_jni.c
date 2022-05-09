@@ -71,6 +71,7 @@ static JNIEnv* jniEnv;
     UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
     UPCALL(AsStruct, SIG_HPY, SIG_PTR) \
     UPCALL(Close, SIG_HPY, SIG_VOID) \
+    UPCALL(BulkClose, SIG_PTR SIG_INT, SIG_VOID)        \
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
     UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
@@ -322,12 +323,25 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
     }
 }
 
+#define MAX_UNCLOSED_HANDLES 32
+static int32_t unclosedHandleTop = 0;
+static uint64_t unclosedHandles[MAX_UNCLOSED_HANDLES] = { 0 };
+
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
         return;
     } else if (isBoxedHandle(bits)) {
-        return original_Close(ctx, h);
+        if (bits < IMMUTABLE_HANDLES) {
+            return;
+        }
+        if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
+            unclosedHandles[unclosedHandleTop++] = bits;
+        } else {
+            DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, unclosedHandles, unclosedHandleTop);
+            memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
+            unclosedHandleTop = 0;
+        }
     }
 }
 

@@ -1373,6 +1373,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallTrackerClose,
         UpcallTrackerAdd,
         UpcallClose,
+        UpcallBulkClose,
         UpcallTrackerNew,
         UpcallGetItemI,
         UpcallSetItem,
@@ -1569,6 +1570,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final void ctxClose(long handle) {
         Counter.UpcallClose.increment();
         closeNativeHandle(handle);
+    }
+
+    public final void ctxBulkClose(long unclosedHandlePtr, int size) {
+        Counter.UpcallBulkClose.increment();
+        for (int i = 0; i < size; i++) {
+            long handle = unsafe.getLong(unclosedHandlePtr);
+            unclosedHandlePtr += 8;
+            assert GraalHPyBoxing.isBoxedHandle(handle);
+            assert handle >= IMMUTABLE_HANDLE_COUNT;
+            getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).closeAndInvalidate(this);
+        }
     }
 
     public final long ctxDup(long handle) {
