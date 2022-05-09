@@ -45,7 +45,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <time.h>
 
 #ifndef NDEBUG
@@ -66,17 +65,6 @@
 #include "hpy/runtime/ctx_funcs.h"
 
 static JNIEnv* jniEnv;
-
-// fields for fast handle accesses
-static jfieldID hpyContextHandleTable;
-static jfieldID hpyContextGlobalsTable;
-static jfieldID hpyContextFreeStack;
-static jfieldID hpyContextNextHandle;
-static jfieldID handleStackHandles;
-static jfieldID pythonObjectHpyFields;
-static jclass pythonHPyObjectClass;
-static jfieldID pythonHPyObjectHpyNativeSpace;
-static jclass longClass;
 
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
@@ -365,26 +353,8 @@ static void augment_Close(HPyContext *ctx, HPy h) {
     if (!bits) {
         return;
     } else if (isBoxedHandle(bits)) {
-        if (bits < IMMUTABLE_HANDLES) {
-            return;
-        }
-        jobject context = CONTEXT_INSTANCE(ctx);
-        jobject table = (*jniEnv)->GetObjectField(jniEnv, context, hpyContextHandleTable);
-        jobject freeStack = (*jniEnv)->GetObjectField(jniEnv, context, hpyContextFreeStack);
-        jobject freeHandles = (*jniEnv)->GetObjectField(jniEnv, freeStack, handleStackHandles);
-        jint mapSize = (*jniEnv)->GetArrayLength(jniEnv, freeHandles);
-        div_t d = div(bits, 64);
-        // timfel: TODO: not clearing delegate id, for correctly behaved code this should be ok
-        // jobject delegate = (*jniEnv)->GetObjectArrayElement(jniEnv, table, h);
-        (*jniEnv)->SetObjectArrayElement(jniEnv, table, bits, NULL);
-        // push free'd handle to free stack
-        jlong map = 0;
-        (*jniEnv)->GetLongArrayRegion(jniEnv, freeHandles, d.quot, 1, &map);
-        map |= (1L << d.rem);
-        (*jniEnv)->SetLongArrayRegion(jniEnv, freeHandles, d.quot, 1, &map);
-        return;
+        return original_Close(ctx, h);
     }
-    return original_Close(ctx, h);
 }
 
 static HPy augment_Dup(HPyContext *ctx, HPy h) {
@@ -392,21 +362,6 @@ static HPy augment_Dup(HPyContext *ctx, HPy h) {
     if (isBoxedHandle(bits)) {
         if (bits < IMMUTABLE_HANDLES) {
             return h;
-        }
-        jobject context = CONTEXT_INSTANCE(ctx);
-        jobject hpyHandleTable = (*jniEnv)->GetObjectField(jniEnv, context, hpyContextHandleTable);
-        jint nextHandle = (*jniEnv)->GetIntField(jniEnv, context, hpyContextNextHandle);
-        jsize hpyHandleTableLength = (*jniEnv)->GetArrayLength(jniEnv, hpyHandleTable);
-        if (nextHandle < hpyHandleTableLength) {
-            jint handle = nextHandle++;
-            // TODO: synchronization
-            (*jniEnv)->SetIntField(jniEnv, context, hpyContextNextHandle, nextHandle);
-            jobject delegate = (*jniEnv)->GetObjectArrayElement(jniEnv, hpyHandleTable, bits);
-            void** space = (void**)ctx->_private;
-            space[handle] = space[bits];
-            // timfel: TODO: not creating a new GraalHPyHandle
-            (*jniEnv)->SetObjectArrayElement(jniEnv, hpyHandleTable, handle, delegate);
-            return toPtr(handle);
         }
         return original_Dup(ctx, h);
     } else {
@@ -511,20 +466,14 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
     return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
 }
 
-// static HPy augment_Field_Load(HPyContext *ctx, HPy owner, HPyField field) {
-//     uint64_t bits = toBits(owner);
-//     if (isBoxedLocal(bits)) {
-//         if (bits < IMMUTABLE_HANDLES) {
-//             return HPy_NULL;
-//         }
-//         // must be a PythonObject
-//         pythonObjectHpyFields[]
-// 
-//         return toPtr(boxField(bits, toFieldBits(field)));
-//     } else {
-//         return original_Field_Load(ctx, owner, field);
-//     }
-// }
+static HPy augment_Field_Load(HPyContext *ctx, HPy owner, HPyField field) {
+    uint64_t bits = toBits(owner);
+    if (isBoxedLocal(bits)) {
+        return toPtr(boxField(bits, toFieldBits(field)));
+    } else {
+        return original_Field_Load(ctx, owner, field);
+    }
+}
 
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
@@ -569,8 +518,8 @@ void initDirectFastPaths(HPyContext *context) {
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
 
-    // original_Field_Load = context->ctx_Field_Load;
-    // context->ctx_Field_Load = augment_Field_Load;
+    original_Field_Load = context->ctx_Field_Load;
+    context->ctx_Field_Load = augment_Field_Load;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -627,31 +576,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
-
     assert(clazz != NULL);
-
-    hpyContextHandleTable = (*env)->GetFieldID(env, clazz, "hpyHandleTable", "[Lcom/oracle/graal/python/builtins/objects/cext/hpy/GraalHPyHandle;");
-    assert(handleTable != NULL);
-    hpyContextGlobalsTable = (*env)->GetFieldID(env, clazz, "hpyGlobalsTable", "[Lcom/oracle/graal/python/builtins/objects/cext/hpy/GraalHPyHandle;");
-    assert(globalsTable != NULL);
-    hpyContextFreeStack = (*env)->GetFieldID(env, clazz, "freeStack", "Lcom/oracle/graal/python/builtins/objects/cext/hpy/HandleStack;");
-    assert(hpyContextFreeStack != NULL);
-    hpyContextNextHandle = (*env)->GetFieldID(env, clazz, "nextHandle", "I");
-    assert(hpyContextNextHandle != NULL);
-    jclass handleStack = (*env)->FindClass(env, "com/oracle/graal/python/builtins/objects/cext/hpy/HandleStack");
-    assert(handleStack != NULL);
-    handleStackHandles = (*env)->GetFieldID(env, handleStack, "handles", "[J");
-    assert(handleStackHandles != NULL);
-    jclass pythonObject = (*env)->FindClass(env, "com/oracle/graal/python/builtins/objects/object/PythonObject");
-    assert(pythonObject != NULL);
-    pythonObjectHpyFields = (*env)->GetFieldID(env, pythonObject, "hpyFields", "[Ljava/lang/Object;");
-    assert(pythonObjectHpyFields != NULL);
-    pythonHPyObjectClass = (*env)->FindClass(env, "com/oracle/graal/python/builtins/objects/cext/hpy/PythonHPyObject");
-    assert(pythonHPyObjectClass != NULL);
-    pythonHPyObjectHpyNativeSpace = (*env)->GetFieldID(env, pythonHPyObjectClass, "hpyNativeSpace", "Ljava/lang/Object;");
-    assert(pythonHPyObjectHpyNativeSpace != NULL);
-    longClass = (*env)->FindClass(env, "java/lang/Long");
-    assert(longClass != NULL);
 
 #define SIG_HPY "J"
 #define SIG_SIZE_T "J"
