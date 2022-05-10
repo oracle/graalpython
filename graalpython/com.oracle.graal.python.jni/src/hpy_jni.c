@@ -466,6 +466,8 @@ void initDirectFastPaths(HPyContext *context) {
     original_AsStruct = context->ctx_AsStruct;
     context->ctx_AsStruct = augment_AsStruct;
 
+    context->ctx_AsStructLegacy = augment_AsStruct;
+
     original_Dup = context->ctx_Dup;
     context->ctx_Dup = augment_Dup;
 
