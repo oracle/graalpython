@@ -272,6 +272,16 @@ final class GraalHPyJNIContext implements TruffleObject {
                 }
             }
         }
+
+        @ExportMessage
+        boolean isPointer() {
+            return true;
+        }
+
+        @ExportMessage
+        long asPointer() {
+            return pointer;
+        }
     }
 
     abstract static class GraalHPyJNIConvertArgNode extends Node {
