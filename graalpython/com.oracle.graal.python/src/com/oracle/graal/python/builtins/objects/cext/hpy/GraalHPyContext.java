@@ -854,7 +854,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private int nextHandle = 1;
 
     private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
-    private final HandleStack freeStack = new HandleStack(16);
+    private final HandleFreeList freeStack = new HandleFreeList(IMMUTABLE_HANDLE_COUNT, 16);
     Object nativePointer;
 
     @CompilationFinal(dimensions = 1) protected final Object[] hpyContextMembers;
@@ -2632,29 +2632,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     void onInvalidHandle(@SuppressWarnings("unused") int id) {
         // nothing to do in the universal context
-    }
-
-    private static final class HandleStack {
-        private int[] handles;
-        private int top = 0;
-
-        public HandleStack(int initialCapacity) {
-            handles = new int[initialCapacity];
-        }
-
-        void push(int i) {
-            if (top >= handles.length) {
-                handles = Arrays.copyOf(handles, handles.length * 2);
-            }
-            handles[top++] = i;
-        }
-
-        int pop() {
-            if (top <= 0) {
-                return -1;
-            }
-            return handles[--top];
-        }
     }
 
     /**
