@@ -722,6 +722,28 @@ index d1b029c18..2bdff3d6c 100644
  
          retval = execute_legacy_ufunc_loop(ufunc, trivial_loop_ok,
                              op, dtypes, order,
+diff --git a/numpy/distutils/system_info.py b/numpy/distutils/system_info.py
+index 9e192329f63..85a0c932145 100644
+--- a/numpy/distutils/system_info.py
++++ b/numpy/distutils/system_info.py
+@@ -2494,8 +2494,6 @@ def calc_info(self):
+                     'accelerate' in libraries):
+                 if intel:
+                     args.extend(['-msse3'])
+-                else:
+-                    args.extend(['-faltivec'])
+                 args.extend([
+                     '-I/System/Library/Frameworks/vecLib.framework/Headers'])
+                 link_args.extend(['-Wl,-framework', '-Wl,Accelerate'])
+@@ -2504,8 +2502,6 @@ def calc_info(self):
+                       'veclib' in libraries):
+                 if intel:
+                     args.extend(['-msse3'])
+-                else:
+-                    args.extend(['-faltivec'])
+                 args.extend([
+                     '-I/System/Library/Frameworks/vecLib.framework/Headers'])
+                 link_args.extend(['-Wl,-framework', '-Wl,vecLib'])
 diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
 index 14451fa66..85e64cc6e 100644
 --- a/numpy/distutils/ccompiler.py
