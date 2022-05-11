@@ -3417,6 +3417,12 @@ public abstract class GraalHPyContextFunctions {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyCapsuleGet extends GraalHPyContextFunction {
+
+        @TruffleBoundary
+        private static byte[] getBytes(PyCapsule pyCapsule) {
+            return pyCapsule.getName().getBytes();
+        }
+
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
@@ -3448,7 +3454,7 @@ public abstract class GraalHPyContextFunctions {
                         result = pyCapsule.getContext();
                         break;
                     case CapsuleKey.Name:
-                        result = new CByteArrayWrapper(pyCapsule.getName().getBytes());
+                        result = new CByteArrayWrapper(getBytes(pyCapsule));
                         break;
                     case CapsuleKey.Destructor:
                         result = pyCapsule.getDestructor();
