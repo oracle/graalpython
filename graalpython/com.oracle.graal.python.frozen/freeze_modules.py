@@ -7,7 +7,6 @@
 """
 
 from collections import namedtuple
-import hashlib
 import marshal
 import ntpath
 import os
@@ -15,6 +14,9 @@ import posixpath
 import sys
 import textwrap
 import shutil
+
+from _sha256 import sha256
+
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
@@ -369,7 +371,7 @@ def _iter_sources(modules):
 def _get_checksum(filename):
     with open(filename, "rb") as infile:
         contents = infile.read()
-    m = hashlib.sha256()
+    m = sha256()
     m.update(contents)
     return m.hexdigest()
 
