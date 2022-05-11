@@ -306,6 +306,19 @@ static void (*original_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
 static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
+static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+
+static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
+    long bitsA = toBits(a);
+    long bitsB = toBits(b);
+    if (bitsA == bitsB) {
+        return 1;
+    } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
+        return original_Is(ctx, a, b);
+    } else {
+        return 0;
+    }
+}
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -614,6 +627,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_Field_Store = context->ctx_Field_Store;
     context->ctx_Field_Store = augment_Field_Store;
+
+    original_Is = context->ctx_Is;
+    context->ctx_Is = augment_Is;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
