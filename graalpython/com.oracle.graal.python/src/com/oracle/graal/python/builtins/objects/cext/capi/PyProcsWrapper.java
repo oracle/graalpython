@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,19 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -337,6 +343,45 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    static class LenfuncWrapper extends PyProcsWrapper {
+
+        public LenfuncWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Cached CallUnaryMethodNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached ToSulongNode nullToSulongNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaIntLossyNode castLossy,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(1, 1, arguments.length);
+                }
+                try {
+                    Object result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]));
+                    int len = PyObjectSizeNode.convertAndCheckLen(null, result, indexNode, castLossy, asSizeNode, raiseNode);
+                    return (long) len;
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
     public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
         return new GetAttrWrapper(getAttrMethod);
     }
@@ -358,5 +403,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {
         return new SsizeargfuncWrapper(ssizeArgMethod, newRef);
+    }
+
+    public static LenfuncWrapper createLenfuncWrapper(Object lenfuncMethod) {
+        return new LenfuncWrapper(lenfuncMethod);
     }
 }
