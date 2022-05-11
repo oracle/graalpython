@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -50,7 +51,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 
@@ -235,7 +235,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         assert value.getName().equals(getName()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
         // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
         // times from different threads, all of them should set the same value
-        MemoryFence.storeStore();
+        VarHandle.storeStoreFence();
         BuiltinMethodDescriptor local = descriptor;
         assert local == null || local == value : value;
         this.descriptor = value;
