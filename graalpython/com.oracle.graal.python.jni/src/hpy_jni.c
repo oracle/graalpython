@@ -225,6 +225,19 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+
+static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
+    long bitsA = toBits(a);
+    long bitsB = toBits(b);
+    if (bitsA == bitsB) {
+        return 1;
+    } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
+        return original_Is(ctx, a, b);
+    } else {
+        return 0;
+    }
+}
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -455,6 +468,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
+
+    original_Is = context->ctx_Is;
+    context->ctx_Is = augment_Is;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
