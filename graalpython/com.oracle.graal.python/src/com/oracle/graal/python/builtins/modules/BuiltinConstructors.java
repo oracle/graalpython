@@ -1593,7 +1593,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw getReportAbstractClassNode().execute(frame, self);
             }
             Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
-            return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
+            return callNativeGenericNewNode(self, nativeBaseClass, varargs, kwargs);
         }
 
         @Specialization(guards = "isNativeClass(self)")
@@ -1603,7 +1603,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
                 throw getReportAbstractClassNode().execute(frame, self);
             }
-            return callNativeGenericNewNode(self, varargs, kwargs);
+            return callNativeGenericNewNode(self, self, varargs, kwargs);
         }
 
         @SuppressWarnings("unused")
@@ -1622,7 +1622,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw new IllegalStateException("class needs native allocation but has not native base class");
         }
 
-        private Object callNativeGenericNewNode(Object self, Object[] varargs, PKeyword[] kwargs) {
+        private Object callNativeGenericNewNode(Object type, Object nativeBase, Object[] varargs, PKeyword[] kwargs) {
             if (callCapiFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callCapiFunction = insert(PCallCapiFunction.create());
@@ -1643,7 +1643,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PTuple targs = factory().createTuple(varargs);
             PDict dkwargs = factory().createDict(kwarr);
             return asPythonObjectNode.execute(
-                            callCapiFunction.call(FUN_PY_OBJECT_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs),
+                            callCapiFunction.call(FUN_PY_OBJECT_NEW, toSulongNodes[0].execute(type), toSulongNodes[1].execute(nativeBase), toSulongNodes[2].execute(targs),
                                             toSulongNodes[3].execute(dkwargs)));
         }
 
