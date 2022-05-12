@@ -218,25 +218,6 @@ static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy
 //*************************
 // BOXING
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
-
-static bool isBoxedDouble(uint64_t value) {
-    return value >= NAN_BOXING_BASE;
-}
-
-static bool isBoxedHandle(uint64_t value) {
-    return value <= NAN_BOXING_MAX_HANDLE;
-}
-
-static bool isBoxedInt(uint64_t value) {
-    return (value & NAN_BOXING_MASK) == NAN_BOXING_INT;
-}
-
 static double unboxDouble(uint64_t value) {
     uint64_t doubleBits = value - NAN_BOXING_BASE;
     return * ((double*) &doubleBits);
@@ -246,42 +227,6 @@ static uint64_t boxDouble(double value) {
     // assumes that value doesn't contain non-standard silent NaNs
     uint64_t doubleBits = * ((uint64_t*) &value);
     return doubleBits + NAN_BOXING_BASE;
-}
-
-static uint64_t unboxHandle(uint64_t value) {
-    return value;
-}
-
-static uint64_t boxHandle(uint64_t handle) {
-    return handle;
-}
-
-static int32_t unboxInt(uint64_t value) {
-    return (int32_t) (value - NAN_BOXING_INT);
-}
-
-static uint64_t boxInt(int32_t value) {
-    return (value & NAN_BOXING_INT_MASK) + NAN_BOXING_INT;
-}
-
-static inline uint64_t toBits(HPy ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline uint64_t toBitsGlobal(HPyGlobal ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline uint64_t toBitsField(HPyField ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline HPy toPtr(uint64_t ptr) {
-    /* return * ((void**) &ptr); */
-    return (HPy) { (HPy_ssize_t) ptr };
 }
 
 //*************************
@@ -300,8 +245,6 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
-static int (*original_Tracker_Add)(HPyContext *ctx, HPyTracker ht, HPy h);
-static void (*original_Tracker_Close)(HPyContext *ctx, HPyTracker ht);
 static void (*original_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
 static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
@@ -374,7 +317,7 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
 
 #define MAX_UNCLOSED_HANDLES 32
 static int32_t unclosedHandleTop = 0;
-static uint64_t unclosedHandles[MAX_UNCLOSED_HANDLES] = { 0 };
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -385,9 +328,9 @@ static void augment_Close(HPyContext *ctx, HPy h) {
             return;
         }
         if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
-            unclosedHandles[unclosedHandleTop++] = bits;
+            unclosedHandles[unclosedHandleTop++] = h;
         } else {
-            DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, unclosedHandles, unclosedHandleTop);
+            upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
             memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
             unclosedHandleTop = 0;
         }
@@ -503,36 +446,12 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
     return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
 }
 
-int augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h) {
-    uint64_t bits = toBits(h);
-    if (!isBoxedHandle(bits)) {
-        return 0;
-    } else if (bits < IMMUTABLE_HANDLES) {
-        return 0;
-    }
-    return original_Tracker_Add(ctx, ht, h);
-}
-
-// XXX: copy from ctx_tracker.c
-typedef struct {
-    HPy_ssize_t capacity;  // allocated handles
-    HPy_ssize_t length;    // used handles
-    HPy *handles;
-} _HPyTracker_s;
-
-static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
-    return (_HPyTracker_s *) (ht)._i;
-}
-
-void augment_Tracker_Close(HPyContext *ctx, HPyTracker ht) {
-    _HPyTracker_s *hp = _ht2hp(ht);
-    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, hp->handles, hp->length);
-    free(hp->handles);
-    free(hp);
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
 }
 
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
-    long bits = toBitsGlobal(global);
+    long bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
         return original_Global_Load(ctx, global);
     } else {
@@ -550,7 +469,7 @@ void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
 }
 
 HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
-    long bits = toBitsField(source_field);
+    long bits = toBits(source_field);
     if (bits && isBoxedHandle(bits)) {
         return original_Field_Load(ctx, source_object, source_field);
     } else {
@@ -611,12 +530,6 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
-
-    original_Tracker_Add = context->ctx_Tracker_Add;
-    context->ctx_Tracker_Add = augment_Tracker_Add;
-
-    original_Tracker_Close = context->ctx_Tracker_Close;
-    context->ctx_Tracker_Close = augment_Tracker_Close;
 
     original_Global_Load = context->ctx_Global_Load;
     context->ctx_Global_Load = augment_Global_Load;
