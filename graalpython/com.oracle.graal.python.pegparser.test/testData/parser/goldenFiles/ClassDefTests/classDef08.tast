@@ -24,6 +24,7 @@ Module[0, 128]
                     Target: Name[109, 113] Value: "self"
                     Args:
                         Starred[114, 119]
+                             Context: Load
                              Expr: Name[115, 119] Value: "args"
                     KWArgs:
                         KeywordTy[121, 127]

@@ -119,7 +119,7 @@ statement_newline[asdl_stmt_seq*]:
     | ENDMARKER { _PyPegen_interactive_exit(p) }
 simple_stmts[asdl_stmt_seq*]:
     | a=simple_stmt !';' NEWLINE {
-            new StmtTy[] {a}; } # Not needed, there for speedup
+            new StmtTy[] {a} } # Not needed, there for speedup
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -276,7 +276,7 @@ match_stmt[stmt_ty]:
     | invalid_match_stmt
 subject_expr[expr_ty]:
     | value=star_named_expression ',' values=star_named_expressions? {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(value, values)), Load, EXTRA) }
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, value, values)), Load, EXTRA) }
     | named_expression
 case_block[match_case_ty]:
     | "case" pattern=patterns guard=guard? ':' body=block {
@@ -313,8 +313,8 @@ literal_pattern[expr_ty]:
     | real=signed_number '-' imag=NUMBER  { factory.createBinaryOp(ExprTy.BinOp.Operator.SUB, real, imag, startToken.startOffset, endToken.endOffset ) }
     | strings
     | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset) }
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset) }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset) }
 signed_number[expr_ty]:
     | NUMBER
     | '-' number=NUMBER { factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, number, startToken.startOffset, endToken.endOffset) }
@@ -459,15 +459,15 @@ param_no_default[arg_ty]:
     | a=param ',' tc=TYPE_COMMENT? { factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()) }
     | a=param tc=TYPE_COMMENT? &')' { factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()) }
 param_with_default[NameDefaultPair*]:
-    | a=param c=default_param ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
-    | a=param c=default_param tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
 param_maybe_default[NameDefaultPair*]:
-    | a=param c=default_param? ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
-    | a=param c=default_param? tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default? ',' tc=TYPE_COMMENT? { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
+    | a=param c=default? tc=TYPE_COMMENT? &')' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getStartOffset(), a.getEndOffset()), c) }
 param[arg_ty]: a=NAME b=annotation? { factory.createArgument(((ExprTy.Name)a).id, b, null, startToken.startOffset, startToken.endOffset) }
 
 annotation[expr_ty]: ':' a=expression { a }
-default_param[expr_ty]: '=' a=expression { a }
+default[expr_ty]: '=' a=expression { a }
 
 decorators[asdl_expr_seq*]: a[asdl_expr_seq*]=('@' f=named_expression NEWLINE { f })+ { a }
 
@@ -510,8 +510,8 @@ annotated_rhs[expr_ty]: yield_expr | star_expressions
 
 expressions[expr_ty]:
     | a=expression b=(',' c=expression { c })+ [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
-    | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, new ExprTy[] {a}), Load, EXTRA) }
+        factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.startOffset, endToken.endOffset) }
+    | a=expression ',' { factory.createTuple(new ExprTy[] {a}, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
     | expression
 expression[expr_ty] (memo):
     | invalid_expression
@@ -562,11 +562,11 @@ lambda_param_no_default[arg_ty]:
     | a=lambda_param ',' { a }
     | a=lambda_param &':' { a }
 lambda_param_with_default[NameDefaultPair*]:
-    | a=lambda_param c=default_param ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
-    | a=lambda_param c=default_param &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
 lambda_param_maybe_default[NameDefaultPair*]:
-    | a=lambda_param c=default_param? ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
-    | a=lambda_param c=default_param? &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default? ',' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
+    | a=lambda_param c=default? &':' { new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getStartOffset(), a.getEndOffset()), c) }
 lambda_param[arg_ty]: a=NAME { factory.createArgument(((ExprTy.Name)a).id, null, null, startToken.startOffset, endToken.endOffset) }
 
 disjunction[expr_ty] (memo):
@@ -680,7 +680,7 @@ listcomp[expr_ty]:
     | invalid_comprehension
 tuple[expr_ty]:
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
-        factory.createTuple((ExprTy[])a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
+        factory.createTuple(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
@@ -731,7 +731,7 @@ kwargs[asdl_seq*]:
     | ','.kwarg_or_starred+
     | ','.kwarg_or_double_starred+
 starred_expression[expr_ty]:
-    | '*' a=expression { factory.createStarred(a, startToken.startOffset, endToken.endOffset) }
+    | '*' a=expression { factory.createStarred(a, ExprContext.Load, startToken.startOffset, endToken.endOffset) }
 kwarg_or_starred[KeywordOrStarred*]:
     | a=NAME '=' b=expression { new KeywordOrStarred(factory.createKeyword(((ExprTy.Name)a).id, b, startToken.startOffset, endToken.endOffset), true) }
     | a=starred_expression { new KeywordOrStarred(a, false) }
@@ -794,13 +794,13 @@ t_primary[expr_ty]:
     | a=t_primary b=genexp &t_lookahead {
         factory.createCall(a, new ExprTy[] {b}, EMPTY_KWDS, startToken.startOffset, endToken.endOffset) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
-            factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset ) 
+            factory.createCall(a, b != null ? ((ExprTy.Call)b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call)b).keywords : EMPTY_KWDS, startToken.startOffset, endToken.endOffset )
         }
     | a=atom &t_lookahead { a }
 t_lookahead: '(' | '[' | '.'
 t_atom[expr_ty]:
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
-    | '(' a=target ')' { _PyPegen_set_expr_context(p, a, Store) }
+    | a=NAME { this.setExprContext(a, ExprContext.Store) }
+    | '(' a=target ')' { this.setExprContext(a, ExprContext.Store) }
     | '(' b=[targets] ')' { _PyAST_Tuple(b, Store, EXTRA) }
     | '[' b=[targets] ']' { _PyAST_List(b, Store, EXTRA) }
 

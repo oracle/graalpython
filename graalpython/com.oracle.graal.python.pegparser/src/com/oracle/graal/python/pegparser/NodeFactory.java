@@ -123,10 +123,6 @@ public interface NodeFactory {
 
     public ExprTy createSet(ExprTy[] values, int startOffset, int endOffset);
 
-    default ExprTy createStarred(ExprTy value, int startOffset, int endOffset) {
-        return createStarred(value, null, startOffset, endOffset);
-    }
-
     public ExprTy createStarred(ExprTy value, ExprContext context, int startOffset, int endOffset);
 
     public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset);

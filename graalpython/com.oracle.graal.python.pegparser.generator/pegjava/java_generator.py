@@ -203,7 +203,7 @@ class TypingVisitor(GrammarVisitor):
                 types.discard("Token*") # heuristic. when tokens are in there, they are usually dropped
             if len(types) == 2:
                 # might be a pair for gathering
-                typ1, typ2 = sorted(types)
+                typ1, typ2 = sorted(types, key=lambda x: x.count('*'))
                 if (f"{typ1}*" == typ2 or
                     typ2.startswith(f"asdl_{typ1.replace('_ty', '')}_seq")):
                     types = {typ2.replace("**", "*")}
@@ -605,7 +605,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 if rule.left_recursive:
                     self.print("// Left-recursive")
                 self.visit(rule)
-                
+
         self._generate_lookahead_methods()
         for todo in getattr(self, "_type_conversions", {}).keys():
             self.print(todo)

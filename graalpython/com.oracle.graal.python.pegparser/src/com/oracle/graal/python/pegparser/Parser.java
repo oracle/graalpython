@@ -206,7 +206,7 @@ public final class Parser extends AbstractParser {
     private static final int PARAM_MAYBE_DEFAULT_ID = 1081;
     private static final int PARAM_ID = 1082;
     private static final int ANNOTATION_ID = 1083;
-    private static final int DEFAULT_PARAM_ID = 1084;
+    private static final int DEFAULT_ID = 1084;
     private static final int DECORATORS_ID = 1085;
     private static final int CLASS_DEF_ID = 1086;
     private static final int CLASS_DEF_RAW_ID = 1087;
@@ -1169,7 +1169,7 @@ public final class Parser extends AbstractParser {
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
             {
-                _res = new StmtTy [ ] {a} ;;
+                _res = new StmtTy [ ] {a};
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -3653,8 +3653,8 @@ public final class Parser extends AbstractParser {
                 ((values = star_named_expressions_rule()) != null || true)  // star_named_expressions?
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
                 return (ExprTy)_res;
@@ -4220,7 +4220,11 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(526)) != null  // token='True'
             )
             {
-                _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createBooleanLiteral(true,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4235,7 +4239,11 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(527)) != null  // token='False'
             )
             {
-                _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createBooleanLiteral(false,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -5997,9 +6005,7 @@ public final class Parser extends AbstractParser {
         return (ArgTy)_res;
     }
 
-    // param_with_default:
-    //     | param default_param ',' TYPE_COMMENT?
-    //     | param default_param TYPE_COMMENT? &')'
+    // param_with_default: param default ',' TYPE_COMMENT? | param default TYPE_COMMENT? &')'
     public NameDefaultPair param_with_default_rule()
     {
         if (errorIndicator) {
@@ -6011,7 +6017,7 @@ public final class Parser extends AbstractParser {
             _res = (NameDefaultPair)cache.getResult(_mark, PARAM_WITH_DEFAULT_ID);
             return (NameDefaultPair)_res;
         }
-        { // param default_param ',' TYPE_COMMENT?
+        { // param default ',' TYPE_COMMENT?
             if (errorIndicator) {
                 return null;
             }
@@ -6022,7 +6028,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = param_rule()) != null  // param
                 &&
-                (c = default_param_rule()) != null  // default_param
+                (c = default_rule()) != null  // default
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -6035,7 +6041,7 @@ public final class Parser extends AbstractParser {
             }
             reset(_mark);
         }
-        { // param default_param TYPE_COMMENT? &')'
+        { // param default TYPE_COMMENT? &')'
             if (errorIndicator) {
                 return null;
             }
@@ -6045,7 +6051,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = param_rule()) != null  // param
                 &&
-                (c = default_param_rule()) != null  // default_param
+                (c = default_rule()) != null  // default
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
                 &&
@@ -6064,8 +6070,8 @@ public final class Parser extends AbstractParser {
     }
 
     // param_maybe_default:
-    //     | param default_param? ',' TYPE_COMMENT?
-    //     | param default_param? TYPE_COMMENT? &')'
+    //     | param default? ',' TYPE_COMMENT?
+    //     | param default? TYPE_COMMENT? &')'
     public NameDefaultPair param_maybe_default_rule()
     {
         if (errorIndicator) {
@@ -6077,7 +6083,7 @@ public final class Parser extends AbstractParser {
             _res = (NameDefaultPair)cache.getResult(_mark, PARAM_MAYBE_DEFAULT_ID);
             return (NameDefaultPair)_res;
         }
-        { // param default_param? ',' TYPE_COMMENT?
+        { // param default? ',' TYPE_COMMENT?
             if (errorIndicator) {
                 return null;
             }
@@ -6088,7 +6094,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = param_rule()) != null  // param
                 &&
-                ((c = default_param_rule()) != null || true)  // default_param?
+                ((c = default_rule()) != null || true)  // default?
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -6101,7 +6107,7 @@ public final class Parser extends AbstractParser {
             }
             reset(_mark);
         }
-        { // param default_param? TYPE_COMMENT? &')'
+        { // param default? TYPE_COMMENT? &')'
             if (errorIndicator) {
                 return null;
             }
@@ -6111,7 +6117,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = param_rule()) != null  // param
                 &&
-                ((c = default_param_rule()) != null || true)  // default_param?
+                ((c = default_rule()) != null || true)  // default?
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
                 &&
@@ -6200,16 +6206,16 @@ public final class Parser extends AbstractParser {
         return (ExprTy)_res;
     }
 
-    // default_param: '=' expression
-    public ExprTy default_param_rule()
+    // default: '=' expression
+    public ExprTy default_rule()
     {
         if (errorIndicator) {
             return null;
         }
         int _mark = mark();
         Object _res = null;
-        if (cache.hasResult(_mark, DEFAULT_PARAM_ID)) {
-            _res = (ExprTy)cache.getResult(_mark, DEFAULT_PARAM_ID);
+        if (cache.hasResult(_mark, DEFAULT_ID)) {
+            _res = (ExprTy)cache.getResult(_mark, DEFAULT_ID);
             return (ExprTy)_res;
         }
         { // '=' expression
@@ -6225,13 +6231,13 @@ public final class Parser extends AbstractParser {
             )
             {
                 _res = a;
-                cache.putResult(_mark, DEFAULT_PARAM_ID, _res);
+                cache.putResult(_mark, DEFAULT_ID, _res);
                 return (ExprTy)_res;
             }
             reset(_mark);
         }
         _res = null;
-        cache.putResult(_mark, DEFAULT_PARAM_ID, _res);
+        cache.putResult(_mark, DEFAULT_ID, _res);
         return (ExprTy)_res;
     }
 
@@ -6876,6 +6882,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, EXPRESSIONS_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // expression ((',' expression))+ ','?
             if (errorIndicator) {
                 return null;
@@ -6891,9 +6898,11 @@ public final class Parser extends AbstractParser {
                 ((_opt_var = _tmp_119_rule()) != null || true)  // ','?
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTuple(this.insertInFront(a,b),ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -6911,9 +6920,11 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , new ExprTy [ ] {a} ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , new ExprTy [ ] {a} ) , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTuple(new ExprTy [ ] {a},ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7563,9 +7574,7 @@ public final class Parser extends AbstractParser {
         return (ArgTy)_res;
     }
 
-    // lambda_param_with_default:
-    //     | lambda_param default_param ','
-    //     | lambda_param default_param &':'
+    // lambda_param_with_default: lambda_param default ',' | lambda_param default &':'
     public NameDefaultPair lambda_param_with_default_rule()
     {
         if (errorIndicator) {
@@ -7577,7 +7586,7 @@ public final class Parser extends AbstractParser {
             _res = (NameDefaultPair)cache.getResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID);
             return (NameDefaultPair)_res;
         }
-        { // lambda_param default_param ','
+        { // lambda_param default ','
             if (errorIndicator) {
                 return null;
             }
@@ -7587,7 +7596,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                (c = default_param_rule()) != null  // default_param
+                (c = default_rule()) != null  // default
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -7598,7 +7607,7 @@ public final class Parser extends AbstractParser {
             }
             reset(_mark);
         }
-        { // lambda_param default_param &':'
+        { // lambda_param default &':'
             if (errorIndicator) {
                 return null;
             }
@@ -7607,7 +7616,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                (c = default_param_rule()) != null  // default_param
+                (c = default_rule()) != null  // default
                 &&
                 genLookahead_expect(true, 11)  // token=':'
             )
@@ -7623,9 +7632,7 @@ public final class Parser extends AbstractParser {
         return (NameDefaultPair)_res;
     }
 
-    // lambda_param_maybe_default:
-    //     | lambda_param default_param? ','
-    //     | lambda_param default_param? &':'
+    // lambda_param_maybe_default: lambda_param default? ',' | lambda_param default? &':'
     public NameDefaultPair lambda_param_maybe_default_rule()
     {
         if (errorIndicator) {
@@ -7637,7 +7644,7 @@ public final class Parser extends AbstractParser {
             _res = (NameDefaultPair)cache.getResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID);
             return (NameDefaultPair)_res;
         }
-        { // lambda_param default_param? ','
+        { // lambda_param default? ','
             if (errorIndicator) {
                 return null;
             }
@@ -7647,7 +7654,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                ((c = default_param_rule()) != null || true)  // default_param?
+                ((c = default_rule()) != null || true)  // default?
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -7658,7 +7665,7 @@ public final class Parser extends AbstractParser {
             }
             reset(_mark);
         }
-        { // lambda_param default_param? &':'
+        { // lambda_param default? &':'
             if (errorIndicator) {
                 return null;
             }
@@ -7667,7 +7674,7 @@ public final class Parser extends AbstractParser {
             if (
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                ((c = default_param_rule()) != null || true)  // default_param?
+                ((c = default_rule()) != null || true)  // default?
                 &&
                 genLookahead_expect(true, 11)  // token=':'
             )
@@ -9900,7 +9907,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             Token _literal_1;
-            Object a;
+            ExprTy[] a;
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
@@ -9913,7 +9920,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple((ExprTy [ ])a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
+                _res = factory.createTuple(a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, TUPLE_ID, _res);
                 return (ExprTy)_res;
             }
@@ -10809,7 +10816,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createStarred(a,startToken.startOffset,endToken.endOffset);
+                _res = factory.createStarred(a,ExprContext.Load,startToken.startOffset,endToken.endOffset);
                 cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12083,9 +12090,7 @@ public final class Parser extends AbstractParser {
                 (a = name_token()) != null  // NAME
             )
             {
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
-                _res = null;
+                _res = this.setExprContext(a,ExprContext.Store);
                 cache.putResult(_mark, T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12106,9 +12111,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
-                _res = null;
+                _res = this.setExprContext(a,ExprContext.Store);
                 cache.putResult(_mark, T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -20015,7 +20018,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_157: star_named_expression ',' star_named_expressions?
-    public Object _tmp_157_rule()
+    public ExprTy[] _tmp_157_rule()
     {
         if (errorIndicator) {
             return null;
@@ -20023,8 +20026,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_157_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_157_ID);
-            return (Object)_res;
+            _res = (ExprTy[])cache.getResult(_mark, _TMP_157_ID);
+            return (ExprTy[])_res;
         }
         { // star_named_expression ',' star_named_expressions?
             if (errorIndicator) {
@@ -20043,13 +20046,13 @@ public final class Parser extends AbstractParser {
             {
                 _res = this.insertInFront(y,z);
                 cache.putResult(_mark, _TMP_157_ID, _res);
-                return (Object)_res;
+                return (ExprTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _TMP_157_ID, _res);
-        return (Object)_res;
+        return (ExprTy[])_res;
     }
 
     // _tmp_158: yield_expr | named_expression
