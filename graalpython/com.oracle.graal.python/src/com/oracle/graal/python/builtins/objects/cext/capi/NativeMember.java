@@ -113,6 +113,7 @@ public enum NativeMember {
     SQ_ITEM("sq_item"),
     SQ_REPEAT("sq_repeat"),
     SQ_CONCAT("sq_concat"),
+    SQ_LENGTH("sq_length"),
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
