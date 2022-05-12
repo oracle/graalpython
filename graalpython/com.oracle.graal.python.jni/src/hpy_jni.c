@@ -321,9 +321,7 @@ static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
-    if (!bits) {
-        return;
-    } else if (isBoxedHandle(bits)) {
+    if (isBoxedHandle(bits)) {
         if (bits < IMMUTABLE_HANDLES) {
             return;
         }
@@ -331,7 +329,6 @@ static void augment_Close(HPyContext *ctx, HPy h) {
             unclosedHandles[unclosedHandleTop++] = h;
         } else {
             upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
-            memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
             unclosedHandleTop = 0;
         }
     }
