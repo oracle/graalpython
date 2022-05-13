@@ -477,65 +477,32 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class MethDirectRoot extends PRootNode {
-
+    static final class MethDirectRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, true, 0, false, null, KEYWORDS_HIDDEN_CALLABLE);
 
-        @Child private ExternalFunctionInvokeNode invokeNode;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child private ReadIndexedArgumentNode readCallableNode = ReadIndexedArgumentNode.create(0);
-
-        private final String name;
-
         private MethDirectRoot(PythonLanguage lang, String name) {
-            super(lang);
-            this.name = name;
-            this.invokeNode = ExternalFunctionInvokeNode.create();
+            super(lang, name, true, PExternalFunctionWrapper.DIRECT);
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
-            try {
-                Object callable = readCallableNode.execute(frame);
-                return ensureInvokeNode().execute(frame, name, callable, PArguments.getVariableArguments(frame), 0);
-            } finally {
-                calleeContext.exit(frame, this);
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            // return a copy of the args array since it will be modified
+            Object[] varargs = PArguments.getVariableArguments(frame);
+            Object[] copy = new Object[varargs.length];
+            PythonUtils.arraycopy(varargs, 0, copy, 0, varargs.length);
+            return copy;
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            for (int i = 0; i < cArguments.length; i++) {
+                ensureReleaseNativeWrapperNode().execute(cArguments[i]);
             }
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public String toString() {
-            return "<external function root " + getName() + ">";
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            // everything that is implemented in C is internal
-            return true;
-        }
-
-        private ExternalFunctionInvokeNode ensureInvokeNode() {
-            if (invokeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                invokeNode = insert(ExternalFunctionInvokeNode.create());
-            }
-            return invokeNode;
         }
 
         @TruffleBoundary
@@ -548,7 +515,6 @@ public abstract class ExternalFunctionNodes {
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
     static final class ExternalFunctionInvokeNode extends PNodeWithContext implements IndirectCallNode {
-        @Child private CExtNodes.ConvertArgsToSulongNode toSulongNode;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
@@ -561,12 +527,12 @@ public abstract class ExternalFunctionNodes {
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
 
         @Override
-        public final Assumption needNotPassFrameAssumption() {
+        public Assumption needNotPassFrameAssumption() {
             return nativeCodeDoesntNeedMyFrame;
         }
 
         @Override
-        public final Assumption needNotPassExceptionAssumption() {
+        public Assumption needNotPassExceptionAssumption() {
             return nativeCodeDoesntNeedExceptionState;
         }
 
@@ -580,19 +546,15 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         ExternalFunctionInvokeNode() {
-            this.toSulongNode = CExtNodes.AllToSulongNode.create();
             this.checkResultNode = DefaultCheckFunctionResultNodeGen.create();
         }
 
         @TruffleBoundary
-        ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
-            ConvertArgsToSulongNode convertArgsNode = provider.createConvertArgsToSulongNode();
-            this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
-            CheckFunctionResultNode checkFunctionResultNode = provider.getCheckFunctionResultNode();
+        ExternalFunctionInvokeNode(CheckFunctionResultNode checkFunctionResultNode) {
             this.checkResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : DefaultCheckFunctionResultNodeGen.create();
         }
 
-        public Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs, int argsOffset) {
+        public Object execute(VirtualFrame frame, String name, Object callable, Object[] cArguments) {
             if (lib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 /*
@@ -602,9 +564,6 @@ public abstract class ExternalFunctionNodes {
                  */
                 lib = insert(InteropLibrary.getFactory().createDispatched(2));
             }
-
-            Object[] cArguments = new Object[frameArgs.length - argsOffset];
-            toSulongNode.executeInto(frameArgs, argsOffset, cArguments, 0);
 
             PythonContext ctx = PythonContext.get(this);
             PythonThreadState threadState = getThreadStateNode.execute(ctx);
@@ -654,8 +613,8 @@ public abstract class ExternalFunctionNodes {
             return new ExternalFunctionInvokeNode();
         }
 
-        public static ExternalFunctionInvokeNode create(PExternalFunctionWrapper provider) {
-            return new ExternalFunctionInvokeNode(provider);
+        public static ExternalFunctionInvokeNode create(CheckFunctionResultNode checkFunctionResultNode) {
+            return new ExternalFunctionInvokeNode(checkFunctionResultNode);
         }
     }
 
@@ -670,30 +629,25 @@ public abstract class ExternalFunctionNodes {
      * means that the handle will stay allocated and we are leaking the wrapper object.
      * </p>
      */
+    @ImportStatic(CApiGuards.class)
     abstract static class ReleaseNativeWrapperNode extends Node {
 
         public abstract void execute(Object pythonObject);
 
-        @Specialization(guards = "hasNativeWrapper(pythonObject)")
-        static void doPythonObjectWithWrapper(PythonObject pythonObject,
+        @Specialization
+        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
-
             // in the cached case, refCntNode acts as a branch profile
-            PythonNativeWrapper nativeWrapper = pythonObject.getNativeWrapper();
             if (subRefCntNode.dec(nativeWrapper) == 0) {
-                traverseNativeWrapperNode.execute(pythonObject);
+                traverseNativeWrapperNode.execute(nativeWrapper.getDelegateSlowPath());
             }
         }
 
-        @Specialization(guards = "!hasNativeWrapper(object)")
+        @Specialization(guards = "!isNativeWrapper(object)")
         @SuppressWarnings("unused")
-        static void doObjectWithoutWrapper(Object object) {
+        static void doOther(Object object) {
             // just do nothing; this is an implicit profile
-        }
-
-        static boolean hasNativeWrapper(Object object) {
-            return object instanceof PythonObject && CApiGuards.isNativeWrapper(((PythonObject) object).getNativeWrapper());
         }
     }
 
@@ -737,6 +691,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
         @Child private PRaiseNode raiseNode;
+        @Child private ConvertArgsToSulongNode toSulongNode;
 
         private final String name;
 
@@ -749,7 +704,9 @@ public abstract class ExternalFunctionNodes {
             CompilerAsserts.neverPartOfCompilation();
             this.name = name;
             if (provider != null) {
-                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
+                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider.getCheckFunctionResultNode());
+                ConvertArgsToSulongNode convertArgsNode = provider.createConvertArgsToSulongNode();
+                this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
             }
@@ -759,14 +716,15 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
+        public final Object execute(VirtualFrame frame) {
             calleeContext.enter(frame);
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
                 if (externalInvokeNode != null) {
                     Object[] cArguments = prepareCArguments(frame);
+                    toSulongNode.executeInto(cArguments, 0, cArguments, 0);
                     try {
-                        return externalInvokeNode.execute(frame, name, callable, cArguments, 0);
+                        return externalInvokeNode.execute(frame, name, callable, cArguments);
                     } finally {
                         postprocessCArguments(frame, cArguments);
                     }
@@ -779,6 +737,10 @@ public abstract class ExternalFunctionNodes {
             }
         }
 
+        /**
+         * Prepare the arguments for calling the C function. The arguments will then be converted to
+         * LLVM arguments using the {@link #toSulongNode}. This will modify the returned array.
+         */
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
 
         @SuppressWarnings("unused")
@@ -827,7 +789,7 @@ public abstract class ExternalFunctionNodes {
             return readCallableNode;
         }
 
-        protected ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+        protected final ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
             if (releaseNativeWrapperNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
@@ -835,7 +797,7 @@ public abstract class ExternalFunctionNodes {
             return releaseNativeWrapperNode;
         }
 
-        protected PRaiseNode getRaiseNode() {
+        protected final PRaiseNode getRaiseNode() {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
@@ -869,7 +831,7 @@ public abstract class ExternalFunctionNodes {
             return true;
         }
 
-        protected Object readSelf(VirtualFrame frame) {
+        protected final Object readSelf(VirtualFrame frame) {
             if (readSelfNode != null) {
                 return readSelfNode.execute(frame);
             }
@@ -2005,13 +1967,13 @@ public abstract class ExternalFunctionNodes {
 
     /**
      * Processes the function result with CPython semantics:
-     * 
+     *
      * <pre>
      *     if (func(self, args, kwds) < 0)
      *         return NULL;
      *     Py_RETURN_NONE;
      * </pre>
-     * 
+     *
      * This is the case for {@code wrap_init}, {@code wrap_descr_delete}, {@code wrap_descr_set},
      * {@code wrap_delattr}, {@code wrap_setattr}.
      */
