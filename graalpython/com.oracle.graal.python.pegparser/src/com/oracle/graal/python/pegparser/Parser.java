@@ -59,9 +59,6 @@ import java.util.stream.Stream;
 @SuppressWarnings({"all", "cast"})
 public final class Parser extends AbstractParser {
 
-    // parser fields
-    
-
     private static final Object[][][] reservedKeywords = new Object[][][]{
         null,
         null,
@@ -3766,9 +3763,7 @@ public final class Parser extends AbstractParser {
                 (guard = named_expression_rule()) != null  // named_expression
             )
             {
-                // TODO: node.action: guard
-                debugMessageln("[33;5;7m!!! TODO: Convert guard to Java !!![0m");
-                _res = null;
+                _res = guard;
                 cache.putResult(_mark, GUARD_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4404,9 +4399,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_71_rule(false)
             )
             {
-                // TODO: node.action: attr
-                debugMessageln("[33;5;7m!!! TODO: Convert attr to Java !!![0m");
-                _res = null;
+                _res = attr;
                 cache.putResult(_mark, VALUE_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4540,9 +4533,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: pattern
-                debugMessageln("[33;5;7m!!! TODO: Convert pattern to Java !!![0m");
-                _res = null;
+                _res = pattern;
                 cache.putResult(_mark, GROUP_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4678,9 +4669,7 @@ public final class Parser extends AbstractParser {
                 ((_opt_var = (Token)expect(12)) != null || true)  // ','?
             )
             {
-                // TODO: node.action: values
-                debugMessageln("[33;5;7m!!! TODO: Convert values to Java !!![0m");
-                _res = null;
+                _res = values;
                 cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -4842,9 +4831,7 @@ public final class Parser extends AbstractParser {
                 ((_opt_var = (Token)expect(12)) != null || true)  // ','?
             )
             {
-                // TODO: node.action: items
-                debugMessageln("[33;5;7m!!! TODO: Convert items to Java !!![0m");
-                _res = null;
+                _res = items;
                 cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
                 return (KeyValuePair[])_res;
             }
@@ -4932,9 +4919,7 @@ public final class Parser extends AbstractParser {
                 (value = capture_pattern_rule()) != null  // capture_pattern
             )
             {
-                // TODO: node.action: KeyValuePair ( null , value )
-                debugMessageln("[33;5;7m!!! TODO: Convert KeyValuePair ( null , value ) to Java !!![0m");
-                _res = null;
+                _res = new KeyValuePair(null,value);
                 cache.putResult(_mark, DOUBLE_STAR_PATTERN_ID, _res);
                 return (KeyValuePair)_res;
             }
@@ -5103,9 +5088,7 @@ public final class Parser extends AbstractParser {
                 (args = (ExprTy[])_gather_78_rule()) != null  // ','.pattern+
             )
             {
-                // TODO: node.action: args
-                debugMessageln("[33;5;7m!!! TODO: Convert args to Java !!![0m");
-                _res = null;
+                _res = args;
                 cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
                 return (ExprTy[])_res;
             }
@@ -5137,9 +5120,7 @@ public final class Parser extends AbstractParser {
                 (keywords = (KeywordTy[])_gather_80_rule()) != null  // ','.keyword_pattern+
             )
             {
-                // TODO: node.action: keywords
-                debugMessageln("[33;5;7m!!! TODO: Convert keywords to Java !!![0m");
-                _res = null;
+                _res = keywords;
                 cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
                 return (KeywordTy[])_res;
             }
@@ -13575,8 +13556,8 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(false, 11)  // token=':'
             )
             {
-                // TODO: node.action: CHECK_VERSION ( void * , 10 , "Pattern matching is" , this . raiseSyntaxError ( "expected ':'" ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( void * , 10 , 'Pattern matching is' , this . raiseSyntaxError ( 'expected ':'' ) ) to Java !!![0m");
+                // TODO: node.action: CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )
+                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( void * , 10 , 'Pattern matching is' , RAISE_SYNTAX_ERROR ( 'expected ':'' ) ) to Java !!![0m");
                 _res = null;
                 cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
                 return (ExprTy)_res;
