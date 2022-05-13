@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
@@ -120,7 +119,6 @@ import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
@@ -423,35 +421,41 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return bciToLine(getBci(frame));
         }
 
-        public void syncLocals(VirtualFrame virtualFrame, Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile) {
-            Frame localFrame = frameToSync;
+        public int getVariableCount() {
             CodeUnit code = rootNode.co;
-            if (code.isGeneratorOrCoroutine()) {
-                localFrame = PArguments.getGeneratorFrame(frameToSync);
-            }
-            for (int i = 0; i < code.varnames.length; i++) {
-                setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.varnames[i], localFrame.getObject(i));
-            }
-            for (int i = 0; i < code.cellvars.length; i++) {
-                PCell cell = (PCell) localFrame.getObject(rootNode.celloffset + i);
-                setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.cellvars[i], cell.getRef());
-            }
-            for (int i = 0; i < code.freevars.length; i++) {
-                PCell cell = (PCell) localFrame.getObject(rootNode.freeoffset + i);
-                setVar(virtualFrame, localsObject, setItem, delItem, errorProfile, code.freevars[i], cell.getRef());
+            return code.varnames.length + code.cellvars.length + code.freevars.length;
+        }
+
+        public String getVariableName(int slot) {
+            CodeUnit code = rootNode.co;
+            if (slot < code.varnames.length) {
+                return code.varnames[slot];
+            } else if (slot < code.varnames.length + code.cellvars.length) {
+                return code.cellvars[slot - code.varnames.length];
+            } else {
+                return code.freevars[slot - code.varnames.length - code.cellvars.length];
             }
         }
 
-        private void setVar(VirtualFrame virtualFrame, Object localsObject, PyObjectSetItem setItem, PyObjectDelItem delItem, IsBuiltinClassProfile errorProfile, String name, Object value) {
-            if (value == null) {
-                try {
-                    delItem.execute(virtualFrame, localsObject, name);
-                } catch (PException e) {
-                    e.expect(KeyError, errorProfile);
+        @TruffleBoundary
+        public int findVariable(String name) {
+            CodeUnit code = rootNode.co;
+            for (int i = 0; i < code.varnames.length; i++) {
+                if (name.equals(code.varnames[i])) {
+                    return i;
                 }
-            } else {
-                setItem.execute(virtualFrame, localsObject, name, value);
             }
+            for (int i = 0; i < code.cellvars.length; i++) {
+                if (name.equals(code.cellvars[i])) {
+                    return code.varnames.length + i;
+                }
+            }
+            for (int i = 0; i < code.freevars.length; i++) {
+                if (name.equals(code.freevars[i])) {
+                    return code.varnames.length + code.cellvars.length + i;
+                }
+            }
+            return -1;
         }
     }
 
@@ -463,11 +467,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
         newBuilder.info(new FrameInfo());
         // locals
-        newBuilder.addSlots(co.varnames.length, FrameSlotKind.Illegal);
+        for (int i = 0; i < co.varnames.length; i++) {
+            newBuilder.addSlot(FrameSlotKind.Illegal, co.varnames[i], null);
+        }
         // cells
-        newBuilder.addSlots(co.cellvars.length, FrameSlotKind.Illegal);
+        for (int i = 0; i < co.cellvars.length; i++) {
+            newBuilder.addSlot(FrameSlotKind.Illegal, co.cellvars[i], null);
+        }
         // freevars
-        newBuilder.addSlots(co.freevars.length, FrameSlotKind.Illegal);
+        for (int i = 0; i < co.freevars.length; i++) {
+            newBuilder.addSlot(FrameSlotKind.Illegal, co.freevars[i], null);
+        }
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
