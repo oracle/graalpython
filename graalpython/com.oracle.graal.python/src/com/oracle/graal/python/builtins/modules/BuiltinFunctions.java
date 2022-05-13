@@ -2478,7 +2478,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     for (int i = 0; i < keywords.length; i++) {
                         if (T_METACLASS.equalsUncached(keywords[i].getName(), TS_ENCODING)) {
                             meta = keywords[i].getValue();
-                            mkw = new PKeyword[keywords.length - 1];
+                            mkw = PKeyword.create(keywords.length - 1);
 
                             PythonUtils.arraycopy(keywords, 0, mkw, 0, i);
                             PythonUtils.arraycopy(keywords, i + 1, mkw, i, mkw.length - i);

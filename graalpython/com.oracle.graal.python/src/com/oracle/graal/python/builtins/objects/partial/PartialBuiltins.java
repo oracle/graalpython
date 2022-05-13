@@ -314,7 +314,7 @@ public class PartialBuiltins extends PythonBuiltins {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
 
             final PKeyword[] pKeywords = starargsNode.execute(self.getKw());
-            PKeyword[] callKeywords = new PKeyword[pKeywords.length + keywords.length];
+            PKeyword[] callKeywords = PKeyword.create(pKeywords.length + keywords.length);
             PythonUtils.arraycopy(pKeywords, 0, callKeywords, 0, pKeywords.length);
             int kwIndex = pKeywords.length;
             // check for overriding keywords and store the new ones

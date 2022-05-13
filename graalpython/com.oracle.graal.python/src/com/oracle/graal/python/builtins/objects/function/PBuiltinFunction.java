@@ -95,7 +95,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     private static PKeyword[] generateKwDefaults(Signature signature) {
         TruffleString[] keywordNames = signature.getKeywordNames();
-        PKeyword[] kwDefaults = new PKeyword[keywordNames.length];
+        PKeyword[] kwDefaults = PKeyword.create(keywordNames.length);
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
         }
