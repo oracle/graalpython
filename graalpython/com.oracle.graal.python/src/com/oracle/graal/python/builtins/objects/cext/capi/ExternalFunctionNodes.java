@@ -488,9 +488,7 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             // return a copy of the args array since it will be modified
             Object[] varargs = PArguments.getVariableArguments(frame);
-            Object[] copy = new Object[varargs.length];
-            PythonUtils.arraycopy(varargs, 0, copy, 0, varargs.length);
-            return copy;
+            return PythonUtils.arrayCopyOf(varargs, varargs.length);
         }
 
         @Override
