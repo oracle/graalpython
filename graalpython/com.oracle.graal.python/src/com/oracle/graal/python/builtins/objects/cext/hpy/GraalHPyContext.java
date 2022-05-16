@@ -180,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeInternFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeReadChar;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeSubstring;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -2374,7 +2375,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT.ordinal()] = new GraalHPyUnicodeFromEncodedObject();
         members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
-        members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyUnicodeSubstring();
 
         members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyContextVarNew();
         members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = new GraalHPyContextVarGet();

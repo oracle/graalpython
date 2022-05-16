@@ -131,7 +131,9 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNodeWithSlice;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -3679,6 +3681,39 @@ public abstract class GraalHPyContextFunctions {
                 Object errors = errorsNode.execute(arguments[3]);
                 try {
                     Object result = libNode.execute(null, obj, encoding, errors);
+                    return asHandleNode.execute(context, result);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return GraalHPyHandle.NULL_HANDLE;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeSubstring extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode objNode,
+                        @Cached CastToJavaStringNode castToJavaString,
+                        @Cached CastToJavaIntExactNode castStart,
+                        @Cached CastToJavaIntExactNode castEnd,
+                        @Cached StrGetItemNodeWithSlice getSlice,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                String value = castToJavaString.execute(objNode.execute(context, arguments[1]));
+                int start = castStart.execute(arguments[2]);
+                int end = castEnd.execute(arguments[3]);
+                try {
+                    Object result = getSlice.execute(value, new SliceInfo(start, end, 1));
                     return asHandleNode.execute(context, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
