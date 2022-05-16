@@ -706,10 +706,10 @@ void* ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
 PyObject* ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
-        return Py_None;
-    } else {
-        return native_to_java(member);
+        member = Py_None;
     }
+    Py_INCREF(member);
+    return native_to_java(member);
 }
 
 int ReadCharMember(PyObject* object, Py_ssize_t offset) {
@@ -738,6 +738,7 @@ PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
         PyErr_SetString(PyExc_ValueError, "member must not be NULL");
         return NULL;
     } else {
+        Py_INCREF(member);
         return native_to_java(member);
     }
 }
@@ -801,8 +802,10 @@ int WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
 
 int WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
 	/* We first need to decref the old value. */
-    Py_XDECREF(ReadMember(object, offset, PyObject*));
+	PyObject *oldv = ReadMember(object, offset, PyObject*);
+    Py_XINCREF(value);
     WriteMember(object, offset, value, PyObject*);
+    Py_XDECREF(oldv);
     return 0;
 }
 
@@ -841,8 +844,9 @@ int WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     if (oldv == NULL) {
         return 1;
     }
-    Py_XDECREF(oldv);
+    Py_XINCREF(value);
     WriteMember(object, offset, value, PyObject*);
+    Py_XDECREF(oldv);
     return 0;
 }
 
