@@ -487,8 +487,8 @@ public final class CApiContext extends CExtContext {
                 }
 
                 if (loggable) {
-                    final long countDuration = middleTime - startTime;
-                    final long duration = System.currentTimeMillis() - middleTime;
+                    final long countDuration = System.currentTimeMillis() - middleTime;
+                    final long duration = middleTime - startTime;
                     final int finalCleaned = cleaned;
                     final long freedNativeMemory = allocatedNativeMem - cApiContext.allocatedMemory;
                     LOGGER.fine(() -> "Total queued references: " + n);
