@@ -151,6 +151,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
@@ -2673,6 +2674,21 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
             return PInt.intValue(callableCheck.execute(object));
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyIsSequence extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PySequenceCheckNode sequenceCheck) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            return PInt.intValue(sequenceCheck.execute(object));
         }
     }
 

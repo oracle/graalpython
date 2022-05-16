@@ -141,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIs;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallable;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsSequence;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLeavePythonExecution;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
@@ -2385,7 +2386,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_CAPSULE_ISVALID.ordinal()] = new GraalHPyCapsuleIsValid();
         members[HPyContextMember.CTX_CAPSULE_SET.ordinal()] = new GraalHPyCapsuleSet();
 
-        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyDump();
+        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyIsSequence();
         members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = new GraalHPyDump();
 
         if (TRACE) {
