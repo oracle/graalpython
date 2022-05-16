@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -77,6 +78,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached BranchProfile errorProfile,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
         int stackTop = resultStackTop;
         SequenceStorage storage = getSequenceStorageNode.execute(sequence);
@@ -105,6 +107,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                     @Cached IsBuiltinClassProfile stopIterationProfile1,
                     @Cached IsBuiltinClassProfile stopIterationProfile2,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
         int stackTop = resultStackTop;
         Object iterator;

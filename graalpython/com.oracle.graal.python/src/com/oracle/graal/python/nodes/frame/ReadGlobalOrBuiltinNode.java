@@ -67,7 +67,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
     private static final ReadGlobalOrBuiltinNode UNCACHED = new ReadGlobalOrBuiltinNode(null) {
         @Override
-        public Object executeWithGlobals(VirtualFrame frame, Object globals) {
+        protected Object executeWithGlobals(VirtualFrame frame, Object globals) {
             throw CompilerDirectives.shouldNotReachHere("uncached ReadGlobalOrBuiltinNode must be used with #read");
         }
 
@@ -141,7 +141,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         throw new UnexpectedResultException(o);
     }
 
-    public abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+    protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
 
     public Object read(Frame frame, Object globals, String name) {
         assert name == attributeId : "cached ReadGlobalOrBuiltinNode can only be used with cached attributeId";

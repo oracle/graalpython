@@ -82,11 +82,7 @@ class RuleResultCache<T> {
     }
 
     public T putResult(int pos, int ruleId, T node) {
-        HashMap<Integer, CachedItem<T>> posCache = mainCache.get(pos);
-        if (posCache == null) {
-            posCache = new HashMap<>();
-            mainCache.put(pos, posCache);
-        }
+        HashMap<Integer, CachedItem<T>> posCache = mainCache.computeIfAbsent(pos, k -> new HashMap<>());
         posCache.put(ruleId, new CachedItem<>(node, parser.mark()));
         return node;
     }

@@ -456,7 +456,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
-        FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(4);
+        int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
+        if (co.isGeneratorOrCoroutine()) {
+            capacity += 2;
+        }
+        FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
         newBuilder.info(new FrameInfo());
         // locals
         newBuilder.addSlots(co.varnames.length, FrameSlotKind.Illegal);
@@ -472,7 +476,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
             // return value of a generator
-            newBuilder.addSlot(FrameSlotKind.Int, null, null);
+            newBuilder.addSlot(FrameSlotKind.Illegal, null, null);
         }
         return newBuilder.build();
     }
@@ -630,17 +634,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+    private <T extends Node> T insertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         Node node = nodes[nodeIndex];
         if (node != null) {
             return (T) node;
         }
-        return doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument);
+        return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
     }
 
     @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
-    private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+    private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         T newNode = nodeSupplier.apply(argument);
         nodes[nodeIndex] = insert(newNode);
@@ -717,8 +721,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @ExplodeLoop
     private void copyArgs(Object[] args, Frame localFrame) {
-        for (int i = 0; i < PArguments.getUserArgumentLength(args); i++) {
-            // we can set these as object, since they're already boxed
+        int argCount = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
+        for (int i = 0; i < argCount; i++) {
             localFrame.setObject(i, args[i + PArguments.USER_ARGUMENTS_OFFSET]);
         }
     }
@@ -774,8 +778,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
     private Object executeInner(VirtualFrame virtualFrame, boolean resumingAfterOSR, int initialBci, int initialStackTop) {
-        boolean inInterpreter = CompilerDirectives.inInterpreter();
-
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
@@ -800,14 +802,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         String[] localNames = names;
         Node[] localNodes = adoptedNodes;
 
-        verifyBeforeLoop(stackTop, bci, localBC);
+        CompilerAsserts.partialEvaluationConstant(localBC);
+        CompilerAsserts.partialEvaluationConstant(bci);
+        CompilerAsserts.partialEvaluationConstant(stackTop);
 
         int oparg = 0;
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
 
-            verifyInLoop(stackTop, bci, bc);
+            CompilerAsserts.partialEvaluationConstant(bc);
+            CompilerAsserts.partialEvaluationConstant(bci);
+            CompilerAsserts.partialEvaluationConstant(stackTop);
 
             try {
                 switch (bc) {
@@ -1000,7 +1006,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case OpCodesConstants.UNARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
-                        UnaryOpNode opNode = insertChildNode(localNodes, bci, UNARY_OP_FACTORY, op);
+                        UnaryOpNode opNode = insertChildNodeInt(localNodes, bci, UNARY_OP_FACTORY, op);
                         Object value = localFrame.getObject(stackTop);
                         Object result = opNode.execute(virtualFrame, value);
                         localFrame.setObject(stackTop, result);
@@ -1008,7 +1014,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.BINARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
-                        BinaryOp opNode = (BinaryOp) insertChildNode(localNodes, bci, BINARY_OP_FACTORY, op);
+                        BinaryOp opNode = (BinaryOp) insertChildNodeInt(localNodes, bci, BINARY_OP_FACTORY, op);
                         Object right = localFrame.getObject(stackTop);
                         localFrame.setObject(stackTop--, null);
                         Object left = localFrame.getObject(stackTop);
@@ -1037,7 +1043,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RETURN_VALUE: {
-                        if (inInterpreter) {
+                        if (CompilerDirectives.hasNextTier() && loopCount > 0) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         Object value = localFrame.getObject(stackTop);
@@ -1189,24 +1195,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.JUMP_BACKWARD: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
-                        if (inInterpreter) {
+                        if (CompilerDirectives.hasNextTier()) {
                             loopCount++;
-                            if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                /*
-                                 * Beware of race conditions when adding more things to the
-                                 * interpreterState argument. It gets stored already at this point,
-                                 * but the compilation runs in parallel. The compiled code may get
-                                 * entered from a different invocation of this root, using the
-                                 * interpreterState that was saved here. Don't put any data specific
-                                 * to particular invocation in there (like python-level arguments or
-                                 * variables) or it will get mixed up. To retain such state, put it
-                                 * into the frame instead.
-                                 */
-                                Object osrResult = BytecodeOSRNode.tryOSR(this, bci, stackTop, null, virtualFrame);
-                                if (osrResult != null) {
+                        }
+                        if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(this)) {
+                            /*
+                             * Beware of race conditions when adding more things to the
+                             * interpreterState argument. It gets stored already at this point, but
+                             * the compilation runs in parallel. The compiled code may get entered
+                             * from a different invocation of this root, using the interpreterState
+                             * that was saved here. Don't put any data specific to particular
+                             * invocation in there (like python-level arguments or variables) or it
+                             * will get mixed up. To retain such state, put it into the frame
+                             * instead.
+                             */
+                            Object osrResult = BytecodeOSRNode.tryOSR(this, bci, stackTop, null, virtualFrame);
+                            if (osrResult != null) {
+                                if (CompilerDirectives.hasNextTier() && loopCount > 0) {
                                     LoopNode.reportLoopCount(this, loopCount);
-                                    return osrResult;
                                 }
+                                return osrResult;
                             }
                         }
                         oparg = 0;
@@ -1325,7 +1333,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        if (inInterpreter) {
+                        if (CompilerDirectives.hasNextTier() && loopCount > 0) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         Object value = localFrame.getObject(stackTop);
@@ -1889,18 +1897,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private void verifyInLoop(int stackTop, int bci, final byte bc) {
-        CompilerAsserts.partialEvaluationConstant(bc);
-        CompilerAsserts.partialEvaluationConstant(bci);
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-    }
-
-    private void verifyBeforeLoop(int stackTop, int bci, byte[] localBC) {
-        CompilerAsserts.partialEvaluationConstant(localBC);
-        CompilerAsserts.partialEvaluationConstant(bci);
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-    }
-
     @ExplodeLoop
     @SuppressWarnings("unchecked")
     private static <T> void moveFromStack(Frame localFrame, int start, int stop, T[] target) {
@@ -2109,9 +2105,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return unpackNode.execute(virtualFrame, stackTop - 1, localFrame, collection, countBefore, countAfter);
     }
 
-    /**
-     * @see #saveExceptionBlockstack
-     */
     @ExplodeLoop
     private long findHandler(int bci) {
         CompilerAsserts.partialEvaluationConstant(bci);

@@ -58,6 +58,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -82,6 +83,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached BranchProfile errorProfile,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        CompilerAsserts.partialEvaluationConstant(countBefore);
+        CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
         int stackTop = resultStackTop;
         SequenceStorage storage = getSequenceStorageNode.execute(sequence);
@@ -110,6 +113,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
+        CompilerAsserts.partialEvaluationConstant(countBefore);
+        CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
         int stackTop = resultStackTop;
         Object iterator;
@@ -140,6 +145,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
     @ExplodeLoop
     private static int moveItemsToStack(VirtualFrame virtualFrame, Object iterator, Frame localFrame, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
                     IsBuiltinClassProfile stopIterationProfile, PRaiseNode raiseNode) {
+        CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
             try {
@@ -155,6 +161,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @ExplodeLoop
     private static int moveItemsToStack(SequenceStorage storage, Frame localFrame, int initialStackTop, int offset, int length, SequenceStorageNodes.GetItemScalarNode getItemNode) {
+        CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
             localFrame.setObject(stackTop--, getItemNode.execute(storage, offset + i));

@@ -103,7 +103,6 @@ public abstract class DictNodes {
         }
 
         @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
-
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
