@@ -150,6 +150,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -3650,6 +3651,38 @@ public abstract class GraalHPyContextFunctions {
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
                     return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeFromEncodedObject extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode objNode,
+                        @Cached FromCharPointerNode encodingNode,
+                        @Cached FromCharPointerNode errorsNode,
+                        @Cached PyUnicodeFromEncodedObject libNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 4);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object obj = objNode.execute(context, arguments[1]);
+                Object encoding = encodingNode.execute(arguments[2]);
+                Object errors = errorsNode.execute(arguments[3]);
+                try {
+                    Object result = libNode.execute(null, obj, encoding, errors);
+                    return asHandleNode.execute(context, result);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
