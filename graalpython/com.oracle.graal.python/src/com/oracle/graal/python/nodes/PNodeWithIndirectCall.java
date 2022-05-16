@@ -41,30 +41,28 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NodeField;
+import com.oracle.truffle.api.dsl.NodeFields;
 
-public class PNodeWithIndirectCall extends PNodeWithContext implements IndirectCallNode {
+@NodeFields({@NodeField(name = "dontNeedExceptionState", type = Assumption.class), @NodeField(name = "dontNeedFrame", type = Assumption.class)})
+public abstract class PNodeWithIndirectCall extends PNodeWithContext implements IndirectCallNode {
+    protected abstract Assumption getDontNeedExceptionState();
 
-    @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
-    @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+    protected abstract Assumption getDontNeedFrame();
 
     @Override
     public final Assumption needNotPassFrameAssumption() {
-        if (nativeCodeDoesntNeedMyFrame == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        if (isAdoptable()) {
+            return getDontNeedFrame();
         }
-        return nativeCodeDoesntNeedMyFrame;
+        return Assumption.NEVER_VALID;
     }
 
     @Override
     public final Assumption needNotPassExceptionAssumption() {
-        if (nativeCodeDoesntNeedExceptionState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        if (isAdoptable()) {
+            return getDontNeedExceptionState();
         }
-        return nativeCodeDoesntNeedExceptionState;
+        return Assumption.NEVER_VALID;
     }
 }
