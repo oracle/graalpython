@@ -45,7 +45,6 @@ import java.nio.ByteOrder;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
@@ -55,6 +54,7 @@ import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * A library for accessing buffers obtained using {@link PythonBufferAcquireLibrary}. The buffer
@@ -101,7 +101,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
     /**
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
      * multiple times on the same buffer. If the caller has access to a VirtualFrame
-     * {@link #release(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)} or
+     * {@link #release(Object, VirtualFrame, PNodeWithIndirectCall)} or
      * {@link #release(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
      * should be used. If the caller doesn't have access to a VirtualFrame it must be ensured that
      * an IndirectCallContext was already created in the call path.
@@ -113,7 +113,7 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
      * multiple times on the same buffer.
      */
-    public final void release(Object receiver, VirtualFrame frame, PNodeWithRaiseAndIndirectCall callNode) {
+    public final <T extends Node & IndirectCallNode> void release(Object receiver, VirtualFrame frame, T callNode) {
         Object savedState = IndirectCallContext.enter(frame, callNode);
         try {
             release(receiver);
