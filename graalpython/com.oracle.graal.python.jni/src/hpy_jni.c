@@ -71,6 +71,7 @@ static JNIEnv* jniEnv;
     UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
     UPCALL(AsStruct, SIG_HPY, SIG_PTR) \
     UPCALL(Close, SIG_HPY, SIG_VOID) \
+    UPCALL(BulkClose, SIG_PTR SIG_INT, SIG_VOID)        \
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
     UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
@@ -197,25 +198,6 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
 //*************************
 // BOXING
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
-
-static bool isBoxedDouble(uint64_t value) {
-    return value >= NAN_BOXING_BASE;
-}
-
-static bool isBoxedHandle(uint64_t value) {
-    return value <= NAN_BOXING_MAX_HANDLE;
-}
-
-static bool isBoxedInt(uint64_t value) {
-    return (value & NAN_BOXING_MASK) == NAN_BOXING_INT;
-}
-
 static double unboxDouble(uint64_t value) {
     uint64_t doubleBits = value - NAN_BOXING_BASE;
     return * ((double*) &doubleBits);
@@ -225,32 +207,6 @@ static uint64_t boxDouble(double value) {
     // assumes that value doesn't contain non-standard silent NaNs
     uint64_t doubleBits = * ((uint64_t*) &value);
     return doubleBits + NAN_BOXING_BASE;
-}
-
-static uint64_t unboxHandle(uint64_t value) {
-    return value;
-}
-
-static uint64_t boxHandle(uint64_t handle) {
-    return handle;
-}
-
-static int32_t unboxInt(uint64_t value) {
-    return (int32_t) (value - NAN_BOXING_INT);
-}
-
-static uint64_t boxInt(int32_t value) {
-    return (value & NAN_BOXING_INT_MASK) + NAN_BOXING_INT;
-}
-
-static inline uint64_t toBits(HPy ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline HPy toPtr(uint64_t ptr) {
-    /* return * ((void**) &ptr); */
-    return (HPy) { (HPy_ssize_t) ptr };
 }
 
 //*************************
@@ -269,6 +225,19 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+
+static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
+    long bitsA = toBits(a);
+    long bitsB = toBits(b);
+    if (bitsA == bitsB) {
+        return 1;
+    } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
+        return original_Is(ctx, a, b);
+    } else {
+        return 0;
+    }
+}
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -322,12 +291,25 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
     }
 }
 
+#define MAX_UNCLOSED_HANDLES 32
+static int32_t unclosedHandleTop = 0;
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
+
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
         return;
     } else if (isBoxedHandle(bits)) {
-        return original_Close(ctx, h);
+        if (bits < IMMUTABLE_HANDLES) {
+            return;
+        }
+        if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
+            unclosedHandles[unclosedHandleTop++] = h;
+        } else {
+            upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
+            memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
+            unclosedHandleTop = 0;
+        }
     }
 }
 
@@ -440,6 +422,9 @@ static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitem
     return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
 }
 
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
+}
 
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
@@ -466,6 +451,8 @@ void initDirectFastPaths(HPyContext *context) {
     original_AsStruct = context->ctx_AsStruct;
     context->ctx_AsStruct = augment_AsStruct;
 
+    context->ctx_AsStructLegacy = augment_AsStruct;
+
     original_Dup = context->ctx_Dup;
     context->ctx_Dup = augment_Dup;
 
@@ -483,6 +470,9 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_TupleFromArray = context->ctx_Tuple_FromArray;
     context->ctx_Tuple_FromArray = augment_TupleFromArray;
+
+    original_Is = context->ctx_Is;
+    context->ctx_Is = augment_Is;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {

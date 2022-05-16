@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,15 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -58,8 +63,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 /**
  * Equivalent of CPython's {@code PyUnicode_FromEncodedObject}.
  */
-public abstract class PyUnicodeFromEncodedObject extends PNodeWithRaiseAndIndirectCall {
-    public abstract Object execute(VirtualFrame frame, Object object, Object encoding, Object errors);
+@GenerateUncached
+public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
+    public abstract Object execute(Frame frame, Object object, Object encoding, Object errors);
 
     @Specialization
     Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
@@ -75,14 +81,16 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithRaiseAndIndire
 
     @Specialization
     @SuppressWarnings("unused")
-    Object doString(VirtualFrame frame, String object, Object encoding, Object errors) {
-        throw raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+    Object doString(VirtualFrame frame, String object, Object encoding, Object errors,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization
     @SuppressWarnings("unused")
-    Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors) {
-        throw raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+    Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
@@ -100,5 +108,9 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithRaiseAndIndire
         } finally {
             bufferLib.release(object, frame, this);
         }
+    }
+
+    public static PyUnicodeFromEncodedObject create() {
+        return PyUnicodeFromEncodedObjectNodeGen.create(Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 }

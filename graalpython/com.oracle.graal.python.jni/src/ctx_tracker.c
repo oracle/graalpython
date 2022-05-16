@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -81,7 +81,7 @@
  *    return HPy_NULL;
  */
 
-#include "hpy.h"
+#include "hpy_jni.h"
 
 static const HPy_ssize_t HPYTRACKER_INITIAL_CAPACITY = 5;
 
@@ -155,13 +155,20 @@ tracker_resize(HPyContext *ctx, _HPyTracker_s *hp, HPy_ssize_t capacity)
 _HPy_HIDDEN int
 ctx_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 {
-    _HPyTracker_s *hp =  _ht2hp(ht);
-    hp->handles[hp->length++] = h;
-    if (hp->capacity <= hp->length) {
-        if (tracker_resize(ctx, hp, hp->capacity * 2 - 1) < 0)
-            return -1;
+    uint64_t bits = toBits(h);
+    if (!isBoxedHandle(bits)) {
+        return 0;
+    } else if (bits < IMMUTABLE_HANDLES) {
+        return 0;
+    } else {
+        _HPyTracker_s *hp =  _ht2hp(ht);
+        hp->handles[hp->length++] = h;
+        if (hp->capacity <= hp->length) {
+            if (tracker_resize(ctx, hp, hp->capacity * 2 - 1) < 0)
+                return -1;
+        }
+        return 0;
     }
-    return 0;
 }
 
 _HPy_HIDDEN void
@@ -176,9 +183,7 @@ ctx_Tracker_Close(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     HPy_ssize_t i;
-    for (i=0; i<hp->length; i++) {
-        HPy_Close(ctx, hp->handles[i]);
-    }
+    upcallBulkClose(ctx, hp->handles, hp->length);
     free(hp->handles);
     free(hp);
 }
