@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -127,6 +128,7 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -343,6 +345,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     };
 
+    /*
+     * Create fake GeneratorControlData just to maintain the same generator frame layout as AST
+     * interpreter. TODO remove
+     */
+    public static final GeneratorControlData GENERATOR_CONTROL_DATA = new GeneratorControlData(new GeneratorInfo(new GeneratorInfo.Mutable()));
+
     private final Signature signature;
     private final String name;
     private boolean pythonInternal;
@@ -398,19 +406,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         public int getBci(Frame frame) {
-            /*
-             * Integer values throw FrameSlotTypeException when accessed before being set. The bci
-             * value is set upon exception or in generators, but not on normal return, which is the
-             * most common case, so we use getValue to avoid the exception.
-             * 
-             * TODO when the static slot API is merged, we should use that, the static slots should
-             * be initialized to 0
-             */
-            Integer bci = (Integer) frame.getValue(rootNode.bcioffset);
-            if (bci == null) {
-                return -1;
+            if (frame.isInt(rootNode.bcioffset)) {
+                return frame.getInt(rootNode.bcioffset);
             }
-            return bci;
+            return -1;
+        }
+
+        public Object getYieldFrom(Frame generatorFrame) {
+            int bci = getBci(generatorFrame);
+            /* Match the `yield from` bytecode pattern and get the object from stack */
+            if (bci > 3 && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
+                            rootNode.bytecode[bci] == OpCodesConstants.RESUME_YIELD) {
+                int stackTop = generatorFrame.getInt(rootNode.generatorStackTopOffset);
+                return generatorFrame.getObject(stackTop);
+            }
+            return null;
         }
 
         public Object getGeneratorReturnValue(Frame frame) {
@@ -746,6 +756,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
+        PArguments.setControlData(arguments, GENERATOR_CONTROL_DATA);
+        PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         generatorFrame.setInt(bcioffset, 0);
         generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
         copyArgsAndCells(generatorFrame, arguments);

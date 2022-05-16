@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
@@ -70,8 +71,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
-import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -556,10 +555,18 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
-                if (self.isStarted()) {
-                    // Hack: Fake bytecode to make inspect.getgeneratorstate distinguish suspended
-                    // and unstarted generators
-                    frame.setLasti(10000);
+                if (!self.usesBytecode()) {
+                    if (self.isStarted()) {
+                        /*
+                         * Hack: Fake bytecode to make inspect.getgeneratorstate distinguish
+                         * suspended and unstarted generators
+                         */
+                        frame.setLasti(10000);
+                    }
+                } else {
+                    PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    frame.setLasti(info.getBci(generatorFrame));
+                    frame.setLine(info.getLineno(generatorFrame));
                 }
                 return frame;
             }
@@ -571,13 +578,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetYieldFromNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getYieldFrom(PGenerator self) {
-            AbstractYieldNode currentYield = self.getCurrentYieldNode();
-            if (currentYield instanceof YieldFromNode) {
-                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
-                return PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getIteratorAt(iteratorSlot);
-            } else {
-                return PNone.NONE;
-            }
+            Object yieldFrom = self.getYieldFrom();
+            return yieldFrom != null ? yieldFrom : PNone.NONE;
         }
     }
 

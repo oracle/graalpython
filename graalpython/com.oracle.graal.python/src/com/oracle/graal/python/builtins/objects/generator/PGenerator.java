@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -53,7 +54,7 @@ public final class PGenerator extends PythonBuiltinObject {
 
     private String name;
     private String qualname;
-    private boolean usesBytecode;
+    private final boolean usesBytecode;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
@@ -161,13 +162,31 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public AbstractYieldNode getCurrentYieldNode() {
-        // TODO bytecode
         if (currentCallTarget == 0 || running || finished) {
             // Not stopped on a yield
             return null;
         }
         // Call target indices are yield indices + 1, see AbstractYieldNode
         return generatorInfo.getYieldNodes()[currentCallTarget - 1];
+    }
+
+    public boolean usesBytecode() {
+        return usesBytecode;
+    }
+
+    public Object getYieldFrom() {
+        if (!usesBytecode) {
+            AbstractYieldNode currentYield = getCurrentYieldNode();
+            if (currentYield instanceof YieldFromNode) {
+                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
+                return PArguments.getControlDataFromGeneratorArguments(arguments).getIteratorAt(iteratorSlot);
+            }
+            return null;
+        } else {
+            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
+            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+            return info.getYieldFrom(generatorFrame);
+        }
     }
 
     public boolean isStarted() {
