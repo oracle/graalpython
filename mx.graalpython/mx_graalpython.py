@@ -1652,10 +1652,9 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
         'graalpython:GRAALPYTHON_GRAALVM_DOCS',
     ],
-    launcher_configs=[
-        mx_sdk.LanguageLauncherConfig(
-            destination='bin/<exe:graalpy>',
-            links=['bin/python', 'bin/python3'],
+    library_configs=[
+        mx_sdk.LanguageLibraryConfig(
+            launchers=['bin/<exe:graalpy>', 'bin/<exe:python>', 'bin/<exe:python3>'],
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
