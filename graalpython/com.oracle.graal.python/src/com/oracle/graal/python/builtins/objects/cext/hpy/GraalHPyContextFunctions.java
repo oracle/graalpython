@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
@@ -131,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNodeWithSlice;
@@ -3735,6 +3737,33 @@ public abstract class GraalHPyContextFunctions {
                     transformExceptionToNativeNode.execute(context, e);
                     return GraalHPyHandle.NULL_HANDLE;
                 }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPySliceUnpack extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode objNode,
+                        @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 5);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object obj = objNode.execute(context, arguments[1]);
+                if (!(obj instanceof PSlice)) {
+                    return -1;
+                }
+                PSlice slice = (PSlice) obj;
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[2], 0L, slice.getStart());
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[3], 0L, slice.getStop());
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[4], 0L, slice.getStep());
+                return 0;
             } finally {
                 gil.release(mustRelease);
             }
