@@ -75,6 +75,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -366,6 +367,7 @@ public abstract class GraalHPyDef {
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, __MUL__, __RMUL__),
         HPY_TP_CALL(50, HPySlotWrapper.NULL, __CALL__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, __INIT__),
+        HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, __ITER__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, __NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, __REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__)),

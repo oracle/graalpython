@@ -488,6 +488,10 @@ HPyAPI_FUNC HPy_hash_t HPy_Hash(HPyContext *ctx, HPy obj) {
      return ctx->ctx_Hash ( ctx, UNWRAP(obj) );
 }
 
+HPyAPI_FUNC HPy HPySeqIter_New(HPyContext *ctx, HPy seq) {
+     return WRAP(ctx->ctx_SeqIter_New ( ctx, UNWRAP(seq) )); 
+}
+
 HPyAPI_FUNC int HPyBytes_Check(HPyContext *ctx, HPy h) {
      return ctx->ctx_Bytes_Check ( ctx, UNWRAP(h) );
 }
@@ -740,7 +744,7 @@ HPyAPI_FUNC void _HPy_Dump(HPyContext *ctx, HPy h) {
      ctx->ctx_Dump ( ctx, UNWRAP(h) );
 }
 
-HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *expected) {
-     return ctx->ctx_Type_CheckSlot ( ctx, UNWRAP(type), expected ); 
+HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value) {
+     return ctx->ctx_Type_CheckSlot ( ctx, UNWRAP(type), value ); 
 }
 

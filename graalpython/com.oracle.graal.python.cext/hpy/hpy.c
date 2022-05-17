@@ -1471,6 +1471,10 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_
     return (int) UPCALL_I32(ctx_Slice_Unpack, ctx, slice, start, stop, step);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(SeqIter_New)(HPyContext *ctx, HPy seq) {
+    return UPCALL_HPY(ctx_SeqIter_New, ctx, seq);
+}
+
 #undef HPy
 #undef HPyListBuilder
 #undef HPyTupleBuilder
@@ -1747,6 +1751,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Type_CheckSlot);
     HPY_CTX_UPCALL(ctx_Sequence_Check);
     HPY_CTX_UPCALL(ctx_Slice_Unpack);
+    HPY_CTX_UPCALL(ctx_SeqIter_New);
 
 #undef HPY_CTX_UPCALL
 

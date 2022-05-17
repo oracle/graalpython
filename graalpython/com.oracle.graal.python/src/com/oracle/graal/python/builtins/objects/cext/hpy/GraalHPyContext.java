@@ -155,6 +155,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNewException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyReenterPythonExecution;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySeqIterNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetType;
@@ -757,7 +758,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_CAPSULE_SET("ctx_Capsule_Set"),
         CTX_DUMP("ctx_Dump"),
         CTX_SEQUENCE_CHECK("ctx_Sequence_Check"),
-        CTX_SLICE_UNPACK("ctx_Slice_Unpack");
+        CTX_SLICE_UNPACK("ctx_Slice_Unpack"),
+        CTX_SEQITER_NEW("ctx_SeqIter_New");
 
         final String name;
 
@@ -2390,6 +2392,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyIsSequence();
         members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = new GraalHPySliceUnpack();
+
+        members[HPyContextMember.CTX_SEQITER_NEW.ordinal()] = new GraalHPySeqIterNew();
 
         if (TRACE) {
             for (int i = 0; i < members.length; i++) {

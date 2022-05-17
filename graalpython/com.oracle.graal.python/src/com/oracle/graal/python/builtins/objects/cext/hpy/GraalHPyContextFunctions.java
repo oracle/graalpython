@@ -3829,4 +3829,19 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPySeqIterNew extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asSeqNode,
+                        @Cached HPyAsHandleNode asHandle,
+                        @Cached PythonObjectFactory factory) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object seq = asSeqNode.execute(context, arguments[1]);
+            return asHandle.execute(context, factory.createSequenceIterator(seq));
+        }
+    }
 }

@@ -900,28 +900,6 @@ ctx_Type_GenericNew(HPyContext *ctx, HPy h_type, HPy *args, HPy_ssize_t nargs, H
     return _py2h(res);
 }
 
-_HPy_HIDDEN int
-ctx_Type_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value) {
-    PyObject *result = _h2py(type);
-    struct _typeobject* t = ((struct _typeobject*) result);
-    char msg[256];
-    switch (value->slot.slot) {
-        case HPy_nb_inplace_add:
-            return t->tp_as_number != NULL && t->tp_as_number->nb_inplace_add == value->slot.cpy_trampoline;
-        case HPy_nb_power:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_power == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_subtract:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_subtract == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_true_divide:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_true_divide == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_add:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_add == (void*) value->slot.cpy_trampoline;
-        default:
-            snprintf(msg, 256, "Unsupported slot in HPyTypeSlot_Is: %d", value->slot.slot);
-            Py_FatalError(msg);
-    }
-}
-
 _HPy_HIDDEN void*
 ctx_AsStruct(HPyContext *ctx, HPy h)
 {
