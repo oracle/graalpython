@@ -1435,6 +1435,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 if (newTarget == -1) {
                     localFrame.setInt(bcioffset, beginBci);
+                    if (CompilerDirectives.hasNextTier() && loopCount > 0) {
+                        LoopNode.reportLoopCount(this, loopCount);
+                    }
                     if (e == pe) {
                         throw pe;
                     } else {
