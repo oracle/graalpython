@@ -608,6 +608,16 @@ public enum OpCodes {
      * Pushes (if jumping): the generator return value
      */
     SEND(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
+    /**
+     * Exception handler for forwarding {@code throw} calls into {@code yield from}.
+     *
+     * Pops: exception, then the generator
+     *
+     * Pushes (if not jumping): the generator, then the yielded value
+     *
+     * Pushes (if jumping): the generator return value
+     */
+    THROW(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
 
     // with statements
     /**

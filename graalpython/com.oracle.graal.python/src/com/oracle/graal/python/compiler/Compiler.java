@@ -118,6 +118,7 @@ import static com.oracle.graal.python.compiler.OpCodes.STORE_FAST;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_SUBSCR;
+import static com.oracle.graal.python.compiler.OpCodes.THROW;
 import static com.oracle.graal.python.compiler.OpCodes.UNARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
@@ -1452,11 +1453,19 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addYieldFrom() {
         Block start = new Block();
+        Block resume = new Block();
         Block exit = new Block();
+        Block exceptionHandler = new Block();
         unit.useNextBlock(start);
         addOp(SEND, exit);
         addOp(YIELD_VALUE);
+        unit.pushBlock(new BlockInfo.TryExcept(resume, exceptionHandler));
+        unit.useNextBlock(resume);
         addOp(RESUME_YIELD);
+        addOp(JUMP_BACKWARD, start);
+        unit.popBlock();
+        unit.useNextBlock(exceptionHandler);
+        addOp(THROW, exit);
         addOp(JUMP_BACKWARD, start);
         unit.useNextBlock(exit);
     }

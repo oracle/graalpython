@@ -68,8 +68,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -292,7 +292,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     // throw(typ[,val[,tb]])
     @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    abstract static class ThrowNode extends PythonBuiltinNode {
+    public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Child private MaterializeFrameNode materializeFrameNode;
         @Child private GetTracebackNode getTracebackNode;

@@ -249,6 +249,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectAsciiNode> NODE_ASCII = PyObjectAsciiNode::create;
     private static final NodeSupplier<BuiltinFunctions.FormatNode> NODE_FORMAT = BuiltinFunctions.FormatNode::create;
     private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
+    private static final NodeSupplier<ThrowNode> NODE_THROW = ThrowNode::create;
 
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
@@ -1392,6 +1393,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object obj = localFrame.getObject(stackTop - 1);
                         SendNode sendNode = insertChildNode(localNodes, beginBci, NODE_SEND);
                         boolean returned = sendNode.execute(virtualFrame, stackTop, localFrame, obj, value);
+                        if (!returned) {
+                            bci++;
+                            break;
+                        } else {
+                            stackTop--;
+                            oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci += oparg;
+                            oparg = 0;
+                            continue;
+                        }
+                    }
+                    case OpCodesConstants.THROW: {
+                        Object exception = localFrame.getObject(stackTop);
+                        if (!(exception instanceof PException)) {
+                            throw CompilerDirectives.shouldNotReachHere("interop exceptions not supported in throw");
+                        }
+                        Object obj = localFrame.getObject(stackTop - 1);
+                        ThrowNode throwNode = insertChildNode(localNodes, beginBci, NODE_THROW);
+                        boolean returned = throwNode.execute(virtualFrame, stackTop, localFrame, obj, (PException) exception);
                         if (!returned) {
                             bci++;
                             break;
