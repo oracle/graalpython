@@ -160,9 +160,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
-            if (result == null) {
-                throw raiseNode.raise(StopIteration, self.getReturnValue());
-            }
+            handleResult(self, result, raiseNode);
             return result;
         }
 
@@ -191,10 +189,19 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
-            if (result == null) {
-                throw raiseNode.raise(StopIteration, self.getReturnValue());
-            }
+            handleResult(self, result, raiseNode);
             return result;
+        }
+
+        private static void handleResult(PGenerator self, Object result, PRaiseNode raiseNode) {
+            if (result == null) {
+                Object returnValue = self.getReturnValue();
+                if (returnValue != PNone.NONE) {
+                    throw raiseNode.raise(StopIteration, returnValue);
+                } else {
+                    throw raiseNode.raise(StopIteration);
+                }
+            }
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
