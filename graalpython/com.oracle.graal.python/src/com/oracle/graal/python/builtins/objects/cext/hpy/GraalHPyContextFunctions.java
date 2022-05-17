@@ -51,11 +51,13 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
@@ -99,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Size
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -3763,6 +3766,63 @@ public abstract class GraalHPyContextFunctions {
                 callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[2], 0L, slice.getStart());
                 callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[3], 0L, slice.getStop());
                 callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[4], 0L, slice.getStep());
+                return 0;
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTypeCheckSlot extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode objNode,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @CachedLibrary(limit = "2") InteropLibrary slotLib,
+                        @CachedLibrary(limit = "2") InteropLibrary slotDefLib,
+                        @CachedLibrary(limit = "2") InteropLibrary slotFuncLib,
+                        @Cached ReadAttributeFromObjectNode readFunction,
+                        @Cached GilNode gil) throws ArityException {
+            checkArity(arguments, 3);
+            boolean mustRelease = gil.acquire();
+            try {
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object type = objNode.execute(context, arguments[1]);
+                Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, arguments[2]);
+                Object slotObj = callHelperFunctionNode.call(context, GRAAL_HPY_SLOT_GET_SLOT, slotDef);
+                HPySlot slot;
+                if (slotLib.fitsInInt(slotObj)) {
+                    try {
+                        slot = HPySlot.fromValue(slotLib.asInt(slotObj));
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    return 0;
+                }
+                if (slot == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    return 0;
+                }
+                Object methodName = slot.getAttributeKeys()[0];
+                Object methodFunctionPointer;
+                try {
+                    methodFunctionPointer = slotDefLib.readMember(slotDef, "impl");
+                } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                Object slotFunc = readFunction.execute(type, methodName);
+                if (slotFunc instanceof PBuiltinFunction) {
+                    PKeyword[] kwDefaults = ((PBuiltinFunction) slotFunc).getKwDefaults();
+                    if (kwDefaults.length > 1 && kwDefaults[0].getName() == HPyExternalFunctionNodes.KW_CALLABLE) {
+                        if (kwDefaults[1].getValue() == methodFunctionPointer) {
+                            return 1;
+                        }
+                    }
+                }
                 return 0;
             } finally {
                 gil.release(mustRelease);

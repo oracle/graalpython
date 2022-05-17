@@ -138,7 +138,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
 
-    private static final String KW_CALLABLE = "$callable";
+    public static final String KW_CALLABLE = "$callable";
     private static final String KW_CLOSURE = "$closure";
     private static final String KW_CONTEXT = "$context";
     private static final String[] KEYWORDS_HIDDEN_CALLABLE = {KW_CALLABLE, KW_CONTEXT};
