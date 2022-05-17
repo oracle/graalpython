@@ -47,6 +47,9 @@ import types
 import mx
 
 
+def hr(l):
+    print('=' * l)
+
 def get_suite(name):
     suite_name = name.lstrip('/')
     suite = mx.suite(suite_name, fatalIfMissing=False)
@@ -186,6 +189,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
         args.enterprise = sec.getboolean('enterprise', False)
         args.no_clean = sec.getboolean('no_clean', False)
+        args.rerun_with_commands = sec['rerun_with_commands']
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('bad', help="Bad commit for bisection")
@@ -193,6 +197,9 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         parser.add_argument('build_command', help="Command to run in order to build the configuration")
         parser.add_argument('benchmark_command',
                             help="Command to run in order to run the benchmark. Output needs to be in mx's format")
+        parser.add_argument('--rerun-with-commands',
+                            help="Re-run the bad and good commits with this benchmark command(s) "
+                                 "(multiple commands separated by '|')")
         parser.add_argument('--benchmark-criterion', default='BEST',
                             help="Which result parameter should be used for comparisons")
         parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
@@ -203,7 +210,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
 
     fetched_enterprise = [False]
 
-    def benchmark_callback(suite, commit):
+    def checkout_suite(suite, commit):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
@@ -223,6 +230,9 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         if args.enterprise:
             debug_str += " graal-enterprise={}".format(get_commit(get_suite('/vm-enterprise')))
         print(debug_str)
+
+    def checkout_and_build_suite(suite, commit):
+        checkout_suite(suite, commit)
         build_command = shlex.split(args.build_command)
         if not args.no_clean:
             try:
@@ -235,8 +245,11 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         retcode = mx.run(build_command, nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute the build command for {}".format(commit))
+
+    def benchmark_callback(suite, commit, bench_command=args.benchmark_command):
+        checkout_and_build_suite(suite, commit)
         output = mx.OutputCapture()
-        retcode = mx.run(shlex.split(args.benchmark_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
+        retcode = mx.run(shlex.split(bench_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute benchmark for {}".format(commit))
         match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
@@ -254,6 +267,28 @@ def _bisect_benchmark(argv, bisect_id, email_to):
     print(visualization)
     print()
     print(summary)
+
+    if args.rerun_with_commands:
+        print('\n\nRerunning the good and bad commits with extra benchmark commands:')
+        current_result = result
+        current_suite = primary_suite
+        while current_result.subresults and current_result.bad_index in current_result.subresults:
+            downstream_suite = get_downstream_suite(current_suite)
+            next_result = current_result.subresults[current_result.bad_index]
+            if not next_result.good_commit or not next_result.bad_commit:
+                print("Next downstream suite {} does not have both good and bad commits".format(downstream_suite.name))
+                break
+            print("Recursing to downstream suite: {}, commit: {}".format(downstream_suite.name, current_result.bad_commit))
+            checkout_suite(current_suite, current_result.bad_commit)
+            current_result = next_result
+            current_suite = downstream_suite
+        for commit in [current_result.good_commit, current_result.bad_commit]:
+            hr(80)
+            print("Commit: {}".format(commit))
+            checkout_and_build_suite(current_suite, commit)
+            for cmd in args.rerun_with_commands.split("|"):
+                hr(40)
+                mx.run(shlex.split(cmd.strip()), nonZeroIsFatal=False)
 
     send_email(
         bisect_id,
