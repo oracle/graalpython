@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -88,21 +89,26 @@ public abstract class HashingCollectionNodes {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class SetItemNode extends PNodeWithContext {
-        public abstract void execute(VirtualFrame frame, PHashingCollection c, Object key, Object value);
+        public abstract void execute(Frame frame, PHashingCollection c, Object key, Object value);
 
         @Specialization(limit = "4")
-        static void doSetItem(VirtualFrame frame, PHashingCollection c, Object key, Object value,
+        static void doSetItem(Frame frame, PHashingCollection c, Object key, Object value,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = c.getDictStorage();
-            storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
+            storage = lib.setItemWithFrame(storage, key, value, hasFrame, (VirtualFrame) frame);
             c.setDictStorage(storage);
         }
 
         public static SetItemNode create() {
             return SetItemNodeGen.create();
+        }
+
+        public static SetItemNode getUncached() {
+            return SetItemNodeGen.getUncached();
         }
     }
 

@@ -111,6 +111,7 @@ public abstract class ErrorMessages {
     public static final String BOOL_SHOULD_RETURN_BOOL = "__bool__ should return bool, returned %p";
     public static final String BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = "both points must have the same number of dimensions";
     public static final String BUFFER_INDICES_MUST_BE_INTS = "buffer indices must be integers, not %p";
+    public static final String BYTECODE_VERSION_MISMATCH = "Bytecode version mismatch, expected %d actual %d";
     public static final String BYTE_STR_IS_TOO_LARGE = "byte string is too large";
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
@@ -409,6 +410,7 @@ public abstract class ErrorMessages {
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
+    public static final String UNBOUNDFREEVAR = "cannot access free variable '%s' where it is not associated with a value in enclosing scope";
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String LOST_SYSDISPLAYHOOK = "lost sys.displayhook";
@@ -504,6 +506,7 @@ public abstract class ErrorMessages {
     public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during %s formatting";
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
+    public static final String NOT_ENOUGH_VALUES_TO_UNPACK_EX = "not enough values to unpack (expected at least %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
     public static final String NUMBER_IS_REQUIRED = "a number is required";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
@@ -755,6 +758,7 @@ public abstract class ErrorMessages {
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
     public static final String RES_O_O_RANGE = "%s result out of range";
     public static final String FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = "float too large to pack with %s format";
+    public static final String CANNOT_UNPACK_NON_ITERABLE = "cannot unpack non-iterable %p object";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";

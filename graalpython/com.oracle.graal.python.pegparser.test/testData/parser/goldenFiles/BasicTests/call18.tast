@@ -1,0 +1,20 @@
+Module[0, 35]
+    FunctionDef[0, 35]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[7, 10] arg
+            Defaults:
+                List[13, 18]
+                    Values:
+                        LONG[14, 15] Value: 1
+                        LONG[16, 17] Value: 2
+        ---- Function body of fn ----
+        Call[21, 35]
+            Target: Name[21, 24] Value: "foo"
+            KWArgs:
+                KeywordTy[25, 34]
+                    arg: List[31, 34]
+                        Values:
+                            LONG[32, 33] Value: 1
+        ---- End of fn function ----

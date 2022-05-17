@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -67,5 +67,12 @@ public class ImportTests {
         String source = "import __future__\n" + //
                         "print(__future__.__file__)\n";
         assertPrintContains("__future__.py\n", source);
+    }
+
+    @Test
+    public void testFromImport() {
+        String souce = "from math import sqrt, sin as sine\n" +
+                        "print(sqrt.__name__, sine.__name__)\n";
+        assertPrints("sqrt sin\n", souce);
     }
 }

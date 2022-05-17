@@ -1905,6 +1905,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             return res;
         }
+
+        public static FormatNode create() {
+            return BuiltinFunctionsFactory.FormatNodeFactory.create();
+        }
     }
 
     // ascii(object)

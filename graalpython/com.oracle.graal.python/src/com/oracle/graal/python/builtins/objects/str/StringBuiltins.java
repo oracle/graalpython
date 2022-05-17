@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -294,57 +293,8 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __REPR__, self));
+            return PString.repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __REPR__, self));
         }
-
-        @TruffleBoundary
-        static String repr(String self) {
-            boolean hasSingleQuote = self.contains("'");
-            boolean hasDoubleQuote = self.contains("\"");
-            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
-
-            StringBuilder str = new StringBuilder(self.length() + 2);
-            byte[] buffer = new byte[12];
-            str.append(useDoubleQuotes ? '"' : '\'');
-            int offset = 0;
-            while (offset < self.length()) {
-                int codepoint = self.codePointAt(offset);
-                switch (codepoint) {
-                    case '"':
-                        if (useDoubleQuotes) {
-                            str.append("\\\"");
-                        } else {
-                            str.append('\"');
-                        }
-                        break;
-                    case '\'':
-                        if (useDoubleQuotes) {
-                            str.append('\'');
-                        } else {
-                            str.append("\\'");
-                        }
-                        break;
-                    case '\\':
-                        str.append("\\\\");
-                        break;
-                    default:
-                        if (StringUtils.isPrintable(codepoint)) {
-                            str.appendCodePoint(codepoint);
-                        } else {
-                            int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
-                            str.ensureCapacity(str.length() + len);
-                            for (int i = 0; i < len; i++) {
-                                str.append((char) buffer[i]);
-                            }
-                        }
-                        break;
-                }
-                offset += Character.charCount(codepoint);
-            }
-            str.append(useDoubleQuotes ? '"' : '\'');
-            return str.toString();
-        }
-
     }
 
     @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)

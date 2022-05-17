@@ -1,0 +1,21 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (foo)
+000000         2 COLLECTION_FROM_STACK             0    (Object[])
+000000         4 LOAD_STRING                       0    ('a')
+000006         6 LOAD_BYTE                         1
+000000         8 COLLECTION_FROM_STACK             2    (dict)
+000011        10 LOAD_NAME                         1    (a)
+000000        12 KWARGS_DICT_MERGE
+000000        13 LOAD_STRING                       1    ('b')
+000016        15 LOAD_BYTE                         2
+000000        17 COLLECTION_FROM_STACK             2    (dict)
+000000        19 KWARGS_DICT_MERGE
+000021        20 LOAD_NAME                         2    (b)
+000000        22 KWARGS_DICT_MERGE
+000000        23 LOAD_STRING                       2    ('c')
+000026        25 LOAD_BYTE                         3
+000000        27 COLLECTION_FROM_STACK             2    (dict)
+000000        29 KWARGS_DICT_MERGE
+000000        30 COLLECTION_FROM_COLLECTION        0    (PKeyword[])
+000000        32 CALL_FUNCTION_KW
+000000        33 RETURN_VALUE

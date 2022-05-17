@@ -1,0 +1,6 @@
+Module[0, 12]
+    Call[0, 12]
+        Target: Name[0, 3] Value: "foo"
+        KWArgs:
+            KeywordTy[4, 11]
+                arg: LONG[10, 11] Value: 1

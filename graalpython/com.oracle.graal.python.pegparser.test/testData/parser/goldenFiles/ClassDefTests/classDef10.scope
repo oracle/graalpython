@@ -1,0 +1,18 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      FalseRec: [DefLocal, Local]
+      test: [DefLocal, Local]
+    Scope test Function
+        Varnames: arg
+        Symbols:
+            arg: [DefParam, Local]
+    Scope FalseRec Class
+        Symbols:
+            test: [DefLocal, Local]
+      Scope test Function
+            Varnames: self, arg
+            Symbols:
+                  arg: [DefParam, Use, Local]
+                  self: [DefParam, Local]
+                  test: [Use, GlobalImplicit]

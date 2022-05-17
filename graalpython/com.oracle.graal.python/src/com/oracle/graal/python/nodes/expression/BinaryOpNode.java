@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,12 +30,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "leftNode", type = ExpressionNode.class)
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
-public abstract class BinaryOpNode extends ExpressionNode {
+public abstract class BinaryOpNode extends ExpressionNode implements BinaryOp {
     public abstract ExpressionNode getLeftNode();
 
     public abstract ExpressionNode getRightNode();
 
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(
+    @Override
     public abstract Object executeObject(VirtualFrame frame, Object left, Object right);
 }

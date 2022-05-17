@@ -1,0 +1,14 @@
+ScopeEnvironment
+  Scope null Module
+    Scope listcomp Function
+        Flags: [IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            a: [DefLocal, Use, DefCompIter, Local]
+    Scope listcomp Function
+        Flags: [IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            b: [DefLocal, Use, DefCompIter, Local]

@@ -1,0 +1,32 @@
+Module[0, 128]
+    ClassDef[0, 128] Test
+        ---- Class body of Test ----
+        FunctionDef[18, 65]
+            Name:fn1
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[26, 32] format
+            ---- Function body of fn1 ----
+            Return[43, 65] 
+                BinOp[51, 64]
+                    Op: MOD
+                    LHS: Name[51, 57] Value: "format"
+                    RHS: Name[60, 64] Value: "args"
+            ---- End of fn1 function ----
+        FunctionDef[70, 128]
+            Name:fn2
+            ArgumentsTy[0, 0]
+                VarArg: ArgTy[79, 83] args
+                Kwarg: ArgTy[87, 91] kwds
+            ---- Function body of fn2 ----
+            Return[102, 128] 
+                Call[109, 128]
+                    Target: Name[109, 113] Value: "self"
+                    Args:
+                        Starred[114, 119]
+                             Expr: Name[115, 119] Value: "args"
+                    KWArgs:
+                        KeywordTy[121, 127]
+                            null: Name[123, 127] Value: "kwds"
+            ---- End of fn2 function ----
+        ---- End of Test class ----

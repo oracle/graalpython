@@ -1,0 +1,9 @@
+Module[0, 17]
+    FunctionDef[0, 17]
+        Name:fn
+        ---- Function body of fn ----
+        AugAssign[11, 17]
+            Op: ADD
+            LHS: Name[11, 12] Value: "x" Store
+            RHS: LONG[16, 17] Value: 3
+        ---- End of fn function ----

@@ -1,0 +1,50 @@
+Module[0, 302]
+    FunctionDef[0, 302]
+        Name:format_exception_only
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[26, 30] self
+        ---- Function body of format_exception_only ----
+        If[41, 92]
+            Test: 
+                Call[44, 47]
+                    Target: Name[44, 45] Value: "a"
+            Then:
+                Yield[61, 73]
+                    RAW[67, 73] Value: neco
+                Return[86, 92]
+        If[101, 278]
+            Test: 
+                Compare[104, 123]
+                    LHS: Name[104, 111] Value: "badline"
+                    Op: ISNOT
+                    RHS: NONE[119, 123] Value: null
+            Then:
+                Yield[137, 147]
+                    RAW[143, 147] Value: 
+
+                If[160, 278]
+                    Test: 
+                        Compare[163, 181]
+                            LHS: Name[163, 169] Value: "offset"
+                            Op: ISNOT
+                            RHS: NONE[177, 181] Value: null
+                    Then:
+                        Assign[199, 245]
+                            LHS: Name[199, 209] Value: "caretspace" Store
+                            RHS: 
+                                GeneratorExp[212, 245]
+                                    Element: 
+                                        Call[213, 224]
+                                            Target: 
+                                                Attribute[213, 214] 
+                                                    Receiver: Name[213, 214] Value: "c"
+                                                    Attr: isspace
+                                    ComprehensionTy[225, 244]
+                                        Target: Name[229, 230] Value: "c" Store
+                                        Iterator: Name[234, 244] Value: "caretspace"
+                        Yield[262, 278]
+                            Name[268, 278] Value: "caretspace"
+        Yield[287, 302]
+            RAW[293, 302] Value: message
+        ---- End of format_exception_only function ----

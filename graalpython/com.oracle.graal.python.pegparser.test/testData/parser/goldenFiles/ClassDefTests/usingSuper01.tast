@@ -1,0 +1,17 @@
+Module[0, 58]
+    ClassDef[0, 58] X
+        ---- Class body of X ----
+        FunctionDef[13, 58]
+            Name:run
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[21, 25] self
+            ---- Function body of run ----
+            FunctionDef[34, 58]
+                Name:f
+                ---- Function body of f ----
+                Call[51, 58]
+                    Target: Name[51, 56] Value: "super"
+                ---- End of f function ----
+            ---- End of run function ----
+        ---- End of X class ----

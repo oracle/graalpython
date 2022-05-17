@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
@@ -236,6 +237,54 @@ public final class PString extends PSequence {
             sb.append(arg);
         }
         return sb.toString();
+    }
+
+    @TruffleBoundary
+    public static String repr(String self) {
+        boolean hasSingleQuote = self.contains("'");
+        boolean hasDoubleQuote = self.contains("\"");
+        boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+
+        StringBuilder str = new StringBuilder(self.length() + 2);
+        byte[] buffer = new byte[12];
+        str.append(useDoubleQuotes ? '"' : '\'');
+        int offset = 0;
+        while (offset < self.length()) {
+            int codepoint = self.codePointAt(offset);
+            switch (codepoint) {
+                case '"':
+                    if (useDoubleQuotes) {
+                        str.append("\\\"");
+                    } else {
+                        str.append('\"');
+                    }
+                    break;
+                case '\'':
+                    if (useDoubleQuotes) {
+                        str.append('\'');
+                    } else {
+                        str.append("\\'");
+                    }
+                    break;
+                case '\\':
+                    str.append("\\\\");
+                    break;
+                default:
+                    if (StringUtils.isPrintable(codepoint)) {
+                        str.appendCodePoint(codepoint);
+                    } else {
+                        int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
+                        str.ensureCapacity(str.length() + len);
+                        for (int i = 0; i < len; i++) {
+                            str.append((char) buffer[i]);
+                        }
+                    }
+                    break;
+            }
+            offset += Character.charCount(codepoint);
+        }
+        str.append(useDoubleQuotes ? '"' : '\'');
+        return str.toString();
     }
 
     @TruffleBoundary(allowInlining = true)

@@ -1,0 +1,12 @@
+Module[0, 30]
+    FunctionDef[0, 30]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[7, 8] a
+        ---- Function body of fn ----
+        Yield[13, 20]
+            Name[19, 20] Value: "a"
+        Yield[23, 30]
+            LONG[29, 30] Value: 2
+        ---- End of fn function ----

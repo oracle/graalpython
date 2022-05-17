@@ -1,0 +1,47 @@
+Module[0, 208]
+    ClassDef[0, 208] Counter
+        Bases:
+            Name[14, 18] Value: "dict"
+        ---- Class body of Counter ----
+        FunctionDef[25, 208]
+            Name:_keep_positive
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[44, 48] self
+            ---- Function body of _keep_positive ----
+            Assign[59, 128]
+                LHS: Name[59, 70] Value: "nonpositive" Store
+                RHS: 
+                    ListComp[73, 128]
+                        Element: Name[74, 78] Value: "elem"
+                        ComprehensionTy[79, 127]
+                            Target: 
+                                Tuple[83, 94] Context: Store
+                                    Values:
+                                        Name[83, 87] Value: "elem" Store
+                                        Name[89, 94] Value: "count" Store
+                            Iterator: 
+                                Call[98, 110]
+                                    Target: 
+                                        Attribute[98, 102] 
+                                            Receiver: Name[98, 102] Value: "self"
+                                            Attr: items
+                            Ifs:
+                                UnaryOp[114, 127]
+                                    Op: NOT
+                                    Value: Compare[118, 127]
+                                        LHS: Name[118, 123] Value: "count"
+                                        Op: GT
+                                        RHS: LONG[126, 127] Value: 0
+            For[137, 188]
+                Target: Name[141, 145] Value: "elem" Store
+                Iter: Name[149, 160] Value: "nonpositive"
+                Body:
+                    Delete[174, 188]
+                        Targets:
+                            Subscript[178, 182] Context: Delete
+                                Slice: Name[183, 187] Value: "elem"
+                                Value: Name[178, 182] Value: "self"
+            Return[197, 208] Name[204, 208] Value: "self"
+            ---- End of _keep_positive function ----
+        ---- End of Counter class ----

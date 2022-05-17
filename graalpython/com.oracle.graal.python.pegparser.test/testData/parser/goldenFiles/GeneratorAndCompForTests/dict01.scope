@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      range: [Use, GlobalImplicit]
+    Scope dictcomp Function
+        Flags: [IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            x: [DefLocal, Use, DefCompIter, Local]

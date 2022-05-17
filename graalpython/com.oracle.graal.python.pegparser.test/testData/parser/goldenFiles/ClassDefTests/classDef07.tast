@@ -1,0 +1,24 @@
+Module[0, 106]
+    ClassDef[0, 106] OrderedDict
+        Bases:
+            Name[18, 22] Value: "dict"
+        ---- Class body of OrderedDict ----
+        FunctionDef[27, 106]
+            Name:setup
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[37, 49] dict_setitem
+                Defaults:
+                    Attribute[52, 56] 
+                        Receiver: Name[52, 56] Value: "dict"
+                        Attr: __setitem__
+            ---- Function body of setup ----
+            Call[75, 89]
+                Target: Name[75, 87] Value: "dict_setitem"
+            Call[94, 106]
+                Target: 
+                    Attribute[94, 98] 
+                        Receiver: Name[94, 98] Value: "dict"
+                        Attr: clear
+            ---- End of setup function ----
+        ---- End of OrderedDict class ----

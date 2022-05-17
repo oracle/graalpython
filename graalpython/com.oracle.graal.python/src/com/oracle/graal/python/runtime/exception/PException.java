@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -88,6 +90,7 @@ public final class PException extends AbstractTruffleException {
     private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
     private Node catchLocation;
+    private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
 
@@ -181,6 +184,10 @@ public final class PException extends AbstractTruffleException {
         return catchLocation;
     }
 
+    public int getCatchBci() {
+        return catchBci;
+    }
+
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
@@ -265,15 +272,20 @@ public final class PException extends AbstractTruffleException {
      *
      * @param frame The current frame of the exception handler.
      */
-    public void setCatchingFrameReference(VirtualFrame frame, Node catchLocation) {
+    public void setCatchingFrameReference(Frame frame, Node catchLocation) {
         setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+    }
+
+    public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
+        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+        this.catchBci = catchBci;
     }
 
     /**
      * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference, Node)} and @{link
      * {@link #getEscapedException()}}
      */
-    public PBaseException setCatchingFrameAndGetEscapedException(VirtualFrame frame, Node catchLocation) {
+    public PBaseException setCatchingFrameAndGetEscapedException(Frame frame, Node catchLocation) {
         setCatchingFrameReference(frame, catchLocation);
         return this.getEscapedException();
     }

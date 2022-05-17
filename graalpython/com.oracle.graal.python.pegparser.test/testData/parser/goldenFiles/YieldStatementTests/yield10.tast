@@ -1,0 +1,8 @@
+Module[0, 24]
+    FunctionDef[0, 24]
+        Name:f
+        ---- Function body of f ----
+        Return[9, 15]
+        Yield[17, 24]
+            LONG[23, 24] Value: 1
+        ---- End of f function ----

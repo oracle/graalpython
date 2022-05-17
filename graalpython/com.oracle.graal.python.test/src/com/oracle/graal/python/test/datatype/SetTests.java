@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,5 +54,27 @@ public class SetTests {
                         "s.add(4)\n" + //
                         "print(s)";
         assertPrints("{1, 2, 3}\n{1, 2, 3, 4}\n", source);
+    }
+
+    @Test
+    public void setLiteral1() {
+        String source = "print({1, 2, 3})\n";
+        assertPrints("{1, 2, 3}\n", source);
+    }
+
+    @Test
+    public void setLiteral2() {
+        String source = "s1 = {1, 2, 3}\n" +
+                        "s2 = {*s1, 4}\n" +
+                        "print(s2)\n";
+        assertPrints("{1, 2, 3, 4}\n", source);
+    }
+
+    @Test
+    public void setLiteral3() {
+        String source = "s1 = {1, 2, 3}\n" +
+                        "s2 = {0, *s1, 4}\n" +
+                        "print(s2)\n";
+        assertPrints("{0, 1, 2, 3, 4}\n", source);
     }
 }

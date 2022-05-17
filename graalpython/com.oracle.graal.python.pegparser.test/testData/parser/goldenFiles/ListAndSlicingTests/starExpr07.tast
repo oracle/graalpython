@@ -1,0 +1,11 @@
+Module[0, 16]
+    Assign[0, 16]
+        LHS: 
+            List[0, 10] Context: Store
+                Values:
+                    Name[1, 2] Value: "a" Store
+                    Starred[4, 6]
+                         Context: Store
+                         Expr: Name[5, 6] Value: "b" Store
+                    Name[8, 9] Value: "c" Store
+        RHS: Name[13, 16] Value: "seq"

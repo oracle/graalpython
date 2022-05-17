@@ -1,0 +1,9 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      avg: [DefLocal, Local]
+    Scope avg Function
+        Varnames: marks
+        Symbols:
+            len: [Use, GlobalImplicit]
+            marks: [DefParam, Use, Local]

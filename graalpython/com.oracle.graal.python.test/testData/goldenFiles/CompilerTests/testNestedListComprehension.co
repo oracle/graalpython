@@ -1,0 +1,33 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (<listcomp>)
+000032         3 LOAD_NAME                         0    (range)
+000038         5 LOAD_BYTE                         3
+000032         7 CALL_FUNCTION                     1
+000000         9 GET_ITER
+000000        10 CALL_FUNCTION                     1
+000000        12 RETURN_VALUE
+
+Disassembly of <listcomp>:
+000000         0 COLLECTION_FROM_STACK             0    (list)
+000000         2 LOAD_FAST                         0    (.0)
+000000   >>    4 FOR_ITER                          20   (to 24)
+000027         6 STORE_FAST                        1    (y)
+000001         8 MAKE_FUNCTION                     0    (<listcomp>.<listcomp>)
+000013        11 LOAD_GLOBAL                       0    (range)
+000019        13 LOAD_BYTE                         5
+000013        15 CALL_FUNCTION                     1
+000001        17 GET_ITER
+000001        18 CALL_FUNCTION                     1
+000000        20 ADD_TO_COLLECTION                 2    (list)
+000000        22 JUMP_BACKWARD                     18   (to 4)
+000000   >>   24 RETURN_VALUE
+
+Disassembly of <listcomp>.<listcomp>:
+000001         0 COLLECTION_FROM_STACK             0    (list)
+000001         2 LOAD_FAST                         0    (.0)
+000001   >>    4 FOR_ITER                          10   (to 14)
+000008         6 STORE_FAST                        1    (x)
+000002         8 LOAD_FAST                         1    (x)
+000001        10 ADD_TO_COLLECTION                 2    (list)
+000001        12 JUMP_BACKWARD                     8    (to 4)
+000001   >>   14 RETURN_VALUE

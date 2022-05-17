@@ -1,0 +1,28 @@
+Module[0, 54]
+    ClassDef[0, 28] Point
+        ---- Class body of Point ----
+        Assign[15, 20]
+            LHS: Name[15, 16] Value: "x" Store
+            RHS: LONG[19, 20] Value: 0
+        Assign[23, 28]
+            LHS: Name[23, 24] Value: "y" Store
+            RHS: LONG[27, 28] Value: 0
+        ---- End of Point class ----
+    Assign[29, 40]
+        LHS: Name[29, 30] Value: "p" Store
+        RHS: 
+            Call[33, 40]
+                Target: Name[33, 38] Value: "Point"
+    Assign[41, 54]
+        LHS: Name[41, 42] Value: "a" Store
+        RHS: 
+            BinOp[45, 54]
+                Op: ADD
+                LHS: 
+                    Attribute[45, 46] 
+                        Receiver: Name[45, 46] Value: "p"
+                        Attr: x
+                RHS: 
+                    Attribute[51, 52] 
+                        Receiver: Name[51, 52] Value: "p"
+                        Attr: y

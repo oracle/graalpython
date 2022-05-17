@@ -1,0 +1,11 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      merge: [DefLocal, Local]
+    Scope merge Function
+        Varnames: sequences
+        Symbols:
+            candidate: [Use, GlobalImplicit]
+            s1: [DefLocal, Local]
+            s2: [DefLocal, Use, Local]
+            sequences: [DefParam, Use, Local]

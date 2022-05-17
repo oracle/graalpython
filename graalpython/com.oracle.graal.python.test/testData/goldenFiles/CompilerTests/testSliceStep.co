@@ -1,0 +1,8 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (a)
+000002         2 LOAD_BYTE                         3
+000004         4 LOAD_BYTE                         9
+000006         6 LOAD_BYTE                         2
+000002         8 BUILD_SLICE                       3
+000000        10 BINARY_SUBSCR
+000000        11 RETURN_VALUE

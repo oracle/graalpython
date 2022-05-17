@@ -1,0 +1,17 @@
+Module[0, 26]
+    FunctionDef[0, 26]
+        Name:fn
+        ---- Function body of fn ----
+        Assign[12, 26]
+            LHS: 
+                Attribute[12, 13] 
+                    Receiver: 
+                        Attribute[12, 13] 
+                            Receiver: 
+                                Attribute[12, 13] 
+                                    Receiver: Name[12, 13] Value: "a"
+                                    Attr: b
+                            Attr: c
+                    Attr: d
+            RHS: LONG[22, 26] Value: 1222
+        ---- End of fn function ----

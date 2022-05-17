@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -59,7 +59,9 @@ SUBGROUP_GRAAL_PYTHON = "graalpython"
 
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+CONFIGURATION_DEFAULT_BYTECODE = "default-bytecode"
 CONFIGURATION_INTERPRETER = "interpreter"
+CONFIGURATION_INTERPRETER_BYTECODE = "interpreter-bytecode"
 CONFIGURATION_NATIVE_INTERPRETER = "native-interpreter"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
 CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"

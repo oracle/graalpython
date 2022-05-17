@@ -1,0 +1,16 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (gen)
+000000         3 STORE_NAME                        0    (gen)
+000000         5 LOAD_NONE
+000000         6 RETURN_VALUE
+
+Disassembly of gen:
+Flags: CO_GENERATOR
+000022         0 LOAD_FAST                         0    (a)
+000026         2 LOAD_BYTE                         1
+000022         4 BINARY_OP                         0    (ADD)
+000016         6 YIELD_VALUE
+000016         7 RESUME_YIELD
+000016         8 POP_TOP
+000000         9 LOAD_NONE
+000000        10 RETURN_VALUE

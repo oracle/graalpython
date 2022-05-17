@@ -1,0 +1,16 @@
+Module[0, 16]
+    Subscript[0, 1]
+        Slice: 
+            Slice[4, 15]
+                Start: 
+                    Call[4, 7]
+                        Target: Name[4, 5] Value: "b"
+                Stop: 
+                    Call[8, 11]
+                        Target: Name[8, 9] Value: "c"
+                Step: 
+                    Call[12, 15]
+                        Target: Name[12, 13] Value: "d"
+        Value: 
+            Call[0, 3]
+                Target: Name[0, 1] Value: "a"

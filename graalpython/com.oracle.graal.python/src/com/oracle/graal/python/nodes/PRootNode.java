@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,11 @@ package com.oracle.graal.python.nodes;
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -204,6 +204,7 @@ public abstract class PRootNode extends RootNode {
         this.code = data;
     }
 
+    @TruffleBoundary
     public final byte[] getCode() {
         if (code != null) {
             return code;
@@ -211,12 +212,7 @@ public abstract class PRootNode extends RootNode {
         return code = extractCode();
     }
 
-    @TruffleBoundary
-    private byte[] extractCode() {
-        if (this instanceof PClosureRootNode) {
-            Python3Core core = PythonContext.get(this);
-            return core.getSerializer().serialize(core, this);
-        }
+    protected byte[] extractCode() {
         // no code for non-user functions
         return PythonUtils.EMPTY_BYTE_ARRAY;
     }

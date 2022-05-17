@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      walk_stack: [DefLocal, Local]
+    Scope walk_stack Function
+        Flags: [IsGenerator]
+        Varnames: f
+        Symbols:
+            a: [Use, GlobalImplicit]
+            f: [DefLocal, DefParam, Use, Local]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -167,8 +169,8 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
-    protected static boolean mayBeEmpty(LazyTraceback tb) {
-        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation();
+    protected boolean mayBeEmpty(LazyTraceback tb) {
+        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation() || PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
     }
 
     public static GetTracebackNode create() {

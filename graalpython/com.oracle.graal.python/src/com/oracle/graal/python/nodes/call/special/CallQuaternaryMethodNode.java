@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
     public static CallQuaternaryMethodNode create() {
         return CallQuaternaryMethodNodeGen.create();
+    }
+
+    public static CallQuaternaryMethodNode getUncached() {
+        return CallQuaternaryMethodNodeGen.getUncached();
     }
 
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);

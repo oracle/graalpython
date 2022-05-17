@@ -1,0 +1,33 @@
+Module[0, 64]
+    Assign[0, 64]
+        LHS: Name[0, 3] Value: "fib" Store
+        RHS: 
+            DictComp[6, 64]
+                Key: NamedExpr[8, 14]
+                    Target: Name[8, 9] Value: "c" Store
+                    Value: Name[13, 14] Value: "a"
+                Value: BinOp[17, 44]
+                    Op: SUB
+                    LHS: 
+                        BinOp[17, 40]
+                            Op: ADD
+                            LHS: 
+                                NamedExpr[18, 24]
+                                    Target: Name[18, 19] Value: "a" Store
+                                    Value: Name[23, 24] Value: "b"
+                            RHS: 
+                                NamedExpr[29, 39]
+                                    Target: Name[29, 30] Value: "b" Store
+                                    Value: 
+                                        BinOp[34, 39]
+                                            Op: ADD
+                                            LHS: Name[34, 35] Value: "a"
+                                            RHS: Name[38, 39] Value: "c"
+                    RHS: Name[43, 44] Value: "b"
+                ComprehensionTy[45, 63]
+                    Target: Name[49, 51] Value: "__" Store
+                    Iterator: 
+                        Call[55, 63]
+                            Target: Name[55, 60] Value: "range"
+                            Args:
+                                LONG[61, 62] Value: 6

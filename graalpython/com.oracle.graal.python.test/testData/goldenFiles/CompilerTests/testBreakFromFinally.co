@@ -1,0 +1,41 @@
+Disassembly of <module>:
+000009         0 LOAD_NAME                         0    (range)
+000015         2 LOAD_BYTE                         10
+000009         4 CALL_FUNCTION                     1
+000000         6 GET_ITER
+000000   >>    7 FOR_ITER                          56   (to 63)
+000004         9 STORE_NAME                        1    (i)
+000034        11 LOAD_NAME                         1    (i)
+000031        13 POP_AND_JUMP_IF_FALSE             15   (to 28)
+000077        15 LOAD_NAME                         2    (print)
+000083        17 LOAD_STRING                       0    ('finally')
+000077        19 CALL_FUNCTION                     1
+000077        21 POP_TOP
+000098        22 POP_TOP
+000098        23 JUMP_FORWARD                      40   (to 63)
+000098        25 POP_TOP
+000098        26 JUMP_FORWARD                      37   (to 63)
+000053   >>   28 LOAD_NAME                         2    (print)
+000059        30 LOAD_NAME                         1    (i)
+000053        32 CALL_FUNCTION                     1
+000053        34 POP_TOP
+000053        35 JUMP_FORWARD                      16   (to 51)
+000053        37 PUSH_EXC_INFO                                                           (exc handler 11 - 15; stack: 1 | exc handler 28 - 37; stack: 1)
+000077        38 LOAD_NAME                         2    (print)
+000083        40 LOAD_STRING                       0    ('finally')
+000077        42 CALL_FUNCTION                     1
+000077        44 POP_TOP
+000098        45 POP_EXCEPT
+000098        46 POP_TOP
+000098        47 POP_TOP
+000098        48 JUMP_FORWARD                      15   (to 63)
+000098        50 END_EXC_HANDLER                                                         (exc handler 38 - 50; stack: 2)
+000077   >>   51 LOAD_NAME                         2    (print)
+000083        53 LOAD_STRING                       0    ('finally')
+000077        55 CALL_FUNCTION                     1
+000077        57 POP_TOP
+000098        58 POP_TOP
+000098        59 JUMP_FORWARD                      4    (to 63)
+000098        61 JUMP_BACKWARD                     54   (to 7)
+000098   >>   63 LOAD_NONE
+000098        64 RETURN_VALUE

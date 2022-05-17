@@ -1,0 +1,14 @@
+Module[0, 24]
+    GeneratorExp[0, 24]
+        Element: 
+            BinOp[1, 4]
+                Op: MULT
+                LHS: Name[1, 2] Value: "x"
+                RHS: Name[3, 4] Value: "x"
+        ComprehensionTy[5, 23]
+            Target: Name[9, 10] Value: "x" Store
+            Iterator: 
+                Call[14, 23]
+                    Target: Name[14, 19] Value: "range"
+                    Args:
+                        LONG[20, 22] Value: 10

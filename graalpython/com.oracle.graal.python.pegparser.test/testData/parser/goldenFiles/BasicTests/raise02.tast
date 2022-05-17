@@ -1,0 +1,3 @@
+Module[0, 15]
+    Raise[0, 15]
+        Exc: Name[6, 15] Value: "NameError"

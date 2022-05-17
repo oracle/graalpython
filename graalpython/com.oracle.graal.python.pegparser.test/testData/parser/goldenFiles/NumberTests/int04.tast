@@ -1,0 +1,8 @@
+Module[0, 7]
+    Compare[0, 7]
+        LHS: Name[0, 1] Value: "h"
+        Op: EQ
+        RHS: 
+            UnaryOp[5, 7]
+                Op: SUB
+                Value: LONG[6, 7] Value: 1

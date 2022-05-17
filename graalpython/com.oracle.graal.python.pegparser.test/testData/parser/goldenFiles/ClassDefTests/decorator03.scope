@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      C: [DefLocal, Local]
+      object: [Use, GlobalImplicit]
+    Scope C Class
+        Symbols:
+            foo: [DefLocal, Local]
+            staticmethod: [Use, GlobalImplicit]
+      Scope foo Function

@@ -1,0 +1,21 @@
+Module[0, 67]
+    FunctionDef[0, 67]
+        Name:test
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[9, 13] self
+                ArgTy[15, 18] msg
+                ArgTy[20, 26] offset
+            Defaults:
+                LONG[27, 28] Value: 0
+        ---- Function body of test ----
+        Return[35, 67] 
+            Call[42, 67]
+                Target: Name[42, 46] Value: "test"
+                Args:
+                    Name[47, 50] Value: "msg"
+                    Attribute[52, 56] 
+                        Receiver: Name[52, 56] Value: "self"
+                        Attr: string
+                    LONG[65, 66] Value: 1
+        ---- End of test function ----

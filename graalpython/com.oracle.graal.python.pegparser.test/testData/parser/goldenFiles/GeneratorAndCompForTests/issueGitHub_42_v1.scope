@@ -1,0 +1,14 @@
+ScopeEnvironment
+  Scope null Module
+    Scope genexp Function
+        Flags: [IsGenerator, IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            s: [DefLocal, Use, DefCompIter, Local]
+    Scope listcomp Function
+        Flags: [IsComprehension]
+        Varnames: .0
+        Symbols:
+            .0: [DefParam, Local]
+            e: [DefLocal, Use, DefCompIter, Local]

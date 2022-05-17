@@ -1,0 +1,9 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (<lambda>)
+000000         3 RETURN_VALUE
+
+Disassembly of <lambda>:
+000017         0 LOAD_FAST                         1    (args)
+000022         2 LOAD_FAST                         0    (x)
+000017         4 BINARY_SUBSCR
+000000         5 RETURN_VALUE

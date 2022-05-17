@@ -1,0 +1,10 @@
+Module[0, 68]
+    Try[0, 3]
+        Body:
+            Raise[8, 31]
+                Exc: Name[14, 31] Value: "KeyboardInterrupt"
+        Finally:
+            Call[44, 68]
+                Target: Name[44, 49] Value: "print"
+                Args:
+                    RAW[50, 67] Value: Goodbye, world!

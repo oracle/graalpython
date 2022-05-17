@@ -113,5 +113,9 @@ public abstract class TupleNodes {
         public static ConstructTupleNode create() {
             return TupleNodesFactory.ConstructTupleNodeGen.create();
         }
+
+        public static ConstructTupleNode getUncached() {
+            return TupleNodesFactory.ConstructTupleNodeGen.getUncached();
+        }
     }
 }

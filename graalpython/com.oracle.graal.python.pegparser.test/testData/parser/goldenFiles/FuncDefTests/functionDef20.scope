@@ -1,0 +1,11 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      __init__: [DefLocal, Local]
+    Scope __init__ Function
+        Varnames: self, max_size, ctx, pending_work_items
+        Symbols:
+            ctx: [DefParam, Local]
+            max_size: [DefParam, Local]
+            pending_work_items: [DefParam, Local]
+            self: [DefParam, Local]

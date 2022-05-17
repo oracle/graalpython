@@ -1,0 +1,41 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (print)
+000006         2 LOAD_STRING                       0    ('before')
+000000         4 CALL_FUNCTION                     1
+000000         6 POP_TOP
+000023         7 LOAD_NAME                         0    (print)
+000029         9 LOAD_STRING                       1    ('try')
+000023        11 CALL_FUNCTION                     1
+000023        13 POP_TOP
+000023        14 JUMP_FORWARD                      38   (to 52)
+000023        16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
+000043        17 LOAD_NAME                         1    (TypeError)
+000036        19 MATCH_EXC_OR_JUMP                 15   (to 34)
+000036        21 UNWRAP_EXC
+000036        22 STORE_NAME                        2    (e)
+000061        24 LOAD_NAME                         0    (print)
+000067        26 LOAD_STRING                       2    ('except1')
+000061        28 CALL_FUNCTION                     1
+000061        30 POP_TOP
+000061        31 POP_EXCEPT
+000061        32 JUMP_FORWARD                      29   (to 61)
+000085   >>   34 LOAD_NAME                         3    (ValueError)
+000078        36 MATCH_EXC_OR_JUMP                 15   (to 51)
+000078        38 UNWRAP_EXC
+000078        39 STORE_NAME                        2    (e)
+000104        41 LOAD_NAME                         0    (print)
+000110        43 LOAD_STRING                       3    ('except2')
+000104        45 CALL_FUNCTION                     1
+000104        47 POP_TOP
+000104        48 POP_EXCEPT
+000104        49 JUMP_FORWARD                      12   (to 61)
+000104   >>   51 END_EXC_HANDLER                                                         (exc handler 17 - 51; stack: 1)
+000129   >>   52 LOAD_NAME                         0    (print)
+000135        54 LOAD_STRING                       4    ('else')
+000129        56 CALL_FUNCTION                     1
+000129        58 POP_TOP
+000129        59 JUMP_FORWARD                      2    (to 61)
+000143   >>   61 LOAD_NAME                         0    (print)
+000149        63 LOAD_STRING                       5    ('after')
+000143        65 CALL_FUNCTION                     1
+000143        67 RETURN_VALUE

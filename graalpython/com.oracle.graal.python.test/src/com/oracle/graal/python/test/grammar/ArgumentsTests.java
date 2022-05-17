@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,9 @@ package com.oracle.graal.python.test.grammar;
 
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
+import static com.oracle.graal.python.test.PythonTests.usingBytecodeCompiler;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 public class ArgumentsTests {
@@ -139,6 +141,24 @@ public class ArgumentsTests {
                         "def update(E=None, **F):\n" +
                         "  print(F)\n" +
                         "update(42)");
+    }
+
+    @Test
+    public void kwargsMerge() {
+        // TODO AST interpreter doesn't maintain the order correctly
+        Assume.assumeTrue(usingBytecodeCompiler());
+        assertPrints("{'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'e': 5})\n");
+    }
+
+    @Test
+    public void kwargsDuplicate() {
+        assertLastLineErrorContains("TypeError: foo() got multiple values for keyword argument 'd'", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'d': 5})\n");
     }
 
     private static String call(String source, String args) {

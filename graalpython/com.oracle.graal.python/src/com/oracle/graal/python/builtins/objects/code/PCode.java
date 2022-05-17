@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -73,10 +74,10 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -92,8 +93,8 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    static final long FLAG_VAR_ARGS = 0x4;
-    static final long FLAG_VAR_KW_ARGS = 0x8;
+    public static final long FLAG_VAR_ARGS = 0x4;
+    public static final long FLAG_VAR_KW_ARGS = 0x8;
     static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
     static final long FLAG_GENERATOR = 0x20;
     static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
@@ -208,7 +209,13 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
-        String filename = PythonContext.get(rootNode).getCodeFilename(funcRootNode.getCallTarget());
+        PythonContext context = PythonContext.get(rootNode);
+        String filename;
+        if (context != null) {
+            filename = context.getCodeFilename(funcRootNode.getCallTarget());
+        } else {
+            return funcRootNode.getName();
+        }
         if (filename != null) {
             // for compiled modules, _imp._fix_co_filename will set the filename
             return filename;
@@ -231,6 +238,9 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) funcRootNode).getStartOffset();
+        }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getStartLine();

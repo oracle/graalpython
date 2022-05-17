@@ -1,0 +1,5 @@
+Module[0, 17]
+    Assign[0, 17]
+        LHS: Name[0, 1] Value: "a" Store
+        RHS: LONG[4, 5] Value: 1
+        TypeComment: int

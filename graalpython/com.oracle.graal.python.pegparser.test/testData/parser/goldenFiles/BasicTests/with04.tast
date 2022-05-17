@@ -1,0 +1,19 @@
+Module[0, 45]
+    FunctionDef[0, 45]
+        Name:fn
+        ---- Function body of fn ----
+        With[12, 45]
+            Items:
+                Item[17, 25]
+                    ContextExpr: 
+                        Call[17, 20]
+                            Target: Name[17, 18] Value: "A"
+                    OptionalVars: Name[24, 25] Value: "a" Store
+                Item[27, 35]
+                    ContextExpr: 
+                        Call[27, 30]
+                            Target: Name[27, 28] Value: "B"
+                    OptionalVars: Name[34, 35] Value: "b" Store
+            Body:
+                Pass[41, 45]
+        ---- End of fn function ----

@@ -1,0 +1,9 @@
+Module[0, 24]
+    FunctionDef[0, 24]
+        Name:fn
+        ---- Function body of fn ----
+        Lambda[12, 24]
+            ArgumentsTy[0, 0]
+                VarArg: ArgTy[20, 21] y
+            Body: LONG[23, 24] Value: 0
+        ---- End of fn function ----

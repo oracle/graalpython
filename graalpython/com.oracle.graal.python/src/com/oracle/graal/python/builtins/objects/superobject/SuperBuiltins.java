@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -224,6 +225,10 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getRootNode() instanceof BuiltinFunctionRootNode;
         }
 
+        protected boolean isInBytecodeRoot() {
+            return getRootNode() instanceof PBytecodeRootNode;
+        }
+
         protected ReadLocalVariableNode createRead(VirtualFrame frame) {
             FrameDescriptor descriptor = frame.getFrameDescriptor();
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
@@ -237,8 +242,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         /**
          * Executed with the frame of the calling method - direct access to the frame.
          */
-        @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
-        PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
+        @Specialization(guards = {"!isInBytecodeRoot()", "!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone initInPlaceAST(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Cached("createRead(frame)") ReadLocalVariableNode readClass,
                         @Cached("create(0)") ReadIndexedArgumentNode readArgument,
                         @Cached ConditionProfile isCellProfile) {
@@ -256,6 +261,28 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+            }
+            return init(frame, self, cls, obj);
+        }
+
+        /**
+         * Executed with the frame of the calling method - direct access to the frame.
+         */
+        @Specialization(guards = {"isInBytecodeRoot()", "!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg) {
+            PBytecodeRootNode rootNode = (PBytecodeRootNode) getRootNode();
+            PCell classCell = rootNode.readClassCell(frame);
+            if (classCell == null) {
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+            }
+            Object cls = getGetRefNode().execute(classCell);
+            if (cls == null) {
+                // the cell is empty
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
+            }
+            Object obj = rootNode.readSelf(frame);
+            if (obj == PNone.NONE || obj == PNone.NO_VALUE) {
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
             return init(frame, self, cls, obj);
         }

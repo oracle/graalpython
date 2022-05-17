@@ -1,0 +1,8 @@
+Module[0, 6]
+    Subscript[0, 1]
+        Slice: 
+            Slice[2, 5]
+                Start: 
+                Stop: 
+                Step: LONG[4, 5] Value: 1
+        Value: Name[0, 1] Value: "a"

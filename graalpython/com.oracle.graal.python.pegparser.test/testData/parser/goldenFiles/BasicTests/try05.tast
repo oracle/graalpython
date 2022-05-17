@@ -1,0 +1,8 @@
+Module[0, 26]
+    Try[0, 3]
+        Body:
+            Pass[7, 11]
+        Except:
+            ExceptHandler[12, 18]
+                Body:
+                    Pass[22, 26]

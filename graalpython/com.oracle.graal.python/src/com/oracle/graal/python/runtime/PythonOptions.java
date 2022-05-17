@@ -294,6 +294,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Disables using frozen modules.") //
     public static final OptionKey<Boolean> DisableFrozenModules = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Enables using experimental bytecode interpreter instead of AST interpreter.") //
+    public static final OptionKey<Boolean> EnableBytecodeInterpreter = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

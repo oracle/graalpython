@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.test.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class ScopeTests {
 
@@ -43,5 +43,21 @@ public class ScopeTests {
                         "foo()()\n";
 
         assertPrints("42\n", source);
+    }
+
+    @Test
+    public void explicitNonLocal() {
+        String source = "def foo():\n" +
+                        "    x = 1\n" +
+                        "    def bar():\n" +
+                        "        nonlocal x\n" +
+                        "        print(x)\n" +
+                        "        x = 2\n" +
+                        "    bar()\n" +
+                        "    print(x)\n" +
+                        "    x = 3\n" +
+                        "    print(x)\n" +
+                        "foo()";
+        assertPrints("1\n2\n3\n", source);
     }
 }

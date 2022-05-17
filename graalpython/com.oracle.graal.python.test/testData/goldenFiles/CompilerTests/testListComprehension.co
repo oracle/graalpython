@@ -1,0 +1,35 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (<listcomp>)
+000019         3 LOAD_BYTE                         1
+000022         5 LOAD_BYTE                         2
+000025         7 LOAD_BYTE                         3
+000018         9 COLLECTION_FROM_STACK             3    (list)
+000030        11 LOAD_BYTE                         4
+000033        13 LOAD_BYTE                         5
+000036        15 LOAD_BYTE                         6
+000029        17 COLLECTION_FROM_STACK             3    (list)
+000017        19 COLLECTION_FROM_STACK             2    (list)
+000000        21 GET_ITER
+000000        22 CALL_FUNCTION                     1
+000000        24 RETURN_VALUE
+
+Disassembly of <listcomp>:
+000000         0 COLLECTION_FROM_STACK             0    (list)
+000000         2 LOAD_FAST                         0    (.0)
+000000   >>    4 FOR_ITER                          31   (to 35)
+000012         6 STORE_FAST                        1    (y)
+000049         8 LOAD_FAST                         1    (y)
+000000        10 GET_ITER
+000000   >>   11 FOR_ITER                          22   (to 33)
+000044        13 STORE_FAST                        2    (x)
+000054        15 LOAD_FAST                         2    (x)
+000058        17 LOAD_BYTE                         5
+000054        19 BINARY_OP                         14   (LT)
+000000        21 POP_AND_JUMP_IF_FALSE             10   (to 31)
+000001        23 LOAD_GLOBAL                       0    (str)
+000005        25 LOAD_FAST                         2    (x)
+000001        27 CALL_FUNCTION                     1
+000000        29 ADD_TO_COLLECTION                 3    (list)
+000000   >>   31 JUMP_BACKWARD                     20   (to 11)
+000000   >>   33 JUMP_BACKWARD                     29   (to 4)
+000000   >>   35 RETURN_VALUE

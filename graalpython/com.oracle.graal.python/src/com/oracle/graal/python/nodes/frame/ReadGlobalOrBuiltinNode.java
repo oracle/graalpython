@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -63,6 +65,38 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
+    private static final ReadGlobalOrBuiltinNode UNCACHED = new ReadGlobalOrBuiltinNode(null) {
+        @Override
+        protected Object executeWithGlobals(VirtualFrame frame, Object globals) {
+            throw CompilerDirectives.shouldNotReachHere("uncached ReadGlobalOrBuiltinNode must be used with #read");
+        }
+
+        @Override
+        public Object read(Frame frame, Object globals, String name) {
+            Object result;
+            if (globals instanceof PythonModule) {
+                result = ReadAttributeFromObjectNode.getUncached().execute(globals, name);
+            } else {
+                result = PyDictGetItem.getUncached().execute(frame, (PDict) globals, name);
+            }
+            if (result == null || result == PNone.NO_VALUE) {
+                PythonContext context = PythonContext.get(this);
+                PythonModule builtins = context.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
+                result = ReadAttributeFromObjectNode.getUncached().execute(builtins, name);
+            }
+            if (result != PNone.NO_VALUE) {
+                return result;
+            } else {
+                throw PRaiseNode.raiseUncached(this, NameError, ErrorMessages.NAME_NOT_DEFINED, name);
+            }
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+    };
+
     @CompilationFinal private boolean wasReadFromModule = false;
     @Child private ReadBuiltinNode readFromBuiltinsNode;
 
@@ -107,7 +141,12 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         throw new UnexpectedResultException(o);
     }
 
-    public abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+    protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+
+    public Object read(Frame frame, Object globals, String name) {
+        assert name == attributeId : "cached ReadGlobalOrBuiltinNode can only be used with cached attributeId";
+        return executeWithGlobals((VirtualFrame) frame, globals);
+    }
 
     protected final String attributeId;
 
@@ -117,6 +156,10 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     public static ReadGlobalOrBuiltinNode create(String attributeId) {
         return ReadGlobalOrBuiltinNodeGen.create(attributeId);
+    }
+
+    public static ReadGlobalOrBuiltinNode getUncached() {
+        return UNCACHED;
     }
 
     @Override
