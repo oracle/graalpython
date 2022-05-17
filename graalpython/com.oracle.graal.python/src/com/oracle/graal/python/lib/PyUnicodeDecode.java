@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,45 +40,45 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.lib.PyUnicodeAsEncodedString.ENC_UTF8;
+import static com.oracle.graal.python.nodes.BuiltinNames._CODECS;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_S_RETURNED_P_INSTEAD_OF_STR;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_Decode}.
  */
 @ImportStatic(PyUnicodeAsEncodedString.class)
-public abstract class PyUnicodeDecode extends PNodeWithRaise {
-    public abstract Object execute(VirtualFrame frame, Object object, Object encoding, Object errors);
+@GenerateUncached
+public abstract class PyUnicodeDecode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object object, Object encoding, Object errors);
 
-    @Specialization(guards = "isCommon(encoding)")
-    Object doCommon(VirtualFrame frame, Object object, String encoding, String errors,
-                    @Cached CodecsModuleBuiltins.CodecsDecodeNode decodeNode) {
-        return decodeNode.execute(frame, object, encoding, errors, false);
-    }
-
-    @Specialization(guards = "!isCommon(encoding)")
-    Object doRegistry(VirtualFrame frame, Object object, String encoding, String errors,
-                    @Cached CodecsModuleBuiltins.DecodeNode decodeNode) {
+    @Specialization(guards = "frame != null")
+    Object doFast(VirtualFrame frame, Object object, Object encoding, Object errors,
+                    @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
+                    @Cached PRaiseNode raiseNode) {
         final Object unicode = decodeNode.execute(frame, object, encoding, errors);
         if (!PGuards.isString(unicode)) {
-            throw raise(TypeError, DECODER_S_RETURNED_P_INSTEAD_OF_STR, encoding, unicode);
+            throw raiseNode.raise(TypeError, DECODER_S_RETURNED_P_INSTEAD_OF_STR, encoding, unicode);
         }
         return unicode;
     }
 
-    @Specialization(guards = "isNoValue(encoding)")
-    Object doNoEncoding(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone encoding, Object errors,
-                    @Cached CodecsModuleBuiltins.CodecsDecodeNode decodeNode) {
-        return decodeNode.execute(frame, object, ENC_UTF8, errors, false);
+    @Specialization(replaces = "doFast")
+    Object doWithCall(Object object, Object encoding, Object errors,
+                    @Cached PyObjectCallMethodObjArgs callNode) {
+        return callNode.execute(null, PythonContext.get(this).getCore().lookupBuiltinModule(_CODECS), DECODE, object, encoding, errors);
     }
 }

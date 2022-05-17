@@ -13,6 +13,7 @@
     {"name":"ctxSetItemi","parameterTypes":["long","long","long"] }, 
     {"name":"ctxLength","parameterTypes":["long"] }, 
     {"name":"ctxListCheck","parameterTypes":["long"] }, 
+    {"name":"ctxBulkClose","parameterTypes":["long","int"] },
     {"name":"ctxListNew","parameterTypes":["long"] },
     {"name":"ctxLongAsLong","parameterTypes":["long"] },
     {"name":"ctxLongAsDouble","parameterTypes":["long"] },
@@ -22,7 +23,8 @@
     {"name":"ctxTypeCheck","parameterTypes":["long", "long"] },
     {"name":"ctxTypeGenericNew","parameterTypes":["long"] },
     {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] }, 
-    {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] }
+    {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] },
+    {"name":"ctxTupleFromArray","parameterTypes":["long[]", "boolean"] }
   ]
 }
 ]

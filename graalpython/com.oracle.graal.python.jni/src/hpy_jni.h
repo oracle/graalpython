@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,31 +38,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
 
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.dsl.NodeField;
-import com.oracle.truffle.api.dsl.NodeFields;
+/*
+ * Native implementation of HPyTupleBuilder.
+ * This is written in a way that we could also use the internal functions
+ * 'builder_*' to implement HPyListBuilder.
+ */
 
-@NodeFields({@NodeField(name = "dontNeedExceptionState", type = Assumption.class), @NodeField(name = "dontNeedFrame", type = Assumption.class)})
-public abstract class PNodeWithIndirectCall extends PNodeWithContext implements IndirectCallNode {
-    protected abstract Assumption getDontNeedExceptionState();
+#include <hpy.h>
+#include <jni.h>
 
-    protected abstract Assumption getDontNeedFrame();
+//*************************
+// BOXING
 
-    @Override
-    public final Assumption needNotPassFrameAssumption() {
-        if (isAdoptable()) {
-            return getDontNeedFrame();
-        }
-        return Assumption.NEVER_VALID;
-    }
+#define NAN_BOXING_BASE (0x0007000000000000llu)
+#define NAN_BOXING_MASK (0xFFFF000000000000llu)
+#define NAN_BOXING_INT (0x0001000000000000llu)
+#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
+#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
+#define IMMUTABLE_HANDLES (0x0000000000000100llu)
 
-    @Override
-    public final Assumption needNotPassExceptionAssumption() {
-        if (isAdoptable()) {
-            return getDontNeedExceptionState();
-        }
-        return Assumption.NEVER_VALID;
-    }
-}
+#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
+#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
+#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+
+#define unboxHandle(value) (value)
+#define boxHandle(handle) (handle)
+
+#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
+#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+
+#define toBits(ptr) ((uint64_t) ((ptr)._i))
+#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+
+_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
+
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);

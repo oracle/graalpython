@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
@@ -83,8 +84,12 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
         }
 
         @Override
+        public Object execute(Frame frame, Object type, Object receiver) {
+            return executeImpl(frame != null ? frame.materialize() : null, type, receiver);
+        }
+
         @TruffleBoundary
-        public Object execute(@SuppressWarnings("unused") Frame frame, Object type, Object receiver) {
+        private Object executeImpl(MaterializedFrame frame, Object type, Object receiver) {
             return MaybeBindDescriptorNode.getUncached().execute(frame, lookup.execute(type), receiver, type);
         }
 

@@ -199,6 +199,15 @@ suite = {
             ],
         },
 
+        "com.oracle.graal.python.jni": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.jni",
+            "source": [
+                "include",
+                "src",
+            ],
+        },
+
         "com.oracle.graal.python.frozen": {
             "type": "python",
             "path": "graalpython/com.oracle.graal.python.frozen",

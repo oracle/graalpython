@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -245,7 +246,7 @@ public final class PException extends AbstractTruffleException {
     @TruffleBoundary
     public Iterable<TruffleStackTraceElement> getTruffleStackTrace() {
         if (tracebackCutoffTarget == null) {
-            tracebackCutoffTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
+            tracebackCutoffTarget = Truffle.getRuntime().iterateFrames(FrameInstance::getCallTarget, 0);
         }
         // Cause may contain wrapped Java exception
         if (getCause() != null) {

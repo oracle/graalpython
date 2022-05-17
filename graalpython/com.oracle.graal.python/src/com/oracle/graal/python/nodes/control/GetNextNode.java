@@ -118,8 +118,12 @@ public abstract class GetNextNode extends PNodeWithContext {
         static final GetNextUncached INSTANCE = new GetNextUncached();
 
         @Override
-        @TruffleBoundary
         public Object execute(Frame frame, Object iterator) {
+            return executeImpl(iterator);
+        }
+
+        @TruffleBoundary
+        private Object executeImpl(Object iterator) {
             Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.getUncached().execute(iterator), iterator);
             if (nextMethod == PNone.NO_VALUE) {
                 throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, __NEXT__);

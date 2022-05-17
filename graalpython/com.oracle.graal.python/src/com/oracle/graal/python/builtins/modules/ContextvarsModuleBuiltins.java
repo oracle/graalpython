@@ -42,21 +42,20 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -83,21 +82,13 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object construct(VirtualFrame frame, Object cls, String name, PNone def,
-                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallNode callNode) {
-            return constructDef(frame, cls, name, PContextVar.NO_DEFAULT, threadingImport, lookupAttrNode, callNode);
+        protected Object construct(VirtualFrame frame, Object cls, String name, PNone def) {
+            return constructDef(frame, cls, name, PContextVar.NO_DEFAULT);
         }
 
         @Specialization(guards = "!isPNone(def)")
-        protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def,
-                        @Cached("createImportThreading()") ImportNode.ImportExpression threadingImport,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallNode callNode) {
-            Object threading = threadingImport.execute(frame);
-            Object localCallable = lookupAttrNode.execute(frame, threading, "local");
-            Object local = callNode.execute(frame, localCallable);
+        protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def) {
+            Object local = factory().createThreadLocal(PythonBuiltinClassType.PThreadLocal, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             return factory().createContextVar(name, def, local);
         }
 

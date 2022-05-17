@@ -72,6 +72,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -134,7 +135,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -199,7 +199,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static SSLEngine createSSLEngine(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
+    static SSLEngine createSSLEngine(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException | IOException | CertificateException ex) {
@@ -275,7 +275,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(frame, constructAndRaiseNode, this, context, serverSide, serverHostname);
+            SSLEngine engine = createSSLEngine(frame.materialize(), constructAndRaiseNode, this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -309,7 +309,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(frame, constructAndRaiseNode, this, context, serverSide, serverHostname);
+            SSLEngine engine = createSSLEngine(frame.materialize(), constructAndRaiseNode, this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -696,7 +696,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         certificates = fromString(frame, constructAndRaiseNode, castToString.execute(cadata));
                     } catch (CannotCastException cannotCastException) {
                         if (cadata instanceof PBytesLike) {
-                            certificates = fromBytesLike(frame, constructAndRaiseNode, toBytes, cadata);
+                            certificates = fromBytesLike(frame.materialize(), constructAndRaiseNode, toBytes, cadata);
                         } else {
                             throw raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
                         }
@@ -734,11 +734,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
-            return getCertificates(frame, constructAndRaiseNode, dataString);
+            return getCertificates(frame.materialize(), constructAndRaiseNode, dataString);
         }
 
         @TruffleBoundary
-        private List<Object> getCertificates(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString)
+        private List<Object> getCertificates(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString)
                         throws PException, CRLException, IOException, CertificateException {
             try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
                 try {
@@ -756,7 +756,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Collection<?> fromBytesLike(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, ToByteArrayNode toBytes, Object cadata)
+        private Collection<?> fromBytesLike(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, ToByteArrayNode toBytes, Object cadata)
                         throws KeyStoreException, IOException, NoSuchAlgorithmException {
             byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
             try {
@@ -795,12 +795,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
             TruffleFile keyTruffleFile = toTruffleFile(frame, asPath.execute(frame, kf));
             try {
                 try {
-                    return load(frame, constructAndRaiseNode, certTruffleFile, keyTruffleFile, null, self);
+                    return load(frame.materialize(), constructAndRaiseNode, certTruffleFile, keyTruffleFile, null, self);
                 } catch (NeedsPasswordException e) {
                     if (passwordObj != PNone.NONE) {
                         char[] password = getPasswordNode.execute(frame, passwordObj);
                         try {
-                            return load(frame, constructAndRaiseNode, certTruffleFile, keyTruffleFile, password, self);
+                            return load(frame.materialize(), constructAndRaiseNode, certTruffleFile, keyTruffleFile, password, self);
                         } catch (NeedsPasswordException e1) {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
@@ -813,7 +813,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object load(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, TruffleFile certTruffleFile, TruffleFile keyTruffleFile, char[] password, PSSLContext self)
+        private Object load(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, TruffleFile certTruffleFile, TruffleFile keyTruffleFile, char[] password, PSSLContext self)
                         throws IOException, NeedsPasswordException {
             try (BufferedReader certReader = getReader(certTruffleFile, "certfile");
                             BufferedReader keyReader = getReader(keyTruffleFile, "keyfile")) {
@@ -830,7 +830,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object load(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password)
+        private Object load(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password)
                         throws NeedsPasswordException {
             // TODO add logging
             try {

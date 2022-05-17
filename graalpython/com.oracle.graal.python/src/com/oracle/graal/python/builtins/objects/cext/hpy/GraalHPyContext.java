@@ -187,6 +187,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -269,7 +270,27 @@ import sun.misc.Unsafe;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    private static final boolean TRACE = Boolean.getBoolean("HPyTraceUpcalls");
+    private static final boolean TRACE;
+    private static final int TRACE_SLEEP_TIME;
+    static {
+        String prop = System.getProperty("HPyTraceUpcalls");
+        boolean doTrace = false;
+        int sleepTime = 5000;
+        if (prop != null) {
+            if (prop.equals("true")) {
+                doTrace = true;
+            } else {
+                try {
+                    sleepTime = Integer.parseInt(prop);
+                    doTrace = true;
+                } catch (NumberFormatException e) {
+                    // pass
+                }
+            }
+        }
+        TRACE = doTrace;
+        TRACE_SLEEP_TIME = sleepTime;
+    }
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
@@ -1268,7 +1289,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 System.load(pythonJNIPath);
                 jniBackendLoaded = true;
             } catch (NullPointerException | UnsatisfiedLinkError e) {
-                LOGGER.fine("HPy JNI backend library could not be found: " + pythonJNIPath);
+                LOGGER.severe("HPy JNI backend library could not be found: " + pythonJNIPath);
+                LOGGER.severe("Error was: " + e);
             }
         }
     }
@@ -1351,6 +1373,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallTrackerClose,
         UpcallTrackerAdd,
         UpcallClose,
+        UpcallBulkClose,
         UpcallTrackerNew,
         UpcallGetItemI,
         UpcallSetItem,
@@ -1368,7 +1391,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallUnicodeFromWideChar,
         UpcallUnicodeFromJCharArray,
         UpcallDictNew,
-        UpcallListNew;
+        UpcallListNew,
+        UpcallTupleFromArray;
 
         long count;
 
@@ -1385,7 +1409,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
                 while (true) {
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(TRACE_SLEEP_TIME);
                     } catch (InterruptedException e) {
                         // fall through
                     }
@@ -1534,9 +1558,27 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         throw CompilerDirectives.shouldNotReachHere("not implemented");
     }
 
+    /**
+     * Close a native handle received from a JNI upcall (hence represented by a Java {code long}).
+     */
+    private void closeNativeHandle(long handle) {
+        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+            getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).closeAndInvalidate(this);
+        }
+    }
+
     public final void ctxClose(long handle) {
         Counter.UpcallClose.increment();
-        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+        closeNativeHandle(handle);
+    }
+
+    public final void ctxBulkClose(long unclosedHandlePtr, int size) {
+        Counter.UpcallBulkClose.increment();
+        for (int i = 0; i < size; i++) {
+            long handle = unsafe.getLong(unclosedHandlePtr);
+            unclosedHandlePtr += 8;
+            assert GraalHPyBoxing.isBoxedHandle(handle);
+            assert handle >= IMMUTABLE_HANDLE_COUNT;
             getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).closeAndInvalidate(this);
         }
     }
@@ -1842,13 +1884,33 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             int len = CastToJavaIntExactNode.getUncached().execute(llen);
             Object[] data = new Object[len];
             Arrays.fill(data, PNone.NONE);
-            PList list = PythonObjectFactory.getUncached().createList(data);
+            PList list = getSlowPathFactory().createList(data);
             return createHandle(list).getId(this, ConditionProfile.getUncached());
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             // NULL handle
             return 0;
         }
+    }
+
+    /**
+     * Implementation of context function {@code ctx_Tuple_FromArray} (JNI upcall). This method can
+     * optionally steal the item handles in order to avoid repeated upcalls just to close them. This
+     * is useful to implement, e.g., tuple builder.
+     */
+    public final long ctxTupleFromArray(long[] hItems, boolean steal) {
+        Counter.UpcallTupleFromArray.increment();
+
+        Object[] objects = new Object[hItems.length];
+        for (int i = 0; i < hItems.length; i++) {
+            long hBits = hItems[i];
+            objects[i] = HPyAsPythonObjectNodeGen.getUncached().execute(this, hBits);
+            if (steal) {
+                closeNativeHandle(hBits);
+            }
+        }
+        PTuple tuple = getSlowPathFactory().createTuple(objects);
+        return createHandle(tuple).getId(this, ConditionProfile.getUncached());
     }
 
     @ExportMessage
@@ -2231,7 +2293,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 public void run() {
                     while (true) {
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(TRACE_SLEEP_TIME);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }

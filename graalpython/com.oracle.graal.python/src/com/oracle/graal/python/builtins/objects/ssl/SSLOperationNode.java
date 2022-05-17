@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -116,7 +116,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
             try {
                 beginHandshake(socket);
             } catch (SSLException e) {
-                throw handleSSLException(frame, constructAndRaiseNode, e);
+                throw handleSSLException(frame.materialize(), constructAndRaiseNode, e);
             }
             execute(frame, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.HANDSHAKE);
         }
@@ -175,8 +175,9 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         SSLOperationStatus status;
         PythonContext context = PythonContext.get(this);
         while (true) {
+            MaterializedFrame materializedFrame = frame.materialize();
             try {
-                status = loop(frame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
+                status = loop(materializedFrame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
                 switch (status) {
                     case COMPLETE:
                         return;
@@ -258,7 +259,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         break;
                 }
             } catch (SSLException e) {
-                throw handleSSLException(frame, constructAndRaiseNode, e);
+                throw handleSSLException(materializedFrame, constructAndRaiseNode, e);
             } catch (OverflowException | OutOfMemoryError node) {
                 throw raise(MemoryError);
             }
@@ -270,8 +271,9 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     void doMemory(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @Cached PConstructAndRaiseNode constructAndRaiseNode) {
         SSLOperationStatus status;
+        MaterializedFrame materializedFrame = frame.materialize();
         try {
-            status = loop(frame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
+            status = loop(materializedFrame, constructAndRaiseNode, this, socket, appInput, targetBuffer, operation);
             switch (status) {
                 case COMPLETE:
                     return;
@@ -298,7 +300,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                     throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");
             }
         } catch (SSLException e) {
-            throw handleSSLException(frame, constructAndRaiseNode, e);
+            throw handleSSLException(materializedFrame, constructAndRaiseNode, e);
         } catch (OverflowException | OutOfMemoryError node) {
             throw raise(MemoryError);
         }
@@ -315,7 +317,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @TruffleBoundary
-    private static SSLOperationStatus loop(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer,
+    private static SSLOperationStatus loop(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer,
                     SSLOperation op) throws SSLException, OverflowException {
         PMemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         PMemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
@@ -527,7 +529,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     }
 
     @TruffleBoundary
-    private static PException handleSSLException(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, SSLException e) {
+    private static PException handleSSLException(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, SSLException e) {
         if (e.getCause() instanceof CertificateException) {
             throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }

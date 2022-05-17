@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -355,7 +354,7 @@ public abstract class ExecutionContext {
             return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
         }
 
-        public static Object enter(VirtualFrame frame, PNodeWithRaiseAndIndirectCall indirectCallNode) {
+        public static <T extends Node & IndirectCallNode> Object enter(VirtualFrame frame, T indirectCallNode) {
             if (frame == null || indirectCallNode == null) {
                 return null;
             }
@@ -365,7 +364,7 @@ public abstract class ExecutionContext {
                 return null;
             }
 
-            PythonThreadState pythonThreadState = indirectCallNode.getContext().getThreadState(indirectCallNode.getLanguage());
+            PythonThreadState pythonThreadState = PythonContext.get(indirectCallNode).getThreadState(PythonLanguage.get(indirectCallNode));
             return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, indirectCallNode);
         }
 
@@ -414,11 +413,11 @@ public abstract class ExecutionContext {
             assert savedState == null : "tried to exit an indirect call with state, but without frame/context";
         }
 
-        public static void exit(VirtualFrame frame, PNodeWithRaiseAndIndirectCall indirectCallNode, Object savedState) {
+        public static <T extends Node & IndirectCallNode> void exit(VirtualFrame frame, T indirectCallNode, Object savedState) {
             if (savedState != null && frame != null) {
-                PythonContext context = indirectCallNode.getContext();
+                PythonContext context = PythonContext.get(indirectCallNode);
                 if (context != null) {
-                    PythonLanguage language = indirectCallNode.getLanguage();
+                    PythonLanguage language = PythonLanguage.get(indirectCallNode);
                     exit(frame, context.getThreadState(language), savedState);
                     return;
                 }

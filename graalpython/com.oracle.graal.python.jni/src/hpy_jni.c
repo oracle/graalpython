@@ -39,7 +39,8 @@
  * SOFTWARE.
  */
 
-#include <hpy.h>
+#include "hpy_jni.h"
+
 #include <wchar.h>
 #include <assert.h>
 #include <stdio.h>
@@ -59,7 +60,6 @@
 
 #include "com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext.h"
 #include "hpynative.h"
-#include <jni.h>
 
 /* definitions for HPyTracker */
 #include "hpy/runtime/ctx_funcs.h"
@@ -71,6 +71,7 @@ static JNIEnv* jniEnv;
     UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
     UPCALL(AsStruct, SIG_HPY, SIG_PTR) \
     UPCALL(Close, SIG_HPY, SIG_VOID) \
+    UPCALL(BulkClose, SIG_PTR SIG_INT, SIG_VOID)        \
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
     UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
@@ -88,6 +89,7 @@ static JNIEnv* jniEnv;
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
+    UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -196,25 +198,6 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
 //*************************
 // BOXING
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
-
-static bool isBoxedDouble(uint64_t value) {
-    return value >= NAN_BOXING_BASE;
-}
-
-static bool isBoxedHandle(uint64_t value) {
-    return value <= NAN_BOXING_MAX_HANDLE;
-}
-
-static bool isBoxedInt(uint64_t value) {
-    return (value & NAN_BOXING_MASK) == NAN_BOXING_INT;
-}
-
 static double unboxDouble(uint64_t value) {
     uint64_t doubleBits = value - NAN_BOXING_BASE;
     return * ((double*) &doubleBits);
@@ -224,32 +207,6 @@ static uint64_t boxDouble(double value) {
     // assumes that value doesn't contain non-standard silent NaNs
     uint64_t doubleBits = * ((uint64_t*) &value);
     return doubleBits + NAN_BOXING_BASE;
-}
-
-static uint64_t unboxHandle(uint64_t value) {
-    return value;
-}
-
-static uint64_t boxHandle(uint64_t handle) {
-    return handle;
-}
-
-static int32_t unboxInt(uint64_t value) {
-    return (int32_t) (value - NAN_BOXING_INT);
-}
-
-static uint64_t boxInt(int32_t value) {
-    return (value & NAN_BOXING_INT_MASK) + NAN_BOXING_INT;
-}
-
-static inline uint64_t toBits(HPy ptr) {
-    /* return * ((uint64_t*) &ptr._i); */
-    return (uint64_t) (ptr._i);
-}
-
-static inline HPy toPtr(uint64_t ptr) {
-    /* return * ((void**) &ptr); */
-    return (HPy) { (HPy_ssize_t) ptr };
 }
 
 //*************************
@@ -267,6 +224,20 @@ static int (*original_NumberCheck)(HPyContext *ctx, HPy h);
 static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
+static HPy (*original_TupleFromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+
+static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
+    long bitsA = toBits(a);
+    long bitsB = toBits(b);
+    if (bitsA == bitsB) {
+        return 1;
+    } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
+        return original_Is(ctx, a, b);
+    } else {
+        return 0;
+    }
+}
 
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -320,12 +291,25 @@ static HPy augment_LongFromLong(HPyContext *ctx, long l) {
     }
 }
 
+#define MAX_UNCLOSED_HANDLES 32
+static int32_t unclosedHandleTop = 0;
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
+
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
         return;
     } else if (isBoxedHandle(bits)) {
-        return original_Close(ctx, h);
+        if (bits < IMMUTABLE_HANDLES) {
+            return;
+        }
+        if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
+            unclosedHandles[unclosedHandleTop++] = h;
+        } else {
+            upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
+            memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
+            unclosedHandleTop = 0;
+        }
     }
 }
 
@@ -428,6 +412,20 @@ static HPy augment_UnicodeFromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ss
     }
 }
 
+_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal) {
+    jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
+    (*jniEnv)->SetLongArrayRegion(jniEnv, jLongArray, 0, (jsize) nitems, (const jlong *)items);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, steal);
+}
+
+static HPy augment_TupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
+}
+
+_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -437,10 +435,10 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_FloatAsDouble = context->ctx_Float_AsDouble;
     context->ctx_Float_AsDouble = augment_FloatAsDouble;
-    
+
     original_LongAsLong = context->ctx_Long_AsLong;
     context->ctx_Long_AsLong = augment_LongAsLong;
-    
+
     original_LongAsDouble = context->ctx_Long_AsDouble;
     context->ctx_Long_AsDouble = augment_LongAsDouble;
 
@@ -452,6 +450,8 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_AsStruct = context->ctx_AsStruct;
     context->ctx_AsStruct = augment_AsStruct;
+
+    context->ctx_AsStructLegacy = augment_AsStruct;
 
     original_Dup = context->ctx_Dup;
     context->ctx_Dup = augment_Dup;
@@ -467,6 +467,12 @@ void initDirectFastPaths(HPyContext *context) {
 
     original_UnicodeFromWideChar = context->ctx_Unicode_FromWideChar;
     context->ctx_Unicode_FromWideChar = augment_UnicodeFromWideChar;
+
+    original_TupleFromArray = context->ctx_Tuple_FromArray;
+    context->ctx_Tuple_FromArray = augment_TupleFromArray;
+
+    original_Is = context->ctx_Is;
+    context->ctx_Is = augment_Is;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -517,6 +523,11 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll;
     context->ctx_Tracker_Close = ctx_Tracker_Close;
 
+    context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
+    context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;
+    context->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
+    context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
+
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
@@ -524,11 +535,13 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_SIZE_T "J"
 #define SIG_PTR "J"
 #define SIG_VOID "V"
+#define SIG_BOOL "Z"
 #define SIG_INT "I"
 #define SIG_LONG "J"
 #define SIG_DOUBLE "D"
 #define SIG_TRACKER "J"
 #define SIG_JCHARARRAY "[C"
+#define SIG_JLONGARRAY "[J"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \

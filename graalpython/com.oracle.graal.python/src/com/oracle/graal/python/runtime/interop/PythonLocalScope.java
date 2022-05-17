@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -82,7 +83,7 @@ public final class PythonLocalScope implements TruffleObject {
     }
 
     @TruffleBoundary
-    static PythonLocalScope createLocalScope(RootNode root, Frame frame) {
+    static PythonLocalScope createLocalScope(RootNode root, MaterializedFrame frame) {
         LinkedHashMap<String, Integer> slotsMap = new LinkedHashMap<>();
 
         FrameDescriptor fd = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
