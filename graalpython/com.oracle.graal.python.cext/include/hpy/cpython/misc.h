@@ -492,31 +492,6 @@ HPyAPI_FUNC int HPyCapsule_SetDestructor(HPyContext *ctx, HPy capsule, HPyCapsul
     return ctx_Capsule_SetDestructor(ctx, capsule, destructor);
 }
 
-// TODO: define helper "private" functions in hpy/deve/include/hpy/runtime/inline.h and use those also in universal
-HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value) {
-    // TODO: it would be cleaner to call the impl from ctx_type, but this feels like performance critical operation,
-    // which on CPython boils down to just memory read(s) and comparison of two addresses
-    PyObject *result = _h2py(type);
-    struct _typeobject* t = ((struct _typeobject*) result);
-    char msg[256];
-    switch (value->slot.slot) {
-        case HPy_nb_inplace_add:
-            return t->tp_as_number != NULL && t->tp_as_number->nb_inplace_add == value->slot.cpy_trampoline;
-        case HPy_nb_power:
-            // TODO: this needs proper cast for C++
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_power == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_subtract:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_subtract == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_true_divide:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_true_divide == (void*) value->slot.cpy_trampoline;
-        case HPy_nb_add:
-            return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_add == (void*) value->slot.cpy_trampoline;
-        default:
-            snprintf(msg, 256, "Unsupported slot in HPyTypeSlot_Is: %d", value->slot.slot);
-            Py_FatalError(msg);
-    }
-}
-
 HPyAPI_FUNC HPy HPy_MaybeGetAttr_s(HPyContext *ctx, HPy obj, const char *name) {
     PyObject *pyobj = _h2py(obj);
     struct _typeobject* t = Py_TYPE(pyobj);
