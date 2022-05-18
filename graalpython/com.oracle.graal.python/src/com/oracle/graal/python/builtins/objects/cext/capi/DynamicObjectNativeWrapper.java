@@ -729,7 +729,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @GenerateUncached
     abstract static class ReadObjectNativeMemberNode extends ReadNativeMemberNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ReadObjectNativeMemberNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(ReadObjectNativeMemberNode.class);
 
         @Specialization(guards = "eq(D_COMMON, key)")
         static Object doDCommon(Object o, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
@@ -1294,7 +1294,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     // WRITE
     @GenerateUncached
     abstract static class WriteNativeMemberNode extends Node {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(WriteNativeMemberNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(WriteNativeMemberNode.class);
 
         abstract void execute(Object receiver, PythonNativeWrapper nativeWrapper, String key, Object value)
                         throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException;

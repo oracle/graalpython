@@ -2963,7 +2963,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class SubRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(SubRefCntNode.class);
 
         public final long dec(Object object) {
             return execute(object, 1);

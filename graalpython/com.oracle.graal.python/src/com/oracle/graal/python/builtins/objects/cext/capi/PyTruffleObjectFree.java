@@ -64,7 +64,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public class PyTruffleObjectFree implements TruffleObject {
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectFree.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectFree.class);
 
     @ExportMessage
     boolean isExecutable() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -65,7 +64,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public class PyTruffleObjectAlloc implements TruffleObject {
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectAlloc.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectAlloc.class);
 
     @ExportMessage
     boolean isExecutable() {

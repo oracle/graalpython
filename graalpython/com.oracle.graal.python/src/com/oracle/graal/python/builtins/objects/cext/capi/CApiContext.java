@@ -122,8 +122,9 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 public final class CApiContext extends CExtContext {
+    public static final String LOGGER_CAPI_NAME = "capi";
     protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
 
     /**
      * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
@@ -184,6 +185,10 @@ public final class CApiContext extends CExtContext {
      * Next key that will be allocated byt PyThread_tss_create
      */
     private AtomicLong nextTssKey = new AtomicLong();
+
+    public static TruffleLogger getLogger(Class<?> clazz) {
+        return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
+    }
 
     /**
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
@@ -417,7 +422,7 @@ public final class CApiContext extends CExtContext {
      */
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, PythonUtils.EMPTY_STRING_ARRAY);
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiReferenceCleanerRootNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiReferenceCleanerRootNode.class);
 
         @Child private CalleeContext calleeContext;
         @Child private InteropLibrary pointerObjectLib;
