@@ -1986,7 +1986,7 @@ public abstract class CExtNodes {
         static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached ToBorrowedRefNode toSulongNode1) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -2012,7 +2012,7 @@ public abstract class CExtNodes {
                         @Cached ToBorrowedRefNode toSulongNode1,
                         @Cached ToBorrowedRefNode toSulongNode4) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
         }

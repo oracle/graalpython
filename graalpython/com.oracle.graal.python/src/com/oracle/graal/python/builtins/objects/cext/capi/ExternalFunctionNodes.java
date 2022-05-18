@@ -901,6 +901,7 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, boolean isStatic) {
             super(language, name, isStatic);
@@ -925,15 +926,24 @@ public abstract class ExternalFunctionNodes {
                 fastcallKwnames[i] = kwargs[i].getName();
                 fastcallArgs[args.length + i] = kwargs[i].getValue();
             }
-            return new Object[]{self, factory.createTuple(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)};
+            return new Object[]{self, new CPyObjectArrayWrapper(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
+            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
             releaseNativeWrapperNode.execute(cArguments[3]);
+        }
+
+        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
+            if (wrapperLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
+            }
+            return wrapperLib;
         }
 
         @Override
@@ -944,8 +954,8 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
-        @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
+        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallRoot(PythonLanguage language, String name, boolean isStatic) {
             super(language, name, isStatic);
@@ -953,7 +963,6 @@ public abstract class ExternalFunctionNodes {
 
         public MethFastcallRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
         }
 
@@ -961,14 +970,23 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            return new Object[]{self, factory.createTuple(args), args.length};
+            return new Object[]{self, new CPyObjectArrayWrapper(args), args.length};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
+            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
+            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
+        }
+
+        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
+            if (wrapperLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
+            }
+            return wrapperLib;
         }
 
         @Override
