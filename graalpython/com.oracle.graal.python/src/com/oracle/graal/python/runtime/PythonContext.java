@@ -1795,7 +1795,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean isExecutableAccessAllowed() {
-        return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
+        return getEnv().isHostLookupAllowed() || isNativeAccessAllowed();
     }
 
     /**

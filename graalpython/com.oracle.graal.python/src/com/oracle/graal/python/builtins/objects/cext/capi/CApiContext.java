@@ -969,7 +969,7 @@ public final class CApiContext extends CExtContext {
                  */
                 throw e.getExceptionForReraise();
             } catch (RuntimeException e) {
-                if (!context.getEnv().isNativeAccessAllowed()) {
+                if (!context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
                 throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
