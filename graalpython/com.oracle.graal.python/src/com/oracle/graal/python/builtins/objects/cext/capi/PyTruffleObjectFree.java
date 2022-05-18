@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
