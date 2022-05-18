@@ -56,13 +56,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsT
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeArgProcToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeObjArgProcToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBorrowedRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
@@ -72,13 +73,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -86,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -126,7 +124,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -616,71 +613,6 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    /**
-     * Decrements the ref count by one of any {@link PythonNativeWrapper} object.
-     * <p>
-     * This node avoids memory leaks for arguments given to native.<br>
-     * Problem description:<br>
-     * {@link PythonNativeWrapper} objects given to C code may go to native, i.e., a handle will be
-     * allocated. In this case, no ref count manipulation is done since the C code considers the
-     * reference to be borrowed and the Python code just doesn't do it because we have a GC. This
-     * means that the handle will stay allocated and we are leaking the wrapper object.
-     * </p>
-     */
-    @ImportStatic(CApiGuards.class)
-    abstract static class ReleaseNativeWrapperNode extends Node {
-
-        public abstract void execute(Object pythonObject);
-
-        @Specialization
-        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
-                        @Cached SubRefCntNode subRefCntNode) {
-            // in the cached case, refCntNode acts as a branch profile
-            if (subRefCntNode.dec(nativeWrapper) == 0) {
-                traverseNativeWrapperNode.execute(nativeWrapper.getDelegateSlowPath());
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        @SuppressWarnings("unused")
-        static void doOther(Object object) {
-            // just do nothing; this is an implicit profile
-        }
-    }
-
-    /**
-     * Traverses the items of a tuple and applies {@link ReleaseNativeWrapperNode} on the items if
-     * the tuple is up to be released.
-     */
-    abstract static class TraverseNativeWrapperNode extends Node {
-
-        public abstract void execute(Object containerObject);
-
-        @Specialization
-        static void doTuple(PTuple tuple,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached SubRefCntNode subRefCntNode) {
-
-            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
-            for (int i = 0; i < values.length; i++) {
-                Object value = values[i];
-                if (value instanceof PythonObject) {
-                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
-                    // only traverse if refCnt != 0; this will break the cycle
-                    if (nativeWrapper != null) {
-                        subRefCntNode.dec(nativeWrapper);
-                    }
-                }
-            }
-        }
-
-        @Fallback
-        static void doOther(@SuppressWarnings("unused") Object other) {
-            // do nothing
-        }
-    }
-
     abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
@@ -763,18 +695,6 @@ public abstract class ExternalFunctionNodes {
                 PythonUtils.arraycopy(variableArguments, 0, arguments, userArgumentLength, variableArgumentsLength);
             }
             return arguments;
-        }
-
-        static Object[] copyPArguments(VirtualFrame frame) {
-            return copyPArguments(frame, PArguments.getUserArgumentLength(frame));
-        }
-
-        static Object[] copyPArguments(VirtualFrame frame, int newUserArgumentLength) {
-            Object[] objects = PArguments.create(newUserArgumentLength);
-            PArguments.setGlobals(objects, PArguments.getGlobals(frame));
-            PArguments.setClosure(objects, PArguments.getClosure(frame));
-            PArguments.setSpecialArgument(objects, PArguments.getSpecialArgument(frame));
-            return objects;
         }
 
         private ReadIndexedArgumentNode ensureReadCallableNode() {
@@ -1593,10 +1513,6 @@ public abstract class ExternalFunctionNodes {
     abstract static class GetSetRootNode extends MethodDescriptorRoot {
 
         @Child private ReadIndexedArgumentNode readClosureNode;
-
-        GetSetRootNode(PythonLanguage language, String name) {
-            super(language, name, false);
-        }
 
         GetSetRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
