@@ -149,7 +149,7 @@ import com.oracle.graal.python.util.PythonUtils;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 20;
+    public static final int BYTECODE_VERSION = 21;
 
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
