@@ -188,6 +188,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
@@ -3753,6 +3754,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached PCallHPyFunction callWriteDataNode,
+                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 5);
             boolean mustRelease = gil.acquire();
@@ -3763,9 +3765,10 @@ public abstract class GraalHPyContextFunctions {
                     return -1;
                 }
                 PSlice slice = (PSlice) obj;
-                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[2], 0L, slice.getStart());
-                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[3], 0L, slice.getStop());
-                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[4], 0L, slice.getStep());
+                SliceInfo info = sliceUnpack.execute(slice);
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[2], 0L, info.start);
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[3], 0L, info.stop);
+                callWriteDataNode.call(context, GRAAL_HPY_WRITE_UL, arguments[4], 0L, info.step);
                 return 0;
             } finally {
                 gil.release(mustRelease);
