@@ -789,7 +789,6 @@ def run_hpy_unittests(python_binary, args=None):
                 "args": args, "paths": [_hpy_test_root()], "env": env.copy(), "use_pytest": True, "lock": lock,
             }))
             threads[-1].start()
-        retval = 0
         for t in threads:
             t.join()
         for t in threads:

@@ -61,7 +61,6 @@ import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -132,23 +131,9 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
-    private static final Unsafe UNSAFE = initUnsafe();
+    private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
     private static final Object CRYPT_LOCK = new Object();
-
-    private static Unsafe initUnsafe() {
-        try {
-            return Unsafe.getUnsafe();
-        } catch (SecurityException se) {
-            try {
-                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-                theUnsafe.setAccessible(true);
-                return (Unsafe) theUnsafe.get(Unsafe.class);
-            } catch (Exception e) {
-                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
-            }
-        }
-    }
 
     private enum PosixNativeFunction {
         get_errno("():sint32"),
@@ -1666,7 +1651,7 @@ public final class NFIPosixSupport extends PosixSupport {
      * Provides access to {@code struct addrinfo}.
      *
      * The layout of native {@code struct addrinfo} is as follows:
-     * 
+     *
      * <pre>
      * {@code
      *     struct addrinfo {
@@ -1681,7 +1666,7 @@ public final class NFIPosixSupport extends PosixSupport {
      *     };
      * }
      * </pre>
-     * 
+     *
      * To avoid multiple NFI calls, we transfer the data in batch using arrays of {@code int}s and
      * {@code long}s - int values are stored in {@code intData}, the {@code ai_canonname} and
      * {@code ai_next} pointers are stored in {@code longData} and the socket address pointed to by

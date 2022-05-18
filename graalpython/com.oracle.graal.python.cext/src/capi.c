@@ -122,19 +122,19 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     type_handle->tp_basicsize = basicsize;
     type_handle->tp_itemsize = itemsize;
     if (alloc_fun) {
-    	type_handle->tp_alloc = alloc_fun;
+        type_handle->tp_alloc = alloc_fun;
     }
     if (dealloc_fun) {
-    	type_handle->tp_dealloc = dealloc_fun;
+        type_handle->tp_dealloc = dealloc_fun;
     }
     if (free_fun) {
-    	type_handle->tp_free = free_fun;
+        type_handle->tp_free = free_fun;
     }
     if (free_fun) {
-    	type_handle->tp_free = free_fun;
+        type_handle->tp_free = free_fun;
     }
     if (vectorcall_offset) {
-    	type_handle->tp_vectorcall_offset = vectorcall_offset;
+        type_handle->tp_vectorcall_offset = vectorcall_offset;
     }
     if (as_buffer) {
         type_handle->tp_as_buffer = as_buffer;
@@ -151,12 +151,12 @@ static void initialize_builtin_type(PyTypeObject* structure, const char* typname
 #define init_hidden(a, b) initialize ## a ## _ ## b ## _gen
 #define init(a, b) init_hidden(a, b)
 
-#define initialize_type(typeobject, typename, struct)                   \
-    ctor(__COUNTER__)                                                   \
-    static void init(__COUNTER__, typeobject)(void) {                   \
-		initialize_builtin_type(&typeobject,                          \
-                                #typename,                            \
-                                polyglot_ ## struct ## _typeid());    \
+#define initialize_type(typeobject, typename, struct)              \
+    ctor(__COUNTER__)                                              \
+    static void init(__COUNTER__, typeobject)(void) {              \
+        initialize_builtin_type(&typeobject,                       \
+                                #typename,                         \
+                                polyglot_ ## struct ## _typeid()); \
     }
 
 #define declare_struct(typeobject, typename, struct)    \
@@ -224,7 +224,7 @@ POLYGLOT_DECLARE_TYPE(Py_buffer);
 #define REGISTER_BASIC_TYPE(typename)                                     \
     POLYGLOT_DECLARE_TYPE(typename);                                      \
     NO_INLINE polyglot_typeid get_ ## typename ## _typeid(void)  {        \
-		return polyglot_ ## typename ## _typeid();                        \
+        return polyglot_ ## typename ## _typeid();                        \
     }
 
 /* just a renaming to avoid name clash with Java types */
@@ -269,8 +269,8 @@ REGISTER_BASIC_TYPE(PyThreadState);
 #define REGISTER_POINTER_TYPE(basetype, ptrtype)                                  \
     typedef basetype* ptrtype;                                                    \
     POLYGLOT_DECLARE_TYPE(ptrtype);                                               \
-    NO_INLINE polyglot_typeid get_ ## ptrtype ## _typeid(void)  {                \
-		return polyglot_array_typeid(polyglot_ ## basetype ## _typeid(), 1);      \
+    NO_INLINE polyglot_typeid get_ ## ptrtype ## _typeid(void)  {                 \
+        return polyglot_array_typeid(polyglot_ ## basetype ## _typeid(), 1);      \
     }
 
 REGISTER_POINTER_TYPE(int64_t, int64_ptr_t);
@@ -396,77 +396,77 @@ Py_ssize_t get_ob_refcnt(PyObject* obj) {
 
 /** to be used from Java code only; reads native 'tp_dict' field */
 PyObject* get_tp_dict(PyTypeObject* obj) {
-	return native_to_java(obj->tp_dict);
+    return native_to_java(obj->tp_dict);
 }
 
 /** to be used from Java code only; reads native 'tp_base' field */
 PyObject* get_tp_base(PyTypeObject* obj) {
-	return native_to_java((PyObject*) obj->tp_base);
+    return native_to_java((PyObject*) obj->tp_base);
 }
 
 /** to be used from Java code only; reads native 'tp_bases' field */
 PyObject* get_tp_bases(PyTypeObject* obj) {
-	return native_to_java(obj->tp_bases);
+    return native_to_java(obj->tp_bases);
 }
 
 /** to be used from Java code only; reads native 'tp_name' field */
 const char* get_tp_name(PyTypeObject* obj) {
-	return obj->tp_name;
+    return obj->tp_name;
 }
 
 /** to be used from Java code only; reads native 'tp_mro' field */
 PyObject* get_tp_mro(PyTypeObject* obj) {
-	return native_to_java(obj->tp_mro);
+    return native_to_java(obj->tp_mro);
 }
 
 /** to be used from Java code only; reads native 'tp_subclasses' field */
 PyObject* get_tp_subclasses(PyTypeObject* obj) {
-	return native_to_java(obj->tp_subclasses);
+    return native_to_java(obj->tp_subclasses);
 }
 
 /** to be used from Java code only; reads native 'tp_dictoffset' field */
 Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
-	return obj->tp_dictoffset;
+    return obj->tp_dictoffset;
 }
 
 /** to be used from Java code only; reads native 'tp_weaklistoffset' field */
 Py_ssize_t get_tp_weaklistoffset(PyTypeObject* obj) {
-	return obj->tp_weaklistoffset;
+    return obj->tp_weaklistoffset;
 }
 
 /** to be used from Java code only; reads native 'tp_itemsize' field */
 Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
-	return obj->tp_itemsize;
+    return obj->tp_itemsize;
 }
 
 /** to be used from Java code only; reads native 'tp_basicsize' field */
 Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
-	return obj->tp_basicsize;
+    return obj->tp_basicsize;
 }
 
 /** to be used from Java code only; reads native 'tp_alloc' field */
 allocfunc get_tp_alloc(PyTypeObject* obj) {
-	return obj->tp_alloc;
+    return obj->tp_alloc;
 }
 
 /** to be used from Java code only; reads native 'tp_dealloc' field */
 destructor get_tp_dealloc(PyTypeObject* obj) {
-	return obj->tp_dealloc;
+    return obj->tp_dealloc;
 }
 
 /** to be used from Java code only; reads native 'tp_free' field */
 freefunc get_tp_free(PyTypeObject* obj) {
-	return obj->tp_free;
+    return obj->tp_free;
 }
 
 /** to be used from Java code only; reads native 'tp_as_buffer' field */
 PyBufferProcs* get_tp_as_buffer(PyTypeObject* obj) {
-	return obj->tp_as_buffer;
+    return obj->tp_as_buffer;
 }
 
 /** to be used from Java code only; reads native 'tp_flags' field */
 unsigned long get_tp_flags(PyTypeObject* obj) {
-	return obj->tp_flags;
+    return obj->tp_flags;
 }
 
 POLYGLOT_DECLARE_TYPE(PyMethodDef);
@@ -530,17 +530,17 @@ polyglot_typeid get_newfunc_typeid() {
 
 /** to be used from Java code only; calls INCREF */
 void PyTruffle_INCREF(PyObject* obj) {
-	Py_INCREF(obj);
+    Py_INCREF(obj);
 }
 
 /** to be used from Java code only; calls DECREF */
 void PyTruffle_DECREF(PyObject* obj) {
-	Py_DECREF(obj);
+    Py_DECREF(obj);
 }
 
 /** to be used from Java code only; calls DECREF */
 Py_ssize_t PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
-	return (obj->ob_refcnt += value);
+    return (obj->ob_refcnt += value);
 }
 
 /** to be used from Java code only; calls DECREF */
@@ -558,27 +558,27 @@ Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
 }
 
 /** to be used from Java code only; calls DECREF */
-Py_ssize_t PyTruffle_bulk_SUBREF(PyObject* ptrArray[], Py_ssize_t values[], int64_t len) {
-	int64_t i;
-	PyObject* obj;
-	Py_ssize_t value;
+Py_ssize_t PyTruffle_bulk_SUBREF(PyObject *ptrArray[], Py_ssize_t values[], int64_t len) {
+    int64_t i;
+    PyObject *obj;
+    Py_ssize_t value;
 
-	for (i=0; i < len; i++) {
-		obj = ptrArray[i];
-		value = values[i];
-		/* IMPORTANT: 'value == 0' indicates we should not process the reference at all */
-		if (value > 0) {
-			Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
-			if (new_value == 0) {
-				_Py_Dealloc(obj);
-			}
+    for (i = 0; i < len; i++) {
+        obj = ptrArray[i];
+        value = values[i];
+        /* IMPORTANT: 'value == 0' indicates we should not process the reference at all */
+        if (value > 0) {
+            Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
+            if (new_value == 0) {
+                _Py_Dealloc(obj);
+            }
 #ifdef Py_REF_DEBUG
-			else if (new_value < 0) {
-				_Py_NegativeRefcount(filename, lineno, op);
-			}
+            else if (new_value < 0) {
+                _Py_NegativeRefcount(filename, lineno, op);
+            }
 #endif
-		}
-	}
+        }
+    }
     return 0;
 }
 
@@ -591,12 +591,12 @@ uint64_t PyTruffle_Wchar_Size() {
 }
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
-void PyTruffle_Free(void* obj) {
-	if(points_to_handle_space(obj) && is_handle(obj)) {
-		release_handle(obj);
-	} else {
-		PyMem_RawFree(obj);
-	}
+void PyTruffle_Free(void *obj) {
+    if (points_to_handle_space(obj) && is_handle(obj)) {
+        release_handle(obj);
+    } else {
+        PyMem_RawFree(obj);
+    }
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
@@ -706,10 +706,10 @@ void* ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
 PyObject* ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
-        return Py_None;
-    } else {
-        return native_to_java(member);
+        member = Py_None;
     }
+    Py_INCREF(member);
+    return native_to_java(member);
 }
 
 int ReadCharMember(PyObject* object, Py_ssize_t offset) {
@@ -738,6 +738,7 @@ PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
         PyErr_SetString(PyExc_ValueError, "member must not be NULL");
         return NULL;
     } else {
+        Py_INCREF(member);
         return native_to_java(member);
     }
 }
@@ -788,21 +789,23 @@ int WriteStringMember(PyObject* object, Py_ssize_t offset, char* value) {
 }
 
 int WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
-	char *addr = (char*) (((char*)object) + offset);
-	size_t n;
-	if (polyglot_has_array_elements(value)) {
-		n = polyglot_get_array_size(value);
-	} else {
-		n = strlen(value);
-	}
-	memcpy(addr, value, n);
-	return 0;
+    char *addr = (char*) (((char*) object) + offset);
+    size_t n;
+    if (polyglot_has_array_elements(value)) {
+        n = polyglot_get_array_size(value);
+    } else {
+        n = strlen(value);
+    }
+    memcpy(addr, value, n);
+    return 0;
 }
 
 int WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
-	/* We first need to decref the old value. */
-    Py_XDECREF(ReadMember(object, offset, PyObject*));
+    /* We first need to decref the old value. */
+    PyObject *oldv = ReadMember(object, offset, PyObject*);
+    Py_XINCREF(value);
     WriteMember(object, offset, value, PyObject*);
+    Py_XDECREF(oldv);
     return 0;
 }
 
@@ -837,12 +840,13 @@ int WriteULongMember(PyObject* object, Py_ssize_t offset, unsigned long value) {
 }
 
 int WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
-	PyObject *oldv = ReadMember(object, offset, PyObject*);
+    PyObject *oldv = ReadMember(object, offset, PyObject*);
     if (oldv == NULL) {
         return 1;
     }
-    Py_XDECREF(oldv);
+    Py_XINCREF(value);
     WriteMember(object, offset, value, PyObject*);
+    Py_XDECREF(oldv);
     return 0;
 }
 
@@ -905,7 +909,7 @@ void* truffle_ptr_add(void* x, Py_ssize_t y) {
 }
 
 double truffle_read_ob_fval(PyFloatObject* fobj) {
-	return fobj->ob_fval;
+    return fobj->ob_fval;
 }
 
 void truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
@@ -914,7 +918,7 @@ void truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_
 
 /* called from Java to get number of bits per long digit */
 int32_t get_long_bits_in_digit() {
-	return PYLONG_BITS_IN_DIGIT;
+    return PYLONG_BITS_IN_DIGIT;
 }
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {

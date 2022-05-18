@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -128,8 +129,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1963,7 +1966,7 @@ public abstract class CExtNodes {
                         @Cached CallNode callNode,
                         @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
             Object[] converted = allToPythonNode.execute(args, 1);
-            return callNode.execute(frame, args[0], converted, new PKeyword[0]);
+            return callNode.execute(frame, args[0], converted, PKeyword.EMPTY_KEYWORDS);
         }
 
         public static DirectUpcallNode create() {
@@ -1983,7 +1986,7 @@ public abstract class CExtNodes {
         static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached ToBorrowedRefNode toSulongNode1) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -2009,7 +2012,7 @@ public abstract class CExtNodes {
                         @Cached ToBorrowedRefNode toSulongNode1,
                         @Cached ToBorrowedRefNode toSulongNode4) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
         }
@@ -2963,7 +2966,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class SubRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(SubRefCntNode.class);
 
         public final long dec(Object object) {
             return execute(object, 1);
@@ -4026,6 +4029,71 @@ public abstract class CExtNodes {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
             checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
             return (PMemoryView) asPythonObjectNode.execute(result);
+        }
+    }
+
+    /**
+     * Decrements the ref count by one of any {@link PythonNativeWrapper} object.
+     * <p>
+     * This node avoids memory leaks for arguments given to native.<br>
+     * Problem description:<br>
+     * {@link PythonNativeWrapper} objects given to C code may go to native, i.e., a handle will be
+     * allocated. In this case, no ref count manipulation is done since the C code considers the
+     * reference to be borrowed and the Python code just doesn't do it because we have a GC. This
+     * means that the handle will stay allocated and we are leaking the wrapper object.
+     * </p>
+     */
+    @ImportStatic(CApiGuards.class)
+    abstract static class ReleaseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object pythonObject);
+
+        @Specialization
+        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
+                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
+                        @Cached SubRefCntNode subRefCntNode) {
+            // in the cached case, refCntNode acts as a branch profile
+            if (subRefCntNode.dec(nativeWrapper) == 0) {
+                traverseNativeWrapperNode.execute(nativeWrapper.getDelegateSlowPath());
+            }
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        @SuppressWarnings("unused")
+        static void doOther(Object object) {
+            // just do nothing; this is an implicit profile
+        }
+    }
+
+    /**
+     * Traverses the items of a tuple and applies {@link ReleaseNativeWrapperNode} on the items if
+     * the tuple is up to be released.
+     */
+    abstract static class TraverseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object containerObject);
+
+        @Specialization
+        static void doTuple(PTuple tuple,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached SubRefCntNode subRefCntNode) {
+
+            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            for (int i = 0; i < values.length; i++) {
+                Object value = values[i];
+                if (value instanceof PythonObject) {
+                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
+                    // only traverse if refCnt != 0; this will break the cycle
+                    if (nativeWrapper != null) {
+                        subRefCntNode.dec(nativeWrapper);
+                    }
+                }
+            }
+        }
+
+        @Fallback
+        static void doOther(@SuppressWarnings("unused") Object other) {
+            // do nothing
         }
     }
 }

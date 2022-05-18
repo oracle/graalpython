@@ -209,7 +209,7 @@ public class NativeLibrary {
 
     private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        if (context.getEnv().isNativeAccessAllowed()) {
+        if (context.isNativeAccessAllowed()) {
             String path = getLibPath(context, name);
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
             if (LOGGER.isLoggable(Level.FINE)) {

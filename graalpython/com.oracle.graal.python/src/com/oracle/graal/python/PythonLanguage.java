@@ -826,6 +826,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, clazz);
     }
 
+    @TruffleBoundary
+    public static TruffleLogger getLogger(String name) {
+        return TruffleLogger.getLogger(ID, name);
+    }
+
     /**
      * Loggers that should report any known incompatibility with CPython, which is silently ignored
      * in order to be able to continue the execution. Example is setting the stack size limit: it
