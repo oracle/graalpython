@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SortNodes {
@@ -214,9 +217,8 @@ public abstract class SortNodes {
             }
         }
 
-        @Specialization(guards = "isStringOnly(storage)")
         @TruffleBoundary
-        void sort(ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+        private static void sortStrings(ObjectSequenceStorage storage, boolean reverse) {
             Object[] array = storage.getInternalArray();
             int len = storage.length();
             Comparator<Object> comparator;
@@ -228,23 +230,34 @@ public abstract class SortNodes {
             Arrays.sort(array, 0, len, comparator);
         }
 
-        @TruffleBoundary
-        protected static boolean isStringOnly(ObjectSequenceStorage storage) {
+        protected boolean isStringOnly(ObjectSequenceStorage storage, LoopConditionProfile isStringOnlyLoopProfile, ConditionProfile isStringOnlyBreakProfile) {
             int length = storage.length();
             Object[] array = storage.getInternalArray();
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; isStringOnlyLoopProfile.profile(i < length); i++) {
                 Object value = array[i];
-                if (!(value instanceof String)) {
+                if (isStringOnlyBreakProfile.profile(!(value instanceof String))) {
+                    LoopNode.reportLoopCount(this, i);
                     return false;
                 }
             }
+            LoopNode.reportLoopCount(this, length);
             return true;
         }
 
         @Specialization
-        void sort(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
+        void sortObjSeqStorage(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
+                        @Cached ConditionProfile isStringOnlyProfile,
+                        @Cached LoopConditionProfile isStringOnlyLoopProfile,
+                        @Cached("createCountingProfile()") ConditionProfile isStringOnlyBreakProfile,
                         @Cached CallContext callContext) {
-            sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, callContext);
+            if (isStringOnlyProfile.profile(isStringOnly(storage, isStringOnlyLoopProfile, isStringOnlyBreakProfile))) {
+                // Sorting of strings seems to be so much faster (especially on SVM) that it is
+                // worth always checking for string only sequences and not replacing the strings
+                // specialized code with generic object storage code
+                sortStrings(storage, reverse);
+            } else {
+                sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, callContext);
+            }
         }
 
         @Specialization(guards = "!isPNone(keyfunc)")
