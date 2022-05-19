@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,56 +41,48 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
+public class PBytecodeGeneratorRootNode extends PRootNode {
     private final PBytecodeRootNode rootNode;
-    private final String originalName;
+    private final int resumeBci;
+    private final int resumeStackTop;
 
-    @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
-
-    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
 
     @TruffleBoundary
-    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName) {
-        super(language, frameDescriptor);
+    public PBytecodeGeneratorRootNode(PythonLanguage language, PBytecodeRootNode rootNode, int resumeBci, int resumeStackTop) {
+        super(language, rootNode.getFrameDescriptor());
         this.rootNode = rootNode;
-        this.originalName = originalName;
-        // TODO compress somehow
-        this.callTargets = new RootCallTarget[rootNode.getCodeUnit().code.length];
-        this.callTargets[0] = rootNode.getCallTarget();
+        this.resumeBci = resumeBci;
+        this.resumeStackTop = resumeStackTop;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object[] arguments = frame.getArguments();
-
-        // This is passed from InvokeNode node
-        PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
-        assert generatorFunction != null;
-        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+        calleeContext.enter(frame);
+        try {
+            return rootNode.executeFromBci(frame, resumeBci, resumeStackTop);
+        } finally {
+            calleeContext.exit(frame, this);
+        }
     }
 
     @Override
     public String getName() {
-        return originalName;
+        return rootNode.getName();
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<generator function root" + originalName + ">";
+        return "<bytecode " + rootNode.getName() + ">";
     }
 
     @Override

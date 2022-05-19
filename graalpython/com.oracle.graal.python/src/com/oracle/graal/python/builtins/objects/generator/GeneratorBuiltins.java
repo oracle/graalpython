@@ -142,7 +142,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+        Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
                         @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
@@ -153,12 +153,17 @@ public class GeneratorBuiltins extends PythonBuiltins {
             Object result;
             try {
                 result = call.execute(frame, null, null, null, arguments);
+                if (result == null) {
+                    self.markAsFinished();
+                }
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
             } finally {
                 self.setRunning(false);
-                self.setNextCallTarget();
+                if (!self.isFinished()) {
+                    self.setNextCallTarget(PythonLanguage.get(this));
+                }
             }
             handleResult(self, result, raiseNode);
             return result;
@@ -166,7 +171,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "cached")
         @Megamorphic
-        static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+        Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached GenericInvokeNode call,
                         @Cached PRaiseNode raiseNode) {
@@ -182,12 +187,17 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 } else {
                     result = call.execute(self.getCurrentCallTarget(), arguments);
                 }
+                if (result == null) {
+                    self.markAsFinished();
+                }
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
             } finally {
                 self.setRunning(false);
-                self.setNextCallTarget();
+                if (!self.isFinished()) {
+                    self.setNextCallTarget(PythonLanguage.get(this));
+                }
             }
             handleResult(self, result, raiseNode);
             return result;

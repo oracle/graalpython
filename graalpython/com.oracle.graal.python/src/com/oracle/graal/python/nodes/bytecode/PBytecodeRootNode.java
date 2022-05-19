@@ -413,6 +413,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return -1;
         }
 
+        public int getGeneratorStackTop(Frame frame) {
+            return frame.getInt(rootNode.generatorStackTopOffset);
+        }
+
         public Object getYieldFrom(Frame generatorFrame) {
             int bci = getBci(generatorFrame);
             /* Match the `yield from` bytecode pattern and get the object from stack */
@@ -597,8 +601,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.pythonInternal = pythonInternal;
     }
 
+    public CodeUnit getCodeUnit() {
+        return co;
+    }
+
     @FunctionalInterface
     private static interface NodeSupplier<T> {
+
         T get();
     }
 
@@ -781,12 +790,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public Object execute(VirtualFrame virtualFrame) {
         calleeContext.enter(virtualFrame);
         try {
-            Object[] arguments = virtualFrame.getArguments();
             if (!co.isGeneratorOrCoroutine()) {
-                copyArgsAndCells(virtualFrame, arguments);
+                copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeInner(virtualFrame, false, 0, stackoffset - 1);
+            return executeFromBci(virtualFrame, 0, stackoffset - 1);
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -806,13 +814,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
-        return executeInner(osrFrame, true, target, (Integer) interpreterState);
+        return executeFromBci(osrFrame, target, (Integer) interpreterState);
     }
 
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    private Object executeInner(VirtualFrame virtualFrame, boolean resumingAfterOSR, int initialBci, int initialStackTop) {
+    Object executeFromBci(VirtualFrame virtualFrame, int initialBci, int initialStackTop) {
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
@@ -824,10 +832,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
         if (isGeneratorOrCoroutine) {
             localFrame = PArguments.getGeneratorFrame(virtualFrame);
-            if (!resumingAfterOSR) {
-                bci = localFrame.getInt(bcioffset);
-                stackTop = localFrame.getInt(generatorStackTopOffset);
-            }
         }
 
         byte[] localBC = bytecode;

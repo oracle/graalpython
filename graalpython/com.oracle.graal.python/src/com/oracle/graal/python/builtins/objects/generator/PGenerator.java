@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.nodes.generator.YieldFromNode;
@@ -42,6 +43,7 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -54,7 +56,6 @@ public final class PGenerator extends PythonBuiltinObject {
 
     private String name;
     private String qualname;
-    private final boolean usesBytecode;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
@@ -71,6 +72,8 @@ public final class PGenerator extends PythonBuiltinObject {
     private final Object iterator;
     private final boolean isPRangeIterator;
     private final GeneratorInfo generatorInfo;
+    private final PBytecodeRootNode bytecodeRootNode;
+    private final PBytecodeRootNode.FrameInfo frameInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
 
@@ -106,12 +109,12 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator, false);
+        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator);
     }
 
-    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget bytecodeCallTarget, Object[] arguments) {
+    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         rootNode.createGeneratorFrame(arguments);
-        return new PGenerator(lang, name, qualname, new RootCallTarget[]{bytecodeCallTarget}, null, arguments, null, null, true);
+        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments);
     }
 
     @ExplodeLoop
@@ -131,7 +134,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
-                    PCell[] closure, Object iterator, boolean usesBytecode) {
+                    PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -143,11 +146,35 @@ public final class PGenerator extends PythonBuiltinObject {
         this.finished = false;
         this.iterator = iterator;
         this.isPRangeIterator = iterator instanceof PIntRangeIterator;
-        this.usesBytecode = usesBytecode;
+        this.bytecodeRootNode = null;
+        this.frameInfo = null;
     }
 
-    public void setNextCallTarget() {
-        if (!usesBytecode) {
+    private PGenerator(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
+        this.name = name;
+        this.qualname = qualname;
+        this.callTargets = callTargets;
+        this.currentCallTarget = 0;
+        this.arguments = arguments;
+        this.finished = false;
+        this.bytecodeRootNode = rootNode;
+        this.frameInfo = (PBytecodeRootNode.FrameInfo) rootNode.getFrameDescriptor().getInfo();
+        this.iterator = null;
+        this.isPRangeIterator = false;
+        this.closure = null;
+        this.generatorInfo = null;
+    }
+
+    public void setNextCallTarget(PythonLanguage language) {
+        if (usesBytecode()) {
+            currentCallTarget = getBci();
+            if (callTargets[currentCallTarget] == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PBytecodeGeneratorRootNode rootNode = new PBytecodeGeneratorRootNode(language, bytecodeRootNode, currentCallTarget, getStackTop());
+                callTargets[currentCallTarget] = rootNode.getCallTarget();
+            }
+        } else {
             currentCallTarget = PArguments.getControlDataFromGeneratorArguments(getArguments()).getLastYieldIndex();
         }
     }
@@ -162,6 +189,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public AbstractYieldNode getCurrentYieldNode() {
+        assert !usesBytecode();
         if (currentCallTarget == 0 || running || finished) {
             // Not stopped on a yield
             return null;
@@ -171,11 +199,11 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     public boolean usesBytecode() {
-        return usesBytecode;
+        return bytecodeRootNode != null;
     }
 
     public Object getYieldFrom() {
-        if (!usesBytecode) {
+        if (!usesBytecode()) {
             AbstractYieldNode currentYield = getCurrentYieldNode();
             if (currentYield instanceof YieldFromNode) {
                 int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
@@ -183,26 +211,24 @@ public final class PGenerator extends PythonBuiltinObject {
             }
             return null;
         } else {
-            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-            return info.getYieldFrom(generatorFrame);
+            return frameInfo.getYieldFrom(PArguments.getGeneratorFrame(arguments));
         }
     }
 
     public boolean isStarted() {
-        return (currentCallTarget != 0 || usesBytecode && getBci() > 0) && !running;
+        return currentCallTarget != 0 && !running;
     }
 
     public int getBci() {
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
-        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-        return info.getBci(generatorFrame);
+        return frameInfo.getBci(PArguments.getGeneratorFrame(arguments));
+    }
+
+    public int getStackTop() {
+        return frameInfo.getGeneratorStackTop(PArguments.getGeneratorFrame(arguments));
     }
 
     public Object getReturnValue() {
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
-        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-        return info.getGeneratorReturnValue(generatorFrame);
+        return frameInfo.getGeneratorReturnValue(PArguments.getGeneratorFrame(arguments));
     }
 
     public Object[] getArguments() {
