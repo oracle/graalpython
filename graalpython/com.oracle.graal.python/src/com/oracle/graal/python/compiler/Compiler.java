@@ -1453,11 +1453,13 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addYieldFrom() {
         Block start = new Block();
+        Block yield = new Block();
         Block resume = new Block();
         Block exit = new Block();
         Block exceptionHandler = new Block();
         unit.useNextBlock(start);
         addOp(SEND, exit);
+        unit.useNextBlock(yield);
         addOp(YIELD_VALUE);
         unit.pushBlock(new BlockInfo.TryExcept(resume, exceptionHandler));
         unit.useNextBlock(resume);
@@ -1466,7 +1468,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.popBlock();
         unit.useNextBlock(exceptionHandler);
         addOp(THROW, exit);
-        addOp(JUMP_BACKWARD, start);
+        addOp(JUMP_BACKWARD, yield);
         unit.useNextBlock(exit);
     }
 
