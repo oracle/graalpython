@@ -768,7 +768,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PArguments.setCallerFrameInfo(arguments, null);
         PArguments.setControlData(arguments, GENERATOR_CONTROL_DATA);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        generatorFrame.setInt(bcioffset, 0);
+        // This is just for inspection, unstarted generators should have bci == -1
+        generatorFrame.setInt(bcioffset, -1);
         generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
         copyArgsAndCells(generatorFrame, arguments);
     }
@@ -1458,7 +1459,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
                 if (newTarget == -1) {
-                    localFrame.setInt(bcioffset, beginBci);
+                    // For tracebacks
+                    virtualFrame.setInt(bcioffset, beginBci);
+                    if (isGeneratorOrCoroutine) {
+                        // For generator inspection
+                        localFrame.setInt(bcioffset, beginBci);
+                        localFrame.setInt(generatorStackTopOffset, stackTop);
+                    }
                     if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                         LoopNode.reportLoopCount(this, loopCount);
                     }

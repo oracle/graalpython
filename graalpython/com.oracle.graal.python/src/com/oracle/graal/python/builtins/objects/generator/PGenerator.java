@@ -211,6 +211,9 @@ public final class PGenerator extends PythonBuiltinObject {
             }
             return null;
         } else {
+            if (running) {
+                return null;
+            }
             return frameInfo.getYieldFrom(PArguments.getGeneratorFrame(arguments));
         }
     }
