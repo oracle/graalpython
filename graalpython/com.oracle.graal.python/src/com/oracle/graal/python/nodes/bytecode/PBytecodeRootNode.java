@@ -770,7 +770,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         // This is just for inspection, unstarted generators should have bci == -1
         generatorFrame.setInt(bcioffset, -1);
-        generatorFrame.setInt(generatorStackTopOffset, stackoffset - 1);
+        generatorFrame.setInt(generatorStackTopOffset, -1);
         copyArgsAndCells(generatorFrame, arguments);
     }
 
@@ -787,6 +787,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         initFreeVars(localFrame, arguments);
     }
 
+    int getInitialStackTop() {
+        return stackoffset - 1;
+    }
+
     @Override
     public Object execute(VirtualFrame virtualFrame) {
         calleeContext.enter(virtualFrame);
@@ -795,7 +799,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeFromBci(virtualFrame, 0, stackoffset - 1);
+            return executeFromBci(virtualFrame, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
         }

@@ -40,13 +40,25 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class PBytecodeGeneratorRootNode extends PRootNode {
@@ -55,6 +67,10 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     private final int resumeStackTop;
 
     @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
+    @Child private IsBuiltinClassProfile errorProfile;
+    @Child private PRaiseNode raise = PRaiseNode.create();
+
+    private final ConditionProfile returnProfile = ConditionProfile.create();
 
     @TruffleBoundary
     public PBytecodeGeneratorRootNode(PythonLanguage language, PBytecodeRootNode rootNode, int resumeBci, int resumeStackTop) {
@@ -67,11 +83,29 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
+        Object result;
         try {
-            return rootNode.executeFromBci(frame, resumeBci, resumeStackTop);
+            result = rootNode.executeFromBci(frame, resumeBci, resumeStackTop);
+        } catch (PException pe) {
+            // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+            // RuntimeError
+            pe.expectStopIteration(getErrorProfile());
+            throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
         } finally {
             calleeContext.exit(frame, this);
         }
+        if (returnProfile.profile(result == null)) {
+            // Null result indicates a generator return
+            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
+            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+            Object returnValue = info.getGeneratorReturnValue(generatorFrame);
+            if (returnValue != PNone.NONE) {
+                throw raise.raise(StopIteration, returnValue);
+            } else {
+                throw raise.raise(StopIteration);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -98,5 +132,13 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Override
     public SourceSection getSourceSection() {
         return rootNode.getSourceSection();
+    }
+
+    private IsBuiltinClassProfile getErrorProfile() {
+        if (errorProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            errorProfile = insert(IsBuiltinClassProfile.create());
+        }
+        return errorProfile;
     }
 }

@@ -69,7 +69,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         this.originalName = originalName;
         // TODO compress somehow
         this.callTargets = new RootCallTarget[rootNode.getCodeUnit().code.length];
-        this.callTargets[0] = rootNode.getCallTarget();
+        this.callTargets[0] = new PBytecodeGeneratorRootNode(language, rootNode, 0, rootNode.getInitialStackTop()).getCallTarget();
     }
 
     @Override

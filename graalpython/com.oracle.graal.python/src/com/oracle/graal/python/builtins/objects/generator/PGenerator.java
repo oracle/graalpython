@@ -182,7 +182,7 @@ public final class PGenerator extends PythonBuiltinObject {
     /**
      * Returns the call target that should be used the next time the generator is called. Each time
      * a generator call target returns through a yield, the generator should be updated with the
-     * next yield index to use via {@link #setNextCallTarget()}
+     * next yield index to use via {@link #setNextCallTarget}
      */
     public RootCallTarget getCurrentCallTarget() {
         return callTargets[currentCallTarget];
@@ -228,10 +228,6 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public int getStackTop() {
         return frameInfo.getGeneratorStackTop(PArguments.getGeneratorFrame(arguments));
-    }
-
-    public Object getReturnValue() {
-        return frameInfo.getGeneratorReturnValue(PArguments.getGeneratorFrame(arguments));
     }
 
     public Object[] getArguments() {

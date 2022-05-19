@@ -143,8 +143,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -153,9 +152,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
             Object result;
             try {
                 result = call.execute(frame, null, null, null, arguments);
-                if (result == null) {
-                    self.markAsFinished();
-                }
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -165,7 +161,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                     self.setNextCallTarget(PythonLanguage.get(this));
                 }
             }
-            handleResult(self, result, raiseNode);
             return result;
         }
 
@@ -173,8 +168,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Megamorphic
         Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached GenericInvokeNode call,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached GenericInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -187,9 +181,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 } else {
                     result = call.execute(self.getCurrentCallTarget(), arguments);
                 }
-                if (result == null) {
-                    self.markAsFinished();
-                }
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -199,19 +190,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                     self.setNextCallTarget(PythonLanguage.get(this));
                 }
             }
-            handleResult(self, result, raiseNode);
             return result;
-        }
-
-        private static void handleResult(PGenerator self, Object result, PRaiseNode raiseNode) {
-            if (result == null) {
-                Object returnValue = self.getReturnValue();
-                if (returnValue != PNone.NONE) {
-                    throw raiseNode.raise(StopIteration, returnValue);
-                } else {
-                    throw raiseNode.raise(StopIteration);
-                }
-            }
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
