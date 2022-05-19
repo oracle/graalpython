@@ -181,30 +181,12 @@ public class Token {
     }
 
     public int type;
-    public final int startOffset;
-    public final int endOffset;
-    public final int startLine;
-    public final int startColumn;
-    public final int endLine;
-    public final int endColumn;
+    public final SourceRange sourceRange;
     public final Object extraData;
 
-    public Token(int type, int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
-        this(type, startOffset, endOffset, startLine, startColumn, endLine, endColumn, null);
-    }
-
-    public Token(int type,
-                    int startOffset, int endOffset,
-                    int startLine, int startColumn,
-                    int endLine, int endColumn,
-                    Object extraData) {
-        this.startOffset = startOffset;
-        this.endOffset = endOffset;
-        this.startLine = startLine;
-        this.startColumn = startColumn;
-        this.endLine = endLine;
-        this.endColumn = endColumn;
+    public Token(int type, SourceRange sourceRange, Object extraData) {
         this.type = type;
+        this.sourceRange = sourceRange;
         this.extraData = extraData;
     }
 
@@ -217,7 +199,7 @@ public class Token {
         } else {
             sb.append(this.type);
         }
-        sb.append(" [").append(this.startOffset).append(", ").append(this.endOffset).append(']');
+        sb.append(" [").append(this.sourceRange.startOffset).append(", ").append(this.sourceRange.endOffset).append(']');
         return sb.toString();
     }
 

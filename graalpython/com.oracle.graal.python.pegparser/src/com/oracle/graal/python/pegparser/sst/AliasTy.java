@@ -41,12 +41,14 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public final class AliasTy extends SSTNode {
     public final String name;
     public final String asName;
 
-    public AliasTy(String name, String asName, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    public AliasTy(String name, String asName, SourceRange sourceRange) {
+        super(sourceRange);
         this.name = name;
         this.asName = asName;
     }

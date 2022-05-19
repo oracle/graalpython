@@ -221,7 +221,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getStartOffset());
+                        hasSplat, hasKwSplat, node.getSourceRange().startOffset);
         nestingLevel++;
     }
 
@@ -434,7 +434,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private int setLocation(SSTNode node) {
-        return setLocation(node.getStartOffset());
+        return setLocation(node.getSourceRange().startOffset);
     }
 
     private class Collector {
@@ -1775,7 +1775,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     ExprTy def = args.kwDefaults[i];
                     if (def != null) {
                         String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
-                        defs.add(new KeywordTy(mangled, def, arg.getStartOffset(), def.getEndOffset()));
+                        defs.add(new KeywordTy(mangled, def, arg.getSourceRange()));
                     }
                 }
                 collectKeywords(defs.toArray(KeywordTy[]::new), null);

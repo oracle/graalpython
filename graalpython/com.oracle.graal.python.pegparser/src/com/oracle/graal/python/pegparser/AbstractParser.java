@@ -52,6 +52,7 @@ import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 
 /**
@@ -170,7 +171,7 @@ abstract class AbstractParser {
 
     /**
      * Get position in the tokenizer.
-     * 
+     *
      * @return the position in tokenizer.
      */
     public int mark() {
@@ -179,7 +180,7 @@ abstract class AbstractParser {
 
     /**
      * Reset position in the tokenizer
-     * 
+     *
      * @param position where the tokenizer should set the current position
      */
     public void reset(int position) {
@@ -189,7 +190,7 @@ abstract class AbstractParser {
     /**
      * Is the expected token on the current position in tokenizer? If there is the expected token,
      * then the current position in tokenizer is changed to the next token.
-     * 
+     *
      * @param tokenKind - the token kind that is expected on the current position
      * @return The expected token or null if the token on the current position is not the expected
      *         one.
@@ -205,7 +206,7 @@ abstract class AbstractParser {
     /**
      * Is the expected token on the current position in tokenizer? If there is the expected token,
      * then the current position in tokenizer is changed to the next token.
-     * 
+     *
      * @param text - the token on the current position has to have this text
      * @return The expected token or null if the token on the current position is not the expected
      *         one.
@@ -258,7 +259,7 @@ abstract class AbstractParser {
         Token token = tokenizer.getToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
-            comments.put(token.startLine, tag);
+            comments.put(token.sourceRange.startLine, tag);
             pos++;
             token = tokenizer.getToken();
         }
@@ -288,14 +289,14 @@ abstract class AbstractParser {
     public ExprTy.Name name_token() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {
-            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
+            return factory.createVariable(getText(t), t.sourceRange);
         } else {
             return null;
         }
     }
 
     /**
-     * 
+     *
      * @return flags that influence parsing.
      */
     public int getFlags() {
@@ -325,7 +326,7 @@ abstract class AbstractParser {
         Token t = tokenizer.peekToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
             tokenizer.getToken();
-            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
+            return factory.createVariable(getText(t), t.sourceRange);
         }
         return null;
     }
@@ -350,7 +351,7 @@ abstract class AbstractParser {
     public ExprTy number_token() {
         Token t = expect(Token.Kind.NUMBER);
         if (t != null) {
-            return factory.createNumber(getText(t), t.startOffset, t.endOffset);
+            return factory.createNumber(getText(t), t.sourceRange);
         } else {
             return null;
         }
@@ -374,7 +375,7 @@ abstract class AbstractParser {
             return null;
         }
         String id = getText(t);
-        return factory.createVariable(id, t.startOffset, t.endOffset);
+        return factory.createVariable(id, t.sourceRange);
     }
 
     /**
@@ -401,7 +402,7 @@ abstract class AbstractParser {
         if (cachedDummyName != null) {
             return cachedDummyName;
         }
-        cachedDummyName = factory.createVariable("", 0, 0);
+        cachedDummyName = factory.createVariable("", new SourceRange(0, 0, 0, 0, 0, 0));
         return cachedDummyName;
     }
 
@@ -410,7 +411,7 @@ abstract class AbstractParser {
      */
     public SSTNode joinNamesWithDot(ExprTy a, ExprTy b) {
         String id = ((ExprTy.Name) a).id + "." + ((ExprTy.Name) b).id;
-        return factory.createVariable(id, a.getStartOffset(), b.getEndOffset());
+        return factory.createVariable(id, a.getSourceRange().withEnd(b.getSourceRange()));
     }
 
     /**
@@ -460,15 +461,13 @@ abstract class AbstractParser {
     public SSTNode concatenateStrings(Token[] tokens) {
         int n = tokens.length;
         String[] values = new String[n];
-        Token t = tokens[0];
-        int startOffset = t.startOffset;
-        values[0] = getText(t);
-        for (int i = 1; i < n; i++) {
-            t = tokens[i];
+        SourceRange[] sourceRanges = new SourceRange[n];
+        for (int i = 0; i < n; i++) {
+            Token t = tokens[i];
             values[i] = getText(t);
+            sourceRanges[i] = t.sourceRange;
         }
-        int endOffset = t.endOffset;
-        return factory.createString(values, startOffset, endOffset, fexprParser, errorCb);
+        return factory.createString(values, sourceRanges, fexprParser, errorCb);
     }
 
     /**
@@ -476,7 +475,7 @@ abstract class AbstractParser {
      */
     public boolean checkBarryAsFlufl(Token token) {
         if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
-            errorCb.onError(token.startOffset, token.endOffset, BARRY_AS_BDFL);
+            errorCb.onError(token.sourceRange, BARRY_AS_BDFL);
             return true;
         }
         return false;
@@ -762,9 +761,9 @@ abstract class AbstractParser {
     /**
      * _PyPegen_collect_call_seqs
      */
-    final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, int startOffset, int endOffset) {
+    final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, SourceRange sourceRange) {
         if (b == null) {
-            return factory.createCall(dummyName(), a, EMPTY_KWDS, startOffset, endOffset);
+            return factory.createCall(dummyName(), a, EMPTY_KWDS, sourceRange);
         } else {
             ExprTy[] starred = extractStarredExpressions(b);
             ExprTy[] args;
@@ -774,7 +773,7 @@ abstract class AbstractParser {
             } else {
                 args = a;
             }
-            return factory.createCall(dummyName(), args, deleteStarredExpressions(b), startOffset, endOffset);
+            return factory.createCall(dummyName(), args, deleteStarredExpressions(b), sourceRange);
         }
     }
 
@@ -844,7 +843,7 @@ abstract class AbstractParser {
     SSTNode raiseSyntaxError(String msg, Object... arguments) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, arguments);
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
         return null;
     }
 
@@ -853,7 +852,7 @@ abstract class AbstractParser {
      */
     SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.startOffset, errorToken.endOffset, msg, argument);
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, argument);
         return null;
     }
 
@@ -862,7 +861,7 @@ abstract class AbstractParser {
      */
     SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getStartOffset(), where.getEndOffset(), msg, argument);
+        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, argument);
         return null;
     }
 
@@ -871,7 +870,7 @@ abstract class AbstractParser {
      */
     SSTNode raiseErrorKnownLocation(ParserErrorCallback.ErrorType typeError, SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(typeError, where.getStartOffset(), where.getEndOffset(), msg, argument);
+        errorCb.onError(typeError, where.getSourceRange(), msg, argument);
         return null;
     }
 

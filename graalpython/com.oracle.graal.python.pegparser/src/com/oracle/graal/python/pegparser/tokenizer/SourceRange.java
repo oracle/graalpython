@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,53 +39,46 @@
  * SOFTWARE.
  */
 
-package com.oracle.graal.python.pegparser;
+package com.oracle.graal.python.pegparser.tokenizer;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+public final class SourceRange {
 
-import java.util.ArrayList;
-import java.util.List;
+    public final int startOffset;
+    public final int endOffset;
+    public final int startLine;
+    public final int startColumn;
+    public final int endLine;
+    public final int endColumn;
 
-public class DefaultParserErrorCallback implements ParserErrorCallback {
-
-    public static class Error {
-        private final ParserErrorCallback.ErrorType type;
-        private SourceRange sourceRange;
-        private final String message;
-
-        public Error(ErrorType type, SourceRange sourceRange, String message) {
-            this.type = type;
-            this.sourceRange = sourceRange;
-            this.message = message;
-        }
-
-        public ErrorType getType() {
-            return type;
-        }
-
-        public SourceRange getSourceRange() {
-            return sourceRange;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
+    public SourceRange(int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
+        this.startOffset = startOffset;
+        this.endOffset = endOffset;
+        this.startLine = startLine;
+        this.startColumn = startColumn;
+        this.endLine = endLine;
+        this.endColumn = endColumn;
     }
 
-    private final List<Error> errors = new ArrayList<>(1);
-
-    public List<Error> getErrors() {
-        return errors;
+    public SourceRange withEnd(SourceRange end) {
+        if (end == this) {
+            return this;
+        }
+        return new SourceRange(startOffset, end.endOffset, startLine, startColumn, end.endLine, end.endColumn);
     }
 
-    public boolean hasErrors() {
-        return !errors.isEmpty();
+    public SourceRange shiftStartRight(int columns) {
+        assert columns >= 0;
+        if (columns == 0) {
+            return this;
+        }
+        return new SourceRange(startOffset + columns, endOffset, startLine, startColumn + columns, endLine, endColumn);
     }
 
-    @Override
-    public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-        errors.add(new Error(errorType, sourceRange, message));
+    public SourceRange shiftEndRight(int columns) {
+        assert columns >= 0;
+        if (columns == 0) {
+            return this;
+        }
+        return new SourceRange(startOffset, endOffset + columns, startLine, startColumn, endLine, endColumn + columns);
     }
-
 }

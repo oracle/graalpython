@@ -41,14 +41,16 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public final class ComprehensionTy extends SSTNode {
     public final ExprTy target;
     public final ExprTy iter;
     public final ExprTy[] ifs;
     public final boolean isAsync;
 
-    public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, SourceRange sourceRange) {
+        super(sourceRange);
         this.target = target;
         this.iter = iter;
         this.ifs = ifs;

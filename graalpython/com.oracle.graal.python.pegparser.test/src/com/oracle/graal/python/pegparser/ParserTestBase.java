@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -97,7 +98,7 @@ public class ParserTestBase {
 
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public ExprTy parse(String code) {
+            public ExprTy parse(String code, SourceRange sourceRange) {
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return (ExprTy) new Parser(tok, factory, this).parse(InputType.FSTRING);
             }
@@ -203,13 +204,13 @@ public class ParserTestBase {
         ArrayList<String> errors = new ArrayList<>();
         ParserErrorCallback errorCb = new ParserErrorCallback() {
             @Override
-            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
-                errors.add(String.format("%s[%d:%d]:%s", type.name(), start, end, message));
+            public void onError(ParserErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
+                errors.add(String.format("%s[%d:%d]:%s", type.name(), sourceRange.startOffset, sourceRange.endOffset, message));
             }
         };
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public ExprTy parse(String code) {
+            public ExprTy parse(String code, SourceRange range) {
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return (ExprTy) new Parser(tok, factory, this, errorCb).parse(InputType.FSTRING);
             }

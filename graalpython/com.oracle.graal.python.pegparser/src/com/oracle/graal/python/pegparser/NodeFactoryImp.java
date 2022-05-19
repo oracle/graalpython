@@ -57,79 +57,80 @@ import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public class NodeFactoryImp implements NodeFactory {
     @Override
-    public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, int startOffset, int endOffset) {
-        return new StmtTy.AnnAssign(target, annotation, rhs, isSimple, startOffset, endOffset);
+    public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, SourceRange sourceRange) {
+        return new StmtTy.AnnAssign(target, annotation, rhs, isSimple, sourceRange);
     }
 
     @Override
-    public StmtTy createAssert(ExprTy test, ExprTy msg, int startOffset, int endOffset) {
+    public StmtTy createAssert(ExprTy test, ExprTy msg, SourceRange sourceRange) {
         if (test == null) {
             // TODO Handle error if the field is null.
         }
-        return new StmtTy.Assert(test, msg, startOffset, endOffset);
+        return new StmtTy.Assert(test, msg, sourceRange);
     }
 
     @Override
-    public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.Assign(lhs, rhs, typeComment, startOffset, endOffset);
+    public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.Assign(lhs, rhs, typeComment, sourceRange);
     }
 
     @Override
-    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, int startOffset, int endOffset) {
-        return new StmtTy.AugAssign(lhs, operation, rhs, startOffset, endOffset);
+    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, SourceRange sourceRange) {
+        return new StmtTy.AugAssign(lhs, operation, rhs, sourceRange);
     }
 
     @Override
-    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, int startOffset, int endOffset) {
-        return new ExprTy.BinOp(left, op, right, startOffset, endOffset);
+    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, SourceRange sourceRange) {
+        return new ExprTy.BinOp(left, op, right, sourceRange);
     }
 
     @Override
-    public ModTy createModule(StmtTy[] statements, int startOffset, int endOffset) {
-        return new ModTy.Module(statements, null, startOffset, endOffset);
+    public ModTy createModule(StmtTy[] statements, SourceRange sourceRange) {
+        return new ModTy.Module(statements, null, sourceRange);
     }
 
     @Override
-    public ModTy createExpressionModule(ExprTy expression, int startOffset, int endOffset) {
-        return new ModTy.Expression(expression, startOffset, endOffset);
+    public ModTy createExpressionModule(ExprTy expression, SourceRange sourceRange) {
+        return new ModTy.Expression(expression, sourceRange);
     }
 
     @Override
-    public ModTy createInteractiveModule(StmtTy[] body, int startOffset, int endOffset) {
-        return new ModTy.Interactive(body, startOffset, endOffset);
+    public ModTy createInteractiveModule(StmtTy[] body, SourceRange sourceRange) {
+        return new ModTy.Interactive(body, sourceRange);
     }
 
     @Override
-    public ExprTy createBooleanLiteral(boolean value, int startOffset, int endOffset) {
-        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, startOffset, endOffset);
+    public ExprTy createBooleanLiteral(boolean value, SourceRange sourceRange) {
+        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, sourceRange);
     }
 
     @Override
-    public ExprTy createNone(int startOffset, int endOffset) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.NONE, startOffset, endOffset);
+    public ExprTy createNone(SourceRange sourceRange) {
+        return new ExprTy.Constant(null, ExprTy.Constant.Kind.NONE, sourceRange);
     }
 
     @Override
-    public ExprTy createEllipsis(int startOffset, int endOffset) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.ELLIPSIS, startOffset, endOffset);
+    public ExprTy createEllipsis(SourceRange sourceRange) {
+        return new ExprTy.Constant(null, ExprTy.Constant.Kind.ELLIPSIS, sourceRange);
     }
 
     @Override
-    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Attribute(receiver, name, context, startOffset, endOffset);
+    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, SourceRange sourceRange) {
+        return new ExprTy.Attribute(receiver, name, context, sourceRange);
     }
 
     @Override
-    public StmtTy createPass(int startOffset, int endOffset) {
-        return new StmtTy.Pass(startOffset, endOffset);
+    public StmtTy createPass(SourceRange sourceRange) {
+        return new StmtTy.Pass(sourceRange);
     }
 
     @Override
-    public StmtTy createBreak(int startOffset, int endOffset) {
-        return new StmtTy.Break(startOffset, endOffset);
+    public StmtTy createBreak(SourceRange sourceRange) {
+        return new StmtTy.Break(sourceRange);
     }
 
     @Override
@@ -138,26 +139,26 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, int startOffset, int endOffset) {
-        return new ExprTy.Call(target, args, kwargs, startOffset, endOffset);
+    public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, SourceRange sourceRange) {
+        return new ExprTy.Call(target, args, kwargs, sourceRange);
     }
 
     @Override
-    public StmtTy createContinue(int startOffset, int endOffset) {
-        return new StmtTy.Continue(startOffset, endOffset);
+    public StmtTy createContinue(SourceRange sourceRange) {
+        return new StmtTy.Continue(sourceRange);
     }
 
     @Override
-    public StmtTy createDelete(ExprTy[] targets, int startOffset, int endOffset) {
-        return new StmtTy.Delete(targets, startOffset, endOffset);
+    public StmtTy createDelete(ExprTy[] targets, SourceRange sourceRange) {
+        return new StmtTy.Delete(targets, sourceRange);
     }
 
     @Override
-    public ExprTy createYield(ExprTy value, boolean isFrom, int startOffset, int endOffset) {
+    public ExprTy createYield(ExprTy value, boolean isFrom, SourceRange sourceRange) {
         if (isFrom) {
-            return new ExprTy.YieldFrom(value, startOffset, endOffset);
+            return new ExprTy.YieldFrom(value, sourceRange);
         } else {
-            return new ExprTy.Yield(value, startOffset, endOffset);
+            return new ExprTy.Yield(value, sourceRange);
         }
     }
 
@@ -173,7 +174,7 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createNumber(String numberWithUnderscores, int startOffset, int endOffset) {
+    public ExprTy createNumber(String numberWithUnderscores, SourceRange sourceRange) {
         String number = numberWithUnderscores;
         if (number.contains("_")) {
             number = number.replace("_", "");
@@ -206,11 +207,11 @@ public class NodeFactoryImp implements NodeFactory {
             double imag = Double.parseDouble(number.substring(0, number.length() - 1));
             return new ExprTy.Constant(new double[]{0.0, imag},
                             ExprTy.Constant.Kind.COMPLEX,
-                            startOffset, endOffset);
+                            sourceRange);
         } else if (isFloat) {
             return new ExprTy.Constant(Double.parseDouble(number),
                             ExprTy.Constant.Kind.DOUBLE,
-                            startOffset, endOffset);
+                            sourceRange);
         } else {
             final long max = Long.MAX_VALUE;
             final long moltmax = max / base;
@@ -240,43 +241,43 @@ public class NodeFactoryImp implements NodeFactory {
                         bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
                         i++;
                     }
-                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, startOffset, endOffset);
+                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, sourceRange);
                 }
                 result = next;
                 i++;
             }
-            return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, startOffset, endOffset);
+            return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, sourceRange);
         }
     }
 
     @Override
-    public ExprTy createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb) {
-        return StringLiteralUtils.createStringLiteral(values, startOffset, endOffset, exprParser, errorCb);
+    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ParserErrorCallback errorCb) {
+        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb);
     }
 
     @Override
-    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, int startOffset, int endOffset) {
-        return new ExprTy.UnaryOp(op, value, startOffset, endOffset);
+    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, SourceRange sourceRange) {
+        return new ExprTy.UnaryOp(op, value, sourceRange);
     }
 
     @Override
-    public ExprTy.Name createVariable(String name, int startOffset, int endOffset, ExprContext context) {
-        return new ExprTy.Name(name, context, startOffset, endOffset);
+    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContext context) {
+        return new ExprTy.Name(name, context, sourceRange);
     }
 
     @Override
-    public ExprTy createStarred(ExprTy value, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Starred(value, context, startOffset, endOffset);
+    public ExprTy createStarred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+        return new ExprTy.Starred(value, context, sourceRange);
     }
 
     @Override
-    public KeywordTy createKeyword(String arg, ExprTy value, int startOffset, int endOffset) {
-        return new KeywordTy(arg, value, startOffset, endOffset);
+    public KeywordTy createKeyword(String arg, ExprTy value, SourceRange sourceRange) {
+        return new KeywordTy(arg, value, sourceRange);
     }
 
     @Override
-    public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
-        return new ArgTy(argument, annotation, typeComment, startOffset, endOffset);
+    public ArgTy createArgument(String argument, ExprTy annotation, String typeComment, SourceRange sourceRange) {
+        return new ArgTy(argument, annotation, typeComment, sourceRange);
     }
 
     @Override
@@ -352,73 +353,74 @@ public class NodeFactoryImp implements NodeFactory {
             kwDefaults = AbstractParser.EMPTY_EXPR;
         }
 
-        return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults, 0, 0);
+        return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults,
+                        new SourceRange(0, 0, 0, 0, 0, 0));
     }
 
     @Override
-    public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, int startOffset, int endOffset) {
+    public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, SourceRange sourceRange) {
         ExprTy.Compare.Operator[] ops = new ExprTy.Compare.Operator[pairs.length];
         ExprTy[] rights = new ExprTy[pairs.length];
         for (int i = 0; i < pairs.length; i++) {
             ops[i] = pairs[i].op;
             rights[i] = pairs[i].expr;
         }
-        return new ExprTy.Compare(left, ops, rights, startOffset, endOffset);
+        return new ExprTy.Compare(left, ops, rights, sourceRange);
     }
 
     @Override
-    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Subscript(receiver, subscript, context, startOffset, endOffset);
+    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContext context, SourceRange sourceRange) {
+        return new ExprTy.Subscript(receiver, subscript, context, sourceRange);
     }
 
     @Override
-    public ExprTy createTuple(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, startOffset, endOffset);
+    public ExprTy createTuple(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
+        return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
     }
 
     @Override
-    public ExprTy createList(ExprTy[] values, ExprContext context, int startOffset, int endOffset) {
-        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, startOffset, endOffset);
+    public ExprTy createList(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
+        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
     }
 
     @Override
-    public ExprTy createDict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset) {
-        return new ExprTy.Dict(keys, values, startOffset, endOffset);
+    public ExprTy createDict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange) {
+        return new ExprTy.Dict(keys, values, sourceRange);
     }
 
     @Override
-    public ExprTy createSet(ExprTy[] values, int startOffset, int endOffset) {
-        return new ExprTy.Set(values, startOffset, endOffset);
+    public ExprTy createSet(ExprTy[] values, SourceRange sourceRange) {
+        return new ExprTy.Set(values, sourceRange);
     }
 
     @Override
-    public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, int startOffset, int endOffset) {
-        return new ComprehensionTy(target, iter, ifs, isAsync, startOffset, endOffset);
+    public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, SourceRange sourceRange) {
+        return new ComprehensionTy(target, iter, ifs, isAsync, sourceRange);
     }
 
     @Override
-    public ExprTy createListComprehension(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset) {
-        return new ExprTy.ListComp(name, generators, startOffset, endOffset);
+    public ExprTy createListComprehension(ExprTy name, ComprehensionTy[] generators, SourceRange sourceRange) {
+        return new ExprTy.ListComp(name, generators, sourceRange);
     }
 
     @Override
-    public ExprTy createDictComprehension(AbstractParser.KeyValuePair name, ComprehensionTy[] generators, int startOffset, int endOffset) {
-        return new ExprTy.DictComp(name.key, name.value, generators, startOffset, endOffset);
+    public ExprTy createDictComprehension(AbstractParser.KeyValuePair name, ComprehensionTy[] generators, SourceRange sourceRange) {
+        return new ExprTy.DictComp(name.key, name.value, generators, sourceRange);
     }
 
     @Override
-    public ExprTy createSetComprehension(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset) {
-        return new ExprTy.SetComp(name, generators, startOffset, endOffset);
+    public ExprTy createSetComprehension(ExprTy name, ComprehensionTy[] generators, SourceRange sourceRange) {
+        return new ExprTy.SetComp(name, generators, sourceRange);
     }
 
     @Override
-    public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, int startOffset, int endOffset) {
-        return new ExprTy.GeneratorExp(name, generators, startOffset, endOffset);
+    public ExprTy createGenerator(ExprTy name, ComprehensionTy[] generators, SourceRange sourceRange) {
+        return new ExprTy.GeneratorExp(name, generators, sourceRange);
     }
 
     @Override
-    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, startOffset, endOffset);
+    public StmtTy createFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.FunctionDef(name, args, body, null, returns, typeComment, sourceRange);
     }
 
     @Override
@@ -427,127 +429,127 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.AsyncFunctionDef(name, args, body, null, returns, typeComment, startOffset, endOffset);
+    public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.AsyncFunctionDef(name, args, body, null, returns, typeComment, sourceRange);
     }
 
     @Override
-    public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, int startOffset, int endOffset) {
-        return new StmtTy.While(condition, block, elseBlock, startOffset, endOffset);
+    public StmtTy createWhile(ExprTy condition, StmtTy[] block, StmtTy[] elseBlock, SourceRange sourceRange) {
+        return new StmtTy.While(condition, block, elseBlock, sourceRange);
     }
 
     @Override
-    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.For(target, iter, block, elseBlock, typeComment, startOffset, endOffset);
+    public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.For(target, iter, block, elseBlock, typeComment, sourceRange);
     }
 
     @Override
-    public StmtTy createReturn(ExprTy value, int startOffset, int endOffset) {
-        return new StmtTy.Return(value, startOffset, endOffset);
+    public StmtTy createReturn(ExprTy value, SourceRange sourceRange) {
+        return new StmtTy.Return(value, sourceRange);
     }
 
     @Override
-    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, int startOffset, int endOffset) {
-        return new ExprTy.Slice(start, stop, step, startOffset, endOffset);
+    public ExprTy createSlice(ExprTy start, ExprTy stop, ExprTy step, SourceRange sourceRange) {
+        return new ExprTy.Slice(start, stop, step, sourceRange);
     }
 
     @Override
-    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, int startOffset, int endOffset) {
-        return new StmtTy.If(condition, block, orElse, startOffset, endOffset);
+    public StmtTy createIf(ExprTy condition, StmtTy[] block, StmtTy[] orElse, SourceRange sourceRange) {
+        return new StmtTy.If(condition, block, orElse, sourceRange);
     }
 
     @Override
-    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, int startOffset, int endOffset) {
-        return new ExprTy.IfExp(condition, then, orElse, startOffset, endOffset);
+    public ExprTy createIfExpression(ExprTy condition, ExprTy then, ExprTy orElse, SourceRange sourceRange) {
+        return new ExprTy.IfExp(condition, then, orElse, sourceRange);
     }
 
     @Override
-    public ExprTy createLambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
-        return new ExprTy.Lambda(args, body, startOffset, endOffset);
+    public ExprTy createLambda(ArgumentsTy args, ExprTy body, SourceRange sourceRange) {
+        return new ExprTy.Lambda(args, body, sourceRange);
     }
 
     @Override
-    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, int startOffset, int endOffset) {
+    public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, SourceRange sourceRange) {
         return new StmtTy.ClassDef(((ExprTy.Name) name).id,
                         call == null ? AbstractParser.EMPTY_EXPR : ((ExprTy.Call) call).args,
                         call == null ? AbstractParser.EMPTY_KWDS : ((ExprTy.Call) call).keywords,
-                        body, null, startOffset, endOffset);
+                        body, null, sourceRange);
     }
 
     @Override
-    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, int startOffset, int endOffset) {
+    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, SourceRange sourceRange) {
         StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
-        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, startOffset, endOffset);
+        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, sourceRange);
     }
 
     @Override
-    public StmtTy createNonLocal(String[] names, int startOffset, int endOffset) {
-        return new StmtTy.NonLocal(names, startOffset, endOffset);
+    public StmtTy createNonLocal(String[] names, SourceRange sourceRange) {
+        return new StmtTy.NonLocal(names, sourceRange);
     }
 
     @Override
-    public StmtTy createGlobal(String[] names, int startOffset, int endOffset) {
-        return new StmtTy.Global(names, startOffset, endOffset);
+    public StmtTy createGlobal(String[] names, SourceRange sourceRange) {
+        return new StmtTy.Global(names, sourceRange);
     }
 
     @Override
-    public ExprTy createAnd(ExprTy[] values, int startOffset, int endOffset) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, startOffset, endOffset);
+    public ExprTy createAnd(ExprTy[] values, SourceRange sourceRange) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, sourceRange);
     }
 
     @Override
-    public ExprTy createOr(ExprTy[] values, int startOffset, int endOffset) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, startOffset, endOffset);
+    public ExprTy createOr(ExprTy[] values, SourceRange sourceRange) {
+        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, sourceRange);
     }
 
     @Override
-    public StmtTy createRaise(ExprTy object, ExprTy from, int startOffset, int endOffset) {
-        return new StmtTy.Raise(object, from, startOffset, endOffset);
+    public StmtTy createRaise(ExprTy object, ExprTy from, SourceRange sourceRange) {
+        return new StmtTy.Raise(object, from, sourceRange);
     }
 
     @Override
-    public StmtTy createImport(AliasTy[] names, int startOffset, int endOffset) {
-        return new StmtTy.Import(names, startOffset, endOffset);
+    public StmtTy createImport(AliasTy[] names, SourceRange sourceRange) {
+        return new StmtTy.Import(names, sourceRange);
     }
 
     @Override
-    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, int startOffset, int endOffset) {
-        return new StmtTy.ImportFrom(fromName, names, level, startOffset, endOffset);
+    public StmtTy createImportFrom(String fromName, AliasTy[] names, int level, SourceRange sourceRange) {
+        return new StmtTy.ImportFrom(fromName, names, level, sourceRange);
     }
 
     @Override
-    public AliasTy createAlias(String name, String asName, int startOffset, int endOffset) {
-        return new AliasTy(name, asName, startOffset, endOffset);
+    public AliasTy createAlias(String name, String asName, SourceRange sourceRange) {
+        return new AliasTy(name, asName, sourceRange);
     }
 
     @Override
-    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset) {
-        return new StmtTy.Try(body, handlers, orElse, finalBody, startOffset, endOffset);
+    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+        return new StmtTy.Try(body, handlers, orElse, finalBody, sourceRange);
     }
 
     @Override
-    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
-        return new StmtTy.Try.ExceptHandler(type, name, body, startOffset, endOffset);
+    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
+        return new StmtTy.Try.ExceptHandler(type, name, body, sourceRange);
     }
 
     @Override
-    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
+    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
         // TODO check if context expr is not null -> throw error
-        return new StmtTy.With.Item(contextExpr, optionalVars, startOffset, endOffset);
+        return new StmtTy.With.Item(contextExpr, optionalVars, sourceRange);
     }
 
     @Override
-    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
-        return new StmtTy.With(items, body, typeComment, startOffset, endOffset);
+    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.With(items, body, typeComment, sourceRange);
     }
 
     @Override
-    public ExprTy createAwait(ExprTy value, int startOffset, int endOffset) {
-        return new ExprTy.Await(value, startOffset, endOffset);
+    public ExprTy createAwait(ExprTy value, SourceRange sourceRange) {
+        return new ExprTy.Await(value, sourceRange);
     }
 
     @Override
-    public ExprTy.NamedExpr createNamedExp(ExprTy target, ExprTy value, int startOffset, int endOffset) {
-        return new ExprTy.NamedExpr(target, value, startOffset, endOffset);
+    public ExprTy.NamedExpr createNamedExp(ExprTy target, ExprTy value, SourceRange sourceRange) {
+        return new ExprTy.NamedExpr(target, value, sourceRange);
     }
 }

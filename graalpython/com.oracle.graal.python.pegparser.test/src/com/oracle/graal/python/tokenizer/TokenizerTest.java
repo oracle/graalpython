@@ -470,8 +470,8 @@ public class TokenizerTest {
                     sb.append("exact_type:").append(getCPythonValueOfTokenType(token.type));
                     sb.append(" (").append(token.typeName()).append(") ");
                 }
-                sb.append("start:[").append(token.startLine).append(", ").append(token.startColumn).append("] ");
-                sb.append("end:[").append(token.endLine).append(", ").append(token.endColumn).append("] ");
+                sb.append("start:[").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn).append("] ");
+                sb.append("end:[").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append("] ");
                 sb.append("string:'").append(tokenizer.getTokenString(token)).append("'");
                 String goldenToken = goldenResult.get(goldenResultIndex);
                 assertEquals("Code: '" + line + "'", goldenToken, sb.toString());

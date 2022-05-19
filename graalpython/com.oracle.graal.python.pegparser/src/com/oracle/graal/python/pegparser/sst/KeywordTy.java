@@ -41,12 +41,14 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public final class KeywordTy extends SSTNode {
     public final String arg;
     public final ExprTy value;
 
-    public KeywordTy(String arg, ExprTy value, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    public KeywordTy(String arg, ExprTy value, SourceRange sourceRange) {
+        super(sourceRange);
         this.arg = arg;
         this.value = value;
     }

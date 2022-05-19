@@ -51,6 +51,7 @@ import java.util.Map;
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class StringLiteralUtils {
     private static final ExprTy[] EMPTY_SST_ARRAY = new ExprTy[0];
@@ -77,16 +78,16 @@ public abstract class StringLiteralUtils {
         }
     }
 
-    public static ExprTy createStringLiteral(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCallback) {
+    public static ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ParserErrorCallback errorCallback) {
+        assert values.length == sourceRanges.length && values.length > 0;
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
         ArrayList<ExprTy> formatStringParts = null;
-        int startPartOffsetInValues = 0;
-        int endPartOffsetInValues = 0;
-        int sbStartOffset = 0;
-        int sbEndOffset = 0;
-        for (String text : values) {
+        SourceRange sourceRange = sourceRanges[0].withEnd(sourceRanges[sourceRanges.length - 1]);
+        SourceRange sbSourceRange = null;
+        for (int index = 0; index < values.length; ++index) {
+            String text = values[index];
             boolean isRaw = false;
             boolean isBytes = false;
             boolean isFormat = false;
@@ -126,13 +127,13 @@ public abstract class StringLiteralUtils {
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
                 if (sb != null || isFormatString) {
-                    errorCallback.onError(startOffset, endOffset, CANNOT_MIX_MESSAGE);
+                    errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
-                        return new ExprTy.Constant(sb.toString(), ExprTy.Constant.Kind.RAW, startOffset, endOffset);
+                        return new ExprTy.Constant(sb.toString(), ExprTy.Constant.Kind.RAW, sourceRange);
                     } else if (bb != null) {
-                        return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
+                        return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
                     } else {
-                        return new ExprTy.Constant(text.getBytes(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
+                        return new ExprTy.Constant(text.getBytes(), ExprTy.Constant.Kind.BYTES, sourceRange);
                     }
                 }
                 if (bb == null) {
@@ -141,15 +142,15 @@ public abstract class StringLiteralUtils {
                 if (isRaw) {
                     bb.append(text.getBytes());
                 } else {
-                    bb.append(decodeEscapeToBytes(errorCallback, text));
+                    bb.append(decodeEscapeToBytes(errorCallback, text, sourceRange));
                 }
             } else {
                 if (bb != null) {
-                    errorCallback.onError(startOffset, endOffset, CANNOT_MIX_MESSAGE);
-                    return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
+                    errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
+                    return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
                 }
                 if (!isRaw && !isFormat) {
-                    text = unescapeString(startOffset + startPartOffsetInValues, startOffset + endPartOffsetInValues, errorCallback, text);
+                    text = unescapeString(sourceRanges[index], errorCallback, text);
                 }
                 if (isFormat) {
                     isFormatString = true;
@@ -159,42 +160,42 @@ public abstract class StringLiteralUtils {
                     if (sb != null && sb.length() > 0) {
                         String part = sb.toString();
                         if (!isRaw) {
-                            part = unescapeString(startOffset + sbStartOffset, startOffset + sbEndOffset, errorCallback, part);
+                            part = unescapeString(sbSourceRange, errorCallback, part);
                         }
-                        formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, startOffset + sbStartOffset, startOffset + sbEndOffset));
+                        formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, sbSourceRange));
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues + strStartIndex, exprParser, errorCallback);
+                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback);
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
-                        sbStartOffset = startPartOffsetInValues;
+                        sbSourceRange = sourceRanges[index];
                     }
                     sb.append(text);
-                    sbEndOffset = endPartOffsetInValues;
+                    sbSourceRange = sbSourceRange.withEnd(sourceRanges[index]);
                 }
             }
-            startPartOffsetInValues = endPartOffsetInValues;
         }
 
         if (bb != null) {
-            return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, startOffset, endOffset);
+            return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
         } else if (isFormatString) {
             assert formatStringParts != null; // guaranteed due to how isFormatString is set
             if (sb != null && sb.length() > 0) {
                 String part = sb.toString();
-                formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, startOffset + sbStartOffset, startOffset + endPartOffsetInValues));
+                formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, sbSourceRange));
             }
             ExprTy[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
-            return new ExprTy.JoinedStr(formatParts, startOffset, endOffset);
+            return new ExprTy.JoinedStr(formatParts, sourceRange);
         }
-        return new ExprTy.Constant(sb == null ? "" : sb.toString(), ExprTy.Constant.Kind.RAW, startOffset, endOffset);
+        return new ExprTy.Constant(sb == null ? "" : sb.toString(), ExprTy.Constant.Kind.RAW, sourceRange);
     }
 
     private static final class FormatStringParser {
         // error messages from parsing
         public static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "f-string: empty expression not allowed";
+        public static final String ERROR_MESSAGE_NESTED_TOO_DEEPLY = "f-string: expressions nested too deeply";
         public static final String ERROR_MESSAGE_SINGLE_BRACE = "f-string: single '}' is not allowed";
         public static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
         public static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
@@ -240,34 +241,60 @@ public abstract class StringLiteralUtils {
                 sb.append(formatTokensCount).append(')');
                 return sb.toString();
             }
+
+            SourceRange getSourceRange(String text, SourceRange textSourceRange) {
+                int column = textSourceRange.startColumn;
+                int line = textSourceRange.startLine;
+                for (int i = 0; i < startIndex; ++i) {
+                    if (text.charAt(i) == '\n') {
+                        line++;
+                        column = 0;
+                    } else {
+                        column++;
+                    }
+                }
+                int startColumn = column;
+                int startLine = line;
+                for (int i = startIndex; i < endIndex; ++i) {
+                    if (text.charAt(i) == '\n') {
+                        line++;
+                        column = 0;
+                    } else {
+                        column++;
+                    }
+                }
+                return new SourceRange(textSourceRange.startOffset + startIndex, textSourceRange.startOffset + endIndex, startLine, startColumn, line, column);
+            }
         }
 
-        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int textOffsetInSource,
+        private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, SourceRange textSourceRange, boolean isRawString,
                         ParserErrorCallback errorCallback, FExprParser exprParser) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
                 if (!isRawString) {
-                    code = unescapeString(textOffsetInSource, textOffsetInSource + code.length(), errorCallback, code);
+                    code = unescapeString(token.getSourceRange(text, textSourceRange), errorCallback, code);
                 }
-                return new ExprTy.Constant(code, ExprTy.Constant.Kind.RAW, textOffsetInSource + token.startIndex, textOffsetInSource + token.endIndex);
+                return new ExprTy.Constant(code, ExprTy.Constant.Kind.RAW, token.getSourceRange(text, textSourceRange));
             }
             int specTokensCount = token.formatTokensCount;
             // the expression has to be wrapped in ()
             code = "(" + code + ")";
-            ExprTy expression = exprParser.parse(code); // TODO: pass isInteractive flag
+            // TODO: pass isInteractive flag
+            ExprTy expression = exprParser.parse(code, token.getSourceRange(text, textSourceRange));
             ExprTy specifier = null;
+            SourceRange specifierSourceRange = null;
             if (specTokensCount > 0) {
                 ExprTy[] specifierParts = new ExprTy[specTokensCount];
                 int specifierTokenStartIndex = tokenIndex + 1;
                 Token specToken = tokens.get(specifierTokenStartIndex);
-                int specifierStartOffset = textOffsetInSource + tokens.get(specifierTokenStartIndex).startIndex - ((specToken != null && specToken.type != TOKEN_TYPE_STRING) ? 1 : 0);
+                specifierSourceRange = specToken.getSourceRange(text, textSourceRange);
                 int realCount = 0;
                 int i;
 
                 for (i = 0; i < specTokensCount; i++) {
                     specToken = tokens.get(specifierTokenStartIndex + i);
-                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, isRawString, textOffsetInSource, errorCallback, exprParser);
+                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, textSourceRange, isRawString, errorCallback, exprParser);
                     i = i + specToken.formatTokensCount;
                 }
 
@@ -275,11 +302,8 @@ public abstract class StringLiteralUtils {
                     specifierParts = Arrays.copyOf(specifierParts, realCount);
                 }
 
-                int specifierEndOffset = textOffsetInSource;
-                if (specToken != null) {
-                    specifierEndOffset = textOffsetInSource + specToken.endIndex + (specToken.type != TOKEN_TYPE_STRING ? 1 : 0);
-                }
-                specifier = new ExprTy.JoinedStr(specifierParts, specifierStartOffset, specifierEndOffset);
+                specifierSourceRange = specifierSourceRange.withEnd(specToken.getSourceRange(text, textSourceRange));
+                specifier = new ExprTy.JoinedStr(specifierParts, specifierSourceRange);
             }
             ExprTy.FormattedValue.ConversionType conversionType;
             switch (token.type) {
@@ -295,18 +319,21 @@ public abstract class StringLiteralUtils {
                 default:
                     conversionType = ExprTy.FormattedValue.ConversionType.NONE;
             }
-            int endOffset = specifier == null ? textOffsetInSource + token.endIndex : specifier.endOffset;
-            if (conversionType != ExprTy.FormattedValue.ConversionType.NONE) {
-                endOffset = endOffset + 2;
+            SourceRange range = token.getSourceRange(text, textSourceRange);
+            if (specifierSourceRange != null) {
+                range = range.withEnd(specifierSourceRange);
             }
-            return new ExprTy.FormattedValue(expression, conversionType, specifier, textOffsetInSource + token.startIndex, endOffset);
+            if (conversionType != ExprTy.FormattedValue.ConversionType.NONE) {
+                range = range.shiftEndRight(2);
+            }
+            return new ExprTy.FormattedValue(expression, conversionType, specifier, range);
         }
 
         /**
          * Parses f-string into an array of {@link ExprTy}. The nodes can end up being
          * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
-        public static void parse(ArrayList<ExprTy> formatStringParts, String text, boolean isRawString, int textOffsetInSource, FExprParser exprParser, ParserErrorCallback errorCallback) {
+        public static void parse(ArrayList<ExprTy> formatStringParts, String text, SourceRange textSourceRange, boolean isRawString, FExprParser exprParser, ParserErrorCallback errorCallback) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -321,7 +348,7 @@ public abstract class StringLiteralUtils {
 
             // create tokens
             ArrayList<Token> tokens = new ArrayList<>(estimatedTokensCount);
-            if (createTokens(tokens, errorCallback, 0, text, isRawString, 0) < 0) {
+            if (createTokens(tokens, errorCallback, 0, text, textSourceRange, isRawString, 0) < 0) {
                 return;
             }
 
@@ -331,7 +358,7 @@ public abstract class StringLiteralUtils {
 
             while (tokenIndex < tokens.size()) {
                 token = tokens.get(tokenIndex);
-                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, textOffsetInSource, errorCallback, exprParser);
+                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, textSourceRange, isRawString, errorCallback, exprParser);
                 formatStringParts.add(part);
                 tokenIndex = tokenIndex + 1 + token.formatTokensCount;
             }
@@ -363,7 +390,7 @@ public abstract class StringLiteralUtils {
          *            apply differently.
          * @return the index of the last processed character or {@code -1} on error
          */
-        public static int createTokens(ArrayList<Token> tokens, ParserErrorCallback errorCallback, int startIndex, String text, boolean isRawString, int recursionLevel) {
+        public static int createTokens(ArrayList<Token> tokens, ParserErrorCallback errorCallback, int startIndex, String text, SourceRange textSourceRange, boolean isRawString, int recursionLevel) {
             int state = STATE_TEXT;
 
             int braceLevel = 0;
@@ -438,7 +465,7 @@ public abstract class StringLiteralUtils {
                         break;
                     case STATE_AFTER_OPEN_BRACE:
                         if (ch == '}' || ch == '=') {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_EMPTY_EXPRESSION);
+                            errorCallback.onError(textSourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                             return -1;
                         }
                         if (ch == '{' && toplevel) {
@@ -450,7 +477,7 @@ public abstract class StringLiteralUtils {
                         } else if (recursionLevel == 2) {
                             // we are inside formatting expression of another formatting expression,
                             // example: f'{42:{42:{42}}}'. This level of nesting is not allowed.
-                            errorCallback.onError(startIndex, index, "f-string: expressions nested too deeply");
+                            errorCallback.onError(textSourceRange, ERROR_MESSAGE_NESTED_TOO_DEEPLY);
                             return -1;
                         } else {
                             index--;
@@ -472,7 +499,7 @@ public abstract class StringLiteralUtils {
                             }
                             start = index + 1;
                         } else {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
+                            errorCallback.onError(textSourceRange, ERROR_MESSAGE_SINGLE_BRACE);
                             return -1;
                         }
                         break;
@@ -491,26 +518,26 @@ public abstract class StringLiteralUtils {
                                 bracesInExpression[braceLevelInExpression] = ch;
                                 braceLevelInExpression++;
                                 if (braceLevelInExpression >= MAX_PAR_NESTING) {
-                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_TOO_MANY_NESTED_PARS);
+                                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_TOO_MANY_NESTED_PARS);
                                     return -1;
                                 }
                                 break;
                             case ')':
                             case ']':
                                 if (braceLevelInExpression == 0) {
-                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_UNMATCHED_PAR, ch);
+                                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_UNMATCHED_PAR, ch);
                                     return -1;
                                 }
                                 braceLevelInExpression--;
                                 char expected = ch == ')' ? '(' : '[';
                                 if (bracesInExpression[braceLevelInExpression] != expected) {
-                                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], ch);
+                                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], ch);
                                     return -1;
                                 }
                                 break;
                             case '}':
                                 if (braceLevelInExpression == 0) {
-                                    Token t = createExpressionToken(errorCallback, text, start, index);
+                                    Token t = createExpressionToken(errorCallback, text, textSourceRange, start, index);
                                     if (t == null) {
                                         return -1;
                                     }
@@ -521,7 +548,7 @@ public abstract class StringLiteralUtils {
                                 } else {
                                     braceLevelInExpression--;
                                     if (bracesInExpression[braceLevelInExpression] != '{') {
-                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], '}');
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], '}');
                                         return -1;
                                     }
                                 }
@@ -540,12 +567,12 @@ public abstract class StringLiteralUtils {
 
                                     // Have we reached a legal end character of an expression?
                                     if (index >= len) {
-                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                                         return -1;
                                     }
                                     char endChar = text.charAt(index);
                                     if (endChar != '}' && endChar != ':' && endChar != '!') {
-                                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                                         return -1;
                                     }
 
@@ -553,7 +580,7 @@ public abstract class StringLiteralUtils {
                                     // any
                                     // spaces after it) and the expression itself
                                     tokens.add(new Token(TOKEN_TYPE_STRING, start, index));
-                                    currentExpression = createExpressionToken(errorCallback, text, start, expressionEndIndex);
+                                    currentExpression = createExpressionToken(errorCallback, text, textSourceRange, start, expressionEndIndex);
                                     if (currentExpression == null) {
                                         return -1;
                                     }
@@ -583,14 +610,14 @@ public abstract class StringLiteralUtils {
                                 break;
                             case '\'':
                             case '"':
-                                index = skipString(errorCallback, text, index, len, ch);
+                                index = skipString(errorCallback, text, textSourceRange, index, len, ch);
                                 if (index < 0) {
                                     return index;
                                 }
                                 break;
                             case '!':
                                 state = STATE_AFTER_EXCLAMATION;
-                                currentExpression = createExpressionToken(errorCallback, text, start, index);
+                                currentExpression = createExpressionToken(errorCallback, text, textSourceRange, start, index);
                                 if (currentExpression == null) {
                                     return -1;
                                 }
@@ -598,7 +625,7 @@ public abstract class StringLiteralUtils {
                                 break;
                             case ':':
                                 if (braceLevelInExpression == 0) {
-                                    currentExpression = createExpressionToken(errorCallback, text, start, index);
+                                    currentExpression = createExpressionToken(errorCallback, text, textSourceRange, start, index);
                                     if (currentExpression == null) {
                                         return -1;
                                     }
@@ -607,10 +634,10 @@ public abstract class StringLiteralUtils {
                                 }
                                 break;
                             case '#':
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_HASH_IN_EXPRESSION);
+                                errorCallback.onError(textSourceRange, ERROR_MESSAGE_HASH_IN_EXPRESSION);
                                 return -1;
                             case '\\':
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
+                                errorCallback.onError(textSourceRange, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
                                 return -1;
                             default:
                                 break;
@@ -629,7 +656,7 @@ public abstract class StringLiteralUtils {
                                 currentExpression.type = TOKEN_TYPE_EXPRESSION_ASCII;
                                 break;
                             default:
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_INVALID_CONVERSION);
+                                errorCallback.onError(textSourceRange, ERROR_MESSAGE_INVALID_CONVERSION);
                                 return -1;
                         }
                         start = index + 2;
@@ -645,20 +672,20 @@ public abstract class StringLiteralUtils {
                                 braceLevel--;
                                 break;
                             default:
-                                errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                                errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                                 return -1;
                         }
                         break;
                     case STATE_AFTER_COLON:
                         assert currentExpression != null;
                         int tokensSizeBefore = tokens.size();
-                        index = createTokens(tokens, errorCallback, index, text, isRawString, recursionLevel + 1);
+                        index = createTokens(tokens, errorCallback, index, text, textSourceRange, isRawString, recursionLevel + 1);
                         if (index < 0) {
                             return -1;
                         }
                         currentExpression.formatTokensCount = tokens.size() - tokensSizeBefore;
                         if (index >= len || text.charAt(index) != '}') {
-                            errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                            errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                             return -1;
                         }
                         braceLevel--;
@@ -682,17 +709,17 @@ public abstract class StringLiteralUtils {
                     }
                     break;
                 case STATE_AFTER_CLOSE_BRACE:
-                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_SINGLE_BRACE);
+                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_SINGLE_BRACE);
                     return -1;
                 case STATE_AFTER_EXCLAMATION:
                 case STATE_AFTER_OPEN_BRACE:
                 case STATE_AFTER_COLON:
-                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                     return -1;
                 case STATE_EXPRESSION:
                     // expression is not allowed to span multiple f-strings: f'{3+' f'1}' is not
                     // the same as f'{3+1}'
-                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
+                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
                     return -1;
             }
             return index;
@@ -709,7 +736,7 @@ public abstract class StringLiteralUtils {
         /**
          * Skips a string literal. Checks for all the valid quotation styles.
          */
-        private static int skipString(ParserErrorCallback errorCallback, String text, int startIndex, int len, char startq) {
+        private static int skipString(ParserErrorCallback errorCallback, String text, SourceRange sourceRange, int startIndex, int len, char startq) {
             boolean triple = false;
             boolean inString = true;
             int index = startIndex + 1;
@@ -727,7 +754,7 @@ public abstract class StringLiteralUtils {
                 while (index < len) {
                     char ch = text.charAt(index);
                     if (ch == '\\') {
-                        errorCallback.onError(startIndex, index, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
+                        errorCallback.onError(sourceRange, ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION);
                         return -1;
                     }
                     if (ch == startq) {
@@ -745,7 +772,7 @@ public abstract class StringLiteralUtils {
                     index++;
                 }
                 if (inString) {
-                    errorCallback.onError(startIndex, index, ERROR_MESSAGE_UNTERMINATED_STRING);
+                    errorCallback.onError(sourceRange, ERROR_MESSAGE_UNTERMINATED_STRING);
                     return -1;
                 }
             }
@@ -755,9 +782,9 @@ public abstract class StringLiteralUtils {
         /**
          * Return an expression Token or {@code null} on error.
          */
-        private static Token createExpressionToken(ParserErrorCallback errorCallback, String text, int start, int end) {
+        private static Token createExpressionToken(ParserErrorCallback errorCallback, String text, SourceRange sourceRange, int start, int end) {
             if (start >= end) {
-                errorCallback.onError(start, start, ERROR_MESSAGE_EMPTY_EXPRESSION);
+                errorCallback.onError(sourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                 return null;
             }
             boolean onlyWhiteSpaces = true;
@@ -768,15 +795,15 @@ public abstract class StringLiteralUtils {
                 }
             }
             if (onlyWhiteSpaces) {
-                errorCallback.onError(start, end, ERROR_MESSAGE_EMPTY_EXPRESSION);
+                errorCallback.onError(sourceRange, ERROR_MESSAGE_EMPTY_EXPRESSION);
                 return null;
             }
             return new Token(TOKEN_TYPE_EXPRESSION, start, end);
         }
     }
 
-    private static byte[] decodeEscapeToBytes(ParserErrorCallback errors, String string) {
-        StringBuilder sb = decodeEscapes(errors, string, false);
+    private static byte[] decodeEscapeToBytes(ParserErrorCallback errors, String string, SourceRange sourceRange) {
+        StringBuilder sb = decodeEscapes(errors, string, sourceRange, false);
         byte[] bytes = new byte[sb.length()];
         for (int i = 0; i < sb.length(); i++) {
             bytes[i] = (byte) sb.charAt(i);
@@ -784,7 +811,7 @@ public abstract class StringLiteralUtils {
         return bytes;
     }
 
-    public static StringBuilder decodeEscapes(ParserErrorCallback errors, String string, boolean regexMode) {
+    public static StringBuilder decodeEscapes(ParserErrorCallback errors, String string, SourceRange sourceRange, boolean regexMode) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
         // TODO: for the moment we assume ASCII
@@ -800,7 +827,7 @@ public abstract class StringLiteralUtils {
 
             i++;
             if (i >= length) {
-                errors.onError(ParserErrorCallback.ErrorType.Value, i, length, TRAILING_S_IN_STR, "\\");
+                errors.onError(ParserErrorCallback.ErrorType.Value, sourceRange, TRAILING_S_IN_STR, "\\");
                 return charList;
             }
 
@@ -886,7 +913,7 @@ public abstract class StringLiteralUtils {
                             // fall through
                         }
                     }
-                    errors.onError(ParserErrorCallback.ErrorType.Value, i, i + 2, INVALID_ESCAPE_AT, "\\x", i);
+                    errors.onError(ParserErrorCallback.ErrorType.Value, sourceRange, INVALID_ESCAPE_AT, "\\x", i);
                     return charList;
                 default:
                     if (regexMode) {
@@ -896,7 +923,7 @@ public abstract class StringLiteralUtils {
                             charList.append('\\');
                             charList.append(chr);
                         } else {
-                            errors.onError(ParserErrorCallback.ErrorType.Value, i, length, INVALID_ESCAPE_AT, "\\x", i);
+                            errors.onError(ParserErrorCallback.ErrorType.Value, sourceRange, INVALID_ESCAPE_AT, "\\x", i);
                             return charList;
                         }
                     } else {
@@ -913,7 +940,7 @@ public abstract class StringLiteralUtils {
         return charList;
     }
 
-    private static String unescapeString(int startOffset, int endOffset, ParserErrorCallback errorCallback, String st) {
+    private static String unescapeString(SourceRange sourceRange, ParserErrorCallback errorCallback, String st) {
         if (!st.contains("\\")) {
             return st;
         }
@@ -981,7 +1008,7 @@ public abstract class StringLiteralUtils {
                         continue;
                     // Hex Unicode: u????
                     case 'u':
-                        int code = getHexValue(st, i + 2, 4, errorCallback);
+                        int code = getHexValue(st, sourceRange, i + 2, 4, errorCallback);
                         if (code < 0) {
                             return st;
                         }
@@ -990,18 +1017,18 @@ public abstract class StringLiteralUtils {
                         continue;
                     // Hex Unicode: U????????
                     case 'U':
-                        code = getHexValue(st, i + 2, 8, errorCallback);
+                        code = getHexValue(st, sourceRange, i + 2, 8, errorCallback);
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, startOffset, endOffset, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
+                            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
                             return st;
                         }
                         i += 9;
                         continue;
                     // Hex Unicode: x??
                     case 'x':
-                        code = getHexValue(st, i + 2, 2, errorCallback);
+                        code = getHexValue(st, sourceRange, i + 2, 2, errorCallback);
                         if (code < 0) {
                             return st;
                         }
@@ -1010,7 +1037,7 @@ public abstract class StringLiteralUtils {
                         continue;
                     case 'N':
                         // a character from Unicode Data Database
-                        i = doCharacterName(st, sb, i + 2, errorCallback);
+                        i = doCharacterName(st, sourceRange, sb, i + 2, errorCallback);
                         if (i < 0) {
                             return st;
                         }
@@ -1032,7 +1059,7 @@ public abstract class StringLiteralUtils {
         return sb.toString();
     }
 
-    private static int getHexValue(String text, int start, int len, ParserErrorCallback errorCb) {
+    private static int getHexValue(String text, SourceRange sourceRange, int start, int len, ParserErrorCallback errorCb) {
         int digit;
         int result = 0;
         for (int index = start; index < (start + len); index++) {
@@ -1041,17 +1068,17 @@ public abstract class StringLiteralUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    return createTruncatedError(start - 2, index - 1, len, errorCb);
+                    return createTruncatedError(sourceRange, start - 2, index - 1, len, errorCb);
                 }
                 result = result * 16 + digit;
             } else {
-                return createTruncatedError(start - 2, index - 1, len, errorCb);
+                return createTruncatedError(sourceRange, start - 2, index - 1, len, errorCb);
             }
         }
         return result;
     }
 
-    private static int createTruncatedError(int startIndex, int endIndex, int len, ParserErrorCallback errorCb) {
+    private static int createTruncatedError(SourceRange sourceRange, int startIndex, int endIndex, int len, ParserErrorCallback errorCb) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -1064,7 +1091,7 @@ public abstract class StringLiteralUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        errorCb.onError(ParserErrorCallback.ErrorType.Encoding, startIndex, endIndex, UNICODE_ERROR + truncatedMessage);
+        errorCb.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
         return -1;
     }
 
@@ -1076,19 +1103,19 @@ public abstract class StringLiteralUtils {
      * @param offset this is offset of the open brace
      * @return offset of the close brace or {@code -1} if an error was signaled
      */
-    private static int doCharacterName(String text, StringBuilder sb, int offset, ParserErrorCallback errorCallback) {
+    private static int doCharacterName(String text, SourceRange sourceRange, StringBuilder sb, int offset, ParserErrorCallback errorCallback) {
         if (offset >= text.length()) {
-            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, offset - 2, offset - 1, UNICODE_ERROR + MALFORMED_ERROR);
+            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
             return -1;
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, offset - 2, offset - 1, UNICODE_ERROR + MALFORMED_ERROR);
+            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
             return -1;
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, offset - 2, offset - 1, UNICODE_ERROR + MALFORMED_ERROR);
+            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
             return -1;
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
@@ -1096,7 +1123,7 @@ public abstract class StringLiteralUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, offset - 2, closeIndex, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR);
+            errorCallback.onError(ParserErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
             return -1;
         }
         return closeIndex;
