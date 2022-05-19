@@ -645,6 +645,9 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private Object getKwargs(VirtualFrame frame) {
+            if (PArguments.getKeywordArguments(frame).length == 0) {
+                return PNone.NO_VALUE;
+            }
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(EMPTY_STRING_ARRAY));
