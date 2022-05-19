@@ -1078,7 +1078,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RETURN_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount > 0) {
+                        if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         Object value = localFrame.getObject(stackTop);
@@ -1230,7 +1230,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.JUMP_BACKWARD: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
-                        if (CompilerDirectives.hasNextTier()) {
+                        if (CompilerDirectives.inInterpreter()) {
                             loopCount++;
                         }
                         if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(this)) {
@@ -1246,7 +1246,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                              */
                             Object osrResult = BytecodeOSRNode.tryOSR(this, bci, stackTop, null, virtualFrame);
                             if (osrResult != null) {
-                                if (CompilerDirectives.hasNextTier() && loopCount > 0) {
+                                if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                                     LoopNode.reportLoopCount(this, loopCount);
                                 }
                                 return osrResult;
@@ -1368,7 +1368,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(virtualFrame, localFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount > 0) {
+                        if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         Object value = localFrame.getObject(stackTop);
@@ -1455,7 +1455,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 if (newTarget == -1) {
                     localFrame.setInt(bcioffset, beginBci);
-                    if (CompilerDirectives.hasNextTier() && loopCount > 0) {
+                    if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                         LoopNode.reportLoopCount(this, loopCount);
                     }
                     if (e == pe) {
