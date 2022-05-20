@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -238,7 +238,12 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         output = mx.OutputCapture()
         retcode = mx.run(shlex.split(args.benchmark_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
         if retcode:
-            raise RuntimeError("Failed to execute benchmark for {}".format(commit))
+            if args.benchmark_criterion == 'WORKS':
+                return sys.maxsize
+            else:
+                raise RuntimeError("Failed to execute benchmark for {}".format(commit))
+        elif args.benchmark_criterion == 'WORKS':
+            return 0
         match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
         if not match:
             raise RuntimeError("Failed to get result from the benchmark")
