@@ -104,6 +104,7 @@ import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_EXCEPT;
 import static com.oracle.graal.python.compiler.OpCodes.POP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.PRINT_EXPR;
 import static com.oracle.graal.python.compiler.OpCodes.PUSH_EXC_INFO;
 import static com.oracle.graal.python.compiler.OpCodes.RAISE_VARARGS;
 import static com.oracle.graal.python.compiler.OpCodes.RESUME_YIELD;
@@ -1674,7 +1675,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Expr node) {
         setLocation(node);
-        if (!(node.value instanceof ExprTy.Constant)) {
+        if (interactive) {
+            node.value.accept(this);
+            addOp(PRINT_EXPR);
+        } else if (!(node.value instanceof ExprTy.Constant)) {
             node.value.accept(this);
             addOp(POP_TOP);
         }

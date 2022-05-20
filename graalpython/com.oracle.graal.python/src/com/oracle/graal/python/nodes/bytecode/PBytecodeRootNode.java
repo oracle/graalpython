@@ -250,11 +250,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<BuiltinFunctions.FormatNode> NODE_FORMAT = BuiltinFunctions.FormatNode::create;
     private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
     private static final NodeSupplier<ThrowNode> NODE_THROW = ThrowNode::create;
-
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
     private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
-
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
+    private static final PrintExprNode UNCACHED_PRINT_EXPR = PrintExprNode.getUncached();
+    private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -1431,6 +1431,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg = 0;
                             continue;
                         }
+                    }
+                    case OpCodesConstants.PRINT_EXPR: {
+                        PrintExprNode printExprNode = insertChildNode(localNodes, beginBci, UNCACHED_PRINT_EXPR, NODE_PRINT_EXPR);
+                        printExprNode.execute(virtualFrame, localFrame.getObject(stackTop));
+                        localFrame.setObject(stackTop--, null);
+                        break;
                     }
                     case OpCodesConstants.EXTENDED_ARG: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);

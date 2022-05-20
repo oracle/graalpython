@@ -207,6 +207,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1041,12 +1042,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Supplier<CallTarget> createCode = () -> {
                 if (pm == ParserMode.File) {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(kwOptimize));
-                    return getContext().getEnv().parsePublic(source);
+                    return context.getEnv().parsePublic(source);
                 } else if (pm == ParserMode.Eval) {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(kwOptimize));
-                    return getContext().getEnv().parsePublic(source);
+                    return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
+                    if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, kwOptimize);
+                    }
                     return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
                 }
             };

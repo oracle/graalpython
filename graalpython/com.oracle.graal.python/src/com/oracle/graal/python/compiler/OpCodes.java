@@ -304,6 +304,12 @@ public enum OpCodes {
      * Pops: level (must be {@code int})
      */
     IMPORT_STAR(1, 1, 0),
+    /**
+     * Prints the top of the stack. Used by "single" parsing mode to echo expressions.
+     *
+     * Pops: the value to print
+     */
+    PRINT_EXPR(0, 1, 0),
 
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),
