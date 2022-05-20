@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
@@ -544,7 +544,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments = PArguments.create();
                 Node location;
                 if (self.usesBytecode()) {
-                    location = ((PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
+                    location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
                 } else {
                     location = self.getCurrentYieldNode();
                     if (location == null) {
@@ -565,7 +565,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         frame.setLasti(10000);
                     }
                 } else {
-                    PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     frame.setLasti(info.getBci(generatorFrame));
                     frame.setLine(info.getLineno(generatorFrame));
                 }

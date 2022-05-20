@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
@@ -73,7 +74,7 @@ public final class PGenerator extends PythonBuiltinObject {
     private final boolean isPRangeIterator;
     private final GeneratorInfo generatorInfo;
     private final PBytecodeRootNode bytecodeRootNode;
-    private final PBytecodeRootNode.FrameInfo frameInfo;
+    private final FrameInfo frameInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
 
@@ -159,7 +160,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.arguments = arguments;
         this.finished = false;
         this.bytecodeRootNode = rootNode;
-        this.frameInfo = (PBytecodeRootNode.FrameInfo) rootNode.getFrameDescriptor().getInfo();
+        this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
         this.iterator = null;
         this.isPRangeIterator = false;
         this.closure = null;

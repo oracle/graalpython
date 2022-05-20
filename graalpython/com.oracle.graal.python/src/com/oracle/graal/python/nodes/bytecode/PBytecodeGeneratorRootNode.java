@@ -109,7 +109,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
         }
         if (returnProfile.profile(result == null)) {
             // Null result indicates a generator return
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+            FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
             Object returnValue = info.getGeneratorReturnValue(generatorFrame);
             if (returnValue != PNone.NONE) {
                 throw raise.raise(StopIteration, returnValue);

@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -170,12 +170,12 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public static boolean isBytecodeFrame(Frame frameToSync) {
-        return frameToSync.getFrameDescriptor().getInfo() instanceof PBytecodeRootNode.FrameInfo;
+        return frameToSync.getFrameDescriptor().getInfo() instanceof FrameInfo;
     }
 
     private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame) {
         if (isBytecodeFrame(frameToMaterialize)) {
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
+            FrameInfo info = (FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
             pyFrame.setLasti(info.getBci(frameToMaterialize));
             pyFrame.setLine(info.getLineno(frameToMaterialize));
             pyFrame.setLocation(info.getRootNode());
@@ -617,7 +617,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) cachedFd.getInfo();
+            FrameInfo info = (FrameInfo) cachedFd.getInfo();
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
@@ -636,7 +636,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) frameToSync.getFrameDescriptor().getInfo();
+            FrameInfo info = (FrameInfo) frameToSync.getFrameDescriptor().getInfo();
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = ConditionProfile.getUncached();
@@ -644,8 +644,8 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        private static void syncDict(VirtualFrame frame, int slot, PBytecodeRootNode.FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
-                        ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
+        private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
+                                     ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
             String identifier = info.getVariableName(slot);
             Object value = frameToSync.getValue(slot);
@@ -675,7 +675,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         protected static int variableSlotCount(FrameDescriptor fd) {
-            PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) fd.getInfo();
+            FrameInfo info = (FrameInfo) fd.getInfo();
             return info.getVariableCount();
         }
 

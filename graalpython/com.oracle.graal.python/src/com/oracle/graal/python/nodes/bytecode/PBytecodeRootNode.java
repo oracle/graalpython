@@ -356,20 +356,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final String name;
     private boolean pythonInternal;
 
-    private final int celloffset;
-    private final int freeoffset;
-    private final int stackoffset;
-    private final int bcioffset;
-    private final int generatorStackTopOffset;
-    private final int generatorReturnOffset;
-    private final int selfIndex;
-    private final int classcellIndex;
+    final int celloffset;
+    final int freeoffset;
+    final int stackoffset;
+    final int bcioffset;
+    final int generatorStackTopOffset;
+    final int generatorReturnOffset;
+    final int selfIndex;
+    final int classcellIndex;
 
     private final CodeUnit co;
     private final Source source;
     private SourceSection sourceSection;
 
-    @CompilationFinal(dimensions = 1) private final byte[] bytecode;
+    @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
     @CompilationFinal(dimensions = 1) private final long[] longConsts;
     @CompilationFinal(dimensions = 1) private final String[] names;
@@ -394,85 +394,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return false;
         }
     };
-
-    public static final class FrameInfo {
-        @CompilationFinal PBytecodeRootNode rootNode;
-
-        public PBytecodeRootNode getRootNode() {
-            return rootNode;
-        }
-
-        public int bciToLine(int bci) {
-            return rootNode.bciToLine(bci);
-        }
-
-        public int getBci(Frame frame) {
-            if (frame.isInt(rootNode.bcioffset)) {
-                return frame.getInt(rootNode.bcioffset);
-            }
-            return -1;
-        }
-
-        public int getGeneratorStackTop(Frame frame) {
-            return frame.getInt(rootNode.generatorStackTopOffset);
-        }
-
-        public Object getYieldFrom(Frame generatorFrame) {
-            int bci = getBci(generatorFrame);
-            /* Match the `yield from` bytecode pattern and get the object from stack */
-            if (bci > 3 && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
-                            rootNode.bytecode[bci] == OpCodesConstants.RESUME_YIELD) {
-                int stackTop = generatorFrame.getInt(rootNode.generatorStackTopOffset);
-                return generatorFrame.getObject(stackTop);
-            }
-            return null;
-        }
-
-        public Object getGeneratorReturnValue(Frame frame) {
-            return frame.getObject(rootNode.generatorReturnOffset);
-        }
-
-        public int getLineno(Frame frame) {
-            return bciToLine(getBci(frame));
-        }
-
-        public int getVariableCount() {
-            CodeUnit code = rootNode.co;
-            return code.varnames.length + code.cellvars.length + code.freevars.length;
-        }
-
-        public String getVariableName(int slot) {
-            CodeUnit code = rootNode.co;
-            if (slot < code.varnames.length) {
-                return code.varnames[slot];
-            } else if (slot < code.varnames.length + code.cellvars.length) {
-                return code.cellvars[slot - code.varnames.length];
-            } else {
-                return code.freevars[slot - code.varnames.length - code.cellvars.length];
-            }
-        }
-
-        @TruffleBoundary
-        public int findVariable(String name) {
-            CodeUnit code = rootNode.co;
-            for (int i = 0; i < code.varnames.length; i++) {
-                if (name.equals(code.varnames[i])) {
-                    return i;
-                }
-            }
-            for (int i = 0; i < code.cellvars.length; i++) {
-                if (name.equals(code.cellvars[i])) {
-                    return code.varnames.length + i;
-                }
-            }
-            for (int i = 0; i < code.freevars.length; i++) {
-                if (name.equals(code.freevars[i])) {
-                    return code.varnames.length + code.cellvars.length + i;
-                }
-            }
-            return -1;
-        }
-    }
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
