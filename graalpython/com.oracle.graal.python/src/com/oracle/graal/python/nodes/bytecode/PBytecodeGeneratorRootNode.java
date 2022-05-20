@@ -83,6 +83,15 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
+        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
+        /*
+         * This copying of exceptions is necessary because we need to remember the exception state
+         * in the generator, but we don't want to remember the state that is "inherited" from the
+         * outer frame as that can change with each invocation.
+         */
+        PException localException = PArguments.getException(generatorFrame);
+        PException outerException = PArguments.getException(frame);
+        PArguments.setException(frame, localException == null ? outerException : localException);
         Object result;
         try {
             result = rootNode.executeFromBci(frame, resumeBci, resumeStackTop);
@@ -93,10 +102,13 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
             throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
         } finally {
             calleeContext.exit(frame, this);
+            PException exception = PArguments.getException(frame);
+            if (exception != outerException && exception != PException.NO_EXCEPTION) {
+                PArguments.setException(generatorFrame, exception);
+            }
         }
         if (returnProfile.profile(result == null)) {
             // Null result indicates a generator return
-            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
             PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
             Object returnValue = info.getGeneratorReturnValue(generatorFrame);
             if (returnValue != PNone.NONE) {

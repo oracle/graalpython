@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,8 +109,14 @@ public abstract class ExceptionStateNodes {
                 if (e == null) {
                     e = PException.NO_EXCEPTION;
                 }
-                // Set into frame to avoid doing the stack walk again
-                PArguments.setException(frame, e);
+                /*
+                 * Set into frame to avoid doing the stack walk again. We cannot do this for
+                 * generators because exception state inherited from outer frame needs to be treated
+                 * differently from local exception state.
+                 */
+                if (PArguments.getGeneratorFrame(frame) == null) {
+                    PArguments.setException(frame, e);
+                }
             }
             return ensure(e);
         }
