@@ -47,8 +47,9 @@ import types
 import mx
 
 
-def hr(l):
+def print_line(l):
     print('=' * l)
+
 
 def get_suite(name):
     suite_name = name.lstrip('/')
@@ -199,7 +200,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
                             help="Command to run in order to run the benchmark. Output needs to be in mx's format")
         parser.add_argument('--rerun-with-commands',
                             help="Re-run the bad and good commits with this benchmark command(s) "
-                                 "(multiple commands separated by '|')")
+                                 "(multiple commands separated by ';')")
         parser.add_argument('--benchmark-criterion', default='BEST',
                             help="Which result parameter should be used for comparisons")
         parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
@@ -283,11 +284,11 @@ def _bisect_benchmark(argv, bisect_id, email_to):
             current_result = next_result
             current_suite = downstream_suite
         for commit in [current_result.good_commit, current_result.bad_commit]:
-            hr(80)
+            print_line(80)
             print("Commit: {}".format(commit))
             checkout_and_build_suite(current_suite, commit)
-            for cmd in args.rerun_with_commands.split("|"):
-                hr(40)
+            for cmd in args.rerun_with_commands.split(";"):
+                print_line(40)
                 mx.run(shlex.split(cmd.strip()), nonZeroIsFatal=False)
 
     send_email(
