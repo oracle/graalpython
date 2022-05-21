@@ -3944,10 +3944,6 @@ public abstract class CExtNodes {
                 flags = resultLib.asInt(methodFlagsObj);
 
                 mlMethObj = interopLibrary.readMember(methodDef, ML_METH);
-                if (!resultLib.isExecutable(mlMethObj)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
-                }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());

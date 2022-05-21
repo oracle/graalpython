@@ -419,22 +419,8 @@ public class GraalHPyNodes {
             boolean readOnly;
             try {
                 getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
-                // TODO eagerly resolve function ptr
-                // the pointer must either be NULL or a callable function pointer
-                if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "get of %s is not callable", getSetDescrName);
-                }
-
                 setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
-                // TODO eagerly resolve function ptr
-                // the pointer must either be NULL or a callable function pointer
-                if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "set of %s is not callable", getSetDescrName);
-                }
                 readOnly = resultLib.isNull(setterFunPtr);
-
                 closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
