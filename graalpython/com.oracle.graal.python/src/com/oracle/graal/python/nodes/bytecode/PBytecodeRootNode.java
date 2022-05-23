@@ -720,7 +720,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeFromBci(virtualFrame, virtualFrame, 0, getInitialStackTop());
+            return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -740,13 +740,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
-        return executeFromBci(osrFrame, osrFrame, target, (Integer) interpreterState);
+        return executeFromBci(osrFrame, osrFrame, this, target, (Integer) interpreterState);
     }
 
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, int initialBci, int initialStackTop) {
+    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
@@ -1158,7 +1158,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (CompilerDirectives.inInterpreter()) {
                             loopCount++;
                         }
-                        if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(this)) {
+                        if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(osrNode)) {
                             /*
                              * Beware of race conditions when adding more things to the
                              * interpreterState argument. It gets stored already at this point, but
@@ -1169,7 +1169,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                              * will get mixed up. To retain such state, put it into the frame
                              * instead.
                              */
-                            Object osrResult = BytecodeOSRNode.tryOSR(this, bci, stackTop, null, virtualFrame);
+                            Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, stackTop, null, virtualFrame);
                             if (osrResult != null) {
                                 if (CompilerDirectives.inInterpreter() && loopCount > 0) {
                                     LoopNode.reportLoopCount(this, loopCount);

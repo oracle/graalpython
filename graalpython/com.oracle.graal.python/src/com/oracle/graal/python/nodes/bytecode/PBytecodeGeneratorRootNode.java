@@ -60,11 +60,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class PBytecodeGeneratorRootNode extends PRootNode {
+public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSRNode {
     private final PBytecodeRootNode rootNode;
     private final int resumeBci;
     private final int resumeStackTop;
@@ -72,6 +73,10 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
     @Child private IsBuiltinClassProfile errorProfile;
     @Child private PRaiseNode raise = PRaiseNode.create();
+    private final ConditionProfile returnProfile = ConditionProfile.create();
+
+    @CompilationFinal private Object osrMetadata;
+    @CompilationFinal(dimensions = 1) private FrameSlotType[] frameSlotTypes;
 
     private enum FrameSlotType {
         Object,
@@ -81,17 +86,13 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
         Boolean
     }
 
-    @CompilationFinal(dimensions = 1) private FrameSlotType[] frameSlotTypes;
-
-    private final ConditionProfile returnProfile = ConditionProfile.create();
-
     @TruffleBoundary
     public PBytecodeGeneratorRootNode(PythonLanguage language, PBytecodeRootNode rootNode, int resumeBci, int resumeStackTop) {
         super(language, rootNode.getFrameDescriptor());
         this.rootNode = rootNode;
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
-        frameSlotTypes = new FrameSlotType[resumeStackTop];
+        frameSlotTypes = new FrameSlotType[resumeStackTop + 1];
     }
 
     @ExplodeLoop
@@ -153,7 +154,9 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
 
     @ExplodeLoop
     private void copyFrameSlotsToGeneratorFrame(VirtualFrame virtualFrame, MaterializedFrame generatorFrame) {
-        for (int i = 0; i < frameSlotTypes.length; i++) {
+        int stackTop = getFrameDescriptor().getNumberOfSlots();
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        for (int i = 0; i < stackTop; i++) {
             if (virtualFrame.isObject(i)) {
                 generatorFrame.setObject(i, virtualFrame.getObject(i));
             } else if (virtualFrame.isInt(i)) {
@@ -168,9 +171,6 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
                 throw CompilerDirectives.shouldNotReachHere("unexpected frame slot type");
             }
         }
-        generatorFrame.setInt(rootNode.bcioffset, virtualFrame.getInt(rootNode.bcioffset));
-        generatorFrame.setInt(rootNode.generatorStackTopOffset, virtualFrame.getInt(rootNode.generatorStackTopOffset));
-        generatorFrame.setObject(rootNode.generatorReturnOffset, virtualFrame.getObject(rootNode.generatorReturnOffset));
     }
 
     private void profileFrameSlots(MaterializedFrame generatorFrame) {
@@ -193,6 +193,31 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     }
 
     @Override
+    public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
+        Integer osrStackTop = (Integer) interpreterState;
+        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(osrFrame);
+        copyFrameSlotsIntoVirtualFrame(generatorFrame, osrFrame);
+        copyOSRStackRemainderIntoVirtualFrame(generatorFrame, osrFrame, osrStackTop);
+        try {
+            return rootNode.executeFromBci(osrFrame, osrFrame, this, target, osrStackTop);
+        } finally {
+            copyFrameSlotsToGeneratorFrame(osrFrame, generatorFrame);
+        }
+    }
+
+    @ExplodeLoop
+    private void copyOSRStackRemainderIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame osrFrame, int stackTop) {
+        /*
+         * In addition to local variables and stack slots present at resume, OSR needs to also
+         * revirtualize stack items that have been pushed since resume. Stack slots at a back edge
+         * should never be primitives.
+         */
+        for (int i = resumeStackTop; i <= stackTop; i++) {
+            osrFrame.setObject(i, generatorFrame.getObject(i));
+        }
+    }
+
+    @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
@@ -206,7 +231,8 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
         PArguments.setException(frame, localException == null ? outerException : localException);
         Object result;
         Frame localFrame;
-        if (CompilerDirectives.inInterpreter()) {
+        boolean usingMaterializedFrame = CompilerDirectives.inInterpreter();
+        if (usingMaterializedFrame) {
             profileFrameSlots(generatorFrame);
             localFrame = generatorFrame;
         } else {
@@ -214,14 +240,14 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
             localFrame = frame;
         }
         try {
-            result = rootNode.executeFromBci(frame, localFrame, resumeBci, resumeStackTop);
+            result = rootNode.executeFromBci(frame, localFrame, this, resumeBci, resumeStackTop);
         } catch (PException pe) {
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             pe.expectStopIteration(getErrorProfile());
             throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
         } finally {
-            if (CompilerDirectives.inCompiledCode()) {
+            if (!usingMaterializedFrame) {
                 copyFrameSlotsToGeneratorFrame(frame, generatorFrame);
             }
             calleeContext.exit(frame, this);
@@ -244,6 +270,26 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     }
 
     @Override
+    public Object getOSRMetadata() {
+        return osrMetadata;
+    }
+
+    @Override
+    public void setOSRMetadata(Object osrMetadata) {
+        this.osrMetadata = osrMetadata;
+    }
+
+    @Override
+    public Object[] storeParentFrameInArguments(VirtualFrame parentFrame) {
+        return rootNode.storeParentFrameInArguments(parentFrame);
+    }
+
+    @Override
+    public Frame restoreParentFrameFromArguments(Object[] arguments) {
+        return rootNode.restoreParentFrameFromArguments(arguments);
+    }
+
+    @Override
     public String getName() {
         return rootNode.getName();
     }
@@ -251,7 +297,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<bytecode " + rootNode.getName() + ">";
+        return "<bytecode " + rootNode.getName() + " (generator resume bci=" + resumeBci + ")>";
     }
 
     @Override
