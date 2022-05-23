@@ -79,7 +79,7 @@ public abstract class BuiltinNames {
     public static final String EXIT = "exit";
     public static final String MODULES = "modules";
 
-    // builtin functions
+    // built-in functions
     public static final String ABS = "abs";
     public static final String DICT = "dict";
     public static final String DEFAULTDICT = "defaultdict";
@@ -162,17 +162,11 @@ public abstract class BuiltinNames {
     public static final String HASH = "hash";
     public static final String MEMORYVIEW = "memoryview";
     public static final String SET = "set";
-    public static final String BUILTINS = "builtins";
-    public static final String __GRAALPYTHON__ = "__graalpython__";
-    public static final String _CODECS = "_codecs";
-    public static final String _STRING = "_string";
-    public static final String _CODECS_TRUFFLE = "_codecs_truffle";
     public static final String GETSET_DESCRIPTOR = "getset_descriptor";
     public static final String MEMBER_DESCRIPTOR = "member_descriptor";
     public static final String WRAPPER_DESCRIPTOR = "wrapper_descriptor";
     public static final String SIMPLE_QUEUE = "SimpleQueue";
     public static final String EMPTY = "Empty";
-    public static final String CONTEXTVARS = "_contextvars";
 
     public static final String DICT_KEYITERATOR = "dict_keyiterator";
     public static final String DICT_VALUEITERATOR = "dict_valueiterator";
@@ -183,4 +177,13 @@ public abstract class BuiltinNames {
     public static final String DICT_KEYS = "dict_keys";
     public static final String DICT_ITEMS = "dict_items";
     public static final String DICT_VALUES = "dict_values";
+
+    // built-in modules
+    public static final String BUILTINS = "builtins";
+    public static final String __GRAALPYTHON__ = "__graalpython__";
+    public static final String _CODECS = "_codecs";
+    public static final String _CODECS_TRUFFLE = "_codecs_truffle";
+    public static final String _STRING = "_string";
+    public static final String CONTEXTVARS = "_contextvars";
+    public static final String BZ2 = "_bz2";
 }
