@@ -155,6 +155,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -384,6 +385,7 @@ public class GraalHPyNodes {
      */
     @GenerateUncached
     public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyAddLegacyGetSetDefNode.class);
 
         public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDef);
 
@@ -419,7 +421,13 @@ public class GraalHPyNodes {
             boolean readOnly;
             try {
                 getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
+                if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
+                    LOGGER.warning(() -> String.format("get of %s is not callable", getSetDescrName));
+                }
                 setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
+                if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
+                    LOGGER.warning(() -> String.format("set of %s is not callable", getSetDescrName));
+                }
                 readOnly = resultLib.isNull(setterFunPtr);
                 closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
             } catch (UnknownIdentifierException e) {

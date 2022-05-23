@@ -3892,6 +3892,7 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class CreateMethodNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CreateMethodNode.class);
 
         public static final String ML_NAME = "ml_name";
         public static final String ML_DOC = "ml_doc";
@@ -3944,6 +3945,9 @@ public abstract class CExtNodes {
                 flags = resultLib.asInt(methodFlagsObj);
 
                 mlMethObj = interopLibrary.readMember(methodDef, ML_METH);
+                if (!resultLib.isExecutable(mlMethObj)) {
+                    LOGGER.warning(() -> String.format("ml_meth of %s is not callable", methodName));
+                }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
