@@ -72,7 +72,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -122,6 +121,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.PythonUtils;
@@ -199,11 +199,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static SSLEngine createSSLEngine(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
+    static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
         } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException | IOException | CertificateException ex) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, ex);
         }
         SSLParameters parameters = new SSLParameters();
         SSLEngine engine;
@@ -268,14 +268,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(VirtualFrame frame, PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(frame.materialize(), constructAndRaiseNode, this, context, serverSide, serverHostname);
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -301,15 +300,14 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapBIONode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(VirtualFrame frame, PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
+        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner,
                         @SuppressWarnings("unused") PNone session,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(frame.materialize(), constructAndRaiseNode, this, context, serverSide, serverHostname);
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming, outgoing);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -693,10 +691,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 if (!(cadata instanceof PNone)) {
                     Collection<?> certificates;
                     try {
-                        certificates = fromString(frame, constructAndRaiseNode, castToString.execute(cadata));
+                        certificates = fromString(castToString.execute(cadata));
                     } catch (CannotCastException cannotCastException) {
                         if (cadata instanceof PBytesLike) {
-                            certificates = fromBytesLike(frame.materialize(), constructAndRaiseNode, toBytes, cadata);
+                            certificates = fromBytesLike(toBytes.execute(((PBytesLike) cadata).getSequenceStorage()));
                         } else {
                             throw raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
                         }
@@ -729,48 +727,47 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private List<Object> fromString(VirtualFrame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString)
+        private List<Object> fromString(String dataString)
                         throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CRLException {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
-            return getCertificates(frame.materialize(), constructAndRaiseNode, dataString);
+            return getCertificates(dataString);
         }
 
         @TruffleBoundary
-        private List<Object> getCertificates(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, String dataString)
+        private List<Object> getCertificates(String dataString)
                         throws PException, CRLException, IOException, CertificateException {
             try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
                 try {
                     List<Object> certificates = CertUtils.getCertificates(r);
                     if (certificates.isEmpty()) {
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
+                        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
                     }
                     return certificates;
                 } catch (DecoderException e) {
-                    throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                 } catch (IOException e) {
-                    throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                 }
             }
         }
 
         @TruffleBoundary
-        private Collection<?> fromBytesLike(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, ToByteArrayNode toBytes, Object cadata)
+        private Collection<?> fromBytesLike(byte[] bytes)
                         throws KeyStoreException, IOException, NoSuchAlgorithmException {
-            byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
             try {
                 return CertUtils.generateCertificates(bytes);
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
                 if (msg != null) {
                     if (msg.contains("No certificate data found")) {
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_NOT_ENOUGH_DATA, ErrorMessages.NOT_ENOUGH_DATA);
+                        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_NOT_ENOUGH_DATA, ErrorMessages.NOT_ENOUGH_DATA);
                     }
                 } else {
                     msg = "error while reading cadata";
                 }
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, msg);
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(null, SSLErrorCode.ERROR_SSL, msg);
             }
         }
     }
@@ -795,12 +792,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
             TruffleFile keyTruffleFile = toTruffleFile(frame, asPath.execute(frame, kf));
             try {
                 try {
-                    return load(frame.materialize(), constructAndRaiseNode, certTruffleFile, keyTruffleFile, null, self);
+                    return load(getContext(), certTruffleFile, keyTruffleFile, null, self);
                 } catch (NeedsPasswordException e) {
                     if (passwordObj != PNone.NONE) {
                         char[] password = getPasswordNode.execute(frame, passwordObj);
                         try {
-                            return load(frame.materialize(), constructAndRaiseNode, certTruffleFile, keyTruffleFile, password, self);
+                            return load(getContext(), certTruffleFile, keyTruffleFile, password, self);
                         } catch (NeedsPasswordException e1) {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
@@ -813,11 +810,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object load(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, TruffleFile certTruffleFile, TruffleFile keyTruffleFile, char[] password, PSSLContext self)
+        private Object load(PythonContext context, TruffleFile certTruffleFile, TruffleFile keyTruffleFile, char[] password, PSSLContext self)
                         throws IOException, NeedsPasswordException {
             try (BufferedReader certReader = getReader(certTruffleFile, "certfile");
                             BufferedReader keyReader = getReader(keyTruffleFile, "keyfile")) {
-                return load(frame, constructAndRaiseNode, self, certReader, keyReader, password);
+                return load(context, self, certReader, keyReader, password);
             }
         }
 
@@ -830,7 +827,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object load(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password)
+        private Object load(PythonContext context, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password)
                         throws NeedsPasswordException {
             // TODO add logging
             try {
@@ -839,17 +836,17 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     List<Object> certificates = CertUtils.getCertificates(certReader, true);
                     certs = certificates.toArray(new X509Certificate[certificates.size()]);
                     if (certs.length == 0) {
-                        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+                        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                     }
                 } catch (IOException | DecoderException e) {
-                    throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                 }
                 // if keyReader and certReader are from the same file, key is expected to come first
-                PrivateKey pk = CertUtils.getPrivateKey(frame, constructAndRaiseNode, keyReader, password, certs[0]);
+                PrivateKey pk = CertUtils.getPrivateKey(context, keyReader, password, certs[0]);
                 self.setCertChain(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
                 return PNone.NONE;
             } catch (GeneralSecurityException | IOException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, ex);
             }
         }
 
@@ -1004,8 +1001,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "binary_form")
-        Object getCertsBinary(VirtualFrame frame, PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+        Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PBytes> result = PythonUtils.newList();
                 for (X509Certificate cert : self.getCACerts()) {
@@ -1015,7 +1011,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createList(PythonUtils.toArray(result));
             } catch (KeyStoreException | NoSuchAlgorithmException | CertificateEncodingException ex) {
-                throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, ex);
             }
         }
 
