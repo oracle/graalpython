@@ -55,9 +55,12 @@ import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -70,6 +73,16 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
     @Child private IsBuiltinClassProfile errorProfile;
     @Child private PRaiseNode raise = PRaiseNode.create();
 
+    private enum FrameSlotType {
+        Object,
+        Int,
+        Long,
+        Double,
+        Boolean
+    }
+
+    @CompilationFinal(dimensions = 1) private FrameSlotType[] frameSlotTypes;
+
     private final ConditionProfile returnProfile = ConditionProfile.create();
 
     @TruffleBoundary
@@ -78,6 +91,105 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
         this.rootNode = rootNode;
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
+        frameSlotTypes = new FrameSlotType[resumeStackTop];
+    }
+
+    @ExplodeLoop
+    private void copyFrameSlotsIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame virtualFrame) {
+        for (int i = 0; i < frameSlotTypes.length; i++) {
+            switch (frameSlotTypes[i]) {
+                case Object:
+                    if (generatorFrame.isObject(i)) {
+                        virtualFrame.setObject(i, generatorFrame.getObject(i));
+                        continue;
+                    }
+                    break;
+                case Int:
+                    if (generatorFrame.isInt(i)) {
+                        virtualFrame.setInt(i, generatorFrame.getInt(i));
+                        continue;
+                    }
+                    break;
+                case Long:
+                    if (generatorFrame.isLong(i)) {
+                        virtualFrame.setLong(i, generatorFrame.getLong(i));
+                        continue;
+                    }
+                    break;
+                case Double:
+                    if (generatorFrame.isDouble(i)) {
+                        virtualFrame.setDouble(i, generatorFrame.getDouble(i));
+                        continue;
+                    }
+                    break;
+                case Boolean:
+                    if (generatorFrame.isBoolean(i)) {
+                        virtualFrame.setBoolean(i, generatorFrame.getBoolean(i));
+                        continue;
+                    }
+                    break;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (generatorFrame.isObject(i)) {
+                virtualFrame.setObject(i, generatorFrame.getObject(i));
+                frameSlotTypes[i] = FrameSlotType.Object;
+            } else if (generatorFrame.isInt(i)) {
+                virtualFrame.setInt(i, generatorFrame.getInt(i));
+                frameSlotTypes[i] = FrameSlotType.Int;
+            } else if (generatorFrame.isLong(i)) {
+                virtualFrame.setLong(i, generatorFrame.getLong(i));
+                frameSlotTypes[i] = FrameSlotType.Long;
+            } else if (generatorFrame.isDouble(i)) {
+                virtualFrame.setDouble(i, generatorFrame.getDouble(i));
+                frameSlotTypes[i] = FrameSlotType.Double;
+            } else if (generatorFrame.isBoolean(i)) {
+                virtualFrame.setBoolean(i, generatorFrame.getBoolean(i));
+                frameSlotTypes[i] = FrameSlotType.Boolean;
+            } else {
+                throw new IllegalStateException("unexpected frame slot type");
+            }
+        }
+    }
+
+    @ExplodeLoop
+    private void copyFrameSlotsToGeneratorFrame(VirtualFrame virtualFrame, MaterializedFrame generatorFrame) {
+        for (int i = 0; i < frameSlotTypes.length; i++) {
+            if (virtualFrame.isObject(i)) {
+                generatorFrame.setObject(i, virtualFrame.getObject(i));
+            } else if (virtualFrame.isInt(i)) {
+                generatorFrame.setInt(i, virtualFrame.getInt(i));
+            } else if (virtualFrame.isLong(i)) {
+                generatorFrame.setLong(i, virtualFrame.getLong(i));
+            } else if (virtualFrame.isDouble(i)) {
+                generatorFrame.setDouble(i, virtualFrame.getDouble(i));
+            } else if (virtualFrame.isBoolean(i)) {
+                generatorFrame.setBoolean(i, virtualFrame.getBoolean(i));
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("unexpected frame slot type");
+            }
+        }
+        generatorFrame.setInt(rootNode.bcioffset, virtualFrame.getInt(rootNode.bcioffset));
+        generatorFrame.setInt(rootNode.generatorStackTopOffset, virtualFrame.getInt(rootNode.generatorStackTopOffset));
+        generatorFrame.setObject(rootNode.generatorReturnOffset, virtualFrame.getObject(rootNode.generatorReturnOffset));
+    }
+
+    private void profileFrameSlots(MaterializedFrame generatorFrame) {
+        CompilerAsserts.neverPartOfCompilation();
+        for (int i = 0; i < frameSlotTypes.length; i++) {
+            if (generatorFrame.isObject(i)) {
+                frameSlotTypes[i] = FrameSlotType.Object;
+            } else if (generatorFrame.isInt(i)) {
+                frameSlotTypes[i] = FrameSlotType.Int;
+            } else if (generatorFrame.isLong(i)) {
+                frameSlotTypes[i] = FrameSlotType.Long;
+            } else if (generatorFrame.isDouble(i)) {
+                frameSlotTypes[i] = FrameSlotType.Double;
+            } else if (generatorFrame.isBoolean(i)) {
+                frameSlotTypes[i] = FrameSlotType.Boolean;
+            } else {
+                throw new IllegalStateException("unexpected frame slot type");
+            }
+        }
     }
 
     @Override
@@ -93,14 +205,25 @@ public class PBytecodeGeneratorRootNode extends PRootNode {
         PException outerException = PArguments.getException(frame);
         PArguments.setException(frame, localException == null ? outerException : localException);
         Object result;
+        Frame localFrame;
+        if (CompilerDirectives.inInterpreter()) {
+            profileFrameSlots(generatorFrame);
+            localFrame = generatorFrame;
+        } else {
+            copyFrameSlotsIntoVirtualFrame(generatorFrame, frame);
+            localFrame = frame;
+        }
         try {
-            result = rootNode.executeFromBci(frame, resumeBci, resumeStackTop);
+            result = rootNode.executeFromBci(frame, localFrame, resumeBci, resumeStackTop);
         } catch (PException pe) {
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             pe.expectStopIteration(getErrorProfile());
             throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
         } finally {
+            if (CompilerDirectives.inCompiledCode()) {
+                copyFrameSlotsToGeneratorFrame(frame, generatorFrame);
+            }
             calleeContext.exit(frame, this);
             PException exception = PArguments.getException(frame);
             if (exception != outerException && exception != PException.NO_EXCEPTION) {

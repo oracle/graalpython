@@ -720,7 +720,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeFromBci(virtualFrame, 0, getInitialStackTop());
+            return executeFromBci(virtualFrame, virtualFrame, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -740,13 +740,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
-        return executeFromBci(osrFrame, target, (Integer) interpreterState);
+        return executeFromBci(osrFrame, osrFrame, target, (Integer) interpreterState);
     }
 
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    Object executeFromBci(VirtualFrame virtualFrame, int initialBci, int initialStackTop) {
+    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, int initialBci, int initialStackTop) {
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
@@ -754,12 +754,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = initialStackTop;
         int bci = initialBci;
 
-        Frame localFrame = virtualFrame;
         boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
-        if (isGeneratorOrCoroutine) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
-
         byte[] localBC = bytecode;
         int[] localArgs = extraArgs;
         Object[] localConsts = consts;
