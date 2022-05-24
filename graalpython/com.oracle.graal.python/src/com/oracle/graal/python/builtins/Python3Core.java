@@ -920,7 +920,7 @@ public abstract class Python3Core extends ParserErrorCallback {
              * would never include the intrinsified _bz2 module in the native image since native
              * access is never allowed during native image build time.
              */
-            if (!getContext().isNativeAccessAllowed()) {
+            if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
                 builtinModules.remove(BuiltinNames.BZ2);
                 sysModules.delItem(BuiltinNames.BZ2);
             }
