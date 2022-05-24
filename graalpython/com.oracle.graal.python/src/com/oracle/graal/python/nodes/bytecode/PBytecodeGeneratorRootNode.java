@@ -272,4 +272,12 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public SourceSection getSourceSection() {
         return rootNode.getSourceSection();
     }
+
+    public int getResumeBci() {
+        return resumeBci;
+    }
+
+    public int getResumeStackTop() {
+        return resumeStackTop;
+    }
 }

@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode.GeneratorResult;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
@@ -142,7 +143,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
         @Specialization(guards = {"!self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object cachedAST(VirtualFrame frame, PGenerator self, Object sendValue,
+        static Object cachedAST(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -156,13 +157,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 throw e;
             } finally {
                 self.setRunning(false);
-                self.setNextCallTarget(PythonLanguage.get(this));
+                self.setNextCallTarget();
             }
         }
 
         @Specialization(guards = "!self.usesBytecode()", replaces = "cachedAST")
         @Megamorphic
-        Object genericAST(VirtualFrame frame, PGenerator self, Object sendValue,
+        static Object genericAST(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached GenericInvokeNode call) {
             self.setRunning(true);
@@ -181,7 +182,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 throw e;
             } finally {
                 self.setRunning(false);
-                self.setNextCallTarget(PythonLanguage.get(this));
+                self.setNextCallTarget();
             }
         }
 
@@ -196,9 +197,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
-            Object result;
+            GeneratorResult result;
             try {
-                result = call.execute(frame, null, null, null, arguments);
+                result = (GeneratorResult) call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
                 self.markAsFinished();
                 // PEP 479 - StopIteration raised from generator body needs to be wrapped in
@@ -208,18 +209,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             } finally {
                 self.setRunning(false);
             }
-            if (returnProfile.profile(result == null)) {
-                // Null result indicates a generator return
-                Object returnValue = self.getReturnValue();
-                if (returnValue != PNone.NONE) {
-                    throw raiseNode.raise(StopIteration, returnValue);
-                } else {
-                    throw raiseNode.raise(StopIteration);
-                }
-            } else {
-                self.setNextCallTarget(PythonLanguage.get(this));
-            }
-            return result;
+            return handleResult(self, result, returnProfile, raiseNode);
         }
 
         @Specialization(guards = "self.usesBytecode()", replaces = "cached")
@@ -235,12 +225,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
-            Object result;
+            GeneratorResult result;
             try {
                 if (hasFrameProfile.profile(frame != null)) {
-                    result = call.execute(frame, self.getCurrentCallTarget(), arguments);
+                    result = (GeneratorResult) call.execute(frame, self.getCurrentCallTarget(), arguments);
                 } else {
-                    result = call.execute(self.getCurrentCallTarget(), arguments);
+                    result = (GeneratorResult) call.execute(self.getCurrentCallTarget(), arguments);
                 }
             } catch (PException e) {
                 self.markAsFinished();
@@ -251,18 +241,22 @@ public class GeneratorBuiltins extends PythonBuiltins {
             } finally {
                 self.setRunning(false);
             }
-            if (returnProfile.profile(result == null)) {
-                // Null result indicates a generator return
-                Object returnValue = self.getReturnValue();
+            return handleResult(self, result, returnProfile, raiseNode);
+        }
+
+        private Object handleResult(PGenerator self, GeneratorResult result, ConditionProfile returnProfile, PRaiseNode raiseNode) {
+            if (returnProfile.profile(result.isReturn)) {
+                self.markAsFinished();
+                Object returnValue = result.value;
                 if (returnValue != PNone.NONE) {
                     throw raiseNode.raise(StopIteration, returnValue);
                 } else {
                     throw raiseNode.raise(StopIteration);
                 }
             } else {
-                self.setNextCallTarget(PythonLanguage.get(this));
+                self.handleResult(PythonLanguage.get(this), result);
             }
-            return result;
+            return result.value;
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
@@ -638,8 +632,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
                     }
                 } else {
                     FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    frame.setLasti(info.getBci(generatorFrame));
-                    frame.setLine(info.getLineno(generatorFrame));
+                    int bci = self.getBci();
+                    frame.setLasti(bci);
+                    frame.setLine(info.getRootNode().bciToLine(bci));
                 }
                 return frame;
             }

@@ -40,55 +40,27 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.OpCodesConstants;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
-public final class FrameInfo {
-    @CompilationFinal PBytecodeRootNode rootNode;
+@ValueType
+public class GeneratorResult {
+    public final int resumeBci;
+    public final int resumeStackTop;
+    public final boolean isReturn;
+    public final Object value;
 
-    public PBytecodeRootNode getRootNode() {
-        return rootNode;
+    private GeneratorResult(int resumeBci, int resumeStackTop, boolean isReturn, Object value) {
+        this.resumeBci = resumeBci;
+        this.resumeStackTop = resumeStackTop;
+        this.isReturn = isReturn;
+        this.value = value;
     }
 
-    public int bciToLine(int bci) {
-        return rootNode.bciToLine(bci);
+    public static GeneratorResult createYield(int resumeBci, int resumeStackTop, Object value) {
+        return new GeneratorResult(resumeBci, resumeStackTop, false, value);
     }
 
-    public int getBci(Frame frame) {
-        if (frame.isInt(rootNode.bcioffset)) {
-            return frame.getInt(rootNode.bcioffset);
-        }
-        return -1;
-    }
-
-    public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
-        /* Match the `yield from` bytecode pattern and get the object from stack */
-        if (bci > 3 && bci < rootNode.bytecode.length && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
-                        rootNode.bytecode[bci] == OpCodesConstants.RESUME_YIELD) {
-            return generatorFrame.getObject(stackTop);
-        }
-        return null;
-    }
-
-    public int getLineno(Frame frame) {
-        return bciToLine(getBci(frame));
-    }
-
-    public int getVariableCount() {
-        CodeUnit code = rootNode.getCodeUnit();
-        return code.varnames.length + code.cellvars.length + code.freevars.length;
-    }
-
-    public String getVariableName(int slot) {
-        CodeUnit code = rootNode.getCodeUnit();
-        if (slot < code.varnames.length) {
-            return code.varnames[slot];
-        } else if (slot < code.varnames.length + code.cellvars.length) {
-            return code.cellvars[slot - code.varnames.length];
-        } else {
-            return code.freevars[slot - code.varnames.length - code.cellvars.length];
-        }
+    public static GeneratorResult createReturn(Object value) {
+        return new GeneratorResult(-1, -1, true, value);
     }
 }

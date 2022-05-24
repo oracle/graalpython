@@ -360,8 +360,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     final int freeoffset;
     final int stackoffset;
     final int bcioffset;
-    final int generatorStackTopOffset;
-    final int generatorReturnOffset;
     final int selfIndex;
     final int classcellIndex;
 
@@ -397,9 +395,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
-        if (co.isGeneratorOrCoroutine()) {
-            capacity += 2;
-        }
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
         newBuilder.info(new FrameInfo());
         // locals
@@ -453,8 +448,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.freeoffset = celloffset + co.cellvars.length;
         this.stackoffset = freeoffset + co.freevars.length;
         this.bcioffset = stackoffset + co.stacksize;
-        this.generatorStackTopOffset = bcioffset + 1;
-        this.generatorReturnOffset = generatorStackTopOffset + 1;
         this.source = source;
         this.signature = sign;
         this.bytecode = co.code;
@@ -689,9 +682,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PArguments.setCallerFrameInfo(arguments, null);
         PArguments.setControlData(arguments, GENERATOR_CONTROL_DATA);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        // This is just for inspection, unstarted generators should have bci == -1
-        generatorFrame.setInt(bcioffset, -1);
-        generatorFrame.setInt(generatorStackTopOffset, -1);
         copyArgsAndCells(generatorFrame, arguments);
     }
 
@@ -1008,14 +998,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = stackFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
-                            stackFrame.setObject(stackTop--, null);
-                            localFrame.setInt(bcioffset, bci + 1);
-                            localFrame.setInt(generatorStackTopOffset, stackTop);
-                            localFrame.setObject(generatorReturnOffset, value);
                             if (localFrame != stackFrame) {
-                                clearFrameSlots(localFrame, stackoffset, initialStackTop);
+                                clearFrameSlots(localFrame, stackoffset, stackTop + 1);
                             }
-                            return null;
+                            return GeneratorResult.createReturn(value);
                         } else {
                             return value;
                         }
@@ -1301,15 +1287,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop--, null);
-                        localFrame.setInt(bcioffset, bci + 1);
-                        localFrame.setInt(generatorStackTopOffset, stackTop);
                         // See PBytecodeGeneratorRootNode#execute
                         if (localFrame != stackFrame) {
                             copyStackSlotsToGeneratorFrame(stackFrame, localFrame, stackTop);
                             // Clear slots that were popped (if any)
                             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
                         }
-                        return value;
+                        return GeneratorResult.createYield(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
                         Object sendValue = PArguments.getSpecialArgument(virtualFrame);
@@ -1397,9 +1381,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // For tracebacks
                     virtualFrame.setInt(bcioffset, beginBci);
                     if (isGeneratorOrCoroutine) {
-                        // For generator inspection
-                        localFrame.setInt(bcioffset, beginBci);
-                        localFrame.setInt(generatorStackTopOffset, stackTop);
                         if (localFrame != stackFrame) {
                             // Unwind the generator frame stack
                             clearFrameSlots(localFrame, stackoffset, initialStackTop);
