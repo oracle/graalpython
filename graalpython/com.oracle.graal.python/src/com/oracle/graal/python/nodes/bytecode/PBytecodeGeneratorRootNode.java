@@ -81,59 +81,61 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         this.rootNode = rootNode;
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
-        frameSlotTypes = new FrameSlotType[resumeStackTop + 1];
+        frameSlotTypes = new FrameSlotType[resumeStackTop - rootNode.stackoffset + 1];
     }
 
     @ExplodeLoop
-    private void copyFrameSlotsIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame virtualFrame) {
+    private void copyStackSlotsIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame virtualFrame) {
+        int offset = rootNode.stackoffset;
         for (int i = 0; i < frameSlotTypes.length; i++) {
+            int frameIndex = i + offset;
             switch (frameSlotTypes[i]) {
                 case Object:
-                    if (generatorFrame.isObject(i)) {
-                        virtualFrame.setObject(i, generatorFrame.getObject(i));
+                    if (generatorFrame.isObject(frameIndex)) {
+                        virtualFrame.setObject(frameIndex, generatorFrame.getObject(frameIndex));
                         continue;
                     }
                     break;
                 case Int:
-                    if (generatorFrame.isInt(i)) {
-                        virtualFrame.setInt(i, generatorFrame.getInt(i));
+                    if (generatorFrame.isInt(frameIndex)) {
+                        virtualFrame.setInt(frameIndex, generatorFrame.getInt(frameIndex));
                         continue;
                     }
                     break;
                 case Long:
-                    if (generatorFrame.isLong(i)) {
-                        virtualFrame.setLong(i, generatorFrame.getLong(i));
+                    if (generatorFrame.isLong(frameIndex)) {
+                        virtualFrame.setLong(frameIndex, generatorFrame.getLong(frameIndex));
                         continue;
                     }
                     break;
                 case Double:
-                    if (generatorFrame.isDouble(i)) {
-                        virtualFrame.setDouble(i, generatorFrame.getDouble(i));
+                    if (generatorFrame.isDouble(frameIndex)) {
+                        virtualFrame.setDouble(frameIndex, generatorFrame.getDouble(frameIndex));
                         continue;
                     }
                     break;
                 case Boolean:
-                    if (generatorFrame.isBoolean(i)) {
-                        virtualFrame.setBoolean(i, generatorFrame.getBoolean(i));
+                    if (generatorFrame.isBoolean(frameIndex)) {
+                        virtualFrame.setBoolean(frameIndex, generatorFrame.getBoolean(frameIndex));
                         continue;
                     }
                     break;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (generatorFrame.isObject(i)) {
-                virtualFrame.setObject(i, generatorFrame.getObject(i));
+            if (generatorFrame.isObject(frameIndex)) {
+                virtualFrame.setObject(frameIndex, generatorFrame.getObject(frameIndex));
                 frameSlotTypes[i] = FrameSlotType.Object;
-            } else if (generatorFrame.isInt(i)) {
-                virtualFrame.setInt(i, generatorFrame.getInt(i));
+            } else if (generatorFrame.isInt(frameIndex)) {
+                virtualFrame.setInt(frameIndex, generatorFrame.getInt(frameIndex));
                 frameSlotTypes[i] = FrameSlotType.Int;
-            } else if (generatorFrame.isLong(i)) {
-                virtualFrame.setLong(i, generatorFrame.getLong(i));
+            } else if (generatorFrame.isLong(frameIndex)) {
+                virtualFrame.setLong(frameIndex, generatorFrame.getLong(frameIndex));
                 frameSlotTypes[i] = FrameSlotType.Long;
-            } else if (generatorFrame.isDouble(i)) {
-                virtualFrame.setDouble(i, generatorFrame.getDouble(i));
+            } else if (generatorFrame.isDouble(frameIndex)) {
+                virtualFrame.setDouble(frameIndex, generatorFrame.getDouble(frameIndex));
                 frameSlotTypes[i] = FrameSlotType.Double;
-            } else if (generatorFrame.isBoolean(i)) {
-                virtualFrame.setBoolean(i, generatorFrame.getBoolean(i));
+            } else if (generatorFrame.isBoolean(frameIndex)) {
+                virtualFrame.setBoolean(frameIndex, generatorFrame.getBoolean(frameIndex));
                 frameSlotTypes[i] = FrameSlotType.Boolean;
             } else {
                 throw new IllegalStateException("unexpected frame slot type");
@@ -141,39 +143,19 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         }
     }
 
-    @ExplodeLoop
-    private void copyFrameSlotsToGeneratorFrame(VirtualFrame virtualFrame, MaterializedFrame generatorFrame) {
-        int stackTop = getFrameDescriptor().getNumberOfSlots();
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-        for (int i = 0; i < stackTop; i++) {
-            if (virtualFrame.isObject(i)) {
-                generatorFrame.setObject(i, virtualFrame.getObject(i));
-            } else if (virtualFrame.isInt(i)) {
-                generatorFrame.setInt(i, virtualFrame.getInt(i));
-            } else if (virtualFrame.isLong(i)) {
-                generatorFrame.setLong(i, virtualFrame.getLong(i));
-            } else if (virtualFrame.isDouble(i)) {
-                generatorFrame.setDouble(i, virtualFrame.getDouble(i));
-            } else if (virtualFrame.isBoolean(i)) {
-                generatorFrame.setBoolean(i, virtualFrame.getBoolean(i));
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("unexpected frame slot type");
-            }
-        }
-    }
-
     private void profileFrameSlots(MaterializedFrame generatorFrame) {
         CompilerAsserts.neverPartOfCompilation();
+        int offset = rootNode.stackoffset;
         for (int i = 0; i < frameSlotTypes.length; i++) {
-            if (generatorFrame.isObject(i)) {
+            if (generatorFrame.isObject(offset + i)) {
                 frameSlotTypes[i] = FrameSlotType.Object;
-            } else if (generatorFrame.isInt(i)) {
+            } else if (generatorFrame.isInt(offset + i)) {
                 frameSlotTypes[i] = FrameSlotType.Int;
-            } else if (generatorFrame.isLong(i)) {
+            } else if (generatorFrame.isLong(offset + i)) {
                 frameSlotTypes[i] = FrameSlotType.Long;
-            } else if (generatorFrame.isDouble(i)) {
+            } else if (generatorFrame.isDouble(offset + i)) {
                 frameSlotTypes[i] = FrameSlotType.Double;
-            } else if (generatorFrame.isBoolean(i)) {
+            } else if (generatorFrame.isBoolean(offset + i)) {
                 frameSlotTypes[i] = FrameSlotType.Boolean;
             } else {
                 throw new IllegalStateException("unexpected frame slot type");
@@ -185,21 +167,17 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
         Integer osrStackTop = (Integer) interpreterState;
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(osrFrame);
-        copyFrameSlotsIntoVirtualFrame(generatorFrame, osrFrame);
+        copyStackSlotsIntoVirtualFrame(generatorFrame, osrFrame);
         copyOSRStackRemainderIntoVirtualFrame(generatorFrame, osrFrame, osrStackTop);
-        try {
-            return rootNode.executeFromBci(osrFrame, osrFrame, this, target, osrStackTop);
-        } finally {
-            copyFrameSlotsToGeneratorFrame(osrFrame, generatorFrame);
-        }
+        return rootNode.executeFromBci(osrFrame, generatorFrame, osrFrame, this, target, osrStackTop);
     }
 
     @ExplodeLoop
     private void copyOSRStackRemainderIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame osrFrame, int stackTop) {
         /*
-         * In addition to local variables and stack slots present at resume, OSR needs to also
-         * revirtualize stack items that have been pushed since resume. Stack slots at a back edge
-         * should never be primitives.
+         * In addition to stack slots present at resume, OSR needs to also re-virtualize stack items
+         * that have been pushed since resume. Stack slots at a back edge should never be
+         * primitives.
          */
         for (int i = resumeStackTop; i <= stackTop; i++) {
             osrFrame.setObject(i, generatorFrame.getObject(i));
@@ -213,26 +191,34 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         /*
          * This copying of exceptions is necessary because we need to remember the exception state
          * in the generator, but we don't want to remember the state that is "inherited" from the
-         * outer frame as that can change with each invocation.
+         * outer frame as that can change with each invocation. The values are copied back in
+         * YIELD_VALUE (because the stack pointer is still PE-constant there, so we can explode the
+         * loop). In interpreter, we use the materialized frame directly, but we still profile the
+         * incoming types.
          */
         PException localException = PArguments.getException(generatorFrame);
         PException outerException = PArguments.getException(frame);
         PArguments.setException(frame, localException == null ? outerException : localException);
-        Frame localFrame;
-        boolean usingMaterializedFrame = CompilerDirectives.inInterpreter();
-        if (usingMaterializedFrame) {
+        Frame stackFrame;
+        /*
+         * Using the materialized frame as stack would be bad for compiled performance, so we copy
+         * the stack slots back to the virtual frame and use that as the stack in compiled code. The
+         * values are copied back in yield node.
+         * 
+         * TODO we could try to re-virtualize the locals too, but we would need to profile the loads
+         * and stores to only copy what is actually used, otherwise copying everything makes things
+         * worse.
+         */
+        if (CompilerDirectives.inInterpreter()) {
             profileFrameSlots(generatorFrame);
-            localFrame = generatorFrame;
+            stackFrame = generatorFrame;
         } else {
-            copyFrameSlotsIntoVirtualFrame(generatorFrame, frame);
-            localFrame = frame;
+            copyStackSlotsIntoVirtualFrame(generatorFrame, frame);
+            stackFrame = frame;
         }
         try {
-            return rootNode.executeFromBci(frame, generatorFrame, this, resumeBci, resumeStackTop);
+            return rootNode.executeFromBci(frame, generatorFrame, stackFrame, this, resumeBci, resumeStackTop);
         } finally {
-            if (!usingMaterializedFrame) {
-                copyFrameSlotsToGeneratorFrame(frame, generatorFrame);
-            }
             calleeContext.exit(frame, this);
             PException exception = PArguments.getException(frame);
             if (exception != outerException && exception != PException.NO_EXCEPTION) {
