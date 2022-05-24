@@ -141,9 +141,56 @@ public class GeneratorBuiltins extends PythonBuiltins {
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
-        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+        @Specialization(guards = {"!self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object cachedAST(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
+            self.setRunning(true);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
+            }
+            try {
+                return call.execute(frame, null, null, null, arguments);
+            } catch (PException e) {
+                self.markAsFinished();
+                throw e;
+            } finally {
+                self.setRunning(false);
+                self.setNextCallTarget(PythonLanguage.get(this));
+            }
+        }
+
+        @Specialization(guards = "!self.usesBytecode()", replaces = "cachedAST")
+        @Megamorphic
+        Object genericAST(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached GenericInvokeNode call) {
+            self.setRunning(true);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
+            }
+            try {
+                if (hasFrameProfile.profile(frame != null)) {
+                    return call.execute(frame, self.getCurrentCallTarget(), arguments);
+                } else {
+                    return call.execute(self.getCurrentCallTarget(), arguments);
+                }
+            } catch (PException e) {
+                self.markAsFinished();
+                throw e;
+            } finally {
+                self.setRunning(false);
+                self.setNextCallTarget(PythonLanguage.get(this));
+            }
+        }
+
+        @Specialization(guards = {"self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
+                        @Cached ConditionProfile returnProfile,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -154,21 +201,35 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 result = call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
                 self.markAsFinished();
-                throw e;
+                // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+                // RuntimeError
+                e.expectStopIteration(errorProfile);
+                throw raiseNode.raise(RuntimeError, e.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
             } finally {
                 self.setRunning(false);
-                if (!self.isFinished()) {
-                    self.setNextCallTarget(PythonLanguage.get(this));
+            }
+            if (returnProfile.profile(result == null)) {
+                // Null result indicates a generator return
+                Object returnValue = self.getReturnValue();
+                if (returnValue != PNone.NONE) {
+                    throw raiseNode.raise(StopIteration, returnValue);
+                } else {
+                    throw raiseNode.raise(StopIteration);
                 }
+            } else {
+                self.setNextCallTarget(PythonLanguage.get(this));
             }
             return result;
         }
 
-        @Specialization(replaces = "cached")
+        @Specialization(guards = "self.usesBytecode()", replaces = "cached")
         @Megamorphic
         Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached GenericInvokeNode call) {
+                        @Cached GenericInvokeNode call,
+                        @Cached ConditionProfile returnProfile,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -183,12 +244,23 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             } catch (PException e) {
                 self.markAsFinished();
-                throw e;
+                // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+                // RuntimeError
+                e.expectStopIteration(errorProfile);
+                throw raiseNode.raise(RuntimeError, e.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
             } finally {
                 self.setRunning(false);
-                if (!self.isFinished()) {
-                    self.setNextCallTarget(PythonLanguage.get(this));
+            }
+            if (returnProfile.profile(result == null)) {
+                // Null result indicates a generator return
+                Object returnValue = self.getReturnValue();
+                if (returnValue != PNone.NONE) {
+                    throw raiseNode.raise(StopIteration, returnValue);
+                } else {
+                    throw raiseNode.raise(StopIteration);
                 }
+            } else {
+                self.setNextCallTarget(PythonLanguage.get(this));
             }
             return result;
         }

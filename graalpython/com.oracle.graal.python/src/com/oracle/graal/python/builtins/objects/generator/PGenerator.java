@@ -62,7 +62,7 @@ public final class PGenerator extends PythonBuiltinObject {
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
      * then specialize towards which nodes are executed when starting from that particular entry
      * point. When yielding, the next index to the next call target to continue from is updated via
-     * {@link #setNextCallTarget()}.
+     * {@link #setNextCallTarget}.
      */
     @CompilationFinal(dimensions = 1) protected final RootCallTarget[] callTargets;
     protected final Object[] arguments;
@@ -229,6 +229,10 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public int getStackTop() {
         return frameInfo.getGeneratorStackTop(PArguments.getGeneratorFrame(arguments));
+    }
+
+    public Object getReturnValue() {
+        return frameInfo.getGeneratorReturnValue(PArguments.getGeneratorFrame(arguments));
     }
 
     public Object[] getArguments() {
