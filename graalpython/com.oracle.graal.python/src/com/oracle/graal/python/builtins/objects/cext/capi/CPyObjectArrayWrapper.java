@@ -192,14 +192,14 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
     }
 
     public void free(PythonNativeWrapperLibrary lib, ReleaseNativeWrapperNode releaseNativeWrapperNode) {
-        if (!PythonContext.get(lib).isNativeAccessAllowed()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
-        }
         for (int i = 0; i < wrappers.length; i++) {
             releaseNativeWrapperNode.execute(wrappers[i]);
         }
         if (lib.isNative(this)) {
+            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
             freeBoundary((long) lib.getNativePointer(this));
         }
     }

@@ -712,7 +712,7 @@ public abstract class Python3Core extends ParserErrorCallback {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (nativeAccessAllowed) {
+        if (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode()) {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
@@ -909,6 +909,20 @@ public abstract class Python3Core extends ParserErrorCallback {
                 if (annotation.isEager() || annotation.extendClasses().length != 0) {
                     builtin.postInitialize(this);
                 }
+            }
+
+            /*
+             * Special case for _bz2: If native access is not allowed, we cannot use the built-in
+             * implementation that would call libbz2 via NFI. Therefore, we remove it from the
+             * built-in modules map (and also from sys.modules if already loaded). This will cause a
+             * fallback to another _bz2 implementation (e.g. LLVM or maybe some Java lib). This
+             * needs to be done here and cannot be done in 'initializeBuiltins' because then we
+             * would never include the intrinsified _bz2 module in the native image since native
+             * access is never allowed during native image build time.
+             */
+            if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
+                builtinModules.remove(BuiltinNames.BZ2);
+                sysModules.delItem(BuiltinNames.BZ2);
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
