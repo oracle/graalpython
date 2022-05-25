@@ -29,6 +29,8 @@ functions. In particular, you have to "import pytest" inside the test in order
 to be able to use e.g. pytest.raises (which on PyPy will be implemented by a
 "fake pytest module")
 """
+import math
+
 from .support import HPyTest
 
 
@@ -339,6 +341,12 @@ class TestObject(HPyTest):
         mod.f(b)
         assert b.foo is True
 
+    def check_subscript_type_error(self, fun):
+        import pytest
+        for obj in [42, 3.14, None]:
+            with pytest.raises(TypeError):
+                fun(obj)
+
     def test_getitem(self):
         import pytest
         mod = self.make_module("""
@@ -359,6 +367,9 @@ class TestObject(HPyTest):
             @INIT
         """)
         assert mod.f({3: "hello"}) == "hello"
+        assert mod.f({3: 42}) == 42
+        assert mod.f({3: 0.5}) == 0.5
+        assert math.isnan(mod.f({3: math.nan}))
         with pytest.raises(KeyError) as exc:
             mod.f({1: "bad"})
         assert exc.value.args == (3,)
@@ -366,6 +377,8 @@ class TestObject(HPyTest):
         assert mod.f([0, 1, 2, "hello"]) == "hello"
         with pytest.raises(IndexError):
             mod.f([])
+
+        self.check_subscript_type_error(mod.f)
 
     def test_getitem_i(self):
         import pytest
@@ -383,6 +396,9 @@ class TestObject(HPyTest):
             @INIT
         """)
         assert mod.f({3: "hello"}) == "hello"
+        assert mod.f({3: 42}) == 42
+        assert mod.f({3: 0.5}) == 0.5
+        assert math.isnan(mod.f({3: math.nan}))
         with pytest.raises(KeyError) as exc:
             mod.f({1: "bad"})
         assert exc.value.args == (3,)
@@ -390,6 +406,8 @@ class TestObject(HPyTest):
         assert mod.f([0, 1, 2, "hello"]) == "hello"
         with pytest.raises(IndexError):
             mod.f([])
+
+        self.check_subscript_type_error(mod.f)
 
     def test_getitem_s(self):
         import pytest
@@ -407,12 +425,17 @@ class TestObject(HPyTest):
             @INIT
         """)
         assert mod.f({"limes": "hello"}) == "hello"
+        assert mod.f({"limes": 42}) == 42
+        assert mod.f({"limes": 0.5}) == 0.5
+        assert math.isnan(mod.f({"limes": math.nan}))
         with pytest.raises(KeyError) as exc:
             mod.f({"oranges": "bad"})
         assert exc.value.args == ("limes",)
 
         with pytest.raises(TypeError):
             mod.f([])
+
+        self.check_subscript_type_error(mod.f)
 
     def test_setitem(self):
         import pytest
@@ -442,6 +465,9 @@ class TestObject(HPyTest):
         with pytest.raises(IndexError):
             mod.f([])
 
+        self.check_subscript_type_error(mod.f)
+
+
     def test_setitem_i(self):
         import pytest
         mod = self.make_module("""
@@ -465,6 +491,8 @@ class TestObject(HPyTest):
         with pytest.raises(IndexError):
             mod.f([])
 
+        self.check_subscript_type_error(mod.f)
+
     def test_setitem_s(self):
         import pytest
         mod = self.make_module("""
@@ -486,6 +514,8 @@ class TestObject(HPyTest):
 
         with pytest.raises(TypeError):
             mod.f([])
+
+        self.check_subscript_type_error(mod.f)
 
     def test_length(self):
         mod = self.make_module("""

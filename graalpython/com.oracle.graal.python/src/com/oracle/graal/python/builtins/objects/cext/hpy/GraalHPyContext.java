@@ -1761,8 +1761,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             HPyRaiseNode.raiseIntUncached(this, -1, SystemError, ErrorMessages.HPY_UNEXPECTED_HPY_NULL);
             return -1;
         }
+        TruffleString tsName = toTruffleStringUncached(name);
         try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            PyObjectSetItem.getUncached().execute(null, receiver, name, value);
+            PyObjectSetItem.getUncached().execute(null, receiver, tsName, value);
             return 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(this, e);
