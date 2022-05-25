@@ -754,6 +754,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         String[] localNames = names;
         Node[] localNodes = adoptedNodes;
 
+        /*
+         * This separate tracking of local exception is necessary to make exception state saving
+         * work in generators. On one hand we need to retain the exception that was caught in the
+         * generator, on the other hand we don't want to retain the exception state that was passed
+         * from the outer frame because that changes with every resume.
+         */
+        PException localException = null;
+
+        // We initialize this lazily when pushing exception state
+        boolean fetchedException = false;
+        PException outerException = null;
+
         CompilerAsserts.partialEvaluationConstant(localBC);
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
@@ -1261,27 +1273,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (!(exception instanceof PException)) {
                             throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
                         }
-                        stackFrame.setObject(stackTop++, PArguments.getException(virtualFrame));
-                        PArguments.setException(virtualFrame, (PException) exception);
+                        if (!fetchedException) {
+                            outerException = PArguments.getException(virtualFrame);
+                            fetchedException = true;
+                        }
+                        stackFrame.setObject(stackTop++, localException);
+                        localException = (PException) exception;
+                        PArguments.setException(virtualFrame, localException);
                         stackFrame.setObject(stackTop, exception);
                         break;
                     }
                     case OpCodesConstants.POP_EXCEPT: {
-                        Object savedException = stackFrame.getObject(stackTop);
-                        if (savedException == null) {
-                            stackTop--;
-                            PArguments.setException(virtualFrame, null);
-                        } else {
-                            if (!(savedException instanceof PException)) {
-                                throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
-                            }
-                            stackFrame.setObject(stackTop--, null);
-                            PArguments.setException(virtualFrame, (PException) savedException);
-                        }
+                        localException = popExceptionState(virtualFrame, stackFrame.getObject(stackTop), outerException);
+                        stackFrame.setObject(stackTop--, null);
                         break;
                     }
                     case OpCodesConstants.END_EXC_HANDLER: {
-                        throw bytecodeEndExcHandler(virtualFrame, stackFrame, stackTop);
+                        localException = popExceptionState(virtualFrame, stackFrame.getObject(stackTop - 1), outerException);
+                        throw bytecodeEndExcHandler(stackFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
                         if (CompilerDirectives.inInterpreter() && loopCount > 0) {
@@ -1289,6 +1298,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop--, null);
+                        PArguments.setException(PArguments.getGeneratorFrame(virtualFrame), localException);
                         // See PBytecodeGeneratorRootNode#execute
                         if (localFrame != stackFrame) {
                             copyStackSlotsToGeneratorFrame(stackFrame, localFrame, stackTop);
@@ -1304,6 +1314,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else if (sendValue instanceof ThrowData) {
                             ThrowData throwData = (ThrowData) sendValue;
                             throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
+                        }
+                        localException = PArguments.getException(PArguments.getGeneratorFrame(virtualFrame));
+                        if (localException != null) {
+                            PArguments.setException(virtualFrame, localException);
                         }
                         stackFrame.setObject(++stackTop, sendValue);
                         break;
@@ -1375,13 +1389,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
-                if (getCaughtExceptionNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
-                }
-                PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
-                if (exceptionState != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                if (localException != null) {
+                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
+                } else {
+                    if (getCaughtExceptionNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
+                    }
+                    PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
+                    if (exceptionState != null) {
+                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                    }
                 }
                 if (newTarget == -1) {
                     // For tracebacks
@@ -1527,18 +1545,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private PException bytecodeEndExcHandler(VirtualFrame virtualFrame, Frame stackFrame, int stackTop) {
-        Object exception = stackFrame.getObject(stackTop);
-        Object savedException = stackFrame.getObject(stackTop - 1);
-        if (savedException == null) {
-            PArguments.setException(virtualFrame, null);
-        } else {
-            if (!(savedException instanceof PException)) {
-                throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
-            }
-            stackFrame.setObject(stackTop, null);
-            PArguments.setException(virtualFrame, (PException) savedException);
+    private PException popExceptionState(VirtualFrame virtualFrame, Object savedException, PException outerException) {
+        PException localException = null;
+        if (savedException instanceof PException) {
+            localException = (PException) savedException;
         }
+        if (savedException == null) {
+            savedException = outerException;
+        }
+        PArguments.setException(virtualFrame, (PException) savedException);
+        return localException;
+    }
+
+    private PException bytecodeEndExcHandler(Frame stackFrame, int stackTop) {
+        Object exception = stackFrame.getObject(stackTop);
         if (exception instanceof PException) {
             throw ((PException) exception).getExceptionForReraise();
         } else if (exception instanceof AbstractTruffleException) {

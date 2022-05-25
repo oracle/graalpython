@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -188,17 +187,6 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
-        /*
-         * This copying of exceptions is necessary because we need to remember the exception state
-         * in the generator, but we don't want to remember the state that is "inherited" from the
-         * outer frame as that can change with each invocation. The values are copied back in
-         * YIELD_VALUE (because the stack pointer is still PE-constant there, so we can explode the
-         * loop). In interpreter, we use the materialized frame directly, but we still profile the
-         * incoming types.
-         */
-        PException localException = PArguments.getException(generatorFrame);
-        PException outerException = PArguments.getException(frame);
-        PArguments.setException(frame, localException == null ? outerException : localException);
         Frame stackFrame;
         /*
          * Using the materialized frame as stack would be bad for compiled performance, so we copy
@@ -220,10 +208,6 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
             return rootNode.executeFromBci(frame, generatorFrame, stackFrame, this, resumeBci, resumeStackTop);
         } finally {
             calleeContext.exit(frame, this);
-            PException exception = PArguments.getException(frame);
-            if (exception != outerException && exception != PException.NO_EXCEPTION) {
-                PArguments.setException(generatorFrame, exception);
-            }
         }
     }
 
