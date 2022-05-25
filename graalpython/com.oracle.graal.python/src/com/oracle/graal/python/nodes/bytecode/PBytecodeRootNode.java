@@ -128,6 +128,7 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -382,6 +383,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+    @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @CompilationFinal private LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
     @CompilationFinal private LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
     @CompilationFinal private Object osrMetadata;
@@ -1373,7 +1375,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 long newTarget = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(newTarget);
-                PException exceptionState = PArguments.getException(virtualFrame);
+                if (getCaughtExceptionNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
+                }
+                PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
                 if (exceptionState != null) {
                     ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
