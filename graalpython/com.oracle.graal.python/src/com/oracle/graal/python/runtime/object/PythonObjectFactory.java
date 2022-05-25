@@ -1435,7 +1435,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDebugHandle(PythonBuiltinClassType.DebugHandle, getShape(PythonBuiltinClassType.DebugHandle), handle));
     }
 
-    public final PContextVar createContextVar(String name, Object def, Object local) {
-        return trace(new PContextVar(PythonBuiltinClassType.ContextVar, getShape(PythonBuiltinClassType.ContextVar), name, def, local));
+    public final PContextVar createContextVar(String name, Object def) {
+        return trace(new PContextVar(PythonBuiltinClassType.ContextVar, getShape(PythonBuiltinClassType.ContextVar), name, def));
     }
 }

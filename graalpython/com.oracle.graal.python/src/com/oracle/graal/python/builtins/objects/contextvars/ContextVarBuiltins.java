@@ -49,11 +49,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,16 +68,14 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PContextVar self, PNone def,
-                        @Cached PyObjectLookupAttr lookupAtrrNode) {
-            return get(frame, self, PContextVar.NO_DEFAULT, lookupAtrrNode);
+        Object get(VirtualFrame frame, PContextVar self, PNone def) {
+            return get(frame, self, PContextVar.NO_DEFAULT);
         }
 
         @Specialization(guards = "!isPNone(def)")
-        Object get(VirtualFrame frame, PContextVar self, Object def,
-                        @Cached PyObjectLookupAttr lookupAtrrNode) {
-            Object value = lookupAtrrNode.execute(frame, self.getLocal(), "value");
-            if (value != PNone.NO_VALUE) {
+        Object get(VirtualFrame frame, PContextVar self, Object def) {
+            Object value = self.getValue();
+            if (value != null) {
                 return value;
             }
             if (def != PContextVar.NO_DEFAULT) {
@@ -97,9 +92,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object get(VirtualFrame frame, PContextVar self, Object value,
-                        @Cached PyObjectSetAttr setAtrrNode) {
-            setAtrrNode.execute(frame, self.getLocal(), "value", value);
+        static Object get(VirtualFrame frame, PContextVar self, Object value) {
+            self.setValue(value);
             return PNone.NONE;
         }
     }
