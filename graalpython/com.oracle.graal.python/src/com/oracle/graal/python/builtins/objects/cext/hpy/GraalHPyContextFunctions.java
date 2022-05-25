@@ -125,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -3628,6 +3629,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asDef,
                         @Cached PyObjectCallMethodObjArgs callGet,
                         @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PCallHPyFunction callWriteHPyNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
@@ -3639,7 +3641,20 @@ public abstract class GraalHPyContextFunctions {
                 Object def = asDef.execute(context, arguments[2]);
                 Object outPtr = arguments[3];
                 try {
-                    Object result = callGet.execute(null, var, "get", def);
+                    if (!(var instanceof PContextVar)) {
+                        throw raiseNode.raise(TypeError, "an instance of ContextVar was expected");
+                    }
+                    Object result = ((PContextVar) var).getValue();
+                    if (result == null) {
+                        if (def instanceof PNone) {
+                            def = ((PContextVar) var).getDefault();
+                            if (def == PContextVar.NO_DEFAULT) {
+                                throw raiseNode.raise(PythonBuiltinClassType.LookupError);
+                            }
+                        }
+                        result = def;
+                    }
+
                     callWriteHPyNode.call(context, GRAAL_HPY_WRITE_HPY, outPtr, 0L, asHandleNode.execute(context, result));
                     return 0;
                 } catch (PException e) {
@@ -3660,6 +3675,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asVar,
                         @Cached HPyAsPythonObjectNode asVal,
                         @Cached PyObjectCallMethodObjArgs callSet,
+                        @Cached PRaiseNode raiseNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
@@ -3670,8 +3686,11 @@ public abstract class GraalHPyContextFunctions {
                 Object var = asVar.execute(context, arguments[1]);
                 Object val = asVal.execute(context, arguments[2]);
                 try {
-                    Object result = callSet.execute(null, var, "set", val);
-                    return asHandleNode.execute(context, result);
+                    if (!(var instanceof PContextVar)) {
+                        throw raiseNode.raise(TypeError, "an instance of ContextVar was expected");
+                    }
+                    ((PContextVar) var).setValue(val);
+                    return asHandleNode.execute(context, PNone.NONE);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
                     return -1;
