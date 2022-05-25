@@ -645,7 +645,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
-                                     ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
+                        ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
             String identifier = info.getVariableName(slot);
             Object value = frameToSync.getValue(slot);
