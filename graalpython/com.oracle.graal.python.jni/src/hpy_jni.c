@@ -504,7 +504,7 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
 }
 
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
-    long bits = toBits(global);
+    uint64_t bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
         return original_Global_Load(ctx, global);
     } else {
@@ -513,7 +513,7 @@ HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
 }
 
 void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
-    long bits = toBits(h);
+    uint64_t bits = toBits(h);
     if (bits && isBoxedHandle(bits)) {
         original_Global_Store(ctx, global, h);
     } else {
@@ -522,7 +522,7 @@ void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
 }
 
 HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
-    long bits = toBits(source_field);
+    uint64_t bits = toBits(source_field);
     if (bits && isBoxedHandle(bits)) {
         return original_Field_Load(ctx, source_object, source_field);
     } else {
@@ -531,7 +531,7 @@ HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field
 }
 
 void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
-    long bits = toBits(h);
+    uint64_t bits = toBits(h);
     if (bits && isBoxedHandle(bits)) {
         original_Field_Store(ctx, target_object, target_field, h);
     } else {
