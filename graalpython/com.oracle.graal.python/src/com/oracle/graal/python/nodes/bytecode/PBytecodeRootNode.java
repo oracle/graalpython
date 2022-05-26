@@ -144,7 +144,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
-import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -549,7 +548,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -567,7 +565,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, node, uncached, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, Node node, T uncached, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -591,7 +588,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -609,7 +605,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, nodeSupplier);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -627,7 +622,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, node, uncached, nodeSupplier);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int bytecodeIndex, Node node, T uncached, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
