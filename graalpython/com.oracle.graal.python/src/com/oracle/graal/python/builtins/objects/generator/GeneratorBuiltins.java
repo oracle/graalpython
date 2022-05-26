@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -572,12 +571,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object getCode(PGenerator self,
                         @Cached ConditionProfile hasCodeProfile) {
-            PCode code = self.getCode();
-            if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getCurrentCallTarget());
-                self.setCode(code);
-            }
-            return code;
+            return self.getOrCreateCode(hasCodeProfile, factory());
         }
     }
 

@@ -107,4 +107,8 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     public SourceSection getSourceSection() {
         return rootNode.getSourceSection();
     }
+
+    public PBytecodeRootNode getBytecodeRootNode() {
+        return rootNode;
+    }
 }

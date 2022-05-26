@@ -53,6 +53,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PGenerator extends PythonBuiltinObject {
 
@@ -276,12 +277,17 @@ public final class PGenerator extends PythonBuiltinObject {
         return "<generator object " + name + " at " + hashCode() + ">";
     }
 
-    public PCode getCode() {
+    public PCode getOrCreateCode(ConditionProfile hasCodeProfile, PythonObjectFactory factory) {
+        if (hasCodeProfile.profile(code == null)) {
+            RootCallTarget callTarget;
+            if (usesBytecode()) {
+                callTarget = bytecodeRootNode.getCallTarget();
+            } else {
+                callTarget = callTargets[0];
+            }
+            code = factory.createCode(callTarget);
+        }
         return code;
-    }
-
-    public void setCode(PCode code) {
-        this.code = code;
     }
 
     public boolean isRunning() {
