@@ -27,7 +27,11 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
@@ -174,6 +178,24 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             return factory().createSet(lib.union(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doOr(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __IOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IOrNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        Object doSet(VirtualFrame frame, PSet self, Object other,
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            self.setDictStorage(lib.addAllToOther(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+            return self;
         }
 
         @SuppressWarnings("unused")
@@ -342,13 +364,34 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class AndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(right)", limit = "1")
+        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
             return factory().createSet(storage);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doAnd(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __IAND__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IAndNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
+            HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
+            left.setDictStorage(storage);
+            return left;
         }
 
         @SuppressWarnings("unused")
@@ -472,6 +515,25 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __IXOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IXorNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        Object doSet(VirtualFrame frame, PSet self, Object other,
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            self.setDictStorage(lib.xor(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+            return self;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doOr(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
     @Builtin(name = "symmetric_difference", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
@@ -535,13 +597,33 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(right)", limit = "1")
+        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = lib.diffWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
             return factory().createSet(storage);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doSub(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __ISUB__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ISubNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.diffWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
+            left.setDictStorage(storage);
+            return left;
         }
 
         @SuppressWarnings("unused")
