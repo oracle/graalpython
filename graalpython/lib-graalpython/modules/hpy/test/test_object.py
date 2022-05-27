@@ -659,3 +659,45 @@ class TestObject(HPyTest):
         a = object()
         assert mod.f(a, a)
         assert not mod.f(a, None)
+
+    def test_is_ctx_constant(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+            {
+                HPy obj;
+                int constant;
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "iO", &constant, &obj))
+                    return HPy_NULL;
+                HPy h_constant;
+                switch (constant) {
+                case 0:
+                    h_constant = ctx->h_None;
+                    break;
+                case 1:
+                    h_constant = ctx->h_True;
+                    break;
+                case 2:
+                    h_constant = ctx->h_False;
+                    break;
+                case 3:
+                    h_constant = ctx->h_NotImplemented;
+                    break;
+                case 4:
+                    h_constant = ctx->h_Ellipsis;
+                    break;
+                default:
+                    HPyErr_SetString(ctx, ctx->h_ValueError, "invalid choice");
+                    return HPy_NULL;
+                }
+                int res = HPy_Is(ctx, obj, h_constant);
+                return HPyBool_FromLong(ctx, res);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        ctx_constants = [None, True, False, NotImplemented, Ellipsis]
+        for idx, const in enumerate(ctx_constants):
+            for other_idx in range(len(ctx_constants)):
+                expected = (idx == other_idx)
+                assert mod.f(other_idx, const) == expected, "{}, {}, {}".format(other_idx, const, expected)
