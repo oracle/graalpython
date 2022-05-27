@@ -1431,6 +1431,10 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Dict_Keys)(HPyContext *ctx, HPy h) {
     return UPCALL_HPY(ctx_Dict_Keys, ctx, h);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Dict_GetItem)(HPyContext *ctx, HPy op, HPy key) {
+    return UPCALL_HPY(ctx_Dict_GetItem, ctx, op, key);
+}
+
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value) {
     return UPCALL_HPY(ctx_ContextVar_New, ctx, name, default_value);
 }
@@ -1741,6 +1745,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext 
     HPY_CTX_UPCALL(ctx_Unicode_InternFromString);
     HPY_CTX_UPCALL(ctx_Unicode_Substring);
     HPY_CTX_UPCALL(ctx_Dict_Keys);
+    HPY_CTX_UPCALL(ctx_Dict_GetItem);
     HPY_CTX_UPCALL(ctx_ContextVar_New);
     HPY_CTX_UPCALL(ctx_ContextVar_Get);
     HPY_CTX_UPCALL(ctx_ContextVar_Set);
