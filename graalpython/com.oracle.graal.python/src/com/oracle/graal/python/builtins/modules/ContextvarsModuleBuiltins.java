@@ -50,12 +50,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -88,12 +85,7 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(def)")
         protected Object constructDef(VirtualFrame frame, Object cls, String name, Object def) {
-            Object local = factory().createThreadLocal(PythonBuiltinClassType.PThreadLocal, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-            return factory().createContextVar(name, def, local);
-        }
-
-        protected ImportNode.ImportExpression createImportThreading() {
-            return ImportNode.createAsExpression("threading");
+            return factory().createContextVar(name, def);
         }
     }
 
