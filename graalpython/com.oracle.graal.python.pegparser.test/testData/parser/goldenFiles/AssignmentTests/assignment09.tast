@@ -1,0 +1,9 @@
+Module[0, 9]
+    Assign[0, 9]
+        LHS: 
+            Attribute[0, 1] 
+                Receiver: 
+                    Call[0, 3]
+                        Target: Name[0, 1] Value: "f"
+                Attr: b
+        RHS: LONG[8, 9] Value: 1

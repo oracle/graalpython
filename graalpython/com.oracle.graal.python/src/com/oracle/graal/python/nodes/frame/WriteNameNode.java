@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,12 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
     public static WriteNameNode create(String attributeId, ExpressionNode rhs) {
         return WriteNameNodeGen.create(attributeId, rhs);
     }
+
+    public static WriteNameNode create(String attributeId) {
+        return WriteNameNodeGen.create(attributeId, null);
+    }
+
+    public abstract void execute(VirtualFrame frame, Object value);
 
     @Specialization(guards = "!hasLocals(frame)")
     protected static void writeGlobal(VirtualFrame frame, Object value,

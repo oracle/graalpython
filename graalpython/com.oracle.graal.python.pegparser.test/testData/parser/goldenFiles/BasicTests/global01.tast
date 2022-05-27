@@ -1,0 +1,28 @@
+Module[0, 137]
+    Assign[0, 5]
+        LHS: Name[0, 1] Value: "c" Store
+        RHS: LONG[4, 5] Value: 0
+    FunctionDef[25, 109]
+        Name:add
+        ---- Function body of add ----
+        Global[40, 48]: c 
+        Assign[53, 62]
+            LHS: Name[53, 54] Value: "c" Store
+            RHS: 
+                BinOp[57, 62]
+                    Op: ADD
+                    LHS: Name[57, 58] Value: "c"
+                    RHS: LONG[61, 62] Value: 2
+        Call[84, 109]
+            Target: Name[84, 89] Value: "print"
+            Args:
+                RAW[90, 105] Value: Inside add():
+                Name[107, 108] Value: "c"
+        ---- End of add function ----
+    Call[111, 116]
+        Target: Name[111, 114] Value: "add"
+    Call[117, 137]
+        Target: Name[117, 122] Value: "print"
+        Args:
+            RAW[123, 133] Value: In main:
+            Name[135, 136] Value: "c"

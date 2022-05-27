@@ -1,0 +1,21 @@
+Module[0, 47]
+    FunctionDef[0, 47]
+        Name:fn
+        ---- Function body of fn ----
+        Assign[12, 18]
+            LHS: Name[12, 13] Value: "c" Store
+            RHS: LONG[16, 18] Value: 10
+        GeneratorExp[21, 47]
+            Element: 
+                BinOp[22, 27]
+                    Op: ADD
+                    LHS: Name[22, 23] Value: "x"
+                    RHS: Name[26, 27] Value: "c"
+            ComprehensionTy[28, 46]
+                Target: Name[32, 33] Value: "x" Store
+                Iterator: 
+                    Call[37, 46]
+                        Target: Name[37, 42] Value: "range"
+                        Args:
+                            LONG[43, 45] Value: 10
+        ---- End of fn function ----

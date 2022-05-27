@@ -1,0 +1,3 @@
+Module[0, 44]
+    ImportFrom[0, 44] Level 0 sys.path
+        dirname as my_dirname

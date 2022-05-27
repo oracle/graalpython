@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -91,6 +91,10 @@ public class PDict extends PHashingCollection {
 
     public void setItem(Object key, Object value) {
         storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
+    }
+
+    public void delItem(Object key) {
+        storage = HashingStorageLibrary.getUncached().delItem(storage, key);
     }
 
     public static HashingStorage createNewStorage(boolean isStringKey, int expectedSize) {

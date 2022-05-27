@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
@@ -108,7 +107,7 @@ public final class NativeReferenceCache implements TruffleObject {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class ResolveNativeReferenceNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ResolveNativeReferenceNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(ResolveNativeReferenceNode.class);
 
         private static final Object NO_REF_CNT = new Object();
 

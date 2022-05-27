@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -48,9 +49,11 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
@@ -141,11 +144,88 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     public boolean isInstrumentable() {
         return getSourceSection() != null;
     }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class ExceptMatchNode extends Node {
+        public abstract boolean executeMatch(Frame frame, Object exception, Object clause);
+
+        private static void raiseIfNoException(VirtualFrame frame, Object clause, ValidExceptionNode isValidException, PRaiseNode raiseNode) {
+            if (!isValidException.execute(frame, clause)) {
+                raiseNoException(raiseNode);
+            }
+        }
+
+        private static void raiseNoException(PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
+        }
+
+        @Specialization(guards = "isClass(clause, lib)", limit = "3")
+        static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
+                        @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
+                        @Cached ValidExceptionNode isValidException,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtype,
+                        @Cached PRaiseNode raiseNode) {
+            raiseIfNoException(frame, clause, isValidException, raiseNode);
+            return isSubtype.execute(frame, getClassNode.execute(e.getUnreifiedException()), clause);
+        }
+
+        @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")
+        @SuppressWarnings("unused")
+        static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
+                        @Cached ValidExceptionNode isValidException,
+                        @CachedLibrary("e") InteropLibrary eLib,
+                        @CachedLibrary("clause") InteropLibrary clauseLib,
+                        @Cached PRaiseNode raiseNode) {
+            // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
+            // foreign exception types if they *are* exception types
+            raiseIfNoException(frame, clause, isValidException, raiseNode);
+            try {
+                return clauseLib.isMetaInstance(clause, e);
+            } catch (UnsupportedMessageException e1) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Specialization
+        static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
+                        @Cached ExceptMatchNode recursiveNode,
+                        @Cached SequenceStorageNodes.LenNode getLenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            // check for every type in the tuple
+            SequenceStorage storage = clause.getSequenceStorage();
+            int length = getLenNode.execute(storage);
+            for (int i = 0; i < length; i++) {
+                Object clauseType = getItemNode.execute(storage, i);
+                if (recursiveNode.executeMatch(frame, e, clauseType)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean fallback(VirtualFrame frame, Object e, Object clause,
+                        @Cached PRaiseNode raiseNode) {
+            raiseNoException(raiseNode);
+            return false;
+        }
+
+        public static ExceptMatchNode create() {
+            return ExceptMatchNodeGen.create();
+        }
+
+        public static ExceptMatchNode getUncached() {
+            return ExceptMatchNodeGen.getUncached();
+        }
+    }
 }
 
-@ImportStatic(PythonOptions.class)
+@GenerateUncached
 abstract class ValidExceptionNode extends Node {
-    protected abstract boolean execute(VirtualFrame frame, Object type);
+    protected abstract boolean execute(Frame frame, Object type);
 
     protected boolean emulateJython() {
         return PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython);
@@ -163,21 +243,21 @@ abstract class ValidExceptionNode extends Node {
     }
 
     @Specialization(guards = "cachedType == type", limit = "3")
-    boolean isPythonExceptionTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType type,
+    static boolean isPythonExceptionTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType type,
                     @SuppressWarnings("unused") @Cached("type") PythonBuiltinClassType cachedType,
                     @Cached("isPythonExceptionType(type)") boolean isExceptionType) {
         return isExceptionType;
     }
 
     @Specialization(guards = "cachedType == klass.getType()", limit = "3")
-    boolean isPythonExceptionClassCached(@SuppressWarnings("unused") PythonBuiltinClass klass,
+    static boolean isPythonExceptionClassCached(@SuppressWarnings("unused") PythonBuiltinClass klass,
                     @SuppressWarnings("unused") @Cached("klass.getType()") PythonBuiltinClassType cachedType,
                     @Cached("isPythonExceptionType(cachedType)") boolean isExceptionType) {
         return isExceptionType;
     }
 
     @Specialization(guards = "isTypeNode.execute(type)", limit = "1", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
-    boolean isPythonException(VirtualFrame frame, Object type,
+    static boolean isPythonException(VirtualFrame frame, Object type,
                     @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached IsSubtypeNode isSubtype) {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
@@ -195,86 +275,11 @@ abstract class ValidExceptionNode extends Node {
     }
 
     @Fallback
-    boolean isAnException(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object type) {
+    static boolean isAnException(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object type) {
         return false;
     }
 
     static ValidExceptionNode create() {
         return ValidExceptionNodeGen.create();
-    }
-}
-
-@ImportStatic({PGuards.class, PythonOptions.class})
-abstract class ExceptMatchNode extends Node {
-    @Child private PRaiseNode raiseNode;
-
-    protected abstract boolean executeMatch(VirtualFrame frame, Object exception, Object clause);
-
-    private void raiseIfNoException(VirtualFrame frame, Object clause, ValidExceptionNode isValidException) {
-        if (!isValidException.execute(frame, clause)) {
-            raiseNoException();
-        }
-    }
-
-    private void raiseNoException() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
-    }
-
-    @Specialization(guards = "isClass(clause, lib)", limit = "3")
-    boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
-                    @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
-                    @Cached ValidExceptionNode isValidException,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtype) {
-        raiseIfNoException(frame, clause, isValidException);
-        return isSubtype.execute(frame, getClassNode.execute(e.getUnreifiedException()), clause);
-    }
-
-    @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")
-    @SuppressWarnings("unused")
-    boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
-                    @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary("e") InteropLibrary eLib,
-                    @CachedLibrary("clause") InteropLibrary clauseLib) {
-        // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
-        // foreign exception types if they *are* exception types
-        raiseIfNoException(frame, clause, isValidException);
-        try {
-            return clauseLib.isMetaInstance(clause, e);
-        } catch (UnsupportedMessageException e1) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @Specialization
-    boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
-                    @Cached ExceptMatchNode recursiveNode,
-                    @Cached SequenceStorageNodes.LenNode getLenNode,
-                    @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-        // check for every type in the tuple
-        SequenceStorage storage = clause.getSequenceStorage();
-        int length = getLenNode.execute(storage);
-        for (int i = 0; i < length; i++) {
-            Object clauseType = getItemNode.execute(frame, storage, i);
-            if (recursiveNode.executeMatch(frame, e, clauseType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Fallback
-    @SuppressWarnings("unused")
-    boolean fallback(VirtualFrame frame, Object e, Object clause) {
-        raiseNoException();
-        return false;
-    }
-
-    static ExceptMatchNode create() {
-        return ExceptMatchNodeGen.create();
     }
 }

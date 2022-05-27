@@ -27,6 +27,7 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -37,11 +38,14 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -49,13 +53,25 @@ import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.CompilationUnit;
+import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -99,6 +115,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.source.SourceSection;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -106,7 +123,8 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
                                 PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
-                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2,
+                                PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE}, //
                 byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
@@ -175,6 +193,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
     static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
+    // XXX Temporary mime type to force bytecode compiler
+    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
+    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE = "application/x-python-source-for-bytecode-compile";
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
@@ -380,6 +401,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = PythonContext.get(null);
+        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            return parseForBytecodeInterpreter(request);
+        }
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty()) {
@@ -424,7 +448,142 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
         }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
+        }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private CallTarget parseForBytecodeInterpreter(ParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        Source source = request.getSource();
+        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
+            if (!request.getArgumentNames().isEmpty()) {
+                throw new IllegalStateException("Not supported yet");
+            }
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+        }
+        if (!request.getArgumentNames().isEmpty()) {
+            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
+        }
+        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
+            byte[] bytes = source.getBytes().toByteArray();
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
+            // The original file path should be passed as the name
+            if (source.getName() != null && !source.getName().isEmpty()) {
+                try {
+                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(source.getName())).name(code.name).build();
+                } catch (IOException e) {
+                    // Proceed with binary source
+                }
+            }
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
+            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize);
+            }
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
+            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize);
+            }
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+        }
+        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
+        }
+        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
+        ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
+        com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
+        ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
+            throw raiseSyntaxError(source, errorType, startOffset, endOffset, message);
+        };
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public ExprTy parse(String code) {
+                ParserTokenizer tok = new ParserTokenizer(code);
+                return new Parser(tok, factory, this, errorCb).fstring_rule();
+            }
+        };
+        try {
+            Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+            Compiler compiler = new Compiler();
+            ModTy mod = (ModTy) parser.parse(type);
+            // TODO this is needed until we get complete error handling in the parser
+            if (mod == null) {
+                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
+            }
+            CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
+            CodeUnit co = cu.assemble(0);
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source);
+            GilNode gil = GilNode.getUncached();
+            boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
+            try {
+                bytecodeRootNode.triggerDeprecationWarnings();
+            } finally {
+                gil.release(context, wasAcquired);
+            }
+            RootNode rootNode = bytecodeRootNode;
+            if (topLevel && context.isCoreInitialized()) {
+                rootNode = new TopLevelExceptionHandler(this, bytecodeRootNode, source);
+            }
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        } catch (PException e) {
+            if (topLevel) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            }
+            throw e;
+        }
+    }
+
+    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
+        Node location = new Node() {
+            @Override
+            public boolean isAdoptable() {
+                return false;
+            }
+
+            @Override
+            public SourceSection getSourceSection() {
+                return source.createSection(startOffset, endOffset - startOffset);
+            }
+        };
+        PBaseException instance;
+        PythonBuiltinClassType cls = PythonBuiltinClassType.SyntaxError;
+        switch (errorType) {
+            case Indentation:
+                cls = PythonBuiltinClassType.IndentationError;
+                break;
+            case Tab:
+                cls = PythonBuiltinClassType.TabError;
+                break;
+        }
+        instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+        final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
+        SourceSection section = location.getSourceSection();
+        String path = source.getPath();
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute is NONE, then the line is not printed
+        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        instance.setExceptionAttributes(excAttrs);
+        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(this));
     }
 
     private RootNode doParse(PythonContext context, Source source, int optimize) {
@@ -665,6 +824,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public static TruffleLogger getLogger(Class<?> clazz) {
         return TruffleLogger.getLogger(ID, clazz);
+    }
+
+    @TruffleBoundary
+    public static TruffleLogger getLogger(String name) {
+        return TruffleLogger.getLogger(ID, name);
     }
 
     /**

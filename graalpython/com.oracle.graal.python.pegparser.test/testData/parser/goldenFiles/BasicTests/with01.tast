@@ -1,0 +1,10 @@
+Module[0, 21]
+    With[0, 21]
+        Items:
+            Item[5, 13]
+                ContextExpr: 
+                    Call[5, 8]
+                        Target: Name[5, 6] Value: "A"
+                OptionalVars: Name[12, 13] Value: "a" Store
+        Body:
+            Pass[17, 21]

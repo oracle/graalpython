@@ -1,0 +1,37 @@
+Disassembly of <module>:
+000000         0 LOAD_BUILD_CLASS
+000000         1 MAKE_FUNCTION                     0    (HandlerTask)
+000000         4 LOAD_STRING                       1    ('HandlerTask')
+000018         6 LOAD_GLOBAL                       0    (Task)
+000000         8 CALL_FUNCTION                     3
+000000        10 STORE_NAME                        1    (HandlerTask)
+000000        12 LOAD_NONE
+000000        13 RETURN_VALUE
+
+Disassembly of HandlerTask:
+000000         0 LOAD_NAME                         0    (__name__)
+000000         2 STORE_NAME                        1    (__module__)
+000000         4 LOAD_STRING                       0    ('HandlerTask')
+000000         6 STORE_NAME                        2    (__qualname__)
+000029         8 MAKE_FUNCTION                     0    (HandlerTask.__init__)
+000029        11 STORE_NAME                        3    (__init__)
+000029        13 LOAD_NONE
+000029        14 RETURN_VALUE
+
+Disassembly of HandlerTask.__init__:
+000091         0 LOAD_BYTE                         0
+000087         2 STORE_FAST                        6    (x)
+000107         4 LOAD_GLOBAL                       0    (ValueError)
+000101         6 RAISE_VARARGS                     1
+000126         8 LOAD_GLOBAL                       1    (Task)
+000140        10 LOAD_FAST                         0    (self)
+000145        12 LOAD_FAST                         1    (i)
+000147        14 LOAD_FAST                         2    (p)
+000149        16 LOAD_FAST                         3    (w)
+000151        18 LOAD_FAST                         4    (s)
+000153        20 LOAD_FAST                         5    (r)
+000126        22 COLLECTION_FROM_STACK             7    (Object[])
+000126        24 CALL_METHOD_VARARGS               2    (__init__)
+000126        26 POP_TOP
+000000        27 LOAD_NONE
+000000        28 RETURN_VALUE

@@ -1,0 +1,9 @@
+Module[0, 26]
+    While[0, 26]
+        Condition: 
+            Compare[6, 20]
+                LHS: Name[6, 8] Value: "tb"
+                Op: ISNOT
+                RHS: NONE[16, 20] Value: null
+        Body:
+            Pass[22, 26]

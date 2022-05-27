@@ -1,0 +1,11 @@
+Module[0, 37]
+    Assign[0, 37]
+        LHS: Name[0, 9] Value: "generator" Store
+        RHS: 
+            Call[12, 37]
+                Target: Name[12, 16] Value: "type"
+                Args:
+                    Call[17, 36]
+                        Target: 
+                            Lambda[18, 33]
+                                Body: Yield[27, 32]

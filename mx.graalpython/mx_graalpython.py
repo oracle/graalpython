@@ -68,7 +68,7 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_BYTECODE, CONFIGURATION_INTERPRETER_BYTECODE
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -789,7 +789,6 @@ def run_hpy_unittests(python_binary, args=None):
                 "args": args, "paths": [_hpy_test_root()], "env": env.copy(), "use_pytest": True, "lock": lock,
             }))
             threads[-1].start()
-        retval = 0
         for t in threads:
             t.join()
         for t in threads:
@@ -1633,8 +1632,15 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_BYTECODE, extra_polyglot_args=[
+        '--experimental-options', '--python.EnableBytecodeInterpreter', '--python.DisableFrozenModules',
+    ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
         '--experimental-options', '--engine.Compilation=false'
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_BYTECODE, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false', '--python.EnableBytecodeInterpreter',
+        '--python.DisableFrozenModules',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',

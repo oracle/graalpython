@@ -43,16 +43,35 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
+    private static final WriteGlobalNode UNCACHED = new WriteGlobalNode(null, null) {
+        @Override
+        public void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value) {
+            throw CompilerDirectives.shouldNotReachHere("uncached WriteGlobalNode must be used with #write");
+        }
+
+        @Override
+        public void write(Frame frame, Object globals, String name, Object value) {
+            if (globals instanceof PythonModule) {
+                WriteAttributeToObjectNode.getUncached().execute(globals, name, value);
+            } else {
+                PyObjectSetItem.getUncached().execute(frame, globals, name, value);
+            }
+        }
+    };
+
     protected final String attributeId;
     @Child private ExpressionNode rhs;
 
@@ -67,6 +86,10 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
         return WriteGlobalNodeGen.create(attributeId, rhs);
+    }
+
+    public static WriteGlobalNode getUncached() {
+        return UNCACHED;
     }
 
     @Override
@@ -101,6 +124,11 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public final void executeWithGlobals(VirtualFrame frame, Object globals) {
         executeObjectWithGlobals(frame, globals, getRhs().execute(frame));
+    }
+
+    public void write(Frame frame, Object globals, String name, Object value) {
+        assert name == attributeId : "cached WriteGlobalNode can only be used with cached attributeId";
+        executeObjectWithGlobals((VirtualFrame) frame, globals, value);
     }
 
     public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);

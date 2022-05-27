@@ -2012,7 +2012,6 @@ public abstract class TypeNodes {
             setAttribute(__WEAKREF__, builtin, callTarget, pythonClass, factory);
         }
 
-
         @TruffleBoundary
         private static HiddenKey createTypeKey(String name) {
             return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));

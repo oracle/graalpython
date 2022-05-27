@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -98,6 +98,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         public static final Object STOP_MARKER = new Object();
         private final boolean throwStopIteration;
+        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         NextNode() {
             this.throwStopIteration = true;
@@ -158,7 +159,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(PIntRangeIterator self) {
-            if (self.hasNextInt()) {
+            if (profile.profile(self.hasNextInt())) {
                 return self.nextInt();
             }
             return stopIteration(self);

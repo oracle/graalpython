@@ -1,0 +1,13 @@
+Module[0, 14]
+    Assign[0, 14]
+        LHS: 
+            Tuple[0, 3] Context: Store
+                Values:
+                    Starred[0, 2]
+                         Context: Store
+                         Expr: Name[1, 2] Value: "a" Store
+        RHS: 
+            Call[6, 14]
+                Target: Name[6, 11] Value: "range"
+                Args:
+                    LONG[12, 13] Value: 5

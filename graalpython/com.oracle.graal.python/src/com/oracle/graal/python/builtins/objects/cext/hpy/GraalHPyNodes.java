@@ -2285,6 +2285,7 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     public abstract static class HPyGetNativeSpacePointerNode extends Node {
 
         public abstract Object execute(Object object);
@@ -2294,7 +2295,7 @@ public class GraalHPyNodes {
             return object.getHPyNativeSpace();
         }
 
-        @Specialization
+        @Specialization(guards = "!isHPyObject(object)")
         static Object doPythonHPyObject(PythonObject object,
                         @Cached ReadAttributeFromDynamicObjectNode readNativeSpaceNode) {
             return readNativeSpaceNode.execute(object.getStorage(), GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);

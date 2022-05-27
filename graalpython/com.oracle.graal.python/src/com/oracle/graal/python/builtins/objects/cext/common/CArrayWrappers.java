@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObject
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -175,7 +177,6 @@ public abstract class CArrayWrappers {
             }
             return interopLibrary.asPointer(nativePointer);
         }
-
     }
 
     /**
@@ -190,24 +191,24 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public final String getString(PythonNativeWrapperLibrary lib) {
+        public String getString(PythonNativeWrapperLibrary lib) {
             return ((String) lib.getDelegate(this));
         }
 
         @ExportMessage
-        final long getArraySize(
+        long getArraySize(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
             return ((String) lib.getDelegate(this)).length();
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        final boolean hasArrayElements() {
+        boolean hasArrayElements() {
             return true;
         }
 
         @ExportMessage
-        final byte readArrayElement(long index,
+        byte readArrayElement(long index,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
@@ -225,19 +226,19 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier,
+        boolean isArrayElementReadable(long identifier,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
             return 0 <= identifier && identifier < getArraySize(lib);
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected boolean hasNativeType() {
+        boolean hasNativeType() {
             return true;
         }
 
         @ExportMessage
-        protected Object getNativeType(
+        Object getNativeType(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
             return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
@@ -247,6 +248,10 @@ public abstract class CArrayWrappers {
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
             invalidateNode.execute();
             if (!lib.isNative(this)) {
                 setNativePointer(stringToNativeUtf8Bytes(getString(lib)));
@@ -313,13 +318,13 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected boolean hasNativeType() {
+        boolean hasNativeType() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected Object getNativeType(
+        Object getNativeType(
                         @Cached GetLLVMType getLLVMType) {
             return getLLVMType.execute(LLVMType.int8_ptr_t);
         }
@@ -328,6 +333,10 @@ public abstract class CArrayWrappers {
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
             invalidateNode.execute();
             if (!lib.isNative(this)) {
                 setNativePointer(byteArrayToNativeInt8(getByteArray(lib), true));
@@ -390,12 +399,15 @@ public abstract class CArrayWrappers {
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
             invalidateNode.execute();
             if (!lib.isNative(this)) {
                 int[] data = getIntArray(lib);
                 setNativePointer(intArrayToNativeInt32(data));
             }
         }
-
     }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -519,3 +519,12 @@ def test_MutableSet_pop():
     assert v2 in l
     assert v1 != v2
     assert len(s) == 0
+
+def test_inplace_ops_mutate():
+    for op in ('-', '&', '|', '^'):
+        s1 = {1, 2}
+        s2 = {1, 3}
+        v = {'a': s1, 'b': s2}
+        exec(f"a {op}= b", v)
+        assert v['a'] is s1
+        assert s1 == eval(f"a {op} b", {'a': {1, 2}, 'b': {1, 3}})

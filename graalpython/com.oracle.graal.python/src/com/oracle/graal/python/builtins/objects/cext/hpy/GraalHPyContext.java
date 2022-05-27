@@ -1668,6 +1668,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     return GraalHPyBoxing.boxHandle(createHandle(lresult).getId(this, ConditionProfile.getUncached()));
                 } else if (storage instanceof ObjectSequenceStorage) {
                     Object result = ((ObjectSequenceStorage) storage).getItemNormalized(idx);
+                    if (result instanceof Integer) {
+                        return GraalHPyBoxing.boxInt((int) result);
+                    } else if (result instanceof Double) {
+                        return GraalHPyBoxing.boxDouble((double) result);
+                    }
                     return GraalHPyBoxing.boxHandle(createHandle(result).getId(this, ConditionProfile.getUncached()));
                 }
                 // TODO: other storages...

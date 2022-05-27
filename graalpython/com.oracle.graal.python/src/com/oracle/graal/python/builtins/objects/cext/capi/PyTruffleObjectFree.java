@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
@@ -64,7 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public class PyTruffleObjectFree implements TruffleObject {
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectFree.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectFree.class);
 
     @ExportMessage
     boolean isExecutable() {

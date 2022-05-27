@@ -1,0 +1,30 @@
+Module[0, 117]
+    FunctionDef[0, 117]
+        Name:walk_stack
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[15, 16] f
+        ---- Function body of walk_stack ----
+        RAW[23, 42] Value: Documentation
+        If[47, 76]
+            Test: 
+                Compare[50, 59]
+                    LHS: Name[50, 51] Value: "f"
+                    Op: IS
+                    RHS: NONE[55, 59] Value: null
+            Then:
+                Assign[69, 76]
+                    LHS: Name[69, 70] Value: "f" Store
+                    RHS: 
+                        Call[73, 76]
+                            Target: Name[73, 74] Value: "a"
+        While[81, 117]
+            Condition: 
+                Compare[87, 100]
+                    LHS: Name[87, 88] Value: "f"
+                    Op: ISNOT
+                    RHS: NONE[96, 100] Value: null
+            Body:
+                Yield[110, 117]
+                    Name[116, 117] Value: "f"
+        ---- End of walk_stack function ----

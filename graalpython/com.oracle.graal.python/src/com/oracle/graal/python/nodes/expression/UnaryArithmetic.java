@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,6 +173,10 @@ public enum UnaryArithmetic {
                         @Cached("createCallNode(__POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
+
+        public static PosNode create() {
+            return UnaryArithmeticFactory.PosNodeGen.create(null);
+        }
     }
 
     public abstract static class NegNode extends UnaryArithmeticNode {
@@ -204,6 +208,10 @@ public enum UnaryArithmetic {
                         @Cached("createCallNode(__NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
+
+        public static NegNode create() {
+            return UnaryArithmeticFactory.NegNodeGen.create(null);
+        }
     }
 
     public abstract static class InvertNode extends UnaryArithmeticNode {
@@ -229,6 +237,10 @@ public enum UnaryArithmetic {
         static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached("createCallNode(__INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
+        }
+
+        public static InvertNode create() {
+            return UnaryArithmeticFactory.InvertNodeGen.create(null);
         }
     }
 }

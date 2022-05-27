@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -120,4 +120,36 @@ public class WithTests {
         assertPrints("In __enter__()\nExecute without asName\nIn __exit__()\n1\n", source);
     }
 
+    @Test
+    public void withExceptionInfo() {
+        String source = "import sys\n" +
+                        "class CM:\n" +
+                        "    def __enter__(self):\n" +
+                        "        return self\n" +
+                        "    def __exit__(self, et, e, tb):\n" +
+                        "        print(repr(sys.exc_info()[1]))\n" +
+                        "        return True\n" +
+                        "with CM():\n" +
+                        "    raise NameError\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+
+        assertPrints("NameError()\nNone\n", source);
+    }
+
+    @Test
+    public void withBreakExecutesExit() {
+        String source = "class CM:\n" +
+                        "    def __enter__(self):\n" +
+                        "        print('enter')\n" +
+                        "        return self\n" +
+                        "    def __exit__(self, et, e, tb):\n" +
+                        "        print('exit')\n" +
+                        "        return True\n" +
+                        "for i in range(1):\n" +
+                        "    with CM():\n" +
+                        "        print('inner')\n" +
+                        "        break\n";
+
+        assertPrints("enter\ninner\nexit\n", source);
+    }
 }

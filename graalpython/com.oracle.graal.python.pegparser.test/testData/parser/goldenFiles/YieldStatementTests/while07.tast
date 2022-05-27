@@ -1,0 +1,31 @@
+Module[0, 101]
+    FunctionDef[0, 101]
+        Name:gen
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[8, 9] x
+        ---- Function body of gen ----
+        While[15, 101]
+            Condition: Name[21, 22] Value: "x"
+            Body:
+                If[29, 52]
+                    Test: 
+                        Compare[32, 38]
+                            LHS: Name[32, 33] Value: "x"
+                            Op: EQ
+                            RHS: LONG[37, 38] Value: 1
+                    Then:
+                        Break[47, 52]
+                Assign[58, 65]
+                    LHS: Name[58, 59] Value: "x" Store
+                    RHS: 
+                        BinOp[62, 65]
+                            Op: SUB
+                            LHS: Name[62, 63] Value: "x"
+                            RHS: LONG[64, 65] Value: 1
+                Yield[71, 78]
+                    Name[77, 78] Value: "x"
+            Else:
+                Yield[93, 101]
+                    LONG[99, 101] Value: 10
+        ---- End of gen function ----

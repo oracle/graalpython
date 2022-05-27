@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.test.datatype;
 
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertLastLineError;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class TupleTest {
 
@@ -42,6 +43,28 @@ public class TupleTest {
     public void greaterThan() {
         String source = "print((3,4) >= (3,3))\n";
         assertPrints("True\n", source);
+    }
+
+    @Test
+    public void tupleLiteral1() {
+        String source = "print((1, 2, 3))\n";
+        assertPrints("(1, 2, 3)\n", source);
+    }
+
+    @Test
+    public void tupleLiteral2() {
+        String source = "s1 = (1, 2, 3)\n" +
+                        "s2 = (*s1, 4)\n" +
+                        "print(s2)\n";
+        assertPrints("(1, 2, 3, 4)\n", source);
+    }
+
+    @Test
+    public void tupleLiteral3() {
+        String source = "s1 = 1, 2, 3\n" +
+                        "s2 = 0, *s1, 4\n" +
+                        "print(s2)\n";
+        assertPrints("(0, 1, 2, 3, 4)\n", source);
     }
 
     @Test

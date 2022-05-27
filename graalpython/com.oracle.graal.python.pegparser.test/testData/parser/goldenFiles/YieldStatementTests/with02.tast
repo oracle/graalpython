@@ -1,0 +1,30 @@
+Module[0, 80]
+    FunctionDef[0, 80]
+        Name:gen
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[8, 9] a
+        ---- Function body of gen ----
+        With[14, 41]
+            Items:
+                Item[19, 20]
+                    ContextExpr: Name[19, 20] Value: "a"
+            Body:
+                Call[26, 41]
+                    Target: Name[26, 29] Value: "bla"
+                    Args:
+                        Name[30, 32] Value: "p1"
+                        Name[34, 36] Value: "p2"
+                        Name[38, 40] Value: "p3"
+        With[44, 80]
+            Items:
+                Item[49, 53]
+                    ContextExpr: 
+                        Call[49, 53]
+                            Target: Name[49, 51] Value: "fn"
+            Body:
+                Yield[59, 67]
+                    LONG[65, 67] Value: 12
+                Yield[72, 80]
+                    LONG[78, 80] Value: 13
+        ---- End of gen function ----

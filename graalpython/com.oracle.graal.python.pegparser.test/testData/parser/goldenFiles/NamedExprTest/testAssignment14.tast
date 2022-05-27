@@ -1,0 +1,42 @@
+Module[0, 57]
+    While[0, 57]
+        Condition: 
+            Compare[6, 30]
+                LHS: Name[6, 7] Value: "a"
+                Op: GT
+                RHS: 
+                    NamedExpr[11, 29]
+                        Target: Name[11, 12] Value: "d" Store
+                        Value: 
+                            BinOp[16, 29]
+                                Op: FLOORDIV
+                                LHS: Name[16, 17] Value: "x"
+                                RHS: 
+                                    BinOp[21, 29]
+                                        Op: POW
+                                        LHS: Name[21, 22] Value: "a"
+                                        RHS: 
+                                            BinOp[25, 28]
+                                                Op: SUB
+                                                LHS: Name[25, 26] Value: "n"
+                                                RHS: LONG[27, 28] Value: 1
+        Body:
+            Assign[35, 57]
+                LHS: Name[35, 36] Value: "a" Store
+                RHS: 
+                    BinOp[39, 57]
+                        Op: FLOORDIV
+                        LHS: 
+                            BinOp[40, 51]
+                                Op: ADD
+                                LHS: 
+                                    BinOp[40, 47]
+                                        Op: MULT
+                                        LHS: 
+                                            BinOp[41, 44]
+                                                Op: SUB
+                                                LHS: Name[41, 42] Value: "n"
+                                                RHS: LONG[43, 44] Value: 1
+                                        RHS: Name[46, 47] Value: "a"
+                                RHS: Name[50, 51] Value: "d"
+                        RHS: Name[56, 57] Value: "n"

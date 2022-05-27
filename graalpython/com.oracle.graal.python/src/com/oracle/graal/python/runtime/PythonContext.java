@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
 import java.security.NoSuchAlgorithmException;
@@ -63,7 +64,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -138,7 +139,6 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -1795,7 +1795,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean isExecutableAccessAllowed() {
-        return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
+        return getEnv().isHostLookupAllowed() || isNativeAccessAllowed();
     }
 
     /**
@@ -1827,7 +1827,7 @@ public final class PythonContext extends Python3Core {
         assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
         assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
         // Other threads must see the nativeWrapper fully initialized once it becomes non-null
-        MemoryFence.storeStore();
+        VarHandle.storeStoreFence();
         singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
     }
 

@@ -1,0 +1,25 @@
+Module[0, 89]
+    FunctionDef[0, 89]
+        Name:merge
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[10, 11] h
+        ---- Function body of merge ----
+        While[18, 52]
+            Condition: BOOLEAN[24, 28] Value: true
+            Body:
+                Assign[38, 52]
+                    LHS: Name[38, 43] Value: "value" Store
+                    RHS: 
+                        Call[46, 52]
+                            Target: Name[46, 50] Value: "next"
+        While[57, 89]
+            Condition: 
+                Compare[63, 68]
+                    LHS: Name[63, 64] Value: "h"
+                    Op: GT
+                    RHS: LONG[67, 68] Value: 1
+            Body:
+                Yield[78, 89]
+                    Name[84, 89] Value: "value"
+        ---- End of merge function ----

@@ -445,39 +445,75 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectRichCompareNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "op == 0")
-        static Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LtNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.LtNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
 
         @Specialization(guards = "op == 1")
-        static Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.LeNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.LeNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
 
         @Specialization(guards = "op == 2")
-        static Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.EqNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.EqNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
 
         @Specialization(guards = "op == 3")
-        static Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.NeNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.NeNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
 
         @Specialization(guards = "op == 4")
-        static Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GtNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.GtNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
 
         @Specialization(guards = "op == 5")
-        static Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached BinaryComparisonNode.GeNode compNode) {
-            return compNode.executeObject(frame, a, b);
+        Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
+                        @Cached BinaryComparisonNode.GeNode compNode,
+                        @Shared("e") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return compNode.executeObject(frame, a, b);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getContext().getNativeNull();
+            }
         }
     }
 

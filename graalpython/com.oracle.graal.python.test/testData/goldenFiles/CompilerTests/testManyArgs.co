@@ -1,0 +1,42 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (print)
+000006         2 LOAD_BYTE                         1
+000009         4 LOAD_BYTE                         2
+000012         6 LOAD_BYTE                         3
+000015         8 LOAD_BYTE                         4
+000018        10 LOAD_BYTE                         5
+000021        12 LOAD_BYTE                         6
+000024        14 LOAD_BYTE                         7
+000027        16 LOAD_BYTE                         8
+000030        18 LOAD_BYTE                         9
+000033        20 LOAD_BYTE                         10
+000037        22 LOAD_BYTE                         11
+000041        24 LOAD_BYTE                         12
+000045        26 LOAD_BYTE                         13
+000049        28 LOAD_BYTE                         14
+000053        30 LOAD_BYTE                         15
+000057        32 LOAD_BYTE                         16
+000061        34 LOAD_BYTE                         17
+000065        36 LOAD_BYTE                         18
+000069        38 LOAD_BYTE                         19
+000073        40 LOAD_BYTE                         20
+000077        42 LOAD_BYTE                         21
+000081        44 LOAD_BYTE                         22
+000085        46 LOAD_BYTE                         23
+000089        48 LOAD_BYTE                         24
+000093        50 LOAD_BYTE                         25
+000097        52 LOAD_BYTE                         26
+000101        54 LOAD_BYTE                         27
+000105        56 LOAD_BYTE                         28
+000109        58 LOAD_BYTE                         29
+000113        60 LOAD_BYTE                         30
+000117        62 LOAD_BYTE                         31
+000000        64 COLLECTION_FROM_STACK             31   (Object[])
+000121        66 LOAD_BYTE                         32
+000125        68 LOAD_BYTE                         33
+000129        70 LOAD_BYTE                         34
+000133        72 LOAD_BYTE                         35
+000137        74 LOAD_BYTE                         36
+000000        76 COLLECTION_ADD_STACK              5    (Object[])
+000000        78 CALL_FUNCTION_VARARGS
+000000        79 RETURN_VALUE

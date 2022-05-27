@@ -1,0 +1,13 @@
+Module[0, 31]
+    For[0, 31]
+        Target: Name[4, 5] Value: "i" Store
+        Iter: 
+            Call[9, 19]
+                Target: Name[9, 14] Value: "range"
+                Args:
+                    LONG[15, 18] Value: 210
+        Body:
+            Call[23, 31]
+                Target: Name[23, 28] Value: "print"
+                Args:
+                    Name[29, 30] Value: "i"

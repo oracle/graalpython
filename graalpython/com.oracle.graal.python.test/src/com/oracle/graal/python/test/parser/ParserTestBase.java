@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -122,7 +122,7 @@ public class ParserTestBase {
 
     private Node parseInternal(Source source, PythonParser.ParserMode mode, Frame fd) {
         PythonParser parser = context.getParser();
-        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, fd, null);
+        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, fd != null ? fd.materialize() : null, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
         lastSST = ((PythonParserImpl) parser).getLastSST();
         // ensure that node parent pointers are set:

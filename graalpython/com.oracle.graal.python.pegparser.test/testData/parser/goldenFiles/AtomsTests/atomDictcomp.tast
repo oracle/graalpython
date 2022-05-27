@@ -1,0 +1,13 @@
+Module[0, 23]
+    DictComp[0, 23]
+        Key: Tuple[1, 5]
+            Values:
+                Name[2, 3] Value: "a"
+        Value: Name[7, 8] Value: "b"
+        ComprehensionTy[10, 22]
+            Target: 
+                Tuple[14, 17] Context: Store
+                    Values:
+                        Name[14, 15] Value: "a" Store
+                        Name[16, 17] Value: "b" Store
+            Iterator: Name[21, 22] Value: "y"

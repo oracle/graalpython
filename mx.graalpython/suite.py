@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "ac0dc591736856f9df9fd12f603bec51bf6c3631",
+                "version": "7d193aafe50a98d60f2b213ce82f9e53b9bedf68",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "ac0dc591736856f9df9fd12f603bec51bf6c3631",
+                "version": "7d193aafe50a98d60f2b213ce82f9e53b9bedf68",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "ac0dc591736856f9df9fd12f603bec51bf6c3631",
+                "version": "7d193aafe50a98d60f2b213ce82f9e53b9bedf68",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -211,7 +211,13 @@ suite = {
         "com.oracle.graal.python.frozen": {
             "type": "python",
             "path": "graalpython/com.oracle.graal.python.frozen",
-        }
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.pegparser.generator",
+            "source": [],
+        },
     },
 
     "projects": {
@@ -230,6 +236,34 @@ suite = {
             "jacoco": "include",
             "native": True,
             "vpath": False,
+        },
+
+        "com.oracle.graal.python.pegparser": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "javaCompliance": "11+",
+            "dependencies": [
+                "truffle:ICU4J",
+            ],
+            "buildDependencies": [
+                "com.oracle.graal.python.pegparser.generator",
+            ],
+        },
+
+        "com.oracle.graal.python.pegparser.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "11+",
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+                "mx:JUNIT",
+            ],
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "subDir": "graalpython",
+            "native": True,
         },
 
         "com.oracle.graal.python.shell": {
@@ -308,6 +342,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
+                "GRAALPYTHON_PEGPARSER",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -515,6 +550,17 @@ suite = {
             "maven": True,
         },
 
+        "GRAALPYTHON_PEGPARSER": {
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+            ],
+            "exclude": [
+                "truffle:ICU4J",
+            ],
+            "description": "GraalPython PEG parser",
+            "internal": True,
+        },
+
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
@@ -564,6 +610,7 @@ suite = {
             "description": "unit tests",
             "dependencies": [
                 "com.oracle.graal.python.test",
+                "com.oracle.graal.python.pegparser.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [

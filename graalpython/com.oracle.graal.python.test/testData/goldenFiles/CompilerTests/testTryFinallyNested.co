@@ -1,0 +1,44 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (foo)
+000000         3 STORE_NAME                        0    (foo)
+000000         5 LOAD_NONE
+000000         6 RETURN_VALUE
+
+Disassembly of foo:
+000027         0 LOAD_FAST                         0    (obj)
+000018         2 GET_ITER
+000018   >>    3 FOR_ITER                          13   (to 16)
+000022         5 STORE_FAST                        1    (x)
+000040         7 LOAD_GLOBAL                       0    (print)
+000046         9 LOAD_FAST                         1    (x)
+000040        11 CALL_FUNCTION                     1
+000040        13 POP_TOP
+000040        14 JUMP_BACKWARD                     11   (to 3)
+000083   >>   16 LOAD_GLOBAL                       0    (print)
+000089        18 LOAD_STRING                       1    ('try')
+000083        20 CALL_FUNCTION                     1
+000083        22 POP_TOP
+000083        23 JUMP_FORWARD                      11   (to 34)
+000083        25 PUSH_EXC_INFO                                                           (exc handler 16 - 25; stack: 0)
+000125        26 LOAD_GLOBAL                       0    (print)
+000131        28 LOAD_STRING                       2    ('finally1')
+000125        30 CALL_FUNCTION                     1
+000125        32 POP_TOP
+000125        33 END_EXC_HANDLER                                                         (exc handler 26 - 33; stack: 1)
+000125   >>   34 LOAD_GLOBAL                       0    (print)
+000131        36 LOAD_STRING                       2    ('finally1')
+000125        38 CALL_FUNCTION                     1
+000125        40 POP_TOP
+000125        41 JUMP_FORWARD                      11   (to 52)
+000125        43 PUSH_EXC_INFO                                                           (exc handler 25 - 26; stack: 0 | exc handler 33 - 43; stack: 0)
+000164        44 LOAD_GLOBAL                       0    (print)
+000170        46 LOAD_STRING                       3    ('finally2')
+000164        48 CALL_FUNCTION                     1
+000164        50 POP_TOP
+000164        51 END_EXC_HANDLER                                                         (exc handler 44 - 51; stack: 1)
+000164   >>   52 LOAD_GLOBAL                       0    (print)
+000170        54 LOAD_STRING                       3    ('finally2')
+000164        56 CALL_FUNCTION                     1
+000164        58 POP_TOP
+000000        59 LOAD_NONE
+000000        60 RETURN_VALUE

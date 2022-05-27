@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,13 +66,15 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
+@GenerateUncached
 public abstract class ExecutePositionalStarargsNode extends Node {
-    public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
+    public abstract Object[] executeWith(Frame frame, Object starargs);
 
     @Specialization
     static Object[] doObjectArray(Object[] starargs) {
@@ -158,6 +160,10 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     public static ExecutePositionalStarargsNode create() {
         return ExecutePositionalStarargsNodeGen.create();
+    }
+
+    public static ExecutePositionalStarargsNode getUncached() {
+        return ExecutePositionalStarargsNodeGen.getUncached();
     }
 
     @GenerateUncached

@@ -53,6 +53,7 @@ language
 /request_cache/
 /org.eclipse.jdt.core.prefs
 Python3.g4.stamp
+python.gram.stamp
 *.orig
 /*.diff
 /testenv

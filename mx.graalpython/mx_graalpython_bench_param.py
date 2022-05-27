@@ -106,6 +106,7 @@ MICRO_BENCHMARKS = {
     'tuple-indexing-from-constructor': ITER_10 + ['10000000'],
     'tuple-indexing-from-literal': ITER_10 + ['10000000'],
     'repeated-import': ITER_10 + ['10000000'],
+    'codeobject-interpretation': ITER_10 + ['2000'],
 }
 
 MICRO_BENCHMARKS_SMALL = {

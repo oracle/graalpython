@@ -1125,9 +1125,13 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return false;
             }
 
-            @TruffleBoundary
             @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+                executeImpl(source, category, format, stackLevel, formatArgs);
+            }
+
+            @TruffleBoundary
+            private void executeImpl(Object source, Object category, String format, int stackLevel, Object... formatArgs) {
                 PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule("_warnings");
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
                 String message;

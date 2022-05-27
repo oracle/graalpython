@@ -164,7 +164,7 @@ public abstract class ExecutionContext {
             if (adoptable) {
                 return ensureMaterializeNode().execute(frame, callNode, markAsEscaped, forceSync);
             }
-            return MaterializeFrameNode.getUnadoptable().execute(frame, callNode, markAsEscaped, forceSync);
+            return MaterializeFrameNode.getUncached().execute(frame, callNode, markAsEscaped, forceSync);
         }
 
         private boolean isPythonFrame(VirtualFrame frame, Node callNode) {

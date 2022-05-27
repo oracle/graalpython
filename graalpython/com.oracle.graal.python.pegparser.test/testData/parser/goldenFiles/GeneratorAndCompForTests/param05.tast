@@ -1,0 +1,13 @@
+Module[0, 42]
+    FunctionDef[0, 42]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Kwarg: ArgTy[9, 12] arg
+        ---- Function body of fn ----
+        For[17, 42]
+            Target: Name[21, 22] Value: "p" Store
+            Iter: Name[26, 29] Value: "arg"
+            Body:
+                Yield[35, 42]
+                    Name[41, 42] Value: "p"
+        ---- End of fn function ----

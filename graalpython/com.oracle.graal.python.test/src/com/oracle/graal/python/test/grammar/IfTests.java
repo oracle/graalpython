@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -67,4 +67,20 @@ public class IfTests {
         assertPrints("a is None\na is None\na is None\na is None\n", source);
     }
 
+    @Test
+    public void testExtendedArgs() {
+        StringBuilder source = new StringBuilder();
+        StringBuilder expected = new StringBuilder();
+        source.append("a = 1\n");
+        source.append("if a:\n");
+        for (int i = 0; i < 260; i++) {
+            source.append(String.format("   print('%d')\n", i));
+            expected.append(i).append('\n');
+        }
+        source.append("else:\n");
+        source.append("    print('else')");
+
+        assertPrints(expected.toString(), source.toString());
+        assertPrints("else\n", source.toString().replace("a = 1", "a = 0"));
+    }
 }

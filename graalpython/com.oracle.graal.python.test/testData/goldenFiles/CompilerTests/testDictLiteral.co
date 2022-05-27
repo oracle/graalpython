@@ -1,0 +1,7 @@
+Disassembly of <module>:
+000001         0 LOAD_STRING                       0    ('a')
+000006         2 LOAD_STRING                       1    ('b')
+000011         4 LOAD_BYTE                         1
+000014         6 LOAD_BYTE                         2
+000000         8 COLLECTION_FROM_STACK             4    (dict)
+000000        10 RETURN_VALUE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -84,11 +85,11 @@ public final class PythonScopes implements TruffleObject {
 
     public static Object create(Node node, Frame frame) {
         RootNode root = node.getRootNode();
-        PythonLocalScope localScope = PythonLocalScope.createLocalScope(root, frame);
+        PythonLocalScope localScope = PythonLocalScope.createLocalScope(root, frame != null ? frame.materialize() : null);
         Object[] scopes;
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
-            Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
+            MaterializedFrame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
             Object globalsScope = null;
             if (globals != null) {
                 globalsScope = new PythonMapScope(new Object[]{scopeFromObject(globals)}, new String[]{"globals()"});

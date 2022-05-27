@@ -1,0 +1,24 @@
+Disassembly of <module>:
+000000         0 LOAD_NAME                         0    (print)
+000006         2 LOAD_STRING                       0    ('before')
+000000         4 CALL_FUNCTION                     1
+000000         6 POP_TOP
+000023         7 LOAD_NAME                         0    (print)
+000029         9 LOAD_STRING                       1    ('try')
+000023        11 CALL_FUNCTION                     1
+000023        13 POP_TOP
+000023        14 JUMP_FORWARD                      11   (to 25)
+000023        16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
+000047        17 LOAD_NAME                         0    (print)
+000053        19 LOAD_STRING                       2    ('finally')
+000047        21 CALL_FUNCTION                     1
+000047        23 POP_TOP
+000047        24 END_EXC_HANDLER                                                         (exc handler 17 - 24; stack: 1)
+000047   >>   25 LOAD_NAME                         0    (print)
+000053        27 LOAD_STRING                       2    ('finally')
+000047        29 CALL_FUNCTION                     1
+000047        31 POP_TOP
+000064        32 LOAD_NAME                         0    (print)
+000070        34 LOAD_STRING                       3    ('after')
+000064        36 CALL_FUNCTION                     1
+000064        38 RETURN_VALUE

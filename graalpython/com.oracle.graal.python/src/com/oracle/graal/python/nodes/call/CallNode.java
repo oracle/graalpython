@@ -57,8 +57,10 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -107,6 +109,12 @@ public abstract class CallNode extends PNodeWithContext {
 
     public final Object execute(Frame frame, Object callableObject, Object... arguments) {
         return executeInternal(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    @Specialization
+    protected Object boundDescriptor(VirtualFrame frame, BoundDescriptor descriptor, Object[] arguments, PKeyword[] keywords,
+                    @Cached CallNode subNode) {
+        return subNode.executeInternal(frame, descriptor.descriptor, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords);
     }
 
     @Specialization
@@ -231,6 +239,10 @@ public abstract class CallNode extends PNodeWithContext {
         } else if (callableObject instanceof PBuiltinMethod) {
             PBuiltinMethod method = (PBuiltinMethod) callableObject;
             return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
+        } else if (callableObject instanceof BoundDescriptor) {
+            return doGeneric(frame, ((BoundDescriptor) callableObject).descriptor,
+                            PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords,
+                            dispatch, createArgs, raise, callAttrGetterNode, getClassNode, callCallNode);
         }
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(getClassNode.execute(callableObject)));
     }
