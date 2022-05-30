@@ -490,7 +490,7 @@ public class GraalHPyNodes {
             this(key, value, null);
         }
 
-        public void write(WriteAttributeToObjectNode writeAttributeToObjectNode, ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType) {
+        void write(WriteAttributeToObjectNode writeAttributeToObjectNode, ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType) {
             for (HPyProperty prop = this; prop != null; prop = prop.next) {
                 /*
                  * Do not overwrite existing attributes. Reason: Different slots may map to the same
@@ -502,10 +502,14 @@ public class GraalHPyNodes {
                  * that we cannot easily do the same since we have two separate sets of slots: HPy
                  * slots and legacy slots. Right now, the HPy slots have precedence.
                  */
-                if (readAttributeFromObjectNode.execute(enclosingType, prop.key) == PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                if (!keyExists(readAttributeFromObjectNode, enclosingType, key)) {
+                    writeAttributeToObjectNode.execute(enclosingType, key, value);
                 }
             }
+        }
+
+        static boolean keyExists(ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType, Object key) {
+            return readAttributeFromObjectNode.execute(enclosingType, key) != PNone.NO_VALUE;
         }
     }
 
@@ -944,7 +948,7 @@ public class GraalHPyNodes {
                 default:
                     // this is the generic slot case
                     String attributeKey = slot.getAttributeKey();
-                    if (attributeKey != null) {
+                    if (attributeKey != null && !HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
                         Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
                         /*
                          * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
