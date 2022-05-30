@@ -502,8 +502,8 @@ public class GraalHPyNodes {
                  * that we cannot easily do the same since we have two separate sets of slots: HPy
                  * slots and legacy slots. Right now, the HPy slots have precedence.
                  */
-                if (!keyExists(readAttributeFromObjectNode, enclosingType, key)) {
-                    writeAttributeToObjectNode.execute(enclosingType, key, value);
+                if (!keyExists(readAttributeFromObjectNode, enclosingType, prop.key)) {
+                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
                 }
             }
         }
