@@ -502,8 +502,8 @@ public class GraalHPyNodes {
                  * that we cannot easily do the same since we have two separate sets of slots: HPy
                  * slots and legacy slots. Right now, the HPy slots have precedence.
                  */
-                if (!keyExists(readAttributeFromObjectNode, enclosingType, key)) {
-                    writeAttributeToObjectNode.execute(enclosingType, key, value);
+                if (!keyExists(readAttributeFromObjectNode, enclosingType, prop.key)) {
+                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
                 }
             }
         }
@@ -948,15 +948,17 @@ public class GraalHPyNodes {
                 default:
                     // this is the generic slot case
                     String attributeKey = slot.getAttributeKey();
-                    if (attributeKey != null && !HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
-                        Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
-                        /*
-                         * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
-                         * and thus if we need to do result and argument conversion.
-                         */
-                        PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
-                                        slot.getSignature(), PythonLanguage.get(raiseNode), factory, true);
-                        writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                    if (attributeKey != null) {
+                        if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
+                            Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                            /*
+                             * TODO(fa): Properly determine if 'pfuncPtr' is a native function
+                             * pointer and thus if we need to do result and argument conversion.
+                             */
+                            PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
+                                            slot.getSignature(), PythonLanguage.get(raiseNode), factory, true);
+                            writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                        }
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
                         CompilerDirectives.transferToInterpreterAndInvalidate();
