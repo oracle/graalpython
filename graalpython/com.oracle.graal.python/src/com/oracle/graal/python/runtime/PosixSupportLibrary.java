@@ -983,6 +983,8 @@ public abstract class PosixSupportLibrary extends Library {
      */
     @ValueType
     public static final class Timeval {
+        public static final Timeval SELECT_TIMEOUT_NOW = new Timeval(0, 0);
+
         private final long seconds;
         private final long microseconds;
 

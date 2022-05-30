@@ -945,40 +945,7 @@ if sys.platform == 'win32':
 
 else:
 
-# Begin Truffle change
-#    import selectors
-#
-#    # poll/select have the advantage of not requiring any extra file
-#    # descriptor, contrarily to epoll/kqueue (also, they require a single
-#    # syscall).
-#    if hasattr(selectors, 'PollSelector'):
-#        _WaitSelector = selectors.PollSelector
-#    else:
-#        _WaitSelector = selectors.SelectSelector
-#
-#    def wait(object_list, timeout=None):
-#        '''
-#        Wait till an object in object_list is ready/readable.
-#
-#        Returns list of those objects in object_list which are ready/readable.
-#        #'''
-#        with _WaitSelector() as selector:
-#            for obj in object_list:
-#                selector.register(obj, selectors.EVENT_READ)
-#
-#            if timeout is not None:
-#                deadline = time.monotonic() + timeout
-#
-#            while True:
-#                ready = selector.select(timeout)
-#                if ready:
-#                    return [key.fileobj for (key, events) in ready]
-#                else:
-#                    if timeout is not None:
-#                        timeout = deadline - time.monotonic()
-#                        if timeout < 0:
-#                            return ready
-
+# Begin Truffle change: original wait works only with actual file descriptors
     import selectors
 
     # poll/select have the advantage of not requiring any extra file
@@ -989,6 +956,30 @@ else:
     else:
         _WaitSelector = selectors.SelectSelector
 
+    def original_wait(object_list, timeout=None):
+        '''
+        Wait till an object in object_list is ready/readable.
+
+        Returns list of those objects in object_list which are ready/readable.
+        #'''
+        with _WaitSelector() as selector:
+            for obj in object_list:
+                selector.register(obj, selectors.EVENT_READ)
+
+            if timeout is not None:
+                deadline = time.monotonic() + timeout
+
+            while True:
+                ready = selector.select(timeout)
+                if ready:
+                    return [key.fileobj for (key, events) in ready]
+                else:
+                    if timeout is not None:
+                        timeout = deadline - time.monotonic()
+                        if timeout < 0:
+                            return ready
+
+
     def wait(object_list, timeout=None):
         '''
         Wait till an object in object_list is ready/readable.
@@ -997,56 +988,32 @@ else:
         #'''
 
         mp_select_list = []
+        mp_original_objs = []
         selectors_list = []
         for obj in object_list:
             fileno = obj.fileno() if hasattr(obj, "fileno") else obj
             if(fileno < 0):
                 mp_select_list.append(fileno)
+                mp_original_objs.append(obj)
             else:
                 selectors_list.append(obj)
 
-        with _WaitSelector() as selector:
-            if selectors_list:
-                for obj in selectors_list:
-                    selector.register(obj, selectors.EVENT_READ)
+        # If there are no "fake" multiprocessing fds, then just use the original implementation
+        if not mp_select_list:
+            return original_wait(object_list, timeout)
 
-            if timeout is not None:
-                deadline = time.monotonic() + timeout
-
-            def is_timeout():
-                nonlocal timeout
-                if timeout is not None:
-                    timeout = deadline - time.monotonic()
-                    return timeout < 0
-
-            while True:
-                selectors_ready = []
-                if selectors_list:
-                    selectors_ready = selector.select(-1)
-                    if selectors_ready:
-                        selectors_ready = [key.fileobj for (key, events) in selectors_ready]
-                        
-                mp_select_ready = []
-                if mp_select_list:
-                    t = time.time()
-                    mp_select_ready = _multiprocessing._select(mp_select_list)
-                
-                ready = fileno_to_obj(mp_select_ready, object_list) + selectors_ready  
-                if ready:
-                    return ready
-
-                if is_timeout():
-                    return ready
-
-    def fileno_to_obj(filenumbers, object_list):
-        l = []
-        for r in filenumbers:
-            for obj in object_list:
-                fileno = obj.fileno() if hasattr(obj, "fileno") else obj
-                if fileno == r:
-                    l.append(obj)
-                    break
-        return l
+        # From the docs:
+        # timeout is None -> block until ready
+        # timeout <= 0    -> no blocking, just check
+        # Our internal builtin only takes float value to make it simpler:
+        # timeout == 0 -> block until ready
+        # timeout < 0  -> no blocking
+        if timeout is None:
+            normalized_timeout = 0
+        else:
+            t = float(timeout)
+            normalized_timeout = -1 if t == 0 else t
+        return _multiprocessing._select(mp_select_list, mp_original_objs, selectors_list, normalized_timeout)
 # End Truffle change
 
 #

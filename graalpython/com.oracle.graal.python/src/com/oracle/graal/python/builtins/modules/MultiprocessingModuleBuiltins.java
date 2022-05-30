@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -71,10 +72,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -356,32 +360,81 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_select", minNumOfPositionalArgs = 1, parameterNames = {"rlist"})
+    @Builtin(name = "_select", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SelectNode extends PythonBuiltinNode {
+        /*
+         * We would like to poll two different things with a timeout: the actual file descriptors
+         * and the Java managed LinkedBlockingQueues.
+         * 
+         * The LinkedBlockingQueue does not expose anything that would allow us to wait on multiple
+         * LinkedBlockingQueues at once, so we'd have to spawn a thread for each or roll out our own
+         * synchronization of take/offer to allow that.
+         * 
+         * The actual file descriptors could be backed by Java POSIX emulation layer, or by the
+         * native POSIX implementation -- the `select` can run actual native select, which we cannot
+         * easily interrupt from Java if one of the LinkedBlockingQueue is unblocked earlier than
+         * the native select returns.
+         * 
+         * Given all these complexities, for the time being, we do active waiting here, but at least
+         * without holding the GIL, and we also yield in every iteration.
+         */
+
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object rlist,
+        Object doGeneric(VirtualFrame frame, Object multiprocessingFdsList, Object multiprocessingObjsList, Object posixFileObjsList, Object timeoutObj,
+                        @Cached PosixModuleBuiltins.FileDescriptorConversionNode fdConvertor,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItem,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
+                        @Cached CastToJavaDoubleNode castToDouble,
                         @Cached GilNode gil) {
-            ArrayBuilder<Integer> notEmpty = new ArrayBuilder<>();
-            SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
-            PSequence pSequence = constructListNode.execute(frame, rlist);
-            for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
+            PythonContext context = getContext();
+            SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
+
+            PSequence pSequence = constructListNode.execute(frame, multiprocessingFdsList);
+            int size = sizeNode.execute(frame, pSequence);
+            int[] multiprocessingFds = new int[size];
+            for (int i = 0; i < size; i++) {
                 Object pythonObject = getItem.execute(frame, pSequence, i);
-                int fd = toInt(castToJava, pythonObject);
-                gil.release(true);
-                try {
-                    if (!sharedData.isBlocking(fd)) {
-                        notEmpty.add(fd);
-                    }
-                } finally {
-                    gil.acquire();
-                }
+                multiprocessingFds[i] = toInt(castToJava, pythonObject);
             }
-            return factory().createList(notEmpty.toObjectArray(new Object[0]));
+
+            Object[] posixFileObjs = getObjectArrayNode.execute(posixFileObjsList);
+            int[] posixFds = new int[posixFileObjs.length];
+            for (int i = 0; i < posixFileObjs.length; i++) {
+                posixFds[i] = toInt(castToJava, fdConvertor.execute(frame, posixFileObjs[i]));
+            }
+
+            double timeout = castToDouble.execute(timeoutObj);
+
+            Object[] multiprocessingObjs = getObjectArrayNode.execute(multiprocessingObjsList);
+            gil.release(true);
+            try {
+                boolean[] selectedMultiprocessingFds = new boolean[multiprocessingFds.length];
+                boolean[] selectedPosixFds = new boolean[posixFds.length];
+
+                doSelect(context.getPosixSupport(), sharedData, posixFds, selectedPosixFds, multiprocessingFds, selectedMultiprocessingFds, timeout);
+
+                ArrayBuilder<Object> result = new ArrayBuilder<>(4);
+                for (int i = 0; i < selectedMultiprocessingFds.length; i++) {
+                    if (selectedMultiprocessingFds[i]) {
+                        result.add(multiprocessingObjs[i]);
+                    }
+                }
+                for (int i = 0; i < selectedPosixFds.length; i++) {
+                    if (selectedPosixFds[i]) {
+                        result.add(posixFileObjs[i]);
+                    }
+                }
+
+                return factory().createList(result.toArray(new Object[0]));
+            } catch (PosixSupportLibrary.PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
+            }
         }
 
         private static int toInt(CastToJavaIntLossyNode castToJava, Object pythonObject) {
@@ -389,6 +442,48 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 return castToJava.execute(pythonObject);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @TruffleBoundary
+        private static void doSelect(Object posix, SharedMultiprocessingData sharedData,
+                        int[] posixFds, boolean[] selectedPosixFds,
+                        int[] multiprocessingFds, boolean[] selectedMultiprocessingFds,
+                        double timeoutInS) throws PosixSupportLibrary.PosixException {
+            PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+            boolean blocking = timeoutInS >= 0;
+            boolean untilReady = timeoutInS == 0;
+            long deadline = 0;
+            if (blocking && !untilReady) {
+                long timeout = (long) (timeoutInS * 1000_000_000.0);
+                deadline = System.nanoTime() + timeout;
+            }
+            while (true) {
+                boolean selected = false;
+                if (posixFds.length > 0) {
+                    PosixSupportLibrary.SelectResult selectResult = posixLib.select(posix, posixFds,
+                                    PythonUtils.EMPTY_INT_ARRAY, PythonUtils.EMPTY_INT_ARRAY, Timeval.SELECT_TIMEOUT_NOW);
+                    System.arraycopy(selectResult.getReadFds(), 0, selectedPosixFds, 0, selectedPosixFds.length);
+                    if (blocking) {
+                        for (boolean b : selectedPosixFds) {
+                            selected |= b;
+                        }
+                    }
+                }
+                for (int i = 0; i < multiprocessingFds.length; i++) {
+                    int fd = multiprocessingFds[i];
+                    selectedMultiprocessingFds[i] = !sharedData.isBlocking(fd);
+                    if (selectedMultiprocessingFds[i]) {
+                        selected = true;
+                    }
+                }
+                if (!blocking || selected) {
+                    return;
+                }
+                if (deadline != 0 && deadline - System.nanoTime() < 0) {
+                    return;
+                }
+                Thread.yield();
             }
         }
     }
