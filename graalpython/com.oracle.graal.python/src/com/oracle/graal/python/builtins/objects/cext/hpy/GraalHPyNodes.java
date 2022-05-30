@@ -60,7 +60,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import java.math.BigInteger;
 import java.util.ArrayList;
 
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
@@ -115,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -492,9 +490,21 @@ public class GraalHPyNodes {
             this(key, value, null);
         }
 
-        public void write(WriteAttributeToObjectNode writeAttributeToObjectNode, Object enclosingType) {
+        public void write(WriteAttributeToObjectNode writeAttributeToObjectNode, ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType) {
             for (HPyProperty prop = this; prop != null; prop = prop.next) {
-                writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                /*
+                 * Do not overwrite existing attributes. Reason: Different slots may map to the same
+                 * magic method. For example: 'nb_add' and 'sq_concat' are both mapped to '__add__'.
+                 * For now, we will always use the first mapping. However, that is not fully
+                 * correct. CPython has a fixed order for slots defined by array 'static slotdef
+                 * slotdefs[]' in 'typeobject.c'. They iterate over this array and check if the new
+                 * type provides the slot. The first mapping will then be install. The problem is
+                 * that we cannot easily do the same since we have two separate sets of slots: HPy
+                 * slots and legacy slots. Right now, the HPy slots have precedence.
+                 */
+                if (readAttributeFromObjectNode.execute(enclosingType, prop.key) == PNone.NO_VALUE) {
+                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                }
             }
         }
     }
@@ -861,6 +871,7 @@ public class GraalHPyNodes {
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeToObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
@@ -894,7 +905,7 @@ public class GraalHPyNodes {
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMemberDef = resultLib.readArrayElement(memberDefArrayPtr, i);
                             HPyProperty property = createLegacyMemberNode.execute(enclosingType, legacyMemberDef);
-                            property.write(writeAttributeToObjectNode, enclosingType);
+                            property.write(writeAttributeToObjectNode, readAttributeToObjectNode, enclosingType);
                         }
                     } catch (InteropException | OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2009,7 +2020,8 @@ public class GraalHPyNodes {
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
                 // allocate additional memory for the metatype and set it
                 if (metatype != null) {
-                    // get basicsize of metatype and allocate it into GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
+                    // get basicsize of metatype and allocate it into
+                    // GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
                     long basicSize = metatype.basicSize;
                     Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
                     writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
@@ -2090,7 +2102,7 @@ public class GraalHPyNodes {
                         }
 
                         if (property != null) {
-                            property.write(writeAttributeToObjectNode, newType);
+                            property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
                         }
                     }
                 }
@@ -2110,7 +2122,7 @@ public class GraalHPyNodes {
                         Object legacySlotDef = ptrLib.readArrayElement(legacySlots, i);
                         HPyProperty property = createLegacySlotNode.execute(context, newType, legacySlotDef);
                         if (property != null) {
-                            property.write(writeAttributeToObjectNode, newType);
+                            property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
                         }
                     }
                 }
