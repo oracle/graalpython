@@ -537,7 +537,7 @@ class TestModsupport(CPyExtTestCase):
         ),
         code='''
         static PyObject * wrap_PyArg_ParseTuple(PyObject* argTuple) {
-            const char * out;
+            char * out;
             Py_INCREF(argTuple);
             if (PyArg_ParseTuple(argTuple, "es", "UTF-8", &out) == 0) {
                 return NULL;
@@ -562,7 +562,7 @@ class TestModsupport(CPyExtTestCase):
         ),
         code='''
         static PyObject * wrap_PyArg_ParseTuple(PyObject* argTuple) {
-            const char * out;
+            char * out;
             Py_INCREF(argTuple);
             if (PyArg_ParseTuple(argTuple, "es", "UTF-8", &out) == 0) {
                 return NULL;

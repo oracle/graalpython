@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -196,10 +196,13 @@ class StrftimeTests(unittest.TestCase):
         pm_am = time.strftime("%p");
         if pm_am == 'AM' or pm_am == 'am' or pm_am == 'PM' or pm_am == 'pm':
             # the test has sence only if the pm/am is provided
-            self.check_format("%p", (2018, 2, 18, 0, 0, 0, 3, 1, 0), 'AM')
-            self.check_format("%p", (2018, 8, 18, 11, 8, 0, 3, 1, 0), 'AM')
-            self.check_format("%p", (2018, 8, 18, 12, 50, 1, 3, 1, 0), 'PM')
-            self.check_format("%p", (2018, 8, 18, 23, 59, 0, 3, 1, 0), 'PM')
+            is_lower_case = pm_am[1] == 'm'
+            pm_case = 'pm' if is_lower_case else 'PM'
+            am_case = 'am' if is_lower_case else 'AM'
+            self.check_format("%p", (2018, 2, 18, 0, 0, 0, 3, 1, 0), am_case)
+            self.check_format("%p", (2018, 8, 18, 11, 8, 0, 3, 1, 0), am_case)
+            self.check_format("%p", (2018, 8, 18, 12, 50, 1, 3, 1, 0), pm_case)
+            self.check_format("%p", (2018, 8, 18, 23, 59, 0, 3, 1, 0), pm_case)
         self.assertRaises(ValueError, time.strftime, "%p", time.struct_time((2018, 8, 2, -1, 24, 30, 1, 1, 0)))
         self.assertRaises(ValueError, time.strftime, "%p", time.struct_time((2018, 8, 2, 24, 24, 30, 1, 1, 0)))
 

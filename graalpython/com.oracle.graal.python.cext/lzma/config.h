@@ -71,7 +71,7 @@
 #define HAVE_FUTIMENS 1
 #define HAVE_GETTEXT 1
 #ifdef __aarch64__
-#define HAVE_IMMINTRIN_H 0
+#undef HAVE_IMMINTRIN_H
 #else
 #define HAVE_IMMINTRIN_H 1
 #endif
