@@ -234,6 +234,7 @@ static uint64_t boxDouble(double value) {
 
 static void *(*original_AsStruct)(HPyContext *ctx, HPy h);
 static HPy (*original_Dup)(HPyContext *ctx, HPy h);
+static HPy (*original_Long)(HPyContext *ctx, HPy h);
 static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
 static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
@@ -274,6 +275,18 @@ static void *augment_AsStruct(HPyContext *ctx, HPy h) {
         return space[unboxHandle(bits)];
     } else {
         return NULL;
+    }
+}
+
+static HPy augment_Long(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedHandle(bits)) {
+        return original_Long(ctx, h);
+    } else if (isBoxedInt(bits)) {
+        return h;
+    } else if (isBoxedDouble(bits)) {
+        double v = unboxDouble(bits);
+        return toPtr(boxInt((int) v));
     }
 }
 
@@ -533,6 +546,8 @@ void initDirectFastPaths(HPyContext *context) {
 #define AUGMENT(name) \
     original_ ## name = context->ctx_ ## name;  \
     context->ctx_ ## name = augment_ ## name;
+
+    AUGMENT(Long);
 
     AUGMENT(Float_FromDouble);
 
