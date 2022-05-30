@@ -803,15 +803,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_dyld_shared_cache_contains_path", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class DyldSharedCacheConstainsPath extends PythonBinaryBuiltinNode {
-        private static boolean hasDynamicLoaderCacheValue = false;
-        private static boolean hasDynamicLoaderCacheInit = false;
+        @CompilationFinal private static boolean hasDynamicLoaderCacheValue = false;
+        @CompilationFinal private static boolean hasDynamicLoaderCacheInit = false;
 
         private static boolean hasDynamicLoaderCache() {
             if (hasDynamicLoaderCacheInit) {
                 return hasDynamicLoaderCacheValue;
             }
 
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             if (System.getProperty("os.name").contains("Mac")) {
                 String osVersion = System.getProperty("os.version");
                 // dynamic linker cache support on os.version >= 11.x
@@ -848,7 +848,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             try {
                 if (cachedFunction == null) {
                     String name = "_dyld_shared_cache_contains_path";
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, "", RTLD_LOCAL.getValueIfDefined());
                     Object sym = ilib.readMember(handle.getLibrary(), name);
                     // bool _dyld_shared_cache_contains_path(const char* path)
