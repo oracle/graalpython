@@ -280,14 +280,13 @@ static void *augment_AsStruct(HPyContext *ctx, HPy h) {
 
 static HPy augment_Long(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
-    if (isBoxedHandle(bits)) {
-        return original_Long(ctx, h);
-    } else if (isBoxedInt(bits)) {
+    if (isBoxedInt(bits)) {
         return h;
     } else if (isBoxedDouble(bits)) {
         double v = unboxDouble(bits);
         return toPtr(boxInt((int) v));
     }
+    return original_Long(ctx, h);
 }
 
 static HPy augment_Float_FromDouble(HPyContext *ctx, double v) {
