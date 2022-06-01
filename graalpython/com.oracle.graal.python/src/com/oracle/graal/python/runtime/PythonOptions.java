@@ -189,6 +189,10 @@ public final class PythonOptions {
                     "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<Boolean> HPyEnableJNIFastPaths = new OptionKey<>(true);
 
+    @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "<time>", help = "Specifies the interval (ms) for periodically printing HPy upcall statistics. If {@code 0}" +
+                    "or not specified, nothing will be printed (default).", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Integer> HPyTraceUpcalls = new OptionKey<>(0);
+
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<String> JNIHome = new OptionKey<>("");
 
