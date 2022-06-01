@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -240,7 +241,6 @@ public final class ReadCallerFrameNode extends Node {
      * @param frameAccess - the desired {@link FrameInstance} access kind
      */
     public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         return getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, FrameSelector.ALL_PYTHON_FRAMES, 0);
     }
 
@@ -260,8 +260,8 @@ public final class ReadCallerFrameNode extends Node {
         return getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level);
     }
 
+    @TruffleBoundary
     private static Frame getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        assert CompilerDirectives.inInterpreter();
         final Frame[] outputFrame = new Frame[1];
         Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
