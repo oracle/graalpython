@@ -234,6 +234,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
@@ -2485,7 +2486,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return GraalHPyHandle.createField(delegate, idx);
     }
 
-    public synchronized GraalHPyHandle createGlobal(Object delegate, int idx) {
+    public GraalHPyHandle createGlobal(Object delegate, int idx) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when creating global";
         final int newIdx;
         if (idx <= 0) {
             newIdx = allocateHPyGlobal();
@@ -2500,7 +2502,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return h;
     }
 
-    private synchronized int allocateHPyGlobal() {
+    private int allocateHPyGlobal() {
         int handle = 0;
         for (int i = 1; i < hpyGlobalsTable.length; i++) {
             if (hpyGlobalsTable[i] == null) {
@@ -2620,17 +2622,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public GraalHPyHandle getObjectForHPyHandle(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from handle";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
     }
 
-    public synchronized GraalHPyHandle getObjectForHPyGlobal(int handle) {
+    public GraalHPyHandle getObjectForHPyGlobal(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from global";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyGlobalsTable[handle];
     }
 
-    synchronized boolean releaseHPyHandleForObject(int handle) {
+    boolean releaseHPyHandleForObject(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when releasing handle";
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
