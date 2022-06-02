@@ -742,7 +742,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
-        int loopCount = 0;
+        /*
+         * We use an array as a workaround for not being able to specify which local variables are
+         * loop constants (GR-35338).
+         */
+        int[] loopCount = new int[]{0};
         int stackTop = initialStackTop;
         int bci = initialBci;
 
@@ -1007,8 +1011,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RETURN_VALUE: {
-                        if (CompilerDirectives.inInterpreter() && loopCount > 0) {
-                            LoopNode.reportLoopCount(this, loopCount);
+                        if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
+                            LoopNode.reportLoopCount(this, loopCount[0]);
                         }
                         Object value = stackFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
@@ -1158,8 +1162,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.JUMP_BACKWARD: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
-                        if (CompilerDirectives.inInterpreter()) {
-                            loopCount++;
+                        if (CompilerDirectives.hasNextTier()) {
+                            loopCount[0]++;
                         }
                         if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(osrNode)) {
                             /*
@@ -1174,8 +1178,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                              */
                             Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, stackTop, null, virtualFrame);
                             if (osrResult != null) {
-                                if (CompilerDirectives.inInterpreter() && loopCount > 0) {
-                                    LoopNode.reportLoopCount(this, loopCount);
+                                if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
+                                    LoopNode.reportLoopCount(this, loopCount[0]);
                                 }
                                 return osrResult;
                             }
@@ -1293,8 +1297,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(stackFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        if (CompilerDirectives.inInterpreter() && loopCount > 0) {
-                            LoopNode.reportLoopCount(this, loopCount);
+                        if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
+                            LoopNode.reportLoopCount(this, loopCount[0]);
                         }
                         Object value = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop--, null);
@@ -1410,8 +1414,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             clearFrameSlots(localFrame, stackoffset, initialStackTop);
                         }
                     }
-                    if (CompilerDirectives.inInterpreter() && loopCount > 0) {
-                        LoopNode.reportLoopCount(this, loopCount);
+                    if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
+                        LoopNode.reportLoopCount(this, loopCount[0]);
                     }
                     if (e == pe) {
                         throw pe;
