@@ -278,8 +278,8 @@ struct _HPyContext_s {
     void (*ctx_Tracker_Close)(HPyContext *ctx, HPyTracker ht);
     void (*ctx_Field_Store)(HPyContext *ctx, HPy target_object, _HPyFieldPtr target_field, HPy h);
     HPy (*ctx_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
-    HPyThreadState (*ctx_LeavePythonExecution)(HPyContext *ctx);
     void (*ctx_ReenterPythonExecution)(HPyContext *ctx, HPyThreadState state);
+    HPyThreadState (*ctx_LeavePythonExecution)(HPyContext *ctx);
     void (*ctx_Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h);
     HPy (*ctx_Global_Load)(HPyContext *ctx, HPyGlobal global);
     void (*ctx_Dump)(HPyContext *ctx, HPy h);
