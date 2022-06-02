@@ -47,7 +47,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * The layout of an argument array for a Python frame.
  *
  *                                         +-------------------+
- * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |
+ * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |  This slot is also used to pass parent frame reference in bytecode OSR compilation.
  *                                         +-------------------+
  * INDEX_KEYWORD_ARGUMENTS              -> | PKeyword[]        |
  *                                         +-------------------+

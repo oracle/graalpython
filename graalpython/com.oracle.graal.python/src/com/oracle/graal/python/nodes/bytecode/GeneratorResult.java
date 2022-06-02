@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 @ValueType
-public class GeneratorResult {
+public final class GeneratorResult {
     public final int resumeBci;
     public final int resumeStackTop;
     public final boolean isReturn;

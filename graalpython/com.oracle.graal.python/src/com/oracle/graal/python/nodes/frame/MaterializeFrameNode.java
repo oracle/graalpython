@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValu
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -295,68 +296,14 @@ public abstract class MaterializeFrameNode extends Node {
         static void doLocalsStorageCachedAST(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
-            boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
                 if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
-                    if (frameToSync.isBoolean(slot)) {
-                        try {
-                            target.setBoolean(slot, frameToSync.getBoolean(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isByte(slot)) {
-                        try {
-                            target.setByte(slot, frameToSync.getByte(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isDouble(slot)) {
-                        try {
-                            target.setDouble(slot, frameToSync.getDouble(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isFloat(slot)) {
-                        try {
-                            target.setFloat(slot, frameToSync.getFloat(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isInt(slot)) {
-                        try {
-                            target.setInt(slot, frameToSync.getInt(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isLong(slot)) {
-                        try {
-                            target.setLong(slot, frameToSync.getLong(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isObject(slot)) {
-                        try {
-                            target.setObject(slot, frameToSync.getObject(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    }
+                    PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
-            }
-            if (CompilerDirectives.inInterpreter() && invalidState) {
-                // we're always in the interpreter if invalidState was set
-                throw new IllegalStateException("the frame lied about the frame slot type");
             }
         }
 
@@ -364,68 +311,14 @@ public abstract class MaterializeFrameNode extends Node {
         static void doLocalsStorageLoopAST(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
-            boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
                 if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
-                    if (frameToSync.isBoolean(slot)) {
-                        try {
-                            target.setBoolean(slot, frameToSync.getBoolean(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isByte(slot)) {
-                        try {
-                            target.setByte(slot, frameToSync.getByte(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isDouble(slot)) {
-                        try {
-                            target.setDouble(slot, frameToSync.getDouble(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isFloat(slot)) {
-                        try {
-                            target.setFloat(slot, frameToSync.getFloat(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isInt(slot)) {
-                        try {
-                            target.setInt(slot, frameToSync.getInt(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isLong(slot)) {
-                        try {
-                            target.setLong(slot, frameToSync.getLong(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    } else if (frameToSync.isObject(slot)) {
-                        try {
-                            target.setObject(slot, frameToSync.getObject(slot));
-                        } catch (FrameSlotTypeException e) {
-                            CompilerDirectives.transferToInterpreter();
-                            invalidState = true;
-                        }
-                    }
+                    PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
-            }
-            if (CompilerDirectives.inInterpreter() && invalidState) {
-                // we're always in the interpreter if invalidState was set
-                throw new IllegalStateException("the frame lied about the frame slot type");
             }
         }
 
@@ -440,21 +333,7 @@ public abstract class MaterializeFrameNode extends Node {
 
                 for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
                     if (FrameSlotIDs.isUserFrameSlot(fd.getSlotName(slot))) {
-                        if (frameToSync.isBoolean(slot)) {
-                            target.setBoolean(slot, frameToSync.getBoolean(slot));
-                        } else if (frameToSync.isByte(slot)) {
-                            target.setByte(slot, frameToSync.getByte(slot));
-                        } else if (frameToSync.isDouble(slot)) {
-                            target.setDouble(slot, frameToSync.getDouble(slot));
-                        } else if (frameToSync.isFloat(slot)) {
-                            target.setFloat(slot, frameToSync.getFloat(slot));
-                        } else if (frameToSync.isInt(slot)) {
-                            target.setInt(slot, frameToSync.getInt(slot));
-                        } else if (frameToSync.isLong(slot)) {
-                            target.setLong(slot, frameToSync.getLong(slot));
-                        } else if (frameToSync.isObject(slot)) {
-                            target.setObject(slot, frameToSync.getObject(slot));
-                        }
+                        PythonUtils.copyFrameSlot(frameToSync, target, slot);
                     }
                 }
             } catch (FrameSlotTypeException e) {
@@ -560,7 +439,8 @@ public abstract class MaterializeFrameNode extends Node {
             // nothing to do; we already worked on the custom object
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd"}, limit = "1")
+        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd",
+                        "variableSlotCount(cachedFd) < 32"}, limit = "1")
         @ExplodeLoop
         static void doLocalsStorageCachedExploded(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
@@ -570,7 +450,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
             int slotCount = variableSlotCount(cachedFd);
             for (int slot = 0; slot < slotCount; slot++) {
-                copySlot(frameToSync, target, slot);
+                PythonUtils.copyFrameSlot(frameToSync, target, slot);
             }
         }
 
@@ -584,7 +464,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
             int slotCount = variableSlotCount(cachedFd);
             for (int slot = 0; slot < slotCount; slot++) {
-                copySlot(frameToSync, target, slot);
+                PythonUtils.copyFrameSlot(frameToSync, target, slot);
             }
         }
 
@@ -595,7 +475,7 @@ public abstract class MaterializeFrameNode extends Node {
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             int slotCount = variableSlotCount(frameToSync.getFrameDescriptor());
             for (int slot = 0; slot < slotCount; slot++) {
-                copySlot(frameToSync, target, slot);
+                PythonUtils.copyFrameSlot(frameToSync, target, slot);
             }
         }
 
@@ -603,9 +483,10 @@ public abstract class MaterializeFrameNode extends Node {
                         "isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
+                        "variableSlotCount(cachedFd) < 32"
         }, limit = "1")
         @ExplodeLoop
-        static void doGenericDictCached(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
+        static void doGenericDictCachedExploded(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
@@ -625,7 +506,32 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)"}, replaces = "doGenericDictCached")
+        @Specialization(guards = { //
+                        "isBytecodeFrame(frameToSync)",
+                        "isDictWithCustomStorage(pyFrame)",
+                        "frameToSync.getFrameDescriptor() == cachedFd",
+        }, limit = "1", replaces = "doGenericDictCachedExploded")
+        static void doGenericDictCachedLoop(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
+                        @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
+                        @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
+                        @Cached BranchProfile updatedStorage,
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            // This can happen if someone received the locals dict using 'locals()' or similar and
+            // then assigned to the dictionary. Assigning will switch the storage. But we still must
+            // refresh the values.
+
+            // The cast is guaranteed by the guard.
+            PDict localsDict = (PDict) pyFrame.getLocalsDict();
+            FrameInfo info = (FrameInfo) cachedFd.getInfo();
+            int slotCount = info.getVariableCount();
+            for (int slot = 0; slot < slotCount; slot++) {
+                ConditionProfile profile = profiles[slot];
+                syncDict(frame, slot, info, frameToSync, localsDict, lib, hasFrame, updatedStorage, profile);
+            }
+        }
+
+        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)"}, replaces = {"doGenericDictCachedExploded", "doGenericDictCachedLoop"})
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
@@ -727,24 +633,6 @@ public abstract class MaterializeFrameNode extends Node {
 
         public static SyncFrameValuesNode create() {
             return SyncFrameValuesNodeGen.create();
-        }
-
-        public static void copySlot(Frame frameToSync, MaterializedFrame target, int slot) {
-            if (frameToSync.isBoolean(slot)) {
-                target.setBoolean(slot, frameToSync.getBoolean(slot));
-            } else if (frameToSync.isByte(slot)) {
-                target.setByte(slot, frameToSync.getByte(slot));
-            } else if (frameToSync.isDouble(slot)) {
-                target.setDouble(slot, frameToSync.getDouble(slot));
-            } else if (frameToSync.isFloat(slot)) {
-                target.setFloat(slot, frameToSync.getFloat(slot));
-            } else if (frameToSync.isInt(slot)) {
-                target.setInt(slot, frameToSync.getInt(slot));
-            } else if (frameToSync.isLong(slot)) {
-                target.setLong(slot, frameToSync.getLong(slot));
-            } else if (frameToSync.isObject(slot)) {
-                target.setObject(slot, frameToSync.getObject(slot));
-            }
         }
     }
 }

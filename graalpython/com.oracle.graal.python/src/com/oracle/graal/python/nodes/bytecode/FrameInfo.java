@@ -44,7 +44,13 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 
+/**
+ * Carries additional metadata for introspection of frames used by the bytecode interpreter. It's
+ * returned by {@link FrameDescriptor#getInfo()} if and only if the frame is coming from the
+ * bytecode interpreter.
+ */
 public final class FrameInfo {
     @CompilationFinal PBytecodeRootNode rootNode;
 

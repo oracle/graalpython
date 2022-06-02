@@ -65,7 +65,7 @@ public abstract class PrintExprNode extends PNodeWithContext {
     void print(VirtualFrame frame, Object object,
                     @Cached PyObjectLookupAttr lookupAttr,
                     @Cached CallNode callNode) {
-        PythonModule sysModule = getContext().lookupBuiltinModule("sys");
+        PythonModule sysModule = getContext().getSysModule();
         Object displayhook = lookupAttr.execute(frame, sysModule, BuiltinNames.DISPLAYHOOK);
         if (displayhook == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
