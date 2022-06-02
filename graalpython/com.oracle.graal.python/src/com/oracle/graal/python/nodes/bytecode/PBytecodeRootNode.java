@@ -712,7 +712,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeFromBci(virtualFrame, virtualFrame, virtualFrame, this, 0, getInitialStackTop());
+            return executeFromBci(virtualFrame, virtualFrame, virtualFrame, this, 0, getInitialStackTop(), Integer.MAX_VALUE);
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -731,14 +731,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @Override
-    public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterState) {
-        return executeFromBci(osrFrame, osrFrame, osrFrame, this, target, (Integer) interpreterState);
+    public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterStateObject) {
+        OSRInterpreterState interpreterState = (OSRInterpreterState) interpreterStateObject;
+        return executeFromBci(osrFrame, osrFrame, osrFrame, this, target, interpreterState.stackTop, interpreterState.loopEndBci);
+    }
+
+    private static final class OSRContinuation {
+        public final int bci;
+        public final int stackTop;
+
+        private OSRContinuation(int bci, int stackTop) {
+            this.bci = bci;
+            this.stackTop = stackTop;
+        }
     }
 
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
-    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
+    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
         Object globals = PArguments.getGlobals(virtualFrame);
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
@@ -786,6 +797,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(stackTop);
+
+            if (CompilerDirectives.inCompiledCode() && bci > loopEndBci) {
+                /*
+                 * This means we're in OSR and we just jumped out of the OSR compiled loop. We want
+                 * to return to the caller to continue in interpreter again otherwise we would most
+                 * likely deopt on the next instruction. The caller handles the special return value
+                 * in JUMP_BACKWARD. In generators, we need to additionally copy the stack items
+                 * back to the generator frame.
+                 */
+                if (localFrame != stackFrame) {
+                    copyStackSlotsToGeneratorFrame(stackFrame, localFrame, stackTop);
+                    // Clear slots that were popped (if any)
+                    clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
+                }
+                return new OSRContinuation(bci, stackTop);
+            }
 
             try {
                 switch (bc) {
@@ -1185,12 +1212,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                              * will get mixed up. To retain such state, put it into the frame
                              * instead.
                              */
-                            Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, stackTop, null, virtualFrame);
+                            Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop, beginBci), null, virtualFrame);
                             if (osrResult != null) {
-                                if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
-                                    LoopNode.reportLoopCount(this, loopCount[0]);
+                                if (osrResult instanceof OSRContinuation) {
+                                    // We should continue executing in interpreter after the loop
+                                    OSRContinuation continuation = (OSRContinuation) osrResult;
+                                    bci = continuation.bci;
+                                    stackTop = continuation.stackTop;
+                                    oparg = 0;
+                                    continue;
+                                } else {
+                                    // We reached a return/yield
+                                    if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
+                                        LoopNode.reportLoopCount(this, loopCount[0]);
+                                    }
+                                    return osrResult;
                                 }
-                                return osrResult;
                             }
                         }
                         oparg = 0;
