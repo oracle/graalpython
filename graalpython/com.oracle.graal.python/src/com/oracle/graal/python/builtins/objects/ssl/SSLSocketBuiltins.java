@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -176,9 +175,8 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class DoHandshakeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doHandshake(VirtualFrame frame, PSSLSocket self,
-                        @Cached SSLOperationNode sslOperationNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
-            sslOperationNode.handshake(frame, constructAndRaiseNode, self);
+                        @Cached SSLOperationNode sslOperationNode) {
+            sslOperationNode.handshake(frame, self);
             return PNone.NONE;
         }
     }

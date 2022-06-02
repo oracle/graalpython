@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -55,8 +56,9 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     private final PBytecodeRootNode rootNode;
-    private final RootCallTarget callTarget;
     private final String originalName;
+
+    @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
@@ -65,7 +67,9 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         super(language, frameDescriptor);
         this.rootNode = rootNode;
         this.originalName = originalName;
-        this.callTarget = rootNode.getCallTarget();
+        // TODO compress somehow
+        this.callTargets = new RootCallTarget[rootNode.getCodeUnit().code.length];
+        this.callTargets[0] = new PBytecodeGeneratorRootNode(language, rootNode, 0, rootNode.getInitialStackTop()).getCallTarget();
     }
 
     @Override
@@ -75,11 +79,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         // This is passed from InvokeNode node
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
         assert generatorFunction != null;
-        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTarget, arguments);
-    }
-
-    public PBytecodeRootNode getFunctionRootNode() {
-        return rootNode;
+        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
     }
 
     @Override
@@ -106,5 +106,9 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     @Override
     public SourceSection getSourceSection() {
         return rootNode.getSourceSection();
+    }
+
+    public PBytecodeRootNode getBytecodeRootNode() {
+        return rootNode;
     }
 }

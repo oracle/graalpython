@@ -34,13 +34,18 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode.GeneratorResult;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -48,18 +53,18 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PGenerator extends PythonBuiltinObject {
 
     private String name;
     private String qualname;
-    private boolean usesBytecode;
     /**
      * Call targets with copies of the generator's AST. Each call target corresponds to one possible
      * entry point into the generator: the first call, and continuation for each yield. Each AST can
      * then specialize towards which nodes are executed when starting from that particular entry
      * point. When yielding, the next index to the next call target to continue from is updated via
-     * {@link #setNextCallTarget()}.
+     * {@link #setNextCallTarget} or {@link #handleResult}.
      */
     @CompilationFinal(dimensions = 1) protected final RootCallTarget[] callTargets;
     protected final Object[] arguments;
@@ -70,6 +75,8 @@ public final class PGenerator extends PythonBuiltinObject {
     private final Object iterator;
     private final boolean isPRangeIterator;
     private final GeneratorInfo generatorInfo;
+    private final PBytecodeRootNode bytecodeRootNode;
+    private final FrameInfo frameInfo;
     // running means it is currently on the stack, not just started
     private boolean running;
 
@@ -105,12 +112,12 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator, false);
+        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, arguments, closure, iterator);
     }
 
-    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget bytecodeCallTarget, Object[] arguments) {
+    public static PGenerator create(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         rootNode.createGeneratorFrame(arguments);
-        return new PGenerator(lang, name, qualname, new RootCallTarget[]{bytecodeCallTarget}, null, arguments, null, null, true);
+        return new PGenerator(lang, name, qualname, rootNode, callTargets, arguments);
     }
 
     @ExplodeLoop
@@ -130,7 +137,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, Object[] arguments,
-                    PCell[] closure, Object iterator, boolean usesBytecode) {
+                    PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
@@ -142,26 +149,57 @@ public final class PGenerator extends PythonBuiltinObject {
         this.finished = false;
         this.iterator = iterator;
         this.isPRangeIterator = iterator instanceof PIntRangeIterator;
-        this.usesBytecode = usesBytecode;
+        this.bytecodeRootNode = null;
+        this.frameInfo = null;
+    }
+
+    private PGenerator(PythonLanguage lang, String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
+        this.name = name;
+        this.qualname = qualname;
+        this.callTargets = callTargets;
+        this.currentCallTarget = 0;
+        this.arguments = arguments;
+        this.finished = false;
+        this.bytecodeRootNode = rootNode;
+        this.frameInfo = (FrameInfo) rootNode.getFrameDescriptor().getInfo();
+        this.iterator = null;
+        this.isPRangeIterator = false;
+        this.closure = null;
+        this.generatorInfo = null;
+    }
+
+    public void handleResult(PythonLanguage language, GeneratorResult result) {
+        assert usesBytecode();
+        if (result.isReturn) {
+            markAsFinished();
+            return;
+        }
+        currentCallTarget = result.resumeBci;
+        if (callTargets[currentCallTarget] == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            PBytecodeGeneratorRootNode rootNode = new PBytecodeGeneratorRootNode(language, bytecodeRootNode, result.resumeBci, result.resumeStackTop);
+            callTargets[currentCallTarget] = rootNode.getCallTarget();
+        }
     }
 
     public void setNextCallTarget() {
-        if (!usesBytecode) {
-            currentCallTarget = PArguments.getControlDataFromGeneratorArguments(getArguments()).getLastYieldIndex();
-        }
+        assert !usesBytecode();
+        currentCallTarget = PArguments.getControlDataFromGeneratorArguments(getArguments()).getLastYieldIndex();
     }
 
     /**
      * Returns the call target that should be used the next time the generator is called. Each time
      * a generator call target returns through a yield, the generator should be updated with the
-     * next yield index to use via {@link #setNextCallTarget()}
+     * next yield index to use via {@link #handleResult}
      */
     public RootCallTarget getCurrentCallTarget() {
+        assert !finished;
         return callTargets[currentCallTarget];
     }
 
     public AbstractYieldNode getCurrentYieldNode() {
-        // TODO bytecode
+        assert !usesBytecode();
         if (currentCallTarget == 0 || running || finished) {
             // Not stopped on a yield
             return null;
@@ -170,20 +208,43 @@ public final class PGenerator extends PythonBuiltinObject {
         return generatorInfo.getYieldNodes()[currentCallTarget - 1];
     }
 
+    public boolean usesBytecode() {
+        return bytecodeRootNode != null;
+    }
+
+    public Object getYieldFrom() {
+        if (!usesBytecode()) {
+            AbstractYieldNode currentYield = getCurrentYieldNode();
+            if (currentYield instanceof YieldFromNode) {
+                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
+                return PArguments.getControlDataFromGeneratorArguments(arguments).getIteratorAt(iteratorSlot);
+            }
+            return null;
+        } else {
+            if (running || finished) {
+                return null;
+            }
+            return frameInfo.getYieldFrom(PArguments.getGeneratorFrame(arguments), getBci(), getCurrentRootNode().getResumeStackTop());
+        }
+    }
+
+    private PBytecodeGeneratorRootNode getCurrentRootNode() {
+        assert usesBytecode();
+        return (PBytecodeGeneratorRootNode) getCurrentCallTarget().getRootNode();
+    }
+
     public boolean isStarted() {
-        return (currentCallTarget != 0 || usesBytecode && getBci() > 0) && !running;
+        return currentCallTarget != 0 && !running;
     }
 
     public int getBci() {
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
-        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-        return info.getBci(generatorFrame);
-    }
-
-    public Object getReturnValue() {
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(arguments);
-        PBytecodeRootNode.FrameInfo info = (PBytecodeRootNode.FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-        return info.getGeneratorReturnValue(generatorFrame);
+        if (!isStarted()) {
+            return -1;
+        } else if (finished) {
+            return bytecodeRootNode.getCodeUnit().code.length;
+        } else {
+            return getCurrentRootNode().getResumeBci();
+        }
     }
 
     public Object[] getArguments() {
@@ -216,12 +277,17 @@ public final class PGenerator extends PythonBuiltinObject {
         return "<generator object " + name + " at " + hashCode() + ">";
     }
 
-    public PCode getCode() {
+    public PCode getOrCreateCode(ConditionProfile hasCodeProfile, PythonObjectFactory factory) {
+        if (hasCodeProfile.profile(code == null)) {
+            RootCallTarget callTarget;
+            if (usesBytecode()) {
+                callTarget = bytecodeRootNode.getCallTarget();
+            } else {
+                callTarget = callTargets[0];
+            }
+            code = factory.createCode(callTarget);
+        }
         return code;
-    }
-
-    public void setCode(PCode code) {
-        this.code = code;
     }
 
     public boolean isRunning() {

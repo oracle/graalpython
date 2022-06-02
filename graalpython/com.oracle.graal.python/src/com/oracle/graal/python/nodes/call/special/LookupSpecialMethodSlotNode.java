@@ -47,7 +47,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
@@ -85,12 +84,12 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
 
         @Override
         public Object execute(Frame frame, Object type, Object receiver) {
-            return executeImpl(frame != null ? frame.materialize() : null, type, receiver);
+            return executeImpl(type, receiver);
         }
 
         @TruffleBoundary
-        private Object executeImpl(MaterializedFrame frame, Object type, Object receiver) {
-            return MaybeBindDescriptorNode.getUncached().execute(frame, lookup.execute(type), receiver, type);
+        private Object executeImpl(Object type, Object receiver) {
+            return MaybeBindDescriptorNode.getUncached().execute(null, lookup.execute(type), receiver, type);
         }
 
         @Override

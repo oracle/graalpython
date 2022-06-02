@@ -54,12 +54,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.frame.PythonFrame;
@@ -359,7 +360,13 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
-        return (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        if (rootNode instanceof GeneratorFunctionRootNode) {
+            return ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
+        }
+        if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+            return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
+        }
+        return rootNode;
     }
 
     @TruffleBoundary

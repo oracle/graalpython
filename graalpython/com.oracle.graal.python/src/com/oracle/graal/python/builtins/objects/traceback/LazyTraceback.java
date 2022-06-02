@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKN
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -144,7 +145,8 @@ public class LazyTraceback {
         Frame frame = element.getFrame();
         // only include frames of non-builtin python functions
         RootNode rootNode = element.getTarget().getRootNode();
-        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(rootNode instanceof PBytecodeRootNode ? rootNode : element.getLocation());
+        return PArguments.isPythonFrame(frame) &&
+                        locationWantedForTraceback(rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode ? rootNode : element.getLocation());
     }
 
     public boolean catchingFrameWantedForTraceback() {

@@ -85,7 +85,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -112,7 +111,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.frame.Frame;
 
 public final class CertUtils {
     public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
@@ -620,7 +618,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    static PrivateKey getPrivateKey(MaterializedFrame frame, PConstructAndRaiseNode constructAndRaiseNode, BufferedReader reader, char[] password, X509Certificate cert)
+    static PrivateKey getPrivateKey(PythonContext context, BufferedReader reader, char[] password, X509Certificate cert)
                     throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NeedsPasswordException {
         PEMParser pemParser = new PEMParser(reader);
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
@@ -656,17 +654,17 @@ public final class CertUtils {
                 break;
             }
         } catch (IOException | DecoderException | OperatorCreationException | PKCSException e) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         if (privateKey == null) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         PublicKey publicKey = cert.getPublicKey();
-        checkPrivateKey(frame, constructAndRaiseNode, privateKey, publicKey);
+        checkPrivateKey(context, privateKey, publicKey);
         return privateKey;
     }
 
-    private static void checkPrivateKey(Frame frame, PConstructAndRaiseNode constructAndRaiseNode, PrivateKey privateKey, PublicKey publicKey) {
+    private static void checkPrivateKey(PythonContext context, PrivateKey privateKey, PublicKey publicKey) {
         /*
          * Check that the private key matches the public key by signing and verifying a short piece
          * of data.
@@ -680,7 +678,7 @@ public final class CertUtils {
             }
             sign.initSign(privateKey);
             byte[] data = new byte[128];
-            PythonContext.get(constructAndRaiseNode).getSecureRandom().nextBytes(data);
+            context.getSecureRandom().nextBytes(data);
             sign.update(data);
             byte[] signature = sign.sign();
             sign.initVerify(publicKey);
@@ -689,11 +687,11 @@ public final class CertUtils {
                 return;
             }
         } catch (NoSuchAlgorithmException e) {
-            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, e);
         } catch (SignatureException | InvalidKeyException e) {
             // fallthrough
         }
-        throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
     }
 
     @TruffleBoundary

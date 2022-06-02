@@ -43,8 +43,9 @@
 # TODO: REMOVEME, temporary patch for coroutines
 async def _c(): pass
 _c = _c()
-def _coro_close(*args):
-    pass
 ctype = type(_c)
-ctype.close = _coro_close
+if not hasattr(ctype, "close"):
+    def _coro_close():
+        pass
+    ctype.close = _coro_close
 # TODO -----------------------------------------------------------------------------------------------------------------
