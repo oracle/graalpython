@@ -129,9 +129,9 @@ class TestSlots(HPyTest):
             static HPyType_Spec Point_spec = {
                 .name = "mytest.Point",
                 .basicsize = sizeof(PointObject),
+                .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_HAVE_GC,
                 .legacy = PointObject_IS_LEGACY,
                 .defines = Point_defines,
-                .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_HAVE_GC,
             };
             @EXPORT_TYPE("Point", Point_spec)
 
@@ -378,7 +378,7 @@ class TestSlots(HPyTest):
                 buf->itemsize = 1;
                 buf->readonly = 1;
                 buf->ndim = 1;
-                buf->format = "B";
+                buf->format = (char*)"B";
                 buf->shape = _shape;
                 buf->strides = _strides;
                 buf->suboffsets = NULL;
@@ -402,8 +402,8 @@ class TestSlots(HPyTest):
             static HPyType_Spec FakeArray_Spec = {
                 .name = "mytest.FakeArray",
                 .basicsize = sizeof(FakeArrayObject),
-                .defines = FakeArray_defines,
                 .legacy = FakeArrayObject_IS_LEGACY,
+                .defines = FakeArray_defines,
             };
 
             @EXPORT_TYPE("FakeArray", FakeArray_Spec)

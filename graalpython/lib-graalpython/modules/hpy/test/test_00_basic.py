@@ -295,7 +295,7 @@ class TestBasic(HPyTest):
                     .kind = HPyDef_Kind_Meth,
                     .meth = {
                         .name = "f",
-                        .signature = 1234,
+                        .signature = (HPyFunc_Signature)1234,
                     }
                 };
                 @EXPORT(f)

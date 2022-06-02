@@ -173,6 +173,7 @@ class TestCPythonCompatibility(HPyTest):
             static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
+                Py_ssize_t final_refcount;
 
                 Py_ssize_t result = -42;
                 HPy handles[NUM_HANDLES];
@@ -185,7 +186,7 @@ class TestCPythonCompatibility(HPyTest):
                         goto error;
                 for (i = 0; i < NUM_HANDLES; i++)
                     HPy_Close(ctx, handles[i]);
-                Py_ssize_t final_refcount = o->ob_refcnt;
+                final_refcount = o->ob_refcnt;
                 result = final_refcount - initial_refcount;
 
              error:
