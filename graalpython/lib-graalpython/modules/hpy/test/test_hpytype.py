@@ -146,10 +146,10 @@ class TestType(HPyTest):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {
                 .name = "mytest.Dummy",
-                .doc = "A succinct description.",
                 .itemsize = 0,
                 .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_BASETYPE,
                 @IS_LEGACY
+                .doc = "A succinct description.",
             };
 
             @EXPORT_TYPE("Dummy", Dummy_spec)
@@ -178,8 +178,8 @@ class TestType(HPyTest):
             };
             static HPyType_Spec Dummy_spec = {
                 .name = "mytest.Dummy",
-                .defines = Dummy_defines,
                 @IS_LEGACY
+                .defines = Dummy_defines,
             };
 
             @EXPORT_TYPE("Dummy", Dummy_spec)
@@ -219,8 +219,8 @@ class TestType(HPyTest):
 
             static HPyType_Spec dummy_type_spec = {
                 .name = "mytest.Dummy",
-                .defines = dummy_type_defines,
                 @IS_LEGACY
+                .defines = dummy_type_defines,
             };
 
             @EXPORT_TYPE("Dummy", dummy_type_spec)
@@ -758,7 +758,7 @@ class TestType(HPyTest):
             {
                 HPyType_SpecParam param[] = {
                     { HPyType_SpecParam_Base, ctx->h_LongType },
-                    { 0 }
+                    { (HPyType_SpecParam_Kind)0 }
                 };
                 HPy h_Dummy = HPyType_FromSpec(ctx, &Dummy_spec, param);
                 if (HPy_IsNull(h_Dummy))
@@ -797,7 +797,7 @@ class TestType(HPyTest):
                     return;
                 HPyType_SpecParam param[] = {
                     { HPyType_SpecParam_BasesTuple, h_bases },
-                    { 0 }
+                    { (HPyType_SpecParam_Kind)0 }
                 };
                 HPy h_Dummy = HPyType_FromSpec(ctx, &Dummy_spec, param);
                 HPy_Close(ctx, h_bases);

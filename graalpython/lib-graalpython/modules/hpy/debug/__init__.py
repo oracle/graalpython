@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,3 +22,13 @@
 # SOFTWARE.
 
 from .leakdetector import HPyDebugError, HPyLeakError, LeakDetector
+
+
+def set_handle_stack_trace_limit(limit):
+    from hpy.universal import _debug
+    _debug.set_handle_stack_trace_limit(limit)
+
+
+def disable_handle_stack_traces():
+    from hpy.universal import _debug
+    _debug.set_handle_stack_trace_limit(None)

@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -69,8 +69,8 @@ class TestCustomLegacySlotsFeatures(HPyTest):
                 NULL
             };
             static PyType_Slot Dummy_type_slots[] = {
-                {Py_tp_repr, Dummy_repr},
-                {Py_nb_add, Dummy_add},
+                {Py_tp_repr, (void*)Dummy_repr},
+                {Py_nb_add, (void*)Dummy_add},
                 {0, 0},
             };
             static HPyType_Spec Dummy_spec = {
@@ -180,9 +180,9 @@ class TestCustomLegacySlotsFeatures(HPyTest):
             static HPyType_Spec Point_spec = {
                 .name = "mytest.Point",
                 .basicsize = sizeof(PointObject),
-                .defines = Point_defines,
                 .legacy = true,
-                .legacy_slots = legacy_slots
+                .legacy_slots = legacy_slots,
+                .defines = Point_defines
             };
 
             @EXPORT_TYPE("Point", Point_spec)
@@ -246,9 +246,9 @@ class TestCustomLegacySlotsFeatures(HPyTest):
             static HPyType_Spec Point_spec = {
                 .name = "mytest.Point",
                 .basicsize = sizeof(PointObject),
-                .defines = Point_defines,
                 .legacy = true,
-                .legacy_slots = legacy_slots
+                .legacy_slots = legacy_slots,
+                .defines = Point_defines
             };
 
             @EXPORT_TYPE("Point", Point_spec)

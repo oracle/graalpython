@@ -593,13 +593,13 @@ HPyAPI_FUNC HPy HPyImport_ImportModule(HPyContext *ctx, const char *name)
     return _py2h(PyImport_ImportModule(name));
 }
 
-HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
-{
-    return _threads2h(PyEval_SaveThread());
-}
-
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state)
 {
     PyEval_RestoreThread(_h2threads(state));
+}
+
+HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
+{
+    return _threads2h(PyEval_SaveThread());
 }
 
