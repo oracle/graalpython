@@ -81,4 +81,8 @@ public abstract class PyObjectFunctionStr extends PNodeWithContext {
     public static PyObjectFunctionStr create() {
         return PyObjectFunctionStrNodeGen.create();
     }
+
+    public static PyObjectFunctionStr getUncached() {
+        return PyObjectFunctionStrNodeGen.getUncached();
+    }
 }

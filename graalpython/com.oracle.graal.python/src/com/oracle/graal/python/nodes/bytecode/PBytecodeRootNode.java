@@ -84,6 +84,7 @@ import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
+import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -97,6 +98,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
@@ -851,7 +853,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.COLLECTION_FROM_COLLECTION: {
                         int type = Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeCollectionFromCollection(virtualFrame, stackFrame, type, stackTop, localNodes, beginBci);
+                        bytecodeCollectionFromCollection(virtualFrame, localFrame, stackFrame, type, stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.COLLECTION_ADD_COLLECTION: {
@@ -2010,7 +2012,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeCollectionFromCollection(VirtualFrame virtualFrame, Frame stackFrame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
+    private void bytecodeCollectionFromCollection(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
         Object sourceCollection = stackFrame.getObject(stackTop);
         Object result;
         switch (type) {
@@ -2042,14 +2044,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
-                result = expandKeywordStarargsNode.execute(sourceCollection);
+                try {
+                    ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
+                    result = expandKeywordStarargsNode.execute(sourceCollection);
+                } catch (NonMappingException e) {
+                    Object functionName = getFunctionName(virtualFrame, stackTop, localFrame);
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
+                }
                 break;
             }
             default:
                 throw CompilerDirectives.shouldNotReachHere("Unexpected collection type");
         }
         stackFrame.setObject(stackTop, result);
+    }
+
+    private static Object getFunctionName(VirtualFrame virtualFrame, int stackTop, Frame localFrame) {
+        /*
+         * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
+         * this point is [kwargs kw, callable].
+         */
+        Object callable = localFrame.getObject(stackTop - 2);
+        return PyObjectFunctionStr.getUncached().execute(virtualFrame, callable);
     }
 
     private int bytecodeCollectionAddCollection(VirtualFrame virtualFrame, Frame stackFrame, int type, int initialStackTop, Node[] localNodes, int nodeIndex) {
@@ -2091,14 +2107,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                PKeyword[] array1 = (PKeyword[]) collection1;
-                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
-                PKeyword[] array2 = expandKeywordStarargsNode.execute(collection2);
-                PKeyword[] combined = new PKeyword[array1.length + array2.length];
-                System.arraycopy(array1, 0, combined, 0, array1.length);
-                System.arraycopy(array2, 0, combined, array1.length, array2.length);
-                result = combined;
-                break;
+                throw CompilerDirectives.shouldNotReachHere("keywords merging handled elsewhere");
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
