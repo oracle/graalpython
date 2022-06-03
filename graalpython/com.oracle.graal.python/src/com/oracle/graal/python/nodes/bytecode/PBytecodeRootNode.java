@@ -137,6 +137,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
+import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
@@ -148,6 +149,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
@@ -302,6 +304,96 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
     private static final GetNameFromLocalsNode UNCACHED_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode.getUncached();
     private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
+
+    private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
+        switch (op) {
+            case UnaryOpsConstants.NOT:
+                return CoerceToBooleanNode.createIfFalseNode();
+            case UnaryOpsConstants.POSITIVE:
+                return PosNode.create();
+            case UnaryOpsConstants.NEGATIVE:
+                return NegNode.create();
+            case UnaryOpsConstants.INVERT:
+                return InvertNode.create();
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+    };
+
+    private static final IntNodeFunction<Node> BINARY_OP_FACTORY = (int op) -> {
+        switch (op) {
+            case BinaryOpsConstants.ADD:
+                return BinaryArithmetic.Add.create();
+            case BinaryOpsConstants.SUB:
+                return BinaryArithmetic.Sub.create();
+            case BinaryOpsConstants.MUL:
+                return BinaryArithmetic.Mul.create();
+            case BinaryOpsConstants.TRUEDIV:
+                return BinaryArithmetic.TrueDiv.create();
+            case BinaryOpsConstants.FLOORDIV:
+                return BinaryArithmetic.FloorDiv.create();
+            case BinaryOpsConstants.MOD:
+                return BinaryArithmetic.Mod.create();
+            case BinaryOpsConstants.LSHIFT:
+                return BinaryArithmetic.LShift.create();
+            case BinaryOpsConstants.RSHIFT:
+                return BinaryArithmetic.RShift.create();
+            case BinaryOpsConstants.AND:
+                return BinaryArithmetic.And.create();
+            case BinaryOpsConstants.OR:
+                return BinaryArithmetic.Or.create();
+            case BinaryOpsConstants.XOR:
+                return BinaryArithmetic.Xor.create();
+            case BinaryOpsConstants.POW:
+                return BinaryArithmetic.Pow.create();
+            case BinaryOpsConstants.MATMUL:
+                return BinaryArithmetic.MatMul.create();
+            case BinaryOpsConstants.INPLACE_ADD:
+                return InplaceArithmetic.IAdd.create();
+            case BinaryOpsConstants.INPLACE_SUB:
+                return InplaceArithmetic.ISub.create();
+            case BinaryOpsConstants.INPLACE_MUL:
+                return InplaceArithmetic.IMul.create();
+            case BinaryOpsConstants.INPLACE_TRUEDIV:
+                return InplaceArithmetic.ITrueDiv.create();
+            case BinaryOpsConstants.INPLACE_FLOORDIV:
+                return InplaceArithmetic.IFloorDiv.create();
+            case BinaryOpsConstants.INPLACE_MOD:
+                return InplaceArithmetic.IMod.create();
+            case BinaryOpsConstants.INPLACE_LSHIFT:
+                return InplaceArithmetic.ILShift.create();
+            case BinaryOpsConstants.INPLACE_RSHIFT:
+                return InplaceArithmetic.IRShift.create();
+            case BinaryOpsConstants.INPLACE_AND:
+                return InplaceArithmetic.IAnd.create();
+            case BinaryOpsConstants.INPLACE_OR:
+                return InplaceArithmetic.IOr.create();
+            case BinaryOpsConstants.INPLACE_XOR:
+                return InplaceArithmetic.IXor.create();
+            case BinaryOpsConstants.INPLACE_POW:
+                return InplaceArithmetic.IPow.create();
+            case BinaryOpsConstants.INPLACE_MATMUL:
+                return InplaceArithmetic.IMatMul.create();
+            case BinaryOpsConstants.EQ:
+                return BinaryComparisonNode.EqNode.create();
+            case BinaryOpsConstants.NE:
+                return BinaryComparisonNode.NeNode.create();
+            case BinaryOpsConstants.LT:
+                return BinaryComparisonNode.LtNode.create();
+            case BinaryOpsConstants.LE:
+                return BinaryComparisonNode.LeNode.create();
+            case BinaryOpsConstants.GT:
+                return BinaryComparisonNode.GtNode.create();
+            case BinaryOpsConstants.GE:
+                return BinaryComparisonNode.GeNode.create();
+            case BinaryOpsConstants.IS:
+                return IsNode.create();
+            case BinaryOpsConstants.IN:
+                return ContainsNode.create();
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+    };
 
     /*
      * Create fake GeneratorControlData just to maintain the same generator frame layout as AST
@@ -483,6 +575,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         T apply(A argument);
     }
 
+    @FunctionalInterface
+    private static interface IntNodeFunction<T extends Node> {
+        T apply(int argument);
+    }
+
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, Class<? extends T> cachedClass, NodeFunction<A, T> nodeSupplier, A argument) {
         Node node = nodes[nodeIndex];
@@ -510,6 +607,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument), cachedClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Node> T insertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+        Node node = nodes[nodeIndex];
+        if (node != null) {
+            return (T) node;
+        }
+        return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        T newNode = nodeSupplier.apply(argument);
+        nodes[nodeIndex] = insert(newNode);
+        return newNode;
     }
 
     @SuppressWarnings("unchecked")
@@ -943,12 +1057,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case OpCodesConstants.UNARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeUnaryOp(virtualFrame, stackFrame, stackTop, localNodes, beginBci, op);
+                        UnaryOpNode opNode = insertChildNodeInt(localNodes, bci, UNARY_OP_FACTORY, op);
+                        Object value = stackFrame.getObject(stackTop);
+                        Object result = opNode.execute(virtualFrame, value);
+                        stackFrame.setObject(stackTop, result);
                         break;
                     }
                     case OpCodesConstants.BINARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeBinaryOp(virtualFrame, stackFrame, stackTop, localNodes, beginBci, op);
+                        BinaryOp opNode = (BinaryOp) insertChildNodeInt(localNodes, bci, BINARY_OP_FACTORY, op);
+                        Object right = stackFrame.getObject(stackTop);
+                        stackFrame.setObject(stackTop--, null);
+                        Object left = stackFrame.getObject(stackTop);
+                        Object result = opNode.executeObject(virtualFrame, left, right);
+                        stackFrame.setObject(stackTop, result);
                         break;
                     }
                     case OpCodesConstants.BINARY_SUBSCR: {
