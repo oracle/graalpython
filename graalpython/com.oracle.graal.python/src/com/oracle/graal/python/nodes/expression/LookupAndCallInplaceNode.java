@@ -59,7 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @NodeChild("arg")
 @NodeChild("arg2")
 @NodeChild("arg3")
-public abstract class LookupAndCallInplaceNode extends ExpressionNode implements BinaryOp {
+public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2);
@@ -102,11 +102,6 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode implements
             lookupAndCallTernaryNode = insert(LookupAndCallTernaryNode.createReversible(arithmetic.binaryOpName, null));
         }
         return lookupAndCallTernaryNode;
-    }
-
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
     }
 
     public final Object execute(VirtualFrame frame, Object left, Object right) {

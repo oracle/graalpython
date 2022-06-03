@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -68,7 +67,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -77,16 +75,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
-public abstract class IsNode extends Node implements BinaryOp {
+public abstract class IsNode extends Node {
 
     protected abstract boolean executeInternal(Object left, Object right);
 
     protected abstract boolean executeInternal(boolean left, Object right);
-
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(left, right);
-    }
 
     public final boolean execute(Object left, Object right) {
         return left == right || executeInternal(left, right);
