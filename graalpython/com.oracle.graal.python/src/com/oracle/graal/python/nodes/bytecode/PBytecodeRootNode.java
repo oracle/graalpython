@@ -258,6 +258,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
     private static final PrintExprNode UNCACHED_PRINT_EXPR = PrintExprNode.getUncached();
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
+    private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -933,6 +934,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeClosureFromStack(stackFrame, stackTop, oparg);
                         break;
                     }
+                    case OpCodesConstants.LOAD_CLASSDEREF: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeLoadClassDefRef(localFrame, stackFrame, locals, stackTop, beginBci, localNodes, oparg);
+                        break;
+                    }
                     case OpCodesConstants.LOAD_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeLoadDeref(localFrame, stackFrame, stackTop, beginBci, localNodes, oparg);
@@ -1531,6 +1537,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         stackFrame.setObject(stackTop--, null);
         cell.setRef(value);
         return stackTop;
+    }
+
+    private int bytecodeLoadClassDefRef(Frame localFrame, Frame stackFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg) {
+        String name;
+        boolean isCellVar;
+        if (oparg < cellvars.length) {
+            name = cellvars[oparg];
+            isCellVar = true;
+        } else {
+            name = freevars[oparg - cellvars.length];
+            isCellVar = false;
+        }
+        GetNameFromLocalsNode getNameFromLocals = insertChildNode(localNodes, bci, NODE_GET_NAME_FROM_LOCALS);
+        Object value = getNameFromLocals.execute(stackFrame, locals, name, isCellVar);
+        if (value != null) {
+            stackFrame.setObject(++stackTop, value);
+            return stackTop;
+        } else {
+            return bytecodeLoadDeref(localFrame, stackFrame, stackTop, bci, localNodes, oparg);
+        }
     }
 
     private int bytecodeLoadDeref(Frame localFrame, Frame stackFrame, int stackTop, int bci, Node[] localNodes, int oparg) {

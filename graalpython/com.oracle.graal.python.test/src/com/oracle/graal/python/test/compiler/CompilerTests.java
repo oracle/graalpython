@@ -714,6 +714,14 @@ public class CompilerTests extends PythonTests {
         doTest("1", InputType.SINGLE);
     }
 
+    @Test
+    public void testLoadClassDefRef() {
+        String s = "def f(x): \n" +
+                        "    class C: y = x\n" +
+                        "f(1)";
+        doTest(s);
+    }
+
     private void doTest(String src) {
         doTest(src, InputType.FILE);
     }
