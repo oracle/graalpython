@@ -127,7 +127,7 @@ public final class GraalHPyHandle implements TruffleObject {
         int result = id;
         if (!isPointer(hasIdProfile)) {
             assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
-            result = context.getHPyHandleForObject(this);
+            result = context.getHPyHandleForObject(delegate);
             id = result;
         }
         return result;
@@ -136,7 +136,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public int getIdDebug(GraalHPyContext context) {
         int result = id;
         if (id == UNINITIALIZED) {
-            result = context.getHPyHandleForObject(this);
+            result = context.getHPyHandleForObject(delegate);
             id = result;
         }
         return result;
@@ -182,7 +182,7 @@ public final class GraalHPyHandle implements TruffleObject {
                     @CachedLibrary("this") InteropLibrary lib) {
         if (!isPointer(isNativeProfile)) {
             assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
-            id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(this);
+            id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(delegate);
         }
     }
 
