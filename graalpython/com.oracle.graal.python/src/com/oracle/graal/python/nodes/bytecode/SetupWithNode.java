@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -69,8 +68,6 @@ public abstract class SetupWithNode extends PNodeWithContext {
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                     @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
-                    @Cached MaybeBindDescriptorNode bindEnter,
-                    @Cached MaybeBindDescriptorNode bindExit,
                     @Cached CallUnaryMethodNode callEnter,
                     @Cached BranchProfile errorProfile,
                     @Cached PRaiseNode raiseNode) {
@@ -82,13 +79,11 @@ public abstract class SetupWithNode extends PNodeWithContext {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{__ENTER__});
         }
-        enter = bindEnter.execute(virtualFrame, enter, contextManager, type);
         Object exit = lookupExit.execute(virtualFrame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{__EXIT__});
         }
-        exit = bindExit.execute(virtualFrame, exit, contextManager, type);
         Object res = callEnter.executeObject(virtualFrame, enter, contextManager);
         localFrame.setObject(++stackTop, exit);
         localFrame.setObject(++stackTop, res);
