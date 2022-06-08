@@ -87,7 +87,8 @@ public final class CompilationUnit {
     Block currentBlock = startBlock;
     int maxStackSize = 0;
 
-    int startOffset;
+    final int startOffset;
+    int currentOffset;
 
     CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int scopeDepth, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
                     boolean takesVarKeywordArgs, int startOffset) {
@@ -100,6 +101,7 @@ public final class CompilationUnit {
         this.takesVarArgs = takesVarArgs;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.startOffset = startOffset;
+        currentOffset = startOffset;
 
         if (scopeType == Class) {
             privateName = name;

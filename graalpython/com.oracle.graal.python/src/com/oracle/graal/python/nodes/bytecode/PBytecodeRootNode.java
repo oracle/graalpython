@@ -2256,6 +2256,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return -1;
     }
 
+    @TruffleBoundary
+    public int getFirstLineno() {
+        if (source != null && source.hasCharacters()) {
+            // TODO the same problem as bciToLine
+            return source.createSection(co.startOffset, 0).getStartLine();
+        }
+        return -1;
+    }
+
     @Override
     public SourceSection getSourceSection() {
         if (sourceSection != null) {

@@ -292,22 +292,22 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private Void addOp(OpCodes code) {
-        addOp(code, 0, null, unit.startOffset);
+        addOp(code, 0, null, unit.currentOffset);
         return null;
     }
 
     private void addOp(OpCodes code, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, null, target, unit.startOffset));
+        b.instr.add(new Instruction(code, 0, null, target, unit.currentOffset));
     }
 
     private Void addOp(OpCodes code, int arg) {
-        addOp(code, arg, null, unit.startOffset);
+        addOp(code, arg, null, unit.currentOffset);
         return null;
     }
 
     private Void addOp(OpCodes code, int arg, byte[] followingArgs) {
-        addOp(code, arg, followingArgs, unit.startOffset);
+        addOp(code, arg, followingArgs, unit.currentOffset);
         return null;
     }
 
@@ -440,8 +440,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private int setLocation(int offset) {
-        int savedOffset = unit.startOffset;
-        unit.startOffset = offset;
+        int savedOffset = unit.currentOffset;
+        unit.currentOffset = offset;
         return savedOffset;
     }
 
