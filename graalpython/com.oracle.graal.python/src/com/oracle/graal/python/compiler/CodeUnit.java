@@ -126,7 +126,7 @@ public final class CodeUnit {
 
     public int bciToSrcOffset(int bci) {
         int diffIdx = 0;
-        int currentOffset = 0;
+        int currentOffset = startOffset;
 
         int bytecodeNumber = 0;
         for (int i = 0; i < code.length;) {

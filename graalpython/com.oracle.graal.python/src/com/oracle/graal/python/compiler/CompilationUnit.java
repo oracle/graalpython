@@ -196,7 +196,7 @@ public final class CompilationUnit {
 
         Block b = startBlock;
         HashMap<Block, List<Block>> handlerBlocks = new HashMap<>();
-        int lastSrcOffset = 0;
+        int lastSrcOffset = startOffset;
         while (b != null) {
             b.startBci = buf.size();
             BlockInfo.AbstractExceptionHandler handler = b.findExceptionHandler();
