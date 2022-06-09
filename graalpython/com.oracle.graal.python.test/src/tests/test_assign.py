@@ -124,24 +124,24 @@ class IllegaAssigmentTest(unittest.TestCase):
         with self.assertRaisesRegex(SyntaxError, "assign to function call"):
             compile("a() = 1", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|'function call' is an illegal expression for augmented assignment"):
             compile("a() += 1", "<test>", "exec")
 
         with self.assertRaisesRegex(SyntaxError, "assign to function call"):
             str = "def set() :\n\tprint(42)\n\nset() = 5"
             compile(str, "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("a(), b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("a, b(), c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to dict comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to dict comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("{s:s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to set comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to set comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("{s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to list comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to list comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("[s for s in [1]], b, c = (1, 2, 3)", "<test>", "exec")
