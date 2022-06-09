@@ -138,17 +138,29 @@ HPyStructSequenceBuilder_New(HPyContext *ctx, HPy type)
 #ifdef HPY_UNIVERSAL_ABI
     HPy fields = HPy_GetAttr_s(ctx, type, "_fields");
     if (HPy_IsNull(fields)) {
+#ifdef GRAALVM_PYTHON_LLVM
+        return (HPyTupleBuilder){NULL};
+#else
         return (HPyTupleBuilder){(HPy_ssize_t)0};
+#endif
     }
     HPy_ssize_t n = HPy_Length(ctx, fields);
     if (n < 0) {
         HPy_Close(ctx, fields);
+#ifdef GRAALVM_PYTHON_LLVM
+        return (HPyTupleBuilder){NULL};
+#else
         return (HPyTupleBuilder){(HPy_ssize_t)0};
+#endif
     }
     return HPyTupleBuilder_New(ctx, n);
 #else
     PyObject *seq = PyStructSequence_New((PyTypeObject *)_h2py(type));
+#ifdef GRAALVM_PYTHON_LLVM
+    return (HPyStructSequenceBuilder){(void *)seq};
+#else
     return (HPyStructSequenceBuilder){(HPy_ssize_t)seq};
+#endif
 #endif
 }
 
