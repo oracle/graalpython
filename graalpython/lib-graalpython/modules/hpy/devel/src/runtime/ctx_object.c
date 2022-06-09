@@ -31,12 +31,28 @@ ctx_Dump(HPyContext *ctx, HPy h)
 _HPy_HIDDEN int
 ctx_TypeCheck(HPyContext *ctx, HPy h_obj, HPy h_type)
 {
-    PyObject *type= _h2py(h_type);
+    PyObject *type = _h2py(h_type);
     assert(type != NULL);
     if (!PyType_Check(type)) {
         Py_FatalError("HPy_TypeCheck arg 2 must be a type");
     }
     return PyObject_TypeCheck(_h2py(h_obj), (PyTypeObject*)type);
+}
+
+_HPy_HIDDEN int
+ctx_Type_IsSubtype(HPyContext *ctx, HPy h_sub, HPy h_type)
+{
+    PyObject *type = _h2py(h_type);
+    PyObject *sub = _h2py(h_sub);
+    assert(type != NULL);
+    assert(sub != NULL);
+    if (!PyType_Check(sub)) {
+        Py_FatalError("HPyType_IsSubtype arg 1 must be a type");
+    }
+    if (!PyType_Check(type)) {
+        Py_FatalError("HPyType_IsSubtype arg 2 must be a type");
+    }
+    return PyType_IsSubtype((PyTypeObject*)sub, (PyTypeObject*)type);
 }
 
 _HPy_HIDDEN int
@@ -83,4 +99,18 @@ ctx_SetItem_s(HPyContext *ctx, HPy obj, const char *key, HPy value) {
     int result = PyObject_SetItem(_h2py(obj), key_o, _h2py(value));
     Py_DECREF(key_o);
     return result;
+}
+
+_HPy_HIDDEN HPy
+ctx_MaybeGetAttr_s(HPyContext *ctx, HPy obj, const char *name) {
+    PyObject *pyobj = _h2py(obj);
+    struct _typeobject* t = Py_TYPE(pyobj);
+    if (t->tp_getattr == NULL && t->tp_getattro == NULL) {
+        return HPy_NULL;
+    }
+    PyObject *res = PyObject_GetAttrString(pyobj, name);
+    if (res == NULL && PyErr_Occurred()) {
+        PyErr_Clear();
+    }
+    return _py2h(res);
 }
