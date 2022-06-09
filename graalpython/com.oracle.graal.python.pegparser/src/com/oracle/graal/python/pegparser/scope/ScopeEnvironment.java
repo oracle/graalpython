@@ -48,6 +48,7 @@ import java.util.Map.Entry;
 import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
@@ -72,9 +73,15 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 public class ScopeEnvironment {
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
+    private final ErrorCallback errorCallback;
 
     public ScopeEnvironment(ModTy moduleNode) {
+        this(moduleNode, null);
+    }
+
+    public ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
         // First pass, similar to the entry point `symtable_enter_block' on CPython
+        this.errorCallback = errorCallback;
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode, this);
         topScope = visitor.currentScope;
         moduleNode.accept(visitor);
@@ -432,7 +439,7 @@ public class ScopeEnvironment {
             }
             if ("*".equals(importedName)) {
                 if (!currentScope.isModule()) {
-                    // TODO: syntax error: IMPORT_STAR not in module scope
+                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), "import * only allowed at module level");
                 }
             } else {
                 addDef(importedName, DefUse.DefImport);

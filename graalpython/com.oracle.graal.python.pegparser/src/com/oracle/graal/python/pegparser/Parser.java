@@ -583,7 +583,7 @@ public final class Parser extends AbstractParser {
     public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
         super(tokenizer, factory, fexprParser);
     }
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {
         super(tokenizer, factory, fexprParser, errorCb);
     }
 
@@ -12328,7 +12328,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?");
+                _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13815,7 +13815,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_230_rule(false)
             )
             {
-                _res = this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"':' expected after dictionary key");
+                _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"':' expected after dictionary key");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }

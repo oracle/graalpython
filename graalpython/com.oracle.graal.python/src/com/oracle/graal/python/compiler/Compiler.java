@@ -133,6 +133,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -153,6 +154,8 @@ import com.oracle.graal.python.util.PythonUtils;
 public class Compiler implements SSTreeVisitor<Void> {
     public static final int BYTECODE_VERSION = 21;
 
+    private final ErrorCallback errorCalback;
+
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
     int optimizationLevel = 0;
@@ -165,9 +168,17 @@ public class Compiler implements SSTreeVisitor<Void> {
     public enum Flags {
     }
 
+    public Compiler() {
+        this(null);
+    }
+
+    public Compiler(ErrorCallback errorCalback) {
+        this.errorCalback = errorCalback;
+    }
+
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
-        this.env = new ScopeEnvironment(mod);
+        this.env = new ScopeEnvironment(mod, errorCalback);
         this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);

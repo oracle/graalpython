@@ -69,7 +69,7 @@ import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -508,7 +508,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-        ParserErrorCallback errorCb = (errorType, sourceRange, message) -> {
+        ErrorCallback errorCb = (errorType, sourceRange, message) -> {
             throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, message);
         };
         FExprParser fexpParser = new FExprParser() {
@@ -521,11 +521,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         };
         try {
             Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-            Compiler compiler = new Compiler();
+            Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse(type);
             // TODO this is needed until we get complete error handling in the parser
             if (mod == null) {
-                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
+                throw raiseSyntaxError(source, ErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(0);
@@ -550,7 +550,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
+    private PException raiseSyntaxError(Source source, ErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {

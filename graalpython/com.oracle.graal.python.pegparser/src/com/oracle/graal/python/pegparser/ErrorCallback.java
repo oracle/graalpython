@@ -43,7 +43,7 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 @FunctionalInterface
-public interface ParserErrorCallback {
+public interface ErrorCallback {
     public enum ErrorType {
         Generic,
         Indentation,

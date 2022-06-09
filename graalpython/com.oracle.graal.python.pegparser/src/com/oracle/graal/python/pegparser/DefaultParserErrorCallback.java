@@ -46,10 +46,10 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultParserErrorCallback implements ParserErrorCallback {
+public class DefaultParserErrorCallback implements ErrorCallback {
 
     public static class Error {
-        private final ParserErrorCallback.ErrorType type;
+        private final ErrorCallback.ErrorType type;
         private SourceRange sourceRange;
         private final String message;
 

@@ -82,7 +82,7 @@ abstract class AbstractParser {
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
 
     private final ParserTokenizer tokenizer;
-    private final ParserErrorCallback errorCb;
+    private final ErrorCallback errorCb;
     private final FExprParser fexprParser;
     protected final NodeFactory factory;
 
@@ -120,11 +120,11 @@ abstract class AbstractParser {
         this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), flags);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {
         this(tokenizer, factory, fexprParser, errorCb, 0);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb, int flags) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
         this.factory = factory;
         this.fexprParser = fexprParser;
@@ -135,7 +135,7 @@ abstract class AbstractParser {
         this.fill = 0;
     }
 
-    public ParserErrorCallback getErrorCallback() {
+    public ErrorCallback getErrorCallback() {
         return errorCb;
     }
 
@@ -843,7 +843,7 @@ abstract class AbstractParser {
     SSTNode raiseSyntaxError(String msg, Object... arguments) {
         errorIndicator = true;
         Token errorToken = tokenizer.peekToken();
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
         return null;
     }
 
@@ -852,7 +852,7 @@ abstract class AbstractParser {
      */
     SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, argument);
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, argument);
         return null;
     }
 
@@ -861,14 +861,14 @@ abstract class AbstractParser {
      */
     SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(ParserErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, argument);
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, argument);
         return null;
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ParserErrorCallback.ErrorType typeError, SSTNode where, String msg, Object... argument) {
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SSTNode where, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(typeError, where.getSourceRange(), msg, argument);
         return null;
