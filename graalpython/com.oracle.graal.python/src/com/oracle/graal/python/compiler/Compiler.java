@@ -131,6 +131,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
@@ -1741,7 +1742,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         CodeUnit code;
         try {
             String docString = getDocstring(node.body);
-            addObject(unit.constants, docString);
+            addObject(unit.constants, docString == null ? PNone.NONE : docString);
             visitSequence(node.body);
             code = unit.assemble(flags);
         } finally {
