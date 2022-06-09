@@ -189,6 +189,8 @@ public final class PCode extends PythonBuiltinObject {
     private static String[] extractFreeVars(RootNode rootNode) {
         if (rootNode instanceof PClosureRootNode) {
             return ((PClosureRootNode) rootNode).getFreeVars();
+        } else if (rootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) rootNode).getCodeUnit().freevars;
         } else {
             return PythonUtils.EMPTY_STRING_ARRAY;
         }
@@ -197,6 +199,8 @@ public final class PCode extends PythonBuiltinObject {
     private static String[] extractCellVars(RootNode rootNode) {
         if (rootNode instanceof PClosureFunctionRootNode) {
             return ((PClosureFunctionRootNode) rootNode).getCellVars();
+        } else if (rootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) rootNode).getCodeUnit().cellvars;
         } else {
             return PythonUtils.EMPTY_STRING_ARRAY;
         }
