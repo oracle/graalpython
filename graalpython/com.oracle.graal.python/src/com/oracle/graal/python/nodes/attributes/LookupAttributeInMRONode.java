@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -70,7 +71,9 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
@@ -99,7 +102,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         protected static Object lookupGeneric(Object klass, Object key,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookup(klass, key, getMroNode, readAttrNode, false);
+            return lookup(klass, key, getMroNode, readAttrNode, false, DynamicObjectLibrary.getUncached());
         }
 
         public static LookupAttributeInMRONode.Dynamic create() {
@@ -111,14 +114,14 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         }
     }
 
-    private final boolean skipPythonClasses;
+    private final boolean skipNonStaticBases;
     protected final String key;
     @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
     @Child private GetMroStorageNode getMroNode;
 
-    public LookupAttributeInMRONode(String key, boolean skipPythonClasses) {
+    public LookupAttributeInMRONode(String key, boolean skipNonStaticBases) {
         this.key = key;
-        this.skipPythonClasses = skipPythonClasses;
+        this.skipNonStaticBases = skipNonStaticBases;
     }
 
     public static LookupAttributeInMRONode create(String key) {
@@ -215,7 +218,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         }
     }
 
-    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
+    private static boolean skipNonStaticBase(Object clsObj, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
+        return skipNonStaticBases && clsObj instanceof PythonClass && !((PythonClass) clsObj).isStaticBase(dylib);
+    }
+
+    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass, DynamicObjectLibrary dylib) {
         CompilerAsserts.neverPartOfCompilation();
         // - avoid cases when attributes are stored in a dict containing elements
         // with a potential MRO sideeffect on access.
@@ -236,12 +243,12 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length(); i++) {
-            Object clsObj = mro.getItemNormalized(i);
+            PythonAbstractClass clsObj = mro.getItemNormalized(i);
             if (i > 0) {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                 getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
             }
-            if (skipPythonClasses && clsObj instanceof PythonClass) {
+            if (skipNonStaticBase(clsObj, skipNonStaticBases, dylib)) {
                 continue;
             }
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
@@ -257,7 +264,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     assumptions = "cachedAttrInMROInfo.assumption")
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass, dylib)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
     }
 
@@ -295,10 +303,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Cached("getMro(cachedKlass)") MroSequenceStorage mro,
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mroLength; i++) {
             Object kls = mro.getItemNormalized(i);
-            if (skipPythonClasses && kls instanceof PythonClass) {
+            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }
             Object value = readAttrNodes[i].execute(kls, key);
@@ -317,10 +326,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Bind("getMro(klass)") MroSequenceStorage mro,
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
                     @Cached("mro.length()") int cachedMroLength,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < cachedMroLength; i++) {
             Object kls = mro.getItemNormalized(i);
-            if (skipPythonClasses && kls instanceof PythonClass) {
+            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }
             Object value = readAttrNodes[i].execute(kls, key);
@@ -334,8 +344,9 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     @Megamorphic
     protected Object lookupGeneric(Object klass,
+                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookup(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
+        return lookup(klass, key, ensureGetMroNode(), readAttrNode, skipNonStaticBases, dylib);
     }
 
     protected GetMroStorageNode ensureGetMroNode() {
@@ -352,14 +363,14 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     @TruffleBoundary
     public static Object lookupSlowPath(Object klass, Object key) {
-        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false, DynamicObjectLibrary.getUncached());
     }
 
-    public static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
+    public static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
-            if (skipPythonClasses && kls instanceof PythonClass) {
+            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }
             Object value = readAttrNode.execute(kls, key);
