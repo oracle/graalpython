@@ -1872,10 +1872,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, NODE_RAISE);
         if (oparg < freeoffset) {
-            int varIdx = oparg - celloffset;
+            int varIdx = oparg;
             throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, cellvars[varIdx]);
         } else {
-            int varIdx = oparg - freeoffset;
+            int varIdx = oparg - cellvars.length;
             throw raiseNode.raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, freevars[varIdx]);
         }
     }

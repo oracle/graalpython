@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -50,12 +49,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -432,13 +431,6 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isCustomLocalsObject(pyFrame, frameToSync, frameProfile)"}, limit = "1")
-        @SuppressWarnings("unused")
-        static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("createClassProfile()") ValueProfile frameProfile) {
-            // nothing to do; we already worked on the custom object
-        }
-
         @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd",
                         "variableSlotCount(cachedFd) < 32"}, limit = "1")
         @ExplodeLoop
@@ -550,6 +542,12 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
+        @Specialization(guards = "!isDictWithCustomStorage(pyFrame)")
+        @SuppressWarnings("unused")
+        static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync, Node location) {
+            // nothing to do; we already worked on the custom object
+        }
+
         private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
                         ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
@@ -558,20 +556,24 @@ public abstract class MaterializeFrameNode extends Node {
             if (value != null && profile.profile(value instanceof PCell)) {
                 value = ((PCell) value).getRef();
             }
-            HashingStorage newStore = null;
+            HashingStorage newStore;
             if (value != null) {
                 newStore = lib.setItemWithFrame(storage, identifier, value, hasFrame, frame);
+                if (newStore != storage) {
+                    updatedStorage.enter();
+                    localsDict.setDictStorage(newStore);
+                }
             } else {
                 // delete variable
                 // TODO: FIXME: this might call __hash__ twice
                 boolean hasKey = lib.hasKeyWithFrame(storage, identifier, hasFrame, frame);
                 if (hasKey) {
                     newStore = lib.delItemWithFrame(storage, identifier, hasFrame, frame);
+                    if (newStore != storage) {
+                        updatedStorage.enter();
+                        localsDict.setDictStorage(newStore);
+                    }
                 }
-            }
-            if (newStore != storage) {
-                updatedStorage.enter();
-                localsDict.setDictStorage(newStore);
             }
         }
 
@@ -606,11 +608,7 @@ public abstract class MaterializeFrameNode extends Node {
         protected static boolean isDictWithCustomStorage(PFrame pyFrame) {
             Object localsObject = pyFrame.getLocalsDict();
             // do not allow subclasses of 'dict'
-            return GetClassNode.getUncached().execute(localsObject) == PythonBuiltinClassType.PDict;
-        }
-
-        protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync, ValueProfile frameProfile) {
-            return !hasLocalsStorage(pyFrame, frameToSync, frameProfile);
+            return localsObject instanceof PDict && PGuards.isBuiltinDict((PDict) localsObject);
         }
 
         protected static LocalsStorage getLocalsStorage(PFrame pyFrame) {

@@ -250,9 +250,14 @@ public final class LocalsStorage extends HashingStorage {
                         @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
             HashingStorage result = other;
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
-                Object value = self.getValue(slot);
-                if (value != null) {
-                    result = lib.setItem(result, desc.getSlotName(slot), value);
+                Object identifier = desc.getSlotName(slot);
+                if (identifier instanceof String) {
+                    if (isUserFrameSlot(identifier)) {
+                        Object value = self.getValue(slot);
+                        if (value != null) {
+                            result = lib.setItem(result, desc.getSlotName(slot), value);
+                        }
+                    }
                 }
             }
             return result;
