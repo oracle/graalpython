@@ -416,7 +416,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
-        newBuilder.addSlot(FrameSlotKind.Int, null, null);
+        newBuilder.addSlot(FrameSlotKind.Static, null, null);
         if (co.isGeneratorOrCoroutine()) {
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
@@ -754,6 +754,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         long[] localLongConsts = longConsts;
         String[] localNames = names;
         Node[] localNodes = adoptedNodes;
+        final int bciSlot = bcioffset;
+
+        virtualFrame.setIntStatic(bciSlot, initialBci);
 
         /*
          * This separate tracking of local exception is necessary to make exception state saving
@@ -775,6 +778,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
+            virtualFrame.setIntStatic(bciSlot, bci);
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
@@ -1409,7 +1413,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 if (newTarget == -1) {
                     // For tracebacks
-                    virtualFrame.setInt(bcioffset, beginBci);
+                    virtualFrame.setIntStatic(bciSlot, beginBci);
                     if (isGeneratorOrCoroutine) {
                         if (localFrame != stackFrame) {
                             // Unwind the generator frame stack

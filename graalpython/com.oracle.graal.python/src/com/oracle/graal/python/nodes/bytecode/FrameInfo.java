@@ -63,10 +63,7 @@ public final class FrameInfo {
     }
 
     public int getBci(Frame frame) {
-        if (frame.isInt(rootNode.bcioffset)) {
-            return frame.getInt(rootNode.bcioffset);
-        }
-        return -1;
+        return frame.getIntStatic(rootNode.bcioffset);
     }
 
     public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
