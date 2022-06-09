@@ -317,8 +317,8 @@ class ExtensionCompiler:
                     cxx = join(llvm_toolchain_vanilla, 'clang++')
                     stdlib = "libc++"
                 else:
-                    cc = join(os.path.sep, 'usr', 'bin', 'gcc')
-                    cxx = join(os.path.sep, 'usr', 'bin', 'g++')
+                    cc = 'gcc'
+                    cxx = 'g++'
                     stdlib = None
             change_compiler(conf, cc, cxx, stdlib)
 
