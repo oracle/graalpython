@@ -3,7 +3,6 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testChainingDescriptors
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testExceptionCleanupNames
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testExceptionCleanupState
-*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidAttrs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInvalidTraceback
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testKeywordArgs

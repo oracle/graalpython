@@ -438,6 +438,7 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout'),
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
+        ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
