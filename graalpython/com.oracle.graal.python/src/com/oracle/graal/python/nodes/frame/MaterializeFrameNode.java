@@ -344,6 +344,7 @@ public abstract class MaterializeFrameNode extends Node {
         @Specialization(guards = { //
                         "!isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
+                        "!hasCustomLocals(frameToSync, pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
         }, //
                         limit = "1")
@@ -389,7 +390,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)"}, replaces = "doGenericDictCachedAST")
+        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)", "!hasCustomLocals(frameToSync, pyFrame)"}, replaces = "doGenericDictCachedAST")
         static void doGenericDictAST(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
@@ -474,6 +475,7 @@ public abstract class MaterializeFrameNode extends Node {
         @Specialization(guards = { //
                         "isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
+                        "!hasCustomLocals(frameToSync, pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
                         "variableSlotCount(cachedFd) < 32"
         }, limit = "1")
@@ -501,6 +503,7 @@ public abstract class MaterializeFrameNode extends Node {
         @Specialization(guards = { //
                         "isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
+                        "!hasCustomLocals(frameToSync, pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
         }, limit = "1", replaces = "doGenericDictCachedExploded")
         static void doGenericDictCachedLoop(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
@@ -523,7 +526,8 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)"}, replaces = {"doGenericDictCachedExploded", "doGenericDictCachedLoop"})
+        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)", "!hasCustomLocals(frameToSync, pyFrame)"}, replaces = {"doGenericDictCachedExploded",
+                        "doGenericDictCachedLoop"})
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
@@ -542,7 +546,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "!isDictWithCustomStorage(pyFrame)")
+        @Specialization(guards = "hasCustomLocals(frameToSync, pyFrame)")
         @SuppressWarnings("unused")
         static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync, Node location) {
             // nothing to do; we already worked on the custom object
@@ -609,6 +613,10 @@ public abstract class MaterializeFrameNode extends Node {
             Object localsObject = pyFrame.getLocalsDict();
             // do not allow subclasses of 'dict'
             return localsObject instanceof PDict && PGuards.isBuiltinDict((PDict) localsObject);
+        }
+
+        protected static boolean hasCustomLocals(Frame frameToSync, PFrame pyFrame) {
+            return PArguments.getSpecialArgument(frameToSync) == pyFrame.getLocalsDict();
         }
 
         protected static LocalsStorage getLocalsStorage(PFrame pyFrame) {
