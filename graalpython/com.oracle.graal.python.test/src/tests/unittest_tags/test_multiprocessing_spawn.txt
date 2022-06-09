@@ -53,7 +53,6 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_action
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_barrier
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_barrier_10
-*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_reset
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_single_thread
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_thousand
