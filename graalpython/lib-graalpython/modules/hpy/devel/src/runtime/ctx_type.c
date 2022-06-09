@@ -807,7 +807,8 @@ ctx_Type_FromSpec(HPyContext *ctx, HPyType_Spec *hpyspec,
     // PyType_FromSpecWithBases does not support passing a metaclass,
     // so we have to use a patched CPython with PyType_FromSpecWithBasesAndMeta
     // See also: https://bugs.python.org/issue15870
-    PyObject *result = PyType_FromSpecWithBasesAndMeta(spec, bases, metatype);
+    // PyObject *result = PyType_FromSpecWithBasesAndMeta(spec, bases, metatype);
+    PyObject *result = PyType_FromSpecWithBases(spec, bases);
 
     /* note that we do NOT free the memory which was allocated by
        create_method_defs, because that one is referenced internally by
