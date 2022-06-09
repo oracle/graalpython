@@ -16,7 +16,6 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_3114
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_MemoryError
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_WindowsError
-*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_errno_ENOTDIR
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_target_in_nested_scope
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_with_doc
