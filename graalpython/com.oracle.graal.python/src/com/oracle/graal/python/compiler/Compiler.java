@@ -2034,13 +2034,13 @@ public class Compiler implements SSTreeVisitor<Void> {
              * We need to save and restore the outer exception state. In order to restore it even in
              * case of an exception, we need an internal finally handler for this.
              */
-            Block cleanupHandler = new Block();
-            unit.pushBlock(new BlockInfo.ExceptHandler(nextHandler, cleanupHandler));
+            Block commonCleanupHandler = new Block();
+            unit.pushBlock(new BlockInfo.ExceptHandler(nextHandler, commonCleanupHandler));
             /*
              * We use this offset to unwind the exception from the except block, we don't need it on
              * the stack
              */
-            cleanupHandler.unwindOffset = -1;
+            commonCleanupHandler.unwindOffset = -1;
             for (int i = 0; i < node.handlers.length; i++) {
                 assert !hasBareExcept;
                 setLocation(node.handlers[i]);
@@ -2053,16 +2053,22 @@ public class Compiler implements SSTreeVisitor<Void> {
                         // Keep the saved state, it's the same
                         nextHandler = finallyBlockExceptWithSavedExc;
                     } else {
-                        nextHandler = cleanupHandler;
+                        nextHandler = commonCleanupHandler;
                     }
                 }
 
+                Block bindingCleanerExcept = null;
+                String bindingName = node.handlers[i].name;
                 if (node.handlers[i].type != null) {
                     node.handlers[i].type.accept(this);
                     addOp(MATCH_EXC_OR_JUMP, nextHandler);
-                    if (node.handlers[i].name != null) {
+                    if (bindingName != null) {
                         addOp(UNWRAP_EXC);
-                        addNameOp(node.handlers[i].name, ExprContext.Store);
+                        addNameOp(bindingName, ExprContext.Store);
+                        Block handlerWithBinding = new Block();
+                        bindingCleanerExcept = new Block();
+                        unit.pushBlock(new BlockInfo.HandlerBindingCleanup(handlerWithBinding, bindingCleanerExcept, bindingName));
+                        unit.useNextBlock(handlerWithBinding);
                     } else {
                         addOp(POP_TOP);
                     }
@@ -2071,27 +2077,22 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(POP_TOP);
                 }
                 visitSequence(node.handlers[i].body);
+                if (bindingName != null) {
+                    unit.popBlock();
+                    unit.useNextBlock(new Block());
+                    addNameOp(bindingName, ExprContext.Delete);
+                }
                 addOp(POP_EXCEPT);
                 jumpToFinally(finallyBlockNormal, end);
+                if (bindingName != null) {
+                    unit.useNextBlock(bindingCleanerExcept);
+                    addNameOp(bindingName, ExprContext.Delete);
+                    cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
+                }
             }
             unit.popBlock();
-            unit.useNextBlock(cleanupHandler);
-            if (hasFinally) {
-                addOp(ROT_TWO);
-                /*
-                 * POP the saved exception state, the finally block needs to push a new one. The
-                 * saved state will be the same, but PUSH_EXC_INFO also updates the current
-                 * exception info which is now different.
-                 */
-                addOp(POP_EXCEPT);
-                addOp(JUMP_FORWARD, finallyBlockExcept);
-            } else {
-                /*
-                 * We can also reach this code by falling off the except handlers if no types
-                 * matched and there is no finally
-                 */
-                addOp(END_EXC_HANDLER);
-            }
+            unit.useNextBlock(commonCleanupHandler);
+            cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
         }
 
         if (elseBlock != null) {
@@ -2128,6 +2129,25 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(end);
 
         return null;
+    }
+
+    private void cleanupOnExceptionInHandler(boolean hasFinally, Block finallyBlockExcept) {
+        if (hasFinally) {
+            addOp(ROT_TWO);
+            /*
+             * POP the saved exception state, the finally block needs to push a new one. The saved
+             * state will be the same, but PUSH_EXC_INFO also updates the current exception info
+             * which is now different.
+             */
+            addOp(POP_EXCEPT);
+            addOp(JUMP_FORWARD, finallyBlockExcept);
+        } else {
+            /*
+             * We can also reach this code by falling off the except handlers if no types matched
+             * and there is no finally
+             */
+            addOp(END_EXC_HANDLER);
+        }
     }
 
     @Override
@@ -2258,6 +2278,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                         addOp(ROT_TWO);
                     }
                     addOp(POP_EXCEPT);
+                } else if (info instanceof BlockInfo.HandlerBindingCleanup) {
+                    String bindingName = ((BlockInfo.HandlerBindingCleanup) info).bindingName;
+                    if (bindingName != null) {
+                        addNameOp(bindingName, ExprContext.Delete);
+                    }
                 } else if (info instanceof BlockInfo.FinallyHandler) {
                     if (type == UnwindType.RETURN_VALUE) {
                         addOp(ROT_THREE);
