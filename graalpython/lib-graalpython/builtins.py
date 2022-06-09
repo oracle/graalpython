@@ -52,24 +52,6 @@ FunctionType = type(_f)
 descriptor = type(FunctionType.__code__)
 
 
-from sys import _getframe as __getframe__
-
-
-@__graalpython__.builtin
-def vars(module, *obj):
-    """Return a dictionary of all the attributes currently bound in obj.  If
-    called with no argument, return the variables bound in local scope."""
-    if len(obj) == 0:
-        # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
-        return __getframe__(0).f_locals
-    elif len(obj) != 1:
-        raise TypeError("vars() takes at most 1 argument.")
-    try:
-        return obj[0].__dict__
-    except AttributeError:
-        raise TypeError("vars() argument must have __dict__ attribute")
-
-
 @__graalpython__.builtin
 def input(module, prompt=None):
     import sys

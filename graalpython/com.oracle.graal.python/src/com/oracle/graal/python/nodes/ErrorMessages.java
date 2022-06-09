@@ -709,6 +709,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
     public static final String UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = "utime: cannot use dir_fd and follow_symlinks together on this platform";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
+    public static final String VARS_ARGUMENT_MUST_HAVE_DICT = "vars() argument must have __dict__ attribute";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
