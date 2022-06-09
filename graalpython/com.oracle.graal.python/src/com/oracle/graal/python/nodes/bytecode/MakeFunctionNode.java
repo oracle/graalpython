@@ -93,7 +93,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         PCode codeObj = cachedCode;
         if (codeObj == null) {
             // Multi-context mode
-            codeObj = createCode(factory, code, callTarget, signature);
+            codeObj = factory.createCode(callTarget, signature, code);
         }
 
         PCell[] closure = null;
@@ -140,11 +140,6 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         return stackTop;
     }
 
-    private static PCode createCode(PythonObjectFactory factory, CodeUnit code, RootCallTarget callTarget, Signature signature) {
-        return factory.createCode(callTarget, signature, code.varnames.length, code.stacksize, code.flags, code.constants, code.names,
-                        code.varnames, code.freevars, code.cellvars, null, code.name, code.startOffset, code.srcOffsetTable);
-    }
-
     public static MakeFunctionNode create(PythonLanguage language, CodeUnit code, Source source) {
         RootCallTarget callTarget;
         PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(language, code, source);
@@ -156,7 +151,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         }
         PCode cachedCode = null;
         if (language.isSingleContext()) {
-            cachedCode = createCode(PythonObjectFactory.getUncached(), code, callTarget, bytecodeRootNode.getSignature());
+            cachedCode = PythonObjectFactory.getUncached().createCode(callTarget, bytecodeRootNode.getSignature(), code);
         }
         String doc = null;
         if (code.constants.length > 0 && code.constants[0] instanceof String) {

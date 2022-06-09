@@ -49,6 +49,7 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.util.PythonUtils;
 
 /**
@@ -94,6 +95,8 @@ public final class CodeUnit {
 
     public final int startOffset;
 
+    public final boolean lambda;
+
     public CodeUnit(String name, String qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
                     byte[] code, byte[] linetable, int flags,
@@ -118,6 +121,7 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
+        this.lambda = name.equals(BuiltinNames.LAMBDA_NAME);
     }
 
     OpCodes codeForBC(int bc) {
@@ -184,6 +188,10 @@ public final class CodeUnit {
 
     public boolean isGeneratorOrCoroutine() {
         return (flags & (IS_GENERATOR | IS_COROUTINE)) != 0;
+    }
+
+    public boolean isLambda() {
+        return lambda;
     }
 
     @SuppressWarnings("fallthrough")

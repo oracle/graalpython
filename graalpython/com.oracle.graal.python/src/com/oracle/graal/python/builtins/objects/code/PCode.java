@@ -97,10 +97,10 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PCode extends PythonBuiltinObject {
     public static final long FLAG_VAR_ARGS = 0x4;
     public static final long FLAG_VAR_KW_ARGS = 0x8;
-    static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
-    static final long FLAG_GENERATOR = 0x20;
-    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
-                                          // redundant anyway
+    public static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
+    public static final long FLAG_GENERATOR = 0x20;
+    public static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
+    // redundant anyway
 
     // callTargetSupplier may be null, in which case callTarget and signature will be
     // set. Otherwise, these are lazily created from the supplier.
@@ -383,6 +383,14 @@ public final class PCode extends PythonBuiltinObject {
         if (funcRootNode instanceof ModuleRootNode) {
             // Not on CPython
             flags |= FLAG_MODULE;
+        }
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            CodeUnit codeUnit = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+            flags = getFlags(flags, codeUnit);
+        }
+        if (funcRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+            CodeUnit codeUnit = ((PBytecodeGeneratorFunctionRootNode) funcRootNode).getBytecodeRootNode().getCodeUnit();
+            flags = getFlags(flags, codeUnit);
         } else {
             // 0x20 - generator
             if (funcRootNode instanceof GeneratorFunctionRootNode) {
@@ -402,6 +410,14 @@ public final class PCode extends PythonBuiltinObject {
                 flags |= FLAG_LAMBDA;
             }
         }
+        return flags;
+    }
+
+    private static int getFlags(int flags, CodeUnit codeUnit) {
+        flags |= codeUnit.isGenerator() ? FLAG_GENERATOR : 0;
+        flags |= codeUnit.takesVarArgs() ? FLAG_VAR_ARGS : 0;
+        flags |= codeUnit.takesVarKeywordArgs() ? FLAG_VAR_KW_ARGS : 0;
+        flags |= codeUnit.isLambda() ? FLAG_LAMBDA : 0;
         return flags;
     }
 

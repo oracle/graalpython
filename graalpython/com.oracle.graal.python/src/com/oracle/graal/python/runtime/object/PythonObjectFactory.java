@@ -190,6 +190,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -1089,6 +1090,11 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, String filename) {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
+    }
+
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
+        return createCode(callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, codeUnit.constants, codeUnit.names,
+                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startOffset, codeUnit.srcOffsetTable);
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
