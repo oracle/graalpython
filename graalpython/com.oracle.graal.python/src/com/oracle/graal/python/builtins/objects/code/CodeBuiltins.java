@@ -384,7 +384,7 @@ public class CodeBuiltins extends PythonBuiltins {
                                 coStacksize == -1 ? self.co_stacksize() : coStacksize,
                                 coFlags == -1 ? self.co_flags() : coFlags,
                                 PGuards.isNone(coCode) ? self.getCodestring() : bufferLib.getInternalOrCopiedByteArray(coCode),
-                                coConsts.length == 0 ? self.getConstants() : coConsts,
+                                coConsts.length == 0 ? self.getConstants(factory()) : coConsts,
                                 coNames.length == 0 ? self.getNames() : coNames,
                                 coVarnames.length == 0 ? self.getVarnames() : coVarnames,
                                 coFreevars.length == 0 ? self.getFreeVars() : coFreevars,

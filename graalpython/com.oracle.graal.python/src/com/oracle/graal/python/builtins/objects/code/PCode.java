@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -135,6 +136,8 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
+    // convert the constants (code units) to code on first access
+    private boolean convertConstants = true;
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
         super(cls, instanceShape);
@@ -500,11 +503,34 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public Object[] getConstants() {
+    public Object[] getConstants(PythonObjectFactory factory) {
         if (constants == null) {
             constants = extractConstants(getRootNode());
         }
+        if (convertConstants) {
+            convertConstants = false;
+            RootNode rootNode = getRootNode();
+            for (int i = 0; i < constants.length; i++) {
+                constants[i] = convert(rootNode, constants[i], factory);
+            }
+        }
         return constants;
+    }
+
+    private static Object convert(RootNode rootNode, Object o, PythonObjectFactory factory) {
+        if (o instanceof CodeUnit) {
+            CodeUnit code = ((CodeUnit) o);
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
+            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code.varnames.length, code.stacksize, code.flags, code.constants,
+                            code.names,
+                            code.varnames, code.freevars, code.cellvars, null, code.name, code.startOffset, code.srcOffsetTable);
+        }
+        return o;
+    }
+
+    @TruffleBoundary
+    private static SourceSection getSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
     }
 
     public Object[] getNames() {
@@ -653,7 +679,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        return createTuple(this.getConstants(), factory);
+        return createTuple(this.getConstants(factory), factory);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {
