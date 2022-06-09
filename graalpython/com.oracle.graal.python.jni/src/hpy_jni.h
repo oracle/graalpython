@@ -47,6 +47,7 @@
 
 #include <hpy.h>
 #include <jni.h>
+#include <stdint.h>
 
 //*************************
 // BOXING
@@ -65,6 +66,8 @@
 #define unboxHandle(value) (value)
 #define boxHandle(handle) (handle)
 
+#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
+#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
 #define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
 #define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
 
