@@ -226,7 +226,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization
+            @Specialization(guards = "!isBytes(initializer)")
             PArray arraySequenceInitializer(VirtualFrame frame, Object cls, String typeCode, PSequence initializer,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -247,7 +247,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"})
+            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)", "!isPSequence(initializer)"})
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
                             @Cached PyObjectGetIter getIter,
                             @Cached ArrayNodes.PutValueNode putValueNode,
