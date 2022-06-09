@@ -38,82 +38,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef HPY_INLINE_HELPERS_H
-#define HPY_INLINE_HELPERS_H
+package com.oracle.graal.python.nodes.bytecode;
 
-#include <assert.h>
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodesConstants;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 
-#if defined(_MSC_VER)
-# include <malloc.h>  /* for alloca() */
-#endif
+/**
+ * Carries additional metadata for introspection of frames used by the bytecode interpreter. It's
+ * returned by {@link FrameDescriptor#getInfo()} if and only if the frame is coming from the
+ * bytecode interpreter.
+ */
+public final class FrameInfo {
+    @CompilationFinal PBytecodeRootNode rootNode;
 
-HPyAPI_FUNC HPy HPyErr_SetFromErrno(HPyContext *ctx, HPy h_type)
-{
-    return HPyErr_SetFromErrnoWithFilenameObjects(ctx, h_type, HPy_NULL, HPy_NULL);
-}
+    public PBytecodeRootNode getRootNode() {
+        return rootNode;
+    }
 
-HPyAPI_FUNC HPy HPyErr_SetFromErrnoWithFilenameObject(HPyContext *ctx, HPy h_type, HPy filename)
-{
-    return HPyErr_SetFromErrnoWithFilenameObjects(ctx, h_type, filename, HPy_NULL);
-}
+    public int bciToLine(int bci) {
+        return rootNode.bciToLine(bci);
+    }
 
-HPyAPI_FUNC int HPySlice_AdjustIndices(HPy_ssize_t length, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t step) {
-    /* Taken from CPython: Written by Jim Hugunin and Chris Chase. */
-    /* this is harder to get right than you might think */
-    assert(step != 0);
-    // assert(step >= -PY_SSIZE_T_MAX); TODO: add the macro for HPy_ssize_t
+    public int getBci(Frame frame) {
+        if (frame.isInt(rootNode.bcioffset)) {
+            return frame.getInt(rootNode.bcioffset);
+        }
+        return -1;
+    }
 
-    if (*start < 0) {
-        *start += length;
-        if (*start < 0) {
-            *start = (step < 0) ? -1 : 0;
+    public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
+        /* Match the `yield from` bytecode pattern and get the object from stack */
+        if (bci > 3 && bci < rootNode.bytecode.length && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
+                        rootNode.bytecode[bci] == OpCodesConstants.RESUME_YIELD) {
+            return generatorFrame.getObject(stackTop);
+        }
+        return null;
+    }
+
+    public int getLineno(Frame frame) {
+        return bciToLine(getBci(frame));
+    }
+
+    public int getVariableCount() {
+        CodeUnit code = rootNode.getCodeUnit();
+        return code.varnames.length + code.cellvars.length + code.freevars.length;
+    }
+
+    public String getVariableName(int slot) {
+        CodeUnit code = rootNode.getCodeUnit();
+        if (slot < code.varnames.length) {
+            return code.varnames[slot];
+        } else if (slot < code.varnames.length + code.cellvars.length) {
+            return code.cellvars[slot - code.varnames.length];
+        } else {
+            return code.freevars[slot - code.varnames.length - code.cellvars.length];
         }
     }
-    else if (*start >= length) {
-        *start = (step < 0) ? length - 1 : length;
-    }
-
-    if (*stop < 0) {
-        *stop += length;
-        if (*stop < 0) {
-            *stop = (step < 0) ? -1 : 0;
-        }
-    }
-    else if (*stop >= length) {
-        *stop = (step < 0) ? length - 1 : length;
-    }
-
-    if (step < 0) {
-        if (*stop < *start) {
-            return (*start - *stop - 1) / (-step) + 1;
-        }
-    }
-    else {
-        if (*start < *stop) {
-            return (*stop - *start - 1) / step + 1;
-        }
-    }
-    return 0;
 }
-
-HPyAPI_FUNC HPy HPyTuple_Pack(HPyContext *ctx, HPy_ssize_t n, ...) {
-    va_list vargs;
-    HPy_ssize_t i;
-
-    if (n == 0) {
-        return HPyTuple_FromArray(ctx, (HPy*)NULL, n);
-    }
-    HPy *array = (HPy *)alloca(n * sizeof(HPy));
-    va_start(vargs, n);
-    if (array == NULL) {
-        va_end(vargs);
-        return HPy_NULL;
-    }
-    for (i = 0; i < n; i++) {
-        array[i] = va_arg(vargs, HPy);
-    }
-    va_end(vargs);
-    return HPyTuple_FromArray(ctx, array, n);
-}
-
-#endif //HPY_INLINE_HELPERS_H

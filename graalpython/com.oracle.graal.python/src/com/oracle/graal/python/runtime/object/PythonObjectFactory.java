@@ -838,8 +838,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
     }
 
-    public final PGenerator createGenerator(String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget bytecodeCallTarget, Object[] arguments) {
-        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, bytecodeCallTarget, arguments));
+    public final PGenerator createGenerator(String name, String qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
 
     public final PMappingproxy createMappingproxy(Object object) {

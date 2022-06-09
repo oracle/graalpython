@@ -79,6 +79,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -733,6 +735,24 @@ public final class PythonUtils {
             } catch (Exception e) {
                 throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
             }
+        }
+    }
+
+    public static void copyFrameSlot(Frame frameToSync, MaterializedFrame target, int slot) {
+        if (frameToSync.isObject(slot)) {
+            target.setObject(slot, frameToSync.getObject(slot));
+        } else if (frameToSync.isInt(slot)) {
+            target.setInt(slot, frameToSync.getInt(slot));
+        } else if (frameToSync.isLong(slot)) {
+            target.setLong(slot, frameToSync.getLong(slot));
+        } else if (frameToSync.isBoolean(slot)) {
+            target.setBoolean(slot, frameToSync.getBoolean(slot));
+        } else if (frameToSync.isDouble(slot)) {
+            target.setDouble(slot, frameToSync.getDouble(slot));
+        } else if (frameToSync.isFloat(slot)) {
+            target.setFloat(slot, frameToSync.getFloat(slot));
+        } else if (frameToSync.isByte(slot)) {
+            target.setByte(slot, frameToSync.getByte(slot));
         }
     }
 }

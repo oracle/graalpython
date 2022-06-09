@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -61,17 +60,17 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode.GeneratorResult;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
-import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -142,18 +141,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
-        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
-                        @Cached PRaiseNode raiseNode) {
+        @Specialization(guards = {"!self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object cachedAST(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
-            Object result;
             try {
-                result = call.execute(frame, null, null, null, arguments);
+                return call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;
@@ -161,29 +158,23 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
-            if (result == null) {
-                throw raiseNode.raise(StopIteration, self.getReturnValue());
-            }
-            return result;
         }
 
-        @Specialization(replaces = "cached")
+        @Specialization(guards = "!self.usesBytecode()", replaces = "cachedAST")
         @Megamorphic
-        static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+        static Object genericAST(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached GenericInvokeNode call,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached GenericInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
-            Object result;
             try {
                 if (hasFrameProfile.profile(frame != null)) {
-                    result = call.execute(frame, self.getCurrentCallTarget(), arguments);
+                    return call.execute(frame, self.getCurrentCallTarget(), arguments);
                 } else {
-                    result = call.execute(self.getCurrentCallTarget(), arguments);
+                    return call.execute(self.getCurrentCallTarget(), arguments);
                 }
             } catch (PException e) {
                 self.markAsFinished();
@@ -192,10 +183,79 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
                 self.setNextCallTarget();
             }
-            if (result == null) {
-                throw raiseNode.raise(StopIteration, self.getReturnValue());
+        }
+
+        @Specialization(guards = {"self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
+                        @Cached ConditionProfile returnProfile,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
+            self.setRunning(true);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
             }
-            return result;
+            GeneratorResult result;
+            try {
+                result = (GeneratorResult) call.execute(frame, null, null, null, arguments);
+            } catch (PException e) {
+                self.markAsFinished();
+                // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+                // RuntimeError
+                e.expectStopIteration(errorProfile);
+                throw raiseNode.raise(RuntimeError, e.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            } finally {
+                self.setRunning(false);
+            }
+            return handleResult(self, result, returnProfile, raiseNode);
+        }
+
+        @Specialization(guards = "self.usesBytecode()", replaces = "cached")
+        @Megamorphic
+        Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached GenericInvokeNode call,
+                        @Cached ConditionProfile returnProfile,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
+            self.setRunning(true);
+            Object[] arguments = prepareArguments(self);
+            if (sendValue != null) {
+                PArguments.setSpecialArgument(arguments, sendValue);
+            }
+            GeneratorResult result;
+            try {
+                if (hasFrameProfile.profile(frame != null)) {
+                    result = (GeneratorResult) call.execute(frame, self.getCurrentCallTarget(), arguments);
+                } else {
+                    result = (GeneratorResult) call.execute(self.getCurrentCallTarget(), arguments);
+                }
+            } catch (PException e) {
+                self.markAsFinished();
+                // PEP 479 - StopIteration raised from generator body needs to be wrapped in
+                // RuntimeError
+                e.expectStopIteration(errorProfile);
+                throw raiseNode.raise(RuntimeError, e.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            } finally {
+                self.setRunning(false);
+            }
+            return handleResult(self, result, returnProfile, raiseNode);
+        }
+
+        private Object handleResult(PGenerator self, GeneratorResult result, ConditionProfile returnProfile, PRaiseNode raiseNode) {
+            if (returnProfile.profile(result.isReturn)) {
+                self.markAsFinished();
+                Object returnValue = result.value;
+                if (returnValue != PNone.NONE) {
+                    throw raiseNode.raise(StopIteration, returnValue);
+                } else {
+                    throw raiseNode.raise(StopIteration);
+                }
+            } else {
+                self.handleResult(PythonLanguage.get(this), result);
+            }
+            return result.value;
         }
 
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
@@ -293,7 +353,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     // throw(typ[,val[,tb]])
     @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    abstract static class ThrowNode extends PythonBuiltinNode {
+    public abstract static class ThrowNode extends PythonQuaternaryBuiltinNode {
 
         @Child private MaterializeFrameNode materializeFrameNode;
         @Child private GetTracebackNode getTracebackNode;
@@ -511,12 +571,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object getCode(PGenerator self,
                         @Cached ConditionProfile hasCodeProfile) {
-            PCode code = self.getCode();
-            if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getCurrentCallTarget());
-                self.setCode(code);
-            }
-            return code;
+            return self.getOrCreateCode(hasCodeProfile, factory());
         }
     }
 
@@ -547,19 +602,33 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
                 Object[] arguments = PArguments.create();
-                Node location = self.getCurrentYieldNode();
-                if (location == null) {
-                    location = self.getCurrentCallTarget().getRootNode();
+                Node location;
+                if (self.usesBytecode()) {
+                    location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
+                } else {
+                    location = self.getCurrentYieldNode();
+                    if (location == null) {
+                        location = self.getCurrentCallTarget().getRootNode();
+                    }
                 }
                 PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
-                if (self.isStarted()) {
-                    // Hack: Fake bytecode to make inspect.getgeneratorstate distinguish suspended
-                    // and unstarted generators
-                    frame.setLasti(10000);
+                if (!self.usesBytecode()) {
+                    if (self.isStarted()) {
+                        /*
+                         * Hack: Fake bytecode to make inspect.getgeneratorstate distinguish
+                         * suspended and unstarted generators
+                         */
+                        frame.setLasti(10000);
+                    }
+                } else {
+                    FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    int bci = self.getBci();
+                    frame.setLasti(bci);
+                    frame.setLine(info.getRootNode().bciToLine(bci));
                 }
                 return frame;
             }
@@ -571,13 +640,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetYieldFromNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getYieldFrom(PGenerator self) {
-            AbstractYieldNode currentYield = self.getCurrentYieldNode();
-            if (currentYield instanceof YieldFromNode) {
-                int iteratorSlot = ((YieldFromNode) currentYield).getIteratorSlot();
-                return PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getIteratorAt(iteratorSlot);
-            } else {
-                return PNone.NONE;
-            }
+            Object yieldFrom = self.getYieldFrom();
+            return yieldFrom != null ? yieldFrom : PNone.NONE;
         }
     }
 

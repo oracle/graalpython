@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -218,9 +219,13 @@ public abstract class IsNode extends Node implements BinaryOp {
                 RootNode rightRootNode = rightCt.getRootNode();
                 if (leftRootNode instanceof GeneratorFunctionRootNode) {
                     leftRootNode = ((GeneratorFunctionRootNode) leftRootNode).getFunctionRootNode();
+                } else if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+                    leftRootNode = ((PBytecodeGeneratorFunctionRootNode) leftRootNode).getBytecodeRootNode();
                 }
                 if (rightRootNode instanceof GeneratorFunctionRootNode) {
                     rightRootNode = ((GeneratorFunctionRootNode) rightRootNode).getFunctionRootNode();
+                } else if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+                    rightRootNode = ((PBytecodeGeneratorFunctionRootNode) rightRootNode).getBytecodeRootNode();
                 }
                 return leftRootNode == rightRootNode;
             } else {

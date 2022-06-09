@@ -55,10 +55,10 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserErrorCallback;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -703,24 +703,32 @@ public class CompilerTests extends PythonTests {
         doTest("from a.b import *");
     }
 
+    @Test
+    public void testEval() {
+        doTest("1", InputType.EVAL);
+    }
+
+    @Test
+    public void testSingle() {
+        doTest("1", InputType.SINGLE);
+    }
+
     private void doTest(String src) {
+        doTest(src, InputType.FILE);
+    }
+
+    private void doTest(String src, InputType type) {
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
-        ParserErrorCallback errorCb = new ParserErrorCallback() {
-            @Override
-            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
-                System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
-            }
-        };
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code) {
                 ParserTokenizer tok = new ParserTokenizer(code);
-                return new Parser(tok, factory, this, errorCb).fstring_rule();
+                return new Parser(tok, factory, this).fstring_rule();
             }
         };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        ModTy result = parser.file_rule();
+        Parser parser = new Parser(tokenizer, factory, fexpParser);
+        ModTy result = (ModTy) parser.parse(type);
         Compiler compiler = new Compiler();
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
         CodeUnit co = cu.assemble(0);
@@ -741,7 +749,7 @@ public class CompilerTests extends PythonTests {
                 Assert.assertEquals(Files.readString(goldenFile), coString);
             }
         } catch (IOException ex) {
-            Assert.assertTrue(ex.getMessage(), false);
+            Assert.fail(ex.getMessage());
         }
     }
 

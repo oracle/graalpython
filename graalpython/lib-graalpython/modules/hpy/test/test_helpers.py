@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -69,7 +69,7 @@ class TestHPyModuleAddType(HPyTest):
             {
                 HPyType_SpecParam param[] = {
                     { HPyType_SpecParam_Base, ctx->h_LongType },
-                    { 0 }
+                    { (HPyType_SpecParam_Kind)0 }
                 };
                 if (!HPyHelpers_AddType(ctx, self, "Dummy", &dummy_spec, param))
                 {

@@ -104,6 +104,7 @@ import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_EXCEPT;
 import static com.oracle.graal.python.compiler.OpCodes.POP_TOP;
+import static com.oracle.graal.python.compiler.OpCodes.PRINT_EXPR;
 import static com.oracle.graal.python.compiler.OpCodes.PUSH_EXC_INFO;
 import static com.oracle.graal.python.compiler.OpCodes.RAISE_VARARGS;
 import static com.oracle.graal.python.compiler.OpCodes.RESUME_YIELD;
@@ -118,6 +119,7 @@ import static com.oracle.graal.python.compiler.OpCodes.STORE_FAST;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_SUBSCR;
+import static com.oracle.graal.python.compiler.OpCodes.THROW;
 import static com.oracle.graal.python.compiler.OpCodes.UNARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
@@ -148,7 +150,7 @@ import com.oracle.graal.python.util.PythonUtils;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 20;
+    public static final int BYTECODE_VERSION = 21;
 
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
@@ -1452,12 +1454,22 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addYieldFrom() {
         Block start = new Block();
+        Block yield = new Block();
+        Block resume = new Block();
         Block exit = new Block();
+        Block exceptionHandler = new Block();
         unit.useNextBlock(start);
         addOp(SEND, exit);
+        unit.useNextBlock(yield);
         addOp(YIELD_VALUE);
+        unit.pushBlock(new BlockInfo.TryExcept(resume, exceptionHandler));
+        unit.useNextBlock(resume);
         addOp(RESUME_YIELD);
         addOp(JUMP_BACKWARD, start);
+        unit.popBlock();
+        unit.useNextBlock(exceptionHandler);
+        addOp(THROW, exit);
+        addOp(JUMP_BACKWARD, yield);
         unit.useNextBlock(exit);
     }
 
@@ -1663,7 +1675,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Expr node) {
         setLocation(node);
-        if (!(node.value instanceof ExprTy.Constant)) {
+        if (interactive) {
+            node.value.accept(this);
+            addOp(PRINT_EXPR);
+        } else if (!(node.value instanceof ExprTy.Constant)) {
             node.value.accept(this);
             addOp(POP_TOP);
         }

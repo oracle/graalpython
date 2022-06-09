@@ -656,14 +656,14 @@ HPyAPI_FUNC int HPyCapsule_IsValid(HPyContext *ctx, HPy capsule, const char *nam
     return PyCapsule_IsValid(_h2py(capsule), name);
 }
 
-HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
-{
-    return _threads2h(PyEval_SaveThread());
-}
-
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state)
 {
     PyEval_RestoreThread(_h2threads(state));
+}
+
+HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
+{
+    return _threads2h(PyEval_SaveThread());
 }
 
 HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value)

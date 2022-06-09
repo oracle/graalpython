@@ -724,12 +724,12 @@ HPyAPI_FUNC HPy HPyField_Load(HPyContext *ctx, HPy source_object, HPyField sourc
      return WRAP(ctx->ctx_Field_Load ( ctx, UNWRAP(source_object), UNWRAP_FIELD(source_field) )); 
 }
 
-HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx) {
-     return WRAP_THREADSTATE(ctx->ctx_LeavePythonExecution ( ctx )); 
-}
-
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state) {
      ctx->ctx_ReenterPythonExecution ( ctx, UNWRAP_THREADSTATE(state) ); 
+}
+
+HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx) {
+     return WRAP_THREADSTATE(ctx->ctx_LeavePythonExecution ( ctx )); 
 }
 
 HPyAPI_FUNC void HPyGlobal_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {

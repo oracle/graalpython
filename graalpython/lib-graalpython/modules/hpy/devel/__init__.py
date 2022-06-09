@@ -200,17 +200,26 @@ _HPY_UNIVERSAL_MODULE_STUB_TEMPLATE = """
 
 def __bootstrap__():
 
-    import sys, pkg_resources
+    from sys import modules
+    from os import environ
+    from pkg_resources import resource_filename
     from hpy.universal import load
-    ext_filepath = pkg_resources.resource_filename(__name__, {ext_file!r})
-    m = load({module_name!r}, ext_filepath)
+    env_debug = environ.get('HPY_DEBUG')
+    is_debug = env_debug is not None and (env_debug == "1" or __name__ in env_debug.split(","))
+    ext_filepath = resource_filename(__name__, {ext_file!r})
+    if 'HPY_LOG' in environ:
+        if is_debug:
+            print("Loading {module_name!r} in HPy universal mode with a debug context")
+        else:
+            print("Loading {module_name!r} in HPy universal mode")
+    m = load({module_name!r}, ext_filepath, debug=is_debug)
     m.__file__ = ext_filepath
     m.__loader__ = __loader__
     m.__name__ = __name__
     m.__package__ = __package__
     m.__spec__ = __spec__
     m.__spec__.origin = ext_filepath
-    sys.modules[__name__] = m
+    modules[__name__] = m
 
 __bootstrap__()
 """

@@ -82,7 +82,7 @@ static HPyType_Extra_t *_HPyType_Extra_Alloc(const char *name, bool is_pure)
 {
     size_t name_size = strlen(name) + 1;
     size_t size = offsetof(HPyType_Extra_t, name) + name_size;
-    HPyType_Extra_t *result = PyMem_Calloc(1, size);
+    HPyType_Extra_t *result = (HPyType_Extra_t*)PyMem_Calloc(1, size);
     if (result == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -272,7 +272,7 @@ create_method_defs(HPyDef *hpydefs[], PyMethodDef *legacy_methods)
     HPy_ssize_t total_count = hpymeth_count + legacy_count;
 
     // allocate&fill the result
-    PyMethodDef *result = PyMem_Calloc(total_count+1, sizeof(PyMethodDef));
+    PyMethodDef *result = (PyMethodDef*)PyMem_Calloc(total_count+1, sizeof(PyMethodDef));
     if (result == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -319,7 +319,7 @@ create_member_defs(HPyDef *hpydefs[], PyMemberDef *legacy_members, HPy_ssize_t b
     HPy_ssize_t total_count = hpymember_count + legacy_count;
 
     // allocate&fill the result
-    PyMemberDef *result = PyMem_Calloc(total_count+1, sizeof(PyMemberDef));
+    PyMemberDef *result = (PyMemberDef*)PyMem_Calloc(total_count+1, sizeof(PyMemberDef));
     if (result == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -366,7 +366,7 @@ create_getset_defs(HPyDef *hpydefs[], PyGetSetDef *legacy_getsets)
     HPy_ssize_t total_count = hpygetset_count + legacy_count;
 
     // allocate&fill the result
-    PyGetSetDef *result = PyMem_Calloc(total_count+1, sizeof(PyGetSetDef));
+    PyGetSetDef *result = (PyGetSetDef*)PyMem_Calloc(total_count+1, sizeof(PyGetSetDef));
     if (result == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -407,7 +407,7 @@ create_slot_defs(HPyType_Spec *hpyspec, HPy_ssize_t base_member_offset,
     PyMethodDef *legacy_method_defs = NULL;
     PyMemberDef *legacy_member_defs = NULL;
     PyGetSetDef *legacy_getset_defs = NULL;
-    legacy_slots_count(hpyspec->legacy_slots, &legacy_slot_count,
+    legacy_slots_count((PyType_Slot*)hpyspec->legacy_slots, &legacy_slot_count,
                        &legacy_method_defs, &legacy_member_defs,
                        &legacy_getset_defs);
     bool needs_dealloc = needs_hpytype_dealloc(hpyspec);
@@ -424,7 +424,7 @@ create_slot_defs(HPyType_Spec *hpyspec, HPy_ssize_t base_member_offset,
 
     // allocate the result PyType_Slot array
     HPy_ssize_t total_slot_count = hpyslot_count + legacy_slot_count;
-    PyType_Slot *result = PyMem_Calloc(total_slot_count+1, sizeof(PyType_Slot));
+    PyType_Slot *result = (PyType_Slot*)PyMem_Calloc(total_slot_count+1, sizeof(PyType_Slot));
     if (result == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -447,7 +447,7 @@ create_slot_defs(HPyType_Spec *hpyspec, HPy_ssize_t base_member_offset,
             }
             PyType_Slot *dst = &result[dst_idx++];
             dst->slot = hpy_slot_to_cpy_slot(src->slot.slot);
-            dst->pfunc = src->slot.cpy_trampoline;
+            dst->pfunc = (void*)src->slot.cpy_trampoline;
         }
     }
 
@@ -498,12 +498,12 @@ create_slot_defs(HPyType_Spec *hpyspec, HPy_ssize_t base_member_offset,
 
     // add a dealloc function, if needed
     if (needs_dealloc) {
-        result[dst_idx++] = (PyType_Slot){Py_tp_dealloc, hpytype_dealloc};
+        result[dst_idx++] = (PyType_Slot){Py_tp_dealloc, (void*)hpytype_dealloc};
     }
 
     // add a tp_clear, if the user provided a tp_traverse
     if (has_tp_traverse(hpyspec)) {
-        result[dst_idx++] = (PyType_Slot){Py_tp_clear, hpytype_clear};
+        result[dst_idx++] = (PyType_Slot){Py_tp_clear, (void*)hpytype_clear};
     }
 
     // add the NULL sentinel at the end
@@ -529,7 +529,7 @@ create_buffer_procs(HPyType_Spec *hpyspec)
             switch (src->slot.slot) {
                 case HPy_bf_getbuffer:
                     if (buffer_procs == NULL) {
-                        buffer_procs = PyMem_Calloc(1, sizeof(PyBufferProcs));
+                        buffer_procs = (PyBufferProcs*)PyMem_Calloc(1, sizeof(PyBufferProcs));
                         if (buffer_procs == NULL) {
                             PyErr_NoMemory();
                             return NULL;
@@ -539,7 +539,7 @@ create_buffer_procs(HPyType_Spec *hpyspec)
                     break;
                 case HPy_bf_releasebuffer:
                     if (buffer_procs == NULL) {
-                        buffer_procs = PyMem_Calloc(1, sizeof(PyBufferProcs));
+                        buffer_procs = (PyBufferProcs*)PyMem_Calloc(1, sizeof(PyBufferProcs));
                         if (buffer_procs == NULL) {
                             PyErr_NoMemory();
                             return NULL;
@@ -751,7 +751,7 @@ ctx_Type_FromSpec(HPyContext *ctx, HPyType_Spec *hpyspec,
         return HPy_NULL;
     }
 
-    PyType_Spec *spec = PyMem_Calloc(1, sizeof(PyType_Spec));
+    PyType_Spec *spec = (PyType_Spec*)PyMem_Calloc(1, sizeof(PyType_Spec));
     if (spec == NULL) {
         PyErr_NoMemory();
         return HPy_NULL;

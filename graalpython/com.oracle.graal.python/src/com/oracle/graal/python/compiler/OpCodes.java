@@ -304,6 +304,12 @@ public enum OpCodes {
      * Pops: level (must be {@code int})
      */
     IMPORT_STAR(1, 1, 0),
+    /**
+     * Prints the top of the stack. Used by "single" parsing mode to echo expressions.
+     *
+     * Pops: the value to print
+     */
+    PRINT_EXPR(0, 1, 0),
 
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),
@@ -608,6 +614,16 @@ public enum OpCodes {
      * Pushes (if jumping): the generator return value
      */
     SEND(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
+    /**
+     * Exception handler for forwarding {@code throw} calls into {@code yield from}.
+     *
+     * Pops: exception, then the generator
+     *
+     * Pushes (if not jumping): the generator, then the yielded value
+     *
+     * Pushes (if jumping): the generator return value
+     */
+    THROW(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
 
     // with statements
     /**

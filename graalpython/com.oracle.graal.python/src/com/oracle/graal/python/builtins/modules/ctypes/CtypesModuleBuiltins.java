@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,6 +163,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.UnsupportedSpecializationException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -796,6 +797,70 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             auditNode.audit("ctypes.dlsym/handle", obj, name);
             DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
             return dlSymNode.execute(frame, handle, name, getContext(), factory(), OSError);
+        }
+    }
+
+    @Builtin(name = "_dyld_shared_cache_contains_path", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    protected abstract static class DyldSharedCacheConstainsPath extends PythonBinaryBuiltinNode {
+        @CompilationFinal private static boolean hasDynamicLoaderCacheValue = false;
+        @CompilationFinal private static boolean hasDynamicLoaderCacheInit = false;
+
+        private static boolean hasDynamicLoaderCache() {
+            if (hasDynamicLoaderCacheInit) {
+                return hasDynamicLoaderCacheValue;
+            }
+
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (System.getProperty("os.name").contains("Mac")) {
+                String osVersion = System.getProperty("os.version");
+                // dynamic linker cache support on os.version >= 11.x
+                int major = 11;
+                int i = osVersion.indexOf('.');
+                try {
+                    major = Integer.parseInt(i < 0 ? osVersion : osVersion.substring(0, i));
+                } catch (NumberFormatException e) {
+                }
+                hasDynamicLoaderCacheValue = major >= 11;
+            } else {
+                hasDynamicLoaderCacheValue = false;
+            }
+            hasDynamicLoaderCacheInit = true;
+            return hasDynamicLoaderCacheValue;
+        }
+
+        @Specialization
+        Object py_dyld_shared_pstring(VirtualFrame frame, PString ppath,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return py_dyld_shared_cache_contains_path(frame, ppath.getValue(), ilib);
+        }
+
+        @CompilationFinal Object cachedFunction = null;
+
+        // TODO: 'path' might need to be processed using FSConverter.
+        @Specialization
+        Object py_dyld_shared_cache_contains_path(VirtualFrame frame, String path,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            if (!hasDynamicLoaderCache()) {
+                throw raise(NotImplementedError, "_dyld_shared_cache_contains_path symbol is missing");
+            }
+
+            try {
+                if (cachedFunction == null) {
+                    String name = "_dyld_shared_cache_contains_path";
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, "", RTLD_LOCAL.getValueIfDefined());
+                    Object sym = ilib.readMember(handle.getLibrary(), name);
+                    // bool _dyld_shared_cache_contains_path(const char* path)
+                    Source source = Source.newBuilder(NFI_LANGUAGE, "(string):sint32", name).build();
+                    Object nfiSignature = getContext().getEnv().parseInternal(source).call();
+                    cachedFunction = SignatureLibrary.getUncached().bind(nfiSignature, sym);
+                    assert ilib.isExecutable(cachedFunction);
+                }
+                return (int) ilib.execute(cachedFunction, path) != 0;
+            } catch (InteropException e) {
+                return false;
+            }
         }
     }
 

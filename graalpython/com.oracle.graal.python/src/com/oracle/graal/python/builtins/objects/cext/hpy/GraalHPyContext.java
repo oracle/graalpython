@@ -290,27 +290,7 @@ import sun.misc.Unsafe;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    private static final boolean TRACE;
-    private static final int TRACE_SLEEP_TIME;
-    static {
-        String prop = System.getProperty("HPyTraceUpcalls");
-        boolean doTrace = false;
-        int sleepTime = 5000;
-        if (prop != null) {
-            if (prop.equals("true")) {
-                doTrace = true;
-            } else {
-                try {
-                    sleepTime = Integer.parseInt(prop);
-                    doTrace = true;
-                } catch (NumberFormatException e) {
-                    // pass
-                }
-            }
-        }
-        TRACE = doTrace;
-        TRACE_SLEEP_TIME = sleepTime;
-    }
+    private final boolean traceJNIUpcalls;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
@@ -901,8 +881,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
+        PythonLanguage language = context.getLanguage();
+        useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
+        int traceJNISleepTime = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
+        traceJNIUpcalls = traceJNISleepTime != 0;
         this.slowPathFactory = context.factory();
-        this.hpyContextMembers = createMembers(context, getName());
+        this.hpyContextMembers = createMembers(context, getName(), traceJNIUpcalls);
         for (Object member : hpyContextMembers) {
             if (member instanceof GraalHPyHandle) {
                 GraalHPyHandle handle = (GraalHPyHandle) member;
@@ -913,7 +897,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         hpyHandleTable = Arrays.copyOf(hpyHandleTable, IMMUTABLE_HANDLE_COUNT * 2);
         nextHandle = IMMUTABLE_HANDLE_COUNT;
-        this.useNativeFastPaths = context.getLanguage().getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
+        if (traceJNIUpcalls) {
+            startUpcallsDaemon(traceJNISleepTime);
+        }
     }
 
     protected String getName() {
@@ -1442,45 +1428,23 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallGlobalLoad,
         UpcallGlobalStore;
 
-        long count;
-
-        void increment() {
-            if (TRACE) {
-                count++;
-            }
-        }
+        @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
 
-    static {
-        if (TRACE) {
-            Thread thread = new Thread(() -> {
-
-                while (true) {
-                    try {
-                        Thread.sleep(TRACE_SLEEP_TIME);
-                    } catch (InterruptedException e) {
-                        // fall through
-                    }
-                    System.out.println("====  HPy counts");
-                    for (Counter c : Counter.values()) {
-                        System.out.printf("  %20s: %8d\n", c.name(), c.count);
-                    }
-                }
-
-            });
-            thread.setDaemon(true);
-            thread.start();
+    private void increment(Counter upcall) {
+        if (traceJNIUpcalls) {
+            jniCounts[upcall.ordinal()]++;
         }
     }
 
     @SuppressWarnings("static-method")
     public final long ctxFloatFromDouble(double value) {
-        Counter.UpcallFloatFromDouble.increment();
+        increment(Counter.UpcallFloatFromDouble);
         return GraalHPyBoxing.boxDouble(value);
     }
 
     public final double ctxFloatAsDouble(long handle) {
-        Counter.UpcallFloatAsDouble.increment();
+        increment(Counter.UpcallFloatAsDouble);
 
         if (GraalHPyBoxing.isBoxedDouble(handle)) {
             return GraalHPyBoxing.unboxDouble(handle);
@@ -1494,7 +1458,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxLongAsLong(long handle) {
-        Counter.UpcallLongAsLong.increment();
+        increment(Counter.UpcallLongAsLong);
 
         if (GraalHPyBoxing.isBoxedInt(handle)) {
             return GraalHPyBoxing.unboxInt(handle);
@@ -1510,7 +1474,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final double ctxLongAsDouble(long handle) {
-        Counter.UpcallLongAsDouble.increment();
+        increment(Counter.UpcallLongAsDouble);
 
         if (GraalHPyBoxing.isBoxedInt(handle)) {
             return GraalHPyBoxing.unboxInt(handle);
@@ -1526,7 +1490,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxLongFromLong(long l) {
-        Counter.UpcallLongFromLong.increment();
+        increment(Counter.UpcallLongFromLong);
 
         if (com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(l)) {
             return GraalHPyBoxing.boxInt((int) l);
@@ -1535,14 +1499,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxAsStruct(long handle) {
-        Counter.UpcallCast.increment();
+        increment(Counter.UpcallCast);
 
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
         return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
     }
 
     public final long ctxNew(long typeHandle, long dataOutVar) {
-        Counter.UpcallNew.increment();
+        increment(Counter.UpcallNew);
 
         Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
         PythonObject pythonObject;
@@ -1584,7 +1548,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxTypeGenericNew(long typeHandle) {
-        Counter.UpcallTypeGenericNew.increment();
+        increment(Counter.UpcallTypeGenericNew);
 
         Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
 
@@ -1616,12 +1580,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final void ctxClose(long handle) {
-        Counter.UpcallClose.increment();
+        increment(Counter.UpcallClose);
         closeNativeHandle(handle);
     }
 
     public final void ctxBulkClose(long unclosedHandlePtr, int size) {
-        Counter.UpcallBulkClose.increment();
+        increment(Counter.UpcallBulkClose);
         for (int i = 0; i < size; i++) {
             long handle = unsafe.getLong(unclosedHandlePtr);
             unclosedHandlePtr += 8;
@@ -1632,7 +1596,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxDup(long handle) {
-        Counter.UpcallDup.increment();
+        increment(Counter.UpcallDup);
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             GraalHPyHandle pyHandle = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
             return GraalHPyBoxing.boxHandle(createHandle(pyHandle.getDelegate()).getId(this, ConditionProfile.getUncached()));
@@ -1642,7 +1606,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxGetItemi(long hCollection, long lidx) {
-        Counter.UpcallGetItemI.increment();
+        increment(Counter.UpcallGetItemI);
         try {
             // If handle 'hCollection' is a boxed int or double, the object is not subscriptable.
             if (!GraalHPyBoxing.isBoxedHandle(hCollection)) {
@@ -1696,7 +1660,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * @return {@code 0} on success; {@code -1} on error
      */
     public final int ctxSetItem(long hSequence, long hKey, long hValue) {
-        Counter.UpcallSetItem.increment();
+        increment(Counter.UpcallSetItem);
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
@@ -1739,7 +1703,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final int ctxSetItemi(long hSequence, long lidx, long hValue) {
-        Counter.UpcallSetItemI.increment();
+        increment(Counter.UpcallSetItemI);
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
@@ -1796,7 +1760,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final int ctxNumberCheck(long handle) {
-        Counter.UpcallNumberCheck.increment();
+        increment(Counter.UpcallNumberCheck);
         if (GraalHPyBoxing.isBoxedDouble(handle) || GraalHPyBoxing.isBoxedInt(handle)) {
             return 1;
         }
@@ -1825,7 +1789,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final int ctxTypeCheck(long handle, long typeHandle) {
-        Counter.UpcallTypeCheck.increment();
+        increment(Counter.UpcallTypeCheck);
         Object receiver;
         if (GraalHPyBoxing.isBoxedDouble(handle)) {
             receiver = PythonBuiltinClassType.PFloat;
@@ -1868,7 +1832,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxLength(long handle) {
-        Counter.UpcallLength.increment();
+        increment(Counter.UpcallLength);
         assert GraalHPyBoxing.isBoxedHandle(handle);
 
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
@@ -1888,7 +1852,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final int ctxListCheck(long handle) {
-        Counter.UpcallListCheck.increment();
+        increment(Counter.UpcallListCheck);
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
             Object obj = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
             Object clazz = GetClassNode.getUncached().execute(obj);
@@ -1899,7 +1863,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxUnicodeFromWideChar(long wcharArrayPtr, long size) {
-        Counter.UpcallUnicodeFromWideChar.increment();
+        increment(Counter.UpcallUnicodeFromWideChar);
 
         if (!PInt.isIntRange(size)) {
             // NULL handle
@@ -1921,19 +1885,19 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxUnicodeFromJCharArray(char[] arr) {
-        Counter.UpcallUnicodeFromJCharArray.increment();
+        increment(Counter.UpcallUnicodeFromJCharArray);
         return createHandle(new String(arr, 0, arr.length)).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxDictNew() {
-        Counter.UpcallDictNew.increment();
+        increment(Counter.UpcallDictNew);
         PDict dict = PythonObjectFactory.getUncached().createDict();
         return createHandle(dict).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxListNew(long llen) {
         try {
-            Counter.UpcallListNew.increment();
+            increment(Counter.UpcallListNew);
             int len = CastToJavaIntExactNode.getUncached().execute(llen);
             Object[] data = new Object[len];
             Arrays.fill(data, PNone.NONE);
@@ -1952,7 +1916,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * is useful to implement, e.g., tuple builder.
      */
     public final long ctxTupleFromArray(long[] hItems, boolean steal) {
-        Counter.UpcallTupleFromArray.increment();
+        increment(Counter.UpcallTupleFromArray);
 
         Object[] objects = new Object[hItems.length];
         for (int i = 0; i < hItems.length; i++) {
@@ -1967,14 +1931,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxFieldLoad(long bits, long idx) {
-        Counter.UpcallFieldLoad.increment();
+        increment(Counter.UpcallFieldLoad);
         Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
         Object referent = ((PythonObject) owner).getHpyFields()[(int) idx - 1];
         return createHandle(referent).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxFieldStore(long bits, long idx, long value) {
-        Counter.UpcallFieldStore.increment();
+        increment(Counter.UpcallFieldStore);
         PythonObject owner = (PythonObject) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
         Object referent = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value)).getDelegate();
 
@@ -1996,13 +1960,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final long ctxGlobalLoad(long bits) {
-        Counter.UpcallGlobalLoad.increment();
+        increment(Counter.UpcallGlobalLoad);
         assert GraalHPyBoxing.isBoxedHandle(bits);
         return createHandle(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate()).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxGlobalStore(long bits, long v) {
-        Counter.UpcallGlobalStore.increment();
+        increment(Counter.UpcallGlobalStore);
         Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)).getDelegate();
         int idx = 0;
         if (bits > 0) {
@@ -2108,7 +2072,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return memberInvokeLib.execute(member, args);
     }
 
-    private static Object[] createMembers(PythonContext context, String name) {
+    private static Object[] createMembers(PythonContext context, String name, boolean traceJNIUpcalls) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
@@ -2401,7 +2365,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         members[HPyContextMember.CTX_SEQITER_NEW.ordinal()] = new GraalHPySeqIterNew();
 
-        if (TRACE) {
+        if (traceJNIUpcalls) {
             for (int i = 0; i < members.length; i++) {
                 Object m = members[i];
                 if (m != null && !(m instanceof Number || m instanceof GraalHPyHandle)) {
@@ -2415,30 +2379,32 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     static final int[] counts = new int[HPyContextMember.VALUES.length];
+    static final int[] jniCounts = new int[Counter.values().length];
 
-    static {
-        if (TRACE) {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(TRACE_SLEEP_TIME);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        System.out.println("========= stats");
-                        for (int i = 0; i < counts.length; i++) {
-                            if (counts[i] != 0) {
-                                System.out.printf("  %40s[%3d]: %d\n", HPyContextMember.VALUES[i].name, i, counts[i]);
-                            }
-                        }
+    private static void startUpcallsDaemon(int traceJNISleepTime) {
+        Thread thread = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(traceJNISleepTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("========= HPy LLVM/NFI upcall counts");
+                for (int i = 0; i < counts.length; i++) {
+                    if (counts[i] != 0) {
+                        System.out.printf("  %40s[%3d]: %d\n", HPyContextMember.VALUES[i].name, i, counts[i]);
                     }
                 }
-            };
-            thread.setDaemon(true);
-            thread.start();
-        }
+                System.out.println("====  HPy JNI upcall counts");
+                for (int i = 0; i < jniCounts.length; i++) {
+                    if (jniCounts[i] != 0) {
+                        System.out.printf("  %40s[%3d]: %d\n", Counter.VALUES[i].name(), i, jniCounts[i]);
+                    }
+                }
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")

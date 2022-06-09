@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -46,7 +47,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * The layout of an argument array for a Python frame.
  *
  *                                         +-------------------+
- * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |
+ * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |  This slot is also used to pass parent frame reference in bytecode OSR compilation.
  *                                         +-------------------+
  * INDEX_KEYWORD_ARGUMENTS              -> | PKeyword[]        |
  *                                         +-------------------+
@@ -277,6 +278,19 @@ public final class PArguments {
 
     public static PCell[] getClosure(Object[] arguments) {
         return (PCell[]) arguments[INDEX_CLOSURE];
+    }
+
+    /*
+     * We repurpose the varargs slot for storing the OSR frame. In the bytecode interpreter, varargs
+     * should only be read once at the beginning of execute which is before OSR.
+     */
+    public static void setOSRFrame(Object[] arguments, VirtualFrame parentFrame) {
+        CompilerAsserts.neverPartOfCompilation();
+        arguments[INDEX_VARIABLE_ARGUMENTS] = parentFrame;
+    }
+
+    public static Frame getOSRFrame(Object[] arguments) {
+        return (Frame) arguments[INDEX_VARIABLE_ARGUMENTS];
     }
 
     public static PCell[] getClosure(Frame frame) {

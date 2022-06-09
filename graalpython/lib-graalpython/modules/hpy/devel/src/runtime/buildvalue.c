@@ -41,6 +41,10 @@
 /**
  * Implementation of HPy_BuildValue.
  *
+ * Note: HPy_BuildValue is a runtime helper functions, i.e., it is not a part
+ * of the HPy context, but is available to HPy extensions to incorporate at
+ * compile time.
+ *
  * HPy_BuildValue creates a new value based on a format string from the values
  * passed in variadic arguments. Returns HPy_NULL in case of an error and raises
  * an exception.
@@ -91,7 +95,7 @@
  *     Convert a C double to a Python floating point number.
  *
  * Collections
- * ~~~~~~~
+ * ~~~~~~~~~~~
  *
  * ``(items) (tuple) [matching-items]``
  *     Convert a sequence of C values to a Python tuple with the same number of items.
