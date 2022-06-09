@@ -353,7 +353,12 @@ public abstract class ObjectNodes {
         }
 
         protected static boolean isDefaultCase(PythonObject object) {
-            return !(object instanceof PFloat || object instanceof PInt || object instanceof PString || object instanceof PTuple || object instanceof PFrozenSet ||
+            return !(object instanceof PBytes ||
+                            object instanceof PFrozenSet ||
+                            object instanceof PTuple ||
+                            object instanceof PInt ||
+                            object instanceof PFloat ||
+                            object instanceof PString ||
                             object instanceof PythonBuiltinClass);
         }
 
