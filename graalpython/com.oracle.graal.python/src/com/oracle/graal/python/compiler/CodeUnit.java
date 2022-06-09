@@ -108,7 +108,7 @@ public final class CodeUnit {
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
-        this.stacksize = stacksize;
+        this.stacksize = stacksize + varnames.length + cellvars.length + freevars.length;
         this.code = code;
         this.srcOffsetTable = linetable;
         this.flags = flags;
