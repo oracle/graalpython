@@ -1384,10 +1384,10 @@ public class GraalHPyNodes {
         }
 
         @Specialization(replaces = { //
-                            "doHandle", "doValidHandle", //
-                            "doNullLong", "doLong", "doLongDouble", "doLongInt", //
-                            "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
-                        })
+                        "doHandle", "doValidHandle", //
+                        "doNullLong", "doLong", "doLongDouble", "doLongInt", //
+                        "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
+        })
         Object doGeneric(GraalHPyContext hpyContext, Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
             if (value instanceof GraalHPyHandle) {
@@ -2053,12 +2053,9 @@ public class GraalHPyNodes {
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, legacy == 0);
-                if (newType instanceof PythonClass) {
-                    PythonClass clazz = (PythonClass) newType;
-                    clazz.basicSize = basicSize;
-                    clazz.flags = flags;
-                    clazz.itemSize = itemSize;
-                }
+                newType.basicSize = basicSize;
+                newType.flags = flags;
+                newType.itemSize = itemSize;
 
                 boolean seenNew = false;
                 boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);

@@ -145,7 +145,7 @@ HPyStructSequence_NewType(HPyContext *ctx, HPyStructSequence_Desc *desc)
     HPy_Close(ctx, defs);
     HPy_Close(ctx, docstring);
     return result;
-#else    
+#else
     PyStructSequence_Desc d = {
         .name = desc->name,
         .doc = desc->doc,

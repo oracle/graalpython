@@ -52,10 +52,10 @@ hpy_get_destructor_registry(void)
     }
 #else
     /* borrowed ref */
-    PyObject *interp_dict = 
+    PyObject *interp_dict =
             PyInterpreterState_GetDict(PyThreadState_Get()->interp);
     if (interp_dict == NULL) {
-        PyErr_SetString(PyExc_SystemError, 
+        PyErr_SetString(PyExc_SystemError,
                 "HPyCapsule destructor registry is not available");
         return NULL;
     }
