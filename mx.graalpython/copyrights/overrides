@@ -103,6 +103,7 @@ graalpython/com.oracle.graal.python.cext/include/hpy/runtime/argparse.h,hpy.copy
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/ctx_funcs.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/ctx_type.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/helpers.h,hpy.copyright
+graalpython/com.oracle.graal.python.cext/include/hpy/runtime/structseq.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/universal/autogen_ctx.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/universal/autogen_hpyfunc_trampolines.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/universal/autogen_trampolines.h,hpy.copyright
@@ -110,6 +111,7 @@ graalpython/com.oracle.graal.python.cext/include/hpy/universal/hpyfunc_trampolin
 graalpython/com.oracle.graal.python.cext/include/hpy/universal/misc_trampolines.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/compile.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/complexobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/context.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/abstract.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/dictobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/fileobject.h,python.copyright
@@ -605,6 +607,9 @@ graalpython/lib-graalpython/modules/hpy/devel/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/argparse.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_bytes.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_call.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_capsule.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_contextvar.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_dict.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_err.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_listbuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_module.c,hpy.copyright
@@ -614,6 +619,7 @@ graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuple.c,hpy.copyri
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuplebuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_type.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/helpers.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/structseq.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/version.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/check_py27_compat.py,hpy.copyright
@@ -622,9 +628,11 @@ graalpython/lib-graalpython/modules/hpy/test/support.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_argparse.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_00_basic.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_call.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/test/test_capsule.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_cpy_compat.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_helpers.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpybytes.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/test/test_hpycontextvar.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpydict.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpyerr.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpyimport.py,hpy.copyright
