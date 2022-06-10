@@ -936,7 +936,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.LOAD_CLASSDEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadClassDefRef(localFrame, stackFrame, locals, stackTop, beginBci, localNodes, oparg);
+                        stackTop = bytecodeLoadClassDeref(virtualFrame, localFrame, stackFrame, locals, stackTop, beginBci, localNodes, oparg);
                         break;
                     }
                     case OpCodesConstants.LOAD_DEREF: {
@@ -1539,7 +1539,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeLoadClassDefRef(Frame localFrame, Frame stackFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg) {
+    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg) {
         String name;
         boolean isCellVar;
         if (oparg < cellvars.length) {
@@ -1550,7 +1550,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             isCellVar = false;
         }
         GetNameFromLocalsNode getNameFromLocals = insertChildNode(localNodes, bci, NODE_GET_NAME_FROM_LOCALS);
-        Object value = getNameFromLocals.execute(stackFrame, locals, name, isCellVar);
+        Object value = getNameFromLocals.execute(virtualFrame, locals, name, isCellVar);
         if (value != null) {
             stackFrame.setObject(++stackTop, value);
             return stackTop;
