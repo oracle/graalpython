@@ -280,10 +280,12 @@ static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
 static unsigned long augment_Long_AsUnsignedLong(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
-        return unboxInt(bits);
-    } else {
-        return original_Long_AsUnsignedLong(ctx, h);
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
     }
+    return original_Long_AsUnsignedLong(ctx, h);
 }
 
 static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
@@ -296,36 +298,32 @@ static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
 }
 
 static HPy augment_Long_FromLong(HPyContext *ctx, long l) {
-    int32_t i = (int32_t) l;
-    if (l == i) {
-        return toPtr(boxInt(i));
+    if (isBoxableInt(l)) {
+        return toPtr(boxInt((int32_t) l));
     } else {
         return original_Long_FromLong(ctx, l);
     }
 }
 
 static HPy augment_Long_FromUnsignedLong(HPyContext *ctx, unsigned long l) {
-    int32_t i = (int32_t) l;
-    if (l == i) {
-        return toPtr(boxInt(i));
+    if (isBoxableUnsignedInt(l)) {
+        return toPtr(boxInt((int32_t) l));
     } else {
         return original_Long_FromUnsignedLong(ctx, l);
     }
 }
 
 static HPy augment_Long_FromLongLong(HPyContext *ctx, long long l) {
-    int32_t i = (int32_t) l;
-    if (l == i) {
-        return toPtr(boxInt(i));
+    if (isBoxableInt(l)) {
+        return toPtr(boxInt((int32_t) l));
     } else {
         return original_Long_FromLongLong(ctx, l);
     }
 }
 
 static HPy augment_Long_FromUnsignedLongLong(HPyContext *ctx, unsigned long long l) {
-    int32_t i = (int32_t) l;
-    if (l == i) {
-        return toPtr(boxInt(i));
+    if (isBoxableUnsignedInt(l)) {
+        return toPtr(boxInt((int32_t) l));
     } else {
         return original_Long_FromUnsignedLongLong(ctx, l);
     }

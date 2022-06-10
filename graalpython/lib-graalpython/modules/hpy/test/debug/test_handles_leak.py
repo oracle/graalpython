@@ -135,6 +135,7 @@ def test_leak_from_method(compiler):
     leaks = [dh.obj for dh in _debug.get_open_handles(gen)]
     assert leaks == ["a"]
 
+@pytest.mark.xfail(reason="set_handle_stack_trace_limit not implemented yet")
 def test_DebugHandle_id(compiler, with_alloc_trace):
     from hpy.universal import _debug
     mod = make_leak_module(compiler)
@@ -183,6 +184,7 @@ def test_DebugHandle_compare(compiler):
     with pytest.raises(TypeError):
         a1 < 'hello'
 
+@pytest.mark.xfail(reason="set_handle_stack_trace_limit not implemented yet")
 def test_DebugHandle_repr(compiler, with_alloc_trace):
     from hpy.universal import _debug
     mod = make_leak_module(compiler)
@@ -215,6 +217,7 @@ def test_LeakDetector(compiler):
     assert 'hello' not in msg
     assert 'world' not in msg
 
+@pytest.mark.xfail(reason="set_handle_stack_trace_limit not implemented yet")
 def test_closed_handles(compiler, with_alloc_trace):
     from hpy.universal import _debug
     mod = make_leak_module(compiler)

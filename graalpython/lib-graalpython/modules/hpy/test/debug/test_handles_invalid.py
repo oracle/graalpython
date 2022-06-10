@@ -175,6 +175,7 @@ def test_keeping_and_reusing_argument_handle(compiler, hpy_debug_capture):
     assert hpy_debug_capture.invalid_handles_count == 1
 
 
+@pytest.mark.xfail(reason="set_handle_stack_trace_limit not implemented yet")
 def test_invalid_handle_crashes_python_if_no_hook(compiler, python_subprocess, fatal_exit_code):
     if not SUPPORTS_SYS_EXECUTABLE:
         pytest.skip("no sys.executable")
