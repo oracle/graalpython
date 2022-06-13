@@ -61,6 +61,7 @@ import java.util.TreeSet;
 
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class CompilationUnit {
     final String name;
@@ -87,11 +88,11 @@ public final class CompilationUnit {
     Block currentBlock = startBlock;
     int maxStackSize = 0;
 
-    final int startOffset;
-    int currentOffset;
+    SourceRange startLocation;
+    SourceRange currentLocation;
 
     CompilationUnit(CompilationScope scopeType, Scope scope, String name, CompilationUnit parent, int scopeDepth, int argCount, int positionalOnlyArgCount, int kwOnlyArgCount, boolean takesVarArgs,
-                    boolean takesVarKeywordArgs, int startOffset) {
+                    boolean takesVarKeywordArgs, SourceRange startLocation) {
         this.scopeType = scopeType;
         this.scope = scope;
         this.name = name;
@@ -100,8 +101,8 @@ public final class CompilationUnit {
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.takesVarArgs = takesVarArgs;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
-        this.startOffset = startOffset;
-        currentOffset = startOffset;
+        this.startLocation = startLocation;
+        currentLocation = startLocation;
 
         if (scopeType == Class) {
             privateName = name;
@@ -168,8 +169,8 @@ public final class CompilationUnit {
             b = b.next;
         }
         if (!b.isReturn()) {
-            b.instr.add(new Instruction(OpCodes.LOAD_NONE, 0, null, null, 0));
-            b.instr.add(new Instruction(OpCodes.RETURN_VALUE, 0, null, null, 0));
+            b.instr.add(new Instruction(OpCodes.LOAD_NONE, 0, null, null, currentLocation));
+            b.instr.add(new Instruction(OpCodes.RETURN_VALUE, 0, null, null, currentLocation));
         }
     }
 
@@ -196,7 +197,7 @@ public final class CompilationUnit {
 
         Block b = startBlock;
         HashMap<Block, List<Block>> handlerBlocks = new HashMap<>();
-        int lastSrcOffset = startOffset;
+        int lastSrcOffset = startLocation.startOffset;
         while (b != null) {
             b.startBci = buf.size();
             BlockInfo.AbstractExceptionHandler handler = b.findExceptionHandler();
@@ -223,8 +224,8 @@ public final class CompilationUnit {
             }
             for (Instruction i : b.instr) {
                 emitBytecode(i, buf);
-                insertSrcOffsetTable(i.srcOffset, lastSrcOffset, srcOffsets);
-                lastSrcOffset = i.srcOffset;
+                insertSrcOffsetTable(i.location.startOffset, lastSrcOffset, srcOffsets);
+                lastSrcOffset = i.location.startOffset;
             }
             b.endBci = buf.size();
             b = b.next;
@@ -256,7 +257,7 @@ public final class CompilationUnit {
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
-                        startOffset);
+                        startLocation.startOffset);
     }
 
     private void addExceptionRange(Collection<short[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
@@ -343,7 +344,7 @@ public final class CompilationUnit {
                     if (target != null) {
                         int targetPos = blockLocationMap.get(target);
                         int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
-                        Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.srcOffset);
+                        Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.location);
                         if (newInstr.extendedLength() != instr.extendedLength()) {
                             repeat = true;
                         }

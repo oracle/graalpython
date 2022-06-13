@@ -40,20 +40,22 @@
  */
 package com.oracle.graal.python.compiler;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 final class Instruction {
 
     final OpCodes opcode;
     final int arg;
     final byte[] followingArgs;
     final Block target;
-    final int srcOffset;
+    final SourceRange location;
 
-    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, int srcOffset) {
+    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {
         this.opcode = opcode;
         this.arg = arg;
         this.followingArgs = followingArgs;
         this.target = target;
-        this.srcOffset = srcOffset;
+        this.location = location;
         assert arg >= 0;
         assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
     }
