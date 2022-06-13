@@ -42,10 +42,11 @@
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ExprTy extends SSTNode {
-    ExprTy(int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    ExprTy(SourceRange sourceRange) {
+        super(sourceRange);
     }
 
     public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContext newContext) {
@@ -53,8 +54,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BoolOp extends ExprTy {
-        public BoolOp(Type op, ExprTy[] values, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public BoolOp(Type op, ExprTy[] values, SourceRange sourceRange) {
+            super(sourceRange);
             this.op = op;
             this.values = values;
         }
@@ -77,8 +78,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy target;
         public final ExprTy value;
 
-        public NamedExpr(ExprTy target, ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public NamedExpr(ExprTy target, ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.target = target;
             this.value = value;
         }
@@ -110,8 +111,8 @@ public abstract class ExprTy extends SSTNode {
         public final Operator op;
         public final ExprTy right;
 
-        public BinOp(ExprTy left, Operator op, ExprTy right, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public BinOp(ExprTy left, Operator op, ExprTy right, SourceRange sourceRange) {
+            super(sourceRange);
             this.left = left;
             this.op = op;
             this.right = right;
@@ -134,8 +135,8 @@ public abstract class ExprTy extends SSTNode {
         public final Operator op;
         public final ExprTy operand;
 
-        public UnaryOp(Operator op, ExprTy operand, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public UnaryOp(Operator op, ExprTy operand, SourceRange sourceRange) {
+            super(sourceRange);
             this.op = op;
             this.operand = operand;
         }
@@ -150,8 +151,8 @@ public abstract class ExprTy extends SSTNode {
         public final ArgumentsTy args;
         public final ExprTy body;
 
-        public Lambda(ArgumentsTy args, ExprTy body, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Lambda(ArgumentsTy args, ExprTy body, SourceRange sourceRange) {
+            super(sourceRange);
             this.args = args;
             this.body = body;
         }
@@ -167,8 +168,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy body;
         public final ExprTy orElse;
 
-        public IfExp(ExprTy test, ExprTy body, ExprTy orElse, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public IfExp(ExprTy test, ExprTy body, ExprTy orElse, SourceRange sourceRange) {
+            super(sourceRange);
             this.test = test;
             this.body = body;
             this.orElse = orElse;
@@ -184,8 +185,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy[] keys;
         public final ExprTy[] values;
 
-        public Dict(ExprTy[] keys, ExprTy[] values, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Dict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange) {
+            super(sourceRange);
             this.keys = keys;
             this.values = values;
         }
@@ -199,8 +200,8 @@ public abstract class ExprTy extends SSTNode {
     public static final class Set extends ExprTy {
         public final ExprTy[] elements;
 
-        public Set(ExprTy[] elements, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Set(ExprTy[] elements, SourceRange sourceRange) {
+            super(sourceRange);
             this.elements = elements;
         }
 
@@ -214,8 +215,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy element;
         public final ComprehensionTy[] generators;
 
-        public ListComp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public ListComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
+            super(sourceRange);
             this.element = element;
             this.generators = generators;
         }
@@ -230,8 +231,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy element;
         public final ComprehensionTy[] generators;
 
-        public SetComp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public SetComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
+            super(sourceRange);
             this.element = element;
             this.generators = generators;
         }
@@ -247,8 +248,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy value;
         public final ComprehensionTy[] generators;
 
-        public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, SourceRange sourceRange) {
+            super(sourceRange);
             this.key = key;
             this.value = value;
             this.generators = generators;
@@ -264,8 +265,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy element;
         public final ComprehensionTy[] generators;
 
-        public GeneratorExp(ExprTy element, ComprehensionTy[] generators, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public GeneratorExp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
+            super(sourceRange);
             this.element = element;
             this.generators = generators;
         }
@@ -279,8 +280,8 @@ public abstract class ExprTy extends SSTNode {
     public static final class Await extends ExprTy {
         public final ExprTy value;
 
-        public Await(ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Await(ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
         }
 
@@ -293,8 +294,8 @@ public abstract class ExprTy extends SSTNode {
     public static final class Yield extends ExprTy {
         public final ExprTy value;
 
-        public Yield(ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Yield(ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
         }
 
@@ -307,8 +308,8 @@ public abstract class ExprTy extends SSTNode {
     public static final class YieldFrom extends ExprTy {
         public final ExprTy value;
 
-        public YieldFrom(ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public YieldFrom(ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
         }
 
@@ -336,8 +337,8 @@ public abstract class ExprTy extends SSTNode {
         public final Operator[] ops;
         public final ExprTy[] comparators;
 
-        public Compare(ExprTy left, Operator[] ops, ExprTy[] comparators, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Compare(ExprTy left, Operator[] ops, ExprTy[] comparators, SourceRange sourceRange) {
+            super(sourceRange);
             this.left = left;
             this.ops = ops;
             this.comparators = comparators;
@@ -354,8 +355,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy[] args;
         public final KeywordTy[] keywords;
 
-        public Call(ExprTy func, ExprTy[] args, KeywordTy[] keywords, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Call(ExprTy func, ExprTy[] args, KeywordTy[] keywords, SourceRange sourceRange) {
+            super(sourceRange);
             this.func = func;
             this.args = args;
             this.keywords = keywords;
@@ -379,8 +380,8 @@ public abstract class ExprTy extends SSTNode {
         public final ConversionType conversion;
         public final ExprTy formatSpec;
 
-        public FormattedValue(ExprTy value, ConversionType conversion, ExprTy formatSpec, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public FormattedValue(ExprTy value, ConversionType conversion, ExprTy formatSpec, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
             this.conversion = conversion;
             this.formatSpec = formatSpec;
@@ -395,8 +396,8 @@ public abstract class ExprTy extends SSTNode {
     public static final class JoinedStr extends ExprTy {
         public final ExprTy[] values;
 
-        public JoinedStr(ExprTy[] values, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public JoinedStr(ExprTy[] values, SourceRange sourceRange) {
+            super(sourceRange);
             this.values = values;
         }
 
@@ -423,8 +424,8 @@ public abstract class ExprTy extends SSTNode {
         public final Object value;
         public final Kind kind;
 
-        public Constant(Object value, Kind kind, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Constant(Object value, Kind kind, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
             this.kind = kind == null ? Kind.OBJECT : kind;
         }
@@ -440,8 +441,8 @@ public abstract class ExprTy extends SSTNode {
         public final String attr;
         public final ExprContext context;
 
-        public Attribute(ExprTy value, String attr, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Attribute(ExprTy value, String attr, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
             this.attr = attr;
             this.context = context;
@@ -454,7 +455,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Attribute(value.copyWithContext(ctx), attr, ctx, startOffset, endOffset);
+            return new Attribute(value.copyWithContext(ctx), attr, ctx, sourceRange);
         }
     }
 
@@ -463,8 +464,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy slice;
         public final ExprContext context;
 
-        public Subscript(ExprTy value, ExprTy slice, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Subscript(ExprTy value, ExprTy slice, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
             this.slice = slice;
             this.context = context;
@@ -477,7 +478,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Subscript(value.copyWithContext(ctx), slice.copyWithContext(ctx), ctx, startOffset, endOffset);
+            return new Subscript(value.copyWithContext(ctx), slice.copyWithContext(ctx), ctx, sourceRange);
         }
     }
 
@@ -485,8 +486,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy value;
         public final ExprContext context;
 
-        public Starred(ExprTy value, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Starred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
             this.context = context;
         }
@@ -498,7 +499,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Starred(value, ctx, startOffset, endOffset);
+            return new Starred(value, ctx, sourceRange);
         }
     }
 
@@ -506,8 +507,8 @@ public abstract class ExprTy extends SSTNode {
         public final String id;
         public final ExprContext context;
 
-        public Name(String id, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Name(String id, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.id = id;
             this.context = context;
         }
@@ -519,7 +520,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Name(id, ctx, startOffset, endOffset);
+            return new Name(id, ctx, sourceRange);
         }
     }
 
@@ -527,8 +528,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy[] elements;
         public final ExprContext context;
 
-        public List(ExprTy[] elements, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public List(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.elements = elements;
             this.context = context;
         }
@@ -544,7 +545,7 @@ public abstract class ExprTy extends SSTNode {
             for (int i = 0; i < newElements.length; i++) {
                 newElements[i] = elements[i].copyWithContext(ctx);
             }
-            return new List(newElements, ctx, startOffset, endOffset);
+            return new List(newElements, ctx, sourceRange);
         }
     }
 
@@ -552,8 +553,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy[] elements;
         public final ExprContext context;
 
-        public Tuple(ExprTy[] elements, ExprContext context, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Tuple(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+            super(sourceRange);
             this.elements = elements;
             this.context = context;
         }
@@ -569,7 +570,7 @@ public abstract class ExprTy extends SSTNode {
             for (int i = 0; i < newElements.length; i++) {
                 newElements[i] = elements[i].copyWithContext(ctx);
             }
-            return new Tuple(newElements, ctx, startOffset, endOffset);
+            return new Tuple(newElements, ctx, sourceRange);
         }
     }
 
@@ -578,8 +579,8 @@ public abstract class ExprTy extends SSTNode {
         public final ExprTy upper;
         public final ExprTy step;
 
-        public Slice(ExprTy lower, ExprTy upper, ExprTy step, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Slice(ExprTy lower, ExprTy upper, ExprTy step, SourceRange sourceRange) {
+            super(sourceRange);
             this.lower = lower;
             this.upper = upper;
             this.step = step;

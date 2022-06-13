@@ -102,7 +102,16 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomFString() throws Exception {
         checkTreeResult("f'a{b!r}'");
-        checkError("f'a{b!g}'", "Generic[0:4]:f-string: invalid conversion character: expected 's', 'r', or 'a'");
+        checkError("f'a{b!g}'", "Generic[2:9]:f-string: invalid conversion character: expected 's', 'r', or 'a'");
+    }
+
+    @Test
+    public void atomFStringMultiline() throws Exception {
+        checkTreeResult("f\"\"\"First line.{\n" +
+                        "   v1\n" +
+                        "+\n" +
+                        "v2}\n" +
+                        "Another line.\"\"\"");
     }
 
     @Test

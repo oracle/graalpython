@@ -41,13 +41,15 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public final class ArgTy extends SSTNode {
     public final String arg;
     public final ExprTy annotation;
     public final String typeComment;
 
-    public ArgTy(String arg, ExprTy annotation, String typeComment, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    public ArgTy(String arg, ExprTy annotation, String typeComment, SourceRange sourceRange) {
+        super(sourceRange);
         this.arg = arg;
         this.annotation = annotation;
         this.typeComment = typeComment;

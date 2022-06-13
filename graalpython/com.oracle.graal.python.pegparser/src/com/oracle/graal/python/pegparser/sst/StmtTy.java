@@ -41,14 +41,16 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public abstract class StmtTy extends SSTNode {
-    StmtTy(int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    StmtTy(SourceRange sourceRange) {
+        super(sourceRange);
     }
 
     public static final class Pass extends StmtTy {
-        public Pass(int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Pass(SourceRange sourceRange) {
+            super(sourceRange);
         }
 
         @Override
@@ -58,8 +60,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Break extends StmtTy {
-        public Break(int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Break(SourceRange sourceRange) {
+            super(sourceRange);
         }
 
         @Override
@@ -69,8 +71,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Continue extends StmtTy {
-        public Continue(int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Continue(SourceRange sourceRange) {
+            super(sourceRange);
         }
 
         @Override
@@ -87,8 +89,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy returns;
         public final String typeComment;
 
-        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
+            super(sourceRange);
             this.name = name;
             this.args = args;
             this.body = body;
@@ -103,13 +105,13 @@ public abstract class StmtTy extends SSTNode {
         }
 
         public FunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
-            return new FunctionDef(name, args, body, newDecoratorList, returns, typeComment, startOffset, endOffset);
+            return new FunctionDef(name, args, body, newDecoratorList, returns, typeComment, sourceRange);
         }
     }
 
     public static final class AsyncFunctionDef extends FunctionDef {
-        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, int startOffset, int endOffset) {
-            super(name, args, body, decoratorList, returns, typeComment, startOffset, endOffset);
+        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
+            super(name, args, body, decoratorList, returns, typeComment, sourceRange);
         }
 
         @Override
@@ -119,7 +121,7 @@ public abstract class StmtTy extends SSTNode {
 
         @Override
         public AsyncFunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
-            return new AsyncFunctionDef(name, args, body, newDecoratorList, returns, typeComment, startOffset, endOffset);
+            return new AsyncFunctionDef(name, args, body, newDecoratorList, returns, typeComment, sourceRange);
         }
     }
 
@@ -130,8 +132,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;
         public final ExprTy[] decoratorList;
 
-        public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, SourceRange sourceRange) {
+            super(sourceRange);
             this.name = name;
             this.bases = bases;
             this.keywords = keywords;
@@ -148,8 +150,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class Return extends StmtTy {
         public final ExprTy value;
 
-        public Return(ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Return(ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.value = value;
         }
 
@@ -162,8 +164,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class Delete extends StmtTy {
         public final ExprTy[] targets;
 
-        public Delete(ExprTy[] targets, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Delete(ExprTy[] targets, SourceRange sourceRange) {
+            super(sourceRange);
             this.targets = targets;
         }
 
@@ -178,8 +180,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy value;
         public final String typeComment;
 
-        public Assign(ExprTy[] targets, ExprTy value, String typeComment, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Assign(ExprTy[] targets, ExprTy value, String typeComment, SourceRange sourceRange) {
+            super(sourceRange);
             this.targets = targets;
             this.value = value;
             this.typeComment = typeComment;
@@ -196,8 +198,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy.BinOp.Operator op;
         public final ExprTy value;
 
-        public AugAssign(ExprTy target, ExprTy.BinOp.Operator op, ExprTy value, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public AugAssign(ExprTy target, ExprTy.BinOp.Operator op, ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
             this.target = target;
             this.op = op;
             this.value = value;
@@ -215,8 +217,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy value;
         public final boolean isSimple;
 
-        public AnnAssign(ExprTy target, ExprTy annotation, ExprTy value, boolean isSimple, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public AnnAssign(ExprTy target, ExprTy annotation, ExprTy value, boolean isSimple, SourceRange sourceRange) {
+            super(sourceRange);
             this.target = target;
             this.annotation = annotation;
             this.value = value;
@@ -236,8 +238,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] orElse;
         public final String typeComment;
 
-        public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
+            super(sourceRange);
             this.target = target;
             this.iter = iter;
             this.body = body;
@@ -252,8 +254,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AsyncFor extends For {
-        public AsyncFor(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, int startOffset, int endOffset) {
-            super(target, iter, body, orElse, typeComment, startOffset, endOffset);
+        public AsyncFor(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
+            super(target, iter, body, orElse, typeComment, sourceRange);
         }
 
         @Override
@@ -267,8 +269,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;
         public final StmtTy[] orElse;
 
-        public While(ExprTy test, StmtTy[] body, StmtTy[] orElse, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public While(ExprTy test, StmtTy[] body, StmtTy[] orElse, SourceRange sourceRange) {
+            super(sourceRange);
             this.test = test;
             this.body = body;
             this.orElse = orElse;
@@ -285,8 +287,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;
         public final StmtTy[] orElse;
 
-        public If(ExprTy test, StmtTy[] body, StmtTy[] orElse, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public If(ExprTy test, StmtTy[] body, StmtTy[] orElse, SourceRange sourceRange) {
+            super(sourceRange);
             this.test = test;
             this.body = body;
             this.orElse = orElse;
@@ -303,8 +305,8 @@ public abstract class StmtTy extends SSTNode {
             public final ExprTy contextExpr;
             public final ExprTy optionalVars;
 
-            public Item(ExprTy contextExpr, ExprTy optionalVars, int startOffset, int endOffset) {
-                super(startOffset, endOffset);
+            public Item(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
+                super(sourceRange);
                 this.contextExpr = contextExpr;
                 this.optionalVars = optionalVars;
             }
@@ -319,8 +321,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;
         public final String typeComment;
 
-        public With(Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public With(Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+            super(sourceRange);
             this.items = items;
             this.body = body;
             this.typeComment = typeComment;
@@ -333,8 +335,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AsyncWith extends With {
-        public AsyncWith(Item[] items, StmtTy[] body, String typeComment, int startOffset, int endOffset) {
-            super(items, body, typeComment, startOffset, endOffset);
+        public AsyncWith(Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+            super(items, body, typeComment, sourceRange);
         }
 
         @Override
@@ -345,15 +347,15 @@ public abstract class StmtTy extends SSTNode {
 
     public static final class Match extends StmtTy {
         public static abstract class Pattern extends SSTNode {
-            Pattern(int startOffset, int endOffset) {
-                super(startOffset, endOffset);
+            Pattern(SourceRange sourceRange) {
+                super(sourceRange);
             }
 
             public static final class MatchValue extends Pattern {
                 public final ExprTy value;
 
-                public MatchValue(ExprTy value, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchValue(ExprTy value, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.value = value;
                 }
 
@@ -366,8 +368,8 @@ public abstract class StmtTy extends SSTNode {
             public static final class MatchSingleton extends Pattern {
                 public final ExprTy.Constant value;
 
-                public MatchSingleton(ExprTy.Constant value, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchSingleton(ExprTy.Constant value, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.value = value;
                 }
 
@@ -380,8 +382,8 @@ public abstract class StmtTy extends SSTNode {
             public static final class MatchSequence extends Pattern {
                 public final Pattern[] patterns;
 
-                public MatchSequence(Pattern[] patterns, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchSequence(Pattern[] patterns, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.patterns = patterns;
                 }
 
@@ -396,8 +398,8 @@ public abstract class StmtTy extends SSTNode {
                 public final Pattern[] patterns;
                 public final String rest;
 
-                public MatchMapping(ExprTy[] keys, Pattern[] patterns, String rest, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchMapping(ExprTy[] keys, Pattern[] patterns, String rest, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.keys = keys;
                     this.patterns = patterns;
                     this.rest = rest;
@@ -415,8 +417,8 @@ public abstract class StmtTy extends SSTNode {
                 public final String[] kwdAttrs;
                 public final Pattern[] kwdPatters;
 
-                public MatchClass(ExprTy cls, Pattern[] patterns, String[] kwdAttrs, Pattern[] kwdPatters, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchClass(ExprTy cls, Pattern[] patterns, String[] kwdAttrs, Pattern[] kwdPatters, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.cls = cls;
                     this.patterns = patterns;
                     this.kwdAttrs = kwdAttrs;
@@ -432,8 +434,8 @@ public abstract class StmtTy extends SSTNode {
             public static final class MatchStar extends Pattern {
                 public final String name;
 
-                public MatchStar(String name, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchStar(String name, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.name = name;
                 }
 
@@ -447,8 +449,8 @@ public abstract class StmtTy extends SSTNode {
                 public final Pattern pattern;
                 public final String name;
 
-                public MatchAs(Pattern pattern, String name, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchAs(Pattern pattern, String name, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.pattern = pattern;
                     this.name = name;
                 }
@@ -462,8 +464,8 @@ public abstract class StmtTy extends SSTNode {
             public static final class MatchOr extends Pattern {
                 public final Pattern[] patterns;
 
-                public MatchOr(Pattern[] patterns, int startOffset, int endOffset) {
-                    super(startOffset, endOffset);
+                public MatchOr(Pattern[] patterns, SourceRange sourceRange) {
+                    super(sourceRange);
                     this.patterns = patterns;
                 }
 
@@ -479,8 +481,8 @@ public abstract class StmtTy extends SSTNode {
             public final ExprTy guard;
             public final StmtTy[] body;
 
-            public Case(Pattern pattern, ExprTy guard, StmtTy[] body, int startOffset, int endOffset) {
-                super(startOffset, endOffset);
+            public Case(Pattern pattern, ExprTy guard, StmtTy[] body, SourceRange sourceRange) {
+                super(sourceRange);
                 this.pattern = pattern;
                 this.guard = guard;
                 this.body = body;
@@ -495,8 +497,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy subject;
         public final Case[] cases;
 
-        public Match(ExprTy subject, Case[] cases, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Match(ExprTy subject, Case[] cases, SourceRange sourceRange) {
+            super(sourceRange);
             this.subject = subject;
             this.cases = cases;
         }
@@ -511,8 +513,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy exc;
         public final ExprTy cause;
 
-        public Raise(ExprTy exc, ExprTy cause, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Raise(ExprTy exc, ExprTy cause, SourceRange sourceRange) {
+            super(sourceRange);
             this.exc = exc;
             this.cause = cause;
         }
@@ -529,8 +531,8 @@ public abstract class StmtTy extends SSTNode {
             public final String name;
             public final StmtTy[] body;
 
-            public ExceptHandler(ExprTy type, String name, StmtTy[] body, int startOffset, int endOffset) {
-                super(startOffset, endOffset);
+            public ExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
+                super(sourceRange);
                 this.type = type;
                 this.name = name;
                 this.body = body;
@@ -547,8 +549,8 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] orElse;
         public final StmtTy[] finalBody;
 
-        public Try(StmtTy[] body, ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Try(StmtTy[] body, ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+            super(sourceRange);
             this.body = body;
             this.handlers = handlers;
             this.orElse = orElse;
@@ -565,8 +567,8 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy test;
         public final ExprTy msg;
 
-        public Assert(ExprTy test, ExprTy msg, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Assert(ExprTy test, ExprTy msg, SourceRange sourceRange) {
+            super(sourceRange);
             this.test = test;
             this.msg = msg;
         }
@@ -580,8 +582,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class Import extends StmtTy {
         public final AliasTy[] names;
 
-        public Import(AliasTy[] names, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Import(AliasTy[] names, SourceRange sourceRange) {
+            super(sourceRange);
             this.names = names;
         }
 
@@ -596,8 +598,8 @@ public abstract class StmtTy extends SSTNode {
         public final AliasTy[] names;
         public final int level;
 
-        public ImportFrom(String module, AliasTy[] names, int level, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public ImportFrom(String module, AliasTy[] names, int level, SourceRange sourceRange) {
+            super(sourceRange);
             this.module = module;
             this.names = names;
             this.level = level;
@@ -612,8 +614,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class Global extends StmtTy {
         public final String[] names;
 
-        public Global(String[] names, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Global(String[] names, SourceRange sourceRange) {
+            super(sourceRange);
             this.names = names;
         }
 
@@ -626,8 +628,8 @@ public abstract class StmtTy extends SSTNode {
     public static final class NonLocal extends StmtTy {
         public final String[] names;
 
-        public NonLocal(String[] names, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public NonLocal(String[] names, SourceRange sourceRange) {
+            super(sourceRange);
             this.names = names;
         }
 
@@ -641,7 +643,7 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy value;
 
         public Expr(ExprTy value) {
-            super(value.startOffset, value.endOffset);
+            super(value.sourceRange);
             this.value = value;
         }
 

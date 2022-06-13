@@ -59,8 +59,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static String addHeader(SSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.getClass().getSimpleName()).append("[").append(node.getStartOffset());
-        sb.append(", ").append(node.getEndOffset()).append("]");
+        sb.append(node.getClass().getSimpleName()).append("[").append(node.getSourceRange().startOffset);
+        sb.append(", ").append(node.getSourceRange().endOffset).append("]");
         return sb.toString();
     }
 
@@ -224,8 +224,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Constant node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.kind).append("[").append(node.getStartOffset());
-        sb.append(", ").append(node.getEndOffset()).append("]");
+        sb.append(node.kind).append("[").append(node.getSourceRange().startOffset);
+        sb.append(", ").append(node.getSourceRange().endOffset).append("]");
         sb.append(" Value: ");
         switch (node.kind) {
             case LONG:

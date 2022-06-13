@@ -41,8 +41,10 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 @FunctionalInterface
 public interface FExprParser {
-    public abstract ExprTy parse(String code);
+
+    ExprTy parse(String code, SourceRange sourceRange);
 }

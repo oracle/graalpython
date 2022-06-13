@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
  * Roughly equivalent to CPython's {@code symtable_entry}.
@@ -56,8 +57,7 @@ public class Scope {
     Scope(String name, ScopeType type, SSTNode ast) {
         this.name = name;
         this.type = type;
-        this.startOffset = ast.getStartOffset();
-        this.endOffset = ast.getEndOffset();
+        this.sourceRange = ast.getSourceRange();
     }
 
     enum ScopeType {
@@ -93,13 +93,11 @@ public class Scope {
 
     static final class Directive {
         final String name;
-        final int startOffset;
-        final int endOffset;
+        final SourceRange sourceRange;
 
-        Directive(String name, int startOffset, int endOffset) {
+        Directive(String name, SourceRange sourceRange) {
             this.name = name;
-            this.startOffset = startOffset;
-            this.endOffset = endOffset;
+            this.sourceRange = sourceRange;
         }
     }
 
@@ -126,8 +124,7 @@ public class Scope {
     EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
     int comprehensionIterExpression = 0;
 
-    int startOffset;
-    int endOffset;
+    SourceRange sourceRange;
 
     @Override
     public String toString() {
@@ -177,11 +174,11 @@ public class Scope {
         return sb.toString();
     }
 
-    void recordDirective(String directiveName, int directiveStartOffset, int directiveEndOffset) {
+    void recordDirective(String directiveName, SourceRange directiveSourceRange) {
         if (directives == null) {
             directives = new ArrayList<>();
         }
-        directives.add(new Directive(directiveName, directiveStartOffset, directiveEndOffset));
+        directives.add(new Directive(directiveName, directiveSourceRange));
     }
 
     public String getName() {

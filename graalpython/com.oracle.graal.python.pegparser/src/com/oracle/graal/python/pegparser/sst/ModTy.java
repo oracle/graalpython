@@ -41,16 +41,18 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public abstract class ModTy extends SSTNode {
-    ModTy(int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    ModTy(SourceRange sourceRange) {
+        super(sourceRange);
     }
 
     public static final class TypeIgnore extends SSTNode {
         public final String tag;
 
-        public TypeIgnore(String tag, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public TypeIgnore(String tag, SourceRange sourceRange) {
+            super(sourceRange);
             this.tag = tag;
         }
 
@@ -64,8 +66,8 @@ public abstract class ModTy extends SSTNode {
         public final StmtTy[] body;
         public final TypeIgnore[] typeIgnores;
 
-        public Module(StmtTy[] body, TypeIgnore[] typeIgnores, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Module(StmtTy[] body, TypeIgnore[] typeIgnores, SourceRange sourceRange) {
+            super(sourceRange);
             this.body = body;
             this.typeIgnores = typeIgnores;
         }
@@ -79,8 +81,8 @@ public abstract class ModTy extends SSTNode {
     public static final class Interactive extends ModTy {
         public final StmtTy[] body;
 
-        public Interactive(StmtTy[] body, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Interactive(StmtTy[] body, SourceRange sourceRange) {
+            super(sourceRange);
             this.body = body;
         }
 
@@ -93,8 +95,8 @@ public abstract class ModTy extends SSTNode {
     public static final class Expression extends ModTy {
         public final ExprTy body;
 
-        public Expression(ExprTy body, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public Expression(ExprTy body, SourceRange sourceRange) {
+            super(sourceRange);
             this.body = body;
         }
 
@@ -108,8 +110,8 @@ public abstract class ModTy extends SSTNode {
         public final ExprTy[] argTypes;
         public final ExprTy returns;
 
-        public FunctionType(ExprTy[] argTypes, ExprTy returns, int startOffset, int endOffset) {
-            super(startOffset, endOffset);
+        public FunctionType(ExprTy[] argTypes, ExprTy returns, SourceRange sourceRange) {
+            super(sourceRange);
             this.argTypes = argTypes;
             this.returns = returns;
         }

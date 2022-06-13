@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -507,12 +508,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-        ParserErrorCallback errorCb = (errorType, startOffset, endOffset, message) -> {
-            throw raiseSyntaxError(source, errorType, startOffset, endOffset, message);
+        ParserErrorCallback errorCb = (errorType, sourceRange, message) -> {
+            throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, message);
         };
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public ExprTy parse(String code) {
+            public ExprTy parse(String code, SourceRange sourceRange) {
+                // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return new Parser(tok, factory, this, errorCb).fstring_rule();
             }
