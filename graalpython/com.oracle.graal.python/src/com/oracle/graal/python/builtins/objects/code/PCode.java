@@ -537,6 +537,7 @@ public final class PCode extends PythonBuiltinObject {
         return constants;
     }
 
+    @TruffleBoundary
     private static Object convert(RootNode rootNode, Object o, PythonObjectFactory factory) {
         if (o instanceof CodeUnit) {
             CodeUnit code = ((CodeUnit) o);
