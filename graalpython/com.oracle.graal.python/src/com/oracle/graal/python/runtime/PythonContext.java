@@ -1749,6 +1749,7 @@ public final class PythonContext extends Python3Core {
                     // running any GraalPython code anymore
                     int tries = isOurThread ? 100 : 5;
                     for (int i = 0; i < tries && thread.isAlive(); i++) {
+                        thread.join(tries - i);
                         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
                             @Override
                             protected void perform(ThreadLocalAction.Access access) {
@@ -1758,7 +1759,6 @@ public final class PythonContext extends Python3Core {
                         if (isOurThread) {
                             thread.interrupt();
                         }
-                        thread.join(2);
                     }
                     if (isOurThread) {
                         // Thread#stop is not supported on SVM
