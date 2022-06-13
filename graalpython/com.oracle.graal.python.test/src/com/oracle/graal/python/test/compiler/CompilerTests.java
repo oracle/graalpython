@@ -254,52 +254,57 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testReturnFromWith() {
-        String source = "for i in range(10):\n" +
-                        "  with foo() as cm:\n" +
-                        "    return a\n";
+        String source = "def foo():\n" +
+                        "  for i in range(10):\n" +
+                        "    with foo() as cm:\n" +
+                        "      return a\n";
         doTest(source);
     }
 
     @Test
     public void testReturnFromTry() {
-        String source = "for i in range(10):\n" +
-                        "  try:\n" +
-                        "    return a\n" +
-                        "  finally:" +
-                        "    print('finally')";
+        String source = "def foo():\n" +
+                        "  for i in range(10):\n" +
+                        "    try:\n" +
+                        "      return a\n" +
+                        "    finally:" +
+                        "      print('finally')";
         doTest(source);
     }
 
     @Test
     public void testReturnFromExcept() {
-        String source = "for i in range(10):\n" +
-                        "  try:\n" +
-                        "    1 / 0\n" +
-                        "  except RuntimeError as e:" +
-                        "    return a";
+        String source = "def foo():\n" +
+                        "  for i in range(10):\n" +
+                        "    try:\n" +
+                        "      1 / 0\n" +
+                        "    except RuntimeError as e:" +
+                        "      return a";
         doTest(source);
     }
 
     @Test
     public void testReturnFromFinally() {
-        String source = "for i in range(10):\n" +
-                        "  try:\n" +
-                        "    if i:\n" +
-                        "      return a\n" +
-                        "    print(i)\n" +
-                        "  finally:\n" +
-                        "    print('finally')\n" +
-                        "    return b";
+        String source = "def foo():\n" +
+                        "  for i in range(10):\n" +
+                        "    try:\n" +
+                        "      if i:\n" +
+                        "        return a\n" +
+                        "      print(i)\n" +
+                        "    finally:\n" +
+                        "      print('finally')\n" +
+                        "      return b";
         doTest(source);
     }
 
     @Test
     public void testFinallyCancelReturn() {
-        String source = "for i in range(10):\n" +
-                        "  try:\n" +
-                        "    return a\n" +
-                        "  finally:" +
-                        "    continue";
+        String source = "def foo():\n" +
+                        "  for i in range(10):\n" +
+                        "    try:\n" +
+                        "      return a\n" +
+                        "    finally:" +
+                        "      continue";
         doTest(source);
     }
 
