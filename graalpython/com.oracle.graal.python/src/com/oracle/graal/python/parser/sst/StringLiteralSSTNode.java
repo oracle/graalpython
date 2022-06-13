@@ -63,7 +63,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
 
         protected String value;
 
-        protected RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
+        public RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
             super(startIndex, endIndex);
             this.value = value;
         }
