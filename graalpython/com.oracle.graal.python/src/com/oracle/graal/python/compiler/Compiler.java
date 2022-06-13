@@ -160,7 +160,6 @@ public class Compiler implements SSTreeVisitor<Void> {
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
     int optimizationLevel = 0;
-    boolean isInteractive = false;
     int nestingLevel = 0;
     CompilationUnit unit;
     List<CompilationUnit> stack = new ArrayList<>();
