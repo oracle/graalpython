@@ -1749,16 +1749,25 @@ public final class PythonContext extends Python3Core {
                     // running any GraalPython code anymore
                     int tries = isOurThread ? 100 : 5;
                     for (int i = 0; i < tries && thread.isAlive(); i++) {
+                        thread.join(tries - i);
+                        if (!thread.isAlive()) {
+                            break;
+                        }
+                        LOGGER.fine("Trying to join " + thread.getName() + " failed after " + (tries - i) + "ms.");
+                        if (isOurThread) {
+                            thread.interrupt();
+                            thread.join(tries - i);
+                            if (!thread.isAlive()) {
+                                break;
+                            }
+                            LOGGER.fine("Trying to interrupt our " + thread.getName() + " failed after " + (tries - i) + "ms.");
+                        }
                         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
                             @Override
                             protected void perform(ThreadLocalAction.Access access) {
                                 throw new PythonThreadKillException();
                             }
                         });
-                        if (isOurThread) {
-                            thread.interrupt();
-                        }
-                        thread.join(2);
                     }
                     if (isOurThread) {
                         // Thread#stop is not supported on SVM

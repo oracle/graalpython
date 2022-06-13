@@ -3,6 +3,11 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.2.0
+* Updated to HPy version 0.0.4, which adds support for the finished HPy port of Kiwi, and the in-progress ports of Matplotlib and NumPy.
+* Added support for aarch64 on both macOS and Linux.
+* Added an experimental bytecode interpreter for faster startup and better interpreter performance. Using either the previous AST interpreter or the new bytecode interpreter can be switched using `--python.EnableBytecodeInterpreter`.
+
 ## Version 22.1.0
 * String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
 * Improved compatibility with PyPI packages `lxml`, `pytz`, `Pillow`, `urllib3`, `setuptools`, `pytest`, `twine`, `jinja2`, and `six`
