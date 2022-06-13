@@ -11,7 +11,7 @@ Disassembly of f:
 000015         1 LOAD_CLOSURE                      0    (x)
 000015         3 CLOSURE_FROM_STACK                1
 000015         5 MAKE_FUNCTION                     8    (f.<locals>.C)
-000015         8 LOAD_STRING                       2    ('C')
+000015         8 LOAD_STRING                       3    ('C')
 000015        10 CALL_FUNCTION                     2
 000015        12 STORE_FAST                        1    (C)
 000000        14 LOAD_NONE

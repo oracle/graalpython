@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000000         0 LOAD_BUILD_CLASS
 000000         1 MAKE_FUNCTION                     0    (HandlerTask)
-000000         4 LOAD_STRING                       1    ('HandlerTask')
+000000         4 LOAD_STRING                       0    ('HandlerTask')
 000018         6 LOAD_GLOBAL                       0    (Task)
 000000         8 CALL_FUNCTION                     3
 000000        10 STORE_NAME                        1    (HandlerTask)
