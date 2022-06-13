@@ -303,6 +303,7 @@ class TestLegacyType(_TestType):
         mod.set_member(d)
         assert d.member == 123614
 
+    @pytest.mark.usefixtures('skip_cpython_abi')
     def test_metatype_as_legacy_static_type(self):
         self._metaclass_test("""
             static PyTypeObject DummyMetaType = {
@@ -324,6 +325,7 @@ class TestLegacyType(_TestType):
     # Ideally this test should be in the super class and parametrized by
     # @IS_LEGACY for both the metatype and the class itself, but we cannot
     # do pure HPy types in this scenario - see the comment above.
+    @pytest.mark.usefixtures('skip_cpython_abi')
     def test_metatype_as_legacy_hpy_type(self):
         self._metaclass_test("""
             static HPyType_Spec DummyMeta_spec = {

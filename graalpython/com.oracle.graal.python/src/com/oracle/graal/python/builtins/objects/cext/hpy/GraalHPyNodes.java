@@ -63,14 +63,18 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -138,6 +142,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -1976,6 +1981,7 @@ public class GraalHPyNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PCallHPyFunction callMallocNode,
+                         @Cached GetTypeMemberNode getMetaSizeNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
@@ -2020,18 +2026,29 @@ public class GraalHPyNodes {
                 }
 
                 // create the type object
-                PythonClass metatype = (PythonClass) getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
                 PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, "PyTruffle_CreateType",
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
                 // allocate additional memory for the metatype and set it
-                if (metatype != null) {
+                long metaBasicSize = 0;
+                Object destroyFunc = null;
+                if (metatype instanceof PythonClass) {
                     // get basicsize of metatype and allocate it into
                     // GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
-                    long basicSize = metatype.basicSize;
-                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
-                    Object destroyFunc = metatype.hpyDestroyFunc;
+                    PythonClass metaclass = (PythonClass) metatype;
+                    metaBasicSize = metaclass.basicSize;
+                    destroyFunc = metaclass.hpyDestroyFunc;
+                } else if (metatype instanceof PythonNativeClass) {
+                    // This path is implemented only for completeness,
+                    // but is not expected to happen often, hence the
+                    // uncached nodes, no profiling and potential leak
+                    Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
+                    metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
+                }
+                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                if (destroyFunc != null) {
                     context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
                 }
 
