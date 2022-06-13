@@ -765,11 +765,11 @@ HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME(Long_AsSsize_t)(HPyContext *ctx, HPy h
 }
 
 HPyAPI_STORAGE void* _HPy_IMPL_NAME(Long_AsVoidPtr)(HPyContext *ctx, HPy h) {
-     return (void *) UPCALL_I64(ctx_Long_AsVoidPtr, ctx, h); 
+     return (void *) UPCALL_I64(ctx_Long_AsVoidPtr, ctx, h);
 }
 
 HPyAPI_STORAGE double _HPy_IMPL_NAME(Long_AsDouble)(HPyContext *ctx, HPy h) {
-     return UPCALL_DOUBLE(ctx_Long_AsDouble, ctx, h); 
+     return UPCALL_DOUBLE(ctx_Long_AsDouble, ctx, h);
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Float_FromDouble)(HPyContext *ctx, double v)
@@ -988,11 +988,11 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetObject)(HPyContext *ctx, HPy h_type, H
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilename)(HPyContext *ctx, HPy h_type, const char *filename_fsencoded) {
-     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilename, ctx, h_type, filename_fsencoded); 
+     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilename, ctx, h_type, filename_fsencoded);
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilenameObjects)(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2) {
-     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilenameObjects, ctx, h_type, filename1, filename2); 
+     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilenameObjects, ctx, h_type, filename1, filename2);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_Occurred)(HPyContext *ctx)
@@ -1001,7 +1001,7 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_Occurred)(HPyContext *ctx)
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_ExceptionMatches)(HPyContext *ctx, HPy exc) {
-     return (int) UPCALL_I32(ctx_Err_ExceptionMatches, ctx, exc); 
+     return (int) UPCALL_I32(ctx_Err_ExceptionMatches, ctx, exc);
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NoMemory)(HPyContext *ctx)
@@ -1023,15 +1023,15 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NewExceptionWithDoc)(HPyContext *ctx, cons
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_WarnEx)(HPyContext *ctx, HPy category, const char *message, HPy_ssize_t stack_level) {
-     return (int) UPCALL_I32(ctx_Err_WarnEx, ctx, category, message, stack_level); 
+     return (int) UPCALL_I32(ctx_Err_WarnEx, ctx, category, message, stack_level);
 }
 
 HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_WriteUnraisable)(HPyContext *ctx, HPy obj) {
-     UPCALL_VOID(ctx_Err_WriteUnraisable, ctx, obj); 
+     UPCALL_VOID(ctx_Err_WriteUnraisable, ctx, obj);
 }
 
 HPyAPI_STORAGE void _HPy_IMPL_NAME(FatalError)(HPyContext *ctx, const char *msg) {
-     UPCALL_VOID(ctx_FatalError, ctx, msg); 
+     UPCALL_VOID(ctx_FatalError, ctx, msg);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(IsTrue)(HPyContext *ctx, HPy h)
@@ -1095,7 +1095,7 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem_s)(HPyContext *ctx, HPy obj, 
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(Contains)(HPyContext *ctx, HPy container, HPy key) {
-     return (int) UPCALL_I32(ctx_Contains, ctx, container, key); 
+     return (int) UPCALL_I32(ctx_Contains, ctx, container, key);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetItem)(HPyContext *ctx, HPy obj, HPy key, HPy value)
@@ -1224,7 +1224,7 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Unicode_Check)(HPyContext *ctx, HPy h)
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsASCIIString)(HPyContext *ctx, HPy h) {
-     return UPCALL_HPY(ctx_Unicode_AsASCIIString, ctx, h); 
+     return UPCALL_HPY(ctx_Unicode_AsASCIIString, ctx, h);
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsLatin1String)(HPyContext *ctx, HPy h) {
@@ -1251,11 +1251,11 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeFSDefault)(HPyContext *ctx, cons
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeFSDefaultAndSize)(HPyContext *ctx, const char *v, HPy_ssize_t size) {
-     return UPCALL_HPY(ctx_Unicode_DecodeFSDefaultAndSize, ctx, v, size); 
+     return UPCALL_HPY(ctx_Unicode_DecodeFSDefaultAndSize, ctx, v, size);
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_EncodeFSDefault)(HPyContext *ctx, HPy h) {
-     return UPCALL_HPY(ctx_Unicode_EncodeFSDefault, ctx, h); 
+     return UPCALL_HPY(ctx_Unicode_EncodeFSDefault, ctx, h);
 }
 
 HPyAPI_STORAGE uint32_t _HPy_IMPL_NAME(Unicode_ReadChar)(HPyContext *ctx, HPy h, HPy_ssize_t index) {
@@ -1263,11 +1263,11 @@ HPyAPI_STORAGE uint32_t _HPy_IMPL_NAME(Unicode_ReadChar)(HPyContext *ctx, HPy h,
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeLatin1)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors) {
-     return UPCALL_HPY(ctx_Unicode_DecodeLatin1, ctx, s, size, errors ); 
+     return UPCALL_HPY(ctx_Unicode_DecodeLatin1, ctx, s, size, errors );
 }
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_DecodeASCII)(HPyContext *ctx, const char *s, HPy_ssize_t size, const char *errors) {
-     return UPCALL_HPY(ctx_Unicode_DecodeASCII, ctx, s, size, errors ); 
+     return UPCALL_HPY(ctx_Unicode_DecodeASCII, ctx, s, size, errors );
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(List_Check)(HPyContext *ctx, HPy h)
@@ -1452,7 +1452,7 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Capsule_New)(HPyContext *ctx, void *pointer, c
 }
 
 HPyAPI_STORAGE void *_HPy_IMPL_NAME(Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name) {
-    return UPCALL_HPY(ctx_Capsule_Get, ctx, capsule, key, name);
+    return UPCALL_HPY(ctx_Capsule_Get, ctx, capsule, (int32_t)key, name);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *name) {
@@ -1460,7 +1460,7 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Capsule_IsValid)(HPyContext *ctx, HPy capsule,
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Capsule_Set)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value) {
-    return (int) UPCALL_I32(ctx_Capsule_Set, ctx, capsule, key, value);
+    return (int) UPCALL_I32(ctx_Capsule_Set, ctx, capsule, (int32_t)key, value);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *expected) {

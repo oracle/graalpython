@@ -63,7 +63,10 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
@@ -230,9 +233,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
 
 @SuppressWarnings("static-method")
 public abstract class GraalHPyContextFunctions {
@@ -3418,13 +3418,18 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CastToJavaStringNode castStr,
+                        @Cached HPyRaiseNode raiseNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 4);
             boolean mustRelease = gil.acquire();
             try {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 PyCapsule result = new PyCapsule();
+                if (interopLib.isNull(arguments[1])) {
+                    return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, ValueError, "HPyCapsule_New called with null pointer");
+                }
                 result.setPointer(arguments[1]);
                 try {
                     if (!nameLib.isPointer(arguments[2]) || nameLib.asPointer(arguments[2]) != 0) {
@@ -3443,6 +3448,7 @@ public abstract class GraalHPyContextFunctions {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyCapsuleGet extends GraalHPyContextFunction {
+        static final String SUFFIX = " called with invalid PyCapsule object";
 
         @TruffleBoundary
         private static byte[] getBytes(PyCapsule pyCapsule) {
@@ -3453,27 +3459,28 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asCapsule,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CastToJavaIntExactNode castInt,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 4);
             boolean mustRelease = gil.acquire();
+            GraalHPyContext context = null;
             try {
-                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                context = asContextNode.execute(arguments[0]);
                 Object capsule = asCapsule.execute(context, arguments[1]);
-                if (!(capsule instanceof PyCapsule)) {
-                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
-                }
-                PyCapsule pyCapsule = (PyCapsule) capsule;
-                String name = castStr.execute(fromCharPointerNode.execute(arguments[3]));
-                if (!pyCapsule.getName().equals(name)) {
-                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
-                }
                 int key = castInt.execute(arguments[2]);
+                isLegalCapsule(capsule, key, raiseNode);
+                PyCapsule pyCapsule = (PyCapsule) capsule;
                 Object result;
                 switch (key) {
                     case CapsuleKey.Pointer:
+                        if (!nameMatches(pyCapsule, arguments[3], interopLib, fromCharPointerNode, castStr)) {
+                            throw raiseNode.raise(ValueError, "HPyCapsule_GetPointer called with incorrect name");
+                        }
                         result = pyCapsule.getPointer();
                         break;
                     case CapsuleKey.Context:
@@ -3486,11 +3493,53 @@ public abstract class GraalHPyContextFunctions {
                         result = pyCapsule.getDestructor();
                         break;
                     default:
-                        throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                        throw CompilerDirectives.shouldNotReachHere("invalid key");
+                }
+                // never allow Java 'null' to be returned
+                if (result == null) {
+                    return context.getContext().getNativeNull().getPtr();
                 }
                 return result;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(context, e);
+                return GraalHPyHandle.NULL_HANDLE;
             } finally {
                 gil.release(mustRelease);
+            }
+        }
+
+        private static boolean nameMatches(PyCapsule capsule, Object namePtr, InteropLibrary interopLib, FromCharPointerNode fromCharPointerNode, CastToJavaStringNode castStr) {
+            boolean isCapsuleNameNull = capsule.getName() == null;
+            boolean isNamePtrNull = interopLib.isNull(namePtr);
+
+            // if one of them is NULL, then both need to be NULL
+            if (isCapsuleNameNull || isNamePtrNull) {
+                return isCapsuleNameNull && isNamePtrNull;
+            }
+
+            String name = castStr.execute(fromCharPointerNode.execute(namePtr));
+            return capsule.getName().equals(name);
+        }
+
+        private static void isLegalCapsule(Object object, int key, PRaiseNode raiseNode) {
+            if (!(object instanceof PyCapsule) || ((PyCapsule) object).getPointer() == null) {
+                throw raiseNode.raise(ValueError, getErrorMessage(key));
+            }
+        }
+
+        @TruffleBoundary
+        private static String getErrorMessage(int key) {
+            switch (key) {
+                case CapsuleKey.Pointer:
+                    return "HPyCapsule_GetPointer" + SUFFIX;
+                case CapsuleKey.Context:
+                    return "HPyCapsule_GetContext" + SUFFIX;
+                case CapsuleKey.Name:
+                    return "HPyCapsule_GetName" + SUFFIX;
+                case CapsuleKey.Destructor:
+                    return "HPyCapsule_GetDestructor" + SUFFIX;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
         }
     }
@@ -3504,19 +3553,24 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CastToJavaIntExactNode castInt,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 4);
             boolean mustRelease = gil.acquire();
+            GraalHPyContext context = null;
             try {
-                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                context = asContextNode.execute(arguments[0]);
                 Object capsule = asCapsule.execute(context, arguments[1]);
-                if (!(capsule instanceof PyCapsule)) {
-                    throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
-                }
-                PyCapsule pyCapsule = (PyCapsule) capsule;
                 int key = castInt.execute(arguments[2]);
+                isLegalCapsule(capsule, key, raiseNode);
+                PyCapsule pyCapsule = (PyCapsule) capsule;
                 switch (key) {
                     case CapsuleKey.Pointer:
+                        if (interopLib.isNull(arguments[3])) {
+                            throw raiseNode.raise(ValueError, "PyCapsule_SetPointer called with null pointer");
+                        }
                         pyCapsule.setPointer(arguments[3]);
                         break;
                     case CapsuleKey.Context:
@@ -3529,11 +3583,36 @@ public abstract class GraalHPyContextFunctions {
                         pyCapsule.setDestructor(arguments[3]);
                         break;
                     default:
-                        throw CompilerDirectives.shouldNotReachHere("TODO: raise ValueError");
+                        throw CompilerDirectives.shouldNotReachHere("invalid key");
                 }
                 return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(context, e);
+                return -1;
             } finally {
                 gil.release(mustRelease);
+            }
+        }
+
+        private static void isLegalCapsule(Object object, int key, PRaiseNode raiseNode) {
+            if (!(object instanceof PyCapsule) || ((PyCapsule) object).getPointer() == null) {
+                throw raiseNode.raise(ValueError, getErrorMessage(key));
+            }
+        }
+
+        @TruffleBoundary
+        private static String getErrorMessage(int key) {
+            switch (key) {
+                case CapsuleKey.Pointer:
+                    return "HPyCapsule_GetPointer" + GraalHPyCapsuleGet.SUFFIX;
+                case CapsuleKey.Context:
+                    return "HPyCapsule_GetContext" + GraalHPyCapsuleGet.SUFFIX;
+                case CapsuleKey.Name:
+                    return "HPyCapsule_GetName" + GraalHPyCapsuleGet.SUFFIX;
+                case CapsuleKey.Destructor:
+                    return "HPyCapsule_GetDestructor" + GraalHPyCapsuleGet.SUFFIX;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
         }
     }
@@ -3544,6 +3623,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asCapsule,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached GilNode gil) throws ArityException {
@@ -3556,8 +3636,7 @@ public abstract class GraalHPyContextFunctions {
                     return 0;
                 }
                 PyCapsule pyCapsule = (PyCapsule) capsule;
-                String name = castStr.execute(fromCharPointerNode.execute(arguments[3]));
-                if (!pyCapsule.getName().equals(name)) {
+                if (!GraalHPyCapsuleGet.nameMatches(pyCapsule, arguments[2], interopLib, fromCharPointerNode, castStr)) {
                     return 0;
                 }
                 return 1;

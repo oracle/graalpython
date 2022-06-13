@@ -47,6 +47,7 @@ typedef HPyGlobal* _HPyGlobalPtr;
 #define HPyField void*
 #define HPyThreadState void*
 #define HPyGlobal void*
+#define _HPyCapsule_key int32_t
 #endif
 
 
@@ -318,4 +319,5 @@ struct _HPyContext_s {
 #undef HPyField
 #undef HPyThreadState
 #undef HPyGlobal
+#undef _HPyCapsule_key
 #endif
