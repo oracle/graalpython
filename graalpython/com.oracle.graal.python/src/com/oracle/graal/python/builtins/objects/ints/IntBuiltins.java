@@ -161,6 +161,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -357,6 +358,7 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
+        public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)
         static int add(int left, int right) {
@@ -419,6 +421,10 @@ public class IntBuiltins extends PythonBuiltins {
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        public static AddNode create() {
+            return IntBuiltinsFactory.AddNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
@@ -426,6 +432,7 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
+        public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)
         static int doII(int x, int y) throws ArithmeticException {
@@ -494,6 +501,10 @@ public class IntBuiltins extends PythonBuiltins {
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        public static SubNode create() {
+            return IntBuiltinsFactory.SubNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
@@ -501,6 +512,7 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
+        public abstract Object execute(int left, int right);
 
         @Specialization
         double divII(int x, int y) {
@@ -574,13 +586,19 @@ public class IntBuiltins extends PythonBuiltins {
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        public static TrueDivNode create() {
+            return IntBuiltinsFactory.TrueDivNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class FloorDivNode extends IntBinaryBuiltinNode {
+    public abstract static class FloorDivNode extends IntBinaryBuiltinNode {
+        public abstract Object execute(int left, int right);
+
         @Specialization
         int doII(int left, int right) {
             raiseDivisionByZero(right == 0);
@@ -686,6 +704,9 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        public static FloorDivNode create() {
+            return IntBuiltinsFactory.FloorDivNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
@@ -726,7 +747,11 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class ModNode extends IntBinaryBuiltinNode {
+    public abstract static class ModNode extends IntBinaryBuiltinNode {
+        public abstract int executeInt(int left, int right) throws UnexpectedResultException;
+
+        public abstract Object execute(int left, int right);
+
         @Specialization
         int doII(int left, int right) {
             raiseDivisionByZero(right == 0);
@@ -831,13 +856,18 @@ public class IntBuiltins extends PythonBuiltins {
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
+
+        public static ModNode create() {
+            return IntBuiltinsFactory.ModNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
     @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class MulNode extends PythonBinaryBuiltinNode {
+    public abstract static class MulNode extends PythonBinaryBuiltinNode {
+        public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)
         static int doII(int x, int y) throws ArithmeticException {
@@ -916,6 +946,10 @@ public class IntBuiltins extends PythonBuiltins {
         @Fallback
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        public static MulNode create() {
+            return IntBuiltinsFactory.MulNodeFactory.create();
         }
     }
 
@@ -1362,7 +1396,10 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class LShiftNode extends PythonBinaryBuiltinNode {
+    public abstract static class LShiftNode extends PythonBinaryBuiltinNode {
+        public abstract int executeInt(int left, int right) throws UnexpectedResultException;
+
+        public abstract Object execute(int left, int right);
 
         private long leftShiftExact(long left, long right) throws OverflowException {
             if (right >= Long.SIZE || right < 0) {
@@ -1522,12 +1559,19 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
+        public static LShiftNode create() {
+            return IntBuiltinsFactory.LShiftNodeFactory.create();
+        }
     }
 
     @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class RShiftNode extends PythonBinaryBuiltinNode {
+    public abstract static class RShiftNode extends PythonBinaryBuiltinNode {
+        public abstract int executeInt(int left, int right) throws UnexpectedResultException;
+
+        public abstract Object execute(int left, int right);
+
         @Specialization(guards = "right < 32")
         int doIISmall(int left, int right) {
             raiseNegativeShiftCount(right < 0);
@@ -1616,6 +1660,9 @@ public class IntBuiltins extends PythonBuiltins {
             return left.shiftRight(right);
         }
 
+        public static RShiftNode create() {
+            return IntBuiltinsFactory.RShiftNodeFactory.create();
+        }
     }
 
     abstract static class BinaryBitwiseNode extends PythonBinaryBuiltinNode {

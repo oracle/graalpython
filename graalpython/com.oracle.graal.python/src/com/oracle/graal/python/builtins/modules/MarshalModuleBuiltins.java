@@ -1185,8 +1185,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int[] exceptionHandlerRanges = readIntArray();
             int startOffset = readInt();
             int startLine = readInt();
+            // TODO quickening
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
-                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine);
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine,
+                            null, null, null);
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {

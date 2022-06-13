@@ -22,9 +22,9 @@ Disassembly of <listcomp>:
 000000        10 GET_ITER
 000000   >>   11 FOR_ITER                          22   (to 33)
 000044        13 STORE_FAST                        2    (x)
-000054        15 LOAD_FAST                         2    (x)
-000058        17 LOAD_BYTE                         5
-000054        19 BINARY_OP                         14   (LT)
+000054        15 LOAD_FAST                         2    (x)                               can quicken
+000058        17 LOAD_BYTE                         5                                      can quicken
+000054        19 BINARY_OP                         14   (LT)                              generalizes: 17, 15
 000000        21 POP_AND_JUMP_IF_FALSE             10   (to 31)
 000001        23 LOAD_GLOBAL                       0    (str)
 000005        25 LOAD_FAST                         2    (x)

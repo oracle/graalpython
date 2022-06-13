@@ -196,6 +196,13 @@ public final class CompilationUnit {
 
         computeStackLevels();
 
+        int varCount = varnames.size() + cellvars.size() + freevars.size();
+        List<Instruction> quickenedInstructions = new ArrayList<>();
+        List<List<Instruction>> variableStores = new ArrayList<>(varCount);
+        for (int i = 0; i < varCount; i++) {
+            variableStores.add(new ArrayList<>());
+        }
+
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
         Block b = startBlock;
@@ -226,6 +233,13 @@ public final class CompilationUnit {
                 addExceptionRange(finishedExceptionHandlerRanges, start, end, handlerBci, stackLevel);
             }
             for (Instruction i : b.instr) {
+                if (i.quickenOutput != 0 || i.quickeningGeneralizeList != null) {
+                    quickenedInstructions.add(i);
+                }
+                if (i.opcode == OpCodes.STORE_FAST) {
+                    variableStores.get(i.arg).add(i);
+                }
+                i.bci = buf.size();
                 emitBytecode(i, buf);
                 insertSrcOffsetTable(i.location.startOffset, lastSrcOffset, srcOffsets);
                 lastSrcOffset = i.location.startOffset;
@@ -249,6 +263,25 @@ public final class CompilationUnit {
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
         }
+        int[] finishedQuickeningMap = new int[buf.size()];
+        int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
+        int[][] finishedGeneralizeVarsMap = new int[varCount][];
+        for (Instruction insn : quickenedInstructions) {
+            finishedQuickeningMap[insn.bci] = insn.quickenOutput;
+            if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
+                finishedGeneralizeInputsMap[insn.bci] = new int[insn.quickeningGeneralizeList.size()];
+                for (int j = 0; j < finishedGeneralizeInputsMap[insn.bci].length; j++) {
+                    finishedGeneralizeInputsMap[insn.bci][j] = insn.quickeningGeneralizeList.get(j).bci;
+                }
+            }
+        }
+        for (int j = 0; j < variableStores.size(); j++) {
+            List<Instruction> stores = variableStores.get(j);
+            finishedGeneralizeVarsMap[j] = new int[stores.size()];
+            for (int k = 0; k < stores.size(); k++) {
+                finishedGeneralizeVarsMap[j][k] = stores.get(k).bci;
+            }
+        }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
                         buf.toByteArray(), srcOffsets.toByteArray(), flags,
@@ -261,7 +294,8 @@ public final class CompilationUnit {
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
                         startLocation.startOffset,
-                        startLocation.startLine);
+                        startLocation.startLine,
+                        finishedQuickeningMap, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
     private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
@@ -346,6 +380,7 @@ public final class CompilationUnit {
                         int targetPos = blockLocationMap.get(target);
                         int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
                         Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.location);
+                        newInstr.quickenOutput = instr.quickenOutput;
                         if (newInstr.extendedLength() != instr.extendedLength()) {
                             repeat = true;
                         }

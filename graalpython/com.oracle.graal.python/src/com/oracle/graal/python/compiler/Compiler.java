@@ -211,6 +211,63 @@ public class Compiler implements SSTreeVisitor<Void> {
         // return (!(mod instanceof ModTy.Expression));
     }
 
+    private List<Instruction> quickeningStack = new ArrayList<>();
+
+    void pushOp(Instruction insn) {
+        // TODO support control flow
+        if (insn.target != null) {
+            quickeningStack.clear();
+            return;
+        }
+        int consumed = insn.opcode.getNumberOfConsumedStackItems(insn.arg, insn.followingArgs, false);
+        int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
+        boolean canQuickenInputs = insn.opcode.canBeQuickened();
+        List<Instruction> inputs = null;
+        if (consumed > 0) {
+            if (canQuickenInputs) {
+                inputs = new ArrayList<>();
+                for (int i = 0; i < consumed; i++) {
+                    Instruction input = popQuickeningStack();
+                    if (input == null) {
+                        /*
+                         * This happens when we cleared the stack after a jump or other
+                         * not-yet-supported scenario
+                         */
+                        canQuickenInputs = false;
+                        break;
+                    }
+                    canQuickenInputs = canQuickenInputs && input.opcode.canBeQuickened();
+                    inputs.add(input);
+                }
+            } else {
+                for (int i = 0; i < consumed; i++) {
+                    popQuickeningStack();
+                }
+            }
+        }
+        if (produced > 0) {
+            if (produced > 1) {
+                // TODO instructions that produce multiple values?
+                quickeningStack.clear();
+                return;
+            }
+            quickeningStack.add(insn);
+            insn.quickeningGeneralizeList = inputs;
+        }
+        if (canQuickenInputs && inputs != null) {
+            for (int i = 0; i < inputs.size(); i++) {
+                inputs.get(i).quickenOutput = 1;
+            }
+        }
+    }
+
+    Instruction popQuickeningStack() {
+        if (quickeningStack.size() == 0) {
+            return null;
+        }
+        return quickeningStack.remove(quickeningStack.size() - 1);
+    }
+
     // helpers
 
     private void enterScope(String name, CompilationScope scopeType, SSTNode node) {
@@ -304,7 +361,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addOp(OpCodes code, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, null, target, unit.currentLocation));
+        Instruction insn = new Instruction(code, 0, null, target, unit.currentLocation);
+        b.instr.add(insn);
+        pushOp(insn);
     }
 
     private Void addOp(OpCodes code, int arg) {
@@ -319,7 +378,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addOp(OpCodes code, int arg, byte[] followingArgs, SourceRange location) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, arg, followingArgs, null, location));
+        Instruction insn = new Instruction(code, arg, followingArgs, null, location);
+        b.instr.add(insn);
+        pushOp(insn);
     }
 
     private Void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {

@@ -7,7 +7,7 @@ Disassembly of <module>:
 000004         9 STORE_NAME                        1    (i)
 000025        11 LOAD_NAME                         1    (i)
 000030        13 LOAD_BYTE                         3
-000025        15 BINARY_OP                         12   (EQ)
+000025        15 BINARY_OP                         12   (EQ)                              generalizes: 13, 11
 000022        17 POP_AND_JUMP_IF_FALSE             7    (to 24)
 000037        19 POP_TOP
 000037        20 JUMP_FORWARD                      15   (to 35)

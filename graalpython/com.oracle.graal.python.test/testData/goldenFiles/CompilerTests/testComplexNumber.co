@@ -1,6 +1,6 @@
 Disassembly of <module>:
-000001         0 LOAD_BYTE                         2
-000000         2 UNARY_OP                          2    (NEGATIVE)
+000001         0 LOAD_BYTE                         2                                      can quicken
+000000         2 UNARY_OP                          2    (NEGATIVE)                        generalizes: 0
 000005         4 LOAD_COMPLEX                      0    (3.00000j)
-000000         6 BINARY_OP                         0    (ADD)
+000000         6 BINARY_OP                         0    (ADD)                             generalizes: 4, 2
 000000         8 RETURN_VALUE

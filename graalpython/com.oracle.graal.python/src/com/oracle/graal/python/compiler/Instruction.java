@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.List;
+
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 final class Instruction {
@@ -49,6 +51,10 @@ final class Instruction {
     final byte[] followingArgs;
     final Block target;
     final SourceRange location;
+
+    public int bci;
+    public int quickenOutput;
+    public List<Instruction> quickeningGeneralizeList;
 
     Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {
         this.opcode = opcode;

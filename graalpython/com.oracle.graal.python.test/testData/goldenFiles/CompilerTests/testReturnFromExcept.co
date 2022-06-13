@@ -11,9 +11,9 @@ Disassembly of foo:
 000013         6 GET_ITER
 000013   >>    7 FOR_ITER                          41   (to 48)
 000017         9 STORE_FAST                        0    (i)
-000048        11 LOAD_BYTE                         1
-000052        13 LOAD_BYTE                         0
-000048        15 BINARY_OP                         8    (TRUEDIV)
+000048        11 LOAD_BYTE                         1                                      can quicken
+000052        13 LOAD_BYTE                         0                                      can quicken
+000048        15 BINARY_OP                         8    (TRUEDIV)                         generalizes: 13, 11
 000048        17 POP_TOP
 000048        18 JUMP_FORWARD                      28   (to 46)
 000048        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
