@@ -168,10 +168,6 @@ public class Compiler implements SSTreeVisitor<Void> {
     public enum Flags {
     }
 
-    public Compiler() {
-        this(null);
-    }
-
     public Compiler(ErrorCallback errorCallback) {
         this.errorCallback = errorCallback;
     }
