@@ -91,6 +91,9 @@ abstract class AbstractParser {
     protected int level = 0;
     protected boolean callInvalidRules = false;
 
+    private boolean isInteractive;
+    private boolean parsingStarted;
+
     /**
      * Indicates, whether there was found an error
      */
@@ -140,6 +143,7 @@ abstract class AbstractParser {
     }
 
     public SSTNode parse(InputType inputType) {
+        isInteractive = inputType == InputType.SINGLE;
         SSTNode res = runParser(inputType);
         if (res == null) {
             resetParserState();
@@ -265,7 +269,13 @@ abstract class AbstractParser {
         }
         reset(pos);
 
-        // TODO: handle reaching end in single_input mode
+        if (isInteractive && token.type == Token.Kind.ENDMARKER && parsingStarted) {
+            token.type = Token.Kind.NEWLINE;
+            parsingStarted = false;
+            // TODO: handle implicit DEDENT (PyPARSE_DONT_IMPLY_DEDENT)
+        } else {
+            parsingStarted = true;
+        }
         return initializeToken(token);
     }
 
