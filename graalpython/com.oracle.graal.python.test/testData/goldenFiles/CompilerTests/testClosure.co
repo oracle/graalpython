@@ -20,8 +20,8 @@ Disassembly of foo:
 000100        24 POP_TOP
 000117        25 LOAD_BYTE                         3
 000113        27 STORE_DEREF                       0    (x)
-000000        29 LOAD_NONE
-000000        30 RETURN_VALUE
+000113        29 LOAD_NONE
+000113        30 RETURN_VALUE
 
 Disassembly of foo.<locals>.bar:
 000063         0 LOAD_GLOBAL                       0    (print)
@@ -30,5 +30,5 @@ Disassembly of foo.<locals>.bar:
 000063         6 POP_TOP
 000084         7 LOAD_BYTE                         2
 000080         9 STORE_DEREF                       0    (x)
-000000        11 LOAD_NONE
-000000        12 RETURN_VALUE
+000080        11 LOAD_NONE
+000080        12 RETURN_VALUE

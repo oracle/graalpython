@@ -14,8 +14,8 @@ Disassembly of f:
 000015         8 LOAD_STRING                       3    ('C')
 000015        10 CALL_FUNCTION                     2
 000015        12 STORE_FAST                        1    (C)
-000000        14 LOAD_NONE
-000000        15 RETURN_VALUE
+000015        14 LOAD_NONE
+000015        15 RETURN_VALUE
 
 Disassembly of f.<locals>.C:
 000015         0 LOAD_NAME                         0    (__name__)
