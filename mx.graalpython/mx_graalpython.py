@@ -758,7 +758,7 @@ def patch_batch_launcher(launcher_path, jvm_args):
         launcher.writelines(lines)
 
 
-def run_hpy_unittests(python_binary, args=None):
+def run_hpy_unittests(python_binary, args=None, include_native=True):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = os.environ.copy()
@@ -783,7 +783,10 @@ def run_hpy_unittests(python_binary, args=None):
                 except Exception as e: # pylint: disable=broad-except;
                     self.exc = e
 
-        for abi in ['cpython', 'universal', 'debug', 'nfi']:
+        abi_list = ['cpython', 'universal', 'debug']
+        if include_native:
+            abi_list.append('nfi')
+        for abi in abi_list:
             env["TEST_HPY_ABI"] = abi
             threads.append(RaisingThread(target=run_python_unittests, args=(python_binary, ), kwargs={
                 "args": args, "paths": [_hpy_test_root()], "env": env.copy(), "use_pytest": True, "lock": lock,
@@ -855,7 +858,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_managed_svm())
+            run_hpy_unittests(python_managed_svm(), include_native=False)
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:

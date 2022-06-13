@@ -316,10 +316,12 @@ static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
 static unsigned long augment_Long_AsUnsignedLong(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
-        return unboxInt(bits);
-    } else {
-        return original_Long_AsUnsignedLong(ctx, h);
+        int32_t unboxed = unboxInt(bits);
+        if (unboxed >= 0) {
+            return unboxed;
+        }
     }
+    return original_Long_AsUnsignedLong(ctx, h);
 }
 
 static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
