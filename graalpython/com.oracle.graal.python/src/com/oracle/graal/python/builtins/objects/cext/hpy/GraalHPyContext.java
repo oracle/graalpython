@@ -2590,7 +2590,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         // lazily register the runnable that concurrently collects the queued references
         Env env = getContext().getEnv();
         if (env.isCreateThreadAllowed()) {
-            Thread thread = env.createThread(new GraalHPyReferenceCleanerRunnable(referenceQueue), null);
+            Thread thread = env.createThread(new GraalHPyReferenceCleanerRunnable(referenceQueue), null, getContext().getThreadGroup());
             // Make the cleaner thread a daemon; it should not prevent JVM shutdown.
             thread.setDaemon(true);
             thread.start();
