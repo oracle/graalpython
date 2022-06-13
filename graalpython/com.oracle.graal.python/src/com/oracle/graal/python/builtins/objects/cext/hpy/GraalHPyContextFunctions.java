@@ -3336,6 +3336,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asType,
                         @Cached GetNameNode getName,
+                        @Cached ReadAttributeFromObjectNode readHPyFlagsNode,
+                        @Cached ReadAttributeFromObjectNode readModuleNameNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached GilNode gil) throws ArityException {
             checkArity(arguments, 2);
@@ -3344,6 +3346,15 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object type = asType.execute(context, arguments[1]);
                 String name = getName.execute(type);
+                if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
+                    // Types that originated from HPy: although they are ordinary managed
+                    // PythonClasses, the name should have "cext semantics", i.e., contain the
+                    // module if it was specified in the HPyType_Spec
+                    Object moduleName = readModuleNameNode.execute(type, SpecialAttributeNames.__MODULE__);
+                    if (moduleName instanceof String) {
+                        name = moduleName + "." + name;
+                    }
+                }
                 byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, CodecsModuleBuiltins.STRICT);
                 return new CByteArrayWrapper(result);
             } finally {
