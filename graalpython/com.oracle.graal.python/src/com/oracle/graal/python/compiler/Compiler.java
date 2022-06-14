@@ -1704,7 +1704,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Expr node) {
         setLocation(node);
-        if (interactive) {
+        if (interactive && nestingLevel <= 1) {
             node.value.accept(this);
             addOp(PRINT_EXPR);
         } else if (!(node.value instanceof ExprTy.Constant)) {
