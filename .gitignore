@@ -29,7 +29,6 @@ language
 *.iml
 /.metadata
 /dumps
-/venv-hpytests
 /graalpython/testfiles/
 /hs_err*.log
 *.dist
