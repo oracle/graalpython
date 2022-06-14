@@ -3,6 +3,8 @@ Module[0, 23]
         Target: Name[0, 3] Value: "foo"
         Args:
             Starred[4, 12]
+                 Context: Load
                  Expr: Name[5, 12] Value: "mylist1"
             Starred[14, 22]
+                 Context: Load
                  Expr: Name[15, 22] Value: "mylist2"

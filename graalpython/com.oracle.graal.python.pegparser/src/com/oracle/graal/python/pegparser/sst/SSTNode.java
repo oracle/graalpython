@@ -41,30 +41,18 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public abstract class SSTNode {
 
-    protected int startOffset;
-    protected int endOffset;
+    protected final SourceRange sourceRange;
 
-    public SSTNode(int startOffset, int endOffset) {
-        this.startOffset = startOffset;
-        this.endOffset = endOffset;
+    public SSTNode(SourceRange sourceRange) {
+        this.sourceRange = sourceRange;
     }
 
-    public int getStartOffset() {
-        return startOffset;
-    }
-
-    public int getEndOffset() {
-        return endOffset;
-    }
-
-    public void setStartOffset(int startOffset) {
-        this.startOffset = startOffset;
-    }
-
-    public void setEndOffset(int endOffset) {
-        this.endOffset = endOffset;
+    public SourceRange getSourceRange() {
+        return sourceRange;
     }
 
     public abstract <T> T accept(SSTreeVisitor<T> visitor);

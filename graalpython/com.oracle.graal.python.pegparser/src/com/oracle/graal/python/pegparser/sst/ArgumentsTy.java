@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public final class ArgumentsTy extends SSTNode {
     public final ArgTy[] posOnlyArgs;
     public final ArgTy[] args;
@@ -50,8 +52,8 @@ public final class ArgumentsTy extends SSTNode {
     public final ArgTy kwArg;
     public final ExprTy[] defaults;
 
-    public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+    public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, SourceRange sourceRange) {
+        super(sourceRange);
         this.posOnlyArgs = posOnlyArgs;
         this.args = args;
         this.varArg = varArg;

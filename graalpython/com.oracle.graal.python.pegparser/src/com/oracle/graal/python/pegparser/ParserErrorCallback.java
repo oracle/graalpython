@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 @FunctionalInterface
 public interface ParserErrorCallback {
@@ -56,29 +56,13 @@ public interface ParserErrorCallback {
         Syntax
     }
 
-    public abstract void onError(ErrorType errorType, int startOffset, int endOffset, String message);
+    void onError(ErrorType errorType, SourceRange sourceRange, String message);
 
-    default void onError(ErrorType errorType, int startOffset, int endOffset, String message, Object... arguments) {
-        onError(errorType, startOffset, endOffset, String.format(message, arguments));
+    default void onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
+        onError(errorType, sourceRange, String.format(message, arguments));
     }
 
-    default void onError(int startOffset, int endOffset, String message, Object... arguments) {
-        onError(ErrorType.Generic, startOffset, endOffset, String.format(message, arguments));
-    }
-
-    default void onError(SSTNode node, String message, Object... arguments) {
-        onError(node.getStartOffset(), node.getEndOffset(), message, arguments);
-    }
-
-    default void onError(ErrorType type, SSTNode node, String message, Object... arguments) {
-        onError(type, node.getStartOffset(), node.getEndOffset(), message, arguments);
-    }
-
-    default void onError(int startOffset, int endOffset) {
-        onError(startOffset, endOffset, "invalid syntax");
-    }
-
-    default void warn(int startOffset, int endOffset, String message, Object... arguments) {
-        onError(ErrorType.Warning, startOffset, endOffset, message, arguments);
+    default void onError(SourceRange sourceRange, String message, Object... arguments) {
+        onError(ErrorType.Generic, sourceRange, String.format(message, arguments));
     }
 }

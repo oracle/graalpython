@@ -414,8 +414,11 @@ def update_unittest_tags(args):
         # Disabled since this fails on Darwin when run in parallel with many other tests
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes'),
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text'),
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_valid_authentication_plain_text'),
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes'),
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_plain_text'),
+        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_noop'),
+        ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_pass_'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
         # Disabled since code object comparison is not stable for us
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
@@ -432,6 +435,10 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout'),
+        # Disabled due to transient stack overflow that fails to get caught and crashes the VM
+        ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
+        ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions

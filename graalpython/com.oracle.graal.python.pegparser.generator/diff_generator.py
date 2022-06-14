@@ -129,6 +129,7 @@ class DiffVisitor(GrammarVisitor):
     def visit_Alt(self, node: Alt):
         action = re.sub(r" ([\.,\(\)\[\]]) ", r"\1", str(node.action)) # shorten action string
         self.actions[" ".join(str(item) for item in node.items)] = action
+        self.generic_visit(node)
 
 
 def main():

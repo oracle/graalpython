@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -722,7 +723,7 @@ public class CompilerTests extends PythonTests {
         NodeFactory factory = new NodeFactoryImp();
         FExprParser fexpParser = new FExprParser() {
             @Override
-            public ExprTy parse(String code) {
+            public ExprTy parse(String code, SourceRange sourceRange) {
                 ParserTokenizer tok = new ParserTokenizer(code);
                 return new Parser(tok, factory, this).fstring_rule();
             }

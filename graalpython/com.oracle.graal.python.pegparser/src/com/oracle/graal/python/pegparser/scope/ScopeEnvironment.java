@@ -621,14 +621,14 @@ public class ScopeEnvironment {
                         } else {
                             addDef(targetName, DefUse.DefNonLocal);
                         }
-                        currentScope.recordDirective(mangle(targetName), node.getStartOffset(), node.getEndOffset());
+                        currentScope.recordDirective(mangle(targetName), node.getSourceRange());
                         addDef(targetName, DefUse.DefLocal, s);
                         break;
                     }
                     // If we find a ModuleBlock entry, add as GLOBAL
                     if (s.type == ScopeType.Module) {
                         addDef(targetName, DefUse.DefGlobal);
-                        currentScope.recordDirective(mangle(targetName), node.getStartOffset(), node.getEndOffset());
+                        currentScope.recordDirective(mangle(targetName), node.getSourceRange());
                         addDef(targetName, DefUse.DefGlobal, s);
                         break;
                     }
@@ -901,7 +901,7 @@ public class ScopeEnvironment {
                 // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
                 // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
                 addDef(n, DefUse.DefGlobal);
-                currentScope.recordDirective(n, node.getStartOffset(), node.getEndOffset());
+                currentScope.recordDirective(n, node.getSourceRange());
             }
             return null;
         }
@@ -984,7 +984,7 @@ public class ScopeEnvironment {
                 // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
                 // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
                 addDef(n, DefUse.DefNonLocal);
-                currentScope.recordDirective(n, node.getStartOffset(), node.getEndOffset());
+                currentScope.recordDirective(n, node.getSourceRange());
             }
             return null;
         }

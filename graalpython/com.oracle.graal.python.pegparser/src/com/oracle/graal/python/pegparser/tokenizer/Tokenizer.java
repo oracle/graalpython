@@ -485,7 +485,7 @@ public class Tokenizer {
 
     /**
      * verify_identifier Verify that the string is a valid identifier.
-     * 
+     *
      * @return {@code null} if valid, else an error message
      */
     private static String verifyIdentifier(String tokenString) {
@@ -1272,16 +1272,16 @@ public class Tokenizer {
         int endLineno = currentLineNumber;
         int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
         int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
-        return new Token(kind, tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset, extraData);
+        return new Token(kind, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
     public String getTokenString(Token tok) {
-        if (tok.startOffset >= codePointsInput.length) {
+        if (tok.sourceRange.startOffset >= codePointsInput.length) {
             return "";
-        } else if (tok.endOffset >= codePointsInput.length) {
-            return new String(codePointsInput, tok.startOffset, codePointsInput.length - tok.startOffset);
+        } else if (tok.sourceRange.endOffset >= codePointsInput.length) {
+            return new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
         } else {
-            return new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
+            return new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
         }
     }
 
@@ -1289,9 +1289,9 @@ public class Tokenizer {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
         sb.append(token.typeName());
-        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
-        sb.append(" (").append(token.startLine).append(", ").append(token.startColumn);
-        sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");
+        sb.append(" [").append(token.sourceRange.startOffset).append(", ").append(token.sourceRange.endOffset).append("]");
+        sb.append(" (").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn);
+        sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
         return sb.toString();
     }
