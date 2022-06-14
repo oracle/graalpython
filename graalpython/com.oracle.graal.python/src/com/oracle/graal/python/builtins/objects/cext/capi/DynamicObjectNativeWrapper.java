@@ -1817,7 +1817,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
             PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-            return PythonUtils.format("PythonObjectNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+            return PythonUtils.formatJString("PythonObjectNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
         }
 
         @ExportMessage

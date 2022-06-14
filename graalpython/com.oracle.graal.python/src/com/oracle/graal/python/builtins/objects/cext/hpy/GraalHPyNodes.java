@@ -959,7 +959,7 @@ public class GraalHPyNodes {
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw CompilerDirectives.shouldNotReachHere(PythonUtils.format("support for legacy slot %s not yet implemented", slot.name()));
+                        throw CompilerDirectives.shouldNotReachHere(PythonUtils.formatJString("support for legacy slot %s not yet implemented", slot.name()));
                     }
             }
             return null;

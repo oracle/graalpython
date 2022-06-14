@@ -476,7 +476,7 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static String format(String fmt, Object... args) {
+    public static String formatJString(String fmt, Object... args) {
         return String.format(fmt, args);
     }
 

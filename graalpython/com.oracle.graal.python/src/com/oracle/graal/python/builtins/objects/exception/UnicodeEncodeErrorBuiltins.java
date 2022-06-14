@@ -132,11 +132,11 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
                 final int badChar = codePointAtIndexNode.execute(object, start, TS_ENCODING);
                 String badCharStr;
                 if (badChar <= 0xFF) {
-                    badCharStr = PythonUtils.format("\\x%02x", badChar);
+                    badCharStr = PythonUtils.formatJString("\\x%02x", badChar);
                 } else if (badChar <= 0xFFFF) {
-                    badCharStr = PythonUtils.format("\\u%04x", badChar);
+                    badCharStr = PythonUtils.formatJString("\\u%04x", badChar);
                 } else {
-                    badCharStr = PythonUtils.format("\\U%08x", badChar);
+                    badCharStr = PythonUtils.formatJString("\\U%08x", badChar);
                 }
                 return simpleTruffleStringFormatNode.format("'%s' codec can't encode character '%s' in position %d: %s", encoding, badCharStr, start, reason);
             } else {

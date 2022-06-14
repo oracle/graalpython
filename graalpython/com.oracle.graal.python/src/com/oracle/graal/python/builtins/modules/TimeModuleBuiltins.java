@@ -575,15 +575,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         private static String format(String format, int arg1) {
-            return PythonUtils.format(format, arg1);
+            return PythonUtils.formatJString(format, arg1);
         }
 
         private static String dateFormat(int[] date) {
-            return PythonUtils.format("%02d/%02d/", date[TM_MON], date[TM_MDAY]) + truncYear(date[TM_YEAR]);
+            return PythonUtils.formatJString("%02d/%02d/", date[TM_MON], date[TM_MDAY]) + truncYear(date[TM_YEAR]);
         }
 
         private static String timeFormat(int[] date) {
-            return PythonUtils.format("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
+            return PythonUtils.formatJString("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
         protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
@@ -1020,7 +1020,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             assert tm[TM_MON] > 0;
             String day = WDAY_NAME[tm[TM_WDAY]];
             String month = MON_NAME[tm[TM_MON]];
-            String str = PythonUtils.format(format, day, month, tm[TM_MDAY], tm[TM_HOUR], tm[TM_MIN], tm[TM_SEC], tm[TM_YEAR]);
+            String str = PythonUtils.formatJString(format, day, month, tm[TM_MDAY], tm[TM_HOUR], tm[TM_MIN], tm[TM_SEC], tm[TM_YEAR]);
             return fromJavaStringNode.execute(str, TS_ENCODING);
         }
     }

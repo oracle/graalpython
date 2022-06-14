@@ -91,6 +91,6 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonUtils.format("PythonNativeVoidPtr(%s)", object);
+        return PythonUtils.formatJString("PythonNativeVoidPtr(%s)", object);
     }
 }

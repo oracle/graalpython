@@ -1961,7 +1961,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere(PythonUtils.format("context function %s not yet implemented: ", key));
+            throw CompilerDirectives.shouldNotReachHere(PythonUtils.formatJString("context function %s not yet implemented: ", key));
         }
 
         @Specialization(replaces = "doMemberCached")
@@ -2418,7 +2418,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         if (LOGGER.isLoggable(Level.FINER)) {
             final int handleID = handle;
-            LOGGER.finer(() -> PythonUtils.format("allocating HPy handle %d (object: %s)", handleID, object));
+            LOGGER.finer(() -> PythonUtils.formatJString("allocating HPy handle %d (object: %s)", handleID, object));
         }
         return handle;
     }
@@ -2496,7 +2496,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     synchronized boolean releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
-        assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
+        assert hpyHandleTable[handle] != null : PythonUtils.formatJString("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(() -> "releasing HPy handle " + handle);
         }

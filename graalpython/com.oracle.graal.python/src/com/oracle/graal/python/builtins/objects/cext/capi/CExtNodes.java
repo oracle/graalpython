@@ -3477,7 +3477,7 @@ public abstract class CExtNodes {
                             } else {
                                 value = System.identityHashCode(ptr);
                             }
-                            result.append(PythonUtils.format("0x%x", value));
+                            result.append(PythonUtils.formatJString("0x%x", value));
                             vaArgIdx++;
                             valid = true;
                             break;

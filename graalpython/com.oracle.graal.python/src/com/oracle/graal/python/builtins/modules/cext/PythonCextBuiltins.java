@@ -1715,7 +1715,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
             cApiContext.increaseMemoryPressure(frame, getThreadStateNode, this, size);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> PythonUtils.format("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
+                LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
             }
             return 0;
         }
@@ -1746,7 +1746,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> PythonUtils.format("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
+                LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
             }
             return 0;
         }
@@ -1821,7 +1821,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.format("Untracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.fine(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -1833,7 +1833,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.fine(() -> PythonUtils.format("Tracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.fine(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
@@ -1881,7 +1881,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                     }
                     AllocInfo allocLocation = cApiContext.traceFree(CApiContext.asPointer(ptr, lib), ref, null);
                     if (allocLocation != null) {
-                        LOGGER.finer(() -> PythonUtils.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
+                        LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
 
                         if (traceNativeMemoryCalls) {
                             Reference left = allocLocation.allocationSite;
@@ -1892,13 +1892,13 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                             }
                             if (pyFrame != null) {
                                 final PFrame f = pyFrame;
-                                LOGGER.finer(() -> PythonUtils.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                                LOGGER.finer(() -> PythonUtils.formatJString("Free'd pointer was allocated at: %s", f.getTarget()));
                             }
                         }
                     }
                 } else {
                     assert isLoggable;
-                    LOGGER.finer(() -> PythonUtils.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
+                    LOGGER.finer(() -> PythonUtils.formatJString("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
             }
             return 0;
@@ -1945,7 +1945,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
-            LOGGER.fine(() -> PythonUtils.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
+            LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
         }
     }

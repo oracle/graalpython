@@ -4051,7 +4051,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     public static void compatibilityInfo(String fmt, Object... args) {
         if (COMPATIBILITY_LOGGER.isLoggable(Level.FINER)) {
-            COMPATIBILITY_LOGGER.log(Level.FINER, PythonUtils.format(fmt, args));
+            COMPATIBILITY_LOGGER.log(Level.FINER, PythonUtils.formatJString(fmt, args));
         }
     }
 

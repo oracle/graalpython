@@ -132,7 +132,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonUtils.format("PythonAbstractNativeObject(%s)", object);
+        return PythonUtils.formatJString("PythonAbstractNativeObject(%s)", object);
     }
 
     @ExportMessage

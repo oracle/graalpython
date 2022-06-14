@@ -57,7 +57,7 @@ public interface PythonNativeClass extends PythonAbstractClass {
     Object getPtr();
 
     default String getName() {
-        return PythonUtils.format("PythonNativeClass(%s)", getPtr());
+        return PythonUtils.formatJString("PythonNativeClass(%s)", getPtr());
     }
 
     static boolean isInstance(Object object) {

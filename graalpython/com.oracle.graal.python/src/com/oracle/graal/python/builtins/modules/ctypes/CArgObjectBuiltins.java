@@ -111,31 +111,31 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 case 'L':
                 case 'q': // TODO big int
                 case 'Q': // TODO big int
-                    ret = PythonUtils.format("<cparam '%c' (%d)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%d)>", self.tag, self.value);
                     break;
                 case 'd':
                 case 'f': {
-                    ret = PythonUtils.format("<cparam '%c' (%f)>", self.tag, self.value);
+                    ret = PythonUtils.formatJString("<cparam '%c' (%f)>", self.tag, self.value);
                     break;
                 }
                 case 'c':
                     byte[] bytes = ((ByteArrayStorage) self.value.ptr).value;
                     if (isLiteralChar((char) bytes[0])) {
-                        ret = PythonUtils.format("<cparam '%c' ('%c')>", self.tag, self.value);
+                        ret = PythonUtils.formatJString("<cparam '%c' ('%c')>", self.tag, self.value);
                     } else {
-                        ret = PythonUtils.format("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                        ret = PythonUtils.formatJString("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));
                     }
                     break;
                 case 'z':
                 case 'Z':
                 case 'P':
-                    ret = PythonUtils.format("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.value));
+                    ret = PythonUtils.formatJString("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.value));
                     break;
                 default:
                     if (isLiteralChar(self.tag)) {
-                        ret = PythonUtils.format("<cparam '%c' at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
+                        ret = PythonUtils.formatJString("<cparam '%c' at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
                     } else {
-                        ret = PythonUtils.format("<cparam 0x%02x at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
+                        ret = PythonUtils.formatJString("<cparam 0x%02x at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
                     }
             }
             return fromJavaStringNode.execute(ret, TS_ENCODING);

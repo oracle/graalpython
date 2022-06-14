@@ -176,7 +176,7 @@ public abstract class GraalHPyObjectBuiltins {
                     dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(PythonUtils.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        LOGGER.finest(PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
                     // TODO(fa): add memory tracing
                 }

@@ -207,7 +207,7 @@ public final class NativeReferenceCache implements TruffleObject {
                     return object;
                 }
             } else if (idx < 0) {
-                LOGGER.warning(() -> PythonUtils.format("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
+                LOGGER.warning(() -> PythonUtils.formatJString("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
             }
             return pointerObject;
         }

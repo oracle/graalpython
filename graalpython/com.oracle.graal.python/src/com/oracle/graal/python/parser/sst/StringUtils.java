@@ -207,7 +207,7 @@ public class StringUtils {
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
             TruffleString message = PyObjectStrAsTruffleStringNode.getUncached().execute(e.getUnreifiedException());
-            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), toTruffleStringUncached(PythonUtils.format("(unicode error) %s", message)));
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), toTruffleStringUncached(PythonUtils.formatJString("(unicode error) %s", message)));
         }
     }
 

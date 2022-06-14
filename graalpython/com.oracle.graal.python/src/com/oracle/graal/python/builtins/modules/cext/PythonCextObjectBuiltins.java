@@ -722,7 +722,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
              */
             boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
             if (pointsToHandleSpace && !isValidHandle || traceNativeMemory && !isWrapper && !cApiContext.isAllocated(ptrObject)) {
-                stderr.println(PythonUtils.format("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
+                stderr.println(PythonUtils.formatJString("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
                 stderr.flush();
                 return 0;
             }

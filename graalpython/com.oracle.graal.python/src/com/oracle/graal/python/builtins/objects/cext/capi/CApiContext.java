@@ -599,7 +599,7 @@ public final class CApiContext extends CExtContext {
             }
             return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
         } else {
-            LOGGER.warning(() -> PythonUtils.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
+            LOGGER.warning(() -> PythonUtils.formatJString("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
         }
         return new PythonAbstractNativeObject(nativePtr);
     }
@@ -658,9 +658,9 @@ public final class CApiContext extends CExtContext {
         AllocInfo allocatedValue = allocatedNativeMemory.remove(ptr);
         Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
-            LOGGER.severe(PythonUtils.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
+            LOGGER.severe(PythonUtils.formatJString("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
         } else if (allocatedValue == null) {
-            LOGGER.info(PythonUtils.format("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
+            LOGGER.info(PythonUtils.formatJString("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
         }
         return allocatedValue;
     }

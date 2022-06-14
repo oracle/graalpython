@@ -2062,7 +2062,7 @@ public abstract class GraalHPyContextFunctions {
                         callWriteDataNode.call(context, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
 
                         if (LOGGER.isLoggable(Level.FINEST)) {
-                            LOGGER.finest(() -> PythonUtils.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                            LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                         }
                         // TODO(fa): add memory tracing
                     }
@@ -2126,7 +2126,7 @@ public abstract class GraalHPyContextFunctions {
                         pythonObject = factory.createPythonHPyObject(type, dataPtr);
 
                         if (LOGGER.isLoggable(Level.FINEST)) {
-                            LOGGER.finest(() -> PythonUtils.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                            LOGGER.finest(() -> PythonUtils.formatJString("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                         }
                         // TODO(fa): add memory tracing
                     }

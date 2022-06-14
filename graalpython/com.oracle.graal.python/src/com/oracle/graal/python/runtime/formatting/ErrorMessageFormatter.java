@@ -123,7 +123,7 @@ public class ErrorMessageFormatter {
                 matchIdx++;
             }
         }
-        return PythonUtils.format(sb.toString(), compact(args, removedCnt));
+        return PythonUtils.formatJString(sb.toString(), compact(args, removedCnt));
     }
 
     @TruffleBoundary

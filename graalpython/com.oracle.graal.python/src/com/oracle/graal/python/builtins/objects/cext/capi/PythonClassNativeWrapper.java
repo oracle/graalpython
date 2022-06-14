@@ -90,6 +90,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     @TruffleBoundary
     public String toString() {
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return PythonUtils.format("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+        return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
     }
 }
