@@ -3743,10 +3743,10 @@ public abstract class GraalHPyContextFunctions {
                     }
                     Object result = ((PContextVar) var).getValue();
                     if (result == null) {
-                        if (def instanceof PNone) {
+                        if (def == NULL_HANDLE_DELEGATE) {
                             def = ((PContextVar) var).getDefault();
                             if (def == PContextVar.NO_DEFAULT) {
-                                throw raiseNode.raise(PythonBuiltinClassType.LookupError);
+                                def = NULL_HANDLE_DELEGATE;
                             }
                         }
                         result = def;
