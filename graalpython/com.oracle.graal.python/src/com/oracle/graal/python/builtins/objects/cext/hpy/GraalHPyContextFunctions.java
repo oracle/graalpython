@@ -872,6 +872,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
+            // note: node 'CastToJavaDoubleNode' cannot throw a PException
             double value = castToJavaDoubleNode.execute(arguments[1]);
             return asHandleNode.execute(context, value);
         }
@@ -884,10 +885,16 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) throws ArityException {
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            return asDoubleNode.execute(null, asPythonObjectNode.execute(context, arguments[1]));
+            try {
+                return asDoubleNode.execute(null, asPythonObjectNode.execute(context, arguments[1]));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(context, e);
+                return -1.0;
+            }
         }
     }
 

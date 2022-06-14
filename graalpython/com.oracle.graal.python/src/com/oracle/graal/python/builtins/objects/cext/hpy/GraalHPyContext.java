@@ -1452,9 +1452,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             return GraalHPyBoxing.unboxInt(handle);
         } else {
             Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
-            return PyFloatAsDoubleNodeGen.getUncached().execute(null, object);
+            try {
+                return PyFloatAsDoubleNodeGen.getUncached().execute(null, object);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+                return -1.0;
+            }
         }
-
     }
 
     public final long ctxLongAsLong(long handle) {
