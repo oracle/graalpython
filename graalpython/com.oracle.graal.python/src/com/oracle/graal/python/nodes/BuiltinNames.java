@@ -47,7 +47,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 public abstract class BuiltinNames {
     // special strings
     public static final String J_LAMBDA_NAME = "<lambda>";
-// public static final TruffleString T_LAMBDA_NAME = tsLiteral(J_LAMBDA_NAME);
 
     // special arg names
     public static final String J_SELF = "self";
@@ -73,7 +72,6 @@ public abstract class BuiltinNames {
     public static final TruffleString T___DEBUG__ = tsLiteral(J___DEBUG__);
 
     public static final String J___FUTURE__ = "__future__";
-// public static final TruffleString T___FUTURE__ = tsLiteral(J___FUTURE__);
 
     // sys
     public static final String J_TRACEBACKLIMIT = "tracebacklimit";
@@ -147,85 +145,62 @@ public abstract class BuiltinNames {
     public static final TruffleString T_DICT = tsLiteral(J_DICT);
 
     public static final String J_DEFAULTDICT = "defaultdict";
-// public static final TruffleString T_DEFAULTDICT = tsLiteral(J_DEFAULTDICT);
 
     public static final String J_PARTIAL = "partial";
-// public static final TruffleString T_PARTIAL = tsLiteral(J_PARTIAL);
 
     public static final String J_TUPLE_GETTER = "_tuplegetter";
-// public static final TruffleString T_TUPLE_GETTER = tsLiteral(J_TUPLE_GETTER);
 
     public static final String J_DEQUE = "deque";
     public static final TruffleString T_DEQUE = tsLiteral(J_DEQUE);
 
     public static final String J_DEQUE_ITER = "_deque_iterator";
-// public static final TruffleString T_DEQUE_ITER = tsLiteral(J_DEQUE_ITER);
 
     public static final String J_DEQUE_REV_ITER = "_deque_reverse_iterator";
-// public static final TruffleString T_DEQUE_REV_ITER = tsLiteral(J_DEQUE_REV_ITER);
 
     public static final String J_HELP = "help";
-// public static final TruffleString T_HELP = tsLiteral(J_HELP);
 
     public static final String J_MIN = "min";
     public static final TruffleString T_MIN = tsLiteral(J_MIN);
 
     public static final String J_SETATTR = "setattr";
-// public static final TruffleString T_SETATTR = tsLiteral(J_SETATTR);
 
     public static final String J_ALL = "all";
-// public static final TruffleString T_ALL = tsLiteral(J_ALL);
 
     public static final String J_DIR = "dir";
-// public static final TruffleString T_DIR = tsLiteral(J_DIR);
 
     public static final String J_HEX = "hex";
-// public static final TruffleString T_HEX = tsLiteral(J_HEX);
 
     public static final String J_NEXT = "next";
     public static final TruffleString T_NEXT = tsLiteral(J_NEXT);
 
     public static final String J_SLICE = "slice";
-// public static final TruffleString T_SLICE = tsLiteral(J_SLICE);
 
     public static final String J_ANY = "any";
-// public static final TruffleString T_ANY = tsLiteral(J_ANY);
 
     public static final String J_DIVMOD = "divmod";
-// public static final TruffleString T_DIVMOD = tsLiteral(J_DIVMOD);
 
     public static final String J_ID = "id";
-// public static final TruffleString T_ID = tsLiteral(J_ID);
 
     public static final String J_OBJECT = "object";
-// public static final TruffleString T_OBJECT = tsLiteral(J_OBJECT);
 
     public static final String J_FOREIGN = "foreign";
-// public static final TruffleString T_FOREIGN = tsLiteral(J_FOREIGN);
 
     public static final String J_SORTED = "sorted";
-// public static final TruffleString T_SORTED = tsLiteral(J_SORTED);
 
     public static final String J_ASCII = "ascii";
     public static final TruffleString T_ASCII = tsLiteral(J_ASCII);
 
     public static final String J_CEIL = "ceil";
-// public static final TruffleString T_CEIL = tsLiteral(J_CEIL);
 
     public static final String J_ENUMERATE = "enumerate";
-// public static final TruffleString T_ENUMERATE = tsLiteral(J_ENUMERATE);
 
     public static final String J_INPUT = "input";
-// public static final TruffleString T_INPUT = tsLiteral(J_INPUT);
 
     public static final String J_OCT = "oct";
-// public static final TruffleString T_OCT = tsLiteral(J_OCT);
 
     public static final String J_STATICMETHOD = "staticmethod";
-// public static final TruffleString T_STATICMETHOD = tsLiteral(J_STATICMETHOD);
 
     public static final String J_BIN = "bin";
-// public static final TruffleString T_BIN = tsLiteral(J_BIN);
 
     public static final String J_EVAL = "eval";
     public static final TruffleString T_EVAL = tsLiteral(J_EVAL);
@@ -234,13 +209,11 @@ public abstract class BuiltinNames {
     public static final TruffleString T_INT = tsLiteral(J_INT);
 
     public static final String J_OPEN = "open";
-// public static final TruffleString T_OPEN = tsLiteral(J_OPEN);
 
     public static final String J_STR = "str";
     public static final TruffleString T_STR = tsLiteral(J_STR);
 
     public static final String J_BOOL = "bool";
-// public static final TruffleString T_BOOL = tsLiteral(J_BOOL);
 
     public static final String J_EXEC = "exec";
     public static final TruffleString T_EXEC = tsLiteral(J_EXEC);
@@ -249,25 +222,19 @@ public abstract class BuiltinNames {
     public static final TruffleString T_ISINSTANCE = tsLiteral(J_ISINSTANCE);
 
     public static final String J_ORD = "ord";
-// public static final TruffleString T_ORD = tsLiteral(J_ORD);
 
     public static final String J_SUM = "sum";
-// public static final TruffleString T_SUM = tsLiteral(J_SUM);
 
     public static final String J_BYTEARRAY = "bytearray";
-// public static final TruffleString T_BYTEARRAY = tsLiteral(J_BYTEARRAY);
 
     public static final String J_FILTER = "filter";
-// public static final TruffleString T_FILTER = tsLiteral(J_FILTER);
 
     public static final String J_ISSUBCLASS = "issubclass";
     public static final TruffleString T_ISSUBCLASS = tsLiteral(J_ISSUBCLASS);
 
     public static final String J_POW = "pow";
-// public static final TruffleString T_POW = tsLiteral(J_POW);
 
     public static final String J_SUPER = "super";
-// public static final TruffleString T_SUPER = tsLiteral(J_SUPER);
 
     public static final String J_BYTES = "bytes";
     public static final TruffleString T_BYTES = tsLiteral(J_BYTES);
@@ -297,20 +264,15 @@ public abstract class BuiltinNames {
     public static final TruffleString T_FORMAT = tsLiteral(J_FORMAT);
 
     public static final String J_FORMAT_MAP = "format_map";
-// public static final TruffleString T_FORMAT_MAP = tsLiteral(J_FORMAT_MAP);
 
     public static final String J_FORMATTER_PARSER = "formatter_parser";
-// public static final TruffleString T_FORMATTER_PARSER = tsLiteral(J_FORMATTER_PARSER);
 
     public static final String J_FORMATTER_FIELD_NAME_SPLIT = "formatter_field_name_split";
-// public static final TruffleString T_FORMATTER_FIELD_NAME_SPLIT =
-// tsLiteral(J_FORMATTER_FIELD_NAME_SPLIT);
 
     public static final String J_LEN = "len";
     public static final TruffleString T_LEN = tsLiteral(J_LEN);
 
     public static final String J_PROPERTY = "property";
-// public static final TruffleString T_PROPERTY = tsLiteral(J_PROPERTY);
 
     public static final String J_TYPE = "type";
     public static final TruffleString T_TYPE = tsLiteral(J_TYPE);
@@ -328,13 +290,10 @@ public abstract class BuiltinNames {
     public static final TruffleString T_RANGE = tsLiteral(J_RANGE);
 
     public static final String J_VARS = "vars";
-// public static final TruffleString T_VARS = tsLiteral(J_VARS);
 
     public static final String J_CLASSMETHOD = "classmethod";
-// public static final TruffleString T_CLASSMETHOD = tsLiteral(J_CLASSMETHOD);
 
     public static final String J_INSTANCEMETHOD = "instancemethod";
-// public static final TruffleString T_INSTANCEMETHOD = tsLiteral(J_INSTANCEMETHOD);
 
     public static final String J_GETATTR = "getattr";
     public static final TruffleString T_GETATTR = tsLiteral(J_GETATTR);
@@ -346,7 +305,6 @@ public abstract class BuiltinNames {
     public static final TruffleString T_REPR = tsLiteral(J_REPR);
 
     public static final String J_ZIP = "zip";
-// public static final TruffleString T_ZIP = tsLiteral(J_ZIP);
 
     public static final String J_COMPILE = "compile";
     public static final TruffleString T_COMPILE = tsLiteral(J_COMPILE);
@@ -358,31 +316,24 @@ public abstract class BuiltinNames {
     public static final TruffleString T_MAP = tsLiteral(J_MAP);
 
     public static final String J_REVERSED = "reversed";
-// public static final TruffleString T_REVERSED = tsLiteral(J_REVERSED);
 
     public static final String J___IMPORT__ = "__import__";
     public static final TruffleString T___IMPORT__ = tsLiteral(J___IMPORT__);
 
     public static final String J_COMPLEX = "complex";
-// public static final TruffleString T_COMPLEX = tsLiteral(J_COMPLEX);
 
     public static final String J_HASATTR = "hasattr";
-// public static final TruffleString T_HASATTR = tsLiteral(J_HASATTR);
 
     public static final String J_MAX = "max";
-// public static final TruffleString T_MAX = tsLiteral(J_MAX);
 
     public static final String J_ROUND = "round";
-// public static final TruffleString T_ROUND = tsLiteral(J_ROUND);
 
     public static final String J_DELATTR = "delattr";
-// public static final TruffleString T_DELATTR = tsLiteral(J_DELATTR);
 
     public static final String J_HASH = "hash";
     public static final TruffleString T_HASH = tsLiteral(J_HASH);
 
     public static final String J_MEMORYVIEW = "memoryview";
-// public static final TruffleString T_MEMORYVIEW = tsLiteral(J_MEMORYVIEW);
 
     public static final String J_SET = "set";
     public static final TruffleString T_SET = tsLiteral(J_SET);

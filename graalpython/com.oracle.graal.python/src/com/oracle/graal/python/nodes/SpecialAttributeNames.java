@@ -58,25 +58,20 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___CODE__ = tsLiteral(J___CODE__);
 
     public static final String J___GLOBALS__ = "__globals__";
-// public static final TruffleString T___GLOBALS__ = tsLiteral(J___GLOBALS__);
 
     public static final String J___CLASSCELL__ = "__classcell__";
     public static final TruffleString T___CLASSCELL__ = tsLiteral(J___CLASSCELL__);
 
     public static final String J___CLOSURE__ = "__closure__";
-// public static final TruffleString T___CLOSURE__ = tsLiteral(J___CLOSURE__);
 
     public static final String J___ANNOTATIONS__ = "__annotations__";
     public static final TruffleString T___ANNOTATIONS__ = tsLiteral(J___ANNOTATIONS__);
 
     public static final String J___KWDEFAULTS__ = "__kwdefaults__";
-// public static final TruffleString T___KWDEFAULTS__ = tsLiteral(J___KWDEFAULTS__);
 
     public static final String J___SELF__ = "__self__";
-// public static final TruffleString T___SELF__ = tsLiteral(J___SELF__);
 
     public static final String J___FUNC__ = "__func__";
-// public static final TruffleString T___FUNC__ = tsLiteral(J___FUNC__);
 
     public static final String J___MODULE__ = "__module__";
     public static final TruffleString T___MODULE__ = tsLiteral(J___MODULE__);
@@ -88,7 +83,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___CLASS__ = tsLiteral(J___CLASS__);
 
     public static final String J___BASE__ = "__base__";
-// public static final TruffleString T___BASE__ = tsLiteral(J___BASE__);
 
     public static final String J___NEWOBJ__ = "__newobj__";
     public static final TruffleString T___NEWOBJ__ = tsLiteral(J___NEWOBJ__);
@@ -106,7 +100,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___QUALNAME__ = tsLiteral(J___QUALNAME__);
 
     public static final String J___MRO__ = "__mro__";
-// public static final TruffleString T___MRO__ = tsLiteral(J___MRO__);
 
     public static final String J___MRO_ENTRIES__ = "__mro_entries__";
     public static final TruffleString T___MRO_ENTRIES__ = tsLiteral(J___MRO_ENTRIES__);
@@ -145,7 +138,6 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___CONTEXT__ = tsLiteral(J___CONTEXT__);
 
     public static final String J___SUPPRESS_CONTEXT__ = "__suppress_context__";
-// public static final TruffleString T___SUPPRESS_CONTEXT__ = tsLiteral(J___SUPPRESS_CONTEXT__);
 
     public static final String J___BASICSIZE__ = "__basicsize__";
     public static final TruffleString T___BASICSIZE__ = tsLiteral(J___BASICSIZE__);

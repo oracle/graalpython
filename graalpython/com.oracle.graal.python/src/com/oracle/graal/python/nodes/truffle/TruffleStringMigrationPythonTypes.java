@@ -51,8 +51,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Temporary {@link TypeSystem} used during migration of j.l.String -> TruffleString. Once the
  * migration is complete, this type system can be deleted.
  *
- * The same implicit casts are also in {@link PythonTypes} and {@link PythonArithmeticTypes}. All
- * explicit usages of {@link #ts2js(TruffleString)} are to-do markers.
+ * The same implicit cast is also in {@link PythonTypes} and {@link PythonArithmeticTypes}
  */
 @TypeSystem
 public abstract class TruffleStringMigrationPythonTypes {
