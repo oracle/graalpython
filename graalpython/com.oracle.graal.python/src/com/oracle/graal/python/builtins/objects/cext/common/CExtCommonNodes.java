@@ -131,7 +131,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class CExtCommonNodes {
     @TruffleBoundary
     public static void fatalError(Node location, PythonContext context, TruffleString prefix, TruffleString msg, int status) {
-        fatalError(location, context, prefix.toJavaStringUncached(), msg.toJavaStringUncached(), status);
+        fatalError(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
     }
 
     @TruffleBoundary
