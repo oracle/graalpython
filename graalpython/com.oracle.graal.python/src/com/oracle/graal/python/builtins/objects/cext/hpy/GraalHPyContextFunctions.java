@@ -73,6 +73,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1264,7 +1265,8 @@ public abstract class GraalHPyContextFunctions {
 
         @TruffleBoundary
         public static GraalHPyUnicodeAsCharsetString asFSDefault() {
-            return new GraalHPyUnicodeAsCharsetString(CharsetMapping.getCharsetNormalized(GetFileSystemEncodingNode.getFileSystemEncoding()));
+            TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
+            return new GraalHPyUnicodeAsCharsetString(CharsetMapping.getCharsetNormalized(normalizedEncoding));
         }
     }
 
@@ -1447,7 +1449,8 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         private String decode(CodingErrorAction errorAction, byte[] bytes) {
             try {
-                return CharsetMapping.getCharsetNormalized(charset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
+                TruffleString normalizedCharset = CharsetMapping.normalizeUncached(charset);
+                return CharsetMapping.getCharsetNormalized(normalizedCharset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
             } catch (CharacterCodingException ex) {
                 throw CompilerDirectives.shouldNotReachHere(ex);
             }
@@ -1520,7 +1523,8 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         private String decode(CodingErrorAction errorAction, byte[] bytes) {
             try {
-                return CharsetMapping.getCharsetNormalized(charset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
+                TruffleString normalizedCharset = CharsetMapping.normalizeUncached(charset);
+                return CharsetMapping.getCharsetNormalized(normalizedCharset).newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(ByteBuffer.wrap(bytes)).toString();
             } catch (CharacterCodingException ex) {
                 return null;
             }
