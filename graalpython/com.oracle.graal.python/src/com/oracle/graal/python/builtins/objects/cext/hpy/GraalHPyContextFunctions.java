@@ -1416,6 +1416,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
@@ -1432,7 +1433,7 @@ public abstract class GraalHPyContextFunctions {
                 } catch (OverflowException | InteropException ex) {
                     throw CompilerDirectives.shouldNotReachHere(ex);
                 }
-                String result = decode(CodingErrorAction.IGNORE, bytes);
+                TruffleString result = fromJavaStringNode.execute(decode(CodingErrorAction.IGNORE, bytes), TS_ENCODING);
                 return asHandleNode.execute(context, result);
             } finally {
                 gil.release(mustRelease);
@@ -1472,6 +1473,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached CastToTruffleStringNode castToJavaStringNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached GetByteArrayNode getByteArrayNode,
                         @Cached HPyRaiseNode raiseNode,
                         @Cached TruffleString.EqualNode equalNode,
@@ -1495,7 +1497,7 @@ public abstract class GraalHPyContextFunctions {
                 // short-circuit the error reading etc
                 TruffleString errors = castToJavaStringNode.execute(callHPyFunction.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[3], "ascii"));
                 CodingErrorAction errorAction = CodecsModuleBuiltins.convertCodingErrorAction(errors, equalNode);
-                String result = decode(errorAction, bytes);
+                TruffleString result = fromJavaStringNode.execute(decode(errorAction, bytes), TS_ENCODING);
                 if (result == null) {
                     // TODO: refactor helper nodes for CodecsModuleBuiltins to use them here
                     return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, PythonBuiltinClassType.UnicodeDecodeError, ErrorMessages.MALFORMED_INPUT);
