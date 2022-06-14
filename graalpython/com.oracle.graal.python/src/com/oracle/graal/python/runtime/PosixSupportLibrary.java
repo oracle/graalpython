@@ -875,13 +875,17 @@ public abstract class PosixSupportLibrary extends Library {
         private final TruffleString msg;
 
         public PosixException(int errorCode, TruffleString message) {
-            super(message.toJavaStringUncached());
             this.errorCode = errorCode;
             msg = message;
         }
 
         public final TruffleString getMessageAsTruffleString() {
             return msg;
+        }
+
+        @Override
+        public String getMessage() {
+            return msg.toJavaStringUncached();
         }
 
         public int getErrorCode() {
