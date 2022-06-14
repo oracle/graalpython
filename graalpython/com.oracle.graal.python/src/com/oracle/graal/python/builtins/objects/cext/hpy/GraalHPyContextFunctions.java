@@ -3345,15 +3345,23 @@ public abstract class GraalHPyContextFunctions {
             try {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object type = asType.execute(context, arguments[1]);
-                String name = getName.execute(type);
+                String baseName = getName.execute(type);
+                String name;
                 if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
                     // Types that originated from HPy: although they are ordinary managed
                     // PythonClasses, the name should have "cext semantics", i.e., contain the
                     // module if it was specified in the HPyType_Spec
                     Object moduleName = readModuleNameNode.execute(type, SpecialAttributeNames.__MODULE__);
                     if (moduleName instanceof String) {
-                        name = moduleName + "." + name;
+                        StringBuilder sb = PythonUtils.newStringBuilder((String) moduleName);
+                        sb = PythonUtils.append(sb, '.');
+                        sb = PythonUtils.append(sb, baseName);
+                        name = PythonUtils.sbToString(sb);
+                    } else {
+                        name = baseName;
                     }
+                } else {
+                    name = baseName;
                 }
                 byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, CodecsModuleBuiltins.STRICT);
                 return new CByteArrayWrapper(result);
