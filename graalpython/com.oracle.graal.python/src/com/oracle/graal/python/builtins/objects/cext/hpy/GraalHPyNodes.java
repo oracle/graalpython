@@ -63,7 +63,6 @@ import java.util.ArrayList;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextListBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -1981,7 +1980,7 @@ public class GraalHPyNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PCallHPyFunction callMallocNode,
-                         @Cached GetTypeMemberNode getMetaSizeNode,
+                        @Cached GetTypeMemberNode getMetaSizeNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
