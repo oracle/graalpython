@@ -168,6 +168,7 @@ class TestHPyCapsule(HPyTest):
         with pytest.raises(ValueError):
             mod.capsule_new()
 
+    @pytest.mark.skip
     def test_capsule_getter_and_setter(self):
         mod = self.make_module("""
             @DEFINE_SomeObject
