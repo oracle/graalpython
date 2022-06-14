@@ -847,7 +847,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_dyld_shared_cache_contains_path", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    protected abstract static class DyldSharedCacheConstainsPath extends PythonBinaryBuiltinNode {
+    protected abstract static class DyldSharedCacheContainsPath extends PythonBinaryBuiltinNode {
         @CompilationFinal private static boolean hasDynamicLoaderCacheValue = false;
         @CompilationFinal private static boolean hasDynamicLoaderCacheInit = false;
 
@@ -882,14 +882,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ParseLongNode parseLongNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            return py_dyld_shared_cache_contains_path(frame, ppath.getValueUncached().toJavaStringUncached(), ilib, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
+            return py_dyld_shared_cache_contains_path(frame, ppath.getValueUncached(), ilib, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
         }
 
         @CompilationFinal Object cachedFunction = null;
 
         // TODO: 'path' might need to be processed using FSConverter.
         @Specialization
-        Object py_dyld_shared_cache_contains_path(VirtualFrame frame, String path,
+        Object py_dyld_shared_cache_contains_path(VirtualFrame frame, TruffleString path,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
@@ -1360,13 +1360,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (restype == null) {
                     throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
                 }
-        
+
                 int cc = FFI_DEFAULT_ABI;
                 ffi_cif cif;
                 if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                     throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
-        
+
                 Object error_object = null;
                 if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                     error_object = state.errno;
