@@ -2395,42 +2395,42 @@ public abstract class CExtNodes {
         public abstract double execute(Object arg);
 
         @Specialization
-        double run(boolean value) {
+        static double run(boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        double run(int value) {
+        static double run(int value) {
             return value;
         }
 
         @Specialization
-        double run(long value) {
+        static double run(long value) {
             return value;
         }
 
         @Specialization
-        double run(double value) {
+        static double run(double value) {
             return value;
         }
 
         @Specialization
-        double run(PInt value) {
+        static double run(PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        double run(PFloat value) {
+        static double run(PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
