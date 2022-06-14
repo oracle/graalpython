@@ -260,7 +260,8 @@ public final class CompilationUnit {
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
-                        startLocation.startOffset);
+                        startLocation.startOffset,
+                        startLocation.startLine);
     }
 
     private void addExceptionRange(Collection<short[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {

@@ -1098,7 +1098,7 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
         return createCode(callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, codeUnit.constants, codeUnit.names,
-                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startOffset, codeUnit.srcOffsetTable);
+                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startLine, codeUnit.srcOffsetTable);
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,

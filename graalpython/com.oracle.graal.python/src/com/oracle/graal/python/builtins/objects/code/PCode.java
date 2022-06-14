@@ -253,7 +253,7 @@ public final class PCode extends PythonBuiltinObject {
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         if (funcRootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) funcRootNode).getStartOffset();
+            return ((PBytecodeRootNode) funcRootNode).getCodeUnit().startLine;
         }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {

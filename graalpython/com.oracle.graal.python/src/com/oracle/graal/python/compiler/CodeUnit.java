@@ -97,6 +97,7 @@ public final class CodeUnit {
     public final short[] exceptionHandlerRanges;
 
     public final int startOffset;
+    public final int startLine;
 
     public final boolean lambda;
 
@@ -105,7 +106,7 @@ public final class CodeUnit {
                     byte[] code, byte[] linetable, int flags,
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
-                    short[] exceptionHandlerRanges, int startOffset) {
+                    short[] exceptionHandlerRanges, int startOffset, int startLine) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -124,6 +125,7 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
+        this.startLine = startLine;
         this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
     }
 
