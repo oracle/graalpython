@@ -60,8 +60,6 @@ public abstract class UnicodeObjectNodes {
 
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
-        private static Charset UTF32LE = Charset.forName("UTF-32LE");
-        private static Charset UTF32BE = Charset.forName("UTF-32BE");
 
         public final PBytes executeNativeOrder(Object obj, long elementSize) {
             return execute(obj, elementSize, ByteOrder.nativeOrder());

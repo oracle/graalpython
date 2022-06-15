@@ -45,8 +45,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public abstract class SpecialAttributeNames {
-    public static final String J___ = "_";
-    public static final TruffleString T___ = tsLiteral(J___);
+    public static final TruffleString T___ = tsLiteral("_");
 
     public static final String J___DOC__ = "__doc__";
     public static final TruffleString T___DOC__ = tsLiteral(J___DOC__);
@@ -84,11 +83,9 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___BASE__ = "__base__";
 
-    public static final String J___NEWOBJ__ = "__newobj__";
-    public static final TruffleString T___NEWOBJ__ = tsLiteral(J___NEWOBJ__);
+    public static final TruffleString T___NEWOBJ__ = tsLiteral("__newobj__");
 
-    public static final String J___NEWOBJ_EX__ = "__newobj_ex__";
-    public static final TruffleString T___NEWOBJ_EX__ = tsLiteral(J___NEWOBJ_EX__);
+    public static final TruffleString T___NEWOBJ_EX__ = tsLiteral("__newobj_ex__");
 
     public static final String J___BASES__ = "__bases__";
     public static final TruffleString T___BASES__ = tsLiteral(J___BASES__);
@@ -101,29 +98,21 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___MRO__ = "__mro__";
 
-    public static final String J___MRO_ENTRIES__ = "__mro_entries__";
-    public static final TruffleString T___MRO_ENTRIES__ = tsLiteral(J___MRO_ENTRIES__);
+    public static final TruffleString T___MRO_ENTRIES__ = tsLiteral("__mro_entries__");
 
-    public static final String J___LOADER__ = "__loader__";
-    public static final TruffleString T___LOADER__ = tsLiteral(J___LOADER__);
+    public static final TruffleString T___LOADER__ = tsLiteral("__loader__");
 
-    public static final String J___PACKAGE__ = "__package__";
-    public static final TruffleString T___PACKAGE__ = tsLiteral(J___PACKAGE__);
+    public static final TruffleString T___PACKAGE__ = tsLiteral("__package__");
 
-    public static final String J___SPEC__ = "__spec__";
-    public static final TruffleString T___SPEC__ = tsLiteral(J___SPEC__);
+    public static final TruffleString T___SPEC__ = tsLiteral("__spec__");
 
-    public static final String J___PATH__ = "__path__";
-    public static final TruffleString T___PATH__ = tsLiteral(J___PATH__);
+    public static final TruffleString T___PATH__ = tsLiteral("__path__");
 
-    public static final String J___FILE__ = "__file__";
-    public static final TruffleString T___FILE__ = tsLiteral(J___FILE__);
+    public static final TruffleString T___FILE__ = tsLiteral("__file__");
 
-    public static final String J___ORIGNAME__ = "__origname__";
-    public static final TruffleString T___ORIGNAME__ = tsLiteral(J___ORIGNAME__);
+    public static final TruffleString T___ORIGNAME__ = tsLiteral("__origname__");
 
-    public static final String J___CACHED__ = "__cached__";
-    public static final TruffleString T___CACHED__ = tsLiteral(J___CACHED__);
+    public static final TruffleString T___CACHED__ = tsLiteral("__cached__");
 
     public static final String J___TEXT_SIGNATURE__ = "__text_signature__";
     public static final TruffleString T___TEXT_SIGNATURE__ = tsLiteral(J___TEXT_SIGNATURE__);
@@ -142,11 +131,9 @@ public abstract class SpecialAttributeNames {
     public static final String J___BASICSIZE__ = "__basicsize__";
     public static final TruffleString T___BASICSIZE__ = tsLiteral(J___BASICSIZE__);
 
-    public static final String J___SLOTS__ = "__slots__";
-    public static final TruffleString T___SLOTS__ = tsLiteral(J___SLOTS__);
+    public static final TruffleString T___SLOTS__ = tsLiteral("__slots__");
 
-    public static final String J___SLOTNAMES__ = "__slotnames__";
-    public static final TruffleString T___SLOTNAMES__ = tsLiteral(J___SLOTNAMES__);
+    public static final TruffleString T___SLOTNAMES__ = tsLiteral("__slotnames__");
 
     public static final String J___DICTOFFSET__ = "__dictoffset__";
     public static final TruffleString T___DICTOFFSET__ = tsLiteral(J___DICTOFFSET__);
@@ -154,14 +141,11 @@ public abstract class SpecialAttributeNames {
     public static final String J___ITEMSIZE__ = "__itemsize__";
     public static final TruffleString T___ITEMSIZE__ = tsLiteral(J___ITEMSIZE__);
 
-    public static final String J___WEAKREF__ = "__weakref__";
-    public static final TruffleString T___WEAKREF__ = tsLiteral(J___WEAKREF__);
+    public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
 
-    public static final String J___WEAKLISTOFFSET__ = "__weaklistoffset__";
-    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral(J___WEAKLISTOFFSET__);
+    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral("__weaklistoffset__");
 
-    public static final String J___ALL__ = "__all__";
-    public static final TruffleString T___ALL__ = tsLiteral(J___ALL__);
+    public static final TruffleString T___ALL__ = tsLiteral("__all__");
 
     public static final String J___FLAGS__ = "__flags__";
     public static final TruffleString T___FLAGS__ = tsLiteral(J___FLAGS__);
@@ -169,8 +153,7 @@ public abstract class SpecialAttributeNames {
     public static final String J___ABSTRACTMETHODS__ = "__abstractmethods__";
     public static final TruffleString T___ABSTRACTMETHODS__ = tsLiteral(J___ABSTRACTMETHODS__);
 
-    public static final String J___ORIG_BASES__ = "__orig_bases__";
-    public static final TruffleString T___ORIG_BASES__ = tsLiteral(J___ORIG_BASES__);
+    public static final TruffleString T___ORIG_BASES__ = tsLiteral("__orig_bases__");
 
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";

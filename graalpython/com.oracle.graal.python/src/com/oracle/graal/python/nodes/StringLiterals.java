@@ -45,8 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class StringLiterals {
-    public static final String J_AMPERSAND = "&";
-    public static final TruffleString T_AMPERSAND = tsLiteral(J_AMPERSAND);
+    public static final TruffleString T_AMPERSAND = tsLiteral("&");
 
     public static final String J_EMPTY_STRING = "";
     public static final TruffleString T_EMPTY_STRING = tsLiteral(J_EMPTY_STRING);
@@ -57,149 +56,99 @@ public abstract class StringLiterals {
     public static final String J_NEWLINE = "\n";
     public static final TruffleString T_NEWLINE = tsLiteral(J_NEWLINE);
 
-    public static final String J_CRLF = "\r\n";
-    public static final TruffleString T_CRLF = tsLiteral(J_CRLF);
+    public static final TruffleString T_CRLF = tsLiteral("\r\n");
 
-    public static final String J_CR = "\r";
-    public static final TruffleString T_CR = tsLiteral(J_CR);
+    public static final TruffleString T_CR = tsLiteral("\r");
 
-    public static final String J_SPACE = " ";
-    public static final TruffleString T_SPACE = tsLiteral(J_SPACE);
+    public static final TruffleString T_SPACE = tsLiteral(" ");
 
-    public static final String J_DOT = ".";
-    public static final TruffleString T_DOT = tsLiteral(J_DOT);
+    public static final TruffleString T_DOT = tsLiteral(".");
 
     public static final String J_DASH = "-";
     public static final TruffleString T_DASH = tsLiteral(J_DASH);
 
-    public static final String J_MINUS = J_DASH;
     public static final TruffleString T_MINUS = T_DASH;
 
-    public static final String J_UNDERSCORE = "_";
-    public static final TruffleString T_UNDERSCORE = tsLiteral(J_UNDERSCORE);
+    public static final TruffleString T_UNDERSCORE = tsLiteral("_");
 
-    public static final String J_ZERO = "0";
-    public static final TruffleString T_ZERO = tsLiteral(J_ZERO);
+    public static final TruffleString T_ZERO = tsLiteral("0");
 
-    public static final String J_NONE = "None";
-    public static final TruffleString T_NONE = tsLiteral(J_NONE);
+    public static final TruffleString T_NONE = tsLiteral("None");
 
-    public static final String J_LPAREN = "(";
-    public static final TruffleString T_LPAREN = tsLiteral(J_LPAREN);
+    public static final TruffleString T_LPAREN = tsLiteral("(");
 
-    public static final String J_RPAREN = ")";
-    public static final TruffleString T_RPAREN = tsLiteral(J_RPAREN);
+    public static final TruffleString T_RPAREN = tsLiteral(")");
 
-    public static final String J_EQ = "=";
-    public static final TruffleString T_EQ = tsLiteral(J_EQ);
+    public static final TruffleString T_EQ = tsLiteral("=");
 
-    public static final String J_QUESTIONMARK = "?";
-    public static final TruffleString T_QUESTIONMARK = tsLiteral(J_QUESTIONMARK);
+    public static final TruffleString T_QUESTIONMARK = tsLiteral("?");
 
-    public static final String J_COMMA = ",";
-    public static final TruffleString T_COMMA = tsLiteral(J_COMMA);
+    public static final TruffleString T_COMMA = tsLiteral(",");
 
-    public static final String J_COLON = ":";
-    public static final TruffleString T_COLON = tsLiteral(J_COLON);
+    public static final TruffleString T_COLON = tsLiteral(":");
 
-    public static final String J_COMMA_SPACE = ", ";
-    public static final TruffleString T_COMMA_SPACE = tsLiteral(J_COMMA_SPACE);
+    public static final TruffleString T_COMMA_SPACE = tsLiteral(", ");
 
-    public static final String J_LBRACE = "{";
-    public static final TruffleString T_LBRACE = tsLiteral(J_LBRACE);
+    public static final TruffleString T_LBRACE = tsLiteral("{");
 
-    public static final String J_RBRACE = "}";
-    public static final TruffleString T_RBRACE = tsLiteral(J_RBRACE);
+    public static final TruffleString T_RBRACE = tsLiteral("}");
 
-    public static final String J_LBRACKET = "[";
-    public static final TruffleString T_LBRACKET = tsLiteral(J_LBRACKET);
+    public static final TruffleString T_LBRACKET = tsLiteral("[");
 
-    public static final String J_RBRACKET = "]";
-    public static final TruffleString T_RBRACKET = tsLiteral(J_RBRACKET);
+    public static final TruffleString T_RBRACKET = tsLiteral("]");
 
-    public static final String J_LANGLE = "<";
-    public static final TruffleString T_LANGLE = tsLiteral(J_LANGLE);
+    public static final TruffleString T_SINGLE_QUOTE = tsLiteral("'");
 
-    public static final String J_RANGLE = ">";
-    public static final TruffleString T_RANGLE = tsLiteral(J_RANGLE);
+    public static final TruffleString T_DOUBLE_QUOTE = tsLiteral("\"");
 
-    public static final String J_SINGLE_QUOTE = "'";
-    public static final TruffleString T_SINGLE_QUOTE = tsLiteral(J_SINGLE_QUOTE);
+    public static final TruffleString T_SLASH = tsLiteral("/");
 
-    public static final String J_DOUBLE_QUOTE = "\"";
-    public static final TruffleString T_DOUBLE_QUOTE = tsLiteral(J_DOUBLE_QUOTE);
+    public static final TruffleString T_EMPTY_PARENS = tsLiteral("()");
 
-    public static final String J_SLASH = "/";
-    public static final TruffleString T_SLASH = tsLiteral(J_SLASH);
+    public static final TruffleString T_EMPTY_BRACKETS = tsLiteral("[]");
 
-    public static final String J_EMPTY_PARENS = "()";
-    public static final TruffleString T_EMPTY_PARENS = tsLiteral(J_EMPTY_PARENS);
+    public static final TruffleString T_EMPTY_BRACES = tsLiteral("{}");
 
-    public static final String J_EMPTY_BRACKETS = "[]";
-    public static final TruffleString T_EMPTY_BRACKETS = tsLiteral(J_EMPTY_BRACKETS);
+    public static final TruffleString T_ELLIPSIS = tsLiteral("...");
 
-    public static final String J_EMPTY_BRACES = "{}";
-    public static final TruffleString T_EMPTY_BRACES = tsLiteral(J_EMPTY_BRACES);
+    public static final TruffleString T_ELLIPSIS_IN_PARENS = tsLiteral("(...)");
 
-    public static final String J_ELLIPSIS = "...";
-    public static final TruffleString T_ELLIPSIS = tsLiteral(J_ELLIPSIS);
+    public static final TruffleString T_ELLIPSIS_IN_BRACKETS = tsLiteral("[...]");
 
-    public static final String J_ELLIPSIS_IN_PARENS = "(...)";
-    public static final TruffleString T_ELLIPSIS_IN_PARENS = tsLiteral(J_ELLIPSIS_IN_PARENS);
+    public static final TruffleString T_DATE = tsLiteral("date");
 
-    public static final String J_ELLIPSIS_IN_BRACKETS = "[...]";
-    public static final TruffleString T_ELLIPSIS_IN_BRACKETS = tsLiteral(J_ELLIPSIS_IN_BRACKETS);
+    public static final TruffleString T_DATETIME = tsLiteral("datetime");
 
-    public static final String J_DATE = "date";
-    public static final TruffleString T_DATE = tsLiteral(J_DATE);
+    public static final TruffleString T_TIME = tsLiteral("time");
 
-    public static final String J_DATETIME = "datetime";
-    public static final TruffleString T_DATETIME = tsLiteral(J_DATETIME);
+    public static final TruffleString T_STRUCT_TIME = tsLiteral("struct_time");
 
-    public static final String J_TIME = "time";
-    public static final TruffleString T_TIME = tsLiteral(J_TIME);
+    public static final TruffleString T_GET_ = tsLiteral("get_");
 
-    public static final String J_STRUCT_TIME = "struct_time";
-    public static final TruffleString T_STRUCT_TIME = tsLiteral(J_STRUCT_TIME);
+    public static final TruffleString T_NAME = tsLiteral("name");
 
-    public static final String J_GET_ = "get_";
-    public static final TruffleString T_GET_ = tsLiteral(J_GET_);
+    public static final TruffleString T_PATH = tsLiteral("path");
 
-    public static final String J_NAME = "name";
-    public static final TruffleString T_NAME = tsLiteral(J_NAME);
+    public static final TruffleString T_UTF8 = tsLiteral("utf-8");
 
-    public static final String J_PATH = "path";
-    public static final TruffleString T_PATH = tsLiteral(J_PATH);
-
-    public static final String J_UTF8 = "utf-8";
-    public static final TruffleString T_UTF8 = tsLiteral(J_UTF8);
-
-    public static final String J_UTF_UNDERSCORE_8 = "utf_8";
-    public static final TruffleString T_UTF_UNDERSCORE_8 = tsLiteral(J_UTF_UNDERSCORE_8);
+    public static final TruffleString T_UTF_UNDERSCORE_8 = tsLiteral("utf_8");
 
     public static final String J_STRICT = "strict";
     public static final TruffleString T_STRICT = tsLiteral(J_STRICT);
 
-    public static final String J_IGNORE = "ignore";
-    public static final TruffleString T_IGNORE = tsLiteral(J_IGNORE);
+    public static final TruffleString T_IGNORE = tsLiteral("ignore");
 
-    public static final String J_REPLACE = "replace";
-    public static final TruffleString T_REPLACE = tsLiteral(J_REPLACE);
+    public static final TruffleString T_REPLACE = tsLiteral("replace");
 
-    public static final String J_ASCII_UPPERCASE = "ASCII";
-    public static final TruffleString T_ASCII_UPPERCASE = tsLiteral(J_ASCII_UPPERCASE);
+    public static final TruffleString T_ASCII_UPPERCASE = tsLiteral("ASCII");
 
-    public static final String J_TRUE = "True";
-    public static final TruffleString T_TRUE = tsLiteral(J_TRUE);
+    public static final TruffleString T_TRUE = tsLiteral("True");
 
-    public static final String J_FALSE = "False";
-    public static final TruffleString T_FALSE = tsLiteral(J_FALSE);
+    public static final TruffleString T_FALSE = tsLiteral("False");
 
-    public static final String J_BIG = "big";
-    public static final TruffleString T_BIG = tsLiteral(J_BIG);
+    public static final TruffleString T_BIG = tsLiteral("big");
 
-    public static final String J_LITTLE = "little";
-    public static final TruffleString T_LITTLE = tsLiteral(J_LITTLE);
+    public static final TruffleString T_LITTLE = tsLiteral("little");
 
     public static final String J_READABLE = "readable";
     public static final TruffleString T_READABLE = tsLiteral(J_READABLE);
@@ -225,35 +174,26 @@ public abstract class StringLiterals {
     public static final String J_JAVA = "java";
     public static final TruffleString T_JAVA = tsLiteral(J_JAVA);
 
-    public static final String J_LOCAL = "local";
-    public static final TruffleString T_LOCAL = tsLiteral(J_LOCAL);
-
-    public static final String J_VALUE_UNKNOWN = "<unknown>";
-    public static final TruffleString T_VALUE_UNKNOWN = tsLiteral(J_VALUE_UNKNOWN);
+    public static final TruffleString T_VALUE_UNKNOWN = tsLiteral("<unknown>");
 
     public static final String J_PY_EXTENSION = ".py";
     public static final TruffleString T_PY_EXTENSION = tsLiteral(J_PY_EXTENSION);
 
-    public static final String J_VERSION = "version";
-    public static final TruffleString T_VERSION = tsLiteral(J_VERSION);
+    public static final TruffleString T_VERSION = tsLiteral("version");
 
     public static final TruffleString T_DEFAULT = tsLiteral("default");
 
     public static final String J_LLVM_LANGUAGE = "llvm";
     public static final TruffleString T_LLVM_LANGUAGE = tsLiteral(J_LLVM_LANGUAGE);
 
-    public static final String J_ID = "id";
-    public static final TruffleString T_ID = tsLiteral(J_ID);
+    public static final TruffleString T_ID = tsLiteral("id");
 
-    public static final String J_SITE = "site";
-    public static final TruffleString T_SITE = tsLiteral(J_SITE);
+    public static final TruffleString T_SITE = tsLiteral("site");
 
-    public static final String J_GRAALPYTHON = "graalpython";
-    public static final TruffleString T_GRAALPYTHON = tsLiteral(J_GRAALPYTHON);
+    public static final TruffleString T_GRAALPYTHON = tsLiteral("graalpython");
 
     public static final TruffleString T_WARNINGS = tsLiteral("warnings");
 
-    public static final String J_REF = "ref";
-    public static final TruffleString T_REF = tsLiteral(J_REF);
+    public static final TruffleString T_REF = tsLiteral("ref");
 
 }
