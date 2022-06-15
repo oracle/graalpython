@@ -970,7 +970,7 @@ public final class CApiContext extends CExtContext {
 
                 String libpython = System.getProperty("LibPythonNativeLibrary");
                 if (libpython != null) {
-                    SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", libPythonName);
+                    SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
                     nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
                 }
 

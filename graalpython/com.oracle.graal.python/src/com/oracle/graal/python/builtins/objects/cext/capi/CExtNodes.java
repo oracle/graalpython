@@ -3988,7 +3988,7 @@ public abstract class CExtNodes {
 
                 mlMethObj = interopLibrary.readMember(methodDef, J_ML_METH);
                 if (!resultLib.isExecutable(mlMethObj)) {
-                    LOGGER.warning(() -> String.format(ErrorMessages.ML_METH_IS_NOT_CALLABLE, methodName));
+                    LOGGER.warning(() -> String.format("ml_meth of %s is not callable", methodName));
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

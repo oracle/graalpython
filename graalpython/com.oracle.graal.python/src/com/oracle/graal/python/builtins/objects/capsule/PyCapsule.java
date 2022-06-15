@@ -45,11 +45,12 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule implements TruffleObject {
     private Object pointer;
-    private String name;
+    private TruffleString name;
     private Object context;
     private Object destructor;
 
@@ -61,11 +62,11 @@ public final class PyCapsule implements TruffleObject {
         this.pointer = pointer;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(TruffleString name) {
         this.name = name;
     }
 
@@ -91,7 +92,7 @@ public final class PyCapsule implements TruffleObject {
         String quote, n;
         if (name != null) {
             quote = "\"";
-            n = name;
+            n = name.toJavaStringUncached();
         } else {
             quote = "";
             n = "NULL";

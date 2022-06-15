@@ -430,11 +430,11 @@ public class GraalHPyNodes {
             try {
                 getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
                 if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
-                    LOGGER.warning(() -> String.format(ErrorMessages.GET_OF_S_IS_NOT_CALLABLE, getSetDescrName));
+                    LOGGER.warning(() -> String.format("get of %s is not callable", getSetDescrName));
                 }
                 setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
                 if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
-                    LOGGER.warning(() -> String.format(ErrorMessages.SET_OF_S_IS_NOT_CALLABLE, getSetDescrName));
+                    LOGGER.warning(() -> String.format("set of %s is not callable", getSetDescrName));
                 }
                 readOnly = resultLib.isNull(setterFunPtr);
                 closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
@@ -2046,7 +2046,7 @@ public class GraalHPyNodes {
 
                 // create the type object
                 Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
-                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.T_PYTHON_CEXT);
                 PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
                                 names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
                 // allocate additional memory for the metatype and set it

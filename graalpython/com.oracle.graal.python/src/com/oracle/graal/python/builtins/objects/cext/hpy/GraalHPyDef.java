@@ -57,6 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
@@ -366,9 +367,9 @@ public abstract class GraalHPyDef {
         HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
-        HPY_TP_CALL(50, HPySlotWrapper.NULL, __CALL__),
+        HPY_TP_CALL(50, HPySlotWrapper.NULL, T___CALL__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
-        HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, __ITER__),
+        HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, T___NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, T___REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),
