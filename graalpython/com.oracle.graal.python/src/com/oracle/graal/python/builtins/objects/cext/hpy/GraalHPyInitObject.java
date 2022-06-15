@@ -40,21 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * A simple interop-capable object that is used to initialize the HPy C API.
@@ -62,14 +57,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(InteropLibrary.class)
 public final class GraalHPyInitObject implements TruffleObject {
 
-    public static final TruffleString T_SET_HPY_CONTEXT_NATIVE_TYPE = tsLiteral("setHPyContextNativeType");
-    public static final TruffleString T_SET_HPY_NATIVE_TYPE = tsLiteral("setHPyNativeType");
-    public static final TruffleString T_SET_HPYFIELD_NATIVE_TYPE = tsLiteral("setHPyFieldNativeType");
-    public static final TruffleString T_SET_HPY_ARRAY_NATIVE_TYPE = tsLiteral("setHPyArrayNativeType");
-    public static final TruffleString T_SET_WCHAR_SIZE = tsLiteral("setWcharSize");
+    public static final String J_SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
+    public static final String J_SET_HPY_NATIVE_TYPE = "setHPyNativeType";
+    public static final String J_SET_HPYFIELD_NATIVE_TYPE = "setHPyFieldNativeType";
+    public static final String J_SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
+    public static final String J_SET_WCHAR_SIZE = "setWcharSize";
     private final GraalHPyContext hpyContext;
-
-    private static final TruffleString[] MEMBERS = new TruffleString[]{T_SET_HPY_CONTEXT_NATIVE_TYPE, T_SET_HPY_NATIVE_TYPE, T_SET_HPYFIELD_NATIVE_TYPE, T_SET_HPY_ARRAY_NATIVE_TYPE, T_SET_WCHAR_SIZE};
 
     public GraalHPyInitObject(GraalHPyContext hpyContext) {
         this.hpyContext = hpyContext;
@@ -84,19 +77,19 @@ public final class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(MEMBERS);
+        return new PythonAbstractObject.Keys(new String[]{J_SET_HPY_CONTEXT_NATIVE_TYPE, J_SET_HPY_NATIVE_TYPE, J_SET_HPYFIELD_NATIVE_TYPE, J_SET_HPY_ARRAY_NATIVE_TYPE, J_SET_WCHAR_SIZE});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isMemberInvocable(String key,
-                    @Cached.Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Cached.Shared("eq") @Cached TruffleString.EqualNode eqNode) {
-        TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
-        for (TruffleString m : MEMBERS) {
-            if (eqNode.execute(tmember, m, TS_ENCODING)) {
+    boolean isMemberInvocable(String key) {
+        switch (key) {
+            case J_SET_HPY_CONTEXT_NATIVE_TYPE:
+            case J_SET_HPY_NATIVE_TYPE:
+            case J_SET_HPYFIELD_NATIVE_TYPE:
+            case J_SET_HPY_ARRAY_NATIVE_TYPE:
+            case J_SET_WCHAR_SIZE:
                 return true;
-            }
         }
         return false;
     }
@@ -104,30 +97,28 @@ public final class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings({"try", "unused"})
-    Object invokeMember(String key, Object[] arguments,
-                    @Cached.Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Cached.Shared("eq") @Cached TruffleString.EqualNode eqNode) throws UnsupportedMessageException, ArityException {
+    Object invokeMember(String key, Object[] arguments) throws UnsupportedMessageException, ArityException {
         try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
             if (arguments.length != 1) {
                 throw ArityException.create(1, 1, arguments.length);
             }
 
-            TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
-            if (eqNode.execute(T_SET_HPY_CONTEXT_NATIVE_TYPE, tmember, TS_ENCODING)) {
-                hpyContext.setHPyContextNativeType(arguments[0]);
-                return 0;
-            } else if (eqNode.execute(T_SET_HPY_NATIVE_TYPE, tmember, TS_ENCODING)) {
-                hpyContext.setHPyNativeType(arguments[0]);
-                return 0;
-            } else if (eqNode.execute(T_SET_HPYFIELD_NATIVE_TYPE, tmember, TS_ENCODING)) {
-                hpyContext.setHPyFieldNativeType(arguments[0]);
-                return 0;
-            } else if (eqNode.execute(T_SET_HPY_ARRAY_NATIVE_TYPE, tmember, TS_ENCODING)) {
-                hpyContext.setHPyArrayNativeType(arguments[0]);
-                return 0;
-            } else if (eqNode.execute(T_SET_WCHAR_SIZE, tmember, TS_ENCODING)) {
-                hpyContext.setWcharSize(((Number) arguments[0]).longValue());
-                return 0;
+            switch (key) {
+                case J_SET_HPY_CONTEXT_NATIVE_TYPE:
+                    hpyContext.setHPyContextNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPY_NATIVE_TYPE:
+                    hpyContext.setHPyNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPYFIELD_NATIVE_TYPE:
+                    hpyContext.setHPyFieldNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPY_ARRAY_NATIVE_TYPE:
+                    hpyContext.setHPyArrayNativeType(arguments[0]);
+                    return 0;
+                case J_SET_WCHAR_SIZE:
+                    hpyContext.setWcharSize(((Number) arguments[0]).longValue());
+                    return 0;
             }
             throw UnsupportedMessageException.create();
         }

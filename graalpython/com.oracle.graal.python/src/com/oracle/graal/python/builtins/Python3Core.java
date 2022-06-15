@@ -937,8 +937,8 @@ public abstract class Python3Core extends ParserErrorCallback {
              * access is never allowed during native image build time.
              */
             if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
-                builtinModules.remove(BuiltinNames.BZ2);
-                sysModules.delItem(BuiltinNames.BZ2);
+                builtinModules.remove(BuiltinNames.T_BZ2);
+                sysModules.delItem(BuiltinNames.T_BZ2);
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());

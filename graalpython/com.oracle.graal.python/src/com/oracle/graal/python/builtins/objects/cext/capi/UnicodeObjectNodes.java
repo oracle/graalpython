@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,8 +59,6 @@ public abstract class UnicodeObjectNodes {
 
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
-        private static Charset UTF32LE = Charset.forName("UTF-32LE");
-        private static Charset UTF32BE = Charset.forName("UTF-32BE");
 
         public final PBytes executeNativeOrder(Object obj, long elementSize) {
             return execute(obj, elementSize, ByteOrder.nativeOrder());

@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
@@ -95,20 +92,20 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(InteropLibrary.class)
 @SuppressWarnings("static-method")
 public final class GraalHPyBuffer implements TruffleObject {
-    private static final TruffleString T_MEMBER_BUF = tsLiteral("buf");
-    private static final TruffleString T_MEMBER_OBJ = tsLiteral("obj");
-    private static final TruffleString T_MEMBER_LEN = tsLiteral("len");
-    private static final TruffleString T_MEMBER_ITEMSIZE = tsLiteral("itemsize");
-    private static final TruffleString T_MEMBER_READONLY = tsLiteral("readonly");
-    private static final TruffleString T_MEMBER_NDIM = tsLiteral("ndim");
-    private static final TruffleString T_MEMBER_FORMAT = tsLiteral("format");
-    private static final TruffleString T_MEMBER_SHAPE = tsLiteral("shape");
-    private static final TruffleString T_MEMBER_STRIDES = tsLiteral("strides");
-    private static final TruffleString T_MEMBER_SUBOFFSETS = tsLiteral("suboffsets");
-    private static final TruffleString T_MEMBER_INTERNAL = tsLiteral("internal");
+    private static final String J_MEMBER_BUF = "buf";
+    private static final String J_MEMBER_OBJ = "obj";
+    private static final String J_MEMBER_LEN = "len";
+    private static final String J_MEMBER_ITEMSIZE = "itemsize";
+    private static final String J_MEMBER_READONLY = "readonly";
+    private static final String J_MEMBER_NDIM = "ndim";
+    private static final String J_MEMBER_FORMAT = "format";
+    private static final String J_MEMBER_SHAPE = "shape";
+    private static final String J_MEMBER_STRIDES = "strides";
+    private static final String J_MEMBER_SUBOFFSETS = "suboffsets";
+    private static final String J_MEMBER_INTERNAL = "internal";
 
-    @CompilationFinal(dimensions = 1) private static final TruffleString[] MEMBERS = new TruffleString[]{T_MEMBER_BUF, T_MEMBER_OBJ, T_MEMBER_LEN, T_MEMBER_ITEMSIZE, T_MEMBER_READONLY, T_MEMBER_NDIM,
-                    T_MEMBER_FORMAT, T_MEMBER_SHAPE, T_MEMBER_STRIDES, T_MEMBER_SUBOFFSETS, T_MEMBER_INTERNAL};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = new String[]{J_MEMBER_BUF, J_MEMBER_OBJ, J_MEMBER_LEN, J_MEMBER_ITEMSIZE, J_MEMBER_READONLY, J_MEMBER_NDIM,
+                    J_MEMBER_FORMAT, J_MEMBER_SHAPE, J_MEMBER_STRIDES, J_MEMBER_SUBOFFSETS, J_MEMBER_INTERNAL};
 
     private final GraalHPyContext context;
     private final CExtPyBuffer buffer;
@@ -127,17 +124,14 @@ public final class GraalHPyBuffer implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{T_MEMBER_BUF, T_MEMBER_OBJ, T_MEMBER_LEN, T_MEMBER_ITEMSIZE, T_MEMBER_READONLY,
-                        T_MEMBER_NDIM, T_MEMBER_FORMAT, T_MEMBER_SHAPE, T_MEMBER_STRIDES, T_MEMBER_SUBOFFSETS, T_MEMBER_INTERNAL});
+        return new PythonAbstractObject.Keys(new Object[]{J_MEMBER_BUF, J_MEMBER_OBJ, J_MEMBER_LEN, J_MEMBER_ITEMSIZE, J_MEMBER_READONLY,
+                        J_MEMBER_NDIM, J_MEMBER_FORMAT, J_MEMBER_SHAPE, J_MEMBER_STRIDES, J_MEMBER_SUBOFFSETS, J_MEMBER_INTERNAL});
     }
 
     @ExportMessage
-    boolean isMemberReadable(String member,
-                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Cached TruffleString.EqualNode eqNode) {
-        TruffleString tmember = fromJavaStringNode.execute(member, TS_ENCODING);
+    boolean isMemberReadable(String key) {
         for (int i = 0; i < MEMBERS.length; i++) {
-            if (eqNode.execute(MEMBERS[i], tmember, TS_ENCODING)) {
+            if (MEMBERS[i].equals(key)) {
                 return true;
             }
         }
@@ -148,34 +142,32 @@ public final class GraalHPyBuffer implements TruffleObject {
     static class ReadMember {
         @Specialization(guards = "receiver.getSupplier() == cachedSupplier")
         static Object readMember(GraalHPyBuffer receiver, String member,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.EqualNode eqNode,
                         @Cached(value = "receiver.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
                         @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) throws UnknownIdentifierException {
-            TruffleString tmember = fromJavaStringNode.execute(member, TS_ENCODING);
-            if (eqNode.execute(T_MEMBER_BUF, tmember, TS_ENCODING)) {
-                return receiver.buffer.getBuf();
-            } else if (eqNode.execute(T_MEMBER_OBJ, tmember, TS_ENCODING)) {
-                Object obj = receiver.buffer.getObj();
-                return toNativeNode.execute(receiver.context, obj != null ? obj : PNone.NO_VALUE);
-            } else if (eqNode.execute(T_MEMBER_LEN, tmember, TS_ENCODING)) {
-                return receiver.buffer.getLen();
-            } else if (eqNode.execute(T_MEMBER_ITEMSIZE, tmember, TS_ENCODING)) {
-                return receiver.buffer.getItemSize();
-            } else if (eqNode.execute(T_MEMBER_READONLY, tmember, TS_ENCODING)) {
-                return PInt.intValue(receiver.buffer.isReadOnly());
-            } else if (eqNode.execute(T_MEMBER_NDIM, tmember, TS_ENCODING)) {
-                return receiver.buffer.getDims();
-            } else if (eqNode.execute(T_MEMBER_FORMAT, tmember, TS_ENCODING)) {
-                return receiver.buffer.getFormat() != null ? new CStringWrapper(receiver.buffer.getFormat()) : toNativeNode.execute(receiver.context, PNone.NO_VALUE);
-            } else if (eqNode.execute(T_MEMBER_SHAPE, tmember, TS_ENCODING)) {
-                return toCArray(receiver.context, toNativeNode, receiver.buffer.getShape());
-            } else if (eqNode.execute(T_MEMBER_STRIDES, tmember, TS_ENCODING)) {
-                return toCArray(receiver.context, toNativeNode, receiver.buffer.getStrides());
-            } else if (eqNode.execute(T_MEMBER_SUBOFFSETS, tmember, TS_ENCODING)) {
-                return toCArray(receiver.context, toNativeNode, receiver.buffer.getSuboffsets());
-            } else if (eqNode.execute(T_MEMBER_INTERNAL, tmember, TS_ENCODING)) {
-                return receiver.buffer.getInternal();
+            switch (member) {
+                case J_MEMBER_BUF:
+                    return receiver.buffer.getBuf();
+                case J_MEMBER_OBJ:
+                    Object obj = receiver.buffer.getObj();
+                    return toNativeNode.execute(receiver.context, obj != null ? obj : PNone.NO_VALUE);
+                case J_MEMBER_LEN:
+                    return receiver.buffer.getLen();
+                case J_MEMBER_ITEMSIZE:
+                    return receiver.buffer.getItemSize();
+                case J_MEMBER_READONLY:
+                    return PInt.intValue(receiver.buffer.isReadOnly());
+                case J_MEMBER_NDIM:
+                    return receiver.buffer.getDims();
+                case J_MEMBER_FORMAT:
+                    return receiver.buffer.getFormat() != null ? new CStringWrapper(receiver.buffer.getFormat()) : toNativeNode.execute(receiver.context, PNone.NO_VALUE);
+                case J_MEMBER_SHAPE:
+                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getShape());
+                case J_MEMBER_STRIDES:
+                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getStrides());
+                case J_MEMBER_SUBOFFSETS:
+                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getSuboffsets());
+                case J_MEMBER_INTERNAL:
+                    return receiver.buffer.getInternal();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnknownIdentifierException.create(member);
