@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -59,7 +63,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -79,6 +83,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.object.ShapeImpl;
 
 /**
@@ -166,13 +171,14 @@ public final class DynamicObjectStorage extends HashingStorage {
             return cachedKeys(self, self.store.getShape(), keyArray(self), readNode);
         }
 
-        private static boolean hasStringKey(DynamicObjectStorage self, String key, ReadAttributeFromDynamicObjectNode readNode) {
+        private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromDynamicObjectNode readNode) {
             return readNode.execute(self.store, key) != PNone.NO_VALUE;
         }
 
         private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromDynamicObjectNode readNode, int len, Object key) {
-            if (key instanceof String) {
-                if (hasStringKey(self, (String) key, readNode)) {
+            key = assertNoJavaString(key);
+            if (key instanceof TruffleString) {
+                if (hasStringKey(self, (TruffleString) key, readNode)) {
                     return len + 1;
                 }
             }
@@ -185,7 +191,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     @ImportStatic(PGuards.class)
     static class GetItemWithState {
         @Specialization
-        static Object string(DynamicObjectStorage self, String key, ThreadState state,
+        static Object string(DynamicObjectStorage self, TruffleString key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
@@ -194,7 +200,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(DynamicObjectStorage self, PString key, ThreadState state,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
@@ -215,10 +221,16 @@ public final class DynamicObjectStorage extends HashingStorage {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             for (Object currentKey : keyList) {
-                if (currentKey instanceof String) {
+                if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (String) currentKey, state, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, state, readKey, noValueProfile);
+                    }
+                }
+                if (isJavaString(currentKey)) {
+                    long keyHash = hashNode.execute(frame, currentKey);
+                    if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                        return string(self, toTruffleStringUncached((String) currentKey), state, readKey, noValueProfile);
                     }
                 }
             }
@@ -238,10 +250,10 @@ public final class DynamicObjectStorage extends HashingStorage {
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
                 Object currentKey = getNext(keys);
-                if (currentKey instanceof String) {
+                if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (String) currentKey, state, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, state, readKey, noValueProfile);
                     }
                 }
             }
@@ -264,7 +276,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, String name, BranchProfile profile) {
+    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, TruffleString name, BranchProfile profile) {
         if (mro != null) {
             profile.enter();
             mro.invalidateAttributeInMROFinalAssumptions(name);
@@ -285,17 +297,17 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         @Specialization(guards = "!shouldTransition(self)")
-        static HashingStorage string(DynamicObjectStorage self, String key, Object value, ThreadState state,
+        static HashingStorage string(DynamicObjectStorage self, TruffleString key, Object value, ThreadState state,
                         @Shared("hasMroprofile") @Cached BranchProfile profile,
                         @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            writeNode.execute(self.store, key, value);
+            writeNode.execute(self.store, key, assertNoJavaString(value));
             invalidateAttributeInMROFinalAssumptions(self.mro, key, profile);
             return self;
         }
 
         @Specialization(guards = {"!shouldTransition(self)", "isBuiltinString(key, profile)"}, limit = "1")
         static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
                         @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                         @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
@@ -341,8 +353,8 @@ public final class DynamicObjectStorage extends HashingStorage {
             hasKey = lib.hasKey(this, key);
         }
         if (hasKey) {
-            // if we're here, key is either a String or a built-in PString
-            String strKey = key instanceof String ? (String) key : ((PString) key).getValue();
+            // if we're here, key is either a TruffleString or a built-in PString
+            TruffleString strKey = key instanceof TruffleString ? (TruffleString) key : isJavaString(key) ? toTruffleStringUncached((String) key) : ((PString) key).getValueUncached();
             writeNode.execute(store, strKey, PNone.NO_VALUE);
             invalidateAttributeInMROFinalAssumptions(mro, strKey, hasMro);
         }
@@ -385,8 +397,14 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         private static Object runNode(DynamicObjectStorage self, Object key, Object acc, ReadAttributeFromDynamicObjectNode readNode, ForEachNode<Object> node) {
-            if (key instanceof String) {
+            if (key instanceof TruffleString) {
                 Object value = readNode.execute(self.store, key);
+                if (value != PNone.NO_VALUE) {
+                    return node.execute(key, acc);
+                }
+            }
+            if (isJavaString(key)) {
+                Object value = readNode.execute(self.store, toTruffleStringUncached((String) key));
                 if (value != PNone.NO_VALUE) {
                     return node.execute(key, acc);
                 }

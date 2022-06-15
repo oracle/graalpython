@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,20 +52,23 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructT
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
 
@@ -257,14 +260,30 @@ public class CtypesNodes {
         } else if (v instanceof Float) {
             SERIALIZE_LE.putFloat(value, idx, (float) v);
             return;
-        } else if (v instanceof String) {
+        } else if (isJavaString(v)) {
             String s = (String) v;
-            if (PString.length(s) == 1) {
-                value[idx] = (byte) PString.charAt(s, 0);
+            if (length(s) == 1) {
+                value[idx] = (byte) charAt(s, 0);
+                return;
+            }
+        } else if (v instanceof TruffleString) {
+            TruffleString s = (TruffleString) v;
+            if (s.codePointLengthUncached(TS_ENCODING) == 1) {
+                value[idx] = (byte) s.codePointAtIndexUncached(0, TS_ENCODING);
                 return;
             }
         }
+
         throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public static int length(String s) {
+        return s.length();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static char charAt(String s, int i) {
+        return s.charAt(i);
+    }
 }

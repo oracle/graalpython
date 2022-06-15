@@ -41,7 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
@@ -122,7 +122,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached CallNode callClassGetItem) {
             if (isTypeNode.execute(type)) {
-                Object classGetitem = lookupClassGetItem.execute(frame, type, __CLASS_GETITEM__);
+                Object classGetitem = lookupClassGetItem.execute(frame, type, T___CLASS_GETITEM__);
                 if (classGetitem != PNone.NO_VALUE) {
                     return callClassGetItem.execute(frame, classGetitem, key);
                 }

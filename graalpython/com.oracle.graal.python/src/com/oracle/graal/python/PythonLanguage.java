@@ -25,6 +25,12 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -117,6 +123,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -145,7 +152,8 @@ import com.oracle.truffle.api.source.SourceSection;
                 DebuggerTags.AlwaysHalt.class
 })
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
-    public static final String GRAALPYTHON_ID = "graalpython";
+    public static final String J_GRAALPYTHON_ID = "graalpython";
+    public static final TruffleString T_GRAALPYTHON_ID = tsLiteral(J_GRAALPYTHON_ID);
     public static final String ID = "python";
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalVM Python";
@@ -157,21 +165,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int RELEASE_LEVEL_GAMMA = 0xC;
     public static final int RELEASE_LEVEL_FINAL = 0xF;
     public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
-    public static final String RELEASE_LEVEL_STRING;
+    public static final TruffleString RELEASE_LEVEL_STRING;
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
-                RELEASE_LEVEL_STRING = "alpha";
+                RELEASE_LEVEL_STRING = tsLiteral("alpha");
                 break;
             case RELEASE_LEVEL_BETA:
-                RELEASE_LEVEL_STRING = "beta";
+                RELEASE_LEVEL_STRING = tsLiteral("beta");
                 break;
             case RELEASE_LEVEL_GAMMA:
-                RELEASE_LEVEL_STRING = "rc";
+                RELEASE_LEVEL_STRING = tsLiteral("rc");
                 break;
             case RELEASE_LEVEL_FINAL:
             default:
-                RELEASE_LEVEL_STRING = "final";
+                RELEASE_LEVEL_STRING = tsLiteral("final");
         }
     }
     public static final int RELEASE_SERIAL = 0;
@@ -197,10 +205,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     // XXX Temporary mime type to force bytecode compiler
     public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
     public static final String MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE = "application/x-python-source-for-bytecode-compile";
-    public static final String EXTENSION = ".py";
-    public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
-    public static final String LLVM_LANGUAGE = "llvm";
+    public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
@@ -259,7 +265,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * parent context. This way, the child inner contexts do not have to run in the same engine
      * (have the same language instance), but can still share the named semaphores.
      */
-    public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
@@ -476,7 +482,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // The original file path should be passed as the name
             if (source.getName() != null && !source.getName().isEmpty()) {
                 try {
-                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(source.getName())).name(code.name).build();
+                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(source.getName())).name(code.name.toJavaStringUncached()).build();
                 } catch (IOException e) {
                     // Proceed with binary source
                 }
@@ -509,7 +515,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
         ParserErrorCallback errorCb = (errorType, sourceRange, message) -> {
-            throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, message);
+            throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, toTruffleStringUncached(message));
         };
         FExprParser fexpParser = new FExprParser() {
             @Override
@@ -525,7 +531,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             ModTy mod = (ModTy) parser.parse(type);
             // TODO this is needed until we get complete error handling in the parser
             if (mod == null) {
-                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, "invalid syntax");
+                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, toTruffleStringUncached("invalid syntax"));
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(0);
@@ -550,7 +556,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, String message) {
+    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, TruffleString message) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {
@@ -736,7 +742,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     return context.getFalse();
                 }
             } else if (interopLib.isString(value)) {
-                return factory.createString(interopLib.asString(value));
+                return factory.createString(interopLib.asTruffleString(value).switchEncodingUncached(TS_ENCODING));
             } else if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
                 // TODO: (tfel) once the interop protocol allows us to
                 // distinguish fixed point from floating point reliably, we can
@@ -796,11 +802,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public static boolean canCache(Object value) {
         CompilerAsserts.neverPartOfCompilation();
+        // We cache strings with at most 16 characters. This corresponds to byte length of 64 for
+        // TruffleStrings since we are using UTF-32 encoding. Note that if the string contains only
+        // ASCII characters, which is the usual case, the actual amount of memory taken by the
+        // string is just 16 bytes - TruffleString#byteLength() reports the length as if the string
+        // was not compacted.
         return value instanceof Long ||
                         value instanceof Integer ||
                         value instanceof Boolean ||
                         value instanceof Double ||
-                        (value instanceof String && ((String) value).length() <= 16) ||
+                        (isJavaString(value) && ((String) value).length() <= 16) ||
+                        (value instanceof TruffleString && ((TruffleString) value).byteLength(TS_ENCODING) <= 64) ||
                         isContextInsensitiveSingleton(value);
     }
 
@@ -848,12 +860,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile, String mime) {
+    public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, String mime) {
         try {
             SourceBuilder sourceBuilder = null;
+            String src = tsrc.toJavaStringUncached();
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire
@@ -870,7 +883,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
             }
             if (sourceBuilder == null) {
-                sourceBuilder = Source.newBuilder(ID, src, name);
+                sourceBuilder = Source.newBuilder(ID, src, name.toJavaStringUncached());
             }
             if (mime != null) {
                 sourceBuilder.mimeType(mime);
@@ -900,10 +913,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContext = false;
     }
 
-    private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TruffleString, CallTarget> cachedCode = new ConcurrentHashMap<>();
 
     @TruffleBoundary
-    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
+    public CallTarget cacheCode(TruffleString filename, Supplier<CallTarget> createCode) {
         if (!singleContext) {
             return cachedCode.computeIfAbsent(filename, f -> {
                 LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);

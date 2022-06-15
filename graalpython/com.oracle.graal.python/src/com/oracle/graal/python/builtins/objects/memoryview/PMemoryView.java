@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // TODO interop library
 @ExportLibrary(PythonBufferAcquireLibrary.class)
@@ -82,7 +83,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private final int len;
     private final boolean readonly;
     private final int itemsize;
-    private final String formatString;
+    private final TruffleString formatString;
     private final BufferFormat format;
     private final int ndim;
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
@@ -103,7 +104,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private int cachedHash = -1;
 
     public PMemoryView(Object cls, Shape instanceShape, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
         PythonBufferAccessLibrary.assertIsBuffer(buffer);
@@ -163,7 +164,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public String getFormatString() {
+    public TruffleString getFormatString() {
         return formatString;
     }
 
@@ -289,26 +290,26 @@ public final class PMemoryView extends PythonBuiltinObject {
                     @Cached PRaiseNode raiseNode) {
         checkReleased(raiseNode);
         if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not writable");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
         }
         if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not Fortran contiguous");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
         }
         if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isCContiguous() && !isFortranContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not contiguous");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
         }
         if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer requires suboffsets");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
         }
         if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         // TODO should reflect the cast to unsigned bytes if necessary
         if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
-            throw raiseNode.raise(BufferError, "memoryview: cannot cast to unsigned bytes if the format flag is present");
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
         }
         exports.incrementAndGet();
         return this;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,26 +47,39 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
+import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_MUTATED_DURING_REMOVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_DEQUE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Iterator;
 import java.util.List;
@@ -98,11 +111,10 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GeNode;
@@ -121,7 +133,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -135,6 +146,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDeque)
 public class DequeBuiltins extends PythonBuiltins {
@@ -148,11 +161,11 @@ public class DequeBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         // setting None means that this type is unhashable
-        builtinConstants.put(__HASH__, PNone.NONE);
+        addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     // deque.__init__(self, [iterable, [maxlen]])
-    @Builtin(name = SpecialMethodNames.__INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "maxlen"})
     @GenerateNodeFactory
     public abstract static class DequeInitNode extends PythonTernaryBuiltinNode {
 
@@ -193,7 +206,7 @@ public class DequeBuiltins extends PythonBuiltins {
                 try {
                     int maxlen = castToIntNode.execute(maxlenObj);
                     if (maxlen < 0) {
-                        throw raise(ValueError, "maxlen must be non-negative");
+                        throw raise(ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
                     }
                     self.setMaxLength(maxlen);
                 } catch (PException e) {
@@ -231,7 +244,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.append(x)
-    @Builtin(name = "append", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeAppendNode extends PythonBinaryBuiltinNode {
 
@@ -268,7 +281,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.copy()
-    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1)
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeCopyNode extends PythonUnaryBuiltinNode {
@@ -306,7 +319,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.extend()
-    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeExtendNode extends PythonBinaryBuiltinNode {
 
@@ -412,7 +425,7 @@ public class DequeBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            throw raise(ValueError, "%s is not in deque", value);
+            throw raise(ValueError, ErrorMessages.S_IS_NOT_DEQUE, value);
         }
 
         @Specialization
@@ -466,7 +479,7 @@ public class DequeBuiltins extends PythonBuiltins {
         PNone doGeneric(PDeque self, int index, Object value) {
             int n = self.getSize();
             if (self.getMaxLength() == n) {
-                throw PRaiseNode.raiseUncached(this, IndexError, "deque already at its maximum size");
+                throw PRaiseNode.raiseUncached(this, IndexError, ErrorMessages.DEQUE_AT_MAX_SIZE);
             }
 
             // shortcuts for simple cases
@@ -497,7 +510,7 @@ public class DequeBuiltins extends PythonBuiltins {
         Object doGeneric(PDeque self) {
             Object value = self.pop();
             if (value == null) {
-                throw raise(IndexError, "pop from an empty deque");
+                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }
@@ -512,7 +525,7 @@ public class DequeBuiltins extends PythonBuiltins {
         Object doGeneric(PDeque self) {
             Object value = self.popLeft();
             if (value == null) {
-                throw raise(IndexError, "pop from an empty deque");
+                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }
@@ -532,7 +545,7 @@ public class DequeBuiltins extends PythonBuiltins {
                 try {
                     boolean result = PyObjectRichCompareBool.EqNode.getUncached().execute(null, self.peekLeft(), value);
                     if (n != self.getSize()) {
-                        throw PRaiseNode.raiseUncached(this, IndexError, "deque mutated during remove().");
+                        throw PRaiseNode.raiseUncached(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
                     }
                     if (result) {
                         Object removed = self.popLeft();
@@ -552,7 +565,7 @@ public class DequeBuiltins extends PythonBuiltins {
                     throw e;
                 }
             }
-            throw PRaiseNode.raiseUncached(this, ValueError, "deque.remove(x): x not in deque");
+            throw PRaiseNode.raiseUncached(this, ValueError, DEQUE_REMOVE_X_NOT_IN_DEQUE);
         }
     }
 
@@ -629,7 +642,7 @@ public class DequeBuiltins extends PythonBuiltins {
     // SEQUENCE METHODS
 
     // deque.__len__()
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeLenNode extends PythonUnaryBuiltinNode {
 
@@ -640,7 +653,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__iadd__(v)
-    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeInplaceAddNode extends PythonBinaryBuiltinNode {
 
@@ -683,7 +696,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__add__(v)
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeAddNode extends PythonBinaryBuiltinNode {
 
@@ -707,7 +720,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__mul__(v)
-    @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeInplaceMulNode extends PythonBinaryClinicBuiltinNode {
@@ -752,7 +765,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__mul__(v)
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeMulNode extends PythonBinaryClinicBuiltinNode {
@@ -772,7 +785,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeRMulNode extends DequeMulNode {
@@ -783,7 +796,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeContainsNode extends PythonBinaryBuiltinNode {
 
@@ -803,7 +816,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeGetItemNode extends PythonBinaryClinicBuiltinNode {
@@ -832,7 +845,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "n", "value"})
+    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "n", "value"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeSetItemNode extends PythonTernaryClinicBuiltinNode {
@@ -851,7 +864,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
     public abstract static class DequeDelItemNode extends PythonBinaryClinicBuiltinNode {
@@ -871,7 +884,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__bool__()
-    @Builtin(name = SpecialMethodNames.__BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeBoolNode extends PythonUnaryBuiltinNode {
 
@@ -882,7 +895,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__iter__()
-    @Builtin(name = SpecialMethodNames.__ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterNode extends PythonUnaryBuiltinNode {
 
@@ -893,7 +906,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__reversed__()
-    @Builtin(name = SpecialMethodNames.__REVERSED__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeReversedNode extends PythonUnaryBuiltinNode {
 
@@ -904,16 +917,15 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__repr__()
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DequeReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        Object repr(PDeque self) {
-            PythonContext ctxt = PythonContext.get(this);
-            if (!ctxt.reprEnter(self)) {
-                return "[...]";
+        TruffleString repr(PDeque self) {
+            if (!getContext().reprEnter(self)) {
+                return T_ELLIPSIS_IN_BRACKETS;
             }
             EncapsulatingNodeReference ref = EncapsulatingNodeReference.getCurrent();
             Node outerNode = ref.set(this);
@@ -921,21 +933,24 @@ public class DequeBuiltins extends PythonBuiltins {
                 Object[] items = self.data.toArray();
                 PList asList = PythonObjectFactory.getUncached().createList(items);
                 int maxLength = self.getMaxLength();
-                StringBuilder sb = new StringBuilder(GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)));
-                sb.append('(').append(PyObjectStrAsJavaStringNode.getUncached().execute(null, asList));
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                sb.appendStringUncached(GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)));
+                sb.appendStringUncached(T_LPAREN);
+                sb.appendStringUncached(PyObjectStrAsTruffleStringNode.getUncached().execute(null, asList));
                 if (maxLength != -1) {
-                    sb.append(", maxlen=").append(maxLength);
+                    sb.appendStringUncached(toTruffleStringUncached(", maxlen="));
+                    sb.appendIntNumberUncached(maxLength);
                 }
-                sb.append(')');
-                return sb.toString();
+                sb.appendStringUncached(T_RPAREN);
+                return sb.toStringUncached();
             } finally {
                 ref.set(outerNode);
-                ctxt.reprLeave(self);
+                getContext().reprLeave(self);
             }
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DequeReduceNode extends PythonUnaryBuiltinNode {
 
@@ -947,7 +962,7 @@ public class DequeBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile profile) {
             Object clazz = getPythonClass(getClassNode.execute(self), profile);
-            Object dict = lookupAttr.execute(frame, self, __DICT__);
+            Object dict = lookupAttr.execute(frame, self, T___DICT__);
             if (PGuards.isNoValue(dict) || sizeNode.execute(frame, dict) <= 0) {
                 dict = PNone.NONE;
             }
@@ -1042,7 +1057,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeEqNode extends DequeCompareNode {
         @Specialization(guards = "!shortcutLengthCheck(self, other)", insertBefore = "doGeneric")
@@ -1090,7 +1105,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeLeNode extends DequeRelCompareNode {
         @Override
@@ -1104,7 +1119,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeLtNode extends DequeRelCompareNode {
         @Override
@@ -1113,7 +1128,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeGeNode extends DequeRelCompareNode {
         @Override
@@ -1127,7 +1142,7 @@ public class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DequeGtNode extends DequeRelCompareNode {
         @Override

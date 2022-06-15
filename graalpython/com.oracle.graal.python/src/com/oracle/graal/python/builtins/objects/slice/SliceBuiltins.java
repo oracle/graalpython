@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -41,7 +43,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
 public class SliceBuiltins extends PythonBuiltins {
@@ -69,17 +71,17 @@ public class SliceBuiltins extends PythonBuiltins {
         return SliceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public static String repr(PSlice self) {
-            return self.toString();
+        public static TruffleString repr(PSlice self) {
+            return toTruffleStringUncached(self.toString());
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -211,7 +213,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -223,7 +225,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization

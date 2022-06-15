@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PSemLock extends AbstractPythonLock {
     public static final int RECURSIVE_MUTEX = 0;
@@ -54,12 +55,12 @@ public final class PSemLock extends AbstractPythonLock {
 
     private final Semaphore semaphore;
     private final int kind;
-    private final String name;
+    private final TruffleString name;
 
     private long lastThreadID = -1;
     private int count;
 
-    public PSemLock(Object cls, Shape instanceShape, String name, int kind, Semaphore sharedSemaphore) {
+    public PSemLock(Object cls, Shape instanceShape, TruffleString name, int kind, Semaphore sharedSemaphore) {
         super(cls, instanceShape);
         this.name = name;
         this.semaphore = sharedSemaphore;
@@ -148,7 +149,7 @@ public final class PSemLock extends AbstractPythonLock {
         return kind;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 }

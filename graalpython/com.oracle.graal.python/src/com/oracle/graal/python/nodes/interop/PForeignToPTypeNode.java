@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,10 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/**
- *
- */
 package com.oracle.graal.python.nodes.interop;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PGuards;
@@ -52,6 +51,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
@@ -60,7 +60,7 @@ public abstract class PForeignToPTypeNode extends Node {
     public abstract Object executeConvert(Object value);
 
     protected static boolean isOtherClass(Class<?> clazz) {
-        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class || clazz == PException.class);
+        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class || clazz == PException.class || clazz == String.class);
     }
 
     @Specialization(guards = {"value.getClass() == cachedClass", "isOtherClass(cachedClass)"}, limit = "1")
@@ -85,8 +85,21 @@ public abstract class PForeignToPTypeNode extends Node {
     }
 
     @Specialization
-    protected static String fromChar(char value) {
-        return String.valueOf(value);
+    protected static TruffleString fromChar(char value,
+                    @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+        return fromCodePointNode.execute(value, TS_ENCODING, true);
+    }
+
+    @Specialization
+    protected static TruffleString fromString(String value,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        return fromJavaStringNode.execute(value, TS_ENCODING);
+    }
+
+    @Specialization
+    protected static TruffleString fromTruffleString(TruffleString value,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+        return switchEncodingNode.execute(value, TS_ENCODING);
     }
 
     @Specialization
@@ -101,5 +114,9 @@ public abstract class PForeignToPTypeNode extends Node {
 
     public static PForeignToPTypeNode create() {
         return PForeignToPTypeNodeGen.create();
+    }
+
+    public static PForeignToPTypeNode getUncached() {
+        return PForeignToPTypeNodeGen.getUncached();
     }
 }

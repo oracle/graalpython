@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent to use for PyDict_SetItem and PyDict_SetItemString functions available in CPython.
@@ -64,7 +65,7 @@ public abstract class PyDictSetItem extends Node {
 
     // We never need a frame for setting string keys
     @Specialization(limit = "3")
-    static final void setItemWithStringKey(@SuppressWarnings("unused") PDict dict, String key, Object item,
+    static void setItemWithStringKey(@SuppressWarnings("unused") PDict dict, TruffleString key, Object item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
@@ -75,7 +76,7 @@ public abstract class PyDictSetItem extends Node {
     }
 
     @Specialization(replaces = "setItemWithStringKey", limit = "3")
-    static final void setItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key, Object item,
+    static void setItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key, Object item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @Cached ConditionProfile frameCondition,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
@@ -87,7 +88,7 @@ public abstract class PyDictSetItem extends Node {
     }
 
     @Specialization(replaces = "setItemCached")
-    static final void setItem(PDict dict, Object key, Object item,
+    static void setItem(PDict dict, Object key, Object item,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();

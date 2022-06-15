@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,11 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_JAVA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -67,7 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
@@ -88,10 +91,11 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = JavaModuleBuiltins.JAVA)
+@CoreFunctions(defineModule = J_JAVA)
 public class JavaModuleBuiltins extends PythonBuiltins {
-    protected static final String JAVA = "java";
+    private static final TruffleString T_JAR = tsLiteral(".jar");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -101,27 +105,27 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("__path__", "java!");
+        addBuiltinConstant("__path__", "java!");
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonModule javaModule = core.lookupBuiltinModule(JAVA);
-        javaModule.setAttribute(__GETATTR__, javaModule.getAttribute(GetAttrNode.JAVA_GETATTR));
+        PythonModule javaModule = core.lookupBuiltinModule(T_JAVA);
+        javaModule.setAttribute(T___GETATTR__, javaModule.getAttribute(GetAttrNode.T_JAVA_GETATTR));
     }
 
     @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        private Object get(String name) {
+        private Object get(TruffleString name, TruffleString.ToJavaStringNode toJavaStringNode) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
             Object hostValue;
             try {
-                hostValue = env.lookupHostSymbol(name);
+                hostValue = env.lookupHostSymbol(toJavaStringNode.execute(name));
             } catch (RuntimeException e) {
                 hostValue = null;
             }
@@ -133,13 +137,16 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object type(String name) {
-            return get(name);
+        Object type(TruffleString name,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return get(name, toJavaStringNode);
         }
 
         @Specialization
-        Object type(PString name) {
-            return get(name.getValue());
+        Object type(PString name,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return get(castToStringNode.execute(name), toJavaStringNode);
         }
 
         @Fallback
@@ -153,19 +160,19 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
         PNone add(Object[] args,
-                        @Cached CastToJavaStringNode castToString) {
+                        @Cached CastToTruffleStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                String entry = null;
+                TruffleString entry = null;
                 try {
                     entry = castToString.execute(arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
-                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
+                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, T_JAR));
                 } catch (CannotCastException e) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
@@ -258,21 +265,22 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = GetAttrNode.JAVA_GETATTR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = GetAttrNode.J_JAVA_GETATTR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetAttrNode extends PythonBuiltinNode {
 
-        protected static final String JAVA_GETATTR = "java_getattr";
-        private static final String JAVA_PKG_LOADER = "JavaPackageLoader";
-        private static final String MAKE_GETATTR = "_make_getattr";
+        protected static final String J_JAVA_GETATTR = "java_getattr";
+        protected static final TruffleString T_JAVA_GETATTR = tsLiteral(J_JAVA_GETATTR);
+        private static final TruffleString T_JAVA_PKG_LOADER = tsLiteral("JavaPackageLoader");
+        private static final TruffleString T_MAKE_GETATTR = tsLiteral("_make_getattr");
 
         @CompilationFinal protected Object getAttr;
 
         private Object getAttr(VirtualFrame frame, PythonModule mod) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, JAVA_PKG_LOADER);
-                getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, MAKE_GETATTR, JAVA);
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, T_JAVA_PKG_LOADER);
+                getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, T_MAKE_GETATTR, T_JAVA);
             }
             return getAttr;
         }

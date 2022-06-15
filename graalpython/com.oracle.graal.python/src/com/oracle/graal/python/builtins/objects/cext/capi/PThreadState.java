@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,20 +87,20 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PThreadState extends PythonNativeWrapper {
-    public static final String CUR_EXC_TYPE = "curexc_type";
-    public static final String CUR_EXC_VALUE = "curexc_value";
-    public static final String CUR_EXC_TRACEBACK = "curexc_traceback";
-    public static final String EXC_TYPE = "exc_type";
-    public static final String EXC_VALUE = "exc_value";
-    public static final String EXC_INFO = "exc_info";
-    public static final String EXC_TRACEBACK = "exc_traceback";
-    public static final String DICT = "dict";
-    public static final String PREV = "prev";
-    public static final String RECURSION_DEPTH = "recursion_depth";
-    public static final String OVERFLOWED = "overflowed";
-    public static final String INTERP = "interp";
-    public static final String USE_TRACING = "use_tracing";
-    public static final String GILSTATE_COUNTER = "gilstate_counter";
+    public static final String J_CUR_EXC_TYPE = "curexc_type";
+    public static final String J_CUR_EXC_VALUE = "curexc_value";
+    public static final String J_CUR_EXC_TRACEBACK = "curexc_traceback";
+    public static final String J_EXC_TYPE = "exc_type";
+    public static final String J_EXC_VALUE = "exc_value";
+    public static final String J_EXC_INFO = "exc_info";
+    public static final String J_EXC_TRACEBACK = "exc_traceback";
+    public static final String J_DICT = "dict";
+    public static final String J_PREV = "prev";
+    public static final String J_RECURSION_DEPTH = "recursion_depth";
+    public static final String J_OVERFLOWED = "overflowed";
+    public static final String J_INTERP = "interp";
+    public static final String J_USE_TRACING = "use_tracing";
+    public static final String J_GILSTATE_COUNTER = "gilstate_counter";
 
     private final PythonThreadState threadState;
 
@@ -128,20 +128,20 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected boolean isMemberReadable(String member) {
         switch (member) {
-            case CUR_EXC_TYPE:
-            case CUR_EXC_VALUE:
-            case CUR_EXC_TRACEBACK:
-            case EXC_TYPE:
-            case EXC_VALUE:
-            case EXC_INFO:
-            case EXC_TRACEBACK:
-            case DICT:
-            case PREV:
-            case RECURSION_DEPTH:
-            case OVERFLOWED:
-            case INTERP:
-            case USE_TRACING:
-            case GILSTATE_COUNTER:
+            case J_CUR_EXC_TYPE:
+            case J_CUR_EXC_VALUE:
+            case J_CUR_EXC_TRACEBACK:
+            case J_EXC_TYPE:
+            case J_EXC_VALUE:
+            case J_EXC_INFO:
+            case J_EXC_TRACEBACK:
+            case J_DICT:
+            case J_PREV:
+            case J_RECURSION_DEPTH:
+            case J_OVERFLOWED:
+            case J_INTERP:
+            case J_USE_TRACING:
+            case J_GILSTATE_COUNTER:
                 return true;
             default:
                 return false;
@@ -151,8 +151,8 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new PythonAbstractObject.Keys(
-                        new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP, USE_TRACING,
-                                        GILSTATE_COUNTER});
+                        new Object[]{J_CUR_EXC_TYPE, J_CUR_EXC_VALUE, J_CUR_EXC_TRACEBACK, J_EXC_TYPE, J_EXC_VALUE, J_EXC_TRACEBACK, J_DICT, J_PREV, J_RECURSION_DEPTH, J_OVERFLOWED, J_INTERP,
+                                        J_USE_TRACING, J_GILSTATE_COUNTER});
     }
 
     @ImportStatic(PThreadState.class)
@@ -160,7 +160,7 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     abstract static class ReadMember {
 
-        @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_TYPE)")
         static Object doCurExcType(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
@@ -172,7 +172,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_VALUE)")
         static Object doCurExcValue(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode) {
             PException currentException = receiver.threadState.getCurrentException();
@@ -183,7 +183,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_TRACEBACK)")
         static Object doCurExcTraceback(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
                         @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode) {
@@ -196,7 +196,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, EXC_TYPE)")
+        @Specialization(guards = "eq(key, J_EXC_TYPE)")
         static Object doExcType(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
@@ -208,7 +208,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, EXC_VALUE)")
+        @Specialization(guards = "eq(key, J_EXC_VALUE)")
         static Object doExcValue(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode) {
             PException currentException = receiver.threadState.getCaughtException();
@@ -219,7 +219,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, EXC_TRACEBACK)")
+        @Specialization(guards = "eq(key, J_EXC_TRACEBACK)")
         static Object doExcTraceback(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode,
                         @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode) {
@@ -231,7 +231,7 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "eq(key, DICT)")
+        @Specialization(guards = "eq(key, J_DICT)")
         static Object doDict(PThreadState receiver, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
                         @Shared("toSulong") @Cached ToSulongNode toSulongNode) {
@@ -243,14 +243,14 @@ public class PThreadState extends PythonNativeWrapper {
             return toSulongNode.execute(threadStateDict);
         }
 
-        @Specialization(guards = "eq(key, PREV)")
+        @Specialization(guards = "eq(key, J_PREV)")
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
                         @CachedLibrary("receiver") InteropLibrary receiverLib) {
             return PythonContext.get(receiverLib).getNativeNull();
         }
 
-        @Specialization(guards = "eq(key, EXC_INFO)")
+        @Specialization(guards = "eq(key, J_EXC_INFO)")
         static Object doExcInfo(PThreadState receiver, @SuppressWarnings("unused") String key) {
             PException currentException = receiver.threadState.getCaughtException();
             PBaseException caughtExceptionObject = null;
@@ -274,7 +274,7 @@ public class PThreadState extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "eq(key, RECURSION_DEPTH)")
+        @Specialization(guards = "eq(key, J_RECURSION_DEPTH)")
         @SuppressWarnings("unused")
         static long doRecursionDepth(PThreadState receiver, String key) {
             DepthCounter visitor = new DepthCounter();
@@ -282,26 +282,26 @@ public class PThreadState extends PythonNativeWrapper {
             return visitor.depth;
         }
 
-        @Specialization(guards = "eq(key, OVERFLOWED)")
+        @Specialization(guards = "eq(key, J_OVERFLOWED)")
         @SuppressWarnings("unused")
         static long doOverflowed(PThreadState receiver, String key) {
             return 0;
         }
 
-        @Specialization(guards = "eq(key, INTERP)")
+        @Specialization(guards = "eq(key, J_INTERP)")
         @SuppressWarnings("unused")
         static Object doInterpreterState(PThreadState receiver, String key,
                         @CachedLibrary("receiver") InteropLibrary receiverLib) {
             return PythonContext.get(receiverLib).getNativeNull();
         }
 
-        @Specialization(guards = "eq(key, USE_TRACING)")
+        @Specialization(guards = "eq(key, J_USE_TRACING)")
         @SuppressWarnings("unused")
         static long doUseTracing(PThreadState receiver, String key) {
             return 0;
         }
 
-        @Specialization(guards = "eq(key, GILSTATE_COUNTER)")
+        @Specialization(guards = "eq(key, J_GILSTATE_COUNTER)")
         @SuppressWarnings("unused")
         static long doGilstateCounter(PThreadState receiver, String key) {
             return 1;
@@ -316,15 +316,15 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected boolean isMemberModifiable(String member) {
         switch (member) {
-            case CUR_EXC_TYPE:
-            case CUR_EXC_VALUE:
-            case CUR_EXC_TRACEBACK:
-            case EXC_TYPE:
-            case EXC_VALUE:
-            case EXC_TRACEBACK:
-            case RECURSION_DEPTH:
-            case OVERFLOWED:
-            case GILSTATE_COUNTER:
+            case J_CUR_EXC_TYPE:
+            case J_CUR_EXC_VALUE:
+            case J_CUR_EXC_TRACEBACK:
+            case J_EXC_TYPE:
+            case J_EXC_VALUE:
+            case J_EXC_TRACEBACK:
+            case J_RECURSION_DEPTH:
+            case J_OVERFLOWED:
+            case J_GILSTATE_COUNTER:
                 return true;
             default:
                 return false;
@@ -374,40 +374,40 @@ public class PThreadState extends PythonNativeWrapper {
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_TYPE)")
         Object doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, Object value,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             setCurrentException(getLanguage(), threadState, factory.createBaseException(value));
             return value;
         }
 
-        @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_VALUE)")
         PBaseException doCurExcValue(PythonThreadState threadState, @SuppressWarnings("unused") String key, PBaseException value) {
             setCurrentException(getLanguage(), threadState, value);
             return value;
         }
 
-        @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
+        @Specialization(guards = "eq(key, J_CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(PythonThreadState threadState, @SuppressWarnings("unused") String key, PTraceback value) {
             PException e = threadState.getCurrentException();
             threadState.setCurrentException(PException.fromExceptionInfo(e.getUnreifiedException(), value, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage())));
             return value;
         }
 
-        @Specialization(guards = "eq(key, EXC_TYPE)")
+        @Specialization(guards = "eq(key, J_EXC_TYPE)")
         PythonClass doExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, PythonClass value,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             setCaughtException(getLanguage(), threadState, factory.createBaseException(value));
             return value;
         }
 
-        @Specialization(guards = "eq(key, EXC_VALUE)")
+        @Specialization(guards = "eq(key, J_EXC_VALUE)")
         PBaseException doExcValue(PythonThreadState threadState, @SuppressWarnings("unused") String key, PBaseException value) {
             setCaughtException(getLanguage(), threadState, value);
             return value;
         }
 
-        @Specialization(guards = "eq(key, EXC_TRACEBACK)")
+        @Specialization(guards = "eq(key, J_EXC_TRACEBACK)")
         PTraceback doExcTraceback(PythonThreadState threadState, @SuppressWarnings("unused") String key, PTraceback value) {
             PException e = threadState.getCaughtException();
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(getLanguage());
@@ -415,21 +415,21 @@ public class PThreadState extends PythonNativeWrapper {
             return value;
         }
 
-        @Specialization(guards = "eq(key, RECURSION_DEPTH)")
+        @Specialization(guards = "eq(key, J_RECURSION_DEPTH)")
         @SuppressWarnings("unused")
         static Object doRecursionDepth(PythonThreadState threadState, String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
-        @Specialization(guards = "eq(key, OVERFLOWED)")
+        @Specialization(guards = "eq(key, J_OVERFLOWED)")
         @SuppressWarnings("unused")
         static Object doOverflowed(PythonThreadState threadState, String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
-        @Specialization(guards = "eq(key, GILSTATE_COUNTER)")
+        @Specialization(guards = "eq(key, J_GILSTATE_COUNTER)")
         @SuppressWarnings("unused")
         static Object doGilstateCounter(PythonThreadState threadState, String key, int value) {
             // Ignoring reference counting, always reporting 1
@@ -463,11 +463,11 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         protected static boolean isCurrentExceptionMember(Object key) {
-            return eq(key, CUR_EXC_TYPE) || eq(key, CUR_EXC_VALUE) || eq(key, CUR_EXC_TRACEBACK);
+            return eq(key, J_CUR_EXC_TYPE) || eq(key, J_CUR_EXC_VALUE) || eq(key, J_CUR_EXC_TRACEBACK);
         }
 
         protected static boolean isCaughtExceptionMember(Object key) {
-            return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
+            return eq(key, J_EXC_TYPE) || eq(key, J_EXC_VALUE) || eq(key, J_EXC_TRACEBACK);
         }
 
         protected static boolean isResetValue(Object value, InteropLibrary lib) {

@@ -40,13 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.PythonLanguage.GRAALPYTHON_ID;
-import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -87,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -106,7 +119,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -137,11 +150,18 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
 
-@CoreFunctions(defineModule = __GRAALPYTHON__, isEager = true)
+@CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
+
+    private static final TruffleString T_PATH_HOOKS = tsLiteral("path_hooks");
+    private static final TruffleString T_PATH_IMPORTER_CACHE = tsLiteral("path_importer_cache");
+    private static final TruffleString T__RUN_MODULE_AS_MAIN = tsLiteral("_run_module_as_main");
+    private static final TruffleString T_STDIO_ENCODING = tsLiteral("stdio_encoding");
+    private static final TruffleString T_STDIO_ERROR = tsLiteral("stdio_error");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -151,30 +171,31 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("is_native", ImageInfo.inImageCode());
+        addBuiltinConstant("is_native", ImageInfo.inImageCode());
         PythonContext ctx = core.getContext();
-        String encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
-        String standardStreamEncoding = null;
-        String standardStreamError = null;
+        TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
+        TruffleString standardStreamEncoding = null;
+        TruffleString standardStreamError = null;
         if (encodingOpt != null && !encodingOpt.isEmpty()) {
-            String[] parts = encodingOpt.split(":");
+            TruffleString[] parts = StringUtils.split(encodingOpt, T_COLON, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+                            TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
             if (parts.length > 0) {
-                standardStreamEncoding = parts[0].isEmpty() ? "utf-8" : parts[0];
-                standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : "strict";
+                standardStreamEncoding = parts[0].isEmpty() ? T_UTF8 : parts[0];
+                standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : T_STRICT;
             }
         }
         if (standardStreamEncoding == null) {
-            standardStreamEncoding = "utf-8";
-            standardStreamError = "surrogateescape";
+            standardStreamEncoding = T_UTF8;
+            standardStreamError = T_SURROGATEESCAPE;
         }
 
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(String.format("Setting default stdio encoding to %s:%s", standardStreamEncoding, standardStreamError));
         }
-        this.builtinConstants.put("stdio_encoding", standardStreamEncoding);
-        this.builtinConstants.put("stdio_error", standardStreamError);
-        this.builtinConstants.put("startup_wall_clock_ts", -1L);
-        this.builtinConstants.put("startup_nano", -1L);
+        this.addBuiltinConstant(T_STDIO_ENCODING, standardStreamEncoding);
+        this.addBuiltinConstant(T_STDIO_ERROR, standardStreamError);
+        this.addBuiltinConstant("startup_wall_clock_ts", -1L);
+        this.addBuiltinConstant("startup_nano", -1L);
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize(core);
     }
@@ -183,47 +204,47 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonContext context = core.getContext();
-        PythonModule mod = core.lookupBuiltinModule(__GRAALPYTHON__);
+        PythonModule mod = core.lookupBuiltinModule(T___GRAALPYTHON__);
         PythonLanguage language = context.getLanguage();
         if (!ImageInfo.inImageBuildtimeCode()) {
-            mod.setAttribute("home", language.getHome());
+            mod.setAttribute(tsLiteral("home"), toTruffleStringUncached(language.getHome()));
         }
-        mod.setAttribute("in_image_buildtime", ImageInfo.inImageBuildtimeCode());
-        mod.setAttribute("in_image", ImageInfo.inImageCode());
-        String coreHome = context.getCoreHome();
-        String stdlibHome = context.getStdlibHome();
-        String capiHome = context.getCAPIHome();
+        mod.setAttribute(tsLiteral("in_image_buildtime"), ImageInfo.inImageBuildtimeCode());
+        mod.setAttribute(tsLiteral("in_image"), ImageInfo.inImageCode());
+        TruffleString coreHome = context.getCoreHome();
+        TruffleString stdlibHome = context.getStdlibHome();
+        TruffleString capiHome = context.getCAPIHome();
         Env env = context.getEnv();
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-        mod.setAttribute("jython_emulation_enabled", language.getEngineOption(PythonOptions.EmulateJython));
-        mod.setAttribute("host_import_enabled", context.getEnv().isHostLookupAllowed());
-        mod.setAttribute("core_home", coreHome);
-        mod.setAttribute("stdlib_home", stdlibHome);
-        mod.setAttribute("capi_home", capiHome);
-        mod.setAttribute("jni_home", context.getJNIHome());
-        mod.setAttribute("platform_id", toolchain.getIdentifier());
+        mod.setAttribute(tsLiteral("jython_emulation_enabled"), language.getEngineOption(PythonOptions.EmulateJython));
+        mod.setAttribute(tsLiteral("host_import_enabled"), context.getEnv().isHostLookupAllowed());
+        mod.setAttribute(tsLiteral("core_home"), coreHome);
+        mod.setAttribute(tsLiteral("stdlib_home"), stdlibHome);
+        mod.setAttribute(tsLiteral("capi_home"), capiHome);
+        mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
+        mod.setAttribute(tsLiteral("platform_id"), toTruffleStringUncached(toolchain.getIdentifier()));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
-        mod.setAttribute("executable_list", executableList);
-        mod.setAttribute("ForeignType", core.lookupType(PythonBuiltinClassType.ForeignObject));
+        mod.setAttribute(tsLiteral("executable_list"), executableList);
+        mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
 
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
-            mod.setAttribute("dump_truffle_ast", PNone.NO_VALUE);
-            mod.setAttribute("tdebug", PNone.NO_VALUE);
-            mod.setAttribute("set_storage_strategy", PNone.NO_VALUE);
-            mod.setAttribute("dump_heap", PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
         }
     }
 
     @TruffleBoundary
-    String getStdIOEncoding() {
-        return (String) builtinConstants.get("stdio_encoding");
+    TruffleString getStdIOEncoding() {
+        return (TruffleString) getBuiltinConstant(T_STDIO_ENCODING);
     }
 
     @TruffleBoundary
-    String getStdIOError() {
-        return (String) builtinConstants.get("stdio_error");
+    TruffleString getStdIOError() {
+        return (TruffleString) getBuiltinConstant(T_STDIO_ERROR);
     }
 
     /**
@@ -232,6 +253,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "run_path")
     @GenerateNodeFactory
     abstract static class RunPathNode extends PythonBuiltinNode {
+
+        public static final TruffleString T_RUNPY = tsLiteral("runpy");
+
         @Specialization
         @TruffleBoundary
         PNone run() {
@@ -242,12 +266,12 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
              */
             assert !ImageInfo.inImageBuildtimeCode();
             PythonContext context = getContext();
-            String inputFilePath = context.getOption(PythonOptions.InputFilePath);
+            TruffleString inputFilePath = context.getOption(PythonOptions.InputFilePath);
             PythonModule sysModule = context.getSysModule();
             boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
             if (needsMainImporter) {
-                Object sysPath = sysModule.getAttribute("path");
-                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
+                Object sysPath = sysModule.getAttribute(T_PATH);
+                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, T_INSERT, 0, inputFilePath);
             } else {
                 // This is normally done by PythonLanguage, but is suppressed when we have a path
                 // argument
@@ -255,7 +279,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
 
             if (needsMainImporter) {
-                runModule(__MAIN__, false);
+                runModule(T___MAIN__, false);
             } else {
                 runFile(context, inputFilePath);
             }
@@ -263,7 +287,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         // Equivalent of CPython's pymain_run_file and pymain_run_stdin
-        private void runFile(PythonContext context, String inputFilePath) {
+        private void runFile(PythonContext context, TruffleString inputFilePath) {
             Source source;
             try {
                 Source.SourceBuilder builder;
@@ -277,7 +301,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 source = builder.mimeType(PythonLanguage.MIME_TYPE).build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
-                ErrorAndMessagePair error = OSErrorEnum.fromException(e);
+                ErrorAndMessagePair error = OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached());
                 String msg = String.format("%s: can't open file '%s': [Errno %d] %s\n", context.getOption(PythonOptions.Executable), inputFilePath, error.oserror.getNumber(), error.message);
                 // CPython uses fprintf(stderr, ...)
                 try {
@@ -293,16 +317,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         // Equivalent of CPython's pymain_run_module
-        private static void runModule(String module, boolean setArgv0) {
-            Object runpy = AbstractImportNode.importModule("runpy");
-            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, "_run_module_as_main", module, setArgv0);
+        private static void runModule(TruffleString module, boolean setArgv0) {
+            Object runpy = AbstractImportNode.importModule(T_RUNPY);
+            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, T__RUN_MODULE_AS_MAIN, module, setArgv0);
         }
 
         // Equivalent of CPython's pymain_get_importer, but returns a boolean
-        private static boolean getImporter(PythonModule sysModule, String inputFilePath) {
+        private static boolean getImporter(PythonModule sysModule, TruffleString inputFilePath) {
             Object importer = null;
-            Object pathHooks = sysModule.getAttribute("path_hooks");
-            Object pathImporterCache = sysModule.getAttribute("path_importer_cache");
+            Object pathHooks = sysModule.getAttribute(T_PATH_HOOKS);
+            Object pathImporterCache = sysModule.getAttribute(T_PATH_IMPORTER_CACHE);
             if (pathHooks instanceof PList && pathImporterCache instanceof PDict) {
                 PDict pathImporterCacheDict = (PDict) pathImporterCache;
                 importer = pathImporterCacheDict.getItem(inputFilePath);
@@ -331,7 +355,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static Object[] convertToObjectArray(String[] arr) {
+    private static Object[] convertToObjectArray(TruffleString[] arr) {
         Object[] objectArr = new Object[arr.length];
         System.arraycopy(arr, 0, objectArr, 0, arr.length);
         return objectArr;
@@ -341,21 +365,23 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public PBytes doString(VirtualFrame frame, String filename) {
+        public PBytes doString(VirtualFrame frame, TruffleString filename,
+                        @Cached TruffleString.EqualNode eqNode) {
             try {
-                TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
                 return factory().createBytes(bytes);
             } catch (Exception ex) {
-                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex);
+                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
                 throw raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
             }
         }
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object filename,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            return doString(frame, castToJavaStringNode.execute(filename));
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            return doString(frame, castToTruffleStringNode.execute(filename), eqNode);
         }
     }
 
@@ -364,32 +390,32 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public String doIt(PFunction func) {
-            return NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(func).getRootNode());
+        public TruffleString doIt(PFunction func) {
+            return toTruffleStringUncached(NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(func).getRootNode()));
         }
 
         @Specialization(guards = "isFunction(method.getFunction())")
         @TruffleBoundary
-        public String doIt(PMethod method) {
-            return NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(method).getRootNode());
+        public TruffleString doIt(PMethod method) {
+            return toTruffleStringUncached(NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(method).getRootNode()));
         }
 
         @Specialization
         @TruffleBoundary
-        public String doIt(PGenerator gen) {
-            return NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode());
+        public TruffleString doIt(PGenerator gen) {
+            return toTruffleStringUncached(NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode()));
         }
 
         @Specialization
         @TruffleBoundary
-        public String doIt(PCode code) {
-            return NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.getUncached().execute(code));
+        public TruffleString doIt(PCode code) {
+            return toTruffleStringUncached(NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.getUncached().execute(code)));
         }
 
         @Fallback
         @TruffleBoundary
-        public Object doit(Object object) {
-            return "truffle ast dump not supported for " + object.toString();
+        public TruffleString doit(Object object) {
+            return toTruffleStringUncached("truffle ast dump not supported for " + object.toString());
         }
 
         protected static boolean isFunction(Object callee) {
@@ -401,7 +427,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CurrentImport extends PythonBuiltinNode {
         @Specialization
-        String doIt() {
+        TruffleString doIt() {
             return getContext().getCurrentImport();
         }
     }
@@ -441,7 +467,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
             } else {
-                String moduleName = (String) getNameNode.execute(frame, globals, __NAME__);
+                TruffleString moduleName = (TruffleString) getNameNode.execute(frame, globals, T___NAME__);
                 builtinModule = getCore().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
@@ -483,15 +509,15 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object getToolPath(String tool) {
+        protected Object getToolPath(TruffleString tool) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            TruffleFile toolPath = toolchain.getToolPath(tool);
+            TruffleFile toolPath = toolchain.getToolPath(tool.toJavaStringUncached());
             if (toolPath == null) {
                 return PNone.NONE;
             }
-            return toolPath.toString();
+            return toTruffleStringUncached(toolPath.toString());
         }
     }
 
@@ -501,18 +527,18 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object getPaths(String key) {
+        protected Object getPaths(TruffleString key) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            List<TruffleFile> pathsList = toolchain.getPaths(key);
+            List<TruffleFile> pathsList = toolchain.getPaths(key.toJavaStringUncached());
             if (pathsList == null) {
                 return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             }
             Object[] paths = new Object[pathsList.size()];
             int i = 0;
             for (TruffleFile f : pathsList) {
-                paths[i++] = f.toString();
+                paths[i++] = toTruffleStringUncached(f.toString());
             }
             return factory().createTuple(paths);
         }
@@ -533,7 +559,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
         @Specialization
-        String posixModuleBackend(
+        TruffleString posixModuleBackend(
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.getBackend(getPosixSupport());
         }
@@ -554,20 +580,21 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doSet(PSet set, String strategyName) {
+        Object doSet(PSet set, TruffleString strategyName) {
             validate(set.getDictStorage());
             set.setDictStorage(getStrategy(strategyName, getLanguage()));
             return set;
         }
 
         @Specialization
-        Object doDict(PDict dict, String strategyName) {
+        Object doDict(PDict dict, TruffleString strategyName) {
             validate(dict.getDictStorage());
             dict.setDictStorage(getStrategy(strategyName, getLanguage()));
             return dict;
         }
 
-        private HashingStorage getStrategy(String name, PythonLanguage lang) {
+        private HashingStorage getStrategy(TruffleString tname, PythonLanguage lang) {
+            String name = tname.toJavaStringUncached();
             switch (name) {
                 case "empty":
                     return EmptyStorage.INSTANCE;
@@ -578,18 +605,18 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 case "economicmap":
                     return EconomicMapStorage.create();
                 default:
-                    throw raise(PythonBuiltinClassType.ValueError, "Unknown storage strategy name");
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
             }
         }
 
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLibrary.getUncached().length(dictStorage) != 0) {
-                throw raise(PythonBuiltinClassType.ValueError, "Should be used only on newly allocated empty sets");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
             }
         }
     }
 
-    @Builtin(name = "extend", minNumOfPositionalArgs = 1, doc = "Extends Java class and return HostAdapterCLass")
+    @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 1, doc = "Extends Java class and return HostAdapterCLass")
     @GenerateNodeFactory
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -597,7 +624,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+                throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM.toJavaStringUncached());
             }
             if (ImageInfo.inImageRuntimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -612,7 +639,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             try {
                 return env.createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
-                throw raise(TypeError, ex.getMessage(), ex);
+                throw raise(TypeError, PythonUtils.getMessage(ex), ex);
             }
         }
 
@@ -640,30 +667,35 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpHeapNode extends PythonBuiltinNode {
         @Specialization
-        String doit(VirtualFrame frame) {
+        TruffleString doit(VirtualFrame frame,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.EqualNode eqNode) {
             TruffleFile tempFile;
             try {
                 PythonContext context = getContext();
-                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), GRAALPYTHON_ID, ".hprof");
+                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), J_GRAALPYTHON_ID, ".hprof");
                 tempFile.delete();
             } catch (IOException e) {
-                throw raiseOSError(frame, e);
+                throw raiseOSError(frame, e, eqNode);
             }
             PythonUtils.dumpHeap(tempFile.getPath());
-            return tempFile.getPath();
+            return fromJavaStringNode.execute(tempFile.getPath(), TS_ENCODING);
         }
     }
 
     @Builtin(name = "compile", parameterNames = {"codestr", "path", "mode"})
     @GenerateNodeFactory
     abstract static class CompileNode extends PythonTernaryBuiltinNode {
+        private static final TruffleString T_PYC = tsLiteral("pyc");
+
         @Specialization
-        PCode compile(VirtualFrame frame, Object codestr, String path, String mode,
+        PCode compile(VirtualFrame frame, Object codestr, TruffleString path, TruffleString mode,
                         @Cached PRaiseNode raise,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
-            if (mode.equals("pyc")) {
+            if (equalNode.execute(mode, T_PYC, TS_ENCODING)) {
                 Source source;
                 if (codestr instanceof PBytesLike) {
                     try {
@@ -675,7 +707,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                     try {
                         source = getSource(path, castStr.execute(codestr));
                     } catch (CannotCastException e) {
-                        throw raise.raise(TypeError, "expected str or bytes, got '%p'", codestr);
+                        throw raise.raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTES, codestr);
                     }
                 }
                 CallTarget callTarget = createCallTarget(source);
@@ -691,18 +723,18 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Source getSource(String path, String code) {
+        private Source getSource(TruffleString path, TruffleString code) {
             return PythonLanguage.newSource(getContext(), code, path, true, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE);
         }
 
         @TruffleBoundary
-        private Source getSource(String path, byte[] code) throws IOException {
-            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        private Source getSource(TruffleString path, byte[] code) throws IOException {
+            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
             if (truffleFile.exists() && code.length == truffleFile.size()) {
                 return Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
             } else {
                 ByteSequence bs = ByteSequence.create(code);
-                return Source.newBuilder(PythonLanguage.ID, bs, path).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
+                return Source.newBuilder(PythonLanguage.ID, bs, path.toJavaStringUncached()).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
             }
         }
     }

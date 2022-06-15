@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
 import java.io.PrintStream;
@@ -88,7 +89,7 @@ public class AssertNode extends StatementNode {
                 // again, Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                assertionMessage = "internal exception occurred";
+                assertionMessage = ErrorMessages.INTERNAL_EXCEPTION_OCCURED;
                 if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
                     printStackTrace(getContext(), e);
                 }
@@ -101,7 +102,7 @@ public class AssertNode extends StatementNode {
         if (assertionMessage == null) {
             return raise.raise(AssertionError);
         }
-        return raise.raise(AssertionError, assertionMessage);
+        return raise.raise(AssertionError, new Object[]{assertionMessage});
     }
 
     public CoerceToBooleanNode getCondition() {

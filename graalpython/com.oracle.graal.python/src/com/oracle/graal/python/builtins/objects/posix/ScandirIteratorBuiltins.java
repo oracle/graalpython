@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
@@ -88,7 +88,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -97,7 +97,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -120,7 +120,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -129,7 +129,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization

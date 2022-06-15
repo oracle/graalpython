@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,9 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.parser.sst.FactorySSTVisitor.ts;
 
 public final class ArgDefListBuilder {
 
@@ -257,14 +260,14 @@ public final class ArgDefListBuilder {
             }
         }
 
-        String[] kwId = kwargIndex == -1 ? PythonUtils.EMPTY_STRING_ARRAY : new String[kwargsLen - 1];
+        TruffleString[] kwId = kwargIndex == -1 ? PythonUtils.EMPTY_TRUFFLESTRING_ARRAY : new TruffleString[kwargsLen - 1];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {
             if (i != kwargIndex) {
                 nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta - starMarkerDelta);
                 if (kwargIndex != -1) {
-                    kwId[i] = kwargs.get(i).name;
+                    kwId[i] = ts(kwargs.get(i).name);
                 }
             } else {
                 nodes[i + delta] = scopeEnvironment.getWriteKwArgsToLocal(kwargs.get(i).name, kwId);
@@ -304,7 +307,7 @@ public final class ArgDefListBuilder {
         }
         FunctionDefinitionNode.KwDefaultExpressionNode[] nodes = new FunctionDefinitionNode.KwDefaultExpressionNode[kwargsWithDefValue.size()];
         for (int i = 0; i < kwargsWithDefValue.size(); i++) {
-            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(kwargsWithDefValue.get(i).name, (ExpressionNode) kwargsWithDefValue.get(i).value.accept(visitor));
+            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(ts(kwargsWithDefValue.get(i).name), (ExpressionNode) kwargsWithDefValue.get(i).value.accept(visitor));
         }
         return nodes;
     }
@@ -314,27 +317,27 @@ public final class ArgDefListBuilder {
             return Signature.EMPTY;
         }
         int i;
-        String[] ids = null;
-        String[] kwids = null;
+        TruffleString[] ids = null;
+        TruffleString[] kwids = null;
         boolean splatMarker = hasSplatStarMarker();
         if (args != null) {
-            ids = new String[args.size() - (splatIndex == -1 ? 0 : 1)];
+            ids = new TruffleString[args.size() - (splatIndex == -1 ? 0 : 1)];
             i = 0;
             if (ids.length > 0) {
                 for (Parameter param : args) {
                     if (i != splatIndex) {
-                        ids[i++] = param.name;
+                        ids[i++] = ts(param.name);
                     }
                 }
             }
         }
         if (kwargs != null) {
-            kwids = new String[kwargs.size() - (kwargIndex == -1 ? 0 : 1)];
+            kwids = new TruffleString[kwargs.size() - (kwargIndex == -1 ? 0 : 1)];
             i = 0;
             if (kwids.length > 0) {
                 for (Parameter param : kwargs) {
                     if (i != kwargIndex) {
-                        kwids[i++] = param.name;
+                        kwids[i++] = ts(param.name);
                     }
                 }
             }

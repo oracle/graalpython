@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
-import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_DELIMITER;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_DOUBLEQUOTE;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_ESCAPECHAR;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_LINETERMINATOR;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_QUOTECHAR;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_QUOTING;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_SKIPINITIALSPACE;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.J_ATTR_STRICT;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET_CODEPOINT;
 
 import java.util.List;
 
@@ -54,6 +62,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVDialect)
 public final class CSVDialectBuiltins extends PythonBuiltins {
@@ -63,16 +72,16 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         return CSVDialectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "delimiter", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_DELIMITER, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DelimiterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doIt(CSVDialect self) {
+        static TruffleString doIt(CSVDialect self) {
             return self.delimiter;
         }
     }
 
-    @Builtin(name = "doublequote", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_DOUBLEQUOTE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DoubleQuoteNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -81,34 +90,34 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "escapechar", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_ESCAPECHAR, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class EscapeCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.escapeChar.equals(NOT_SET) ? PNone.NONE : self.escapeChar;
+            return self.escapeCharCodePoint == NOT_SET_CODEPOINT ? PNone.NONE : self.escapeChar;
         }
     }
 
-    @Builtin(name = "lineterminator", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_LINETERMINATOR, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class LineTerminatorNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static String doIt(CSVDialect self) {
+        static TruffleString doIt(CSVDialect self) {
             return self.lineTerminator;
         }
     }
 
-    @Builtin(name = "quotechar", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_QUOTECHAR, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class QuoteCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.quoteChar.equals(NOT_SET) ? PNone.NONE : self.quoteChar;
+            return self.quoteCharCodePoint == NOT_SET_CODEPOINT ? PNone.NONE : self.quoteChar;
         }
     }
 
-    @Builtin(name = "quoting", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_QUOTING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class QuotingNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -117,7 +126,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "skipinitialspace", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_SKIPINITIALSPACE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class SkipInitialSpaceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -126,7 +135,7 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strict", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ATTR_STRICT, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class StrictNode extends PythonUnaryBuiltinNode {
         @Specialization

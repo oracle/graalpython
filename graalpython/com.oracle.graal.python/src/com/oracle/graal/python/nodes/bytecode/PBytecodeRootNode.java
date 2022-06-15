@@ -42,8 +42,10 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -159,6 +161,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Root node with main bytecode interpreter loop.
@@ -197,10 +200,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
-    private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__);
-    private static final NodeFunction<String, ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode::create;
-    private static final NodeFunction<String, ReadNameNode> NODE_READ_NAME = ReadNameNode::create;
-    private static final NodeFunction<String, WriteNameNode> NODE_WRITE_NAME = WriteNameNode::create;
+    private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create(T___BUILD_CLASS__);
+    private static final NodeFunction<TruffleString, ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode::create;
+    private static final NodeFunction<TruffleString, ReadNameNode> NODE_READ_NAME = ReadNameNode::create;
+    private static final NodeFunction<TruffleString, WriteNameNode> NODE_WRITE_NAME = WriteNameNode::create;
     private static final ReadGlobalOrBuiltinNode UNCACHED_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode.getUncached();
     private static final NodeSupplier<PyObjectSetItem> NODE_OBJECT_SET_ITEM = PyObjectSetItem::create;
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
@@ -252,8 +255,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
     private static final NodeSupplier<ThrowNode> NODE_THROW = ThrowNode::create;
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
-    private static final NodeFunction<String, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
-    private static final NodeFunction<String, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
+    private static final NodeFunction<TruffleString, WriteGlobalNode> NODE_WRITE_GLOBAL = WriteGlobalNode::create;
+    private static final NodeFunction<TruffleString, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
     private static final PrintExprNode UNCACHED_PRINT_EXPR = PrintExprNode.getUncached();
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
 
@@ -354,7 +357,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public static final GeneratorControlData GENERATOR_CONTROL_DATA = new GeneratorControlData(new GeneratorInfo(new GeneratorInfo.Mutable()));
 
     private final Signature signature;
-    private final String name;
+    private final TruffleString name;
     private boolean pythonInternal;
 
     final int celloffset;
@@ -371,10 +374,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
     @CompilationFinal(dimensions = 1) private final long[] longConsts;
-    @CompilationFinal(dimensions = 1) private final String[] names;
-    @CompilationFinal(dimensions = 1) private final String[] varnames;
-    @CompilationFinal(dimensions = 1) private final String[] freevars;
-    @CompilationFinal(dimensions = 1) private final String[] cellvars;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] names;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] varnames;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] freevars;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] cellvars;
     @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
@@ -426,8 +429,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private static Signature makeSignature(CodeUnit co) {
         int posArgCount = co.argCount + co.positionalOnlyArgCount;
-        String[] parameterNames = Arrays.copyOf(co.varnames, posArgCount);
-        String[] kwOnlyNames = Arrays.copyOfRange(co.varnames, posArgCount, posArgCount + co.kwOnlyArgCount);
+        TruffleString[] parameterNames = Arrays.copyOf(co.varnames, posArgCount);
+        TruffleString[] kwOnlyNames = Arrays.copyOfRange(co.varnames, posArgCount, posArgCount + co.kwOnlyArgCount);
         int varArgsIndex = co.takesVarArgs() ? posArgCount : -1;
         return new Signature(co.positionalOnlyArgCount,
                         co.takesVarKeywordArgs(),
@@ -472,7 +475,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         int classcellIndex = -1;
         for (int i = 0; i < this.freevars.length; i++) {
-            if (__CLASS__.equals(this.freevars[i])) {
+            if (T___CLASS__.equalsUncached(this.freevars[i], TS_ENCODING)) {
                 classcellIndex = this.freeoffset + i;
                 break;
             }
@@ -495,7 +498,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public String getName() {
-        return name;
+        return name.toJavaStringUncached();
     }
 
     @Override
@@ -755,7 +758,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int[] localArgs = extraArgs;
         Object[] localConsts = consts;
         long[] localLongConsts = longConsts;
-        String[] localNames = names;
+        TruffleString[] localNames = names;
         Node[] localNodes = adoptedNodes;
 
         /*
@@ -834,7 +837,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.MAKE_KEYWORD: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        String key = (String) localConsts[oparg];
+                        TruffleString key = (TruffleString) localConsts[oparg];
                         Object value = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop, new PKeyword(key, value));
                         break;
@@ -1026,7 +1029,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.LOAD_BUILD_CLASS: {
                         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, beginBci, UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS);
-                        stackFrame.setObject(++stackTop, read.read(virtualFrame, globals, __BUILD_CLASS__));
+                        stackFrame.setObject(++stackTop, read.read(virtualFrame, globals, T___BUILD_CLASS__));
                         break;
                     }
                     case OpCodesConstants.LOAD_ASSERTION_ERROR: {
@@ -1208,7 +1211,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.CALL_METHOD: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        String methodName = localNames[oparg];
+                        TruffleString methodName = localNames[oparg];
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallMethod(virtualFrame, stackFrame, stackTop, beginBci, argcount, methodName, localNodes);
                         break;
@@ -1375,7 +1378,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw insertChildNode(localNodes, bci, NODE_RAISE).raise(SystemError, "not implemented bytecode %s", OpCodes.VALUES[bc]);
+                        throw insertChildNode(localNodes, bci, NODE_RAISE).raise(SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.VALUES[bc]);
                 }
                 // prepare next loop
                 oparg = 0;
@@ -1440,11 +1443,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return null;
         }
         if (PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions) && (e instanceof Exception || e instanceof AssertionError)) {
-            return wrapJavaException(e, factory.createBaseException(SystemError, "%m", new Object[]{e}));
+            return wrapJavaException(e, factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
             PythonContext.get(this).reacquireGilAfterStackOverflow();
-            return wrapJavaException(e, factory.createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+            return wrapJavaException(e, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         return null;
     }
@@ -1569,13 +1572,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             throw (AbstractTruffleException) exception;
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, "expected exception on the stack");
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_EXCEPTION_ON_THE_STACK);
         }
     }
 
-    private void bytecodeLoadAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
+    private void bytecodeLoadAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         PyObjectGetAttr getAttr = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_ATTR, NODE_OBJECT_GET_ATTR);
-        String varname = localNames[oparg];
+        TruffleString varname = localNames[oparg];
         Object owner = stackFrame.getObject(stackTop);
         Object value = getAttr.execute(virtualFrame, owner, varname);
         stackFrame.setObject(stackTop, value);
@@ -1590,38 +1593,38 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         localFrame.setObject(oparg, null);
     }
 
-    private int bytecodeLoadGlobal(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int stackTop, int bci, String localName, Node[] localNodes) {
+    private int bytecodeLoadGlobal(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int stackTop, int bci, TruffleString localName, Node[] localNodes) {
         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, bci, UNCACHED_READ_GLOBAL_OR_BUILTIN, NODE_READ_GLOBAL_OR_BUILTIN, localName);
         stackFrame.setObject(++stackTop, read.read(virtualFrame, globals, localName));
         return stackTop;
     }
 
-    private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, String[] localNames) {
-        String varname = localNames[oparg];
+    private void bytecodeDeleteGlobal(VirtualFrame virtualFrame, Object globals, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
+        TruffleString varname = localNames[oparg];
         DeleteGlobalNode deleteGlobalNode = insertChildNode(localNodes, bci, NODE_DELETE_GLOBAL, varname);
         deleteGlobalNode.executeWithGlobals(virtualFrame, globals);
     }
 
-    private int bytecodeStoreGlobal(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int stackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
-        String varname = localNames[oparg];
+    private int bytecodeStoreGlobal(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
+        TruffleString varname = localNames[oparg];
         WriteGlobalNode writeGlobalNode = insertChildNode(localNodes, bci, UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, varname);
         writeGlobalNode.write(virtualFrame, globals, varname, stackFrame.getObject(stackTop));
         stackFrame.setObject(stackTop--, null);
         return stackTop;
     }
 
-    private int bytecodeDeleteAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
+    private int bytecodeDeleteAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         PyObjectSetAttr callNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_SET_ATTR, NODE_OBJECT_SET_ATTR);
-        String varname = localNames[oparg];
+        TruffleString varname = localNames[oparg];
         Object owner = stackFrame.getObject(stackTop);
         stackFrame.setObject(stackTop--, null);
         callNode.delete(virtualFrame, owner, varname);
         return stackTop;
     }
 
-    private int bytecodeStoreAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
+    private int bytecodeStoreAttr(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         PyObjectSetAttr callNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_SET_ATTR, NODE_OBJECT_SET_ATTR);
-        String varname = localNames[oparg];
+        TruffleString varname = localNames[oparg];
         Object owner = stackFrame.getObject(stackTop);
         stackFrame.setObject(stackTop--, null);
         Object value = stackFrame.getObject(stackTop);
@@ -1630,8 +1633,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeDeleteName(VirtualFrame virtualFrame, Object globals, Object locals, int bci, int oparg, String[] localNames, Node[] localNodes) {
-        String varname = localNames[oparg];
+    private void bytecodeDeleteName(VirtualFrame virtualFrame, Object globals, Object locals, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
+        TruffleString varname = localNames[oparg];
         if (locals != null) {
             PyObjectDelItem delItemNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_DEL_ITEM, NODE_OBJECT_DEL_ITEM);
             delItemNode.execute(virtualFrame, locals, varname);
@@ -1702,17 +1705,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, String[] localNames, int oparg, Node[] localNodes) {
+    private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, TruffleString[] localNames, int oparg, Node[] localNodes) {
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD);
         Object[] args = (Object[]) stackFrame.getObject(stackTop);
-        String methodName = localNames[oparg];
+        TruffleString methodName = localNames[oparg];
         Object rcvr = args[0];
         Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
         CallNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL, NODE_CALL);
         stackFrame.setObject(stackTop, callNode.execute(virtualFrame, func, args, PKeyword.EMPTY_KEYWORDS));
     }
 
-    private int bytecodeLoadName(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, String[] localNames) {
+    private int bytecodeLoadName(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         int stackTop = initialStackTop;
         ReadNameNode readNameNode = insertChildNode(localNodes, bci, NODE_READ_NAME, localNames[oparg]);
         stackFrame.setObject(++stackTop, readNameNode.execute(virtualFrame));
@@ -1772,7 +1775,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeCallMethod(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, String methodName, Node[] localNodes) {
+    private int bytecodeCallMethod(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, int oparg, TruffleString methodName, Node[] localNodes) {
         Object rcvr = stackFrame.getObject(stackTop - oparg);
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, NODE_OBJECT_GET_METHOD);
         Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
@@ -1814,7 +1817,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeStoreName(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+    private int bytecodeStoreName(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
         Object value = stackFrame.getObject(stackTop);
         stackFrame.setObject(stackTop--, null);
@@ -1854,11 +1857,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int bytecodeImportName(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+    private int bytecodeImportName(VirtualFrame virtualFrame, Frame stackFrame, Object globals, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         CastToJavaIntExactNode castNode = insertChildNode(localNodes, bci, UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT);
-        String modname = localNames[oparg];
+        TruffleString modname = localNames[oparg];
         int stackTop = initialStackTop;
-        String[] fromlist = (String[]) stackFrame.getObject(stackTop);
+        TruffleString[] fromlist = (TruffleString[]) stackFrame.getObject(stackTop);
         stackFrame.setObject(stackTop--, null);
         int level = castNode.execute(stackFrame.getObject(stackTop));
         ImportNode importNode = insertChildNode(localNodes, bci + 1, NODE_IMPORT);
@@ -1867,9 +1870,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeImportFrom(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+    private int bytecodeImportFrom(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
-        String name = localNames[oparg];
+        TruffleString name = localNames[oparg];
         Object from = stackFrame.getObject(stackTop);
         ImportFromNode importFromNode = insertChildNode(localNodes, bci, UNCACHED_IMPORT_FROM, NODE_IMPORT_FROM);
         Object imported = importFromNode.execute(virtualFrame, from, name);
@@ -1877,9 +1880,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeImportStar(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+    private int bytecodeImportStar(VirtualFrame virtualFrame, Frame stackFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
-        String name = localNames[oparg];
+        TruffleString name = localNames[oparg];
         int level = (int) stackFrame.getObject(stackTop);
         stackFrame.setObject(stackTop--, null);
         ImportStarNode importStarNode = insertChildNode(localNodes, bci, () -> new ImportStarNode(name, level));
@@ -2102,7 +2105,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.getUncached().raise(SystemError, "Invalid type for COLLECTION_ADD_COLLECTION");
+                throw PRaiseNode.getUncached().raise(SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "COLLECTION_ADD_COLLECTION");
         }
         stackFrame.setObject(stackTop--, null);
         stackFrame.setObject(stackTop, result);
@@ -2133,7 +2136,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.getUncached().raise(SystemError, "Invalid type for ADD_TO_COLLECTION");
+                throw PRaiseNode.getUncached().raise(SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "ADD_TO_COLLECTION");
         }
         stackFrame.setObject(stackTop--, null);
         return stackTop;
@@ -2258,22 +2261,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          * the code object and the co_code attribute contains just the bytecode. It would be better
          * if we did the same, however we currently serialize everything into just co_code and
          * ignore the rest. The reasons are:
-         * 
+         *
          * 1) TruffleLanguage.parsePublic does source level caching but it only accepts bytes or
          * Strings. We could cache ourselves instead, but we have to come up with a cache key. It
          * would be impractical to compute a cache key from all the deserialized constants, but we
          * could just generate a large random number at compile time to serve as a key.
-         * 
+         *
          * 2) The arguments of code object constructor would be different. Some libraries like
          * cloudpickle (used by pyspark) still rely on particular signature, even though CPython has
          * changed theirs several times. We would have to match CPython's signature. It's doable,
          * but it would certainly be more practical to update to 3.11 first to have an attribute for
          * exception ranges.
-         * 
+         *
          * 3) While the AST interpreter is still in use, we have to share the code in CodeBuiltins,
          * so it's much simpler to do it in a way that is close to what the AST interpreter is
          * doing.
-         * 
+         *
          * TODO We should revisit this when the AST interpreter is removed.
          */
         return MarshalModuleBuiltins.serializeCodeUnit(co);

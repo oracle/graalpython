@@ -42,14 +42,16 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -73,6 +76,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -80,6 +84,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -112,13 +117,13 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object run(VirtualFrame frame, PythonModule module, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            setattrNode.execute(frame, module, __DOC__, doc);
+            setattrNode.execute(frame, module, T___DOC__, doc);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "PyModule_NewObject", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class PyModuleNewObjectNode extends PythonUnaryClinicBuiltinNode {
 
@@ -128,14 +133,14 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object run(VirtualFrame frame, String name,
+        static Object run(VirtualFrame frame, TruffleString name,
                         @Cached CallNode callNode) {
             return callNode.execute(frame, PythonBuiltinClassType.PythonModule, new Object[]{name});
         }
     }
 
     @Builtin(name = "_PyModule_CreateInitialized_PyModule_New", parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class PyModuleCreateInitializedNewNode extends PythonUnaryClinicBuiltinNode {
 
@@ -145,15 +150,19 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, String name,
+        Object run(VirtualFrame frame, TruffleString name,
                         @Cached CallNode callNode,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
+                        @Cached ObjectBuiltins.SetattrNode setattrNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached EndsWithNode endsWithNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode lastIndexNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
             // see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
             // comparison how they handle _Py_PackageContext
-            String newModuleName = name;
+            TruffleString newModuleName = name;
             PythonContext ctx = getContext();
-            String pyPackageContext = ctx.getPyPackageContext();
-            if (pyPackageContext != null && pyPackageContext.endsWith(newModuleName)) {
+            TruffleString pyPackageContext = ctx.getPyPackageContext() == null ? null : ctx.getPyPackageContext();
+            if (pyPackageContext != null && endsWithNode.executeBoolean(frame, pyPackageContext, newModuleName, 0, codePointLengthNode.execute(pyPackageContext, TS_ENCODING))) {
                 newModuleName = pyPackageContext;
                 ctx.setPyPackageContext(null);
             }
@@ -163,9 +172,10 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
             // sklearn.neighbors.ball_tree the __package__ attribute seems to be already
             // set in CPython. To not produce a warning, I'm setting it here, although I
             // could not find what CPython really does
-            int idx = newModuleName.lastIndexOf(".");
+            int nameLength = codePointLengthNode.execute(newModuleName, TS_ENCODING);
+            int idx = lastIndexNode.execute(newModuleName, '.', nameLength, 0, TS_ENCODING);
             if (idx > -1) {
-                setattrNode.execute(frame, newModule, __PACKAGE__, newModuleName.substring(0, idx));
+                setattrNode.execute(frame, newModule, T___PACKAGE__, substringNode.execute(newModuleName, 0, idx, TS_ENCODING, false));
             }
             return newModule;
         }
@@ -179,7 +189,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lookupAttrNode.execute(frame, o, __NAME__);
+                return lookupAttrNode.execute(frame, o, T___NAME__);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -191,7 +201,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyModuleAddObjectNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        static Object addObject(VirtualFrame frame, Object m, String k, Object o,
+        static Object addObject(VirtualFrame frame, Object m, TruffleString k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
@@ -208,12 +218,13 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
         Object addObject(VirtualFrame frame, Object m, PString k, Object o,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return addObject(frame, m, k.getValue(), o, getClassNode, isSubtypeNode, writeAtrrNode, raiseNativeNode, transformExceptionToNativeNode);
+            return addObject(frame, m, castToStringNode.execute(k), o, getClassNode, isSubtypeNode, writeAtrrNode, raiseNativeNode, transformExceptionToNativeNode);
         }
 
         @SuppressWarnings("unused")

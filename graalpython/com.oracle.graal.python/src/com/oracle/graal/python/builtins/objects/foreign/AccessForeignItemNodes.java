@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -53,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFa
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -84,6 +84,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class AccessForeignItemNodes {
 
@@ -92,7 +93,7 @@ abstract class AccessForeignItemNodes {
     protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
         @Child PRaiseNode raiseNode;
 
-        protected PException raise(PythonBuiltinClassType type, String msg, Object... arguments) {
+        protected PException raise(PythonBuiltinClassType type, TruffleString msg, Object... arguments) {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
@@ -102,10 +103,6 @@ abstract class AccessForeignItemNodes {
 
         protected static boolean isSlice(Object o) {
             return o instanceof PSlice;
-        }
-
-        protected static boolean isString(Object o) {
-            return o instanceof String || o instanceof PString;
         }
 
         protected int getForeignSize(Object object, InteropLibrary libForObject) {
@@ -184,12 +181,13 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.isString(object)", "!lib.hasArrayElements(object)"})
         Object doString(VirtualFrame frame, Object object, Object idx,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached StringBuiltins.StrGetItemNode getItemNode,
                         @Shared("gil") @Cached GilNode gil) {
-            String string;
+            TruffleString string;
             gil.release(true);
             try {
-                string = lib.asString(object);
+                string = switchEncodingNode.execute(lib.asTruffleString(object), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
@@ -201,6 +199,7 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryReadable(object, key)) {
                 gil.release(true);
@@ -213,7 +212,7 @@ abstract class AccessForeignItemNodes {
                 }
             }
             try {
-                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -318,6 +317,7 @@ abstract class AccessForeignItemNodes {
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryWritable(object, key)) {
                 gil.release(true);
@@ -336,7 +336,7 @@ abstract class AccessForeignItemNodes {
             wrongIndex.enter();
             gil.release(true);
             try {
-                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
@@ -426,6 +426,7 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryRemovable(object, key)) {
                 gil.release(true);
@@ -439,7 +440,7 @@ abstract class AccessForeignItemNodes {
                 }
             }
             try {
-                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+                throw raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

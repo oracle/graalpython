@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,14 +42,16 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins.PyCPointerTypeParamFunc;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.J_FROM_PARAM;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins._ctypes_alloc_format_string_with_shape;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CDATA_INSTANCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_BE_A_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.nodes.StringLiterals.T_AMPERSAND;
 
 import java.util.List;
 
@@ -70,7 +72,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -87,6 +89,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCPointerType)
 public class PyCPointerTypeBuiltins extends PythonBuiltins {
@@ -96,11 +100,14 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
         return PyCPointerTypeBuiltinsFactory.getFactories();
     }
 
-    protected static final String _type_ = "_type_";
-    protected static final String set_type = "set_type";
+    protected static final TruffleString T__TYPE_ = tsLiteral("_type_");
+    protected static final String J_SET_TYPE = "set_type";
+
+    protected static final TruffleString T_UPPER_B = tsLiteral("B");
+    protected static final TruffleString T_UPPER_T_LEFTBRACE = tsLiteral("T{");
 
     @ImportStatic(PyCPointerTypeBuiltins.class)
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCPointerTypeNewNode extends PythonBuiltinNode {
 
@@ -111,7 +118,10 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached IsTypeNode isTypeNode,
                         @Cached TypeNode newType,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode) {
             /*
              * stgdict items size, align, length contain info about pointers itself, stgdict.proto
              * has info about the pointed to type!
@@ -125,7 +135,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             stgdict.flags |= TYPEFLAG_ISPOINTER;
 
             PDict typedict = (PDict) args[2];
-            Object proto = hlib.getItem(typedict.getDictStorage(), _type_); /* Borrowed ref */
+            Object proto = hlib.getItem(typedict.getDictStorage(), T__TYPE_); /* Borrowed ref */
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
@@ -136,12 +146,12 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                  * create a generic format string 'pointer to bytes' in this case. XXX Better would
                  * be to fix the format string later...
                  */
-                String current_format = itemdict.format != null ? itemdict.format : "B";
+                TruffleString current_format = itemdict.format != null ? itemdict.format : T_UPPER_B;
                 if (itemdict.shape != null) {
                     /* pointer to an array: the shape needs to be prefixed */
-                    stgdict.format = _ctypes_alloc_format_string_with_shape(itemdict.ndim, itemdict.shape, "&", current_format);
+                    stgdict.format = _ctypes_alloc_format_string_with_shape(itemdict.ndim, itemdict.shape, T_AMPERSAND, current_format, appendStringNode, toStringNode, formatNode);
                 } else {
-                    stgdict.format = PString.cat("&", current_format);
+                    stgdict.format = StringUtils.cat(T_AMPERSAND, current_format);
                 }
             }
 
@@ -160,7 +170,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_PARAM, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class FromParamNode extends PythonBinaryBuiltinNode {
 
@@ -220,18 +230,18 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = set_type, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_SET_TYPE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class SetTypeNode extends PythonBuiltinNode {
 
         @Specialization
-        Object PyCPointerType_set_type(Object self, String type,
+        Object PyCPointerType_set_type(Object self, TruffleString type,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
             PyCPointerType_SetProto(dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
-            hlib.setItem(dict.getDictStorage(), _type_, type);
+            hlib.setItem(dict.getDictStorage(), T__TYPE_, type);
             return PNone.NONE;
         }
 
@@ -243,16 +253,16 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
     }
 
     /*
-     * 
+     *
      * The PyCPointerType_Type metaclass must ensure that the subclass of Pointer can be created. It
      * must check for a _type_ attribute in the class. Since are no runtime created properties, a
      * CField is probably *not* needed ?
-     * 
+     *
      * class IntPointer(Pointer): _type_ = "i"
-     * 
+     *
      * The PyCPointer_Type provides the functionality: a contents method/property, a size
      * property/method, and the sequence protocol.
-     * 
+     *
      */
     static void PyCPointerType_SetProto(StgDictObject stgdict, Object proto,
                     IsTypeNode isTypeNode,

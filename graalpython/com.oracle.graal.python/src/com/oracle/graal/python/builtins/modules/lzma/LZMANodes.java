@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FILTERS;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.INITIAL_BUFFER_SIZE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_FILTERS_MAX;
-import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_JAVA_ERROR;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_ANY_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_NO_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.PRESET_DEFAULT;
@@ -64,10 +64,13 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_CONTAINER_FORM
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_FILTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT;
 import static com.oracle.graal.python.nodes.ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ID;
 import static com.oracle.graal.python.runtime.NFILZMASupport.LZMA_ID_ERROR;
 import static com.oracle.graal.python.runtime.NFILZMASupport.LZMA_PRESET_ERROR;
 import static com.oracle.graal.python.runtime.NFILZMASupport.MAX_OPTS_INDEX;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -99,7 +102,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -126,6 +130,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class LZMANodes {
 
@@ -189,10 +194,10 @@ public class LZMANodes {
         @Specialization
         long ll(long l) {
             if (l < 0) {
-                throw raise(OverflowError, "can't convert negative int to unsigned");
+                throw raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
             }
             if (l > MAX_UINT32 && with32BitLimit) {
-                throw raise(OverflowError, "Value too large for uint32_t type");
+                throw raise(OverflowError, ErrorMessages.VALUE_TOO_LARGE_FOR_UINT32);
             }
             return l;
         }
@@ -226,7 +231,7 @@ public class LZMANodes {
                         @Shared("k") @Cached ConditionProfile hasKeyErrorProfile,
                         @Shared("h") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             HashingStorage storage = dict.getDictStorage();
-            if (idErrorProfile.profile(!hlib.hasKeyWithFrame(storage, "id", hasKeyErrorProfile, frame))) {
+            if (idErrorProfile.profile(!hlib.hasKeyWithFrame(storage, T_ID, hasKeyErrorProfile, frame))) {
                 throw raise(ValueError, FILTER_SPECIFIER_MUST_HAVE);
             }
             return storage;
@@ -248,10 +253,9 @@ public class LZMANodes {
 
     protected abstract static class ForEachOption extends HashingStorageLibrary.ForEachNode<OptionsState> {
 
-        @TruffleBoundary
-        private static int getOptionIndex(String key, OptionsState s) {
+        private static int getOptionIndex(TruffleString key, OptionsState s, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < s.optnames.length; i++) {
-                if (key.equals(s.optnames[i].OptName())) {
+                if (equalNode.execute(key, s.optnames[i].OptName(), TS_ENCODING)) {
                     return i;
                 }
             }
@@ -267,22 +271,23 @@ public class LZMANodes {
 
         @Specialization(limit = "2")
         OptionsState doit(Object key, OptionsState s,
-                        @Cached PyObjectStrAsJavaStringNode strNode,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached ConditionProfile errProfile,
                         @CachedLibrary("s.dictStorage") HashingStorageLibrary hlib,
-                        @Cached PRaiseNode raise) {
-            String skey = strNode.execute(null, key);
-            int idx = getOptionIndex(skey, s);
+                        @Cached PRaiseNode raise,
+                        @Cached TruffleString.EqualNode equalNode) {
+            TruffleString skey = strNode.execute(null, key);
+            int idx = getOptionIndex(skey, s, equalNode);
             if (errProfile.profile(idx == -1)) {
-                throw raise.raise(ValueError, "Invalid filter specifier for %s filter", s.filterType);
+                throw raise.raise(ValueError, ErrorMessages.INVALID_FILTER_SPECIFIED_FOR_FILTER, s.filterType);
             }
             long l = toLong.execute(hlib.getItem(s.dictStorage, skey));
             if (errProfile.profile(l < 0)) {
-                throw raise.raise(OverflowError, "can't convert negative int to unsigned");
+                throw raise.raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
             }
             if (errProfile.profile(l > MAX_UINT32 && idx > 0) /* filters are special case */) {
-                throw raise.raise(OverflowError, "Value too large for uint32_t type");
+                throw raise.raise(OverflowError, ErrorMessages.VALUE_TOO_LARGE_FOR_UINT32);
             }
             s.options[idx] = l;
             return s;
@@ -290,7 +295,7 @@ public class LZMANodes {
     }
 
     interface Option {
-        String OptName();
+        TruffleString OptName();
 
         int ordinal();
     }
@@ -335,14 +340,14 @@ public class LZMANodes {
         mf("mf"),
         depth("depth");
 
-        private final String optname;
+        private final TruffleString optname;
 
         LZMAOption(String name) {
-            this.optname = name;
+            this.optname = tsLiteral(name);
         }
 
         @Override
-        public String OptName() {
+        public TruffleString OptName() {
             return optname;
         }
     }
@@ -352,14 +357,14 @@ public class LZMANodes {
         id("id"),
         dist("dist");
 
-        private final String optname;
+        private final TruffleString optname;
 
         DeltaOption(String name) {
-            this.optname = name;
+            this.optname = tsLiteral(name);
         }
 
         @Override
-        public String OptName() {
+        public TruffleString OptName() {
             return optname;
         }
     }
@@ -369,14 +374,14 @@ public class LZMANodes {
         id("id"),
         start_offset("start_offset");
 
-        private final String optname;
+        private final TruffleString optname;
 
         BCJOption(String name) {
-            this.optname = name;
+            this.optname = tsLiteral(name);
         }
 
         @Override
-        public String OptName() {
+        public TruffleString OptName() {
             return optname;
         }
     }
@@ -393,7 +398,7 @@ public class LZMANodes {
                         @Cached GetOptionsDict getOptionsDict,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             HashingStorage dict = getOptionsDict.execute(frame, spec);
-            Object idObj = hlib.getItem(dict, "id");
+            Object idObj = hlib.getItem(dict, T_ID);
             long id = toLong.execute(idObj);
             long[] options;
             OptionsState state;
@@ -444,7 +449,7 @@ public class LZMANodes {
             checkIsSequenceNode.execute(filterSpecs);
             int numFilters = sizeNode.execute(frame, filterSpecs);
             if (errProfile.profile(numFilters > LZMA_FILTERS_MAX)) {
-                throw raise(ValueError, "Too many filters - liblzma supports a maximum of %d", LZMA_FILTERS_MAX);
+                throw raise(ValueError, ErrorMessages.TOO_MAMNY_FILTERS_LZMA_SUPPORTS_MAX_S, LZMA_FILTERS_MAX);
             }
             long[][] filters = new long[numFilters][0];
             for (int i = 0; i < numFilters; i++) {
@@ -530,7 +535,7 @@ public class LZMANodes {
                 try {
                     optionsChain[i] = getFilterOptions(filters[i]);
                 } catch (UnsupportedOptionsException e) {
-                    throw raise(ValueError, "%m", e);
+                    throw raise(ValueError, ErrorMessages.M, e);
                 }
 
             }
@@ -736,7 +741,7 @@ public class LZMANodes {
             try {
                 self.lzmaEasyEncoder(parseLZMAOptions(preset));
             } catch (IOException e) {
-                throw raise(PythonErrorType.ValueError, "%m", e);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.M, e);
             }
         }
 
@@ -746,7 +751,7 @@ public class LZMANodes {
             try {
                 self.lzmaStreamEncoder(filterChain.execute(frame, filters));
             } catch (IOException e) {
-                throw raise(ValueError, "%m", e);
+                throw raise(ValueError, ErrorMessages.M, e);
             }
         }
 
@@ -756,7 +761,7 @@ public class LZMANodes {
             try {
                 self.lzmaAloneEncoder(parseLZMAOptions(preset));
             } catch (IOException e) {
-                throw raise(ValueError, "%m", e);
+                throw raise(ValueError, ErrorMessages.M, e);
             }
         }
 
@@ -771,7 +776,7 @@ public class LZMANodes {
             try {
                 self.lzmaAloneEncoder((LZMA2Options) optionsChain[0]);
             } catch (IOException e) {
-                throw raise(ValueError, "%m", e);
+                throw raise(ValueError, ErrorMessages.M, e);
             }
         }
 
@@ -786,7 +791,7 @@ public class LZMANodes {
             try {
                 self.lzmaRawEncoder(optionsChain);
             } catch (IOException e) {
-                throw raise(ValueError, "%m", e);
+                throw raise(ValueError, ErrorMessages.M, e);
             }
         }
 
@@ -833,7 +838,7 @@ public class LZMANodes {
                 self.resetBuffer();
                 return result;
             } catch (IOException e) {
-                throw raise(LZMAError, "%m", e);
+                throw raise(LZMAError, ErrorMessages.M, e);
             }
         }
 
@@ -844,7 +849,7 @@ public class LZMANodes {
                 self.finish();
                 return self.getByteArray();
             } catch (IOException e) {
-                throw raise(LZMAError, "%m", e);
+                throw raise(LZMAError, ErrorMessages.M, e);
             }
         }
     }
@@ -912,7 +917,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization
         void rawJava(VirtualFrame frame, LZMADecompressor.Java self, Object filters) {
-            throw raise(SystemError, LZMA_JAVA_ERROR);
+            throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
         @Specialization
@@ -1232,7 +1237,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "!useNativeContext()")
         byte[] encodeJava(Object filter) {
-            throw raise(SystemError, LZMA_JAVA_ERROR);
+            throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
     }
 
@@ -1269,7 +1274,7 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "!useNativeContext()")
         void decodeJava(long id, byte[] encoded, PDict dict) {
-            throw raise(SystemError, LZMA_JAVA_ERROR);
+            throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
         void buildFilterSpec(VirtualFrame frame, ConditionProfile hasFrameProfile, long[] opts, PDict dict, HashingStorageLibrary lib) {
@@ -1299,7 +1304,7 @@ public class LZMANodes {
             }
         }
 
-        void addField(VirtualFrame frame, HashingStorageLibrary lib, ConditionProfile hasFrameProfile, PDict dict, String key, long val) {
+        void addField(VirtualFrame frame, HashingStorageLibrary lib, ConditionProfile hasFrameProfile, PDict dict, TruffleString key, long val) {
             dict.setDictStorage(lib.setItemWithFrame(dict.getDictStorage(), key, val, hasFrameProfile, frame));
         }
     }
@@ -1351,23 +1356,23 @@ public class LZMANodes {
             case LZMA_STREAM_END:
                 return 0;
             case LZMA_UNSUPPORTED_CHECK:
-                throw raise.raise(LZMAError, "Unsupported integrity check");
+                throw raise.raise(LZMAError, ErrorMessages.UNSUPPORTED_INTEGRITY_CHECK);
             case LZMA_MEM_ERROR:
                 throw raise.raise(MemoryError);
             case LZMA_MEMLIMIT_ERROR:
-                throw raise.raise(LZMAError, "Memory usage limit exceeded");
+                throw raise.raise(LZMAError, ErrorMessages.MEM_USAGE_LIMIT_EXCEEDED);
             case LZMA_FORMAT_ERROR:
-                throw raise.raise(LZMAError, "Input format not supported by decoder");
+                throw raise.raise(LZMAError, ErrorMessages.INPUT_FMT_NOT_SUPPORTED_BY_DECODER);
             case LZMA_OPTIONS_ERROR:
-                throw raise.raise(LZMAError, "Invalid or unsupported options");
+                throw raise.raise(LZMAError, ErrorMessages.INVALID_UNSUPPORTED_OPTIONS);
             case LZMA_DATA_ERROR:
-                throw raise.raise(LZMAError, "Corrupt input data");
+                throw raise.raise(LZMAError, ErrorMessages.CORRUPT_INPUT_DATA);
             case LZMA_BUF_ERROR:
-                throw raise.raise(LZMAError, "Insufficient buffer space");
+                throw raise.raise(LZMAError, ErrorMessages.INSUFFICIENT_BUFFER_SPACE);
             case LZMA_PROG_ERROR:
-                throw raise.raise(LZMAError, "Internal error");
+                throw raise.raise(LZMAError, ErrorMessages.INTERNAL_ERROR);
             default:
-                throw raise.raise(LZMAError, "Unrecognized error from liblzma: %d", lzret);
+                throw raise.raise(LZMAError, ErrorMessages.UNRECOGNIZED_ERROR_FROM_LIBLZMA, lzret);
         }
     }
 }

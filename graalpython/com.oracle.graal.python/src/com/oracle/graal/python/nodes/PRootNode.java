@@ -143,7 +143,7 @@ public abstract class PRootNode extends RootNode {
         Python3Core errors = PythonContext.get(this);
         try {
             for (String warning : deprecationWarnings) {
-                errors.warn(PythonBuiltinClassType.DeprecationWarning, "%s", warning);
+                errors.warn(PythonBuiltinClassType.DeprecationWarning, ErrorMessages.S, warning);
             }
         } catch (Exception e) {
             throw PythonParserImpl.handleParserError(errors, getSourceSection().getSource(), e);

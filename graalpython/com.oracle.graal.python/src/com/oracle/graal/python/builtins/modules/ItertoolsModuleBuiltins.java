@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,30 +28,32 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
@@ -78,7 +80,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -101,7 +102,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import java.util.ArrayList;
 
 @CoreFunctions(defineModule = "itertools")
 public final class ItertoolsModuleBuiltins extends PythonBuiltins {
@@ -439,7 +439,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isTypeNode.execute(cls)", "!isGroupBy(parent)"})
         Object construct(Object cls, Object parent, Object tgtky,
                         @Cached IsTypeNode isTypeNode) {
-            throw raise(TypeError, "incorrect usage of internal _grouper ");
+            throw raise(TypeError, ErrorMessages.INCORRECT_USAGE_OF_INTERNAL_GROUPER);
         }
 
         protected boolean isGroupBy(Object obj) {
@@ -507,7 +507,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached CallVarargsMethodNode callNode,
                         @Cached BranchProfile notCallableProfile) {
             Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
-            Object copyCallable = getAttrNode.execute(frame, it, __COPY__);
+            Object copyCallable = getAttrNode.execute(frame, it, T___COPY__);
             if (!callableCheckNode.execute(copyCallable)) {
                 notCallableProfile.enter();
                 // as in Tee.__NEW__()
@@ -519,7 +519,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             Object[] tupleObjs = new Object[n];
             tupleObjs[0] = it;
 
-            copyCallable = getAttrNode.execute(frame, it, __COPY__);
+            copyCallable = getAttrNode.execute(frame, it, T___COPY__);
             for (int i = 1; i < n; i++) {
                 tupleObjs[i] = callNode.execute(frame, copyCallable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             }
@@ -840,9 +840,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         private void checkType(VirtualFrame frame, Object obj, PyObjectTypeCheck typeCheckNode, PyObjectLookupAttr lookupAttrNode, BranchProfile isNumberProfile) {
             if (typeCheckNode.execute(obj, PythonBuiltinClassType.PComplex) ||
-                            lookupAttrNode.execute(frame, obj, __INDEX__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, obj, __FLOAT__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, obj, __INT__) != PNone.NO_VALUE) {
+                            lookupAttrNode.execute(frame, obj, T___INDEX__) != PNone.NO_VALUE ||
+                            lookupAttrNode.execute(frame, obj, T___FLOAT__) != PNone.NO_VALUE ||
+                            lookupAttrNode.execute(frame, obj, T___INT__) != PNone.NO_VALUE) {
                 isNumberProfile.enter();
                 return;
             }

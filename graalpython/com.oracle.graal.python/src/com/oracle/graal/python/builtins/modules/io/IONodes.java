@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,20 +50,23 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,67 +75,146 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public class IONodes {
 
-    public static final String DETACH = "detach";
-    public static final String FLUSH = "flush";
-    public static final String CLOSE = "close";
-    public static final String SEEKABLE = "seekable";
-    public static final String READABLE = "readable";
-    public static final String WRITABLE = "writable";
-    public static final String FILENO = "fileno";
-    public static final String ISATTY = "isatty";
-    public static final String READ = "read";
-    public static final String PEEK = "peek";
-    public static final String READ1 = "read1";
-    public static final String READINTO = "readinto";
-    public static final String READINTO1 = "readinto1";
-    public static final String READLINE = "readline";
-    public static final String READLINES = "readlines";
-    public static final String WRITELINES = "writelines";
-    public static final String WRITE = "write";
-    public static final String SEEK = "seek";
-    public static final String TELL = "tell";
-    public static final String TRUNCATE = "truncate";
-    public static final String RAW = "raw";
-    public static final String CLOSED = "closed";
+    public static final String J_DETACH = "detach";
+    public static final TruffleString T_DETACH = tsLiteral(J_DETACH);
 
-    public static final String NAME = "name";
-    public static final String MODE = "mode";
-    public static final String GETBUFFER = "getbuffer";
-    public static final String GETVALUE = "getvalue";
-    public static final String READALL = "readall";
-    public static final String CLOSEFD = "closefd";
+    public static final String J_FLUSH = "flush";
+    public static final TruffleString T_FLUSH = tsLiteral(J_FLUSH);
 
-    public static final String DECODE = "decode";
-    public static final String ENCODE = "encode";
+    public static final String J_CLOSE = "close";
+    public static final TruffleString T_CLOSE = tsLiteral(J_CLOSE);
 
-    public static final String GETSTATE = "getstate";
-    public static final String SETSTATE = "setstate";
+    public static final String J_SEEKABLE = "seekable";
+    public static final TruffleString T_SEEKABLE = tsLiteral(J_SEEKABLE);
 
-    public static final String RESET = "reset";
-    public static final String NEWLINES = "newlines";
-    public static final String LINE_BUFFERING = "line_buffering";
+    public static final String J_READABLE = StringLiterals.J_READABLE;
+    public static final TruffleString T_READABLE = StringLiterals.T_READABLE;
 
-    public static final String ENCODING = "encoding";
-    public static final String ERRORS = "errors";
-    public static final String RECONFIGURE = "reconfigure";
-    public static final String BUFFER = "buffer";
-    public static final String WRITE_THROUGH = "write_through";
+    public static final String J_WRITABLE = StringLiterals.J_WRITABLE;
+    public static final TruffleString T_WRITABLE = StringLiterals.T_WRITABLE;
 
-    public static final String _DEALLOC_WARN = "_dealloc_warn";
-    public static final String _FINALIZING = "_finalizing";
-    public static final String _BLKSIZE = "_blksize";
-    public static final String __IOBASE_CLOSED = "__IOBase_closed";
-    public static final String _CHECKCLOSED = "_checkClosed";
-    public static final String _CHECKSEEKABLE = "_checkSeekable";
-    public static final String _CHECKREADABLE = "_checkReadable";
-    public static final String _CHECKWRITABLE = "_checkWritable";
-    public static final String _CHUNK_SIZE = "_CHUNK_SIZE";
+    public static final String J_FILENO = "fileno";
+    public static final TruffleString T_FILENO = tsLiteral(J_FILENO);
+
+    public static final String J_ISATTY = "isatty";
+    public static final TruffleString T_ISATTY = tsLiteral(J_ISATTY);
+
+    public static final String J_READ = "read";
+    public static final TruffleString T_READ = tsLiteral(J_READ);
+
+    public static final String J_PEEK = "peek";
+    public static final TruffleString T_PEEK = tsLiteral(J_PEEK);
+
+    public static final String J_READ1 = "read1";
+    public static final TruffleString T_READ1 = tsLiteral(J_READ1);
+
+    public static final String J_READINTO = "readinto";
+    public static final TruffleString T_READINTO = tsLiteral(J_READINTO);
+
+    public static final String J_READINTO1 = "readinto1";
+    public static final TruffleString T_READINTO1 = tsLiteral(J_READINTO1);
+
+    public static final String J_READLINE = BuiltinNames.J_READLINE;
+    public static final TruffleString T_READLINE = BuiltinNames.T_READLINE;
+
+    public static final String J_READLINES = "readlines";
+
+    public static final String J_WRITELINES = "writelines";
+
+    public static final String J_WRITE = "write";
+    public static final TruffleString T_WRITE = tsLiteral(J_WRITE);
+
+    public static final String J_SEEK = "seek";
+    public static final TruffleString T_SEEK = tsLiteral(J_SEEK);
+
+    public static final String J_TELL = "tell";
+    public static final TruffleString T_TELL = tsLiteral(J_TELL);
+
+    public static final String J_TRUNCATE = "truncate";
+    public static final TruffleString T_TRUNCATE = tsLiteral(J_TRUNCATE);
+
+    public static final String J_RAW = "raw";
+
+    public static final String J_CLOSED = "closed";
+    public static final TruffleString T_CLOSED = tsLiteral(J_CLOSED);
+
+    public static final String J_NAME = "name";
+    public static final TruffleString T_NAME = tsLiteral(J_NAME);
+
+    public static final String J_MODE = "mode";
+    public static final TruffleString T_MODE = tsLiteral(J_MODE);
+
+    public static final String J_GETBUFFER = "getbuffer";
+
+    public static final String J_GETVALUE = "getvalue";
+
+    public static final String J_READALL = "readall";
+    public static final TruffleString T_READALL = tsLiteral(J_READALL);
+
+    public static final String J_CLOSEFD = "closefd";
+
+    public static final String J_DECODE = "decode";
+    public static final TruffleString T_DECODE = tsLiteral(J_DECODE);
+
+    public static final String J_ENCODE = "encode";
+    public static final TruffleString T_ENCODE = tsLiteral(J_ENCODE);
+
+    public static final String J_GETSTATE = "getstate";
+    public static final TruffleString T_GETSTATE = tsLiteral(J_GETSTATE);
+
+    public static final String J_SETSTATE = "setstate";
+    public static final TruffleString T_SETSTATE = tsLiteral(J_SETSTATE);
+
+    public static final String J_RESET = "reset";
+    public static final TruffleString T_RESET = tsLiteral(J_RESET);
+
+    public static final String J_NEWLINES = "newlines";
+    public static final TruffleString T_NEWLINES = tsLiteral(J_NEWLINES);
+
+    public static final String J_LINE_BUFFERING = "line_buffering";
+
+    public static final String J_ENCODING = "encoding";
+    public static final TruffleString T_ENCODING = tsLiteral(J_ENCODING);
+
+    public static final String J_BUFFER = "buffer";
+    public static final TruffleString T_BUFFER = tsLiteral(J_BUFFER);
+
+    public static final String J_ERRORS = "errors";
+    public static final String J_RECONFIGURE = "reconfigure";
+    public static final String J_WRITE_THROUGH = "write_through";
+
+    public static final String J__DEALLOC_WARN = "_dealloc_warn";
+    public static final TruffleString T__DEALLOC_WARN = tsLiteral(J__DEALLOC_WARN);
+
+    public static final String J__FINALIZING = "_finalizing";
+    public static final String J__BLKSIZE = "_blksize";
+
+    public static final String J___IOBASE_CLOSED = "__IOBase_closed";
+    public static final TruffleString T___IOBASE_CLOSED = tsLiteral(J___IOBASE_CLOSED);
+
+    public static final String J__CHECKCLOSED = "_checkClosed";
+    public static final String J__CHECKSEEKABLE = "_checkSeekable";
+    public static final String J__CHECKREADABLE = "_checkReadable";
+    public static final String J__CHECKWRITABLE = "_checkWritable";
+
+    public static final String J__CHUNK_SIZE = "_CHUNK_SIZE";
+    public static final TruffleString T__CHUNK_SIZE = tsLiteral(J__CHUNK_SIZE);
+
+    public static final TruffleString T_R = tsLiteral("r");
+    public static final TruffleString T_W = tsLiteral("w");
+    public static final TruffleString T_RB = tsLiteral("rb");
 
     @CompilerDirectives.ValueType
     public static final class IOMode {
+        public static final IOMode R = new IOMode(T_R, true, false, false, 1);
+        public static final IOMode W = new IOMode(T_W, false, true, false, 1);
+        public static final IOMode RB = new IOMode(T_RB, true, false, true, 1);
+
         boolean creating;
         boolean reading;
         boolean writing;
@@ -149,21 +231,23 @@ public class IONodes {
         boolean isBad;
         boolean hasNil;
 
-        final String mode;
+        final TruffleString mode;
 
-        IOMode(String mode) {
+        private IOMode(TruffleString mode, boolean reading, boolean writing, boolean binary, int xrwa) {
             this.mode = mode;
+            this.reading = reading;
+            this.writing = writing;
+            this.binary = binary;
+            this.xrwa = xrwa;
         }
 
-        static IOMode create(String mode) {
-            IOMode m = new IOMode(mode);
-            return m.decode();
-        }
-
-        IOMode decode() {
+        IOMode(TruffleString mode, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode, TruffleStringIterator.NextNode nextNode) {
+            this.mode = mode;
             /* Decode mode */
             int flags = 0;
-            for (char c : PString.toCharArray(mode)) {
+            TruffleStringIterator it = createCodePointIteratorNode.execute(mode, TS_ENCODING);
+            while (it.hasNext()) {
+                int c = nextNode.execute(it);
                 int current;
                 switch (c) {
                     case 'x':
@@ -201,15 +285,15 @@ public class IONodes {
                         break;
                     case '\0':
                         hasNil = true;
-                        return this;
+                        return;
                     default:
                         isInvalid = true;
-                        return this;
+                        return;
                 }
                 /* c must not be duplicated */
                 if ((flags & current) > 0) {
                     isBad = true;
-                    return this;
+                    return;
                 }
                 flags |= current;
             }
@@ -217,13 +301,6 @@ public class IONodes {
             xrwa += isSet(reading);
             xrwa += isSet(writing);
             xrwa += isSet(appending);
-            return this;
-        }
-
-        IOMode read() {
-            reading = true;
-            xrwa = 1;
-            return this;
         }
 
         private static int isSet(boolean b) {
@@ -279,7 +356,7 @@ public class IONodes {
 
         @Specialization
         static IOMode none(@SuppressWarnings("unused") PNone none) {
-            return new IOMode("r").read();
+            return IOMode.R;
         }
 
         @Specialization
@@ -288,10 +365,12 @@ public class IONodes {
         }
 
         @Specialization
-        IOMode string(VirtualFrame frame, String mode,
+        IOMode string(VirtualFrame frame, TruffleString mode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached ConditionProfile errProfile,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            IOMode m = new IOMode(mode).decode();
+            IOMode m = new IOMode(mode, createCodePointIteratorNode, nextNode);
             if (errProfile.profile(m.hasNil)) {
                 throw raise(ValueError, EMBEDDED_NULL_CHARACTER);
             }
@@ -299,18 +378,20 @@ public class IONodes {
                 throw raise(ValueError, INVALID_MODE_S, mode);
             }
             if (errProfile.profile(warnUniversal && m.universal)) {
-                warnNode.warnEx(frame, DeprecationWarning, "'U' mode is deprecated", 1);
+                warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.U_MODE_DEPRACATED, 1);
             }
             return m;
         }
 
         @Specialization(guards = "!isFast(mode)", replaces = "string")
         IOMode generic(VirtualFrame frame, Object mode,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached ConditionProfile errProfile,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
             try {
-                return string(frame, toString.execute(mode), errProfile, warnNode);
+                return string(frame, toString.execute(mode), createCodePointIteratorNode, nextNode, errProfile, warnNode);
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
@@ -413,21 +494,21 @@ public class IONodes {
         }
     }
 
-    public abstract static class ToStringNode extends PNodeWithRaise {
-        public abstract String execute(Object str);
+    public abstract static class ToTruffleStringNode extends PNodeWithRaise {
+        public abstract TruffleString execute(Object str);
 
         public static boolean isString(Object s) {
-            return s instanceof String;
+            return s instanceof TruffleString;
         }
 
         @Specialization
-        static String string(String s) {
+        static TruffleString string(TruffleString s) {
             return s;
         }
 
         @Specialization(guards = "!isString(s)")
-        String str(Object s,
-                        @Cached CastToJavaStringNode str) {
+        TruffleString str(Object s,
+                        @Cached CastToTruffleStringNode str) {
             try {
                 return str.execute(s);
             } catch (CannotCastException e) {

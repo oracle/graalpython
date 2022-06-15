@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -65,14 +66,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
 public class LockBuiltins extends PythonBuiltins {
@@ -199,7 +201,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -221,14 +223,14 @@ public class LockBuiltins extends PythonBuiltins {
         @Specialization
         Object doRelease(PRLock self) {
             if (!self.isOwned()) {
-                throw raise(PythonBuiltinClassType.RuntimeError, "lock not held");
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOCK_NOT_HELD);
             }
             self.release();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
@@ -248,22 +250,22 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(PLock self) {
-            return PythonUtils.format("<%s %s object at %s>",
+        TruffleString repr(PLock self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<%s %s object at %d>",
                             (self.locked()) ? "locked" : "unlocked",
                             GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.hashCode());
         }
 
         @Specialization
-        @TruffleBoundary
-        String repr(PRLock self) {
-            return PythonUtils.format("<%s %s object owner=%d count=%d at %s>",
+        TruffleString repr(PRLock self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<%s %s object owner=%d count=%d at %d>",
                             (self.locked()) ? "locked" : "unlocked",
                             GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.getOwnerId(),

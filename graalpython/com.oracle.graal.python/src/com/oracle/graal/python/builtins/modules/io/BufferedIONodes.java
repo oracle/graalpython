@@ -45,12 +45,12 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
@@ -63,6 +63,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
@@ -89,17 +90,18 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class BufferedIONodes {
 
     abstract static class CheckIsClosedNode extends PNodeWithContext {
 
-        private final String method;
-        private final String messageFmt;
+        private final TruffleString method;
+        private final TruffleString messageFmt;
 
-        public CheckIsClosedNode(String method) {
+        public CheckIsClosedNode(TruffleString method) {
             this.method = method;
-            this.messageFmt = IONodes.WRITE.equals(method) ? S_TO_CLOSED_FILE : S_OF_CLOSED_FILE;
+            this.messageFmt = IONodes.T_WRITE.equalsUncached(method, TS_ENCODING) ? S_TO_CLOSED_FILE : S_OF_CLOSED_FILE;
         }
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
@@ -136,7 +138,7 @@ public class BufferedIONodes {
         static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = getAttr.execute(frame, self.getRaw(), CLOSED);
+            Object res = getAttr.execute(frame, self.getRaw(), T_CLOSED);
             return isTrue.execute(frame, res);
         }
     }
@@ -165,7 +167,7 @@ public class BufferedIONodes {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
             assert self.isOK();
-            Object res = callMethod.execute(frame, self.getRaw(), SEEKABLE);
+            Object res = callMethod.execute(frame, self.getRaw(), T_SEEKABLE);
             return isTrue.execute(frame, res);
         }
     }
@@ -183,7 +185,7 @@ public class BufferedIONodes {
         static boolean isReadable(VirtualFrame frame, Object raw,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = callMethod.execute(frame, raw, READABLE);
+            Object res = callMethod.execute(frame, raw, T_READABLE);
             return isTrue.execute(frame, res);
         }
 
@@ -205,7 +207,7 @@ public class BufferedIONodes {
         static boolean isWritable(VirtualFrame frame, Object raw,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = callMethod.execute(frame, raw, WRITABLE);
+            Object res = callMethod.execute(frame, raw, T_WRITABLE);
             return isTrue.execute(frame, res);
         }
 
@@ -257,7 +259,7 @@ public class BufferedIONodes {
         private static long tell(VirtualFrame frame, Object raw,
                         PyObjectCallMethodObjArgs callMethod,
                         AsOffNumberNode asOffNumberNode) {
-            Object res = callMethod.execute(frame, raw, TELL);
+            Object res = callMethod.execute(frame, raw, T_TELL);
             return asOffNumberNode.execute(frame, res, ValueError);
         }
 
@@ -312,7 +314,7 @@ public class BufferedIONodes {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile profile) {
-            Object res = callMethod.execute(frame, self.getRaw(), SEEK, target, whence);
+            Object res = callMethod.execute(frame, self.getRaw(), T_SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, res, ValueError);
             if (profile.profile(n < 0)) {
                 raise.raise(OSError, IO_STREAM_INVALID_POS, n);

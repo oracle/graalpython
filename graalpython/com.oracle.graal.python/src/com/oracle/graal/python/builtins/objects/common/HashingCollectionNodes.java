@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -70,6 +72,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class HashingCollectionNodes {
 
@@ -188,13 +192,20 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization
-        static HashingStorage doString(VirtualFrame frame, String str, Object value,
+        static HashingStorage doString(VirtualFrame frame, TruffleString str, Object value,
                         @Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage storage = PDict.createNewStorage(true, PString.length(str));
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            HashingStorage storage = PDict.createNewStorage(true, codePointLengthNode.execute(str, TS_ENCODING));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            for (int i = 0; i < PString.length(str); i++) {
-                String key = PString.valueOf(PString.charAt(str, i));
+            TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
+            while (it.hasNext()) {
+                // TODO: GR-37219: use SubstringNode with lazy=true?
+                int codePoint = nextNode.execute(it);
+                TruffleString key = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
                 storage = lib.setItemWithFrame(storage, key, val, hasFrame, frame);
             }
             return storage;
@@ -203,8 +214,13 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
                         @Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return doString(frame, pstr.getValue(), value, hasFrame, lib);
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return doString(frame, castToStringNode.execute(pstr), value, hasFrame, lib, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})

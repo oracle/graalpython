@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,8 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FSPATH__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -58,6 +59,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyOS_FSPath}. Converts objects to path-like using their
@@ -68,7 +70,7 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
     @Specialization
-    static Object doString(String object) {
+    static Object doString(TruffleString object) {
         return object;
     }
 
@@ -89,12 +91,12 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
                     @Cached CallUnaryMethodNode callFSPath,
                     @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(object);
-        Object fspathMethod = lookupFSPath.execute(frame, type, __FSPATH__, object);
+        Object fspathMethod = lookupFSPath.execute(frame, type, T___FSPATH__, object);
         if (fspathMethod == PNone.NO_VALUE) {
             throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
         }
         Object result = callFSPath.executeObject(frame, fspathMethod, object);
-        if (result instanceof String || result instanceof PString || result instanceof PBytes) {
+        if (isJavaString(result) || result instanceof TruffleString || result instanceof PString || result instanceof PBytes) {
             return result;
         }
         throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);

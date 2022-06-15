@@ -41,10 +41,13 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.MAXSIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
-import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TRACEBACKLIMIT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -68,17 +71,18 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of {@code PyTraceBack_Print} from CPython. the node contains also a number of utility
@@ -107,17 +111,21 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return true;
     }
 
-    public static void fileWriteString(VirtualFrame frame, Object file, String data) {
+    public static void fileWriteString(VirtualFrame frame, Object file, TruffleString data) {
         fileWriteString(frame, file, data, PyObjectGetAttr.getUncached(), CallNode.getUncached());
     }
 
-    public static void fileWriteString(VirtualFrame frame, Object file, String data, PyObjectGetAttr getAttr, CallNode callNode) {
-        final Object writeMethod = getAttr.execute(frame, file, WRITE);
+    public static void fileWriteString(VirtualFrame frame, Object file, String data) {
+        fileWriteString(frame, file, toTruffleStringUncached(data));
+    }
+
+    public static void fileWriteString(VirtualFrame frame, Object file, TruffleString data, PyObjectGetAttr getAttr, CallNode callNode) {
+        final Object writeMethod = getAttr.execute(frame, file, T_WRITE);
         callNode.execute(frame, writeMethod, data);
     }
 
     public static void fileFlush(VirtualFrame frame, Object file) {
-        final Object flushMethod = PyObjectGetAttr.getUncached().execute(frame, file, FLUSH);
+        final Object flushMethod = PyObjectGetAttr.getUncached().execute(frame, file, T_FLUSH);
         CallNode.getUncached().execute(frame, flushMethod);
     }
 
@@ -145,15 +153,15 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         }
     }
 
-    public static String castToString(Object value) {
-        return castToString(value, CastToJavaStringNode.getUncached());
+    public static TruffleString castToString(Object value) {
+        return castToString(value, CastToTruffleStringNode.getUncached());
     }
 
-    public static String castToString(Object value, CastToJavaStringNode castToJavaStringNode) {
-        return castToJavaStringNode.execute(value);
+    public static TruffleString castToString(Object value, CastToTruffleStringNode castToStringNode) {
+        return castToStringNode.execute(value);
     }
 
-    public static String tryCastToString(Object value) {
+    public static TruffleString tryCastToString(Object value) {
         try {
             return castToString(value);
         } catch (CannotCastException e) {
@@ -161,28 +169,28 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         }
     }
 
-    public static Object objectLookupAttr(VirtualFrame frame, Object object, String attr) {
+    public static Object objectLookupAttr(VirtualFrame frame, Object object, TruffleString attr) {
         return objectLookupAttr(frame, object, attr, PyObjectLookupAttr.getUncached());
     }
 
-    public static Object objectLookupAttr(VirtualFrame frame, Object object, String attr, PyObjectLookupAttr lookupAttr) {
+    public static Object objectLookupAttr(VirtualFrame frame, Object object, TruffleString attr, PyObjectLookupAttr lookupAttr) {
         return lookupAttr.execute(frame, object, attr);
     }
 
-    public static String objectLookupAttrAsString(VirtualFrame frame, Object object, String attr, PyObjectLookupAttr lookupAttr, CastToJavaStringNode castToJavaStringNode) {
+    public static TruffleString objectLookupAttrAsString(VirtualFrame frame, Object object, TruffleString attr, PyObjectLookupAttr lookupAttr, CastToTruffleStringNode castToStringNode) {
         final Object value = objectLookupAttr(frame, object, attr, lookupAttr);
-        return value != PNone.NO_VALUE ? castToString(value, castToJavaStringNode) : null;
+        return value != PNone.NO_VALUE ? castToString(value, castToStringNode) : null;
     }
 
-    public static String objectLookupAttrAsString(VirtualFrame frame, Object object, String attr) {
-        return objectLookupAttrAsString(frame, object, attr, PyObjectLookupAttr.getUncached(), CastToJavaStringNode.getUncached());
+    public static TruffleString objectLookupAttrAsString(VirtualFrame frame, Object object, TruffleString attr) {
+        return objectLookupAttrAsString(frame, object, attr, PyObjectLookupAttr.getUncached(), CastToTruffleStringNode.getUncached());
     }
 
-    public static boolean objectHasAttr(VirtualFrame frame, Object object, String attr) {
+    public static boolean objectHasAttr(VirtualFrame frame, Object object, TruffleString attr) {
         return objectLookupAttr(frame, object, attr) != PNone.NO_VALUE;
     }
 
-    public static String getTypeName(Object type) {
+    public static TruffleString getTypeName(Object type) {
         return TypeNodes.GetNameNode.getUncached().execute(type);
     }
 
@@ -213,13 +221,14 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         }
     }
 
-    public static Object objectReadAttr(Object object, String attribute) {
+    public static Object objectReadAttr(Object object, TruffleString attribute) {
         return ReadAttributeFromObjectNode.getUncached().execute(object, attribute);
     }
 
-    public static String classNameNoDot(String name) {
-        final int i = PythonUtils.lastIndexOf(name, '.');
-        return (i > 0) ? PythonUtils.substring(name, i + 1) : name;
+    public static TruffleString classNameNoDot(TruffleString name) {
+        int len = name.codePointLengthUncached(TS_ENCODING);
+        final int i = name.lastIndexOfCodePointUncached('.', len, 0, TS_ENCODING);
+        return (i > 0) ? name.substringUncached(i + 1, len - i - 1, TS_ENCODING, true) : name;
     }
 
     public PCode getCode(VirtualFrame frame, PythonObjectFactory factory, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, PTraceback tb) {
@@ -235,35 +244,31 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     private void printLineRepeated(VirtualFrame frame, Object out, int count) {
         int cnt = count;
         cnt -= TB_RECURSIVE_CUTOFF;
-        final StringBuilder sb = PythonUtils.newStringBuilder("  [Previous line repeated ");
-        PythonUtils.append(sb, cnt, (cnt > 1) ? " more times]\n" : " more time]\n");
-        fileWriteString(frame, out, PythonUtils.sbToString(sb));
+        final StringBuilder sb = newStringBuilder("  [Previous line repeated ");
+        append(sb, cnt, (cnt > 1) ? " more times]\n" : " more time]\n");
+        fileWriteString(frame, out, sbToString(sb));
     }
 
-    private void displayLine(VirtualFrame frame, Object out, String fileName, int lineNo, String name) {
+    private void displayLine(VirtualFrame frame, Object out, TruffleString fileName, int lineNo, TruffleString name) {
         if (fileName == null || name == null) {
             return;
         }
 
-        final StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
-        PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, NEW_LINE);
-        fileWriteString(frame, out, PythonUtils.sbToString(sb));
+        final StringBuilder sb = newStringBuilder("  File \"");
+        append(sb, fileName, "\", line ", lineNo, ", in ", name, J_NEWLINE);
+        fileWriteString(frame, out, sbToString(sb));
         // ignore errors since we can't report them, can we?
         displaySourceLine(frame, out, fileName, lineNo, 4);
     }
 
-    protected static String getIndent(int indent) {
-        StringBuilder sb = PythonUtils.newStringBuilder();
-        for (int i = 0; i < indent; i++) {
-            PythonUtils.append(sb, ' ');
-        }
-        return PythonUtils.sbToString(sb);
+    protected static TruffleString getIndent(int indent) {
+        return T_SPACE.repeatUncached(indent, TS_ENCODING);
     }
 
     @CompilerDirectives.TruffleBoundary
-    protected CharSequence getSourceLine(String fileName, int lineNo) {
+    protected CharSequence getSourceLine(TruffleString fileName, int lineNo) {
         final PythonContext context = getContext();
-        TruffleFile file = context.getEnv().getInternalTruffleFile(fileName);
+        TruffleFile file = context.getEnv().getInternalTruffleFile(fileName.toJavaStringUncached());
         String line = null;
         try {
             Charset encoding;
@@ -288,21 +293,50 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return line;
     }
 
-    private void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
+    private void displaySourceLine(VirtualFrame frame, Object out, TruffleString fileName, int lineNo, int indent) {
         final CharSequence line = getSourceLine(fileName, lineNo);
         if (line != null) {
             fileWriteString(frame, out, getIndent(indent));
-            fileWriteString(frame, out, PythonUtils.trimLeft(line));
-            fileWriteString(frame, out, NEW_LINE);
+            fileWriteString(frame, out, trimLeft(line));
+            fileWriteString(frame, out, J_NEWLINE);
         }
     }
 
+    @TruffleBoundary(allowInlining = true)
+    private static StringBuilder newStringBuilder(String str) {
+        return new StringBuilder(str);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static String sbToString(StringBuilder sb) {
+        return sb.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static StringBuilder append(StringBuilder sb, Object... args) {
+        for (Object arg : args) {
+            sb.append(arg);
+        }
+        return sb;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static String trimLeft(CharSequence sequence) {
+        int len = sequence.length();
+        int st = 0;
+        while ((st < len) && (sequence.charAt(st) <= ' ')) {
+            st++;
+        }
+        return (st > 0 ? sequence.subSequence(st, len) : sequence).toString();
+    }
+
     private void printInternal(VirtualFrame frame, PythonObjectFactory factory, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
-                    TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, Object out, PTraceback traceback, long limit) {
+                    TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, Object out, PTraceback traceback, long limit,
+                    TruffleString.EqualNode equalNode) {
         int depth = 0;
-        String lastFile = null;
+        TruffleString lastFile = null;
         int lastLine = -1;
-        String lastName = null;
+        TruffleString lastName = null;
         int cnt = 0;
         PTraceback tb1 = traceback;
         PTraceback tb = traceback;
@@ -317,9 +351,9 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         while (tb != null) {
             final PCode code = getCode(frame, factory, getTbFrameNode, tb);
             if (lastFile == null ||
-                            !code.getFilename().equals(lastName) ||
+                            !equalNode.execute(code.getFilename(), lastFile, TS_ENCODING) ||
                             lastLine == -1 || tb.getLineno() != lastLine ||
-                            lastName == null || !code.getName().equals(lastName)) {
+                            lastName == null || !equalNode.execute(code.getName(), lastName, TS_ENCODING)) {
                 if (cnt > TB_RECURSIVE_CUTOFF) {
                     printLineRepeated(frame, out, cnt);
                 }
@@ -345,9 +379,10 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     public void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb,
                     @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                     @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached PythonObjectFactory factory,
+                    @Cached TruffleString.EqualNode equalNode) {
         long limit = TRACEBACK_LIMIT;
-        final Object limitv = objectReadAttr(sys, TRACEBACKLIMIT);
+        final Object limitv = objectReadAttr(sys, T_TRACEBACKLIMIT);
         if (checkLong(limitv)) {
             limit = longAsLongAndOverflow(frame, limitv, MAXSIZE);
             if (limit <= 0) {
@@ -355,7 +390,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
             }
         }
         fileWriteString(frame, out, "Traceback (most recent call last):\n");
-        printInternal(frame, factory, getTbFrameNode, materializeStNode, out, tb, limit);
+        printInternal(frame, factory, getTbFrameNode, materializeStNode, out, tb, limit, equalNode);
     }
 
     @Specialization(guards = "!isPTraceback(tb)")

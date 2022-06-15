@@ -45,6 +45,7 @@ import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Carries additional metadata for introspection of frames used by the bytecode interpreter. It's
@@ -87,7 +88,7 @@ public final class FrameInfo {
         return code.varnames.length + code.cellvars.length + code.freevars.length;
     }
 
-    public String getVariableName(int slot) {
+    public TruffleString getVariableName(int slot) {
         CodeUnit code = rootNode.getCodeUnit();
         if (slot < code.varnames.length) {
             return code.varnames[slot];

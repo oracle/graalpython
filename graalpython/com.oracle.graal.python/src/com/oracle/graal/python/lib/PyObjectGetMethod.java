@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of _PyObject_GetMethod. Like CPython, the node uses {@link PyObjectGetAttr} for any
@@ -79,7 +80,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
 
-    public abstract Object execute(Frame frame, Object receiver, String name);
+    public abstract Object execute(Frame frame, Object receiver, TruffleString name);
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
         Object getattributeSlot = null;
@@ -97,7 +98,7 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")
-    static Object getGenericAttr(Frame frame, Object receiver, String name,
+    static Object getGenericAttr(Frame frame, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @SuppressWarnings("unused") @Bind("getClass.execute(receiver)") Object lazyClass,
                     @Cached PyObjectGetAttr getAttr) {
@@ -105,10 +106,10 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     @Specialization(guards = {"isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
+    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
-                    @SuppressWarnings("unused") @Cached("name") String cachedName,
+                    @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Cached("create(name)") LookupAttributeInMRONode lookupNode,
                     @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
                     @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
@@ -163,7 +164,7 @@ public abstract class PyObjectGetMethod extends Node {
 
     // No explicit branch profiling when we're looking up multiple things
     @Specialization(guards = "isObjectGetAttribute(lazyClass)", replaces = "getFixedAttr", limit = "1")
-    static Object getDynamicAttr(Frame frame, Object receiver, String name,
+    static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
                     @Cached LookupAttributeInMRONode.Dynamic lookupNode,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,17 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODING;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ERRORS;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ENCODING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ERRORS;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 
 import java.util.List;
 
@@ -71,43 +75,43 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
         return TextIOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonBuiltinNode {
         @Specialization
         Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, DETACH);
+            throw raise(IOUnsupportedOperation, T_DETACH);
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
         Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, READ);
+            throw raise(IOUnsupportedOperation, T_READ);
         }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBuiltinNode {
         @Specialization
         Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, READLINE);
+            throw raise(IOUnsupportedOperation, T_READLINE);
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
         Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
-            throw raise(IOUnsupportedOperation, WRITE);
+            throw raise(IOUnsupportedOperation, T_WRITE);
         }
     }
 
-    @Builtin(name = ENCODING, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ENCODING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class EncodingNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -116,7 +120,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NewlinesNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -125,7 +129,7 @@ public final class TextIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = ERRORS, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ERRORS, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ErrorsNode extends PythonUnaryBuiltinNode {
         @Specialization

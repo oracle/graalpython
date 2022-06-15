@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.HiddenKey;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SYSCONFIG;
+
 /**
  * this builtin module is used to fill in truffle land config options into the sysconfig python
  * module
@@ -71,7 +73,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         LinkedHashMap<String, Object> configOptions = new LinkedHashMap<>();
         configOptions.put("WITH_THREAD", 1);
-        core.lookupBuiltinModule("_sysconfig").setAttribute(CONFIG_OPTIONS, configOptions);
+        core.lookupBuiltinModule(T__SYSCONFIG).setAttribute(CONFIG_OPTIONS, configOptions);
     }
 
     @Override

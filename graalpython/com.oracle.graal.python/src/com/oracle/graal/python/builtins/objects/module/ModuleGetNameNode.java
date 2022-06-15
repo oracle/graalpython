@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,11 +46,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Eqivalent of {@code PyModule_GetName}.
@@ -58,17 +59,17 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class ModuleGetNameNode extends Node {
 
-    public abstract String execute(Object module);
+    public abstract TruffleString execute(Object module);
 
     @Specialization
-    static String doPythonModule(PythonModule module,
+    static TruffleString doPythonModule(PythonModule module,
                     @Cached ReadAttributeFromObjectNode readNameNode,
-                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached PRaiseNode raiseNode) {
 
         try {
-            Object name = readNameNode.execute(module, SpecialAttributeNames.__NAME__);
-            return castToJavaStringNode.execute(name);
+            Object name = readNameNode.execute(module, SpecialAttributeNames.T___NAME__);
+            return castToTruffleStringNode.execute(name);
         } catch (CannotCastException e) {
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
         }

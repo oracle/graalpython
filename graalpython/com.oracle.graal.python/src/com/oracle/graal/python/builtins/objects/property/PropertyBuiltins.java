@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,16 @@
 package com.oracle.graal.python.builtins.objects.property;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISABSTRACTMETHOD__;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNREADABLE_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
 
 import java.util.List;
 
@@ -54,8 +63,6 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -83,7 +90,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         return PropertyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__INIT__, parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
+    @Builtin(name = J___INIT__, parameterNames = {"$self", "fget", "fset", "fdel", "doc"})
     @GenerateNodeFactory
     abstract static class PropertyInitNode extends PythonBuiltinNode {
 
@@ -109,7 +116,7 @@ public class PropertyBuiltins extends PythonBuiltins {
             }
             // if no docstring given and the getter has one, use that one
             if ((doc == PNone.NO_VALUE || doc == PNone.NONE) && fget != PNone.NO_VALUE) {
-                Object get_doc = PyObjectLookupAttr.getUncached().execute(null, fget, SpecialAttributeNames.__DOC__);
+                Object get_doc = PyObjectLookupAttr.getUncached().execute(null, fget, T___DOC__);
                 if (get_doc != PNone.NO_VALUE) {
                     if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(self), PythonBuiltinClassType.PProperty)) {
                         self.setDoc(get_doc);
@@ -119,7 +126,7 @@ public class PropertyBuiltins extends PythonBuiltins {
                          * instance instead, otherwise it gets shadowed by __doc__ in the class's
                          * dict.
                          */
-                        WriteAttributeToObjectNode.getUncached().execute(self, SpecialAttributeNames.__DOC__, get_doc);
+                        WriteAttributeToObjectNode.getUncached().execute(self, T___DOC__, get_doc);
                     }
                     self.setGetterDoc(true);
                 }
@@ -177,7 +184,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialAttributeNames.__DOC__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
+    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class PropertyDocNode extends PythonBinaryBuiltinNode {
 
@@ -272,7 +279,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GET__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj", "type"})
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj", "type"})
     @GenerateNodeFactory
     abstract static class PropertyGetNode extends PythonTernaryBuiltinNode {
         @Child private CallUnaryMethodNode callNode;
@@ -290,7 +297,7 @@ public class PropertyBuiltins extends PythonBuiltins {
 
             Object fget = self.getFget();
             if (fget == null) {
-                throw raise(PythonBuiltinClassType.AttributeError, "unreadable attribute");
+                throw raise(PythonBuiltinClassType.AttributeError, UNREADABLE_ATTRIBUTE);
             }
             return ensureCallNode().executeObject(frame, fget, obj);
         }
@@ -304,7 +311,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SET__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "obj", "value"})
+    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "obj", "value"})
     @GenerateNodeFactory
     abstract static class PropertySetNode extends PythonTernaryBuiltinNode {
         @Child private CallBinaryMethodNode callSetNode;
@@ -328,7 +335,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__DELETE__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj"})
+    @Builtin(name = J___DELETE__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj"})
     @GenerateNodeFactory
     abstract static class PropertyDeleteNode extends PythonBinaryBuiltinNode {
         @Child private CallUnaryMethodNode callDeleteNode;
@@ -337,7 +344,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, PProperty self, Object obj) {
             Object func = self.getFdel();
             if (func == null) {
-                throw raise(PythonBuiltinClassType.AttributeError, "can't delete attribute");
+                throw raise(PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
             }
             ensureCallDeleteNode().executeObject(frame, func, obj);
             return PNone.NONE;
@@ -352,7 +359,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ISABSTRACTMETHOD__, parameterNames = "$self", isGetter = true)
+    @Builtin(name = J___ISABSTRACTMETHOD__, parameterNames = "$self", isGetter = true)
     @GenerateNodeFactory
     abstract static class PropertyIsAbstractMethodNode extends PythonUnaryBuiltinNode {
 
@@ -373,7 +380,7 @@ public class PropertyBuiltins extends PythonBuiltins {
             if (func == null) {
                 return false;
             }
-            Object result = lookup.execute(frame, func, __ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, func, T___ISABSTRACTMETHOD__);
             if (result != PNone.NO_VALUE) {
                 return isTrueNode.execute(frame, result);
             }

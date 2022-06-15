@@ -40,8 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -49,9 +53,24 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UCharacterCategory;
 import com.ibm.icu.lang.UProperty;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public final class StringUtils {
+
+    /**
+     * The maximum length of the source string when creating a sing-codepoint substring.
+     */
+    public static final int LAZY_CODEPOINT_THRESHOLD = 20;
+
     public enum StripKind {
         LEFT,
         RIGHT,
@@ -153,14 +172,14 @@ public final class StringUtils {
         return isUnicodeWhitespace(ch);
     }
 
-    public static String strip(String str, StripKind stripKind) {
+    public static TruffleString strip(TruffleString str, StripKind stripKind, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    TruffleString.SubstringNode substringNode) {
         int i = 0;
-        int len = str.length();
-
+        int len = codePointLengthNode.execute(str, TS_ENCODING);
         if (stripKind != StripKind.RIGHT) {
             while (i < len) {
-                char ch = str.charAt(i);
-                if (!isSpace(ch)) {
+                int cp = codePointAtIndexNode.execute(str, i, TS_ENCODING);
+                if (!isSpace(cp)) {
                     break;
                 }
                 i++;
@@ -171,8 +190,8 @@ public final class StringUtils {
         if (stripKind != StripKind.LEFT) {
             j--;
             while (j >= i) {
-                char ch = str.charAt(j);
-                if (!isSpace(ch)) {
+                int cp = codePointAtIndexNode.execute(str, j, TS_ENCODING);
+                if (!isSpace(cp)) {
                     break;
                 }
                 j--;
@@ -180,18 +199,20 @@ public final class StringUtils {
             j++;
         }
 
-        return str.substring(i, j);
+        return substringNode.execute(str, i, j - i, TS_ENCODING, false);
     }
 
-    public static String strip(String str, String chars, StripKind stripKind) {
+    public static TruffleString strip(TruffleString str, TruffleString chars, StripKind stripKind, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode, TruffleString.IndexOfCodePointNode indexOfCodePointNode, TruffleString.SubstringNode substringNode) {
         int i = 0;
-        int len = str.length();
+        int len = codePointLengthNode.execute(str, TS_ENCODING);
+        int charsLen = codePointLengthNode.execute(chars, TS_ENCODING);
         // TODO: cpython uses a bloom filter for to skip chars that are not in the sep list:
         // to avoid the linear search in chars
         if (stripKind != StripKind.RIGHT) {
             while (i < len) {
-                char ch = str.charAt(i);
-                if (chars.indexOf(ch) < 0) {
+                int cp = codePointAtIndexNode.execute(str, i, TS_ENCODING);
+                if (indexOfCodePointNode.execute(chars, cp, 0, charsLen, TS_ENCODING) < 0) {
                     break;
                 }
                 i++;
@@ -202,8 +223,8 @@ public final class StringUtils {
         if (stripKind != StripKind.LEFT) {
             j--;
             while (j >= i) {
-                char ch = str.charAt(j);
-                if (chars.indexOf(ch) < 0) {
+                int cp = codePointAtIndexNode.execute(str, j, TS_ENCODING);
+                if (indexOfCodePointNode.execute(chars, cp, 0, charsLen, TS_ENCODING) < 0) {
                     break;
                 }
                 j--;
@@ -211,55 +232,18 @@ public final class StringUtils {
             j++;
         }
 
-        return str.substring(i, j);
+        return substringNode.execute(str, i, j - i, TS_ENCODING, false);
     }
 
-    @TruffleBoundary
-    public static boolean equalsBoundary(String a, String b) {
-        return a.equals(b);
-    }
-
-    @TruffleBoundary
-    public static boolean containsNullCharacter(String value) {
-        return value.indexOf(0) > 0;
-    }
-
-    public static boolean containsNullCharacter(byte[] value) {
-        for (byte b : value) {
-            if (b == 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @TruffleBoundary
-    public static boolean canEncodeUTF8(String doc) {
-        return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
-    }
-
-    @TruffleBoundary
-    public static boolean isAscii(String string) {
-        return StandardCharsets.US_ASCII.newEncoder().canEncode(string);
-    }
-
-    @TruffleBoundary
-    public static byte[] getBytes(String string, Charset charset) {
-        return string.getBytes(charset);
-    }
-
-    @TruffleBoundary
-    public static Object[] toCharacterArray(String arg) {
-        Object[] values = new Object[arg.codePointCount(0, arg.length())];
-        for (int i = 0, o = 0; i < arg.length(); o++) {
-            int codePoint = arg.codePointAt(i);
-            int charCount = Character.charCount(codePoint);
-            if (charCount == 1) {
-                values[o] = String.valueOf((char) codePoint);
-            } else {
-                values[o] = String.valueOf(Character.toChars(codePoint));
-            }
-            i += charCount;
+    public static Object[] toCharacterArray(TruffleString arg, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                    TruffleStringIterator.NextNode nextNode, TruffleString.FromCodePointNode fromCodePointNode) {
+        Object[] values = new Object[codePointLengthNode.execute(arg, TS_ENCODING)];
+        TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
+        int i = 0;
+        while (it.hasNext()) {
+            // TODO: GR-37219: use SubstringNode with lazy=true?
+            int codePoint = nextNode.execute(it);
+            values[i++] = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
         }
         return values;
     }
@@ -334,20 +318,14 @@ public final class StringUtils {
         return sb.toString();
     }
 
+    public static int compareStrings(TruffleString a, TruffleString b, TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+        assert TS_ENCODING == TruffleString.Encoding.UTF_32;
+        return compareIntsUTF32Node.execute(a, b);
+    }
+
     @TruffleBoundary(allowInlining = true)
-    public static int compareToUnicodeAware(String a, String b) {
-        int len1 = a.length();
-        int len2 = b.length();
-        int lim = Math.min(len1, len2);
-        for (int i = 0; i < lim;) {
-            int c1 = a.codePointAt(i);
-            int c2 = b.codePointAt(i);
-            if (c1 != c2) {
-                return c1 - c2;
-            }
-            i += Character.charCount(c1);
-        }
-        return len1 - len2;
+    public static int compareStringsUncached(TruffleString a, TruffleString b) {
+        return compareStrings(a, b, TruffleString.CompareIntsUTF32Node.getUncached());
     }
 
     /**
@@ -355,24 +333,264 @@ public final class StringUtils {
      * number of XID_Continue characters. Python keywords are not treated in a special way, so they
      * are identifiers as well.
      */
-    @TruffleBoundary
-    public static boolean isIdentifier(String value) {
-        int pos = 0;
-        if (value.isEmpty()) {
-            return false;
-        }
-        int c = value.codePointAt(pos);
-        if (c != '_' && !UCharacter.hasBinaryProperty(c, UProperty.XID_START)) {
-            return false;
-        }
-        pos += Character.charCount(c);
-        while (pos < value.length()) {
-            c = value.codePointAt(pos);
-            if (!UCharacter.hasBinaryProperty(c, UProperty.XID_CONTINUE)) {
+    @GenerateUncached
+    public abstract static class IsIdentifierNode extends Node {
+
+        public abstract boolean execute(TruffleString str);
+
+        @Specialization
+        boolean doString(TruffleString str,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode) {
+            if (str.isEmpty()) {
                 return false;
             }
-            pos += Character.charCount(c);
+            TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
+            int c = nextNode.execute(it);
+            if (c != '_' && !hasProperty(c, UProperty.XID_START)) {
+                return false;
+            }
+            while (it.hasNext()) {
+                c = nextNode.execute(it);
+                if (!hasProperty(c, UProperty.XID_CONTINUE)) {
+                    return false;
+                }
+            }
+            return true;
         }
-        return true;
+
+        @TruffleBoundary
+        static boolean hasProperty(int codePoint, int property) {
+            return UCharacter.hasBinaryProperty(codePoint, property);
+        }
+
+        public static IsIdentifierNode create() {
+            return StringUtilsFactory.IsIdentifierNodeGen.create();
+        }
+
+        public static IsIdentifierNode getUncached() {
+            return StringUtilsFactory.IsIdentifierNodeGen.getUncached();
+        }
+    }
+
+    @TruffleBoundary
+    public static boolean isIdentifierUncached(TruffleString value) {
+        return IsIdentifierNode.getUncached().execute(value);
+    }
+
+    @TruffleBoundary
+    public static TruffleString joinUncached(TruffleString delimiter, Iterable<TruffleString> values) {
+        Iterator<TruffleString> it = values.iterator();
+        if (!it.hasNext()) {
+            return TS_ENCODING.getEmpty();
+        }
+        TruffleString first = it.next();
+        if (!it.hasNext()) {
+            return first;
+        }
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        sb.appendStringUncached(first);
+        while (it.hasNext()) {
+            sb.appendStringUncached(delimiter);
+            sb.appendStringUncached(it.next());
+        }
+        return sb.toStringUncached();
+    }
+
+    public static TruffleString[] split(TruffleString s, TruffleString sep, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.IndexOfStringNode indexOfStringNode,
+                    TruffleString.SubstringNode substringNode, TruffleString.EqualNode eqNode) {
+        int selfLen = codePointLengthNode.execute(s, TS_ENCODING);
+        int lastEnd = 0;
+        int sepLen = codePointLengthNode.execute(sep, TS_ENCODING);
+        if (selfLen == sepLen && eqNode.execute(s, sep, TS_ENCODING)) {
+            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+        }
+        List<TruffleString> l = new ArrayList<>();
+        while (lastEnd < selfLen) {
+            int nextIndex = indexOfStringNode.execute(s, sep, lastEnd, selfLen, TS_ENCODING);
+            if (nextIndex < 0) {
+                break;
+            }
+            add(l, substringNode.execute(s, lastEnd, nextIndex - lastEnd, TS_ENCODING, false));
+            lastEnd = nextIndex + sepLen;
+        }
+        add(l, substringNode.execute(s, lastEnd, selfLen - lastEnd, TS_ENCODING, false));
+        return l.toArray(new TruffleString[l.size()]);
+    }
+
+    @TruffleBoundary
+    private static void add(List<TruffleString> l, TruffleString s) {
+        l.add(s);
+    }
+
+    @TruffleBoundary
+    public static TruffleString cat(TruffleString arg1, TruffleString arg2) {
+        return arg1.concatUncached(arg2, TS_ENCODING, false);
+    }
+
+    @TruffleBoundary
+    public static TruffleString cat(TruffleString... args) {
+        if (args.length == 2) {
+            return args[0].concatUncached(args[1], TS_ENCODING, false);
+        }
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        for (TruffleString arg : args) {
+            sb.appendStringUncached(arg);
+        }
+        return sb.toStringUncached();
+    }
+
+    /**
+     * Helper node for formatting simple strings, e.g. in {@code __repr__}. Basically just a
+     * convenient way of using {@link TruffleStringBuilder}. The only supported directives are:
+     * <ul>
+     * <li>{@code %%} - replaced by a single {@code '%'}</li>
+     * <li>{@code %s} - {@linkplain TruffleStringBuilder.AppendStringNode replaced} by the next
+     * argument, which must be a {@link TruffleString} or {@link String}</li>
+     * <li>{@code %c} - {@linkplain TruffleStringBuilder.AppendCodePointNode replaced} by a single
+     * codepoint, the argument must be an {@code int} or {@code char}</li>
+     * <li>{@code %d} - {@linkplain TruffleStringBuilder.AppendLongNumberNode replaced} by the
+     * decimal representation of the next argument, which must be an {@link int} or
+     * {@link long}</li>
+     * </ul>
+     */
+    @GenerateUncached
+    public abstract static class SimpleTruffleStringFormatNode extends Node {
+
+        public final TruffleString format(TruffleString format, Object... args) {
+            return executeInternal(format, args);
+        }
+
+        public final TruffleString format(String format, Object... args) {
+            return executeInternal(format, args);
+        }
+
+        abstract TruffleString executeInternal(TruffleString format, Object[] args);
+
+        abstract TruffleString executeInternal(String format, Object[] args);
+
+        @Specialization
+        TruffleString doTruffleString(TruffleString format, Object[] args,
+                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared("appendSubstr") @Cached TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringByteIndexNode,
+                        @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("appendLong") @Cached TruffleStringBuilder.AppendLongNumberNode appendLongNumberNode,
+                        @Shared("byteIndexOfCodePoint") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
+                        @Shared("cpAtByteIndex") @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Shared("byteLenOfCP") @Cached TruffleString.ByteLengthOfCodePointNode byteLengthOfCodePointNode,
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            int i = 0;
+            int len = format.byteLength(TS_ENCODING);
+            int nextArg = 0;
+            while (i < len) {
+                int j = byteIndexOfCodePointNode.execute(format, '%', i, len, TS_ENCODING);
+                if (j < 0) {
+                    break;
+                }
+                appendSubstringByteIndexNode.execute(sb, format, i, j - i);
+                i = j;
+                i += byteLengthOfCodePointNode.execute(format, i, TS_ENCODING);
+                if (i >= len) {
+                    throw shouldNotReachHere("Truncated format directive");
+                }
+                int c = codePointAtByteIndexNode.execute(format, i, TS_ENCODING);
+                i += byteLengthOfCodePointNode.execute(format, i, TS_ENCODING);
+                switch (c) {
+                    case '%':
+                        appendCodePointNode.execute(sb, '%', 1, true);
+                        break;
+                    case 's':
+                        appendStringNode.execute(sb, asString(fetchArg(args, nextArg++), fromJavaStringNode));
+                        break;
+                    case 'c':
+                        appendCodePointNode.execute(sb, asCodePoint(fetchArg(args, nextArg++)), 1, true);
+                        break;
+                    case 'd':
+                        appendLongNumberNode.execute(sb, asLong(fetchArg(args, nextArg++)));
+                        break;
+                    default:
+                        throw shouldNotReachHere("Invalid format directive");
+                }
+            }
+            if (nextArg != args.length) {
+                throw shouldNotReachHere("Extra unprocessed arguments");
+            }
+            if (i < len) {
+                appendSubstringByteIndexNode.execute(sb, format, i, len - i);
+            }
+            return toStringNode.execute(sb);
+        }
+
+        @Specialization
+        TruffleString doJavaString(String format, Object[] args,
+                        @Shared("sbToString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared("appendSubstr") @Cached TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringByteIndexNode,
+                        @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("appendLong") @Cached TruffleStringBuilder.AppendLongNumberNode appendLongNumberNode,
+                        @Shared("byteIndexOfCodePoint") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
+                        @Shared("cpAtByteIndex") @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Shared("byteLenOfCP") @Cached TruffleString.ByteLengthOfCodePointNode byteLengthOfCodePointNode,
+                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return doTruffleString(fromJavaStringNode.execute(format, TS_ENCODING), args, toStringNode, appendSubstringByteIndexNode, appendCodePointNode, appendStringNode, appendLongNumberNode,
+                            byteIndexOfCodePointNode, codePointAtByteIndexNode, byteLengthOfCodePointNode, fromJavaStringNode);
+        }
+
+        private static Object fetchArg(Object[] args, int nextArg) {
+            if (nextArg >= args.length) {
+                throw shouldNotReachHere("Not enough arguments for formatting");
+            }
+            return args[nextArg];
+        }
+
+        private static TruffleString asString(Object arg, TruffleString.FromJavaStringNode fromJavaStringNode) {
+            if (arg instanceof TruffleString) {
+                return (TruffleString) arg;
+            }
+            if (arg instanceof String) {
+                return fromJavaStringNode.execute((String) arg, TS_ENCODING);
+            }
+            throw shouldNotReachHere("Expected a string argument");
+        }
+
+        private static long asLong(Object arg) {
+            if (arg instanceof Long) {
+                return (Long) arg;
+            }
+            if (arg instanceof Integer) {
+                return (Integer) arg;
+            }
+            throw shouldNotReachHere("Expected an int or long argument");
+        }
+
+        private static int asCodePoint(Object arg) {
+            if (arg instanceof Integer) {
+                return (Integer) arg;
+            }
+            if (arg instanceof Character) {
+                return (Character) arg;
+            }
+            throw shouldNotReachHere("Expected an int or char argument");
+        }
+
+        public static SimpleTruffleStringFormatNode create() {
+            return StringUtilsFactory.SimpleTruffleStringFormatNodeGen.create();
+        }
+
+        public static SimpleTruffleStringFormatNode getUncached() {
+            return StringUtilsFactory.SimpleTruffleStringFormatNodeGen.getUncached();
+        }
+    }
+
+    @TruffleBoundary
+    public static TruffleString simpleTruffleStringFormatUncached(TruffleString format, Object... args) {
+        return SimpleTruffleStringFormatNode.getUncached().format(format, args);
+    }
+
+    @TruffleBoundary
+    public static TruffleString simpleTruffleStringFormatUncached(String format, Object... args) {
+        return SimpleTruffleStringFormatNode.getUncached().format(format, args);
     }
 }

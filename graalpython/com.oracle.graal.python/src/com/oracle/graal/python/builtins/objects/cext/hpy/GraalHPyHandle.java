@@ -41,6 +41,10 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -61,6 +65,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
@@ -70,7 +75,8 @@ public final class GraalHPyHandle implements TruffleObject {
 
     public static final Object NULL_HANDLE_DELEGATE = PNone.NO_VALUE;
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
-    public static final String I = "_i";
+    public static final String J_I = "_i";
+    public static final TruffleString T_I = tsLiteral(J_I);
 
     private final Object delegate;
     /**
@@ -97,7 +103,7 @@ public final class GraalHPyHandle implements TruffleObject {
     private GraalHPyHandle(Object delegate, int id) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         assert delegate != NULL_HANDLE_DELEGATE || id == 0 : "must not not create more than on HPy_NULL";
-        this.delegate = delegate;
+        this.delegate = assertNoJavaString(delegate);
         this.id = id;
     }
 
@@ -238,18 +244,24 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{I});
+        return new PythonAbstractObject.Keys(new TruffleString[]{T_I});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isMemberReadable(String key) {
-        return I.equals(key);
+    boolean isMemberReadable(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) {
+        TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
+        return eqNode.execute(T_I, tmember, TS_ENCODING);
     }
 
     @ExportMessage
-    Object readMember(String key) throws UnknownIdentifierException {
-        if (I.equals(key)) {
+    Object readMember(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws UnknownIdentifierException {
+        TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
+        if (eqNode.execute(T_I, tmember, TS_ENCODING)) {
             return this;
         }
         throw UnknownIdentifierException.create(key);

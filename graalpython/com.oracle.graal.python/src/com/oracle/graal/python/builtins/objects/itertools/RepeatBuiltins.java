@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,12 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -55,20 +55,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
 public final class RepeatBuiltins extends PythonBuiltins {
@@ -78,7 +79,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         return RepeatBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -87,7 +88,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() > 0")
@@ -108,7 +109,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
@@ -123,7 +124,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
@@ -143,39 +144,30 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
-        static Object reprPos(VirtualFrame frame, PRepeat self,
-                        @Cached GetClassNode getClass,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castNode) {
+        static TruffleString reprPos(VirtualFrame frame, PRepeat self,
+                        @Shared("getClass") @Cached GetClassNode getClass,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
+                        @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,
+                        @Shared("castToTruffleString") @Cached CastToTruffleStringNode castNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object type = getClass.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, castNode.execute(reprNode.execute(frame, self.getElement())));
-            PythonUtils.append(sb, ", ");
-            PythonUtils.append(sb, PInt.toString(self.getCnt()));
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+            return simpleTruffleStringFormatNode.format("%s(%s, %d)", castNode.execute(getAttrNode.execute(frame, type, T___NAME__)), castNode.execute(reprNode.execute(frame, self.getElement())),
+                            self.getCnt());
         }
 
         @Specialization(guards = "self.getCnt() < 0")
-        static Object reprNeg(VirtualFrame frame, PRepeat self,
-                        @Cached GetClassNode getClass,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castNode) {
+        static TruffleString reprNeg(VirtualFrame frame, PRepeat self,
+                        @Shared("getClass") @Cached GetClassNode getClass,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
+                        @Shared("repr") @Cached PyObjectReprAsObjectNode reprNode,
+                        @Shared("castToTruffleString") @Cached CastToTruffleStringNode castNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object type = getClass.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, castNode.execute(reprNode.execute(frame, self.getElement())));
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+            return simpleTruffleStringFormatNode.format("%s(%s)", castNode.execute(getAttrNode.execute(frame, type, T___NAME__)), castNode.execute(reprNode.execute(frame, self.getElement())));
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,10 +55,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_OF_BITS_INVALID
 import static com.oracle.graal.python.nodes.ErrorMessages.PACK_MUST_BE_A_NON_NEGATIVE_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
 
 import java.util.List;
 
@@ -80,7 +84,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -98,7 +102,6 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -106,6 +109,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {
                 PythonBuiltinClassType.PyCStructType,
@@ -120,14 +125,14 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
     private static final int MAX_STRUCT_SIZE = 16;
 
-    protected static final String _abstract_ = "_abstract_";
-    protected static final String _fields_ = "_fields_";
-    protected static final String _swappedbytes_ = "_swappedbytes_";
-    protected static final String _use_broken_old_ctypes_structure_semantics_ = "_use_broken_old_ctypes_structure_semantics_";
-    protected static final String _pack_ = "_pack_";
+    protected static final TruffleString T__abstract_ = tsLiteral("_abstract_");
+    protected static final TruffleString T__fields_ = tsLiteral("_fields_");
+    protected static final TruffleString T__swappedbytes_ = tsLiteral("_swappedbytes_");
+    protected static final TruffleString T__use_broken_old_ctypes_structure_semantics_ = tsLiteral("_use_broken_old_ctypes_structure_semantics_");
+    protected static final TruffleString T__pack_ = tsLiteral("_pack_");
 
     @ImportStatic(StructUnionTypeBuiltins.class)
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class StructUnionTypeNewNode extends PythonBuiltinNode {
 
@@ -143,7 +148,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("create(_fields_)") SetAttributeNode setFieldsAttributeNode) {
+                        @Cached("create(T__fields_)") SetAttributeNode setFieldsAttributeNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
@@ -154,7 +159,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             /* keep this for bw compatibility */
-            if (hlib.hasKey(resDict.getDictStorage(), _abstract_)) {
+            if (hlib.hasKey(resDict.getDictStorage(), T__abstract_)) {
                 return result;
             }
 
@@ -168,13 +173,13 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              */
             dict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), dict.getDictStorage()));
             setDict.execute((PythonObject) result, dict);
-            dict.format = "B";
+            dict.format = T_UPPER_B;
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
 
-            boolean hasFields = hlib.hasKey(dict.getDictStorage(), _fields_);
+            boolean hasFields = hlib.hasKey(dict.getDictStorage(), T__fields_);
             if (hasFields) {
-                setFieldsAttributeNode.executeVoid(frame, result, hlib.getItem(dict.getDictStorage(), _fields_));
+                setFieldsAttributeNode.executeVoid(frame, result, hlib.getItem(dict.getDictStorage(), T__fields_));
             } else {
                 StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(result));
                 if (basedict == null) {
@@ -214,13 +219,16 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Cached(parameters = "_swappedbytes_") LookupAttributeInMRONode lookupSwappedbytes,
-                        @Cached(parameters = "_pack_") LookupAttributeInMRONode lookupPack,
-                        @Cached(parameters = "_use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes) {
+                        @Cached(parameters = "T__swappedbytes_") LookupAttributeInMRONode lookupSwappedbytes,
+                        @Cached(parameters = "T__pack_") LookupAttributeInMRONode lookupPack,
+                        @Cached(parameters = "T__use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             /*
              * HACK Alert: I cannot be bothered to fix ctypes.com, so there has to be a way to use
              * the old, broken semantics: _fields_ are not extended but replaced in subclasses.
-             * 
+             *
              * XXX Remove this in ctypes 1.0!
              */
             boolean use_broken_old_ctypes_semantics;
@@ -309,15 +317,15 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
             assert (stgdict.format == null);
             if (isStruct && !isPacked) {
-                stgdict.format = "T{";
+                stgdict.format = T_UPPER_T_LEFTBRACE;
             } else {
                 /*
                  * PEP3118 doesn't support union, or packed structures (well, only standard packing,
                  * but we don't support the pep for that). Use 'B' for bytes.
                  */
-                stgdict.format = "B";
+                stgdict.format = T_UPPER_B;
             }
-            String[] fieldsNames = new String[len];
+            TruffleString[] fieldsNames = new TruffleString[len];
             int[] fieldsOffsets = new int[len];
             FFI_TYPES[] fieldsTypes = new FFI_TYPES[len];
 
@@ -334,7 +342,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                     fieldsError();
                 }
-                String name = (String) tuple[0];
+                TruffleString name = (TruffleString) tuple[0];
                 Object desc = tuple[1];
                 int bitsize = tupleLen >= 3 ? (int) tuple[2] : 0;
 
@@ -379,13 +387,13 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 }
 
                 if (isStruct && !isPacked) {
-                    String fieldfmt = dict.format != null ? dict.format : "B";
-                    String buf = PythonUtils.format("%s:%s:", fieldfmt, name);
+                    TruffleString fieldfmt = dict.format != null ? dict.format : T_UPPER_B;
+                    TruffleString buf = formatNode.format("%s:%s:", fieldfmt, name);
 
                     if (dict.shape != null) {
-                        stgdict.format = _ctypes_alloc_format_string_with_shape(dict.ndim, dict.shape, stgdict.format, buf);
+                        stgdict.format = _ctypes_alloc_format_string_with_shape(dict.ndim, dict.shape, stgdict.format, buf, appendStringNode, toStringNode, formatNode);
                     } else {
-                        stgdict.format = PString.cat(stgdict.format, buf);
+                        stgdict.format = StringUtils.cat(stgdict.format, buf);
                     }
                 }
 
@@ -424,7 +432,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
             stgdict.fieldsTypes = fieldsTypes;
 
             if (isStruct && !isPacked) {
-                stgdict.format = PString.cat(stgdict.format, "}");
+                stgdict.format = StringUtils.cat(stgdict.format, T_RBRACE);
             }
 
             if (!isStruct) {

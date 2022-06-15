@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_COMPILE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
-import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
-import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.PGuards.isDict;
 import static com.oracle.graal.python.nodes.PGuards.isString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -95,9 +95,9 @@ public final class PythonCextPythonRunBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PythonModule builtins = getCore().getBuiltins();
-                Object compileCallable = lookupNode.execute(frame, builtins, COMPILE);
+                Object compileCallable = lookupNode.execute(frame, builtins, T_COMPILE);
                 Object code = callNode.execute(frame, compileCallable, source, stype, stype);
-                Object execCallable = lookupNode.execute(frame, builtins, EXEC);
+                Object execCallable = lookupNode.execute(frame, builtins, T_EXEC);
                 return callNode.execute(frame, execCallable, code, globals, locals);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

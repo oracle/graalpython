@@ -62,6 +62,9 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 
 /**
  * Equivalent of CPython's {@code PyMapping_Check}.
@@ -77,7 +80,7 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doString(@SuppressWarnings("unused") String object) {
+    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return true;
     }
 
@@ -121,7 +124,7 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     }
 
     protected static boolean isKnownMapping(Object object) {
-        return object instanceof PDict || object instanceof String || object instanceof PSequence || object instanceof PArray ||
+        return object instanceof PDict || isJavaString(object) || object instanceof TruffleString || object instanceof PSequence || object instanceof PArray ||
                         object instanceof PMemoryView || object instanceof PRange || object instanceof PMappingproxy;
     }
 

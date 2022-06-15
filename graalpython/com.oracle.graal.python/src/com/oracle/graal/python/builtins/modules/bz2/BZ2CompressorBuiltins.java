@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandlin
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9;
 import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FLUSHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
@@ -86,7 +86,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
         return BZ2CompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
     @ArgumentClinic(name = "compresslevel", conversion = ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {

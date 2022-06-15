@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-public abstract class JavaStringConverterNode extends ArgumentCastNodeWithRaise {
-    private final String builtinName;
+import com.oracle.truffle.api.dsl.ImplicitCast;
+import com.oracle.truffle.api.dsl.TypeSystem;
+import com.oracle.truffle.api.strings.TruffleString;
 
-    public JavaStringConverterNode(String builtinName) {
-        this.builtinName = builtinName;
+/**
+ * Temporary {@link TypeSystem} used during migration of j.l.String -> TruffleString. Once the
+ * migration is complete, this type system can be deleted.
+ *
+ * The same implicit cast is also in {@link PythonTypes} and {@link PythonArithmeticTypes}
+ */
+@TypeSystem
+public abstract class TruffleStringMigrationPythonTypes {
+
+    @ImplicitCast
+    public static TruffleString fromJavaString(String value) {
+        assert false;
+        return TruffleString.fromJavaStringUncached(value, TS_ENCODING);
     }
 
-    @Specialization
-    static Object doString(String value) {
-        return value;
+    /**
+     * Used in places where we don't expect a {@link String}.
+     */
+    public static Object assertNoJavaString(Object o) {
+        assert !(o instanceof String);
+        return o;
     }
 
-    @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
-    Object doOthers(Object value,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        try {
-            return castToJavaStringNode.execute(value);
-        } catch (CannotCastException ex) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
+    /**
+     * Used in places where we accept a {@link String}, but we want it silently converted to a
+     * {@link TruffleString}.
+     */
+    public static Object ensureNoJavaString(Object o) {
+        if (o instanceof String) {
+            return toTruffleStringUncached((String) o);
         }
+        return o;
     }
 
-    // to be overridden in the subclass
-    protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
+    public static boolean isJavaString(Object o) {
+        assert !(o instanceof String);
         return false;
     }
 
-    @ClinicConverterFactory
-    public static JavaStringConverterNode create(@BuiltinName String builtinName) {
-        return JavaStringConverterNodeGen.create(builtinName);
+    public static boolean containsJavaString(Object[] elements) {
+        if (elements == null) {
+            return false;
+        }
+        for (Object o : elements) {
+            if (o instanceof String) {
+                return true;
+            }
+        }
+        return false;
     }
 }

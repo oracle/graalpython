@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.BZ_OK;
 import static com.oracle.graal.python.builtins.modules.bz2.Bz2Nodes.errorHandling;
 import static com.oracle.graal.python.nodes.ErrorMessages.END_OF_STREAM_ALREADY_REACHED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
@@ -80,7 +80,7 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
         return BZ2DecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self"})
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonUnaryBuiltinNode {
 

@@ -44,10 +44,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_ITEM;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_LENGTH;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_REPEAT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -92,7 +92,8 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        return SQ_REPEAT.getMemberName().equals(member) || SQ_ITEM.getMemberName().equals(member) || SQ_CONCAT.getMemberName().equals(member) || SQ_LENGTH.getMemberName().equals(member);
+        return SQ_REPEAT.getMemberNameJavaString().equals(member) || SQ_ITEM.getMemberNameJavaString().equals(member) || SQ_CONCAT.getMemberNameJavaString().equals(member) ||
+                        SQ_LENGTH.getMemberNameJavaString().equals(member);
     }
 
     @ExportMessage
@@ -112,14 +113,14 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         try {
             Object result;
             try {
-                if (SQ_REPEAT.getMemberName().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), __MUL__));
-                } else if (SQ_ITEM.getMemberName().equals(member)) {
-                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(lib), __GETITEM__), true);
-                } else if (SQ_CONCAT.getMemberName().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), __ADD__));
-                } else if (SQ_LENGTH.getMemberName().equals(member)) {
-                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(lib), __LEN__));
+                if (SQ_REPEAT.getMemberNameJavaString().equals(member)) {
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___MUL__));
+                } else if (SQ_ITEM.getMemberNameJavaString().equals(member)) {
+                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(lib), T___GETITEM__), true);
+                } else if (SQ_CONCAT.getMemberNameJavaString().equals(member)) {
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___ADD__));
+                } else if (SQ_LENGTH.getMemberNameJavaString().equals(member)) {
+                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(lib), T___LEN__));
                 } else {
                     // TODO extend list
                     throw UnknownIdentifierException.create(member);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules.io;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -51,20 +53,20 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PTextIO extends PTextIOBase {
 
     private boolean detached;
     private int chunkSize;
     private Object buffer;
-    private String encoding;
+    private TruffleString encoding;
     private Object encoder;
-    private String errors;
+    private TruffleString errors;
     private boolean lineBuffering;
     private boolean writeThrough;
     private boolean writetranslate;
@@ -80,14 +82,16 @@ public final class PTextIO extends PTextIOBase {
     /*
      * Reads and writes are internally buffered in order to speed things up. However, any read will
      * first flush the write buffer if itsn't empty.
-     * 
+     *
      * Please also note that text to be written is first encoded before being buffered. This is
      * necessary so that encoding errors are immediately reported to the caller, but it
      * unfortunately means that the IncrementalEncoder (whose encode() method is always written in
      * Python) becomes a bottleneck for small writes.
      */
-    private StringBuilder decodedChars; /* buffer for text returned from decoder */
-    private int decodedCharsUsed; /* offset into _decoded_chars for read() */
+    private TruffleString decodedChars; /* buffer for text returned from decoder */
+    private int decodedCharsUsed; /* offset (in code points) into _decoded_chars for read() */
+    private int decodedCharsLen; /* code point length of decodedChars */
+
     private ByteArrayOutputStream pendingBytes;       // data waiting to be written.
 
     /*
@@ -150,11 +154,11 @@ public final class PTextIO extends PTextIOBase {
         this.buffer = buffer;
     }
 
-    public String getEncoding() {
+    public TruffleString getEncoding() {
         return encoding;
     }
 
-    public void setEncoding(String encoding) {
+    public void setEncoding(TruffleString encoding) {
         this.encoding = encoding;
     }
 
@@ -174,11 +178,11 @@ public final class PTextIO extends PTextIOBase {
         return encoder != null;
     }
 
-    public String getErrors() {
+    public TruffleString getErrors() {
         return errors;
     }
 
-    public void setErrors(String errors) {
+    public void setErrors(TruffleString errors) {
         this.errors = errors;
     }
 
@@ -255,7 +259,7 @@ public final class PTextIO extends PTextIOBase {
         this.encodingStartOfStream = encodingStartOfStream;
     }
 
-    public StringBuilder getDecodedChars() {
+    public TruffleString getDecodedChars() {
         return decodedChars;
     }
 
@@ -263,28 +267,59 @@ public final class PTextIO extends PTextIOBase {
         return decodedChars != null;
     }
 
-    public void appendDecodedChars(String decoded) {
-        if (this.decodedChars == null) {
-            this.decodedChars = PythonUtils.newStringBuilder();
-        }
-        PythonUtils.append(this.decodedChars, decoded);
+    public boolean hasDecodedCharsAvailable() {
+        return decodedChars != null && decodedCharsUsed < decodedCharsLen;
     }
 
     public int getDecodedCharsUsed() {
         return decodedCharsUsed;
     }
 
-    public void setDecodedCharsUsed(int decodedCharsUsed) {
-        this.decodedCharsUsed = decodedCharsUsed;
+    public int setDecodedChars(TruffleString decodedChars, TruffleString.CodePointLengthNode codePointLengthNode) {
+        assert !hasDecodedCharsAvailable();
+        this.decodedChars = decodedChars;
+        decodedCharsLen = codePointLengthNode.execute(decodedChars, TS_ENCODING);
+        decodedCharsUsed = 0;
+        return decodedCharsLen;
     }
 
     public void incDecodedCharsUsed(int n) {
+        assert decodedCharsUsed + n <= decodedCharsLen;
         this.decodedCharsUsed += n;
     }
 
     public void clearDecodedChars() {
         this.decodedChars = null;
         this.decodedCharsUsed = 0;
+        this.decodedCharsLen = 0;
+    }
+
+    TruffleString consumeDecodedChars(int n, TruffleString.SubstringNode substringNode, boolean lazy) {
+        assert n >= 0;
+        if (decodedChars == null || n == 0) {
+            return T_EMPTY_STRING;
+        }
+        int avail = decodedCharsLen - decodedCharsUsed;
+        if (n >= avail) {
+            return consumeAllDecodedChars(substringNode, lazy);
+        }
+        TruffleString chars = substringNode.execute(decodedChars, decodedCharsUsed, n, TS_ENCODING, lazy);
+        decodedCharsUsed += n;
+        return chars;
+    }
+
+    TruffleString consumeAllDecodedChars(TruffleString.SubstringNode substringNode, boolean lazy) {
+        if (decodedChars == null || decodedCharsUsed == decodedCharsLen) {
+            return T_EMPTY_STRING;
+        }
+        TruffleString chars;
+        if (decodedCharsUsed > 0) {
+            chars = substringNode.execute(decodedChars, decodedCharsUsed, decodedCharsLen - decodedCharsUsed, TS_ENCODING, lazy);
+        } else {
+            chars = decodedChars;
+        }
+        decodedCharsUsed = decodedCharsLen;
+        return chars;
     }
 
     public void clearPendingBytes() {

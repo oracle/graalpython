@@ -199,22 +199,22 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         String qualname = node.scope.getQualname();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, executionCellSlots, Signature.EMPTY, null);
         RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(funcRoot);
-        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, getIterator, fd, definitionCellSlots, generatorInfo.getImmutable());
+        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(ts(name), ts(qualname), callTarget, getIterator, fd, definitionCellSlots, generatorInfo.getImmutable());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameIdentifiers());
         genExprDef.setEnclosingFrameGenerator(node.level != 0 || parentVisitor.comprLevel != 0 || node.scope.getParent().getScopeKind() == ScopeInfo.ScopeKind.Generator);
         PNode result;
         switch (node.resultType) {
             case PList:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.LIST), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.T_LIST), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PSet:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.SET), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.T_SET), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PDict:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.DICT), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.T_DICT), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.name.startOffset, node.endOffset));
                 break;
             default:

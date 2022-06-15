@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,13 +54,14 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // cpython://Objects/abstract.c#ternary_op
 // Order operations are tried until either a valid result or error: v.op(v,w,z), w.op(v,w,z), z.op(v,w,z)
 @ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCallTernaryNode {
 
-    LookupAndCallNonReversibleTernaryNode(String name) {
+    LookupAndCallNonReversibleTernaryNode(TruffleString name) {
         super(name);
     }
 

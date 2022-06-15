@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import java.util.zip.Inflater;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -235,12 +236,12 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             int idx = 0;
             // Check header magic
             if (readShort(bytes, idx, crc) != GZIP_MAGIC) {
-                throw PRaiseNode.raiseUncached(node, ZLibError, "Not in GZIP format");
+                throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.NOT_IN_GZIP_FORMAT);
             }
             idx += 2;
             // Check compression method
             if (getValue(bytes[idx++], crc) != 8) {
-                throw PRaiseNode.raiseUncached(node, ZLibError, "Unsupported compression method");
+                throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.UNSUPPORTED_COMPRESSION_METHOD);
             }
             // Read flags
             int flg = getValue(bytes[idx++], crc);
@@ -270,7 +271,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             if ((flg & FHCRC) == FHCRC) {
                 int v = (int) crc.getValue() & 0xffff;
                 if (readShort(bytes, idx, crc) != v) {
-                    throw PRaiseNode.raiseUncached(node, ZLibError, "Corrupt GZIP header");
+                    throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.CORRUPT_GZIP_HEADER);
                 }
                 idx += 2;
                 n += 2;

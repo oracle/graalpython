@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S_NOT_P;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
@@ -64,9 +65,9 @@ public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
         return getInternalArrayNode.execute(t.getSequenceStorage());
     }
 
-    @Specialization(guards = "!isPNone(value)")
+    @Fallback
     Object doOthers(Object value) {
-        throw raise(PythonBuiltinClassType.TypeError, MUST_BE_S_NOT_P, value, "tuple", value);
+        throw raise(PythonBuiltinClassType.TypeError, S_MUST_BE_S_NOT_P, value, "tuple", value);
     }
 
     @ClinicConverterFactory

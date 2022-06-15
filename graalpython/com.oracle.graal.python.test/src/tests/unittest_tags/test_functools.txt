@@ -89,7 +89,6 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_protection_of_callers_dict_argument
-*graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_setstate
@@ -116,7 +115,6 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_protection_of_callers_dict_argument
-*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_setstate
@@ -152,7 +150,6 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_protection_of_callers_dict_argument
-*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPy.test_setstate
@@ -177,7 +174,6 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_protection_of_callers_dict_argument
-*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_setstate

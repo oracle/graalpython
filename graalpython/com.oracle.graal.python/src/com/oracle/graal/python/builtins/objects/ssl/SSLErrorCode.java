@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,9 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 public enum SSLErrorCode {
     ERROR_UNKNOWN(0, PythonBuiltinClassType.SSLError),
@@ -63,7 +66,7 @@ public enum SSLErrorCode {
 
     ERROR_CERT_VERIFICATION("CERTIFICATE_VERIFY_FAILED", 1, PythonBuiltinClassType.SSLCertVerificationError);
 
-    private final String mnemonic;
+    private final TruffleString mnemonic;
     private final int errno;
     private final PythonBuiltinClassType type;
 
@@ -72,12 +75,12 @@ public enum SSLErrorCode {
     }
 
     SSLErrorCode(String mnemonic, int errno, PythonBuiltinClassType type) {
-        this.mnemonic = mnemonic;
+        this.mnemonic = toTruffleStringUncached(mnemonic);
         this.errno = errno;
         this.type = type;
     }
 
-    public String getMnemonic() {
+    public TruffleString getMnemonic() {
         return mnemonic;
     }
 

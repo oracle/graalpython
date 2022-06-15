@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -98,11 +98,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     public MathModuleBuiltins() {
         // Add constant values
-        builtinConstants.put("pi", Math.PI);
-        builtinConstants.put("e", Math.E);
-        builtinConstants.put("tau", 2 * Math.PI);
-        builtinConstants.put("inf", Double.POSITIVE_INFINITY);
-        builtinConstants.put("nan", Double.NaN);
+        addBuiltinConstant("pi", Math.PI);
+        addBuiltinConstant("e", Math.E);
+        addBuiltinConstant("tau", 2 * Math.PI);
+        addBuiltinConstant("inf", Double.POSITIVE_INFINITY);
+        addBuiltinConstant("nan", Double.NaN);
     }
 
     public abstract static class MathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
@@ -268,7 +268,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object ceil(VirtualFrame frame, Object value,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil,
+                        @Cached("create(T___CEIL__)") LookupAndCallUnaryNode dispatchCeil,
                         @Cached CeilNode recursive) {
             Object result = dispatchCeil.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
@@ -657,7 +657,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object floor(VirtualFrame frame, Object value,
-                        @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
+                        @Cached("create(T___FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(frame, value);
@@ -872,8 +872,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LdexpNode extends PythonBinaryClinicBuiltinNode {
 
-        private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
-
         private static int makeInt(long x) {
             long result = x;
             if (x < Integer.MIN_VALUE) {
@@ -907,7 +905,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 long longExp = cast.execute(indexNode.execute(frame, exp));
                 return ldexp(mantissa, longExp);
             } else {
-                throw raise(TypeError, EXPECTED_INT_MESSAGE);
+                throw raise(TypeError, ErrorMessages.EXPECTED_INT_MESSAGE);
             }
         }
 
@@ -1757,7 +1755,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object trunc(VirtualFrame frame, Object obj,
-                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
+                        @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc) {
             Object result = callTrunc.executeObject(frame, obj);
             if (result == PNone.NO_VALUE) {
                 raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class RootNodeFactory {
 
@@ -61,7 +62,7 @@ public final class RootNodeFactory {
         return new RootNodeFactory(language);
     }
 
-    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd, boolean hasAnnotations) {
+    public ModuleRootNode createModuleRoot(String name, TruffleString doc, ExpressionNode file, FrameDescriptor fd, boolean hasAnnotations) {
         return new ModuleRootNode(language, name, doc, file, fd, hasAnnotations);
     }
 

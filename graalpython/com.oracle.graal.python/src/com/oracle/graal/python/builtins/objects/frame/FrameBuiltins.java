@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCodeAsHexString;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -50,7 +52,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -68,22 +70,18 @@ public final class FrameBuiltins extends PythonBuiltins {
         return FrameBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static String repr(VirtualFrame frame, PFrame self,
+        static TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Cached GetLinenoNode getLinenoNode) {
+                        @Cached GetLinenoNode getLinenoNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             PCode code = getCodeNode.executeObject(frame, self);
             int lineno = getLinenoNode.executeInt(frame, self);
-            return getFormat(self, code, lineno);
-        }
-
-        @TruffleBoundary
-        private static String getFormat(PFrame self, PCode code, int lineno) {
-            return String.format("<frame at 0x%x, file '%s', line %d, code %s>",
-                            self.hashCode(), code.getFilename(), lineno, code.getName());
+            return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
+                            objectHashCodeAsHexString(self), code.getFilename(), lineno, code.getName());
         }
     }
 

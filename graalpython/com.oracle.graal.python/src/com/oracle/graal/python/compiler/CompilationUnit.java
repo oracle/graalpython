@@ -44,6 +44,7 @@ import static com.oracle.graal.python.compiler.CompilationScope.AsyncFunction;
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
 import static com.oracle.graal.python.compiler.CompilationScope.Function;
 import static com.oracle.graal.python.compiler.CompilationScope.Lambda;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayDeque;
@@ -61,6 +62,8 @@ import java.util.TreeSet;
 
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CompilationUnit {
     final String name;
@@ -243,13 +246,13 @@ public final class CompilationUnit {
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
         }
-        return new CodeUnit(name, qualName,
+        return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
                         buf.toByteArray(), srcOffsets.toByteArray(), flags,
-                        orderedKeys(names, new String[0]),
-                        orderedKeys(varnames, new String[0]),
-                        orderedKeys(cellvars, new String[0]),
-                        orderedKeys(freevars, new String[0], cellvars.size()),
+                        orderedKeys(names, new TruffleString[0], PythonUtils::toTruffleStringUncached),
+                        orderedKeys(varnames, new TruffleString[0], PythonUtils::toTruffleStringUncached),
+                        orderedKeys(cellvars, new TruffleString[0], PythonUtils::toTruffleStringUncached),
+                        orderedKeys(freevars, new TruffleString[0], cellvars.size(), PythonUtils::toTruffleStringUncached),
                         cell2arg,
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
@@ -388,16 +391,20 @@ public final class CompilationUnit {
         }
     }
 
-    private <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template, int offset) {
-        T[] ary = Arrays.copyOf(template, map.size());
+    private <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, int offset, com.oracle.graal.python.util.Function<T, U> convertor) {
+        U[] ary = Arrays.copyOf(template, map.size());
         for (Map.Entry<T, Integer> e : map.entrySet()) {
-            ary[e.getValue() - offset] = e.getKey();
+            ary[e.getValue() - offset] = convertor.apply(e.getKey());
         }
         return ary;
     }
 
     private <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template) {
-        return orderedKeys(map, template, 0);
+        return orderedKeys(map, template, 0, i -> i);
+    }
+
+    private <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, com.oracle.graal.python.util.Function<T, U> convertor) {
+        return orderedKeys(map, template, 0, convertor);
     }
 
     private long[] orderedLong(HashMap<Long, Integer> map) {

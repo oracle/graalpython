@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,7 +68,7 @@ public abstract class BuiltinMethodDescriptor {
      *
      * Another way to look at this is that it is a map of all builtins, like
      * {@link PythonBuiltinClassType} is list of all builtin types, but initialized at runtime.
-     * 
+     *
      * Not having this cache per {@link com.oracle.graal.python.PythonLanguage} allows to save the
      * indirection when comparing to some well known {@link BuiltinMethodDescriptor} in guards.
      */
@@ -84,7 +84,7 @@ public abstract class BuiltinMethodDescriptor {
         if (factory == null) {
             return null;
         }
-        Builtin builtinAnnotation = findBuiltinAnnotation(function.getName(), factory);
+        Builtin builtinAnnotation = findBuiltinAnnotation(function.getName().toJavaStringUncached(), factory);
         if (builtinAnnotation.needsFrame()) {
             return null;
         }
@@ -99,7 +99,7 @@ public abstract class BuiltinMethodDescriptor {
             assert enclosing == null;
         }
 
-        return get(function.getName(), factory, type);
+        return get(function.getName().toJavaStringUncached(), factory, type);
     }
 
     static BuiltinMethodDescriptor get(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {

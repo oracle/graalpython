@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,16 +48,17 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYP
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_A_NOT_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_TYPE_A_NOT_TYPE_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLOTNAMES_SHOULD_BE_A_NOT_B;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ_EX__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTNAMES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS_EX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NEWOBJ_EX__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NEWOBJ__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTNAMES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETNEWARGS_EX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETSTATE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
@@ -68,6 +69,8 @@ import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
 import static com.oracle.graal.python.runtime.object.IDUtils.getId;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import org.graalvm.collections.Pair;
 
@@ -94,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodesFactory.GetFul
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -121,14 +125,13 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -144,8 +147,13 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class ObjectNodes {
+
+    public static final TruffleString T__REDUCE_EX = tsLiteral("_reduce_ex");
+    public static final TruffleString T__SLOTNAMES = tsLiteral("_slotnames");
 
     @GenerateUncached
     abstract static class GetObjectIdNode extends Node {
@@ -224,7 +232,7 @@ public abstract class ObjectNodes {
      */
     @ImportStatic({PythonOptions.class, PGuards.class})
     @GenerateUncached
-    public abstract static class GetIdNode extends Node {
+    public abstract static class GetIdNode extends PNodeWithContext {
         public abstract Object execute(Object self);
 
         @Specialization
@@ -329,8 +337,8 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        Object id(String self) {
-            if (self.length() == 0) {
+        Object id(TruffleString self) {
+            if (self.isEmpty()) {
                 return ID_EMPTY_UNICODE;
             }
             return PythonContext.get(this).getNextStringId(self);
@@ -468,8 +476,8 @@ public abstract class ObjectNodes {
         Pair<Object, Object> dispatch(VirtualFrame frame, Object obj,
                         @Cached GetNewArgsInternalNode getNewArgsInternalNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            Object getNewArgsExAttr = lookupAttr.execute(frame, obj, __GETNEWARGS_EX__);
-            Object getNewArgsAttr = lookupAttr.execute(frame, obj, __GETNEWARGS__);
+            Object getNewArgsExAttr = lookupAttr.execute(frame, obj, T___GETNEWARGS_EX__);
+            Object getNewArgsAttr = lookupAttr.execute(frame, obj, T___GETNEWARGS__);
             return getNewArgsInternalNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
         }
 
@@ -486,11 +494,11 @@ public abstract class ObjectNodes {
                             @Cached PyObjectSizeNode sizeNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
                 if (!isTupleSubClassNode.execute(frame, newargs)) {
-                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
+                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS_EX__, "tuple", newargs);
                 }
                 int length = sizeNode.execute(frame, newargs);
                 if (length != 2) {
-                    throw raise(ValueError, SHOULD_RETURN_A_NOT_B, __GETNEWARGS_EX__, "tuple of length 2", length);
+                    throw raise(ValueError, SHOULD_RETURN_A_NOT_B, T___GETNEWARGS_EX__, "tuple of length 2", length);
                 }
 
                 SequenceStorage sequenceStorage = getSequenceStorageNode.execute(newargs);
@@ -513,7 +521,7 @@ public abstract class ObjectNodes {
                             @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode) {
                 Object args = callNode.execute(frame, getNewArgsAttr);
                 if (!isTupleSubClassNode.execute(frame, args)) {
-                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
+                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS__, "tuple", args);
                 }
                 return Pair.create(args, PNone.NONE);
             }
@@ -531,7 +539,7 @@ public abstract class ObjectNodes {
         @Child PyObjectLookupAttr lookupAttr = PyObjectLookupAttr.create();
 
         public final Object execute(VirtualFrame frame, Object cls, Object copyReg) {
-            Object clsDict = lookupAttr.execute(frame, cls, __DICT__);
+            Object clsDict = lookupAttr.execute(frame, cls, T___DICT__);
             return executeInternal(frame, cls, clsDict, copyReg);
         }
 
@@ -541,7 +549,7 @@ public abstract class ObjectNodes {
         Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
-            Object slotNames = storageLib.getItem(clsDict.getDictStorage(), __SLOTNAMES__);
+            Object slotNames = storageLib.getItem(clsDict.getDictStorage(), T__SLOTNAMES);
             slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
@@ -578,7 +586,7 @@ public abstract class ObjectNodes {
             Object slotNames = PNone.NO_VALUE;
             if (!PGuards.isNoValue(clsDict)) {
                 try {
-                    slotNames = getItemNode.execute(frame, clsDict, __SLOTNAMES__);
+                    slotNames = getItemNode.execute(frame, clsDict, T___SLOTNAMES__);
                 } catch (PException ex) {
                     ex.expect(PythonBuiltinClassType.KeyError, isBuiltinClassProfile);
                 }
@@ -603,7 +611,7 @@ public abstract class ObjectNodes {
             Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
                             @Cached FastIsListSubClassNode isListSubClassNode,
                             @Cached PyObjectCallMethodObjArgs callMethod) {
-                Object names = callMethod.execute(frame, copyReg, "_slotnames", cls);
+                Object names = callMethod.execute(frame, copyReg, T__SLOTNAMES, cls);
                 if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
                     throw raise(TypeError, COPYREG_SLOTNAMES);
                 }
@@ -621,7 +629,7 @@ public abstract class ObjectNodes {
         Object dispatch(VirtualFrame frame, Object obj, boolean required, Object copyReg,
                         @Cached GetStateInternalNode getStateInternalNode,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            Object getStateAttr = lookupAttr.execute(frame, obj, __GETSTATE__);
+            Object getStateAttr = lookupAttr.execute(frame, obj, T___GETSTATE__);
             return getStateInternalNode.execute(frame, obj, required, copyReg, getStateAttr);
         }
 
@@ -639,7 +647,7 @@ public abstract class ObjectNodes {
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                             @Cached TypeNodes.GetItemsizeNode getItemsizeNode,
-                            @Cached CastToJavaStringNode toJavaStringNode,
+                            @Cached CastToTruffleStringNode toStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
@@ -651,7 +659,7 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                Object dict = lookupAttr.execute(frame, obj, __DICT__);
+                Object dict = lookupAttr.execute(frame, obj, T___DICT__);
                 if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
                     state = dict;
                 } else {
@@ -670,7 +678,7 @@ public abstract class ObjectNodes {
                         boolean haveSlots = false;
                         for (Object o : names) {
                             try {
-                                String name = toJavaStringNode.execute(o);
+                                TruffleString name = toStringNode.execute(o);
                                 Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
                                     hlib.setItem(slotsStorage, name, value);
@@ -692,18 +700,18 @@ public abstract class ObjectNodes {
     }
 
     abstract static class CommonReduceNode extends PNodeWithState {
-        protected static final String MOD_COPYREG = "copyreg";
+        protected static final TruffleString T_MOD_COPYREG = tsLiteral("copyreg");
 
         public abstract Object execute(VirtualFrame frame, Object obj, int proto);
 
         static ImportNode.ImportExpression createImportCopyReg() {
-            return ImportNode.createAsExpression(MOD_COPYREG);
+            return ImportNode.createAsExpression(T_MOD_COPYREG);
         }
 
         @Specialization(guards = "proto >= 2")
         public Object reduceNewObj(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int proto,
                         @Cached GetClassNode getClassNode,
-                        @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
+                        @Cached("create(T___NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
                         @Cached ConditionProfile newObjProfile,
@@ -731,7 +739,7 @@ public abstract class ObjectNodes {
             boolean hasargs = args != PNone.NONE;
 
             if (newObjProfile.profile(kwargs == PNone.NONE || sizeNode.execute(frame, kwargs) == 0)) {
-                newobj = lookupAttr.execute(frame, copyReg, __NEWOBJ__);
+                newobj = lookupAttr.execute(frame, copyReg, T___NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(hasargs)) {
                     SequenceStorage sequenceStorage = getSequenceStorageNode.execute(args);
@@ -744,7 +752,7 @@ public abstract class ObjectNodes {
                 }
                 newargs = factory().createTuple(newargsVals);
             } else if (hasArgsProfile.profile(hasargs)) {
-                newobj = lookupAttr.execute(frame, copyReg, __NEWOBJ_EX__);
+                newobj = lookupAttr.execute(frame, copyReg, T___NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
                 throw raiseBadInternalCall();
@@ -756,7 +764,7 @@ public abstract class ObjectNodes {
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
             Object listitems = objIsList ? getIter.execute(frame, obj) : PNone.NONE;
-            Object dictitems = objIsDict ? getIter.execute(frame, callMethod.execute(frame, obj, ITEMS)) : PNone.NONE;
+            Object dictitems = objIsDict ? getIter.execute(frame, callMethod.execute(frame, obj, T_ITEMS)) : PNone.NONE;
 
             return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }
@@ -766,7 +774,7 @@ public abstract class ObjectNodes {
                         @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object copyReg = importNode.execute(frame);
-            return callMethod.execute(frame, copyReg, "_reduce_ex", obj, proto);
+            return callMethod.execute(frame, copyReg, T__REDUCE_EX, obj, proto);
         }
     }
 
@@ -774,28 +782,35 @@ public abstract class ObjectNodes {
      * Returns the fully qualified name of a class.
      *
      * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#BUILTINS} module).
+     * {@link BuiltinNames#J_BUILTINS} module).
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object cls);
+        public abstract TruffleString execute(Frame frame, Object cls);
 
         @Specialization
-        static String get(VirtualFrame frame, Object cls,
+        static TruffleString get(VirtualFrame frame, Object cls,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached CastToJavaStringNode cast) {
-            Object moduleNameObject = lookupAttr.execute(frame, cls, __MODULE__);
-            Object qualNameObject = lookupAttr.execute(frame, cls, __QUALNAME__);
-            String qualName = cast.execute(qualNameObject);
-            if (moduleNameObject == PNone.NO_VALUE || BuiltinNames.BUILTINS.equals(moduleNameObject)) {
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            Object moduleNameObject = lookupAttr.execute(frame, cls, T___MODULE__);
+            Object qualNameObject = lookupAttr.execute(frame, cls, T___QUALNAME__);
+            TruffleString qualName = cast.execute(qualNameObject);
+            if (moduleNameObject == PNone.NO_VALUE) {
                 return qualName;
             }
-            StringBuilder sb = PythonUtils.newStringBuilder();
-            PythonUtils.append(sb, cast.execute(moduleNameObject));
-            PythonUtils.append(sb, '.');
-            PythonUtils.append(sb, qualName);
-            return PythonUtils.sbToString(sb);
+            TruffleString moduleName = cast.execute(moduleNameObject);
+            if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
+                return qualName;
+            }
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, moduleName);
+            appendStringNode.execute(sb, T_DOT);
+            appendStringNode.execute(sb, qualName);
+            return toStringNode.execute(sb);
         }
 
         public static GetFullyQualifiedNameNode create() {
@@ -807,15 +822,15 @@ public abstract class ObjectNodes {
      * Returns the fully qualified name of the class of an object.
      *
      * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#BUILTINS} module).
+     * {@link BuiltinNames#T_BUILTINS} module).
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class GetFullyQualifiedClassNameNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object self);
+        public abstract TruffleString execute(Frame frame, Object self);
 
         @Specialization
-        static String get(VirtualFrame frame, Object self,
+        static TruffleString get(VirtualFrame frame, Object self,
                         @Cached GetClassNode getClass,
                         @Cached GetFullyQualifiedNameNode getFullyQualifiedNameNode) {
             return getFullyQualifiedNameNode.execute(frame, getClass.execute(self));
@@ -827,13 +842,14 @@ public abstract class ObjectNodes {
      */
     @GenerateUncached
     public abstract static class DefaultObjectReprNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object object);
+        public abstract TruffleString execute(Frame frame, Object object);
 
         @Specialization
-        static String repr(VirtualFrame frame, Object self,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
-            String fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
-            return PythonUtils.format("<%s object at 0x%x>", fqcn, PythonAbstractNativeObject.systemHashCode(self));
+        static TruffleString repr(VirtualFrame frame, Object self,
+                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+            return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
 
         public static DefaultObjectReprNode create() {
@@ -846,14 +862,14 @@ public abstract class ObjectNodes {
         @Child LookupCallableSlotInMRONode lookupSetNode;
         @Child CallTernaryMethodNode callSetNode;
 
-        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
+        public abstract PNone execute(VirtualFrame frame, Object object, TruffleString key, Object value);
 
-        protected boolean writeAttribute(Object object, String key, Object value) {
+        protected boolean writeAttribute(Object object, TruffleString key, Object value) {
             throw CompilerDirectives.shouldNotReachHere("writeAttribute");
         }
 
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+        protected PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
             Object type = getClassNode.execute(object);
@@ -880,8 +896,8 @@ public abstract class ObjectNodes {
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
-            String key;
+                        @Cached CastToTruffleStringNode castKeyToStringNode) {
+            TruffleString key;
             try {
                 key = castKeyToStringNode.execute(keyObject);
             } catch (CannotCastException e) {

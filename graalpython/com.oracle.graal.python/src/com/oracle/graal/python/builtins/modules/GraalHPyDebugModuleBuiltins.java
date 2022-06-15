@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,12 +85,14 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = GraalHPyDebugModuleBuiltins.HPY_DEBUG)
+@CoreFunctions(defineModule = GraalHPyDebugModuleBuiltins.J_HPY_DEBUG)
 @GenerateNodeFactory
 public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
 
-    public static final String HPY_DEBUG = "_hpy_debug";
+    public static final String J_HPY_DEBUG = "_hpy_debug";
+    private static final TruffleString T_HPY_DEBUG = tsLiteral(J_HPY_DEBUG);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -100,17 +104,17 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
      * you try to load it then the HPy API is initialized automatically. So, if someone is up to use
      * this module, we will initialize the HPy API.
      */
-    static GraalHPyDebugContext getHPyDebugContext(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode node) {
+    static GraalHPyDebugContext getHPyDebugContext(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode node, TruffleString.EqualNode eqNode) {
         PythonContext context = node.getContext();
         Object state = IndirectCallContext.enter(frame, language, context, node);
         try {
-            GraalHPyContext.ensureHPyWasLoaded(node, context, HPY_DEBUG, "");
+            GraalHPyContext.ensureHPyWasLoaded(node, context, T_HPY_DEBUG, T_EMPTY_STRING);
         } catch (ApiInitException ie) {
             throw ie.reraise(node.getConstructAndRaiseNode(), frame);
         } catch (ImportException ie) {
             throw ie.reraise(node.getConstructAndRaiseNode(), frame);
         } catch (IOException e) {
-            throw node.getConstructAndRaiseNode().raiseOSError(frame, e);
+            throw node.getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
         } finally {
             IndirectCallContext.exit(frame, language, context, state);
         }
@@ -122,8 +126,9 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugNewGenerationNode extends PythonBuiltinNode {
         @Specialization
-        int doGeneric(VirtualFrame frame) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+        int doGeneric(VirtualFrame frame,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             return hpyDebugContext.newGeneration();
         }
     }
@@ -133,8 +138,9 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugGetOpenHandlesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PList doInt(VirtualFrame frame, int generation) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+        PList doInt(VirtualFrame frame, int generation,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             Object[] openHandles = getOpenDebugHandles(hpyDebugContext, generation);
             return factory().createList(openHandles);
         }
@@ -158,8 +164,9 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugGetClosedHandlesNode extends PythonBuiltinNode {
         @Specialization
-        PList doInt(VirtualFrame frame) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+        PList doInt(VirtualFrame frame,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             return factory().createList(getClosedDebugHandles(hpyDebugContext));
         }
 
@@ -182,8 +189,9 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugGetClosedHandlesQueueMaxSizeNode extends PythonBuiltinNode {
         @Specialization
-        int doInt(VirtualFrame frame) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+        int doInt(VirtualFrame frame,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             return hpyDebugContext.getClosedHandlesQueueMaxSize();
         }
     }
@@ -199,8 +207,9 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doInt(VirtualFrame frame, int size) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+        PNone doInt(VirtualFrame frame, int size,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             hpyDebugContext.setClosedHandlesQueueMaxSize(size);
             return PNone.NONE;
         }
@@ -232,12 +241,13 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     abstract static class HPyDebugSetOnInvalidHandleNode extends PythonUnaryBuiltinNode {
         @Specialization
         PNone doInt(VirtualFrame frame, Object callback,
-                        @Cached PyCallableCheckNode callableCheckNode) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this, eqNode);
             if (callback == PNone.NONE) {
                 hpyDebugContext.setOnInvalidHandleCallback(null);
             } else if (!callableCheckNode.execute(callback)) {
-                throw raise(TypeError, "Expected a callable object");
+                throw raise(TypeError, ErrorMessages.EXPECTED_CALLABLE_OBJ);
             } else {
                 hpyDebugContext.setOnInvalidHandleCallback(callback);
             }

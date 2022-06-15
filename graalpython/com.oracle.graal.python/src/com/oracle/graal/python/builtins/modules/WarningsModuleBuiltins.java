@@ -40,6 +40,30 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__WARNINGS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_CLEAR;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_WARNINGS;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.IllegalFormatException;
 import java.util.List;
 
@@ -61,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -70,7 +93,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -93,6 +116,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -121,16 +145,31 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
-
-@CoreFunctions(defineModule = "_warnings")
+@CoreFunctions(defineModule = J__WARNINGS)
 public class WarningsModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
     private static final HiddenKey FILTERS = new HiddenKey("filters");
     private static final HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
     private static final HiddenKey ONCEREGISTRY = new HiddenKey("_onceregistry");
-    private static final String __WARNINGREGISTRY__ = "__warningregistry__";
+    private static final TruffleString T___WARNINGREGISTRY__ = tsLiteral("__warningregistry__");
+
+    private static final String J_WARN = "warn";
+    public static final TruffleString T_WARN = tsLiteral(J_WARN);
+
+    private static final TruffleString T_ERROR = tsLiteral("error");
+    private static final TruffleString T_ALWAYS = tsLiteral("always");
+    private static final TruffleString T_ONCE = tsLiteral("once");
+    private static final TruffleString T_IGNORE = tsLiteral("ignore");
+    private static final TruffleString T_MATCH = tsLiteral("match");
+    private static final TruffleString T_GET_SOURCE = tsLiteral("get_source");
+    private static final TruffleString T__SHOWWARNMSG = tsLiteral("_showwarnmsg");
+    private static final TruffleString T_ONCEREGISTRY = tsLiteral("onceregistry");
+    private static final TruffleString T_DEFAULTACTION = tsLiteral("defaultaction");
+    private static final TruffleString T_FILTERS = tsLiteral("filters");
+    private static final TruffleString T_WARNING_MESSAGE = tsLiteral("WarningMessage");
+    private static final TruffleString T_UNKNOWN_SOURCE = tsLiteral("<unknown source>");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -140,42 +179,39 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     // _Warnings_InitState done via initialize and postInitialize
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
+        addBuiltinConstant(SpecialAttributeNames.T___DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
         // we need to copy the attrs, since they must still be available even if the user `del`s the
         // attrs
-        Object defaultaction = "default";
-        builtinConstants.put("_defaultaction", defaultaction);
-        builtinConstants.put(DEFAULTACTION, defaultaction);
-        Object onceregistry = core.factory().createDict();
-        builtinConstants.put("_onceregistry", onceregistry);
-        builtinConstants.put(ONCEREGISTRY, onceregistry);
-        Object filters = initFilters(core.factory());
-        builtinConstants.put("filters", filters);
-        builtinConstants.put(FILTERS, filters);
-        builtinConstants.put(FILTERS_VERSION, 0L);
+        addBuiltinConstant("_defaultaction", T_DEFAULT);
+        addBuiltinConstant(DEFAULTACTION, T_DEFAULT);
+        PDict onceregistry = core.factory().createDict();
+        addBuiltinConstant("_onceregistry", onceregistry);
+        addBuiltinConstant(ONCEREGISTRY, onceregistry);
+        PList filters = initFilters(core.factory());
+        addBuiltinConstant("filters", filters);
+        addBuiltinConstant(FILTERS, filters);
+        addBuiltinConstant(FILTERS_VERSION, 0L);
         super.initialize(core);
     }
 
-    private static PTuple createFilter(PythonObjectSlowPathFactory factory, PythonBuiltinClassType cat, String id, Object mod) {
+    private static PTuple createFilter(PythonObjectSlowPathFactory factory, PythonBuiltinClassType cat, TruffleString id, Object mod) {
         return factory.createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
     private static PList initFilters(PythonObjectSlowPathFactory factory) {
         return factory.createList(new Object[]{
-                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
-                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
+                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, T_DEFAULT, T___MAIN__),
+                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, T_IGNORE, PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.PendingDeprecationWarning, T_IGNORE, PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.ImportWarning, T_IGNORE, PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.ResourceWarning, T_IGNORE, PNone.NONE)});
     }
 
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
-        private static final String WARNINGS = "warnings";
-
         @Child DynamicObjectLibrary warningsModuleLib;
-        @Child CastToJavaStringNode castStr;
+        @Child CastToTruffleStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PyObjectRichCompareBool.EqNode eqNode;
         @Child GetClassNode getClassNode;
@@ -195,13 +231,17 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child SequenceStorageNodes.LenNode sequenceLenNode;
         @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItemNode;
         @Child TypeNodes.IsTypeNode isTypeNode;
+        @Child TruffleString.CodePointLengthNode codePointLengthNode;
+        @Child TruffleString.RegionEqualNode regionEqualNode;
+        @Child TruffleString.EqualNode equalNode;
+        @Child TruffleString.SubstringNode substringNode;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
         }
 
         private static Object tryImport() {
-            return AbstractImportNode.importModule(WARNINGS);
+            return AbstractImportNode.importModule(T_WARNINGS);
         }
 
         private PythonLanguage getLanguage() {
@@ -325,13 +365,45 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return isTrueNode;
         }
 
-        private CastToJavaStringNode getCastStr() {
+        private CastToTruffleStringNode getCastStr() {
             if (castStr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                castStr = insert(CastToJavaStringNode.create());
+                castStr = insert(CastToTruffleStringNode.create());
             }
             return castStr;
+        }
+
+        private TruffleString.CodePointLengthNode getCodePointLengthNode() {
+            if (codePointLengthNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                codePointLengthNode = insert(TruffleString.CodePointLengthNode.create());
+            }
+            return codePointLengthNode;
+        }
+
+        private TruffleString.RegionEqualNode getRegionEqualNode() {
+            if (regionEqualNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                regionEqualNode = insert(TruffleString.RegionEqualNode.create());
+            }
+            return regionEqualNode;
+        }
+
+        private TruffleString.EqualNode getEqualNode() {
+            if (equalNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                equalNode = insert(TruffleString.EqualNode.create());
+            }
+            return equalNode;
+        }
+
+        private TruffleString.SubstringNode getSubstringNode() {
+            if (substringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                substringNode = insert(TruffleString.SubstringNode.create());
+            }
+            return substringNode;
         }
 
         private PRaiseNode getRaise() {
@@ -367,7 +439,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetOrCreateDictNode.create());
             }
-            return getDictNode.execute(getContext().lookupBuiltinModule("sys"));
+            return getDictNode.execute(getContext().lookupBuiltinModule(T_SYS));
         }
 
         private PDict getGlobalsDict(Object globals) {
@@ -430,15 +502,15 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return true;
             }
             try {
-                String objStr = getCastStr().execute(obj);
+                TruffleString objStr = getCastStr().execute(obj);
                 try {
-                    return PString.equals(objStr, getCastStr().execute(arg));
+                    return getEqualNode().execute(objStr, getCastStr().execute(arg), TS_ENCODING);
                 } catch (CannotCastException e) {
                     // Python calls PyUnicode_Compare directly, which raises this error
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANT_COMPARE, obj, arg);
                 }
             } catch (CannotCastException e) {
-                Object result = getCallMethodNode().execute(frame, obj, "match", arg);
+                Object result = getCallMethodNode().execute(frame, obj, T_MATCH, arg);
                 return getIsTrueNode().execute(frame, result);
             }
         }
@@ -446,21 +518,21 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * On fast path. Never tries to import the warnings module.
          */
-        private Object getWarningsAttr(VirtualFrame frame, String attr) {
+        private Object getWarningsAttr(VirtualFrame frame, TruffleString attr) {
             return getWarningsAttr(frame, attr, false, getLookupAttrNode(), getCallMethodNode(), getContext());
         }
 
         /**
          * Slow path. Sometimes may try to import the warnings module.
          */
-        private static Object getWarningsAttr(PythonContext context, String attr, boolean tryImport) {
+        private static Object getWarningsAttr(PythonContext context, TruffleString attr, boolean tryImport) {
             return getWarningsAttr(null, attr, tryImport, PyObjectLookupAttr.getUncached(), PyObjectCallMethodObjArgs.getUncached(), context);
         }
 
         /**
          * Used on both fast and slow path.
          */
-        private static Object getWarningsAttr(VirtualFrame frame, String attr, boolean tryImport,
+        private static Object getWarningsAttr(VirtualFrame frame, TruffleString attr, boolean tryImport,
                         PyObjectLookupAttr lookup, PyObjectCallMethodObjArgs callMethod, PythonContext context) {
             Object warningsModule;
             if (tryImport) {
@@ -471,10 +543,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             } else {
-                Object sys = context.lookupBuiltinModule("sys");
-                Object modules = lookup.execute(frame, sys, MODULES);
+                Object sys = context.lookupBuiltinModule(T_SYS);
+                Object modules = lookup.execute(frame, sys, T_MODULES);
                 try {
-                    warningsModule = callMethod.execute(frame, modules, "get", WARNINGS, PNone.NONE);
+                    warningsModule = callMethod.execute(frame, modules, T_GET, T_WARNINGS, PNone.NONE);
                 } catch (PException e) {
                     return null;
                 }
@@ -494,12 +566,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * On slow path.
          */
         private static PDict getOnceRegistry(Node node, PythonContext context, PythonModule module) {
-            Object registry = getWarningsAttr(context, "onceregistry", false);
+            Object registry = getWarningsAttr(context, T_ONCEREGISTRY, false);
             if (registry == null) {
                 registry = getStateOnceRegistry(module);
             }
             if (!(registry instanceof PDict)) {
-                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, "warnings.onceregistry must be a dict, not %p", registry);
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.WARN_ONCE_REG_MUST_BE_DICT, registry);
             }
             return (PDict) registry;
         }
@@ -507,30 +579,30 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * On fast path.
          */
-        private String getDefaultAction(VirtualFrame frame, PythonModule module) {
-            Object defaultAction = getWarningsAttr(frame, "defaultaction");
+        private TruffleString getDefaultAction(VirtualFrame frame, PythonModule module) {
+            Object defaultAction = getWarningsAttr(frame, T_DEFAULTACTION);
             if (defaultAction == null) {
                 defaultAction = getStateDefaultAction(module);
             }
             try {
                 return getCastStr().execute(defaultAction);
             } catch (CannotCastException e) {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, "warnings.defaultaction must be a string, not %p", defaultAction);
+                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_DEF_ACTION_MUST_BE_STRING, defaultAction);
             }
         }
 
         /**
          * On fast path.
          */
-        private String getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
-            Object filters = getWarningsAttr(frame, "filters");
+        private TruffleString getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
+            Object filters = getWarningsAttr(frame, T_FILTERS);
             if (filters != null) {
                 getWarnLib().put(_warnings, FILTERS, filters);
             } else {
                 filters = getStateFilters(_warnings);
             }
             if (!(filters instanceof PList)) {
-                throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
+                throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_MUST_BE_LIST);
             }
             SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
             SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
@@ -538,21 +610,21 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < sequenceLen.execute(filtersStorage); i++) {
                 Object tmpItem = sequenceGetItem.execute(filtersStorage, i);
                 if (!(tmpItem instanceof PTuple)) {
-                    throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
+                    throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
                 SequenceStorage tmpStorage = ((PTuple) tmpItem).getSequenceStorage();
                 if (sequenceLen.execute(tmpStorage) != 5) {
-                    throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
+                    throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
 
                 Object actionObj = sequenceGetItem.execute(tmpStorage, 0);
-                String action;
+                TruffleString action;
                 try {
                     action = getCastStr().execute(actionObj);
                 } catch (CannotCastException e) {
                     // CPython does this check after the other __getitem__ calls, but we know it's a
                     // tuple so...
-                    throw getRaise().raise(PythonBuiltinClassType.TypeError, "action must be a string, not %p", actionObj);
+                    throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ACTION_MUST_BE_STRING, actionObj);
                 }
                 Object msg = sequenceGetItem.execute(tmpStorage, 1);
                 Object cat = sequenceGetItem.execute(tmpStorage, 2);
@@ -573,7 +645,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            String action = getDefaultAction(frame, _warnings);
+            TruffleString action = getDefaultAction(frame, _warnings);
             item[0] = PNone.NONE;
             return action;
         }
@@ -600,11 +672,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
                         PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode,
                         DynamicObjectLibrary warnLib) {
-            Object versionObj = getItem.execute(frame, registry, "version");
+            Object versionObj = getItem.execute(frame, registry, T_VERSION);
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
             if (versionObj == null || !eqNode.execute(frame, stateFiltersVersion, versionObj)) {
-                callMethod.execute(frame, registry, "clear");
-                setItem.execute(frame, registry, "version", stateFiltersVersion);
+                callMethod.execute(frame, registry, T_CLEAR);
+                setItem.execute(frame, registry, T_VERSION, stateFiltersVersion);
             } else {
                 Object alreadyWarned = getItem.execute(frame, registry, key);
                 if (alreadyWarned != null) {
@@ -618,16 +690,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         /**
-         * On the fast path, but must be behind a boundary for the String operations.
+         * On the fast path.
          */
-        @TruffleBoundary
-        private static String normalizeModule(String filename) {
-            int length = filename.length();
-            if (length == 0) {
-                return "<unknown>";
+        private TruffleString normalizeModule(TruffleString filename) {
+            final int extLen = 3;
+            assert extLen == T_PY_EXTENSION.codePointLengthUncached(TS_ENCODING);
+
+            if (filename.isEmpty()) {
+                return T_VALUE_UNKNOWN;
             }
-            if (filename.endsWith(".py")) {
-                return filename.substring(0, length - 3);
+            int length = getCodePointLengthNode().execute(filename, TS_ENCODING);
+            if (length >= extLen && getRegionEqualNode().execute(filename, length - extLen, T_PY_EXTENSION, 0, extLen, TS_ENCODING)) {
+                return getSubstringNode().execute(filename, 0, length - extLen, TS_ENCODING, false);
             } else {
                 return filename;
             }
@@ -645,12 +719,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void showWarning(Object filename, int lineno, Object text, Object category, Object sourceline) {
+        private static void showWarning(Object filename, int lineno, Object text, Object category, TruffleString sourceline) {
             Object name;
             if (category instanceof PythonBuiltinClassType) {
                 name = ((PythonBuiltinClassType) category).getName();
             } else {
-                name = PyObjectLookupAttr.getUncached().execute(null, category, SpecialAttributeNames.__NAME__);
+                name = PyObjectLookupAttr.getUncached().execute(null, category, SpecialAttributeNames.T___NAME__);
             }
             Object stderr = PythonContext.get(null).getStderr();
 
@@ -660,20 +734,23 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // Print "filename:lineno: category: text\n"
             PyObjectCallMethodObjArgs call = PyObjectCallMethodObjArgs.getUncached();
             PyObjectStrAsObjectNode str = PyObjectStrAsObjectNode.getUncached();
-            call.execute(null, stderr, "write", str.execute(null, filename));
-            call.execute(null, stderr, "write", String.format(":%d:", lineno));
-            call.execute(null, stderr, "write", str.execute(null, name));
-            call.execute(null, stderr, "write", ": ");
-            call.execute(null, stderr, "write", str.execute(null, text));
-            call.execute(null, stderr, "write", "\n");
+            call.execute(null, stderr, T_WRITE, str.execute(null, filename));
+            call.execute(null, stderr, T_WRITE, T_COLON);
+            call.execute(null, stderr, T_WRITE, TruffleString.fromLongUncached(lineno, TS_ENCODING, true));
+            call.execute(null, stderr, T_WRITE, T_COLON);
+            call.execute(null, stderr, T_WRITE, str.execute(null, name));
+            call.execute(null, stderr, T_WRITE, T_COLON);
+            call.execute(null, stderr, T_WRITE, T_SPACE);
+            call.execute(null, stderr, T_WRITE, str.execute(null, text));
+            call.execute(null, stderr, T_WRITE, T_NEWLINE);
 
             // Print " source_line\n"
             if (sourceline != null) {
                 // CPython goes through the trouble of getting a substring of sourceline with
                 // leading whitespace removed, but then ignores the substring and prints the full
                 // sourceline anyway...
-                call.execute(null, stderr, "write", str.execute(null, sourceline));
-                call.execute(null, stderr, "write", "\n");
+                call.execute(null, stderr, T_WRITE, sourceline);
+                call.execute(null, stderr, T_WRITE, T_NEWLINE);
             } else {
                 // TODO: _Py_DisplaySourceLine(f_stderr, filename, lineno, indent 2);
             }
@@ -681,27 +758,27 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static void callShowWarning(PythonContext context, Object category, Object text, Object message,
-                        Object filename, int lineno, Object sourceline, Object sourceIn) {
+                        TruffleString filename, int lineno, TruffleString sourceline, Object sourceIn) {
             PRaiseNode raise = PRaiseNode.getUncached();
 
-            Object showFn = getWarningsAttr(context, "_showwarnmsg", sourceIn != null);
+            Object showFn = getWarningsAttr(context, T__SHOWWARNMSG, sourceIn != null);
             if (showFn == null) {
                 showWarning(filename, lineno, text, category, sourceline);
                 return;
             }
 
             if (!PyCallableCheckNode.getUncached().execute(showFn)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "warnings._showwarnmsg() must be set to a callable");
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_MUST_BE_SET_CALLABLE);
             }
 
-            Object warnmsgCls = getWarningsAttr(context, "WarningMessage", false);
+            Object warnmsgCls = getWarningsAttr(context, T_WARNING_MESSAGE, false);
             if (warnmsgCls == null) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, "unable to get warnings.WarningMessage");
+                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNABLE_GET_WARN_MSG);
             }
             Object source = sourceIn == null ? PNone.NONE : sourceIn;
 
             assert message != null && category != null && filename != null && source != null;
-            assert message != PNone.NO_VALUE && category != PNone.NO_VALUE && filename != PNone.NO_VALUE && source != PNone.NO_VALUE;
+            assert message != PNone.NO_VALUE && category != PNone.NO_VALUE && source != PNone.NO_VALUE;
             Object msg = CallNode.getUncached().execute(warnmsgCls, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
             CallNode.getUncached().execute(showFn, msg);
         }
@@ -712,7 +789,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * are set to ignore. On the fast path.
          */
         private void warnExplicit(VirtualFrame frame, PythonModule warnings,
-                        Object categoryIn, Object messageIn, String filename, int lineno, Object moduleIn,
+                        Object categoryIn, Object messageIn, TruffleString filename, int lineno, Object moduleIn,
                         Object registryObj, PDict globals /* see comment in method */, Object source) {
             // CPython passes the sourceline directly here where we pass the globals argument. If
             // it's not null, and we need the source line eventually, we will get it on the slow
@@ -731,7 +808,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (registryObj instanceof PDict) {
                 registry = (PDict) registryObj;
             } else {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, "'registry' must be a dict or None");
+                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.REGISTRY_MUST_BE_DICT);
             }
 
             if (module == null) {
@@ -758,11 +835,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // TODO: branch profile?
 
             Object[] item = new Object[1];
-            String action = getFilter(frame, warnings, category, text, lineno, module, item);
+            TruffleString action = getFilter(frame, warnings, category, text, lineno, module, item);
 
             // CPython first checks for the "error" case, but since we want to optimize for ignored
             // warnings, we swap those checks
-            if (PString.equals("ignore", action)) {
+            if (getEqualNode().execute(T_IGNORE, action, TS_ENCODING)) {
                 return;
             }
 
@@ -770,47 +847,45 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // about performance when warnings are enabled.
             Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), this);
             try {
-                warnExplicitPart2(PythonContext.get(this), this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
+                warnExplicitPart2(PythonContext.get(this), this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
             } finally {
                 IndirectCallContext.exit(frame, getLanguage(), getContext(), state);
             }
         }
 
         @TruffleBoundary
-        private static void warnExplicitPart2(PythonContext context, Node node, PythonModule warnings, Object filename, int lineno, PDict registry, PDict globals, Object source, Object category,
-                        Object message,
-                        Object text,
-                        Object key, Object[] item, String action) {
+        private static void warnExplicitPart2(PythonContext context, Node node, PythonModule warnings, TruffleString filename, int lineno, PDict registry, PDict globals, Object source,
+                        Object category, Object message, Object text, Object key, Object item, TruffleString action) {
 
-            if (PString.equals("error", action)) {
+            if (action.equalsUncached(T_ERROR, TS_ENCODING)) {
                 if (!(message instanceof PBaseException)) {
-                    throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass",
-                                    PyObjectReprAsJavaStringNode.getUncached().execute(null, message));
+                    throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION,
+                                    PyObjectReprAsTruffleStringNode.getUncached().execute(null, message));
                 } else {
                     throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
                 }
             }
 
-            if (!PString.equals("always", action)) {
+            if (!action.equalsUncached(T_ALWAYS, TS_ENCODING)) {
                 if (registry != null) {
                     PyObjectSetItem.getUncached().execute(null, registry, key, true);
                 }
 
                 boolean alreadyWarned = false;
-                if (PString.equals("once", action)) {
+                if (action.equalsUncached(T_ONCE, TS_ENCODING)) {
                     if (registry == null) {
                         PDict currentRegistry = getOnceRegistry(node, context, warnings);
                         alreadyWarned = updateRegistry(context.factory(), warnings, currentRegistry, text, category, false);
                     } else {
                         alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
                     }
-                } else if (PString.equals("module", action)) {
+                } else if (action.equalsUncached(T_MODULE, TS_ENCODING)) {
                     if (registry != null) {
                         alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
                     }
-                } else if (!PString.equals("default", action)) {
-                    PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, "Unrecognized action (%s) in warnings.filters:\n %s", action,
-                                    PyObjectReprAsJavaStringNode.getUncached().execute(null, item));
+                } else if (!action.equalsUncached(T_DEFAULT, TS_ENCODING)) {
+                    throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNRECOGNIZED_ACTION_IN_WARNINGS, action,
+                                    PyObjectReprAsTruffleStringNode.getUncached().execute(null, item));
                 }
 
                 if (alreadyWarned) {
@@ -820,7 +895,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
             // CPython does this part eagerly in warn_explicit before ever getting here, but we try
             // to delay it
-            String sourceline = null;
+            TruffleString sourceline = null;
             if (globals != null) {
                 sourceline = getSourceLine(node, globals, lineno);
             }
@@ -831,14 +906,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * Used from doWarn. On the fast path.
          */
-        private void setupContext(VirtualFrame frame, int stackLevel, String[] filename, int[] lineno, String[] module, Object[] registry) {
+        private void setupContext(VirtualFrame frame, int stackLevel, TruffleString[] filename, int[] lineno, TruffleString[] module, Object[] registry) {
             PFrame f = getCallerFrame(frame, stackLevel - 1); // the stack level for the
                                                               // intrinsified version is off-by-one
                                                               // compared to the Python version
             PDict globals;
             if (f == null || f.getGlobals() == null) {
                 globals = getSysDict();
-                filename[0] = "sys";
+                filename[0] = T_SYS;
                 lineno[0] = 1;
             } else {
                 globals = getGlobalsDict(f.getGlobals());
@@ -847,23 +922,23 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 if (ct != null) {
                     filename[0] = PCode.extractFileName(ct.getRootNode());
                 } else {
-                    filename[0] = "<unknown source>";
+                    filename[0] = T_UNKNOWN_SOURCE;
                 }
             }
 
-            registry[0] = getDictGetItemNode().execute(frame, globals, __WARNINGREGISTRY__);
+            registry[0] = getDictGetItemNode().execute(frame, globals, T___WARNINGREGISTRY__);
             if (registry[0] == null) {
                 registry[0] = getFactory().createDict();
-                getSetItemNode().execute(frame, globals, __WARNINGREGISTRY__, registry[0]);
+                getSetItemNode().execute(frame, globals, T___WARNINGREGISTRY__, registry[0]);
             }
-            Object moduleObj = getDictGetItemNode().execute(frame, globals, SpecialAttributeNames.__NAME__);
+            Object moduleObj = getDictGetItemNode().execute(frame, globals, SpecialAttributeNames.T___NAME__);
             if (moduleObj == null) {
                 module[0] = null;
             } else {
                 try {
                     module[0] = getCastStr().execute(moduleObj);
                 } catch (CannotCastException e) {
-                    module[0] = "<string>";
+                    module[0] = T_STRING_SOURCE;
                 }
             }
         }
@@ -878,7 +953,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
             } else if (!getIsTypeNode().execute(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, "category must be a Warning subclass, not '%P'", category);
+                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CATEGORY_MUST_BE_WARN_SUBCLS, category);
             } else {
                 return category;
             }
@@ -889,9 +964,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private void doWarn(VirtualFrame frame, PythonModule warnings,
                         Object message, Object category, int stackLevel, Object source) {
-            String[] filename = new String[1];
+            TruffleString[] filename = new TruffleString[1];
             int[] lineno = new int[1];
-            String[] module = new String[1];
+            TruffleString[] module = new TruffleString[1];
             Object[] registry = new Object[1];
             setupContext(frame, stackLevel, filename, lineno, module, registry);
             warnExplicit(frame, warnings, category, message, filename[0], lineno[0], module[0], registry[0], null, source);
@@ -901,18 +976,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * Slow path.
          */
         @TruffleBoundary
-        private static String getSourceLine(Node node, PDict globals, int lineno) {
-            Object loader = PyDictGetItem.getUncached().execute(null, globals, "__loader__");
+        private static TruffleString getSourceLine(Node node, PDict globals, int lineno) {
+            Object loader = PyDictGetItem.getUncached().execute(null, globals, T___LOADER__);
             if (loader == null) {
                 return null;
             }
-            Object moduleName = PyDictGetItem.getUncached().execute(null, globals, "__name__");
+            Object moduleName = PyDictGetItem.getUncached().execute(null, globals, T___NAME__);
             if (moduleName == null) {
                 return null;
             }
             Object source;
             try {
-                source = PyObjectCallMethodObjArgs.getUncached().execute(null, loader, "get_source", moduleName);
+                source = PyObjectCallMethodObjArgs.getUncached().execute(null, loader, T_GET_SOURCE, moduleName);
             } catch (PException e) {
                 return null;
             }
@@ -927,7 +1002,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
             String[] lines = src.split("\n");
             if (lines.length >= lineno) {
-                return lines[lineno - 1];
+                return toTruffleStringUncached(lines[lineno - 1]);
             } else {
                 throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
@@ -949,7 +1024,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     @ReportPolymorphism
     @NodeInfo(shortName = "warnings_warn_impl", description = "implements warnings_warn_impl and the clinic wrapper")
-    @Builtin(name = "warn", minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
     @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
     @ArgumentClinic(name = "source", defaultValue = "PNone.NONE")
@@ -985,10 +1060,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         Object ln, Object module, Object registry, Object globals, Object source,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Cached CastToJavaIntLossyNode castLong,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
-            String filename;
+            TruffleString filename;
             try {
                 filename = castStr.execute(flname);
             } catch (CannotCastException e) {
@@ -1006,7 +1081,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (globals instanceof PDict) {
                 globalsDict = (PDict) globals;
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, "module_globals must be a dict, not '%p'", globals);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MOD_GLOBALS_MUST_BE_DICT, globals);
             }
             // CPython calls get_source_line here. But since that's potentially slow, maybe we can
             // get away with doing that lazily
@@ -1051,46 +1126,51 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return UNCACHED;
         }
 
-        public final void warnUnicode(Frame frame, Object category, String message, int stackLevel, Object source) {
+        public final void warnUnicode(Frame frame, Object category, TruffleString message, int stackLevel, Object source) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
-        public final void warnFormat(Frame frame, Object category, String message, Object... formatArgs) {
+        public final void warnFormat(Frame frame, Object category, TruffleString message, Object... formatArgs) {
             warnFormat(frame, null, category, 1, message, formatArgs);
         }
 
-        public final void warnFormat(Frame frame, Object source, Object category, int stackLevel, String message, Object... formatArgs) {
+        public final void warnFormat(Frame frame, Object source, Object category, int stackLevel, TruffleString message, Object... formatArgs) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel, formatArgs);
         }
 
-        public final void resourceWarning(Frame frame, Object source, int stackLevel, String message, Object... formatArgs) {
+        public final void resourceWarning(Frame frame, Object source, int stackLevel, TruffleString message, Object... formatArgs) {
             execute(frame, source, PythonBuiltinClassType.ResourceWarning, message, stackLevel, formatArgs);
         }
 
-        public final void warnEx(Frame frame, Object category, String message, int stackLevel) {
+        public final void warnEx(Frame frame, Object category, TruffleString message, int stackLevel) {
             execute(frame, null, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
-        public final void warn(Frame frame, Object category, String message) {
+        public final void warn(Frame frame, Object category, TruffleString message) {
             warnEx(frame, category, message, 1);
         }
 
-        protected abstract void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs);
+        protected abstract void execute(Frame frame, Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs);
 
         private static final class WarnNodeCached extends WarnNode {
             @CompilationFinal BranchProfile noFrame = BranchProfile.create();
             @Child WarningsModuleNode moduleFunctionsNode;
+            @Child TruffleString.FromJavaStringNode fromJavaStringNode;
 
             @Override
-            protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+            protected void execute(Frame frame, Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs) {
                 if (frame == null) {
                     noFrame.enter();
                     UNCACHED.execute(null, source, category, format, stackLevel, formatArgs);
                     return;
                 }
                 assert frame instanceof VirtualFrame;
-                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule("_warnings");
-                String message = formatMessage(format, formatArgs);
+                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule(T__WARNINGS);
+                if (fromJavaStringNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    fromJavaStringNode = insert(TruffleString.FromJavaStringNode.create());
+                }
+                TruffleString message = fromJavaStringNode.execute(formatMessage(format, formatArgs), TS_ENCODING);
                 if (moduleFunctionsNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     moduleFunctionsNode = insert(WarningsModuleNode.create());
@@ -1099,7 +1179,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
 
             /*
-             * Unfortunately, this has do be done eagerly for now, because of the way that the
+             * Unfortunately, this has to be done eagerly for now, because of the way that the
              * action filters filter by message text. So we cannot easily wait until we find "ah,
              * this warning will be ignored" and then format behind the TruffleBoundary at the end
              * of warnExplicit, since matching the filters needs the text. We could very carefully
@@ -1107,7 +1187,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
              * but that's a bit involved and might not be worth it.
              */
             @TruffleBoundary
-            private static String formatMessage(String format, Object... formatArgs) {
+            private static String formatMessage(TruffleString format, Object... formatArgs) {
                 String message;
                 try {
                     message = formatter.format(format, formatArgs);
@@ -1126,17 +1206,17 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
-            protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+            protected void execute(Frame frame, Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs) {
                 executeImpl(source, category, format, stackLevel, formatArgs);
             }
 
             @TruffleBoundary
-            private void executeImpl(Object source, Object category, String format, int stackLevel, Object... formatArgs) {
-                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule("_warnings");
-                Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
-                String message;
+            private void executeImpl(Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs) {
+                PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule(T__WARNINGS);
+                Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, T_WARN, PNone.NONE);
+                TruffleString message;
                 try {
-                    message = formatter.format(format, formatArgs);
+                    message = TruffleString.fromJavaStringUncached(formatter.format(format, formatArgs), TS_ENCODING);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -126,7 +126,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
                 } else {
                     warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                                    ErrorMessages.WARN_P_RETURNED_NON_P, object, __FLOAT__, "float", result, "float");
+                                    ErrorMessages.WARN_P_RETURNED_NON_P, object, T___FLOAT__, "float", result, "float");
                 }
             }
             return cast.execute(result);

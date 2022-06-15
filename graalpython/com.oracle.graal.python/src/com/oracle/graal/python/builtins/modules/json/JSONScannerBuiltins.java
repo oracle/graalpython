@@ -1,11 +1,13 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.modules.json;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -27,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -41,14 +44,18 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONScanner)
 public class JSONScannerBuiltins extends PythonBuiltins {
+
+    public static final TruffleString T_JSON_DECODE_ERROR = tsLiteral("JSONDecodeError");
 
     static final class IntRef {
         int value;
@@ -59,8 +66,8 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         return JSONScannerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "string", "idx"})
+    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "idx", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CallScannerNode extends PythonTernaryClinicBuiltinNode {
@@ -85,7 +92,8 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONScanner self, String string, int idx) {
+        protected PTuple call(PJSONScanner self, TruffleString string, int idx,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             if (tupleInstanceShape == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 tupleInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
@@ -99,7 +107,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                 dictInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
             }
             IntRef nextIdx = new IntRef();
-            Object result = scanOnceUnicode(self, string, idx, nextIdx);
+            Object result = scanOnceUnicode(self, toJavaStringNode.execute(string), idx, nextIdx);
             return factory.createTuple(new Object[]{result, nextIdx.value});
         }
 
@@ -133,10 +141,10 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
                     /* read key */
                     if (idx >= length || string.charAt(idx) != '"') {
-                        throw decodeError(raiseNode, string, idx, "Expecting property name enclosed in double quotes");
+                        throw decodeError(raiseNode, string, idx, ErrorMessages.EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES);
                     }
-                    String newKey = scanStringUnicode(string, idx + 1, scanner.strict, nextIdx, raiseNode);
-                    String key = scanner.memo.putIfAbsent(newKey, newKey);
+                    TruffleString newKey = scanStringUnicode(string, idx + 1, scanner.strict, nextIdx, raiseNode);
+                    TruffleString key = scanner.memo.putIfAbsent(newKey, newKey);
                     if (key == null) {
                         key = newKey;
                     }
@@ -145,7 +153,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                     /* skip whitespace between key and : delimiter, read :, skip whitespace */
                     idx = skipWhitespace(string, idx, length);
                     if (idx >= length || string.charAt(idx) != ':') {
-                        throw decodeError(raiseNode, string, idx, "Expecting ':' delimiter");
+                        throw decodeError(raiseNode, string, idx, ErrorMessages.EXPECTING_COLON_DELIMITER);
                     }
                     idx = skipWhitespace(string, idx + 1, length);
 
@@ -167,7 +175,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                         break;
                     }
                     if (idx >= length || string.charAt(idx) != ',') {
-                        throw decodeError(raiseNode, string, idx, "Expecting ',' delimiter");
+                        throw decodeError(raiseNode, string, idx, ErrorMessages.EXPECTING_COMMA_DELIMITER);
                     }
 
                     /* skip whitespace after , delimiter */
@@ -220,7 +228,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                         break;
                     }
                     if (idx >= length || string.charAt(idx) != ',') {
-                        throw decodeError(raiseNode, string, idx, "Expecting ',' delimiter");
+                        throw decodeError(raiseNode, string, idx, ErrorMessages.EXPECTING_COMMA_DELIMITER);
                     }
                     idx++;
 
@@ -230,7 +238,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
             /* verify that idx < (length-1), string.charAt( idx) should be ']' */
             if (idx >= length || string.charAt(idx) != ']') {
-                throw decodeError(raiseNode, string, length - 1, "Expecting value");
+                throw decodeError(raiseNode, string, length - 1, ErrorMessages.EXPECTING_VALUE);
             }
             nextIdx.value = idx + 1;
             return factory.createList(PythonBuiltinClassType.PList, listInstanceShape, storage);
@@ -254,7 +262,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
              */
 
             nextIdx.value = idx + constant.length();
-            return callParseConstant.executeObject(scanner.parseConstant, constant);
+            return callParseConstant.executeObject(scanner.parseConstant, toTruffleStringUncached(constant));
         }
 
         private Object matchNumberUnicode(PJSONScanner scanner, String string, int start, IntRef nextIdx) {
@@ -332,7 +340,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                     return FloatUtils.parseValidString(numStr);
                 } else {
                     /* copy the section we determined to be a number */
-                    String numStr = string.substring(start, idx);
+                    TruffleString numStr = toTruffleStringUncached(string.substring(start, idx));
                     return callParseFloat.executeObject(scanner.parseFloat, numStr);
                 }
             } else {
@@ -356,7 +364,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                     return factory.createInt(bi);
                 } else {
                     /* copy the section we determined to be a number */
-                    String numStr = string.substring(start, idx);
+                    TruffleString numStr = toTruffleStringUncached(string.substring(start, idx));
                     return callParseInt.executeObject(scanner.parseInt, numStr);
                 }
             }
@@ -372,7 +380,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
              * Returns a new PyObject representation of the term.
              */
             if (idx < 0) {
-                throw raise(PythonBuiltinClassType.ValueError, "idx cannot be negative");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.IDX_CANNOT_BE_NEG);
             }
             int length = string.length();
             if (idx >= length) {
@@ -449,12 +457,12 @@ public class JSONScannerBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    static String scanStringUnicode(String string, int start, boolean strict, IntRef nextIdx, PRaiseNode raiseNode) {
+    static TruffleString scanStringUnicode(String string, int start, boolean strict, IntRef nextIdx, PRaiseNode raiseNode) {
         String result;
         StringBuilder builder = null;
 
         if (start < 0 || start > string.length()) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, "end is out of bounds");
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.END_IS_OUT_OF_BOUNDS);
         }
         int idx = start;
         while (idx < string.length()) {
@@ -463,25 +471,25 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                 // we reached the end of the string literal
                 result = builder == null ? string.substring(start, idx - 1) : builder.toString();
                 nextIdx.value = idx;
-                return result.toString();
+                return toTruffleStringUncached(result);
             } else if (c == '\\') {
                 // escape sequence, switch to StringBuilder
                 if (builder == null) {
                     builder = new StringBuilder().append(string, start, idx - 1);
                 }
                 if (idx >= string.length()) {
-                    throw decodeError(raiseNode, string, start - 1, "Unterminated string starting at");
+                    throw decodeError(raiseNode, string, start - 1, ErrorMessages.UTERMINATED_STR_STARTING);
                 }
                 c = string.charAt(idx++);
                 if (c == 'u') {
                     if (idx + 3 >= string.length()) {
-                        throw decodeError(raiseNode, string, idx - 1, "Invalid \\uXXXX escape");
+                        throw decodeError(raiseNode, string, idx - 1, ErrorMessages.INVALID_UXXXX_ESCAPE);
                     }
                     c = 0;
                     for (int i = 0; i < 4; i++) {
                         int digit = Character.digit(string.charAt(idx++), 16);
                         if (digit == -1) {
-                            throw decodeError(raiseNode, string, idx - 1, "Invalid \\uXXXX escape");
+                            throw decodeError(raiseNode, string, idx - 1, ErrorMessages.INVALID_UXXXX_ESCAPE);
                         }
                         c = (char) ((c << 4) + digit);
                     }
@@ -507,28 +515,28 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                             c = '\t';
                             break;
                         default:
-                            throw decodeError(raiseNode, string, idx - 1, "Invalid \\escape");
+                            throw decodeError(raiseNode, string, idx - 1, ErrorMessages.INVALID_ESCAPE);
                     }
                 }
                 builder.append(c);
             } else {
                 // any other character: check if in strict mode
                 if (strict && c < 0x20) {
-                    throw decodeError(raiseNode, string, idx - 1, "Invalid control character at");
+                    throw decodeError(raiseNode, string, idx - 1, ErrorMessages.INVALID_CTRL_CHARACTER_AT);
                 }
                 if (builder != null) {
                     builder.append(c);
                 }
             }
         }
-        throw decodeError(raiseNode, string, start - 1, "Unterminated string starting at");
+        throw decodeError(raiseNode, string, start - 1, ErrorMessages.UNTERMINATED_STR_STARTING_AT);
     }
 
-    private static RuntimeException decodeError(Node raisingNode, String jsonString, int pos, String format) {
+    private static RuntimeException decodeError(Node raisingNode, String jsonString, int pos, TruffleString format) {
         CompilerAsserts.neverPartOfCompilation();
-        Object module = AbstractImportNode.importModule("json.decoder");
-        Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, "JSONDecodeError");
-        Object exception = CallNode.getUncached().execute(errorClass, format, jsonString, pos);
+        Object module = AbstractImportNode.importModule(toTruffleStringUncached("json.decoder"));
+        Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, T_JSON_DECODE_ERROR);
+        Object exception = CallNode.getUncached().execute(errorClass, format, toTruffleStringUncached(jsonString), pos);
         throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
     }
 

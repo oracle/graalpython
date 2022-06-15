@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
@@ -78,6 +81,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
 public class SSLSocketBuiltins extends PythonBuiltins {
@@ -224,9 +228,10 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class VersionNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getVersion(PSSLSocket self) {
+        static Object getVersion(PSSLSocket self,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             if (self.isHandshakeComplete()) {
-                return getProtocol(self.getEngine());
+                return fromJavaStringNode.execute(getProtocol(self.getEngine()), TS_ENCODING);
             }
             return PNone.NONE;
         }
@@ -349,12 +354,14 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_channel_binding", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sb_type"})
-    @ArgumentClinic(name = "sb_type", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"tls-unique\"")
+    @ArgumentClinic(name = "sb_type", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_TLS_UNIQUE")
     @GenerateNodeFactory
     abstract static class GetChannelBinding extends PythonBinaryClinicBuiltinNode {
+        static final TruffleString T_TLS_UNIQUE = tsLiteral("tls-unique");
+
         @Specialization
         @SuppressWarnings("unused")
-        Object getChannelBinding(PSSLSocket self, String sbType) {
+        Object getChannelBinding(PSSLSocket self, TruffleString sbType) {
             // JDK doesn't have an API to access what we need. BouncyCastle could provide this
             throw raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
         }
@@ -414,7 +421,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object get(PSSLSocket socket) {
             String protocol = socket.getEngine().getApplicationProtocol();
-            return protocol != null && !protocol.isEmpty() ? protocol : PNone.NONE;
+            return protocol != null && !protocol.isEmpty() ? toTruffleStringUncached(protocol) : PNone.NONE;
         }
     }
 

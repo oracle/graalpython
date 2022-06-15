@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -73,10 +74,16 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class ClinicTests {
     public static final boolean EXPECT_TYPE_ERROR = true;
     public static final int DEFAULT_VALUE_42 = 42;
+    private static final TruffleString T_DO_DEFAULTS = tsLiteral("doDefaults");
+    private static final TruffleString T_TYPE_ERROR = tsLiteral("typeError");
+    private static final TruffleString T_A_INPUT = tsLiteral("a_input");
+    private static final TruffleString T_B_INPUT = tsLiteral("b_input");
+    private static final TruffleString T_DONE = tsLiteral("done");
 
     @Before
     public void setUp() {
@@ -101,22 +108,22 @@ public class ClinicTests {
         Object doDefaults(int a, int b) {
             assertEquals(42, a);
             assertEquals(7, b);
-            return "doDefaults";
+            return T_DO_DEFAULTS;
         }
     }
 
     @Test
     public void testDefaultValues() {
         CallTarget callTarget = createCallTarget(MyBuiltinWithDefaultValuesNodeGen.create());
-        assertEquals("doDefaults", callTarget.call(PNone.NO_VALUE, PNone.NO_VALUE));
-        assertEquals("doDefaults", callTarget.call(PNone.NONE, PNone.NO_VALUE));
-        assertEquals("typeError", callTarget.call(PNone.NONE, PNone.NONE, EXPECT_TYPE_ERROR));
+        assertEquals(T_DO_DEFAULTS, callTarget.call(PNone.NO_VALUE, PNone.NO_VALUE));
+        assertEquals(T_DO_DEFAULTS, callTarget.call(PNone.NONE, PNone.NO_VALUE));
+        assertEquals(T_TYPE_ERROR, callTarget.call(PNone.NONE, PNone.NONE, EXPECT_TYPE_ERROR));
     }
 
     public static final class MyCustomConvertor extends ArgumentCastNode {
-        private final String expectedArgValue;
+        private final TruffleString expectedArgValue;
 
-        public MyCustomConvertor(String expectedArgValue) {
+        public MyCustomConvertor(TruffleString expectedArgValue) {
             this.expectedArgValue = expectedArgValue;
         }
 
@@ -138,13 +145,13 @@ public class ClinicTests {
                     assertEquals(42, defaultValue);
                     assertTrue(useDefaultForNone);
                     assertEquals("a_extra", extraArgument);
-                    return new MyCustomConvertor("a_input");
+                    return new MyCustomConvertor(T_A_INPUT);
                 case "b":
                     assertEquals(1, index);
                     assertEquals(7, defaultValue);
                     assertFalse(useDefaultForNone);
                     assertEquals("b_extra", extraArgument);
-                    return new MyCustomConvertor("b_input");
+                    return new MyCustomConvertor(T_B_INPUT);
                 default:
                     throw new AssertionError(name);
             }
@@ -167,14 +174,14 @@ public class ClinicTests {
         Object doDefaults(int a, int b) {
             assertEquals(42, a);
             assertEquals(42, b);
-            return "done";
+            return T_DONE;
         }
     }
 
     @Test
     public void testCustomConvertor() {
         CallTarget callTarget = createCallTarget(MyBuiltinWithCustomConvertorNodeGen.create());
-        assertEquals("done", callTarget.call("a_input", "b_input"));
+        assertEquals(T_DONE, callTarget.call(T_A_INPUT, T_B_INPUT));
     }
 
     private static CallTarget createCallTarget(PythonBinaryClinicBuiltinNode node) {
@@ -197,7 +204,7 @@ public class ClinicTests {
                 boolean expectTypeError = frame.getArguments().length >= 3 && (boolean) frame.getArguments()[2];
                 if (expectTypeError) {
                     ex.expect(PythonBuiltinClassType.TypeError, IsBuiltinClassProfile.getUncached());
-                    return "typeError";
+                    return T_TYPE_ERROR;
                 } else {
                     throw ex;
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,13 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READALL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READALL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READALL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
@@ -89,7 +92,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         return RawIOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "$size"})
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "$size"})
     @ArgumentClinic(name = "$size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
@@ -105,7 +108,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, READALL);
+            return callMethod.execute(frame, self, T_READALL);
         }
 
         @Specialization(guards = "size >= 0")
@@ -114,7 +117,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
-            Object res = callMethodReadInto.execute(frame, self, READINTO, b);
+            Object res = callMethodReadInto.execute(frame, self, T_READINTO, b);
             if (res == PNone.NONE) {
                 return res;
             }
@@ -130,7 +133,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READALL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READALL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadallNode extends PythonBuiltinNode {
 
@@ -144,7 +147,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
-                Object data = callMethodRead.execute(frame, self, READ, DEFAULT_BUFFER_SIZE);
+                Object data = callMethodRead.execute(frame, self, T_READ, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
                 if (data == PNone.NONE) {
                     if (chunks.size() == 0) {
@@ -167,7 +170,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_READINTO, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends PythonBuiltinNode {
 
@@ -180,7 +183,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
 

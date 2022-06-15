@@ -125,6 +125,8 @@ import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -145,6 +147,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Compiler for bytecode interpreter.
@@ -603,7 +606,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     k.value.accept(this);
                     collector.appendCollection();
                 } else {
-                    addOp(LOAD_STRING, addObject(unit.constants, k.arg));
+                    addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(k.arg)));
                     k.value.accept(this);
                     collector.appendItem();
                 }
@@ -616,7 +619,8 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void makeClosure(CodeUnit code) {
         if (code.freevars.length > 0) {
             // add the closure
-            for (String fv : code.freevars) {
+            for (TruffleString tfv : code.freevars) {
+                String fv = tfv.toJavaStringUncached();
                 // special case for class scopes
                 int arg;
                 if (unit.scopeType == CompilationScope.Class && "__class__".equals(fv) || unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
@@ -662,7 +666,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(AliasTy node) {
         addOp(LOAD_BYTE, 0);
-        addOp(LOAD_CONST, addObject(unit.constants, PythonUtils.EMPTY_STRING_ARRAY));
+        addOp(LOAD_CONST, addObject(unit.constants, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY));
         addOpName(IMPORT_NAME, unit.names, node.name);
         if (node.asName != null) {
             int dotIdx = node.name.indexOf('.');
@@ -987,7 +991,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BIGINTEGER:
                     return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
                 case RAW:
-                    return addOp(LOAD_STRING, addObject(unit.constants, node.value));
+                    return addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached((String) node.value)));
                 case BYTES:
                     return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
                 default:
@@ -1083,7 +1087,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         int savedOffset = setLocation(node);
         try {
             // TODO add optimized op for small chains
-            addOp(LOAD_STRING, addObject(unit.constants, ""));
+            addOp(LOAD_STRING, addObject(unit.constants, T_EMPTY_STRING));
             collectIntoArray(node.values, CollectionBits.LIST);
             addOp(CALL_METHOD, addObject(unit.names, "join"), new byte[]{1});
             return null;
@@ -1477,7 +1481,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(KeywordTy node) {
         node.value.accept(this);
         setLocation(node);
-        return addOp(MAKE_KEYWORD, addObject(unit.constants, node.arg));
+        return addOp(MAKE_KEYWORD, addObject(unit.constants, toTruffleStringUncached(node.arg)));
     }
 
     @Override
@@ -1621,7 +1625,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
         addNameOp("__name__", ExprContext.Load);
         addNameOp("__module__", ExprContext.Store);
-        addOp(LOAD_STRING, addObject(unit.constants, unit.qualName));
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(unit.qualName)));
         addNameOp("__qualname__", ExprContext.Store);
 
         visitBody(node.body);
@@ -1640,7 +1644,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         addOp(LOAD_BUILD_CLASS);
         makeClosure(co);
-        addOp(LOAD_STRING, addObject(unit.constants, node.name));
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
 
         if ((node.bases.length < 3) && node.keywords.length == 0) {
             visitSequence(node.bases);
@@ -1856,9 +1860,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(StmtTy.ImportFrom node) {
         setLocation(node);
         addLoadLong(node.level);
-        String[] names = new String[node.names.length];
+        TruffleString[] names = new TruffleString[node.names.length];
         for (int i = 0; i < node.names.length; i++) {
-            names[i] = node.names[i].name;
+            names[i] = toTruffleStringUncached(node.names[i].name);
         }
         String moduleName = node.module != null ? node.module : "";
         if ("*".equals(node.names[0].name)) {

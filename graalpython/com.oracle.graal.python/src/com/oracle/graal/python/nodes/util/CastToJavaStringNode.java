@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -67,20 +68,22 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     public abstract String execute(Object x) throws CannotCastException;
 
     @Specialization
-    static String doString(String x) {
-        return x;
+    static String doString(TruffleString x,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(x);
     }
 
-    @Specialization(guards = "isMaterialized(x)")
-    static String doPStringMaterialized(PString x) {
-        // cast guaranteed by the guard
-        return (String) x.getCharSequence();
+    @Specialization(guards = "x.isMaterialized()")
+    static String doPStringMaterialized(PString x,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(x.getMaterialized());
     }
 
-    @Specialization(guards = "!isMaterialized(x)")
+    @Specialization(guards = "!x.isMaterialized()")
     static String doPStringGeneric(PString x,
-                    @Cached StringMaterializeNode materializeNode) {
-        return materializeNode.execute(x);
+                    @Cached StringMaterializeNode materializeNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(materializeNode.execute(x));
     }
 
     @Specialization
@@ -88,12 +91,13 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
-                    @Cached ToSulongNode toSulongNode) {
+                    @Cached ToSulongNode toSulongNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
             // read the native data
             Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
-            assert result instanceof String;
-            return (String) result;
+            assert result instanceof TruffleString;
+            return toJavaStringNode.execute((TruffleString) result);
         }
         // the object's type is not a subclass of 'str'
         throw CannotCastException.INSTANCE;
@@ -102,10 +106,6 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     @Specialization(guards = {"!isString(x)", "!isNativeObject(x)"})
     static String doUnsupported(@SuppressWarnings("unused") Object x) {
         throw CannotCastException.INSTANCE;
-    }
-
-    static boolean isMaterialized(PString x) {
-        return x.getCharSequence() instanceof String;
     }
 
     public static CastToJavaStringNode create() {

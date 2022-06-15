@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -108,7 +109,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
             boolean reportAllocation = reporter.isActive();
             if (isLoggable || traceNativeMemory || reportAllocation) {
                 if (isLoggable) {
-                    LOGGER.finer(() -> String.format("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
+                    LOGGER.finer(() -> PythonUtils.formatJString("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
                 }
                 if (traceNativeMemory) {
                     PFrame.Reference ref = null;

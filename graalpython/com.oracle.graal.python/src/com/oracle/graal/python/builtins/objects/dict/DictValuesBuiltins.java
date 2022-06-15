@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 
 import java.util.List;
 
@@ -62,7 +62,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         return DictValuesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
@@ -72,7 +72,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
@@ -83,7 +83,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
@@ -95,7 +95,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization(limit = "1")

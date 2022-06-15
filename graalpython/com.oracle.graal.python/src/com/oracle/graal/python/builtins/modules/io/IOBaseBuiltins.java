@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,36 +40,46 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.PEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKCLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKREADABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKSEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKWRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.__IOBASE_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITELINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHECKCLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHECKREADABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHECKSEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHECKWRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_PEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T___IOBASE_CLOSED;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_NOT_P;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -118,6 +128,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PIOBase)
 public final class IOBaseBuiltins extends PythonBuiltins {
@@ -130,7 +141,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         return IOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
@@ -141,7 +152,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends PythonUnaryBuiltinNode {
 
@@ -151,7 +162,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends PythonUnaryBuiltinNode {
 
@@ -161,7 +172,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends PythonUnaryBuiltinNode {
 
@@ -171,28 +182,28 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = _CHECKCLOSED, minNumOfPositionalArgs = 1)
+    @Builtin(name = J__CHECKCLOSED, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isTrueNode.execute(frame, getAttr.execute(frame, self, CLOSED))) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, self, T_CLOSED))) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = _CHECKSEEKABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J__CHECKSEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckSeekableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached IsNode isNode) {
-            Object v = callMethod.execute(frame, self, SEEKABLE);
+            Object v = callMethod.execute(frame, self, T_SEEKABLE);
             if (isNode.isTrue(v)) {
                 return true;
             }
@@ -200,14 +211,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = _CHECKREADABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J__CHECKREADABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckReadableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached IsNode isNode) {
-            Object v = callMethod.execute(frame, self, READABLE);
+            Object v = callMethod.execute(frame, self, T_READABLE);
             if (isNode.isTrue(v)) {
                 return true;
             }
@@ -215,14 +226,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = _CHECKWRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J__CHECKWRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckWritableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached IsNode isNode) {
-            Object result = callMethod.execute(frame, self, WRITABLE);
+            Object result = callMethod.execute(frame, self, T_WRITABLE);
             if (isNode.isTrue(result)) {
                 return true;
             }
@@ -230,7 +241,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
@@ -238,11 +249,11 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         PNone close(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached("create(__IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
+                        @Cached("create(T___IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
                         @Cached BranchProfile errorProfile) {
             if (!isClosed(self, frame, lookup)) {
                 try {
-                    callMethod.execute(frame, self, FLUSH);
+                    callMethod.execute(frame, self, T_FLUSH);
                 } catch (PException e) {
                     errorProfile.enter();
                     try {
@@ -260,7 +271,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FLUSH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
@@ -274,35 +285,35 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEK, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonBuiltinNode {
         @Specialization
         Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args) {
-            throw unsupported(getRaiseNode(), SEEK);
+            throw unsupported(getRaiseNode(), T_SEEK);
         }
     }
 
-    @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBuiltinNode {
         @Specialization
         Object truncate(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), TRUNCATE);
+            throw unsupported(getRaiseNode(), T_TRUNCATE);
         }
     }
 
-    @Builtin(name = TELL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object tell(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, SEEK, 0, 1);
+            return callMethod.execute(frame, self, T_SEEK, 0, 1);
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -313,26 +324,26 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self, CLOSE);
+            return callMethod.execute(frame, self, T_CLOSE);
         }
     }
 
-    @Builtin(name = FILENO, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FILENO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object fileno(@SuppressWarnings("unused") PythonObject self) {
-            throw unsupported(getRaiseNode(), FILENO);
+            throw unsupported(getRaiseNode(), T_FILENO);
         }
     }
 
-    @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsattyNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -343,7 +354,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -354,14 +365,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object next(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode) {
-            Object line = callMethod.execute(frame, self, READLINE);
+            Object line = callMethod.execute(frame, self, T_READLINE);
             if (sizeNode.execute(frame, line) <= 0) {
                 throw raiseStopIteration();
             }
@@ -369,7 +380,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
+    @Builtin(name = J_WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -389,14 +400,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                callMethod.execute(frame, self, WRITE, line);
+                callMethod.execute(frame, self, T_WRITE, line);
                 // TODO _PyIO_trap_eintr [GR-23297]
             }
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBinaryClinicBuiltinNode {
@@ -418,7 +429,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasPeek,
                         @Cached ConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
-            Object peek = lookupPeek.execute(frame, self, PEEK);
+            Object peek = lookupPeek.execute(frame, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
@@ -441,7 +452,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object b = callRead.execute(frame, self, READ, nreadahead);
+                Object b = callRead.execute(frame, self, T_READ, nreadahead);
                 if (isBytes.profile(!(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
@@ -461,7 +472,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READLINES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "hint"})
+    @Builtin(name = J_READLINES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "hint"})
     @ArgumentClinic(name = "hint", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlinesNode extends PythonBinaryClinicBuiltinNode {
@@ -508,18 +519,18 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent of {@code iobase_is_closed}.
-     * 
+     *
      * @param self the IOBase instance
-     * @return true if the {@link IONodes#__IOBASE_CLOSED} attribute exists
+     * @return true if the {@link IONodes#T___IOBASE_CLOSED} attribute exists
      */
     private static boolean isClosed(PythonObject self, VirtualFrame frame, PyObjectLookupAttr lookup) {
-        return !PGuards.isNoValue(lookup.execute(frame, self, __IOBASE_CLOSED));
+        return !PGuards.isNoValue(lookup.execute(frame, self, T___IOBASE_CLOSED));
     }
 
     /**
      * Equivalent of {@code iobase_unsupported}.
      */
-    private static PException unsupported(PRaiseNode raiseNode, String message) {
+    private static PException unsupported(PRaiseNode raiseNode, TruffleString message) {
         throw raiseNode.raise(IOUnsupportedOperation, message);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,12 +46,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED_GOT;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.List;
 
@@ -89,7 +90,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         return TeeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -107,11 +108,11 @@ public final class TeeBuiltins extends PythonBuiltins {
         }
 
         protected LookupAndCallUnaryNode createCopyNode() {
-            return LookupAndCallUnaryNode.create(__COPY__);
+            return LookupAndCallUnaryNode.create(T___COPY__);
         }
     }
 
-    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -120,7 +121,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -130,7 +131,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(TeeDataObjectBuiltins.class)
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
@@ -151,7 +152,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         abstract Object execute(VirtualFrame frame, PythonObject self);
@@ -167,7 +168,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         abstract Object execute(VirtualFrame frame, PythonObject self, Object state);

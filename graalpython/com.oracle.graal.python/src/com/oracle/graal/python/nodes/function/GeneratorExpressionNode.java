@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,10 +40,11 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
-    private final String name;
-    private final String qualname;
+    private final TruffleString name;
+    private final TruffleString qualname;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
@@ -53,7 +54,8 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Child private ExpressionNode getIterator;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorExpressionNode(String name, String qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
+    public GeneratorExpressionNode(TruffleString name, TruffleString qualname, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor,
+                    DefinitionCellSlots definitionCellSlots,
                     GeneratorInfo generatorInfo) {
         super(definitionCellSlots, callTarget);
         this.name = name;
@@ -63,7 +65,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         this.generatorInfo = generatorInfo;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
@@ -117,6 +119,6 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return name;
+        return name.toJavaStringUncached();
     }
 }

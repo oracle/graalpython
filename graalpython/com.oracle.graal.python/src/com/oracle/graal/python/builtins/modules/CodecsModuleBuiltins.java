@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
-import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
-import static com.oracle.graal.python.nodes.BuiltinNames._CODECS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_SEARCH_MUST_RETURN_4;
@@ -54,13 +56,26 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_RETURN_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_DECODE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NAMEREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEPASS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF_UNDERSCORE_8;
+import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -112,10 +127,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -129,41 +146,33 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
-@CoreFunctions(defineModule = _CODECS)
+@CoreFunctions(defineModule = J__CODECS)
 public class CodecsModuleBuiltins extends PythonBuiltins {
 
-    public static final String STRICT = "strict";
-    public static final String IGNORE = "ignore";
-    public static final String REPLACE = "replace";
-    public static final String BACKSLASHREPLACE = "backslashreplace";
-    public static final String NAMEREPLACE = "namereplace";
-    public static final String XMLCHARREFREPLACE = "xmlcharrefreplace";
-    public static final String SURROGATEESCAPE = "surrogateescape";
-    public static final String SURROGATEPASS = "surrogatepass";
+    public static final TruffleString T_UTF_7 = tsLiteral("utf-7");
+    public static final TruffleString T_UTF_16 = tsLiteral("utf-16");
+    public static final TruffleString T_UTF_16_LE = tsLiteral("utf-16-le");
+    public static final TruffleString T_UTF_16_BE = tsLiteral("utf-16-be");
+    public static final TruffleString T_UTF_32 = tsLiteral("utf-32");
+    public static final TruffleString T_UTF_32_LE = tsLiteral("utf-32-le");
+    public static final TruffleString T_UTF_32_BE = tsLiteral("utf-32-be");
+    public static final TruffleString T_RAW_UNICODE_ESCAPE = tsLiteral("raw_unicode_escape");
+    public static final TruffleString T_UNICODE_ESCAPE = tsLiteral("unicode_escape");
+    public static final TruffleString T_LATIN_1 = tsLiteral("latin_1");
 
-    public static CodingErrorAction convertCodingErrorAction(String errors) {
-        CodingErrorAction errorAction;
-        switch (errors) {
-            // TODO: see [GR-10256] to implement the correct handling mechanics
-            case IGNORE:
-                errorAction = CodingErrorAction.IGNORE;
-                break;
-            case REPLACE:
-            case NAMEREPLACE:
-                errorAction = CodingErrorAction.REPLACE;
-                break;
-            case STRICT:
-            case BACKSLASHREPLACE:
-            case SURROGATEPASS:
-            case SURROGATEESCAPE:
-            case XMLCHARREFREPLACE:
-            default:
-                // Everything else will be handled by our Handle nodes
-                errorAction = CodingErrorAction.REPORT;
-                break;
+    public static CodingErrorAction convertCodingErrorAction(TruffleString errors, TruffleString.EqualNode equalNode) {
+        // TODO: see [GR-10256] to implement the correct handling mechanics
+        // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
+        if (equalNode.execute(T_IGNORE, errors, TS_ENCODING)) {
+            return CodingErrorAction.IGNORE;
         }
-        return errorAction;
+        if (equalNode.execute(T_REPLACE, errors, TS_ENCODING) || equalNode.execute(T_NAMEREPLACE, errors, TS_ENCODING)) {
+            return CodingErrorAction.REPLACE;
+        }
+        return CodingErrorAction.REPORT;
     }
 
     @Override
@@ -195,29 +204,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     public abstract static class HandleEncodingErrorNode extends Node {
-        public abstract void execute(TruffleEncoder encoder, String errorAction, Object inputObject);
+        public abstract void execute(TruffleEncoder encoder, TruffleString errorAction, Object inputObject);
 
         @Specialization
-        static void handle(TruffleEncoder encoder, String errorAction, Object inputObject,
+        static void handle(TruffleEncoder encoder, TruffleString errorAction, Object inputObject,
                         @Cached ConditionProfile strictProfile,
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
                         @Cached ConditionProfile surrogateescapeProfile,
                         @Cached ConditionProfile xmlcharrefreplaceProfile,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             boolean fixed;
             try {
                 // Ignore and replace are handled by Java Charset
-                if (strictProfile.profile(STRICT.equals(errorAction))) {
+                if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
                     fixed = false;
-                } else if (backslashreplaceProfile.profile(BACKSLASHREPLACE.equals(errorAction))) {
+                } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
                     fixed = backslashreplace(encoder);
-                } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
-                    fixed = surrogatepass(encoder);
-                } else if (surrogateescapeProfile.profile(SURROGATEESCAPE.equals(errorAction))) {
+                } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
+                    fixed = surrogatepass(encoder, equalNode);
+                } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
                     fixed = surrogateescape(encoder);
-                } else if (xmlcharrefreplaceProfile.profile(XMLCHARREFREPLACE.equals(errorAction))) {
+                } else if (xmlcharrefreplaceProfile.profile(equalNode.execute(T_XMLCHARREFREPLACE, errorAction, TS_ENCODING))) {
                     fixed = xmlcharrefreplace(encoder);
                 } else {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
@@ -253,28 +263,33 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @TruffleBoundary
-        private static boolean surrogatepass(TruffleEncoder encoder) {
+        private static boolean surrogatepass(TruffleEncoder encoder, TruffleString.EqualNode equalNode) {
             // UTF-8 only for now. The name should be normalized already
-            if (encoder.getEncodingName().equals("utf_8")) {
-                String p = new String(encoder.getInputChars(encoder.getErrorLength()));
-                byte[] replacement = new byte[p.length() * 3];
-                int outp = 0;
-                for (int i = 0; i < p.length();) {
-                    int ch = p.codePointAt(i);
-                    if (!(0xD800 <= ch && ch <= 0xDFFF)) {
-                        // Not a surrogate
-                        return false;
-                    }
-                    replacement[outp++] = (byte) (0xe0 | (ch >> 12));
-                    replacement[outp++] = (byte) (0x80 | ((ch >> 6) & 0x3f));
-                    replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
-                    i += Character.charCount(ch);
-                }
-                encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
-                return true;
+            if (equalNode.execute(encoder.getEncodingName(), T_UTF_UNDERSCORE_8, TS_ENCODING)) {
+                return surrogatepassUtf8Boundary(encoder);
             }
             return false;
+        }
+
+        @TruffleBoundary
+        private static boolean surrogatepassUtf8Boundary(TruffleEncoder encoder) {
+            // TODO GR-37228: use TruffleString, remove boundary and inline into surrogatepass
+            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
+            byte[] replacement = new byte[p.length() * 3];
+            int outp = 0;
+            for (int i = 0; i < p.length();) {
+                int ch = p.codePointAt(i);
+                if (!(0xD800 <= ch && ch <= 0xDFFF)) {
+                    // Not a surrogate
+                    return false;
+                }
+                replacement[outp++] = (byte) (0xe0 | (ch >> 12));
+                replacement[outp++] = (byte) (0x80 | ((ch >> 6) & 0x3f));
+                replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
+                i += Character.charCount(ch);
+            }
+            encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
+            return true;
         }
 
         @TruffleBoundary
@@ -390,26 +405,27 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, String errorAction, Object inputObject);
+        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization
-        static void doStrict(TruffleDecoder decoder, String errorAction, Object inputObject,
+        static void doStrict(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
                         @Cached ConditionProfile strictProfile,
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
                         @Cached ConditionProfile surrogateescapeProfile,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             boolean fixed;
             try {
                 // Ignore and replace are handled by Java Charset
-                if (strictProfile.profile(STRICT.equals(errorAction))) {
+                if (strictProfile.profile(equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
                     fixed = false;
-                } else if (backslashreplaceProfile.profile(BACKSLASHREPLACE.equals(errorAction))) {
+                } else if (backslashreplaceProfile.profile(equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
                     fixed = backslashreplace(decoder);
-                } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
-                    fixed = surrogatepass(decoder);
-                } else if (surrogateescapeProfile.profile(SURROGATEESCAPE.equals(errorAction))) {
+                } else if (surrogatepassProfile.profile(equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
+                    fixed = surrogatepass(decoder, equalNode);
+                } else if (surrogateescapeProfile.profile(equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
                     fixed = surrogateescape(decoder);
                 } else {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
@@ -440,10 +456,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @TruffleBoundary
-        private static boolean surrogatepass(TruffleDecoder decoder) {
+        private static boolean surrogatepass(TruffleDecoder decoder, TruffleString.EqualNode equalNode) {
             // UTF-8 only for now. The name should be normalized already
-            if (decoder.getEncodingName().equals("utf_8")) {
+            if (equalNode.execute(decoder.getEncodingName(), T_UTF_UNDERSCORE_8, TS_ENCODING)) {
                 if (decoder.getInputRemaining() >= 3) {
                     byte[] p = decoder.getInputBytes(3);
                     if ((p[0] & 0xf0) == 0xe0 && (p[1] & 0xc0) == 0x80 && (p[2] & 0xc0) == 0x80) {
@@ -486,22 +501,25 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     public abstract static class CodecsEncodeToJavaBytesNode extends Node {
-        public abstract byte[] execute(Object self, String encoding, String errors);
+        public abstract byte[] execute(Object self, TruffleString encoding, TruffleString errors);
 
         @Specialization
-        byte[] encode(Object self, String encoding, String errors,
+        byte[] encode(Object self, TruffleString encoding, TruffleString errors,
                         @Cached CastToJavaStringNode castStr,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached HandleEncodingErrorNode errorHandler,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
             String input = castStr.execute(self);
-            CodingErrorAction errorAction = convertCodingErrorAction(errors);
-            Charset charset = CharsetMapping.getCharset(encoding);
+            CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
+            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
+            Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
             if (charset == null) {
                 throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleEncoder encoder;
             try {
-                encoder = new TruffleEncoder(CharsetMapping.normalize(encoding), charset, input, errorAction);
+                encoder = new TruffleEncoder(normalizedEncoding, charset, input, errorAction);
                 while (!encoder.encodingStep()) {
                     errorHandler.execute(encoder, errors, self);
                 }
@@ -515,8 +533,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_UTF8", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
         public abstract Object execute(Object str, Object encoding, Object errors);
@@ -527,12 +545,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(self)"})
-        Object encode(Object self, String encoding, String errors,
-                        @Cached CastToJavaStringNode castStr,
+        Object encode(Object self, TruffleString encoding, TruffleString errors,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached CodecsEncodeToJavaBytesNode encode) {
-            String input = castStr.execute(self);
+            TruffleString input = castStr.execute(self);
             PBytes bytes = factory().createBytes(encode.execute(self, encoding, errors));
-            return factory().createTuple(new Object[]{bytes, input.length()});
+            return factory().createTuple(new Object[]{bytes, codePointLengthNode.execute(input, TS_ENCODING)});
         }
 
         @Fallback
@@ -543,8 +562,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict', final=False)
     @Builtin(name = "__truffle_decode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_UTF8", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @ArgumentClinic(name = "final", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsDecodeNode extends PythonQuaternaryClinicBuiltinNode {
@@ -559,7 +578,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object decode(VirtualFrame frame, Object input, String encoding, String errors, boolean finalData,
+        Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
                         @Cached InternalCodecsDecodeNode internalNode) {
             return internalNode.execute(frame, this, input, encoding, errors, finalData);
         }
@@ -567,16 +586,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     public abstract static class InternalCodecsDecodeNode extends PNodeWithContext {
-        abstract Object execute(Frame frame, PNodeWithRaiseAndIndirectCall node, Object input, String encoding, String errors, boolean finalData);
+        abstract Object execute(Frame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData);
 
-        public final Object call(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, String encoding, String errors, boolean finalData) {
+        public final Object call(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData) {
             return execute(frame, node, input, encoding, errors, finalData);
         }
 
         @Specialization(limit = "3")
-        Object decode(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, String encoding, String errors, boolean finalData,
+        Object decode(VirtualFrame frame, PNodeWithRaiseAndIndirectCall node, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
                         @CachedLibrary("input") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
                         @Cached HandleDecodingErrorNode errorHandler,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
@@ -584,14 +605,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                CodingErrorAction errorAction = convertCodingErrorAction(errors);
-                Charset charset = CharsetMapping.getCharsetForDecoding(encoding, bytes, len);
+                CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
+                TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
+                Charset charset = CharsetMapping.getCharsetForDecodingNormalized(normalizedEncoding, bytes, len);
                 if (charset == null) {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
                 }
                 TruffleDecoder decoder;
                 try {
-                    decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, len, errorAction);
+                    decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
                         errorHandler.execute(decoder, errors, input);
                     }
@@ -608,40 +630,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
-        enum Errors {
-            ERR_STRICT,
-            ERR_IGNORE,
-            ERR_REPLACE,
-            ERR_UNKNOWN,
-        }
-
-        private static Errors getErrors(String err) {
-            switch (err) {
-                case STRICT:
-                    return Errors.ERR_STRICT;
-                case REPLACE:
-                    return Errors.ERR_REPLACE;
-                case IGNORE:
-                    return Errors.ERR_IGNORE;
-                default:
-                    return Errors.ERR_UNKNOWN;
-            }
-        }
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, String errors) {
+        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, TruffleString errors) {
             return decodeBytes(bytes, bytes.length, errors);
         }
 
         @Specialization(limit = "3")
-        Object decode(VirtualFrame frame, Object buffer, String errors,
+        Object decode(VirtualFrame frame, Object buffer, TruffleString errors,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
@@ -651,14 +653,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object decodeBytes(byte[] bytes, int len, String errors) {
+        private Object decodeBytes(byte[] bytes, int len, TruffleString errors) {
             ByteArrayBuffer result = doDecode(bytes, len, errors);
             return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
         }
 
         @TruffleBoundary
-        private ByteArrayBuffer doDecode(byte[] bytes, int bytesLen, String errors) {
-            Errors err = getErrors(errors);
+        private ByteArrayBuffer doDecode(byte[] bytes, int bytesLen, TruffleString errors) {
             ByteArrayBuffer buffer = new ByteArrayBuffer(bytesLen);
             for (int i = 0; i < bytesLen; i++) {
                 char chr = (char) bytes[i];
@@ -743,12 +744,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                             }
                         }
                         // invalid hexadecimal digits
-                        if (err == Errors.ERR_STRICT) {
+                        if (T_STRICT.equalsUncached(errors, TS_ENCODING)) {
                             throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
                         }
-                        if (err == Errors.ERR_REPLACE) {
+                        if (T_REPLACE.equalsUncached(errors, TS_ENCODING)) {
                             buffer.append('?');
-                        } else if (err == Errors.ERR_IGNORE) {
+                        } else if (T_IGNORE.equalsUncached(errors, TS_ENCODING)) {
                             // do nothing
                         } else {
                             throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
@@ -775,7 +776,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -785,7 +786,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object encode(PBytes data, @SuppressWarnings("unused") String errors,
+        Object encode(PBytes data, @SuppressWarnings("unused") TruffleString errors,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
             byte[] bytes = getInternalByteArrayNode.execute(data.getSequenceStorage());
             int size = bytes.length;
@@ -832,8 +833,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         @Specialization
-        static Object lookup(String encoding) {
-            if (hasTruffleEncoding(encoding)) {
+        static Object lookup(TruffleString encoding,
+                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
+            if (hasTruffleEncodingNormalized(normalizeEncodingNameNode.execute(encoding))) {
                 return true;
             } else {
                 return PNone.NONE;
@@ -841,16 +843,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static boolean hasTruffleEncoding(String encoding) {
-        return CharsetMapping.getCharset(encoding) != null;
+    private static boolean hasTruffleEncodingNormalized(TruffleString normalizedEncoding) {
+        return CharsetMapping.getCharsetNormalized(normalizedEncoding) != null;
     }
 
     @Builtin(name = "lookup", minNumOfPositionalArgs = 1, parameterNames = {"encoding"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class LookupNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PTuple lookup(VirtualFrame frame, String encoding,
+        PTuple lookup(VirtualFrame frame, TruffleString encoding,
                         @Cached InternalLookupNode internalNode) {
             return internalNode.execute(frame, encoding);
         }
@@ -863,29 +865,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @GenerateUncached
     abstract static class InternalLookupNode extends PNodeWithContext {
-        abstract PTuple execute(Frame frame, String encoding);
+        abstract PTuple execute(Frame frame, TruffleString encoding);
 
         @Specialization
-        PTuple lookup(VirtualFrame frame, String encoding,
+        PTuple lookup(VirtualFrame frame, TruffleString encoding,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectTypeCheck typeCheck,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile hasSearchPathProfile,
                         @Cached ConditionProfile hasTruffleEncodingProfile,
                         @Cached ConditionProfile isTupleProfile,
+                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
                         @Cached PRaiseNode raiseNode) {
-            String normalized_encoding = normalizeString(encoding);
+            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
             PythonContext context = getContext();
-            PTuple result = getSearchPath(context, normalized_encoding);
+            PTuple result = getSearchPath(context, normalizedEncoding);
             if (hasSearchPathProfile.profile(result != null)) {
                 return result;
             }
-            if (hasTruffleEncodingProfile.profile(hasTruffleEncoding(encoding))) {
-                PythonModule codecs = context.lookupBuiltinModule("_codecs_truffle");
+            if (hasTruffleEncodingProfile.profile(hasTruffleEncodingNormalized(normalizedEncoding))) {
+                PythonModule codecs = context.lookupBuiltinModule(T__CODECS_TRUFFLE);
                 result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, context.factory());
             } else {
                 for (Object func : getSearchPaths(context)) {
-                    Object obj = callNode.executeObject(func, normalized_encoding);
+                    Object obj = callNode.executeObject(func, normalizedEncoding);
                     if (obj != PNone.NONE) {
                         if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, typeCheck, sizeNode))) {
                             throw raiseNode.raise(TypeError, CODEC_SEARCH_MUST_RETURN_4);
@@ -896,19 +899,19 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (result != null) {
-                putSearchPath(context, normalized_encoding, result);
+                putSearchPath(context, normalizedEncoding, result);
                 return result;
             }
             throw raiseNode.raise(LookupError, UNKNOWN_ENCODING, encoding);
         }
 
         @TruffleBoundary
-        private static void putSearchPath(PythonContext ctx, String key, PTuple value) {
+        private static void putSearchPath(PythonContext ctx, TruffleString key, PTuple value) {
             ctx.getCodecSearchCache().put(key, value);
         }
 
         @TruffleBoundary
-        private static PTuple getSearchPath(PythonContext ctx, String key) {
+        private static PTuple getSearchPath(PythonContext ctx, TruffleString key) {
             return ctx.getCodecSearchCache().get(key);
         }
 
@@ -921,26 +924,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     private static boolean isTupleInstanceCheck(VirtualFrame frame, Object result, int len, PyObjectTypeCheck typeCheck, PyObjectSizeNode sizeNode) throws PException {
         return typeCheck.execute(result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, result) == len;
-    }
-
-    @TruffleBoundary
-    private static String normalizeString(String encoding) {
-        // Copied from encodings.normalize_encoding + added lowercasing
-        boolean punct = false;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < encoding.length(); i++) {
-            char c = encoding.charAt(i);
-            if (Character.isLetterOrDigit(c) || c == '.') {
-                if (punct && sb.length() > 0) {
-                    sb.append('_');
-                }
-                sb.append(Character.toLowerCase(c));
-                punct = false;
-            } else {
-                punct = true;
-            }
-        }
-        return sb.toString();
     }
 
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
@@ -972,20 +955,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
-            forget((String) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
+            forget((TruffleString) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
             return PNone.NONE;
         }
 
         @Specialization
         @TruffleBoundary
-        Object forget(String encoding) {
+        Object forget(TruffleString encoding) {
             PythonContext.get(this).getCodecSearchCache().remove(encoding);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "register_error", minNumOfPositionalArgs = 2, parameterNames = {"name", "handler"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class RegisterErrorNode extends PythonBinaryClinicBuiltinNode {
 
@@ -995,7 +978,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "callableCheckNode.execute(handler)")
-        Object register(String name, Object handler,
+        Object register(TruffleString name, Object handler,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
             put(PythonContext.get(this), name, handler);
             return PNone.NONE;
@@ -1003,19 +986,19 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!callableCheckNode.execute(handler)")
-        Object registerNoCallable(String name, Object handler,
+        Object registerNoCallable(TruffleString name, Object handler,
                         @Cached PyCallableCheckNode callableCheckNode) {
             throw raise(TypeError, HANDLER_MUST_BE_CALLABLE);
         }
 
         @TruffleBoundary
-        private static void put(PythonContext ctx, String name, Object handler) {
+        private static void put(PythonContext ctx, TruffleString name, Object handler) {
             ctx.getCodecErrorRegistry().put(name, handler);
         }
     }
 
     @Builtin(name = "lookup_error", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
 
@@ -1025,7 +1008,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object lookup(String name,
+        Object lookup(TruffleString name,
                         @Cached ConditionProfile resultProfile) {
             Object result = get(PythonContext.get(this), name);
             if (resultProfile.profile(result == null)) {
@@ -1035,14 +1018,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object get(PythonContext ctx, String name) {
+        private static Object get(PythonContext ctx, TruffleString name) {
             return ctx.getCodecErrorRegistry().get(name);
         }
     }
 
-    @Builtin(name = ENCODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
+    @Builtin(name = J_ENCODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_UTF8")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT")
     @GenerateNodeFactory
     public abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
 
@@ -1052,7 +1035,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, String encoding, String errors,
+        Object encode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
@@ -1069,13 +1052,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
+    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_UTF8")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT")
     @GenerateNodeFactory
     public abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
 
-        public abstract Object executeWithStrings(VirtualFrame frame, Object obj, String encoding, String errors);
+        public abstract Object executeWithStrings(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1083,7 +1066,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object decode(VirtualFrame frame, Object obj, String encoding, String errors,
+        Object decode(VirtualFrame frame, Object obj, TruffleString encoding, TruffleString errors,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
@@ -1100,16 +1083,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static Object codec_getItem(VirtualFrame frame, String encoding, int index, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
+    private static Object codec_getItem(VirtualFrame frame, TruffleString encoding, int index, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
         PTuple t = (PTuple) lookupNode.execute(frame, encoding);
         return getItemNode.execute(frame, t.getSequenceStorage(), index);
     }
 
-    private static Object encoder(VirtualFrame frame, String encoding, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
+    private static Object encoder(VirtualFrame frame, TruffleString encoding, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
         return codec_getItem(frame, encoding, 0, lookupNode, getItemNode);
     }
 
-    private static Object decoder(VirtualFrame frame, String encoding, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
+    private static Object decoder(VirtualFrame frame, TruffleString encoding, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
         return codec_getItem(frame, encoding, 1, lookupNode, getItemNode);
     }
 
@@ -1119,7 +1102,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-8", errors);
+            return encode.execute(frame, obj, T_UTF8, errors);
         }
     }
 
@@ -1129,7 +1112,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-8", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF8, errors, ffinal);
         }
     }
 
@@ -1139,7 +1122,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-7", errors);
+            return encode.execute(frame, obj, T_UTF_7, errors);
         }
     }
 
@@ -1149,7 +1132,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-7", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_7, errors, ffinal);
         }
     }
 
@@ -1159,7 +1142,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, @SuppressWarnings("unused") Object byteorder,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-16", errors);
+            return encode.execute(frame, obj, T_UTF_16, errors);
         }
     }
 
@@ -1169,7 +1152,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-16", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_16, errors, ffinal);
         }
     }
 
@@ -1179,7 +1162,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-16-le", errors);
+            return encode.execute(frame, obj, T_UTF_16_LE, errors);
         }
     }
 
@@ -1189,7 +1172,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-16-le", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_16_LE, errors, ffinal);
         }
     }
 
@@ -1199,7 +1182,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-16-be", errors);
+            return encode.execute(frame, obj, T_UTF_16_BE, errors);
         }
     }
 
@@ -1209,7 +1192,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-16-be", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_16_BE, errors, ffinal);
         }
     }
 
@@ -1219,7 +1202,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, "utf_16_ex_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("utf_16_ex_decode"));
         }
     }
 
@@ -1229,7 +1212,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, @SuppressWarnings("unused") Object byteorder,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-32", errors);
+            return encode.execute(frame, obj, T_UTF_32, errors);
         }
     }
 
@@ -1239,7 +1222,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-32", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_32, errors, ffinal);
         }
     }
 
@@ -1249,7 +1232,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-32-le", errors);
+            return encode.execute(frame, obj, T_UTF_32_LE, errors);
         }
     }
 
@@ -1259,7 +1242,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-32-le", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_32_LE, errors, ffinal);
         }
     }
 
@@ -1269,7 +1252,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "utf-32-be", errors);
+            return encode.execute(frame, obj, T_UTF_32_BE, errors);
         }
     }
 
@@ -1279,7 +1262,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "utf-32-be", errors, ffinal);
+            return decode.execute(frame, obj, T_UTF_32_BE, errors, ffinal);
         }
     }
 
@@ -1289,7 +1272,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, Object byteorder, Object ffinal) {
-            throw raise(NotImplementedError, "utf_32_ex_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("utf_32_ex_decode"));
         }
     }
 
@@ -1299,7 +1282,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors) {
-            throw raise(NotImplementedError, "unicode_internal_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("unicode_internal_encode"));
         }
     }
 
@@ -1309,7 +1292,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors) {
-            throw raise(NotImplementedError, "unicode_internal_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("unicode_internal_decode"));
         }
     }
 
@@ -1319,7 +1302,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "raw_unicode_escape", errors);
+            return encode.execute(frame, obj, T_RAW_UNICODE_ESCAPE, errors);
         }
     }
 
@@ -1329,7 +1312,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "raw_unicode_escape", errors, true);
+            return decode.execute(frame, obj, T_RAW_UNICODE_ESCAPE, errors, true);
         }
     }
 
@@ -1339,7 +1322,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "unicode_escape", errors);
+            return encode.execute(frame, obj, T_UNICODE_ESCAPE, errors);
         }
     }
 
@@ -1349,7 +1332,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "unicode_escape", errors, true);
+            return decode.execute(frame, obj, T_UNICODE_ESCAPE, errors, true);
         }
     }
 
@@ -1359,7 +1342,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "latin_1", errors);
+            return encode.execute(frame, obj, T_LATIN_1, errors);
         }
     }
 
@@ -1369,7 +1352,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "latin_1", errors, true);
+            return decode.execute(frame, obj, T_LATIN_1, errors, true);
         }
     }
 
@@ -1379,7 +1362,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.execute(frame, obj, "ascii", errors);
+            return encode.execute(frame, obj, T_ASCII, errors);
         }
     }
 
@@ -1389,7 +1372,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object decode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.execute(frame, obj, "ascii", errors, true);
+            return decode.execute(frame, obj, T_ASCII, errors, true);
         }
     }
 
@@ -1399,7 +1382,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(Object obj, Object errors, Object mapping) {
-            throw raise(NotImplementedError, "charmap_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("charmap_encode"));
         }
     }
 
@@ -1409,7 +1392,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object decode(Object obj, Object errors, Object mapping) {
-            throw raise(NotImplementedError, "charmap_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("charmap_decode"));
         }
     }
 
@@ -1419,7 +1402,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, "readbuffer_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("readbuffer_encode"));
         }
     }
 
@@ -1429,7 +1412,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, "mbcs_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("mbcs_encode"));
         }
     }
 
@@ -1439,7 +1422,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object decode(Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, "mbcs_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("mbcs_decode"));
         }
     }
 
@@ -1449,7 +1432,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(Object obj, Object errors) {
-            throw raise(NotImplementedError, "oem_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("oem_encode"));
         }
     }
 
@@ -1459,7 +1442,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object decode(Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, "oem_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("oem_decode"));
         }
     }
 
@@ -1469,7 +1452,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object encode(Object code_page, Object string, Object errors) {
-            throw raise(NotImplementedError, "code_page_encode");
+            throw raise(NotImplementedError, toTruffleStringUncached("code_page_encode"));
         }
     }
 
@@ -1479,7 +1462,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object decode(Object code_page, Object obj, Object errors, Object ffinal) {
-            throw raise(NotImplementedError, "code_page_decode");
+            throw raise(NotImplementedError, toTruffleStringUncached("code_page_decode"));
         }
     }
 
@@ -1488,43 +1471,34 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CharmapBuildNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
-        Object lookup(String chars,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage store = PDict.createNewStorage(false, chars.length());
+        Object lookup(TruffleString chars,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            HashingStorage store = PDict.createNewStorage(false, codePointLengthNode.execute(chars, TS_ENCODING));
             PDict dict = factory().createDict(store);
-            int pos = 0;
             int num = 0;
-
-            while (pos < chars.length()) {
-                int charid = codePointAt(chars, pos);
+            TruffleStringIterator it = createCodePointIteratorNode.execute(chars, TS_ENCODING);
+            while (it.hasNext()) {
+                int charid = nextNode.execute(it);
                 store = lib.setItem(store, charid, num);
-                pos += charCount(charid);
                 num++;
             }
             dict.setDictStorage(store);
             return dict;
         }
-
-        @TruffleBoundary
-        private static int charCount(int charid) {
-            return Character.charCount(charid);
-        }
-
-        @TruffleBoundary
-        private static int codePointAt(String chars, int pos) {
-            return Character.codePointAt(chars, pos);
-        }
     }
 
     static class TruffleEncoder {
-        private final String encodingName;
+        private final TruffleString encodingName;
         private final CharsetEncoder encoder;
         private CharBuffer inputBuffer;
         private ByteBuffer outputBuffer;
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleEncoder(String encodingName, Charset charset, String input, CodingErrorAction errorAction) {
+        public TruffleEncoder(TruffleString encodingName, Charset charset, String input, CodingErrorAction errorAction) {
             this.encodingName = encodingName;
             this.inputBuffer = CharBuffer.wrap(input);
             this.encoder = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
@@ -1566,7 +1540,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private String getErrorReason() {
+        private TruffleString getErrorReason() {
             if (coderResult.isMalformed()) {
                 return ErrorMessages.MALFORMED_INPUT;
             } else if (coderResult.isUnmappable()) {
@@ -1626,20 +1600,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             inputBuffer = newBuffer;
         }
 
-        public String getEncodingName() {
+        public TruffleString getEncodingName() {
             return encodingName;
         }
     }
 
     static class TruffleDecoder {
-        private final String encodingName;
+        private final TruffleString encodingName;
         private final CharsetDecoder decoder;
         private final ByteBuffer inputBuffer;
         private CharBuffer outputBuffer;
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleDecoder(String encodingName, Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
+        public TruffleDecoder(TruffleString encodingName, Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
             this.encodingName = encodingName;
             this.inputBuffer = ByteBuffer.wrap(input, 0, inputLen);
             this.decoder = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
@@ -1681,7 +1655,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private String getErrorReason() {
+        private TruffleString getErrorReason() {
             if (coderResult.isMalformed()) {
                 return ErrorMessages.MALFORMED_INPUT;
             } else if (coderResult.isUnmappable()) {
@@ -1706,8 +1680,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public String getString() {
-            return outputBuffer.toString();
+        public TruffleString getString() {
+            return toTruffleStringUncached(outputBuffer.toString());
         }
 
         @TruffleBoundary
@@ -1733,7 +1707,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
-        public String getEncodingName() {
+        public TruffleString getEncodingName() {
             return encodingName;
         }
     }

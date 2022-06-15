@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,15 +43,20 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.systemHashCodeAsHexString;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -104,6 +110,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
@@ -129,7 +136,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
@@ -180,7 +187,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
@@ -255,7 +262,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
@@ -366,7 +373,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -438,20 +445,26 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})
-    @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"C\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_C", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class ToBytesNode extends PythonBinaryClinicBuiltinNode {
+
+        static final TruffleString T_A = tsLiteral("A");
+        static final TruffleString T_C = tsLiteral("C");
+        static final TruffleString T_F = tsLiteral("F");
+
         @Child private MemoryViewNodes.ToJavaBytesNode toJavaBytesNode;
         @Child private MemoryViewNodes.ToJavaBytesFortranOrderNode toJavaBytesFortranOrderNode;
 
         @Specialization
-        PBytes tobytes(PMemoryView self, String order) {
+        PBytes tobytes(PMemoryView self, TruffleString order,
+                        @Cached TruffleString.EqualNode equalNode) {
             self.checkReleased(this);
             byte[] bytes;
             // The nodes act as branch profiles
-            if ("C".equals(order) || "A".equals(order)) {
+            if (equalNode.execute(order, T_C, TS_ENCODING) || equalNode.execute(order, T_A, TS_ENCODING)) {
                 bytes = getToJavaBytesNode().execute(self);
-            } else if ("F".equals(order)) {
+            } else if (equalNode.execute(order, T_F, TS_ENCODING)) {
                 bytes = getToJavaBytesFortranOrderNode().execute(self);
             } else {
                 throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
@@ -488,7 +501,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     abstract static class HexNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
-        String none(PMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+        TruffleString none(PMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Shared("p") @Cached ConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
@@ -496,13 +509,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String hex(PMemoryView self, byte sep, int bytesPerSepGroup,
+        TruffleString hex(PMemoryView self, byte sep, int bytesPerSepGroup,
                         @Shared("p") @Cached ConditionProfile earlyExit,
                         @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             self.checkReleased(this);
             if (earlyExit.profile(self.getLength() == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             byte[] b = toJavaBytesNode.execute(self);
             return toHexNode.execute(b, b.length, sep, bytesPerSepGroup);
@@ -532,22 +545,26 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "cast", minNumOfPositionalArgs = 2, parameterNames = {"$self", "format", "shape"})
-    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class CastNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
-        PMemoryView cast(PMemoryView self, String formatString, @SuppressWarnings("unused") PNone none) {
+        PMemoryView cast(PMemoryView self, TruffleString formatString, @SuppressWarnings("unused") PNone none,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
             self.checkReleased(this);
-            return doCast(self, formatString, 1, null, PythonContext.get(this));
+            return doCast(self, formatString, 1, null, PythonContext.get(this), lengthNode, atIndexNode);
         }
 
         @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
-        PMemoryView cast(VirtualFrame frame, PMemoryView self, String formatString, Object shapeObj,
+        PMemoryView cast(VirtualFrame frame, PMemoryView self, TruffleString formatString, Object shapeObj,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
             self.checkReleased(this);
             SequenceStorage storage = getSequenceStorageNode.execute(shapeObj);
             int ndim = lenNode.execute(storage);
@@ -558,20 +575,21 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS);
                 }
             }
-            return doCast(self, formatString, ndim, shape, PythonContext.get(this));
+            return doCast(self, formatString, ndim, shape, PythonContext.get(this), lengthNode, atIndexNode);
         }
 
         @Specialization(guards = {"!isPTuple(shape)", "!isList(shape)", "!isPNone(shape)"})
         @SuppressWarnings("unused")
-        PMemoryView error(PMemoryView self, String format, Object shape) {
+        PMemoryView error(PMemoryView self, TruffleString format, Object shape) {
             throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_A_LIST_OR_TUPLE, "shape");
         }
 
-        private PMemoryView doCast(PMemoryView self, String formatString, int ndim, int[] shape, PythonContext context) {
+        private PMemoryView doCast(PMemoryView self, TruffleString formatString, int ndim, int[] shape, PythonContext context, TruffleString.CodePointLengthNode lengthNode,
+                        TruffleString.CodePointAtIndexNode atIndexNode) {
             if (!self.isCContiguous()) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
             }
-            BufferFormat format = BufferFormat.forMemoryView(formatString);
+            BufferFormat format = BufferFormat.forMemoryView(formatString, lengthNode, atIndexNode);
             int itemsize = format.bytesize;
             if (itemsize < 0) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DESTINATION_FORMAT_ERROR);
@@ -631,7 +649,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -642,21 +660,21 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static String repr(PMemoryView self) {
+        static TruffleString repr(PMemoryView self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.isReleased()) {
-                return String.format("<released memory at 0x%x>", System.identityHashCode(self));
+                return simpleTruffleStringFormatNode.format("<released memory at 0x%s>", systemHashCodeAsHexString(self));
             } else {
-                return String.format("<memory at 0x%x>", System.identityHashCode(self));
+                return simpleTruffleStringFormatNode.format("<memory at 0x%s>", systemHashCodeAsHexString(self));
             }
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -684,7 +702,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -694,7 +712,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     public abstract static class ExitNode extends PythonQuaternaryBuiltinNode {
         @Specialization
@@ -757,7 +775,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization
         Object get(PMemoryView self) {
             self.checkReleased(this);
-            return self.getFormatString() != null ? self.getFormatString() : "B";
+            return self.getFormatString() != null ? self.getFormatString() : T_UINT_8_TYPE_CODE;
         }
     }
 

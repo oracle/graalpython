@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 
 import java.util.List;
 
@@ -93,8 +93,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class AndNode extends PythonBinaryBuiltinNode {
@@ -166,8 +166,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class OrNode extends PythonBinaryBuiltinNode {
@@ -193,8 +193,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class XorNode extends PythonBinaryBuiltinNode {
@@ -233,8 +233,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -334,7 +334,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         protected static long HASH_UNSET = -1;

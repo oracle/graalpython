@@ -27,11 +27,34 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SLASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_WARNINGS;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -142,11 +166,14 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
+    public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
+
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
@@ -157,7 +184,7 @@ public final class PythonContext extends Python3Core {
         return ".so";
     }
 
-    public static final String PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
+    public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
 
     /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
@@ -404,15 +431,16 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    static final String PREFIX = "/";
-    static final String LIB_PYTHON_3 = "/lib-python/3";
-    static final String LIB_GRAALPYTHON = "/lib-graalpython";
-    static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
-    static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
-    static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
-    static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
-    static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
-    static final String NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
+    private static final TruffleString T_PREFIX = T_SLASH;
+    private static final TruffleString T_LIB_PYTHON_3 = tsLiteral("/lib-python/3");
+    private static final TruffleString T_LIB_GRAALPYTHON = tsLiteral("/lib-graalpython");
+    private static final TruffleString T_STD_LIB_PLACEHOLDER = tsLiteral("!stdLibHome!");
+    private static final String J_NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
+    private static final String J_NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
+    private static final String J_NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
+    private static final String J_NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
+    private static final String J_NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
+    private static final String J_NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
     private PythonModule mainModule;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
@@ -456,7 +484,7 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private GraalHPyContext hPyContext;
     @CompilationFinal private GraalHPyDebugContext hPyDebugContext;
 
-    private String soABI; // cache for soAPI
+    private TruffleString soABI; // cache for soAPI
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
@@ -483,7 +511,7 @@ public final class PythonContext extends Python3Core {
 
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
-    private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
+    private final ThreadLocal<ArrayDeque<TruffleString>> currentImport = new ThreadLocal<>();
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
     private final AllocationReporter allocationReporter;
@@ -498,8 +526,8 @@ public final class PythonContext extends Python3Core {
      * id. The filename is stored in a weak hash map, because the code itself is a
      * context-independent object.
      */
-    private final WeakHashMap<CallTarget, String> codeFilename = new WeakHashMap<>();
-    private final ConcurrentHashMap<String, AtomicLong> deserializationId = new ConcurrentHashMap<>();
+    private final WeakHashMap<CallTarget, TruffleString> codeFilename = new WeakHashMap<>();
+    private final ConcurrentHashMap<TruffleString, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
     private final long perfCounterStart = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
 
@@ -509,19 +537,19 @@ public final class PythonContext extends Python3Core {
     private final SharedMultiprocessingData sharedMultiprocessingData;
 
     private final List<Object> codecSearchPath = new ArrayList<>();
-    private final Map<String, PTuple> codecSearchCache = new HashMap<>();
-    private final Map<String, Object> codecErrorRegistry = new HashMap<>();
+    private final Map<TruffleString, PTuple> codecSearchCache = new HashMap<>();
+    private final Map<TruffleString, Object> codecErrorRegistry = new HashMap<>();
 
     // the full module name for package imports
-    private String pyPackageContext;
+    private TruffleString pyPackageContext;
 
     private final PythonNativeNull nativeNull = new PythonNativeNull();
 
-    public String getPyPackageContext() {
+    public TruffleString getPyPackageContext() {
         return pyPackageContext;
     }
 
-    public void setPyPackageContext(String pyPackageContext) {
+    public void setPyPackageContext(TruffleString pyPackageContext) {
         this.pyPackageContext = pyPackageContext;
     }
 
@@ -529,11 +557,11 @@ public final class PythonContext extends Python3Core {
         return codecSearchPath;
     }
 
-    public Map<String, PTuple> getCodecSearchCache() {
+    public Map<TruffleString, PTuple> getCodecSearchCache() {
         return codecSearchCache;
     }
 
-    public Map<String, Object> getCodecErrorRegistry() {
+    public Map<TruffleString, Object> getCodecErrorRegistry() {
         return codecErrorRegistry;
     }
 
@@ -613,7 +641,7 @@ public final class PythonContext extends Python3Core {
          */
         private final ConcurrentHashMap<Integer, Integer> fdRefCount = new ConcurrentHashMap<>();
 
-        public SharedMultiprocessingData(ConcurrentHashMap<String, Semaphore> namedSemaphores) {
+        public SharedMultiprocessingData(ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores) {
             this.namedSemaphores = namedSemaphores;
         }
 
@@ -771,20 +799,20 @@ public final class PythonContext extends Python3Core {
         /**
          * @see PythonLanguage#namedSemaphores
          */
-        private final ConcurrentHashMap<String, Semaphore> namedSemaphores;
+        private final ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores;
 
         @TruffleBoundary
-        public void putNamedSemaphore(String name, Semaphore sem) {
+        public void putNamedSemaphore(TruffleString name, Semaphore sem) {
             namedSemaphores.put(name, sem);
         }
 
         @TruffleBoundary
-        public Semaphore getNamedSemaphore(String name) {
+        public Semaphore getNamedSemaphore(TruffleString name) {
             return namedSemaphores.get(name);
         }
 
         @TruffleBoundary
-        public Semaphore removeNamedSemaphore(String name) {
+        public Semaphore removeNamedSemaphore(TruffleString name) {
             return namedSemaphores.remove(name);
         }
 
@@ -970,7 +998,7 @@ public final class PythonContext extends Python3Core {
         return idUtils.getNextObjectId(object);
     }
 
-    public long getNextStringId(String string) {
+    public long getNextStringId(TruffleString string) {
         return idUtils.getNextStringId(string);
     }
 
@@ -1179,11 +1207,11 @@ public final class PythonContext extends Python3Core {
 
     private void importSiteIfForced() {
         if (getOption(PythonOptions.ForceImportSite)) {
-            AbstractImportNode.importModule("site");
+            AbstractImportNode.importModule(T_SITE);
         }
         if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
             // we must force an import of the warnings module here if warnings were passed
-            AbstractImportNode.importModule("warnings");
+            AbstractImportNode.importModule(T_WARNINGS);
         }
         if (getOption(PythonOptions.InputFilePath).isEmpty()) {
             // When InputFilePath is set, this is handled by __graalpython__.run_path
@@ -1193,27 +1221,27 @@ public final class PythonContext extends Python3Core {
 
     public void addSysPath0() {
         if (!getOption(PythonOptions.IsolateFlag)) {
-            String path0 = computeSysPath0();
+            TruffleString path0 = computeSysPath0();
             if (path0 != null) {
-                PythonModule sys = lookupBuiltinModule("sys");
-                Object path = sys.getAttribute("path");
-                PyObjectCallMethodObjArgs.getUncached().execute(null, path, "insert", 0, path0);
+                PythonModule sys = lookupBuiltinModule(T_SYS);
+                Object path = sys.getAttribute(T_PATH);
+                PyObjectCallMethodObjArgs.getUncached().execute(null, path, T_INSERT, 0, path0);
             }
         }
     }
 
     // Equivalent of pathconfig.c:_PyPathConfig_ComputeSysPath0
-    private String computeSysPath0() {
+    private TruffleString computeSysPath0() {
         String[] args = env.getApplicationArguments();
         if (args.length == 0) {
             return null;
         }
         String argv0 = args[0];
         if (argv0.isEmpty()) {
-            return "";
+            return T_EMPTY_STRING;
         } else if (argv0.equals("-m")) {
             try {
-                return env.getCurrentWorkingDirectory().getPath();
+                return toTruffleStringUncached(env.getCurrentWorkingDirectory().getPath());
             } catch (SecurityException e) {
                 return null;
             }
@@ -1226,10 +1254,10 @@ public final class PythonContext extends Python3Core {
                 parent = scriptFile.getParent();
             }
             if (parent != null) {
-                return parent.getPath();
+                return toTruffleStringUncached(parent.getPath());
             }
         }
-        return "";
+        return T_EMPTY_STRING;
     }
 
     /**
@@ -1239,40 +1267,44 @@ public final class PythonContext extends Python3Core {
      * during build time and after starting up from a pre-initialized context so they point to the
      * run-time package paths.
      */
-    private void patchPackagePaths(String from, String to) {
+    private void patchPackagePaths(TruffleString from, TruffleString to) {
         for (Object v : HashingStorageLibrary.getUncached().values(getSysModules().getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
-                Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
+                Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.T___PATH__);
                 if (path instanceof PList) {
                     Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.getUncached().execute(((PList) path).getSequenceStorage());
                     for (int i = 0; i < paths.length; i++) {
                         Object pathElement = paths[i];
-                        String strPath;
+                        TruffleString strPath;
                         if (pathElement instanceof PString) {
-                            strPath = ((PString) pathElement).getValue();
-                        } else if (pathElement instanceof String) {
-                            strPath = (String) pathElement;
+                            strPath = ((PString) pathElement).getValueUncached();
+                        } else if (isJavaString(pathElement)) {
+                            strPath = toTruffleStringUncached((String) pathElement);
+                        } else if (pathElement instanceof TruffleString) {
+                            strPath = (TruffleString) pathElement;
                         } else {
                             continue;
                         }
-                        if (strPath.startsWith(from)) {
-                            paths[i] = strPath.replace(from, to);
+                        if (strPath.regionEqualsUncached(0, from, 0, from.codePointLengthUncached(TS_ENCODING), TS_ENCODING)) {
+                            paths[i] = StringReplaceNode.getUncached().execute(strPath, from, to, -1);
                         }
                     }
-                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, factory().createList(paths));
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.T___PATH__, factory().createList(paths));
                 }
 
                 // Update module.__file__
-                Object file = ((PythonModule) v).getAttribute(SpecialAttributeNames.__FILE__);
-                String strFile = null;
+                Object file = ((PythonModule) v).getAttribute(T___FILE__);
                 if (file instanceof PString) {
-                    strFile = ((PString) file).getValue();
-                } else if (file instanceof String) {
-                    strFile = (String) file;
+                    file = ((PString) file).getValueUncached();
                 }
-                if (strFile != null) {
-                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__FILE__, strFile.replace(from, to));
+                if (file instanceof TruffleString) {
+                    TruffleString strFile = (TruffleString) file;
+                    ((PythonModule) v).setAttribute(T___FILE__, StringReplaceNode.getUncached().execute(strFile, from, to, -1));
+                }
+                if (isJavaString(file)) {
+                    TruffleString strFile = toTruffleStringUncached((String) file);
+                    ((PythonModule) v).setAttribute(T___FILE__, StringReplaceNode.getUncached().execute(strFile, from, to, -1));
                 }
             }
         }
@@ -1286,21 +1318,20 @@ public final class PythonContext extends Python3Core {
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
 
-        mainModule = factory().createPythonModule(__MAIN__);
-        mainModule.setAttribute(__BUILTINS__, getBuiltins());
-        mainModule.setAttribute(__ANNOTATIONS__, factory().createDict());
+        mainModule = factory().createPythonModule(T___MAIN__);
+        mainModule.setAttribute(T___BUILTINS__, getBuiltins());
+        mainModule.setAttribute(T___ANNOTATIONS__, factory().createDict());
         SetDictNode.getUncached().execute(mainModule, factory().createDictFixedStorage(mainModule));
-        getSysModules().setItem(__MAIN__, mainModule);
+        getSysModules().setItem(T___MAIN__, mainModule);
 
-        final String stdLibPlaceholder = "!stdLibHome!";
         if (ImageInfo.inImageBuildtimeCode()) {
             // Patch any pre-loaded packages' paths if we're running
             // pre-initialization
-            patchPackagePaths(getStdlibHome(), stdLibPlaceholder);
+            patchPackagePaths(getStdlibHome(), T_STD_LIB_PLACEHOLDER);
         } else if (isPatching && ImageInfo.inImageRuntimeCode()) {
             // Patch any pre-loaded packages' paths to the new stdlib home if
             // we're patching a pre-initialized context
-            patchPackagePaths(stdLibPlaceholder, getStdlibHome());
+            patchPackagePaths(T_STD_LIB_PLACEHOLDER, getStdlibHome());
         }
 
         applyToAllThreadStates(ts -> ts.currentException = null);
@@ -1333,32 +1364,29 @@ public final class PythonContext extends Python3Core {
     }
 
     private void initializePosixSupport() {
-        String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
+        TruffleString option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         PosixSupport result;
         // The resources field will be removed once all posix builtins go through PosixSupport
-        switch (option) {
-            case "java":
-                result = new EmulatedPosixSupport(this);
-                break;
-            case "native":
-            case "llvm":
-                if (ImageInfo.inImageBuildtimeCode()) {
-                    EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
-                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
-                    result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
-                } else if (ImageInfo.inImageRuntimeCode()) {
-                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
-                    result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
-                } else {
-                    if (!getOption(PythonOptions.RunViaLauncher)) {
-                        writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
-                                        "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
-                    }
-                    result = new NFIPosixSupport(this, option);
+        TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
+        if (eqNode.execute(T_JAVA, option, TS_ENCODING)) {
+            result = new EmulatedPosixSupport(this);
+        } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING) || eqNode.execute(T_LLVM_LANGUAGE, option, TS_ENCODING)) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
+                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
+            } else if (ImageInfo.inImageRuntimeCode()) {
+                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
+            } else {
+                if (!getOption(PythonOptions.RunViaLauncher)) {
+                    writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
+                                    "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
                 }
-                break;
-            default:
-                throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
+                result = new NFIPosixSupport(this, option);
+            }
+        } else {
+            throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
         }
         if (LoggingPosixSupport.isEnabled()) {
             posixSupport = new LoggingPosixSupport(result);
@@ -1367,7 +1395,7 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome;
+    private TruffleString sysPrefix, basePrefix, coreHome, capiHome, jniHome, stdLibHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
@@ -1410,18 +1438,18 @@ public final class PythonContext extends Python3Core {
 
         if (home != null) {
             if (sysPrefix.isEmpty()) {
-                sysPrefix = home.getAbsoluteFile().getPath();
+                sysPrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = home.getAbsoluteFile().getPath();
+                basePrefix = toTruffleStringUncached(home.getAbsoluteFile().getPath());
             }
 
             if (coreHome.isEmpty()) {
                 try {
                     for (TruffleFile f : home.list()) {
                         if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
-                            coreHome = f.getPath();
+                            coreHome = toTruffleStringUncached(f.getPath());
                             break;
                         }
                     }
@@ -1435,7 +1463,7 @@ public final class PythonContext extends Python3Core {
                         if (f.getName().equals("lib-python") && f.isDirectory()) {
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("3") && f.isDirectory()) {
-                                    stdLibHome = f2.getPath();
+                                    stdLibHome = toTruffleStringUncached(f2.getPath());
                                     break outer;
                                 }
                             }
@@ -1456,17 +1484,17 @@ public final class PythonContext extends Python3Core {
 
         if (ImageInfo.inImageBuildtimeCode()) {
             // use relative paths at buildtime to avoid freezing buildsystem paths
-            TruffleFile base = newEnv.getInternalTruffleFile(basePrefix).getAbsoluteFile();
+            TruffleFile base = newEnv.getInternalTruffleFile(basePrefix.toJavaStringUncached()).getAbsoluteFile();
             newEnv.setCurrentWorkingDirectory(base);
-            basePrefix = ".";
-            sysPrefix = base.relativize(newEnv.getInternalTruffleFile(sysPrefix)).getPath();
+            basePrefix = T_DOT;
+            sysPrefix = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(sysPrefix.toJavaStringUncached())).getPath());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = ".";
+                sysPrefix = T_DOT;
             }
-            coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
-            stdLibHome = base.relativize(newEnv.getInternalTruffleFile(stdLibHome)).getPath();
-            capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
-            jniHome = base.relativize(newEnv.getInternalTruffleFile(jniHome)).getPath();
+            coreHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(coreHome.toJavaStringUncached())).getPath());
+            stdLibHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(stdLibHome.toJavaStringUncached())).getPath());
+            capiHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(capiHome.toJavaStringUncached())).getPath());
+            jniHome = toTruffleStringUncached(base.relativize(newEnv.getInternalTruffleFile(jniHome.toJavaStringUncached())).getPath());
         }
 
         Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
@@ -1482,65 +1510,67 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public String getSysPrefix() {
+    public TruffleString getSysPrefix() {
         if (sysPrefix.isEmpty()) {
-            writeWarning(NO_PREFIX_WARNING);
-            sysPrefix = PREFIX;
+            writeWarning(J_NO_PREFIX_WARNING);
+            sysPrefix = T_PREFIX;
         }
         return sysPrefix;
     }
 
     @TruffleBoundary
-    public String getSysBasePrefix() {
+    public TruffleString getSysBasePrefix() {
         if (basePrefix.isEmpty()) {
             String homePrefix = getLanguage().getHome();
             if (homePrefix == null || homePrefix.isEmpty()) {
-                homePrefix = PREFIX;
+                basePrefix = T_PREFIX;
+            } else {
+                basePrefix = toTruffleStringUncached(homePrefix);
             }
-            basePrefix = homePrefix;
+
         }
         return basePrefix;
     }
 
     @TruffleBoundary
-    public String getCoreHome() {
+    public TruffleString getCoreHome() {
         if (coreHome.isEmpty()) {
-            writeWarning(NO_CORE_WARNING);
-            coreHome = LIB_GRAALPYTHON;
+            writeWarning(J_NO_CORE_WARNING);
+            coreHome = T_LIB_GRAALPYTHON;
         }
         return coreHome;
     }
 
     @TruffleBoundary
-    public String getStdlibHome() {
+    public TruffleString getStdlibHome() {
         if (stdLibHome.isEmpty()) {
-            writeWarning(NO_STDLIB);
-            stdLibHome = LIB_PYTHON_3;
+            writeWarning(J_NO_STDLIB);
+            stdLibHome = T_LIB_PYTHON_3;
         }
         return stdLibHome;
     }
 
     @TruffleBoundary
-    public String getCoreHomeOrFail() {
+    public TruffleString getCoreHomeOrFail() {
         if (coreHome.isEmpty()) {
-            throw new RuntimeException(NO_CORE_FATAL);
+            throw new RuntimeException(J_NO_CORE_FATAL);
         }
         return coreHome;
     }
 
     @TruffleBoundary
-    public String getCAPIHome() {
+    public TruffleString getCAPIHome() {
         if (capiHome.isEmpty()) {
-            writeWarning(NO_CAPI);
+            writeWarning(J_NO_CAPI);
             return coreHome;
         }
         return capiHome;
     }
 
     @TruffleBoundary
-    public String getJNIHome() {
+    public TruffleString getJNIHome() {
         if (jniHome.isEmpty()) {
-            writeWarning(NO_JNI);
+            writeWarning(J_NO_JNI);
             return jniHome;
         }
         return jniHome;
@@ -1689,11 +1719,11 @@ public final class PythonContext extends Python3Core {
         LOGGER.fine("shutting down threads");
         PDict importedModules = getSysModules();
         HashingStorage dictStorage = importedModules.getDictStorage();
-        Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
+        Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, T_THREADING);
         if (value != null) {
-            Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.SHUTDOWN);
+            Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.T_SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {
-                LOGGER.fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
+                LOGGER.fine("threading module has no member " + SpecialMethodNames.T_SHUTDOWN);
                 return;
             }
             try {
@@ -1789,9 +1819,9 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    public void initializeMainModule(String path) {
+    public void initializeMainModule(TruffleString path) {
         if (path != null) {
-            mainModule.setAttribute(__FILE__, path);
+            mainModule.setAttribute(T___FILE__, path);
         }
     }
 
@@ -1921,22 +1951,24 @@ public final class PythonContext extends Python3Core {
      * access files of the {@code stdlib}, {@code core} or similar.
      */
     @TruffleBoundary
-    public TruffleFile getPublicTruffleFileRelaxed(String path, String... allowedSuffixes) {
-        TruffleFile f = env.getInternalTruffleFile(path);
+    public TruffleFile getPublicTruffleFileRelaxed(TruffleString path, TruffleString... allowedSuffixes) {
+        TruffleFile f = env.getInternalTruffleFile(path.toJavaStringUncached());
         // 'isDirectory' does deliberately not follow symlinks because otherwise this could allow to
         // escape the language home directory.
         // Also, during image build time, we allow full internal access.
         if (ImageInfo.inImageBuildtimeCode() || isPyFileInLanguageHome(f) && (f.isDirectory(LinkOption.NOFOLLOW_LINKS) || hasAllowedSuffix(path, allowedSuffixes))) {
             return f;
         } else {
-            return env.getPublicTruffleFile(path);
+            return env.getPublicTruffleFile(path.toJavaStringUncached());
         }
     }
 
     @TruffleBoundary(allowInlining = true)
-    private static boolean hasAllowedSuffix(String path, String[] allowedSuffixes) {
-        for (String suffix : allowedSuffixes) {
-            if (path.endsWith(suffix)) {
+    private static boolean hasAllowedSuffix(TruffleString path, TruffleString[] allowedSuffixes) {
+        int pathLen = path.codePointLengthUncached(TS_ENCODING);
+        for (TruffleString suffix : allowedSuffixes) {
+            int suffixLen = suffix.codePointLengthUncached(TS_ENCODING);
+            if (path.regionEqualsUncached(pathLen - suffixLen, suffix, 0, suffixLen, TS_ENCODING)) {
                 return true;
             }
         }
@@ -1966,18 +1998,18 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public String getCurrentImport() {
-        ArrayDeque<String> ci = currentImport.get();
+    public TruffleString getCurrentImport() {
+        ArrayDeque<TruffleString> ci = currentImport.get();
         if (ci == null || ci.isEmpty()) {
-            return "";
+            return T_EMPTY_STRING;
         } else {
             return ci.peek();
         }
     }
 
     @TruffleBoundary
-    public void pushCurrentImport(String object) {
-        ArrayDeque<String> ci = currentImport.get();
+    public void pushCurrentImport(TruffleString object) {
+        ArrayDeque<TruffleString> ci = currentImport.get();
         if (ci == null) {
             ci = new ArrayDeque<>();
             currentImport.set(ci);
@@ -2141,41 +2173,41 @@ public final class PythonContext extends Python3Core {
         return finalizing;
     }
 
-    public void setCodeFilename(CallTarget callTarget, String filename) {
+    public void setCodeFilename(CallTarget callTarget, TruffleString filename) {
         codeFilename.put(callTarget, filename);
     }
 
-    public String getCodeFilename(CallTarget callTarget) {
+    public TruffleString getCodeFilename(CallTarget callTarget) {
         return codeFilename.get(callTarget);
     }
 
-    public long getDeserializationId(String fileName) {
+    public long getDeserializationId(TruffleString fileName) {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
     }
 
     @TruffleBoundary
-    public String getSoAbi() {
+    public TruffleString getSoAbi() {
         if (soABI == null) {
-            PythonModule sysModule = this.lookupBuiltinModule("sys");
-            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
+            PythonModule sysModule = this.lookupBuiltinModule(T_SYS);
+            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
             // sys.implementation.cache_tag
-            String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
+            TruffleString cacheTag = (TruffleString) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, T_CACHE_TAG);
             // sys.implementation._multiarch
-            String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
+            TruffleString multiArch = (TruffleString) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, T__MULTIARCH);
 
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainId = toolchain.getIdentifier();
+            TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
 
             // only use '.dylib' if we are on 'Darwin-native'
-            String soExt;
-            if (getPythonOS() == PLATFORM_DARWIN && "native".equals(toolchainId)) {
-                soExt = ".dylib";
+            TruffleString soExt;
+            if (getPythonOS() == PLATFORM_DARWIN && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
+                soExt = T_EXT_DYLIB;
             } else {
-                soExt = ".so";
+                soExt = T_EXT_SO;
             }
 
-            soABI = "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+            soABI = cat(T_DOT, cacheTag, T_DASH, toolchainId, T_DASH, multiArch, soExt);
         }
         return soABI;
     }

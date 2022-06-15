@@ -51,25 +51,26 @@ import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class StringUtilsTests extends ParserTestBase {
     private static final ParserErrorCallback errorCallback = new ParserErrorCallback() {
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
-            Assert.fail("Unexpected error: " + String.format(message, arguments));
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message.toJavaStringUncached(), arguments));
             return null;
         }
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
-            Assert.fail("Unexpected error: " + String.format(message, arguments));
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message.toJavaStringUncached(), arguments));
             return null;
         }
 
         @Override
-        public void warn(PythonBuiltinClassType type, String format, Object... args) {
-            Assert.fail("Unexpected warning: " + String.format(format, args));
+        public void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
+            Assert.fail("Unexpected warning: " + String.format(format.toJavaStringUncached(), args));
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,11 +52,13 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_AsEncodedString}.
@@ -77,8 +79,9 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     public abstract Object execute(VirtualFrame frame, Object object, Object encoding, Object errors);
 
-    public static boolean isCommon(String encoding) {
-        switch (PythonUtils.toLowerCase(encoding)) {
+    public static boolean isCommon(TruffleString encoding, TruffleString.ToJavaStringNode toJavaStringNode) {
+        // TODO GR-37601: review
+        switch (toLowerCase(toJavaStringNode.execute(encoding))) {
             case ENC_ASCII:
             case ENC_ISO8859_1:
             case ENC_ISO_8859_1:
@@ -97,19 +100,26 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
         }
     }
 
-    @Specialization(guards = {"isString(unicode)", "isCommon(encoding)"})
-    Object doCommon(VirtualFrame frame, Object unicode, String encoding, String errors,
-                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
+    @TruffleBoundary(allowInlining = true)
+    private static String toLowerCase(String s) {
+        return s.toLowerCase();
+    }
+
+    @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"}, limit = "1")
+    Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
+                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
+                    @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
 
-    @Specialization(guards = {"isString(unicode)", "!isCommon(encoding)"})
-    Object doRegistry(VirtualFrame frame, Object unicode, String encoding, String errors,
+    @Specialization(guards = {"isString(unicode)", "!isCommon(encoding, toJavaStringNode)"}, limit = "1")
+    Object doRegistry(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
                     @Cached ConditionProfile isBytesProfile,
                     @Cached ConditionProfile isByteArrayProfile,
                     @Cached SequenceStorageNodes.CopyNode copyNode,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                    @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
         if (isBytesProfile.profile(v instanceof PBytes)) {

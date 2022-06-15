@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,10 +7,10 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.NONE;
 import static com.oracle.graal.python.runtime.formatting.InternalFormat.Spec.specified;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -18,12 +18,11 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Locale.Category;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 //Copyright (c) Jython Developers
 
@@ -35,28 +34,10 @@ public class InternalFormat {
      * @param text to parse
      * @return parsed equivalent to text
      */
-    private static Spec fromText(PRaiseNode raiseNode, String text) {
-        Parser parser = new Parser(text);
-        return parser.parse(raiseNode);
-    }
-
-    /**
-     * Create a {@link Spec} object by parsing a format specification, supplied as an object.
-     *
-     * @param text to parse
-     * @return parsed equivalent to text
-     */
     @TruffleBoundary
-    public static Spec fromText(PRaiseNode raiseNode, Object text, String method) {
-        if (text instanceof PBytes) {
-            return fromText(raiseNode, text.toString());
-        } else if (text instanceof PString) {
-            return fromText(raiseNode, ((PString) text).toString());
-        } else if (text instanceof String) {
-            return fromText(raiseNode, (String) text);
-        } else {
-            throw raiseNode.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, method, 1, "str", text);
-        }
+    public static Spec fromText(PRaiseNode raiseNode, TruffleString text) {
+        Parser parser = new Parser(text.toJavaStringUncached());
+        return parser.parse(raiseNode);
     }
 
     /**
@@ -131,8 +112,8 @@ public class InternalFormat {
          *
          * @return formatted result
          */
-        public String getResult() {
-            return result.toString();
+        public TruffleString getResult() {
+            return toTruffleStringUncached(result.toString());
         }
 
         /*
@@ -861,7 +842,7 @@ public class InternalFormat {
                     width = scanInteger();
                 } catch (NumberFormatException ex) {
                     // CPython seems to happily parse big ints and then it chokes on the allocation
-                    throw raiseNode.raise(ValueError, "width too big");
+                    throw raiseNode.raise(ValueError, ErrorMessages.WIDTH_TOO_BIG);
                 }
             }
 
@@ -885,10 +866,10 @@ public class InternalFormat {
                     try {
                         precision = scanInteger();
                     } catch (NumberFormatException ex) {
-                        throw raiseNode.raise(ValueError, "precision too big");
+                        throw raiseNode.raise(ValueError, ErrorMessages.PRECISION_TOO_BIG);
                     }
                 } else {
-                    throw raiseNode.raise(ValueError, "Format specifier missing precision");
+                    throw raiseNode.raise(ValueError, ErrorMessages.FMT_SPECIFIER_MISSING_PRECISION);
                 }
             }
 
@@ -899,7 +880,7 @@ public class InternalFormat {
 
             // If we haven't reached the end, something is wrong
             if (ptr != spec.length()) {
-                throw raiseNode.raise(ValueError, "Invalid conversion specification");
+                throw raiseNode.raise(ValueError, ErrorMessages.INVALID_CONVERSION_SPECIFICATION);
             }
 
             // Some basic validation

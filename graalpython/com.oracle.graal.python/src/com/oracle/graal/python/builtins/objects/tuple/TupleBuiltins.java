@@ -25,24 +25,35 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -69,7 +80,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -89,7 +100,6 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -100,6 +110,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -174,7 +186,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -184,61 +196,66 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        public abstract TruffleString execute(VirtualFrame VirtualFrame, Object arg);
 
-        public static String toString(VirtualFrame frame, Object item, PyObjectReprAsJavaStringNode reprNode) {
+        private static final TruffleString NULL = tsLiteral("(null)");
+
+        public static TruffleString toString(VirtualFrame frame, Object item, PyObjectReprAsTruffleStringNode reprNode) {
             if (item != null) {
                 return reprNode.execute(frame, item);
             }
-            return "(null)";
+            return NULL;
         }
 
         @Specialization
-        public static String repr(VirtualFrame frame, PTuple self,
+        public static TruffleString repr(VirtualFrame frame, PTuple self,
                         @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyObjectReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             if (len == 0) {
-                return "()";
+                return T_EMPTY_PARENS;
             }
             if (!PythonContext.get(reprNode).reprEnter(self)) {
-                return "(...)";
+                return T_ELLIPSIS_IN_PARENS;
             }
             try {
-                StringBuilder buf = PythonUtils.newStringBuilder();
-                PythonUtils.append(buf, "(");
+                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
+                appendStringNode.execute(buf, T_LPAREN);
                 for (int i = 0; i < len - 1; i++) {
-                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
-                    PythonUtils.append(buf, ", ");
+                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
+                    appendStringNode.execute(buf, T_COMMA_SPACE);
                 }
 
                 if (len > 0) {
-                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
+                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
                 }
 
                 if (len == 1) {
-                    PythonUtils.append(buf, ",");
+                    appendStringNode.execute(buf, T_COMMA);
                 }
 
-                PythonUtils.append(buf, ")");
-                return PythonUtils.sbToString(buf);
+                appendStringNode.execute(buf, T_RPAREN);
+                return toStringNode.execute(buf);
             } finally {
                 PythonContext.get(reprNode).reprLeave(self);
             }
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @ImportStatic({MathGuards.class, PGuards.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        private static final String TYPE_ERROR_MESSAGE = "tuple " + ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES;
+        private static final TruffleString TYPE_ERROR_MESSAGE = cat(T_TUPLE, T_SPACE, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
 
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
@@ -267,7 +284,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -284,7 +301,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -301,7 +318,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
@@ -319,7 +336,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
 
@@ -337,7 +354,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
 
@@ -353,7 +370,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -368,7 +385,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization
@@ -388,8 +405,8 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
@@ -408,7 +425,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -419,7 +436,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -434,7 +451,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
@@ -468,7 +485,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         protected static long HASH_UNSET = -1;
@@ -511,7 +528,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization

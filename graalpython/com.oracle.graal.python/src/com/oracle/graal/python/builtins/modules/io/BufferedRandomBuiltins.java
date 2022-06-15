@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
@@ -92,7 +92,7 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     }
 
     // BufferedRandom(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedRandom")
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedRandom")
     @GenerateNodeFactory
     public abstract static class InitNode extends BaseInitNode {
 

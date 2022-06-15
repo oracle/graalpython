@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,8 +88,8 @@ public class ConverterFactory {
 
     private static ConverterFactory[] BuiltinBoolean;
     private static ConverterFactory[] BuiltinIntToBoolean;
-    private static ConverterFactory[] BuiltinString;
-    private static ConverterFactory[] BuiltinStringWithDefaultValue;
+    private static ConverterFactory[] BuiltinTString;
+    private static ConverterFactory[] BuiltinTStringWithDefaultValue;
     private static ConverterFactory[] BuiltinInt;
     private static ConverterFactory[] BuiltinLong;
     private static ConverterFactory[] BuiltinCodePoint;
@@ -132,8 +132,8 @@ public class ConverterFactory {
                 return BuiltinBoolean;
             case IntToBoolean:
                 return BuiltinIntToBoolean;
-            case String:
-                return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefaultValue;
+            case TString:
+                return annotation.defaultValue().isEmpty() ? BuiltinTString : BuiltinTStringWithDefaultValue;
             case Int:
                 return BuiltinInt;
             case Long:
@@ -218,8 +218,8 @@ public class ConverterFactory {
     public static void initBuiltins(Elements elementUtils) throws ProcessingError {
         BuiltinBoolean = forBuiltin(elementUtils, "JavaBooleanConverterNode");
         BuiltinIntToBoolean = forBuiltin(elementUtils, "JavaIntToBooleanConverterNode");
-        BuiltinString = forBuiltin(elementUtils, "JavaStringConverterNode");
-        BuiltinStringWithDefaultValue = forBuiltin(elementUtils, "JavaStringConverterWithDefaultValueNode");
+        BuiltinTString = forBuiltin(elementUtils, "TruffleStringConverterNode");
+        BuiltinTStringWithDefaultValue = forBuiltin(elementUtils, "TruffleStringConverterWithDefaultValueNode");
         BuiltinInt = forBuiltin(elementUtils, "JavaIntConversionNode");
         BuiltinLong = forBuiltin(elementUtils, "JavaLongConversionNode");
         BuiltinDouble = forBuiltin(elementUtils, "JavaDoubleConversionNode");

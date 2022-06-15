@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,36 +26,47 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toLower;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toUpper;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DECODE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_RETURNED_P_INSTEAD_OF_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_NEED_OBJ;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -63,7 +74,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.LStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.RStripNodeFactory;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -95,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -104,9 +114,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import static com.oracle.graal.python.nodes.BuiltinNames.DECODE;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_RETURNED_P_INSTEAD_OF_BYTES;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -127,7 +135,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -142,6 +150,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -152,6 +161,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
 public class BytesBuiltins extends PythonBuiltins {
@@ -164,7 +175,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(SpecialAttributeNames.__DOC__, //
+        addBuiltinConstant(SpecialAttributeNames.T___DOC__, //
                         "bytes(iterable_of_ints) -> bytes\n" + //
                                         "bytes(string, encoding[, errors]) -> bytes\n" + //
                                         "bytes(bytes_or_buffer) -> immutable copy of bytes_or_buffer\n" + //
@@ -177,28 +188,29 @@ public class BytesBuiltins extends PythonBuiltins {
                                         "  - an integer");
     }
 
-    public static CodingErrorAction toCodingErrorAction(String errors) {
-        switch (errors) {
-            case "strict":
-                return CodingErrorAction.REPORT;
-            case "ignore":
-                return CodingErrorAction.IGNORE;
-            case "replace":
-                return CodingErrorAction.REPLACE;
+    public static CodingErrorAction toCodingErrorAction(TruffleString errors, TruffleString.EqualNode eqNode) {
+        // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
+        if (eqNode.execute(T_STRICT, errors, TS_ENCODING)) {
+            return CodingErrorAction.REPORT;
+        } else if (eqNode.execute(T_IGNORE, errors, TS_ENCODING)) {
+            return CodingErrorAction.IGNORE;
+        } else if (eqNode.execute(T_REPLACE, errors, TS_ENCODING)) {
+            return CodingErrorAction.REPLACE;
         }
         return null;
     }
 
-    public static CodingErrorAction toCodingErrorAction(String errors, PRaiseNode n) {
-        CodingErrorAction action = toCodingErrorAction(errors);
+    public static CodingErrorAction toCodingErrorAction(TruffleString errors, PRaiseNode n, TruffleString.EqualNode eqNode) {
+        CodingErrorAction action = toCodingErrorAction(errors, eqNode);
         if (action != null) {
             return action;
         }
         throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
-    public static CodingErrorAction toCodingErrorAction(String errors, PythonBuiltinBaseNode n) {
-        CodingErrorAction action = toCodingErrorAction(errors);
+    public static CodingErrorAction toCodingErrorAction(TruffleString errors, PythonBuiltinBaseNode n, TruffleString.EqualNode eqNode) {
+        // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
+        CodingErrorAction action = toCodingErrorAction(errors, eqNode);
         if (action != null) {
             return action;
         }
@@ -206,7 +218,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @CompilerDirectives.TruffleBoundary
-    public static byte[] doEncode(Charset charset, String string, CodingErrorAction action) throws CharacterCodingException {
+    public static byte[] doEncode(Charset charset, TruffleString s, CodingErrorAction action) throws CharacterCodingException {
+        String string = s.toJavaStringUncached();
         CharsetEncoder encoder = charset.newEncoder();
         encoder.onMalformedInput(action).onUnmappableCharacter(action);
         CharBuffer buf = CharBuffer.allocate(string.length());
@@ -218,7 +231,7 @@ public class BytesBuiltins extends PythonBuiltins {
         return barr;
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
 
@@ -235,7 +248,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(key)", limit = "1")
@@ -262,23 +275,25 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object repr(PBytes self,
+        public static TruffleString repr(PBytes self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = PythonUtils.newStringBuilder();
-            BytesUtils.reprLoop(sb, bytes, len);
-            return PythonUtils.sbToString(sb);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            BytesUtils.reprLoop(sb, bytes, len, appendCodePointNode);
+            return toStringNode.execute(sb);
         }
     }
 
-    @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "encoding", "errors"}, doc = "Decode the bytes using the codec registered for encoding.\n\n" +
+    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "encoding", "errors"}, doc = "Decode the bytes using the codec registered for encoding.\n\n" +
                     "encoding\n" +
                     "  The encoding with which to decode the bytes.\n" +
                     "errors\n" +
@@ -287,8 +302,8 @@ public class BytesBuiltins extends PythonBuiltins {
                     "  UnicodeDecodeError. Other possible values are 'ignore' and 'replace'\n" +
                     "  as well as any other name registered with codecs.register_error that\n" +
                     "  can handle UnicodeDecodeErrors.")
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_UTF8")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT")
     @GenerateNodeFactory
     public abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
 
@@ -298,7 +313,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object decode(VirtualFrame frame, PBytesLike self, String encoding, String errors,
+        public Object decode(VirtualFrame frame, PBytesLike self, TruffleString encoding, TruffleString errors,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached IsInstanceNode isInstanceNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
@@ -381,31 +396,34 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class FromHexNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PBytes doString(PythonBuiltinClass cls, String str) {
-            return factory().createBytes(cls, BytesUtils.fromHex(str, getRaiseNode()));
+        PBytes doString(PythonBuiltinClass cls, TruffleString str,
+                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
+            return factory().createBytes(cls, hexStringToBytesNode.execute(str));
         }
 
         @Specialization
         PBytes doGeneric(PythonBuiltinClass cls, Object strObj,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Shared("toString") @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
             try {
-                String str = castToJavaStringNode.execute(strObj);
-                return factory().createBytes(cls, BytesUtils.fromHex(str, getRaiseNode()));
+                TruffleString str = castToStringNode.execute(strObj);
+                return factory().createBytes(cls, hexStringToBytesNode.execute(str));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
             }
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cls)")
         Object doGeneric(VirtualFrame frame, Object cls, Object strObj,
                         @Cached TypeBuiltins.CallNode callNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Shared("toString") @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
             try {
-                String str = castToJavaStringNode.execute(strObj);
-                PBytes bytes = factory().createBytes(BytesUtils.fromHex(str, getRaiseNode()));
-                return callNode.varArgExecute(frame, null, new Object[]{cls, bytes}, new PKeyword[0]);
+                TruffleString str = castToStringNode.execute(strObj);
+                PBytes bytes = factory().createBytes(hexStringToBytesNode.execute(str));
+                return callNode.varArgExecute(frame, null, new Object[]{cls, bytes}, PKeyword.EMPTY_KEYWORDS);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
             }
         }
     }
@@ -433,7 +451,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
@@ -468,8 +486,8 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -495,7 +513,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -505,7 +523,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -524,7 +542,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -556,7 +574,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends CmpNode {
         @Specialization
@@ -571,7 +589,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends CmpNode {
         @Specialization
@@ -586,7 +604,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends CmpNode {
         @Specialization
@@ -601,7 +619,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends CmpNode {
         @Specialization
@@ -616,7 +634,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
 
@@ -649,8 +667,8 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IMOD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
@@ -674,7 +692,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __RMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RModNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -684,7 +702,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -694,7 +712,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
 
@@ -726,7 +744,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -807,7 +825,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     // bytes.startswith(prefix[, start[, end]])
     // bytearray.startswith(prefix[, start[, end]])
-    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, parameterNames = {"$self", "prefix", "start", "end"})
+    @Builtin(name = J_STARTSWITH, minNumOfPositionalArgs = 2, parameterNames = {"$self", "prefix", "start", "end"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -838,7 +856,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     // bytes.endswith(suffix[, start[, end]])
     // bytearray.endswith(suffix[, start[, end]])
-    @Builtin(name = "endswith", minNumOfPositionalArgs = 2, parameterNames = {"$self", "suffix", "start", "end"})
+    @Builtin(name = J_ENDSWITH, minNumOfPositionalArgs = 2, parameterNames = {"$self", "suffix", "start", "end"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
     @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -1200,14 +1218,25 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        byte string(String str) {
-            return check(getStringBytes(str));
+        byte string(TruffleString str,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            if (codePointLengthNode.execute(str, TS_ENCODING) != 1) {
+                throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
+            }
+            int cp = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+            if (cp > 127) {
+                throw raise(ValueError, SEP_MUST_BE_ASCII);
+            }
+            return (byte) cp;
         }
 
         @Specialization
         byte pstring(PString str,
-                        @Cached StringNodes.StringMaterializeNode toStr) {
-            return check(getStringBytes(toStr.execute(str)));
+                        @Cached CastToTruffleStringNode toStr,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            return string(toStr.execute(str), codePointLengthNode, codePointAtIndexNode);
         }
 
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
@@ -1219,7 +1248,11 @@ public class BytesBuiltins extends PythonBuiltins {
                 if (bufferLib.getBufferLength(buffer) != 1) {
                     throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
                 }
-                return check(bufferLib.readByte(buffer, 0));
+                byte b = bufferLib.readByte(buffer, 0);
+                if (b < 0) {
+                    throw raise(ValueError, SEP_MUST_BE_ASCII);
+                }
+                return b;
             } finally {
                 bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
             }
@@ -1229,20 +1262,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         byte error(VirtualFrame frame, Object value) {
             throw raise(TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
-        }
-
-        private byte check(byte[] bytes) {
-            if (bytes.length != 1) {
-                throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
-            }
-            return check(bytes[0]);
-        }
-
-        private byte check(byte b) {
-            if ((b & 0xFF) > 127) {
-                throw raise(ValueError, SEP_MUST_BE_ASCII);
-            }
-            return b;
         }
 
         @ClinicConverterFactory
@@ -1263,7 +1282,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String none(PBytesLike self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+        TruffleString none(PBytesLike self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Cached.Shared("p") @Cached ConditionProfile earlyExit,
                         @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
@@ -1272,14 +1291,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String hex(PBytesLike self, byte sep, int bytesPerSepGroup,
+        TruffleString hex(PBytesLike self, byte sep, int bytesPerSepGroup,
                         @Cached.Shared("p") @Cached ConditionProfile earlyExit,
                         @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             int len = lenNode.execute(self.getSequenceStorage());
             if (earlyExit.profile(len == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             byte[] b = getBytes.execute(self.getSequenceStorage());
             return toHexNode.execute(b, len, sep, bytesPerSepGroup);
@@ -1287,7 +1306,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        String err(Object self, Object sep, Object bytesPerSepGroup) {
+        TruffleString err(Object self, Object sep, Object bytesPerSepGroup) {
             throw raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
         }
     }
@@ -1398,7 +1417,7 @@ public class BytesBuiltins extends PythonBuiltins {
             for (int i = 0; i < len; i++) {
                 byte ch = b[i];
                 if (!BytesUtils.isLower(ch)) {
-                    if (BytesUtils.toLower(ch) == BytesUtils.toUpper(ch)) {
+                    if (toLower(ch) == toUpper(ch)) {
                         uncased++;
                     } else {
                         return false;
@@ -1426,7 +1445,7 @@ public class BytesBuiltins extends PythonBuiltins {
             for (int i = 0; i < len; i++) {
                 byte ch = b[i];
                 if (!BytesUtils.isUpper(ch)) {
-                    if (BytesUtils.toLower(ch) == BytesUtils.toUpper(ch)) {
+                    if (toLower(ch) == toUpper(ch)) {
                         uncased++;
                     } else {
                         return false;
@@ -1735,13 +1754,11 @@ public class BytesBuiltins extends PythonBuiltins {
         PBytesLike replace(PBytesLike self,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
-            return create.execute(factory(), self, lower(toBytes.execute(self)));
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        protected static byte[] lower(byte[] bytes) {
-            String string = BytesUtils.createASCIIString(bytes);
-            return string.toLowerCase().getBytes(StandardCharsets.US_ASCII);
+            byte[] bytes = toBytes.execute(self);
+            for (int i = 0; i < bytes.length; ++i) {
+                bytes[i] = toLower(bytes[i]);
+            }
+            return create.execute(factory(), self, bytes);
         }
     }
 
@@ -1753,13 +1770,11 @@ public class BytesBuiltins extends PythonBuiltins {
         PBytesLike replace(PBytesLike self,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached BytesNodes.CreateBytesNode create) {
-            return create.execute(factory(), self, upper(toBytes.execute(self)));
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        protected static byte[] upper(byte[] bytes) {
-            String string = BytesUtils.createASCIIString(bytes);
-            return string.toUpperCase().getBytes(StandardCharsets.US_ASCII);
+            byte[] bytes = toBytes.execute(self);
+            for (int i = 0; i < bytes.length; ++i) {
+                bytes[i] = toUpper(bytes[i]);
+            }
+            return create.execute(factory(), self, bytes);
         }
     }
 
@@ -2506,9 +2521,9 @@ public class BytesBuiltins extends PythonBuiltins {
                 return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] b = bufferLib.getCopiedByteArray(self);
-            b[0] = BytesUtils.toUpper(b[0]);
+            b[0] = toUpper(b[0]);
             for (int i = 1; i < len; i++) {
-                b[i] = BytesUtils.toLower(b[i]);
+                b[i] = toLower(b[i]);
             }
             return create.execute(factory(), self, b);
         }
@@ -2533,12 +2548,12 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte c = b[i];
                 if (BytesUtils.isLower(c)) {
                     if (!previousIsCased) {
-                        c = BytesUtils.toUpper(c);
+                        c = toUpper(c);
                     }
                     previousIsCased = true;
                 } else if (BytesUtils.isUpper(c)) {
                     if (previousIsCased) {
-                        c = BytesUtils.toLower(c);
+                        c = toLower(c);
                     }
                     previousIsCased = true;
                 } else {
@@ -2566,9 +2581,9 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] b = bufferLib.getCopiedByteArray(self);
             for (int i = 0; i < len; i++) {
                 if (BytesUtils.isUpper(b[i])) {
-                    b[i] = BytesUtils.toLower(b[i]);
+                    b[i] = toLower(b[i]);
                 } else {
-                    b[i] = BytesUtils.toUpper(b[i]);
+                    b[i] = toUpper(b[i]);
                 }
             }
             return create.execute(factory(), self, b);
@@ -2601,18 +2616,18 @@ public class BytesBuiltins extends PythonBuiltins {
                     if (tabsize > 0) {
                         int incr = tabsize - (j % tabsize);
                         if (j > max - incr) {
-                            throw raise(OverflowError, "result too long");
+                            throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         j += incr;
                     }
                 } else {
                     if (j > max - 1) {
-                        throw raise(OverflowError, "result too long");
+                        throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                     }
                     j++;
                     if (p == N || p == R) {
                         if (i > max - j) {
-                            throw raise(OverflowError, "result too long");
+                            throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         i += j;
                         j = 0;
@@ -2620,7 +2635,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 }
             }
             if (i > max - j) {
-                throw raise(OverflowError, "result too long");
+                throw raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
             }
 
             byte[] q = new byte[i + j];
@@ -2730,7 +2745,7 @@ public class BytesBuiltins extends PythonBuiltins {
         };
 
         @Override
-        protected final String getErrorMessage() {
+        protected final TruffleString getErrorMessage() {
             return ErrorMessages.BYTE_MUST_BE_IN_RANGE;
         }
 
@@ -2774,12 +2789,7 @@ public class BytesBuiltins extends PythonBuiltins {
         return it.hasNext();
     }
 
-    @TruffleBoundary
-    protected static byte[] getStringBytes(Object o) {
-        return ((String) o).getBytes();
-    }
-
-    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization

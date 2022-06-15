@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -51,6 +51,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
 
 /**
@@ -89,12 +90,12 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @TruffleBoundary
     @Override
-    public void onAttributeUpdate(String key, Object newValue) {
+    public void onAttributeUpdate(TruffleString key, Object newValue) {
         assert !PythonContext.get(null).isCoreInitialized();
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
         if (slot != null) {
             SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, newValue);
         }
@@ -127,20 +128,22 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     }
 
     @ExportMessage
-    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return type.getName();
+            return toJavaStringNode.execute(type.getName());
         } finally {
             gil.release(mustRelease);
         }
     }
 
     @ExportMessage
-    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return type.getPrintName();
+            return toJavaStringNode.execute(type.getPrintName());
         } finally {
             gil.release(mustRelease);
         }

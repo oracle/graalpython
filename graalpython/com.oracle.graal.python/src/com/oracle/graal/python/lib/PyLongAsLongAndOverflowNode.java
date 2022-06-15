@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,8 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsLongAndOverflow}. Converts an object into a Java long
@@ -113,12 +114,12 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         Object result = null;
         if (indexDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, indexDescr, object);
-            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, __INDEX__);
+            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, T___INDEX__);
         }
         Object intDescr = lookupInt.execute(frame, type, object);
         if (intDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, intDescr, object);
-            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, __INT__);
+            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, T___INT__);
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,
                             ErrorMessages.WARN_INT_CONVERSION_DEPRECATED, object);
         }
@@ -129,7 +130,7 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
     }
 
     private static void checkResult(VirtualFrame frame, Object originalObject, Object result, PyLongCheckNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
-                    WarningsModuleBuiltins.WarnNode warnNode, String methodName) {
+                    WarningsModuleBuiltins.WarnNode warnNode, TruffleString methodName) {
         if (!isInt.execute(result)) {
             if (!isSubtype.execute(result)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INT, methodName, result);

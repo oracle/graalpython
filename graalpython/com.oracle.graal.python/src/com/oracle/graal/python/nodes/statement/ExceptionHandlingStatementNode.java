@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -197,7 +198,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     protected PException exceptionStateForTruffleException(AbstractTruffleException exception) {
-        return wrapJavaException(exception, this, factory().createBaseException(SystemError, "%m", new Object[]{exception}));
+        return wrapJavaException(exception, this, factory().createBaseException(SystemError, ErrorMessages.M, new Object[]{exception}));
     }
 
     protected final PException wrapJavaExceptionIfApplicable(Throwable e) {
@@ -205,11 +206,11 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             return null;
         }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
-            return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
+            return wrapJavaException(e, this, factory().createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
             PythonContext.get(this).reacquireGilAfterStackOverflow();
-            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+            return wrapJavaException(e, this, factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         return null;
     }

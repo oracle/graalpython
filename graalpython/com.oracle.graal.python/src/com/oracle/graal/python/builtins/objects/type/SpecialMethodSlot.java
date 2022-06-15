@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,78 +41,80 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MATMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RLSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMATMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET_NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -144,6 +146,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
@@ -172,97 +175,97 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
  * initialized.
  */
 public enum SpecialMethodSlot {
-    GetAttribute(__GETATTRIBUTE__),
-    GetAttr(__GETATTR__),
-    SetAttr(__SETATTR__),
-    DelAttr(__DELATTR__),
+    GetAttribute(T___GETATTRIBUTE__),
+    GetAttr(T___GETATTR__),
+    SetAttr(T___SETATTR__),
+    DelAttr(T___DELATTR__),
 
-    Dict(__DICT__),
+    Dict(T___DICT__),
 
-    Get(__GET__),
-    Set(__SET__),
-    Delete(__DELETE__),
+    Get(T___GET__),
+    Set(T___SET__),
+    Delete(T___DELETE__),
 
-    Iter(__ITER__),
-    Next(__NEXT__),
+    Iter(T___ITER__),
+    Next(T___NEXT__),
 
-    New(__NEW__, NO_BUILTIN_DESCRIPTORS),
-    Init(__INIT__, NO_BUILTIN_DESCRIPTORS),
-    SetName(__SET_NAME__, NO_BUILTIN_DESCRIPTORS),
-    InstanceCheck(__INSTANCECHECK__),
-    Subclasscheck(__SUBCLASSCHECK__),
-    Call(__CALL__, NO_BUILTIN_DESCRIPTORS),
+    New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
+    Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
+    SetName(T___SET_NAME__, NO_BUILTIN_DESCRIPTORS),
+    InstanceCheck(T___INSTANCECHECK__),
+    Subclasscheck(T___SUBCLASSCHECK__),
+    Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
-    GetItem(__GETITEM__),
-    SetItem(__SETITEM__),
-    DelItem(__DELITEM__),
+    GetItem(T___GETITEM__),
+    SetItem(T___SETITEM__),
+    DelItem(T___DELITEM__),
 
-    Exit(__EXIT__),
-    Enter(__ENTER__),
+    Exit(T___EXIT__),
+    Enter(T___ENTER__),
 
-    Len(__LEN__),
-    LengthHint(__LENGTH_HINT__),
-    Contains(__CONTAINS__),
-    Bool(__BOOL__),
-    Hash(__HASH__),
-    Index(__INDEX__),
-    Float(__FLOAT__),
-    Int(__INT__),
-    Str(__STR__),
-    Repr(__REPR__),
+    Len(T___LEN__),
+    LengthHint(T___LENGTH_HINT__),
+    Contains(T___CONTAINS__),
+    Bool(T___BOOL__),
+    Hash(T___HASH__),
+    Index(T___INDEX__),
+    Float(T___FLOAT__),
+    Int(T___INT__),
+    Str(T___STR__),
+    Repr(T___REPR__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
-    Format(__FORMAT__),
-    Missing(__MISSING__),
+    Format(T___FORMAT__),
+    Missing(T___MISSING__),
 
-    Eq(__EQ__),
-    Ne(__NE__),
-    Lt(__LT__),
-    Le(__LE__),
-    Gt(__GT__),
-    Ge(__GE__),
+    Eq(T___EQ__),
+    Ne(T___NE__),
+    Lt(T___LT__),
+    Le(T___LE__),
+    Gt(T___GT__),
+    Ge(T___GE__),
 
-    And(__AND__),
-    RAnd(__RAND__),
-    Or(__OR__),
-    ROr(__ROR__),
-    Xor(__XOR__),
-    RXor(__RXOR__),
-    Add(__ADD__),
-    RAdd(__RADD__),
-    Sub(__SUB__),
-    RSub(__RSUB__),
-    Mul(__MUL__),
-    RMul(__RMUL__),
-    MatMul(__MATMUL__),
-    RMatMul(__RMATMUL__),
-    Mod(__MOD__),
-    RMod(__RMOD__),
-    DivMod(__DIVMOD__),
-    RDivMod(__RDIVMOD__),
-    Pow(__POW__),
-    RPow(__RPOW__),
-    TrueDiv(__TRUEDIV__),
-    RTrueDiv(__RTRUEDIV__),
-    FloorDiv(__FLOORDIV__),
-    RFloorDiv(__RFLOORDIV__),
-    LShift(__LSHIFT__),
-    RLShift(__RLSHIFT__),
-    RShift(__RSHIFT__),
-    RRShift(__RRSHIFT__),
-    Round(__ROUND__),
+    And(T___AND__),
+    RAnd(T___RAND__),
+    Or(T___OR__),
+    ROr(T___ROR__),
+    Xor(T___XOR__),
+    RXor(T___RXOR__),
+    Add(T___ADD__),
+    RAdd(T___RADD__),
+    Sub(T___SUB__),
+    RSub(T___RSUB__),
+    Mul(T___MUL__),
+    RMul(T___RMUL__),
+    MatMul(T___MATMUL__),
+    RMatMul(T___RMATMUL__),
+    Mod(T___MOD__),
+    RMod(T___RMOD__),
+    DivMod(T___DIVMOD__),
+    RDivMod(T___RDIVMOD__),
+    Pow(T___POW__),
+    RPow(T___RPOW__),
+    TrueDiv(T___TRUEDIV__),
+    RTrueDiv(T___RTRUEDIV__),
+    FloorDiv(T___FLOORDIV__),
+    RFloorDiv(T___RFLOORDIV__),
+    LShift(T___LSHIFT__),
+    RLShift(T___RLSHIFT__),
+    RShift(T___RSHIFT__),
+    RRShift(T___RRSHIFT__),
+    Round(T___ROUND__),
 
-    IAdd(__IADD__),
-    IMul(__IMUL__),
+    IAdd(T___IADD__),
+    IMul(T___IMUL__),
 
-    Reversed(__REVERSED__),
-    Bytes(__BYTES__);
+    Reversed(T___REVERSED__),
+    Bytes(T___BYTES__);
 
     static class Flags {
         static final boolean NO_BUILTIN_DESCRIPTORS = false;
     }
 
     public static final SpecialMethodSlot[] VALUES = values();
-    private final String name;
+    private final TruffleString name;
     @CompilationFinal private SpecialMethodSlot reverse;
     /**
      * Indicates if given slot may or must not store context independent (AST cacheable)
@@ -282,12 +285,12 @@ public enum SpecialMethodSlot {
      */
     private final boolean allowsBuiltinDescriptors;
 
-    SpecialMethodSlot(String name) {
+    SpecialMethodSlot(TruffleString name) {
         this.name = name;
         this.allowsBuiltinDescriptors = true;
     }
 
-    SpecialMethodSlot(String name, boolean allowsBuiltinDescriptors) {
+    SpecialMethodSlot(TruffleString name, boolean allowsBuiltinDescriptors) {
         this.name = name;
         this.allowsBuiltinDescriptors = allowsBuiltinDescriptors;
     }
@@ -311,7 +314,7 @@ public enum SpecialMethodSlot {
         assert checkReverseSlots();
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
@@ -676,172 +679,347 @@ public enum SpecialMethodSlot {
     /**
      * Fast check that can rule out that given name is a special slot.
      */
-    public static boolean canBeSpecial(String name) {
-        int len = name.length();
-        return len > 5 && name.charAt(0) == '_' && name.charAt(1) == '_' &&
-                        name.charAt(len - 1) == '_' && name.charAt(len - 2) == '_';
+    public static boolean canBeSpecial(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        int len = codePointLengthNode.execute(name, TS_ENCODING);
+        return len > 5 && codePointAtIndexNode.execute(name, len - 2, TS_ENCODING) == '_' && codePointAtIndexNode.execute(name, len - 1, TS_ENCODING) == '_' &&
+                        codePointAtIndexNode.execute(name, 1, TS_ENCODING) == '_' && codePointAtIndexNode.execute(name, 0, TS_ENCODING) == '_';
     }
 
-    public static SpecialMethodSlot findSpecialSlot(String name) {
-        if (!canBeSpecial(name)) {
+    @TruffleBoundary
+    public static SpecialMethodSlot findSpecialSlotUncached(TruffleString name) {
+        return findSpecialSlot(name, TruffleString.CodePointLengthNode.getUncached(), TruffleString.CodePointAtIndexNode.getUncached(), TruffleString.EqualNode.getUncached());
+    }
+
+    public static SpecialMethodSlot findSpecialSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    TruffleString.EqualNode eqNode) {
+        if (!canBeSpecial(name, codePointLengthNode, codePointAtIndexNode)) {
             return null;
         }
-        switch (name) {
-            case __GETATTRIBUTE__:
-                return GetAttribute;
-            case __GETATTR__:
-                return GetAttr;
-            case __SETATTR__:
-                return SetAttr;
-            case __DELATTR__:
-                return DelAttr;
-            case __DICT__:
-                return Dict;
-            case __GET__:
-                return Get;
-            case __SET__:
-                return Set;
-            case __DELETE__:
-                return Delete;
-            case __ITER__:
-                return Iter;
-            case __NEXT__:
-                return Next;
-            case __NEW__:
-                return New;
-            case __INIT__:
-                return Init;
-            case __SET_NAME__:
-                return SetName;
-            case __INSTANCECHECK__:
-                return InstanceCheck;
-            case __SUBCLASSCHECK__:
-                return Subclasscheck;
-            case __CALL__:
-                return Call;
-            case __GETITEM__:
-                return GetItem;
-            case __SETITEM__:
-                return SetItem;
-            case __DELITEM__:
-                return DelItem;
-            case __EXIT__:
-                return Exit;
-            case __ENTER__:
-                return Enter;
-            case __LEN__:
-                return Len;
-            case __LENGTH_HINT__:
-                return LengthHint;
-            case __CONTAINS__:
-                return Contains;
-            case __BOOL__:
-                return Bool;
-            case __HASH__:
-                return Hash;
-            case __INDEX__:
-                return Index;
-            case __FLOAT__:
-                return Float;
-            case __INT__:
-                return Int;
-            case __STR__:
-                return Str;
-            case __REPR__:
-                return Repr;
-            case __FORMAT__:
-                return Format;
-            case __MISSING__:
-                return Missing;
-            case __EQ__:
-                return Eq;
-            case __NE__:
-                return Ne;
-            case __LT__:
-                return Lt;
-            case __LE__:
-                return Le;
-            case __GT__:
-                return Gt;
-            case __GE__:
-                return Ge;
-            case __AND__:
-                return And;
-            case __RAND__:
-                return RAnd;
-            case __OR__:
-                return Or;
-            case __ROR__:
-                return ROr;
-            case __XOR__:
-                return Xor;
-            case __RXOR__:
-                return RXor;
-            case __ADD__:
-                return Add;
-            case __RADD__:
-                return RAdd;
-            case __SUB__:
-                return Sub;
-            case __RSUB__:
-                return RSub;
-            case __MUL__:
-                return Mul;
-            case __RMUL__:
-                return RMul;
-            case __MATMUL__:
-                return MatMul;
-            case __RMATMUL__:
-                return RMatMul;
-            case __MOD__:
-                return Mod;
-            case __RMOD__:
-                return RMod;
-            case __DIVMOD__:
-                return DivMod;
-            case __RDIVMOD__:
-                return RDivMod;
-            case __POW__:
-                return Pow;
-            case __RPOW__:
-                return RPow;
-            case __TRUEDIV__:
-                return TrueDiv;
-            case __RTRUEDIV__:
-                return RTrueDiv;
-            case __FLOORDIV__:
-                return FloorDiv;
-            case __RFLOORDIV__:
-                return RFloorDiv;
-            case __LSHIFT__:
-                return LShift;
-            case __RLSHIFT__:
-                return RLShift;
-            case __RSHIFT__:
-                return RShift;
-            case __RRSHIFT__:
-                return RRShift;
-            case __ROUND__:
-                return Round;
-            case __IADD__:
-                return IAdd;
-            case __IMUL__:
-                return IMul;
-            case __REVERSED__:
-                return Reversed;
-            case __BYTES__:
-                return Bytes;
-            default:
-                return null;
+        int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
+        switch (x) {
+            case 'g' * 26 + 'e':    // ge
+                if (eqNode.execute(name, T___GETATTRIBUTE__, TS_ENCODING)) {
+                    return GetAttribute;
+                }
+                if (eqNode.execute(name, T___GETATTR__, TS_ENCODING)) {
+                    return GetAttr;
+                }
+                if (eqNode.execute(name, T___GET__, TS_ENCODING)) {
+                    return Get;
+                }
+                if (eqNode.execute(name, T___GETITEM__, TS_ENCODING)) {
+                    return GetItem;
+                }
+                if (eqNode.execute(name, T___GE__, TS_ENCODING)) {
+                    return Ge;
+                }
+                break;
+            case 's' * 26 + 'e':    // se
+                if (eqNode.execute(name, T___SETATTR__, TS_ENCODING)) {
+                    return SetAttr;
+                }
+                if (eqNode.execute(name, T___SET__, TS_ENCODING)) {
+                    return Set;
+                }
+                if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
+                    return SetName;
+                }
+                if (eqNode.execute(name, T___SETITEM__, TS_ENCODING)) {
+                    return SetItem;
+                }
+                break;
+            case 'd' * 26 + 'e':    // de
+                if (eqNode.execute(name, T___DELATTR__, TS_ENCODING)) {
+                    return DelAttr;
+                }
+                if (eqNode.execute(name, T___DELETE__, TS_ENCODING)) {
+                    return Delete;
+                }
+                if (eqNode.execute(name, T___DELITEM__, TS_ENCODING)) {
+                    return DelItem;
+                }
+                break;
+            case 'd' * 26 + 'i':    // di
+                if (eqNode.execute(name, T___DICT__, TS_ENCODING)) {
+                    return Dict;
+                }
+                if (eqNode.execute(name, T___DIVMOD__, TS_ENCODING)) {
+                    return DivMod;
+                }
+                break;
+            case 'i' * 26 + 't':    // it
+                if (eqNode.execute(name, T___ITER__, TS_ENCODING)) {
+                    return Iter;
+                }
+                break;
+            case 'n' * 26 + 'e':    // ne
+                if (eqNode.execute(name, T___NEXT__, TS_ENCODING)) {
+                    return Next;
+                }
+                if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
+                    return New;
+                }
+                if (eqNode.execute(name, T___NE__, TS_ENCODING)) {
+                    return Ne;
+                }
+                break;
+            case 'i' * 26 + 'n':    // in
+                if (eqNode.execute(name, T___INIT__, TS_ENCODING)) {
+                    return Init;
+                }
+                if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
+                    return InstanceCheck;
+                }
+                if (eqNode.execute(name, T___INDEX__, TS_ENCODING)) {
+                    return Index;
+                }
+                if (eqNode.execute(name, T___INT__, TS_ENCODING)) {
+                    return Int;
+                }
+                break;
+            case 's' * 26 + 'u':    // su
+                if (eqNode.execute(name, T___SUBCLASSCHECK__, TS_ENCODING)) {
+                    return Subclasscheck;
+                }
+                if (eqNode.execute(name, T___SUB__, TS_ENCODING)) {
+                    return Sub;
+                }
+                break;
+            case 'c' * 26 + 'a':    // ca
+                if (eqNode.execute(name, T___CALL__, TS_ENCODING)) {
+                    return Call;
+                }
+                break;
+            case 'e' * 26 + 'x':    // ex
+                if (eqNode.execute(name, T___EXIT__, TS_ENCODING)) {
+                    return Exit;
+                }
+                break;
+            case 'e' * 26 + 'n':    // en
+                if (eqNode.execute(name, T___ENTER__, TS_ENCODING)) {
+                    return Enter;
+                }
+                break;
+            case 'l' * 26 + 'e':    // le
+                if (eqNode.execute(name, T___LEN__, TS_ENCODING)) {
+                    return Len;
+                }
+                if (eqNode.execute(name, T___LENGTH_HINT__, TS_ENCODING)) {
+                    return LengthHint;
+                }
+                if (eqNode.execute(name, T___LE__, TS_ENCODING)) {
+                    return Le;
+                }
+                break;
+            case 'c' * 26 + 'o':    // co
+                if (eqNode.execute(name, T___CONTAINS__, TS_ENCODING)) {
+                    return Contains;
+                }
+                break;
+            case 'b' * 26 + 'o':    // bo
+                if (eqNode.execute(name, T___BOOL__, TS_ENCODING)) {
+                    return Bool;
+                }
+                break;
+            case 'h' * 26 + 'a':    // ha
+                if (eqNode.execute(name, T___HASH__, TS_ENCODING)) {
+                    return Hash;
+                }
+                break;
+            case 'f' * 26 + 'l':    // fl
+                if (eqNode.execute(name, T___FLOAT__, TS_ENCODING)) {
+                    return Float;
+                }
+                if (eqNode.execute(name, T___FLOORDIV__, TS_ENCODING)) {
+                    return FloorDiv;
+                }
+                break;
+            case 's' * 26 + 't':    // st
+                if (eqNode.execute(name, T___STR__, TS_ENCODING)) {
+                    return Str;
+                }
+                break;
+            case 'r' * 26 + 'e':    // re
+                if (eqNode.execute(name, T___REPR__, TS_ENCODING)) {
+                    return Repr;
+                }
+                if (eqNode.execute(name, T___REVERSED__, TS_ENCODING)) {
+                    return Reversed;
+                }
+                break;
+            case 'f' * 26 + 'o':    // fo
+                if (eqNode.execute(name, T___FORMAT__, TS_ENCODING)) {
+                    return Format;
+                }
+                break;
+            case 'm' * 26 + 'i':    // mi
+                if (eqNode.execute(name, T___MISSING__, TS_ENCODING)) {
+                    return Missing;
+                }
+                break;
+            case 'e' * 26 + 'q':    // eq
+                if (eqNode.execute(name, T___EQ__, TS_ENCODING)) {
+                    return Eq;
+                }
+                break;
+            case 'l' * 26 + 't':    // lt
+                if (eqNode.execute(name, T___LT__, TS_ENCODING)) {
+                    return Lt;
+                }
+                break;
+            case 'g' * 26 + 't':    // gt
+                if (eqNode.execute(name, T___GT__, TS_ENCODING)) {
+                    return Gt;
+                }
+                break;
+            case 'a' * 26 + 'n':    // an
+                if (eqNode.execute(name, T___AND__, TS_ENCODING)) {
+                    return And;
+                }
+                break;
+            case 'r' * 26 + 'a':    // ra
+                if (eqNode.execute(name, T___RAND__, TS_ENCODING)) {
+                    return RAnd;
+                }
+                if (eqNode.execute(name, T___RADD__, TS_ENCODING)) {
+                    return RAdd;
+                }
+                break;
+            case 'o' * 26 + 'r':    // or
+                if (eqNode.execute(name, T___OR__, TS_ENCODING)) {
+                    return Or;
+                }
+                break;
+            case 'r' * 26 + 'o':    // ro
+                if (eqNode.execute(name, T___ROR__, TS_ENCODING)) {
+                    return ROr;
+                }
+                if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
+                    return Round;
+                }
+                break;
+            case 'x' * 26 + 'o':    // xo
+                if (eqNode.execute(name, T___XOR__, TS_ENCODING)) {
+                    return Xor;
+                }
+                break;
+            case 'r' * 26 + 'x':    // rx
+                if (eqNode.execute(name, T___RXOR__, TS_ENCODING)) {
+                    return RXor;
+                }
+                break;
+            case 'a' * 26 + 'd':    // ad
+                if (eqNode.execute(name, T___ADD__, TS_ENCODING)) {
+                    return Add;
+                }
+                break;
+            case 'r' * 26 + 's':    // rs
+                if (eqNode.execute(name, T___RSUB__, TS_ENCODING)) {
+                    return RSub;
+                }
+                if (eqNode.execute(name, T___RSHIFT__, TS_ENCODING)) {
+                    return RShift;
+                }
+                break;
+            case 'm' * 26 + 'u':    // mu
+                if (eqNode.execute(name, T___MUL__, TS_ENCODING)) {
+                    return Mul;
+                }
+                break;
+            case 'r' * 26 + 'm':    // rm
+                if (eqNode.execute(name, T___RMUL__, TS_ENCODING)) {
+                    return RMul;
+                }
+                if (eqNode.execute(name, T___RMATMUL__, TS_ENCODING)) {
+                    return RMatMul;
+                }
+                if (eqNode.execute(name, T___RMOD__, TS_ENCODING)) {
+                    return RMod;
+                }
+                break;
+            case 'm' * 26 + 'a':    // ma
+                if (eqNode.execute(name, T___MATMUL__, TS_ENCODING)) {
+                    return MatMul;
+                }
+                break;
+            case 'm' * 26 + 'o':    // mo
+                if (eqNode.execute(name, T___MOD__, TS_ENCODING)) {
+                    return Mod;
+                }
+                break;
+            case 'r' * 26 + 'd':    // rd
+                if (eqNode.execute(name, T___RDIVMOD__, TS_ENCODING)) {
+                    return RDivMod;
+                }
+                break;
+            case 'p' * 26 + 'o':    // po
+                if (eqNode.execute(name, T___POW__, TS_ENCODING)) {
+                    return Pow;
+                }
+                break;
+            case 'r' * 26 + 'p':    // rp
+                if (eqNode.execute(name, T___RPOW__, TS_ENCODING)) {
+                    return RPow;
+                }
+                break;
+            case 't' * 26 + 'r':    // tr
+                if (eqNode.execute(name, T___TRUEDIV__, TS_ENCODING)) {
+                    return TrueDiv;
+                }
+                break;
+            case 'r' * 26 + 't':    // rt
+                if (eqNode.execute(name, T___RTRUEDIV__, TS_ENCODING)) {
+                    return RTrueDiv;
+                }
+                break;
+            case 'r' * 26 + 'f':    // rf
+                if (eqNode.execute(name, T___RFLOORDIV__, TS_ENCODING)) {
+                    return RFloorDiv;
+                }
+                break;
+            case 'l' * 26 + 's':    // ls
+                if (eqNode.execute(name, T___LSHIFT__, TS_ENCODING)) {
+                    return LShift;
+                }
+                break;
+            case 'r' * 26 + 'l':    // rl
+                if (eqNode.execute(name, T___RLSHIFT__, TS_ENCODING)) {
+                    return RLShift;
+                }
+                break;
+            case 'r' * 26 + 'r':    // rr
+                if (eqNode.execute(name, T___RRSHIFT__, TS_ENCODING)) {
+                    return RRShift;
+                }
+                break;
+            case 'i' * 26 + 'a':    // ia
+                if (eqNode.execute(name, T___IADD__, TS_ENCODING)) {
+                    return IAdd;
+                }
+                break;
+            case 'i' * 26 + 'm':    // im
+                if (eqNode.execute(name, T___IMUL__, TS_ENCODING)) {
+                    return IMul;
+                }
+                break;
+            case 'b' * 26 + 'y':    // by
+                if (eqNode.execute(name, T___BYTES__, TS_ENCODING)) {
+                    return Bytes;
+                }
+                break;
         }
+        return null;
     }
 
     private static boolean checkReverseSlots() {
+        TruffleString prefix = tsLiteral("__");
+        TruffleString rPrefix = tsLiteral("__r");
         for (SpecialMethodSlot slot : VALUES) {
-            String slotName = slot.getName();
-            if (slotName.startsWith("__r")) {
-                String rname = slotName.replace("__r", "__");
-                SpecialMethodSlot rslot = findSpecialSlot(rname);
+            TruffleString slotName = slot.getName();
+            if (rPrefix.regionEqualsUncached(0, slotName, 0, 3, TS_ENCODING)) {
+                int slotNameLen = slotName.codePointLengthUncached(TS_ENCODING);
+                TruffleString slotNamePart = slotName.substringUncached(3, slotNameLen - 3, TS_ENCODING, true);
+                SpecialMethodSlot rslot = findSpecialSlotUncached(prefix.concatUncached(slotNamePart, TS_ENCODING, false));
                 if (rslot != null && rslot.reverse != slot) {
                     assert false : slotName;
                     return false;
@@ -853,19 +1031,12 @@ public enum SpecialMethodSlot {
 
     private static boolean checkFind() {
         for (SpecialMethodSlot slot : VALUES) {
-            if (findSpecialSlot(slot.getName()) != slot) {
-                /*-
-                // Uncomment following to print the code for the switch:
-                String code = Arrays.stream(VALUES).//
-                                map(x -> String.format("case %s: return %s;", x.name.toUpperCase(Locale.ROOT), x.name())).//
-                                collect(Collectors.joining("\n"));
-                System.err.println(code);
-                 */
+            if (findSpecialSlotUncached(slot.getName()) != slot) {
                 assert false : slot;
                 return false;
             }
         }
-        return findSpecialSlot("__bogus__") == null;
+        return findSpecialSlotUncached(tsLiteral("__bogus__")) == null;
     }
 
     // --------------------------------------------------
@@ -894,7 +1065,7 @@ public enum SpecialMethodSlot {
                         // BuiltinMethodDescriptor and matching PBuiltinFunction: OK
                         continue;
                     }
-                    mismatches.add(type.getName() + "." + slot.getName());
+                    mismatches.add(type.getName().toJavaStringUncached() + "." + slot.getName().toJavaStringUncached());
                 }
             }
         }

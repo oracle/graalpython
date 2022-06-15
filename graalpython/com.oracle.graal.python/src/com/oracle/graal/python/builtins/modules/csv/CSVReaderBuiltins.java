@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,49 @@
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.T__CSV;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.AFTER_ESCAPED_CRNL;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.EAT_CRNL;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPED_CHAR;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPE_IN_QUOTED_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_QUOTED_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
-import java.util.List;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVReader)
 public final class CSVReaderBuiltins extends PythonBuiltins {
@@ -66,7 +92,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         return CSVReaderBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterReaderNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -75,22 +101,253 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextReaderNode extends PythonUnaryBuiltinNode {
+
+        private static final int EOL = -2;
+        private static final int NEWLINE_CODEPOINT = '\n';
+        private static final int CARRIAGE_RETURN_CODEPOINT = '\r';
+        private static final int SPACE_CODEPOINT = ' ';
+
         @Specialization
-        Object nextPos(VirtualFrame frame, CSVReader self) {
-
+        Object nextPos(VirtualFrame frame, CSVReader self,
+                        @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached PyNumberFloatNode pyNumberFloatNode,
+                        @Cached AppendNode appendNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+            PList fields = factory().createList();
+            CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) getContext().lookupBuiltinModule(T__CSV).getBuiltins();
             self.parseReset();
+            do {
+                Object lineObj;
+                try {
+                    lineObj = getNextNode.execute(frame, self.inputIter);
+                } catch (PException e) {
+                    e.expectStopIteration(isBuiltinClassProfile);
+                    self.fieldLimit = csvModuleBuiltins.fieldLimit;
+                    if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
+                        if (self.dialect.strict) {
+                            throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
+                        } else {
+                            try {
+                                parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                            } catch (AbstractTruffleException ignored) {
+                                throw e.getExceptionForReraise();
+                            }
+                            break;
+                        }
+                    }
+                    throw raiseStopIteration();
+                }
+                self.fieldLimit = csvModuleBuiltins.fieldLimit;
 
-            PythonLanguage language = PythonLanguage.get(this);
-            Object state = IndirectCallContext.enter(frame, language, getContext(), this);
+                TruffleString line;
+                try {
+                    line = castToStringNode.execute(lineObj);
+                } catch (CannotCastException e) {
+                    throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(lineObj));
+                }
 
-            try {
-                return self.parseIterableInput(this);
-            } finally {
-                IndirectCallContext.exit(frame, language, getContext(), state);
+                // TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of
+                // bytes?
+                // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and
+                // line.index(0) >=0:
+                // raise Error("line contains NULL byte")
+                if (byteIndexOfCodePointNode.execute(line, 0, 0, line.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
+                    throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
+                }
+
+                self.lineNum++;
+                TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
+                while (tsi.hasNext()) {
+                    final int codepoint = nextNode.execute(tsi);
+                    parseProcessCodePoint(self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
+                }
+                parseProcessCodePoint(self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode);
+
+            } while (self.state != START_RECORD);
+            return fields;
+        }
+
+        @SuppressWarnings("fallthrough")
+        private void parseProcessCodePoint(CSVReader self, PList fields, int codePoint, TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.ToStringNode toStringNode,
+                        PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
+            CSVDialect dialect = self.dialect;
+
+            switch (self.state) {
+                case START_RECORD:
+                    /* start of record */
+                    if (codePoint == EOL) {
+                        /* empty line - return [] */
+                        break;
+                    } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
+                        self.state = EAT_CRNL;
+                        break;
+                    }
+                    /* normal character - handle as START_FIELD */
+                    self.state = START_FIELD;
+                    /* fallthru */
+
+                case START_FIELD:
+                    /* expecting field */
+                    if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
+                        /* save empty field - return [fields] */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
+                    } else if (codePoint == dialect.quoteCharCodePoint &&
+                                    dialect.quoting != QUOTE_NONE) {
+                        /* start quoted field */
+                        self.state = IN_QUOTED_FIELD;
+                    } else if (codePoint == dialect.escapeCharCodePoint) {
+                        /* possible escaped character */
+                        self.state = ESCAPED_CHAR;
+                    } else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace) {
+                        /* ignore space at start of field */
+                    } else if (codePoint == dialect.delimiterCodePoint) {
+                        /* save empty field */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                    } else {
+                        /* begin new unquoted field */
+                        if (dialect.quoting == QUOTE_NONNUMERIC) {
+                            self.numericField = true;
+                        }
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                        self.state = IN_FIELD;
+                    }
+                    break;
+
+                case ESCAPED_CHAR:
+                    if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                        self.state = AFTER_ESCAPED_CRNL;
+                        break;
+                    }
+                    if (codePoint == EOL) {
+                        codePoint = NEWLINE_CODEPOINT;
+                    }
+                    parseAddCodePoint(self, codePoint, appendCodePointNode);
+
+                    self.state = IN_FIELD;
+                    break;
+
+                case AFTER_ESCAPED_CRNL:
+                    if (codePoint == EOL) {
+                        break;
+                    }
+                    /* fallthru */
+
+                case IN_FIELD:
+                    /* in unquoted field */
+                    if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
+                        /* end of line - return [fields] */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+
+                        self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
+                    } else if (codePoint == dialect.escapeCharCodePoint) {
+                        /* possible escaped character */
+                        self.state = ESCAPED_CHAR;
+                    } else if (codePoint == dialect.delimiterCodePoint) {
+                        /* save field - wait for new field */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        self.state = START_FIELD;
+                    } else {
+                        /* normal character - save in field */
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                    }
+                    break;
+
+                case IN_QUOTED_FIELD:
+                    /* in quoted field */
+                    if (codePoint == EOL) {
+                        /* ignore */
+                    } else if (codePoint == dialect.escapeCharCodePoint) {
+                        /* Possible escape character */
+                        self.state = ESCAPE_IN_QUOTED_FIELD;
+                    } else if (codePoint == dialect.quoteCharCodePoint &&
+                                    dialect.quoting != QUOTE_NONE) {
+                        if (dialect.doubleQuote) {
+                            /* doublequote; " represented by "" */
+                            self.state = ReaderState.QUOTE_IN_QUOTED_FIELD;
+                        } else {
+                            /* end of quote part of field */
+                            self.state = IN_FIELD;
+                        }
+                    } else {
+                        /* normal character - save in field */
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                    }
+                    break;
+
+                case ESCAPE_IN_QUOTED_FIELD:
+                    if (codePoint == EOL) {
+                        codePoint = NEWLINE_CODEPOINT;
+                    }
+                    parseAddCodePoint(self, codePoint, appendCodePointNode);
+                    self.state = IN_QUOTED_FIELD;
+                    break;
+
+                case QUOTE_IN_QUOTED_FIELD:
+                    /* doublequote - seen a quote in a quoted field */
+                    if (dialect.quoting != QUOTE_NONE &&
+                                    codePoint == dialect.quoteCharCodePoint) {
+                        /* save "" as " */
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                        self.state = IN_QUOTED_FIELD;
+                    } else if (codePoint == dialect.delimiterCodePoint) {
+                        /* save field - wait for new field */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        self.state = START_FIELD;
+                    } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
+                        /* end of line - return [fields] */
+                        parseSaveField(self, fields, toStringNode, pyNumberFloatNode, appendNode);
+                        self.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
+                    } else if (!dialect.strict) {
+                        parseAddCodePoint(self, codePoint, appendCodePointNode);
+                        self.state = IN_FIELD;
+                    } else {
+                        /* illegal */
+                        throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.S_EXPECTED_AFTER_S, dialect.delimiter, dialect.quoteChar);
+                    }
+                    break;
+
+                case EAT_CRNL:
+                    if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
+                        /* ignore */
+                    } else if (codePoint == EOL) {
+                        self.state = START_RECORD;
+                    } else {
+                        throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.NEWLINE_IN_UNQOUTED_FIELD);
+                    }
+                    break;
             }
+        }
+
+        private void parseSaveField(CSVReader self, PList fields, TruffleStringBuilder.ToStringNode toStringNode, PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
+            TruffleString field = toStringNode.execute(self.field);
+            self.field = TruffleStringBuilder.create(TS_ENCODING);
+            if (self.numericField) {
+                self.numericField = false;
+                appendNode.execute(fields, pyNumberFloatNode.execute(field));
+            } else {
+                appendNode.execute(fields, field);
+            }
+        }
+
+        private void parseAddCodePoint(CSVReader self, int codePoint, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+            assert TS_ENCODING == TruffleString.Encoding.UTF_32;
+            int cpLen = self.field.byteLength() / 4;        // assumes UTF-32
+            if (cpLen + 1 > self.fieldLimit) {
+                throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT, self.fieldLimit);
+            }
+            appendCodePointNode.execute(self.field, codePoint, 1, true);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 @NodeChild(value = "rhs", type = ExpressionNode.class)
@@ -67,9 +68,9 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         }
     }
 
-    private final String key;
+    private final TruffleString key;
 
-    protected SetAttributeNode(String key) {
+    protected SetAttributeNode(TruffleString key) {
         this.key = key;
     }
 
@@ -77,11 +78,11 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     public abstract ExpressionNode getRhs();
 
-    public static SetAttributeNode create(String key) {
+    public static SetAttributeNode create(TruffleString key) {
         return create(key, null, null);
     }
 
-    public static SetAttributeNode create(String key, ExpressionNode object, ExpressionNode rhs) {
+    public static SetAttributeNode create(TruffleString key, ExpressionNode object, ExpressionNode rhs) {
         return SetAttributeNodeGen.create(key, object, rhs);
     }
 
@@ -92,7 +93,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     public abstract void executeVoid(VirtualFrame frame, Object object, Object value);
 
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return key;
     }
 

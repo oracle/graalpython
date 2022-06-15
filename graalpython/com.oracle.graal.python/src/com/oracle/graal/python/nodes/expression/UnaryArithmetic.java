@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum UnaryArithmetic {
     Pos(UnaryArithmeticFactory.PosNodeGen::create),
@@ -80,7 +82,7 @@ public enum UnaryArithmetic {
      * checking.
      */
     static final class CallUnaryArithmeticRootNode extends CallArithmeticRootNode {
-        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
+        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, tsArray("$self"), null);
 
         @Child private UnaryOpNode callUnaryNode;
 
@@ -137,7 +139,7 @@ public enum UnaryArithmetic {
             };
         }
 
-        static LookupAndCallUnaryNode createCallNode(String name, Supplier<NoAttributeHandler> handler) {
+        static LookupAndCallUnaryNode createCallNode(TruffleString name, Supplier<NoAttributeHandler> handler) {
             return LookupAndCallUnaryNode.create(name, handler);
         }
     }
@@ -170,7 +172,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(__POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached("createCallNode(T___POS__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
@@ -205,7 +207,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(__NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached("createCallNode(T___NEG__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 
@@ -235,7 +237,7 @@ public enum UnaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached("createCallNode(__INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
+                        @Cached("createCallNode(T___INVERT__, NOT_IMPLEMENTED)") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }
 

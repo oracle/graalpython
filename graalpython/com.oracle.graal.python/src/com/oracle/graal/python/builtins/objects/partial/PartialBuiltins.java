@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,17 @@ package com.oracle.graal.python.builtins.objects.partial;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARTIAL_STATE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -68,8 +74,8 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -96,6 +102,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
 public class PartialBuiltins extends PythonBuiltins {
@@ -139,7 +147,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
@@ -171,7 +179,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PartialReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -192,7 +200,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
 
@@ -262,7 +270,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
         private static int indexOf(PKeyword[] keywords, PKeyword kw) {
@@ -325,52 +333,56 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
-        private static void reprArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode) {
+        private static void reprArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, TruffleStringBuilder.AppendStringNode appendStringNode) {
             for (Object arg : partial.getArgs()) {
-                PythonUtils.append(sb, ", ");
-                PythonUtils.append(sb, reprNode.execute(frame, arg));
+                appendStringNode.execute(sb, T_COMMA_SPACE);
+                appendStringNode.execute(sb, reprNode.execute(frame, arg));
             }
         }
 
-        private static void reprKwArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode, PyObjectStrAsJavaStringNode strNode, HashingStorageLibrary lib) {
+        private static void reprKwArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, PyObjectStrAsTruffleStringNode strNode,
+                        HashingStorageLibrary lib, TruffleStringBuilder.AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
             if (kwDict != null) {
                 final HashingStorage storage = kwDict.getDictStorage();
                 for (Object key : lib.keys(storage)) {
                     final Object value = lib.getItem(storage, key);
-                    PythonUtils.append(sb, ", ");
-                    PythonUtils.append(sb, strNode.execute(frame, key));
-                    PythonUtils.append(sb, "=");
-                    PythonUtils.append(sb, reprNode.execute(frame, value));
+                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    appendStringNode.execute(sb, strNode.execute(frame, key));
+                    appendStringNode.execute(sb, T_EQ);
+                    appendStringNode.execute(sb, reprNode.execute(frame, value));
                 }
             }
         }
 
         @Specialization
-        public static Object repr(VirtualFrame frame, PPartial partial,
-                        @Cached PyObjectStrAsJavaStringNode strNode,
-                        @Cached PyObjectReprAsJavaStringNode reprNode,
+        public static TruffleString repr(VirtualFrame frame, PPartial partial,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached GetClassNode classNode,
                         @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object cls = classNode.execute(partial);
-            final String name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, partial) : nameNode.execute(cls);
-            StringBuilder sb = PythonUtils.newStringBuilder(name);
-            PythonUtils.append(sb, "(");
+            final TruffleString name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, partial) : nameNode.execute(cls);
             PythonContext ctxt = PythonContext.get(classNameNode);
             if (!ctxt.reprEnter(partial)) {
-                return "...";
+                return T_ELLIPSIS;
             }
             try {
-                PythonUtils.append(sb, reprNode.execute(frame, partial.getFn()));
-                reprArgs(frame, partial, sb, reprNode);
-                reprKwArgs(frame, partial, sb, reprNode, strNode, lib);
-                PythonUtils.append(sb, ")");
-                return PythonUtils.sbToString(sb);
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                appendStringNode.execute(sb, name);
+                appendStringNode.execute(sb, T_LPAREN);
+                appendStringNode.execute(sb, reprNode.execute(frame, partial.getFn()));
+                reprArgs(frame, partial, sb, reprNode, appendStringNode);
+                reprKwArgs(frame, partial, sb, reprNode, strNode, lib, appendStringNode);
+                appendStringNode.execute(sb, T_RPAREN);
+                return toStringNode.execute(sb);
             } finally {
                 ctxt.reprLeave(partial);
             }

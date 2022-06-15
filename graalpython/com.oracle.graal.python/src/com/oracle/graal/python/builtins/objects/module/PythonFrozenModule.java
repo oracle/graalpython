@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import com.oracle.truffle.api.strings.TruffleString;
+
 import java.io.IOException;
 import java.io.InputStream;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 public final class PythonFrozenModule {
-    private final String name;
+    private final TruffleString name;
     private final byte[] code;
     private final boolean isPackage;
 
@@ -61,10 +65,10 @@ public final class PythonFrozenModule {
     }
 
     public PythonFrozenModule(String symbol, String name, boolean isPackage) {
-        this(name, getByteCode(symbol), isPackage);
+        this(toTruffleStringUncached(name), getByteCode(symbol), isPackage);
     }
 
-    private PythonFrozenModule(String name, byte[] code, boolean isPackage) {
+    private PythonFrozenModule(TruffleString name, byte[] code, boolean isPackage) {
         this.name = name;
         this.code = code;
         this.isPackage = isPackage;
@@ -78,7 +82,7 @@ public final class PythonFrozenModule {
         }
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 

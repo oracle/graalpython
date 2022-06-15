@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateWrapper
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
@@ -86,8 +87,8 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        static boolean doString(String operand) {
-            return operand.length() != 0;
+        static boolean doString(TruffleString operand) {
+            return !operand.isEmpty();
         }
 
         @Megamorphic
@@ -120,8 +121,8 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        static boolean doString(String operand) {
-            return operand.length() == 0;
+        static boolean doString(TruffleString operand) {
+            return operand.isEmpty();
         }
 
         @Megamorphic

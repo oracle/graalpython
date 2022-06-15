@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -62,13 +62,13 @@ public class CmathModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         // Add constant values
-        builtinConstants.put("pi", Math.PI);
-        builtinConstants.put("e", Math.E);
-        builtinConstants.put("tau", 2 * Math.PI);
-        builtinConstants.put("inf", Double.POSITIVE_INFINITY);
-        builtinConstants.put("nan", Double.NaN);
-        builtinConstants.put("infj", core.factory().createComplex(0, Double.POSITIVE_INFINITY));
-        builtinConstants.put("nanj", core.factory().createComplex(0, Double.NaN));
+        addBuiltinConstant("pi", Math.PI);
+        addBuiltinConstant("e", Math.E);
+        addBuiltinConstant("tau", 2 * Math.PI);
+        addBuiltinConstant("inf", Double.POSITIVE_INFINITY);
+        addBuiltinConstant("nan", Double.NaN);
+        addBuiltinConstant("infj", core.factory().createComplex(0, Double.POSITIVE_INFINITY));
+        addBuiltinConstant("nanj", core.factory().createComplex(0, Double.NaN));
         super.initialize(core);
     }
 

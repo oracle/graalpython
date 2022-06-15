@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 
 import java.io.IOException;
 import java.util.List;
@@ -71,12 +71,13 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = GraalHPyUniversalModuleBuiltins.HPY_UNIVERSAL)
+@CoreFunctions(defineModule = GraalHPyUniversalModuleBuiltins.J_HPY_UNIVERSAL)
 @GenerateNodeFactory
 public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
-    public static final String HPY_UNIVERSAL = "_hpy_universal";
+    public static final String J_HPY_UNIVERSAL = "_hpy_universal";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -85,8 +86,8 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "load", parameterNames = {"name", "path", "debug"}, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
-    @ArgumentClinic(name = "path", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "debug", conversion = ClinicConversion.Boolean, defaultValue = "false")
     abstract static class HPyUniversalLoadNode extends PythonTernaryClinicBuiltinNode {
 
@@ -96,8 +97,9 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PythonModule doGeneric(VirtualFrame frame, String name, String path, boolean debug,
-                        @Cached HPyCheckHandleResultNode checkHandleResultNode) {
+        PythonModule doGeneric(VirtualFrame frame, TruffleString name, TruffleString path, boolean debug,
+                        @Cached HPyCheckHandleResultNode checkHandleResultNode,
+                        @Cached TruffleString.EqualNode eqNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
@@ -108,14 +110,14 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
             } catch (ImportException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (IOException e) {
-                throw getConstructAndRaiseNode().raiseOSError(frame, e);
+                throw getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private PythonModule loadHPyModule(PythonContext context, String name, String path, boolean debug,
+        private PythonModule loadHPyModule(PythonContext context, TruffleString name, TruffleString path, boolean debug,
                         HPyCheckHandleResultNode checkHandleResultNode) throws IOException, ApiInitException, ImportException {
             Object result = GraalHPyContext.loadHPyModule(this, context, name, path, debug, checkHandleResultNode);
             if (!(result instanceof PythonModule)) {
@@ -127,7 +129,7 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseUncached(this, PythonErrorType.SystemError, ErrorMessages.INIT_S_RETURNED_AN_UNEXPECTED_VALUE, name);
             }
             PythonModule module = (PythonModule) result;
-            module.setAttribute(__FILE__, path);
+            module.setAttribute(T___FILE__, path);
             return module;
         }
     }

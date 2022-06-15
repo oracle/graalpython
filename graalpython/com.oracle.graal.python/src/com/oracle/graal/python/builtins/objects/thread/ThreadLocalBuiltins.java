@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -82,6 +82,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PThreadLocal)
 public class ThreadLocalBuiltins extends PythonBuiltins {
@@ -90,7 +91,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         return ThreadLocalBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -99,7 +100,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -110,7 +111,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         @Child private LookupCallableSlotInMRONode lookupGetNode;
@@ -125,10 +126,10 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            String key;
+            TruffleString key;
             try {
                 key = castKeyToStringNode.execute(keyObj);
             } catch (CannotCastException e) {
@@ -223,7 +224,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Child private GetClassNode getDescClassNode;
@@ -232,17 +233,15 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private HashingStorageLibrary hlib;
         @CompilationFinal private boolean changedStorage;
 
-        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
-
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, PThreadLocal object, String keyObject, Object value,
-                        @Cached CastToJavaStringNode castKeyToStringNode,
+        protected PNone doStringKey(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
+                        @Cached CastToTruffleStringNode castKeyToStringNode,
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            String key;
+            TruffleString key;
             try {
                 key = castKeyToStringNode.execute(keyObject);
             } catch (CannotCastException e) {
@@ -302,7 +301,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Child private GetClassNode getDescClassNode;
@@ -312,13 +311,13 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached GetClassNode getClassNode,
-                        @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
+                        @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached CallBinaryMethodNode callDelete,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
+                        @Cached CastToTruffleStringNode castKeyToStringNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            String key;
+            TruffleString key;
             try {
                 key = castKeyToStringNode.execute(keyObj);
             } catch (CannotCastException e) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,12 +6,17 @@
 package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins.IntRef;
@@ -20,6 +25,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
@@ -30,7 +36,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -38,6 +43,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(defineModule = "_json")
 public class JSONModuleBuiltins extends PythonBuiltins {
@@ -48,15 +56,11 @@ public class JSONModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put(SpecialAttributeNames.__DOC__, "json speedups\n");
-        builtinConstants.put("make_scanner", core.lookupType(PythonBuiltinClassType.JSONScanner));
-        builtinConstants.put("make_encoder", core.lookupType(PythonBuiltinClassType.JSONEncoder));
+        addBuiltinConstant(SpecialAttributeNames.T___DOC__, "json speedups\n");
+        addBuiltinConstant("make_scanner", core.lookupType(PythonBuiltinClassType.JSONScanner));
+        addBuiltinConstant("make_encoder", core.lookupType(PythonBuiltinClassType.JSONEncoder));
         super.initialize(core);
 
-    }
-
-    static boolean isSimpleChar(char c) {
-        return c >= ' ' && c <= '~' && c != '\\' && c != '"';
     }
 
     static boolean isWhitespace(char c) {
@@ -90,8 +94,9 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             IntRef nextIdx = new IntRef();
-            String result = JSONScannerBuiltins.scanStringUnicode(castString.execute(string, "first argument must be a string, not %p", new Object[]{string}), end, strict, nextIdx, raiseNode);
-            return factory.createTuple(new Object[]{result.toString(), nextIdx.value});
+            TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
+                            raiseNode);
+            return factory.createTuple(new Object[]{result, nextIdx.value});
         }
     }
 
@@ -100,7 +105,7 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                                     "\n" +
                                     "Return a JSON representation of a Python string")
     @GenerateNodeFactory
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     abstract static class EncodeBaseString extends PythonUnaryClinicBuiltinNode {
 
         @Override
@@ -109,58 +114,22 @@ public class JSONModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        Object call(String string) {
+        TruffleString call(TruffleString string,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             try {
-                // 12.5% overallocated, StringBuilder.toString will always copy anyway
-                StringBuilder builder = new StringBuilder(string.length() + (string.length() >> 3) + 2);
-                appendString(string, builder);
-                return builder.toString();
+                int len = string.byteLength(TS_ENCODING);
+                // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
+                TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING, len + (len >> 3) + 2);
+                appendString(createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode);
+                return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, "string is too long to escape");
+                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
 
-        static void appendString(String string, StringBuilder builder) {
-            builder.append('"');
-
-            for (int i = 0; i < string.length(); i++) {
-                char c = string.charAt(i);
-                switch (c) {
-                    case '\\':
-                        builder.append('\\').append('\\');
-                        break;
-                    case '"':
-                        builder.append('\\').append('"');
-                        break;
-                    case '\b':
-                        builder.append('\\').append('b');
-                        break;
-                    case '\f':
-                        builder.append('\\').append('f');
-                        break;
-                    case '\n':
-                        builder.append('\\').append('n');
-                        break;
-                    case '\r':
-                        builder.append('\\').append('r');
-                        break;
-                    case '\t':
-                        builder.append('\\').append('t');
-                        break;
-                    default:
-                        if (c <= 0x1f) {
-                            builder.append("\\u00");
-                            builder.append(Character.forDigit((c >> 4) & 0xf, 16));
-                            builder.append(Character.forDigit(c & 0xf, 16));
-                        } else {
-                            builder.append(c);
-                        }
-                        break;
-                }
-            }
-            builder.append('"');
-        }
     }
 
     @Builtin(name = "encode_basestring_ascii", parameterNames = {"string"}, //
@@ -168,7 +137,7 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                                     "\n" +
                                     "Return an ASCII-only JSON representation of a Python string")
     @GenerateNodeFactory
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     abstract static class EncodeBaseStringAscii extends PythonUnaryClinicBuiltinNode {
 
         @Override
@@ -177,59 +146,20 @@ public class JSONModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        Object call(String string) {
+        TruffleString call(TruffleString string,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             try {
-                // 12.5% overallocated, StringBuilder.toString will always copy anyway
-                StringBuilder builder = new StringBuilder(string.length() + (string.length() >> 3) + 2);
-                appendString(string, builder);
-                return builder.toString();
+                int len = string.byteLength(TS_ENCODING);
+                // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
+                TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING, len + (len >> 3) + 2);
+                appendString(createCodePointIteratorNode.execute(string, TS_ENCODING), builder, true, nextNode, appendCodePointNode);
+                return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raise(PythonBuiltinClassType.OverflowError, "string is too long to escape");
+                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
-        }
-
-        static void appendString(String string, StringBuilder builder) {
-            builder.append('"');
-
-            for (int i = 0; i < string.length(); i++) {
-                char c = string.charAt(i);
-                if (isSimpleChar(c)) {
-                    builder.append(c);
-                } else {
-                    switch (c) {
-                        case '\\':
-                            builder.append('\\').append('\\');
-                            break;
-                        case '"':
-                            builder.append('\\').append('"');
-                            break;
-                        case '\b':
-                            builder.append('\\').append('b');
-                            break;
-                        case '\f':
-                            builder.append('\\').append('f');
-                            break;
-                        case '\n':
-                            builder.append('\\').append('n');
-                            break;
-                        case '\r':
-                            builder.append('\\').append('r');
-                            break;
-                        case '\t':
-                            builder.append('\\').append('t');
-                            break;
-                        default:
-                            builder.append("\\u");
-                            builder.append(Character.forDigit((c >> 12) & 0xf, 16));
-                            builder.append(Character.forDigit((c >> 8) & 0xf, 16));
-                            builder.append(Character.forDigit((c >> 4) & 0xf, 16));
-                            builder.append(Character.forDigit(c & 0xf, 16));
-                            break;
-                    }
-                }
-            }
-            builder.append('"');
         }
     }
 
@@ -238,12 +168,12 @@ public class JSONModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MakeScanner extends PythonBinaryBuiltinNode {
 
-        @Child private GetFixedAttributeNode getStrict = GetFixedAttributeNode.create("strict");
-        @Child private GetFixedAttributeNode getObjectHook = GetFixedAttributeNode.create("object_hook");
-        @Child private GetFixedAttributeNode getObjectPairsHook = GetFixedAttributeNode.create("object_pairs_hook");
-        @Child private GetFixedAttributeNode getParseFloat = GetFixedAttributeNode.create("parse_float");
-        @Child private GetFixedAttributeNode getParseInt = GetFixedAttributeNode.create("parse_int");
-        @Child private GetFixedAttributeNode getParseConstant = GetFixedAttributeNode.create("parse_constant");
+        @Child private GetFixedAttributeNode getStrict = GetFixedAttributeNode.create(T_STRICT);
+        @Child private GetFixedAttributeNode getObjectHook = GetFixedAttributeNode.create(tsLiteral("object_hook"));
+        @Child private GetFixedAttributeNode getObjectPairsHook = GetFixedAttributeNode.create(tsLiteral("object_pairs_hook"));
+        @Child private GetFixedAttributeNode getParseFloat = GetFixedAttributeNode.create(tsLiteral("parse_float"));
+        @Child private GetFixedAttributeNode getParseInt = GetFixedAttributeNode.create(tsLiteral("parse_int"));
+        @Child private GetFixedAttributeNode getParseConstant = GetFixedAttributeNode.create(tsLiteral("parse_constant"));
 
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
@@ -264,8 +194,8 @@ public class JSONModuleBuiltins extends PythonBuiltins {
                     parameterNames = {"$cls", "markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan"}, //
                     constructsClass = PythonBuiltinClassType.JSONEncoder, //
                     doc = "JSON scanner object")
-    @ArgumentClinic(name = "key_separator", conversion = ArgumentClinic.ClinicConversion.String)
-    @ArgumentClinic(name = "item_separator", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "key_separator", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "item_separator", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "sort_keys", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @ArgumentClinic(name = "skipkeys", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @ArgumentClinic(name = "allow_nan", conversion = ArgumentClinic.ClinicConversion.Boolean)
@@ -279,11 +209,11 @@ public class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys, boolean skipKeys,
-                        boolean allowNan,
+        protected PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
+                        boolean skipKeys, boolean allowNan,
                         @Cached PythonObjectFactory factory) {
             if (markers != PNone.NONE && !(markers instanceof PDict)) {
-                throw raise(TypeError, "make_encoder() argument 1 must be dict or None, not %p", markers);
+                throw raise(TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
             }
 
             FastEncode fastEncode = FastEncode.None;
@@ -300,5 +230,67 @@ public class JSONModuleBuiltins extends PythonBuiltins {
             }
             return factory.createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
+    }
+
+    static void appendString(TruffleStringIterator it, TruffleStringBuilder builder, boolean asciiOnly, TruffleStringIterator.NextNode nextNode,
+                    TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+        appendCodePointNode.execute(builder, '"', 1, true);
+
+        while (it.hasNext()) {
+            int c = nextNode.execute(it);
+            switch (c) {
+                case '\\':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    break;
+                case '"':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, '"', 1, true);
+                    break;
+                case '\b':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, 'b', 1, true);
+                    break;
+                case '\f':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, 'f', 1, true);
+                    break;
+                case '\n':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, 'n', 1, true);
+                    break;
+                case '\r':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, 'r', 1, true);
+                    break;
+                case '\t':
+                    appendCodePointNode.execute(builder, '\\', 1, true);
+                    appendCodePointNode.execute(builder, 't', 1, true);
+                    break;
+                default:
+                    if (c <= 0x1f || (asciiOnly && c > '~')) {
+                        if (c <= 0xffff) {
+                            appendEscapedUtf16((char) c, builder, appendCodePointNode);
+                        } else {
+                            // split SMP codepoint to surrogate pair
+                            appendEscapedUtf16((char) (0xD800 + ((c - 0x10000) >> 10)), builder, appendCodePointNode);
+                            appendEscapedUtf16((char) (0xDC00 + ((c - 0x10000) & 0x3FF)), builder, appendCodePointNode);
+                        }
+                    } else {
+                        appendCodePointNode.execute(builder, c, 1, true);
+                    }
+                    break;
+            }
+        }
+        appendCodePointNode.execute(builder, '"', 1, true);
+    }
+
+    private static void appendEscapedUtf16(char c, TruffleStringBuilder builder, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+        appendCodePointNode.execute(builder, '\\', 1, true);
+        appendCodePointNode.execute(builder, 'u', 1, true);
+        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 12) & 0xf], 1, true);
+        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 8) & 0xf], 1, true);
+        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 4) & 0xf], 1, true);
+        appendCodePointNode.execute(builder, HEXDIGITS[c & 0xf], 1, true);
     }
 }

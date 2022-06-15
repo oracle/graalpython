@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -61,12 +62,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_Repr}. Converts the object to a string using its
  * {@code __repr__} special method. Falls back to default object {@code __repr__} implementation.
  * <p>
- * The output can be either a {@link String} or a {@link PString}.
+ * The output can be either a {@link TruffleString} or a {@link PString}.
  *
  * @see PyObjectReprAsJavaStringNode
  */
@@ -98,11 +100,12 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
         }
         if (reprMethod != PNone.NO_VALUE) {
             Object result = callRepr.executeObject(frame, reprMethod, obj);
-            if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
+            result = assertNoJavaString(result);
+            if (isString.profile(result instanceof TruffleString) || isPString.profile(result instanceof PString)) {
                 return result;
             }
             if (result != PNone.NO_VALUE) {
-                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
+                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___REPR__, obj);
             }
         }
         return defaultRepr.execute(frame, obj);

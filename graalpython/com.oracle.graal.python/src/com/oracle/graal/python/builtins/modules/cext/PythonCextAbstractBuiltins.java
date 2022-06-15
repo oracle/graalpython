@@ -50,13 +50,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 
 import java.util.List;
 
@@ -721,7 +721,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object setItemCallable = lookupAttrNode.execute(frame, obj, __SETITEM__);
+                Object setItemCallable = lookupAttrNode.execute(frame, obj, T___SETITEM__);
                 if (hasSetItem.profile(setItemCallable == PNone.NO_VALUE)) {
                     throw raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, obj);
                 } else {
@@ -755,7 +755,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object getItemCallable = lookupAttrNode.execute(frame, obj, __GETITEM__);
+                Object getItemCallable = lookupAttrNode.execute(frame, obj, T___GETITEM__);
                 return callNode.execute(getItemCallable, sliceNode.execute(iLow, iHigh, PNone.NONE));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -827,7 +827,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object imulCallable = lookupNode.execute(frame, obj, __IMUL__);
+                Object imulCallable = lookupNode.execute(frame, obj, T___IMUL__);
                 if (imulCallable != PNone.NO_VALUE) {
                     Object ret = callNode.execute(frame, imulCallable, n);
                     return ret;
@@ -891,7 +891,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Shared("check") @SuppressWarnings("unused") @Cached com.oracle.graal.python.lib.PySequenceCheckNode checkNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object iaddCallable = lookupNode.execute(frame, s1, __IADD__);
+                Object iaddCallable = lookupNode.execute(frame, s1, T___IADD__);
                 if (iaddCallable != PNone.NO_VALUE) {
                     return callNode.execute(frame, iaddCallable, s2);
                 }
@@ -1120,7 +1120,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
     }
 
     private static PList getKeys(VirtualFrame frame, Object obj, PyObjectGetAttr getAttrNode, CallNode callNode, ConstructListNode listNode) {
-        Object attr = getAttrNode.execute(frame, obj, KEYS);
+        Object attr = getAttrNode.execute(frame, obj, T_KEYS);
         return listNode.execute(frame, callNode.execute(frame, attr));
     }
 
@@ -1147,7 +1147,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object attr = getAttrNode.execute(frame, obj, ITEMS);
+                Object attr = getAttrNode.execute(frame, obj, T_ITEMS);
                 return listNode.execute(frame, callNode.execute(frame, attr));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -1179,7 +1179,7 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object attr = getAttrNode.execute(frame, obj, VALUES);
+                Object attr = getAttrNode.execute(frame, obj, T_VALUES);
                 return listNode.execute(frame, callNode.execute(frame, attr));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

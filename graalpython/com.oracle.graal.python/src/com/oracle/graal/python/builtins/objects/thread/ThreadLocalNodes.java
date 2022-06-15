@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ public abstract class ThreadLocalNodes {
             if (dict == null) {
                 dict = factory.createDict();
                 self.setThreadLocalDict(dict);
-                Object initMethod = lookup.execute(frame, self, SpecialMethodNames.__INIT__);
+                Object initMethod = lookup.execute(frame, self, SpecialMethodNames.T___INIT__);
                 callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());
             }
             return dict;

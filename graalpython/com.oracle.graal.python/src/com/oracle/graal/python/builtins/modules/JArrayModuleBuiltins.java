@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
 
 import java.lang.reflect.Array;
 import java.util.List;
@@ -140,7 +141,7 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object error(int length, String typeCode) {
-            throw raise(ValueError, "Invalid type code '%s'", typeCode);
+            throw raise(ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
         }
 
         protected static boolean eq(String a, String b) {
@@ -173,7 +174,7 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
                     return env.asGuestValue(array);
                 }
             }
-            throw raise(TypeError, "Second argument must be a string type code or a java.lang.Class object, not %p", classObj);
+            throw raise(TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);
         }
 
         @Override
@@ -182,7 +183,7 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "array", minNumOfPositionalArgs = 2, parameterNames = {"sequence", "type"})
+    @Builtin(name = J_ARRAY, minNumOfPositionalArgs = 2, parameterNames = {"sequence", "type"})
     @GenerateNodeFactory
     abstract static class ArrayNode extends PythonBinaryBuiltinNode {
         @Specialization

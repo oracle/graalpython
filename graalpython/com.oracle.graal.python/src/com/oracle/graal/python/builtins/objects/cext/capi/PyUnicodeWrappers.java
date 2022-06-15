@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -72,6 +71,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public abstract class PyUnicodeWrappers {
@@ -130,6 +130,7 @@ public abstract class PyUnicodeWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     public static class PyUnicodeData extends PyUnicodeWrapper {
+
         public PyUnicodeData(PString delegate) {
             super(delegate);
         }
@@ -142,19 +143,19 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
             return new String[]{
-                            UNICODE_DATA_ANY.getMemberName(),
-                            UNICODE_DATA_LATIN1.getMemberName(),
-                            UNICODE_DATA_UCS2.getMemberName(),
-                            UNICODE_DATA_UCS4.getMemberName()
+                            UNICODE_DATA_ANY.getMemberNameJavaString(),
+                            UNICODE_DATA_LATIN1.getMemberNameJavaString(),
+                            UNICODE_DATA_UCS2.getMemberNameJavaString(),
+                            UNICODE_DATA_UCS4.getMemberNameJavaString()
             };
         }
 
         @ExportMessage
         boolean isMemberReadable(String member) {
-            return UNICODE_DATA_ANY.getMemberName().equals(member) ||
-                            UNICODE_DATA_LATIN1.getMemberName().equals(member) ||
-                            UNICODE_DATA_UCS2.getMemberName().equals(member) ||
-                            UNICODE_DATA_UCS4.getMemberName().equals(member);
+            return UNICODE_DATA_ANY.getMemberNameJavaString().equals(member) ||
+                            UNICODE_DATA_LATIN1.getMemberNameJavaString().equals(member) ||
+                            UNICODE_DATA_UCS2.getMemberNameJavaString().equals(member) ||
+                            UNICODE_DATA_UCS4.getMemberNameJavaString().equals(member);
         }
 
         @ExportMessage
@@ -168,11 +169,10 @@ public abstract class PyUnicodeWrappers {
                 if (isMemberReadable(member)) {
                     int elementSize = (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
                     PString s = getPString(lib);
-                    CharSequence content = s.getCharSequence();
 
-                    if (content instanceof NativeCharSequence) {
+                    if (s.isNativeCharSequence()) {
                         // in this case, we can just return the pointer
-                        return ((NativeCharSequence) content).getPtr();
+                        return s.getNativeCharSequence().getPtr();
                     }
                     return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(s, elementSize), elementSize);
                 }
@@ -202,21 +202,21 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
             return new String[]{
-                            UNICODE_STATE_INTERNED.getMemberName(),
-                            UNICODE_STATE_KIND.getMemberName(),
-                            UNICODE_STATE_COMPACT.getMemberName(),
-                            UNICODE_STATE_ASCII.getMemberName(),
-                            UNICODE_STATE_READY.getMemberName()
+                            UNICODE_STATE_INTERNED.getMemberNameJavaString(),
+                            UNICODE_STATE_KIND.getMemberNameJavaString(),
+                            UNICODE_STATE_COMPACT.getMemberNameJavaString(),
+                            UNICODE_STATE_ASCII.getMemberNameJavaString(),
+                            UNICODE_STATE_READY.getMemberNameJavaString()
             };
         }
 
         @ExportMessage
         boolean isMemberReadable(String member) {
-            return UNICODE_STATE_INTERNED.getMemberName().equals(member) ||
-                            UNICODE_STATE_KIND.getMemberName().equals(member) ||
-                            UNICODE_STATE_COMPACT.getMemberName().equals(member) ||
-                            UNICODE_STATE_ASCII.getMemberName().equals(member) ||
-                            UNICODE_STATE_READY.getMemberName().equals(member);
+            return UNICODE_STATE_INTERNED.getMemberNameJavaString().equals(member) ||
+                            UNICODE_STATE_KIND.getMemberNameJavaString().equals(member) ||
+                            UNICODE_STATE_COMPACT.getMemberNameJavaString().equals(member) ||
+                            UNICODE_STATE_ASCII.getMemberNameJavaString().equals(member) ||
+                            UNICODE_STATE_READY.getMemberNameJavaString().equals(member);
         }
 
         @ExportMessage
@@ -228,14 +228,14 @@ public abstract class PyUnicodeWrappers {
                         @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
-                // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
-                int value = 0b000000000000000000000000_1_0_0_000_00;
-                PString delegate = getPString(lib);
-                if (onlyAscii(delegate, storageProfile, materializeNode)) {
-                    value |= 0b1_0_000_00;
-                }
-                value |= (getKind(delegate, storageProfile, sizeofWcharNode) << 2) & 0b11100;
                 if (isMemberReadable(member)) {
+                    // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
+                    int value = 0b000000000000000000000000_1_0_0_000_00;
+                    PString delegate = getPString(lib);
+                    if (onlyAscii(delegate, storageProfile, materializeNode)) {
+                        value |= 0b1_0_000_00;
+                    }
+                    value |= (getKind(delegate, storageProfile, sizeofWcharNode) << 2) & 0b11100;
                     // it's a bit field; so we need to return the whole 32-bit word
                     return value;
                 }
@@ -246,11 +246,9 @@ public abstract class PyUnicodeWrappers {
         }
 
         private boolean onlyAscii(PString value, ConditionProfile storageProfile, StringMaterializeNode stringMaterializeNode) {
-            CharSequence storage = value.getCharSequence();
-
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(storage instanceof NativeCharSequence)) {
-                return ((NativeCharSequence) storage).isAsciiOnly();
+            if (storageProfile.profile(value.isNativeCharSequence())) {
+                return value.getNativeCharSequence().isAsciiOnly();
             }
 
             if (asciiEncoder == null) {
@@ -261,11 +259,9 @@ public abstract class PyUnicodeWrappers {
         }
 
         private static int getKind(PString value, ConditionProfile storageProfile, SizeofWCharNode sizeofWcharNode) {
-            CharSequence storage = value.getCharSequence();
-
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(storage instanceof NativeCharSequence)) {
-                return ((NativeCharSequence) storage).getElementSize();
+            if (storageProfile.profile(value.isNativeCharSequence())) {
+                return value.getNativeCharSequence().getElementSize();
             }
             return (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
         }
@@ -276,9 +272,9 @@ public abstract class PyUnicodeWrappers {
         }
 
         @TruffleBoundary
-        private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
+        private static boolean doCheck(TruffleString value, CharsetEncoder asciiEncoder) {
             asciiEncoder.reset();
-            return asciiEncoder.canEncode(value);
+            return asciiEncoder.canEncode(value.toJavaStringUncached());
         }
 
     }

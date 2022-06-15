@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,9 @@ import java.util.IdentityHashMap;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PJSONEncoder extends PythonBuiltinObject {
 
@@ -58,17 +60,18 @@ public final class PJSONEncoder extends PythonBuiltinObject {
     final Object defaultFn;
     final Object encoder;
     final Object indent;
-    final String keySeparator;
-    final String itemSeparator;
+    final TruffleString keySeparator;
+    final TruffleString itemSeparator;
     final boolean sortKeys;
     final boolean skipKeys;
     final boolean allowNan;
     final FastEncode fastEncode;
 
-    final IdentityHashMap<Object, Object> circular = new IdentityHashMap<>();
+    private final IdentityHashMap<Object, Object> circular = new IdentityHashMap<>();
+    private static final Object dummy = new Object();
 
-    public PJSONEncoder(Object cls, Shape instanceShape, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys, boolean skipKeys,
-                    boolean allowNan, FastEncode fastEncode) {
+    public PJSONEncoder(Object cls, Shape instanceShape, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
+                    boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         super(cls, instanceShape);
         CompilerAsserts.neverPartOfCompilation();
         this.markers = markers;
@@ -81,5 +84,15 @@ public final class PJSONEncoder extends PythonBuiltinObject {
         this.skipKeys = skipKeys;
         this.allowNan = allowNan;
         this.fastEncode = fastEncode;
+    }
+
+    @TruffleBoundary
+    void removeCircular(Object obj) {
+        circular.remove(obj);
+    }
+
+    @TruffleBoundary
+    boolean tryAddCircular(Object obj) {
+        return circular.put(obj, dummy) == null;
     }
 }
