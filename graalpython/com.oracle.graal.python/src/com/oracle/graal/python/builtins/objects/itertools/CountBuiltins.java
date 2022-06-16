@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -61,8 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCount})
 public final class CountBuiltins extends PythonBuiltins {
@@ -79,7 +80,7 @@ public final class CountBuiltins extends PythonBuiltins {
         return CountBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -88,7 +89,7 @@ public final class CountBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -100,34 +101,31 @@ public final class CountBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object reprPos(VirtualFrame frame, PCount self,
+        static TruffleString reprPos(VirtualFrame frame, PCount self,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castStringNode,
+                        @Cached CastToTruffleStringNode castStringNode,
                         @Cached CastToJavaLongExactNode castLongNode,
                         @Cached PyObjectTypeCheck typeCheckNode,
-                        @Cached BranchProfile hasDefaultStep) {
+                        @Cached BranchProfile hasDefaultStep,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object type = getClassNode.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, castStringNode.execute(reprNode.execute(frame, self.getCnt())));
+            TruffleString name = castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__));
+            TruffleString cntRepr = castStringNode.execute(reprNode.execute(frame, self.getCnt()));
             if (!typeCheckNode.execute(self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(self.getStep()) != 1) {
                 hasDefaultStep.enter();
-                PythonUtils.append(sb, ", ");
-                PythonUtils.append(sb, castStringNode.execute(reprNode.execute(frame, self.getStep())));
+                return simpleTruffleStringFormatNode.format("%s(%s, %s)", name, cntRepr, castStringNode.execute(reprNode.execute(frame, self.getStep())));
             }
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+            return simpleTruffleStringFormatNode.format("%s(%s)", name, cntRepr);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization

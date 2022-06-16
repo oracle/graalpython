@@ -169,7 +169,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
         if (!PythonContext.get(lib).isNativeAccessAllowed()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
         }
         invalidateNode.execute();
         if (!lib.isNative(this)) {
@@ -198,7 +198,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
         if (lib.isNative(this)) {
             if (!PythonContext.get(lib).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             freeBoundary((long) lib.getNativePointer(this));
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
@@ -204,22 +205,22 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     }
 
     public abstract static class RaiseBlockingIOError extends Node {
-        protected abstract PException execute(Node node, Object errno, String message, int written);
+        protected abstract PException execute(Node node, Object errno, TruffleString message, int written);
 
-        public final PException raise(Object errno, String message, int written) {
+        public final PException raise(Object errno, TruffleString message, int written) {
             return execute(this, errno, message, written);
         }
 
-        public final PException raiseEWOULDBLOCK(String message, int written) {
+        public final PException raiseEWOULDBLOCK(TruffleString message, int written) {
             return raise(OSErrorEnum.EWOULDBLOCK.getNumber(), message, written);
         }
 
-        public final PException raiseEAGAIN(String message, int written) {
+        public final PException raiseEAGAIN(TruffleString message, int written) {
             return raise(OSErrorEnum.EAGAIN.getNumber(), message, written);
         }
 
         @Specialization
-        static PException raise(Node node, Object errno, String message, int written,
+        static PException raise(Node node, Object errno, TruffleString message, int written,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToObjectNode writeAttribute) {
             Object[] args = new Object[]{

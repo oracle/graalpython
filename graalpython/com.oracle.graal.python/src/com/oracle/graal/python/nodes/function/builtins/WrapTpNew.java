@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,8 +107,7 @@ public final class WrapTpNew extends SlotWrapper {
                     reportPolymorphicSpecialize();
                     state |= NOT_CLASS_STATE;
                 }
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                "%s.__new__(X): X is not a type object (%p)", owner.getName(), arg0);
+                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), arg0);
             }
             if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -131,7 +130,7 @@ public final class WrapTpNew extends SlotWrapper {
             if (lookupNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.__NEW__));
+                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(SpecialMethodNames.T___NEW__));
             }
             Object newMethod = lookupNewNode.execute(arg0);
             if (newMethod instanceof PBuiltinFunction) {
@@ -147,9 +146,7 @@ public final class WrapTpNew extends SlotWrapper {
                             reportPolymorphicSpecialize();
                             state |= IS_UNSAFE_STATE;
                         }
-                        throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                        "%s.__new__(%N) is not safe, use %N.__new__()",
-                                        owner.getName(), arg0, arg0);
+                        throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), arg0, arg0);
                     }
                 }
                 // we explicitly allow non-Java functions to pass here, since a PythonBuiltinClass

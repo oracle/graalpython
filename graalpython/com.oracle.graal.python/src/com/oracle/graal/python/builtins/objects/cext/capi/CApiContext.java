@@ -40,7 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TYPE_ID;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -120,10 +127,10 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CApiContext extends CExtContext {
     public static final String LOGGER_CAPI_NAME = "capi";
-    protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
 
     /**
@@ -173,7 +180,7 @@ public final class CApiContext extends CExtContext {
     private long maxModuleNumber;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
-    private final HashMap<Pair<String, String>, Object> extensions = new HashMap<>(4);
+    private final HashMap<Pair<TruffleString, TruffleString>, Object> extensions = new HashMap<>(4);
 
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
@@ -421,7 +428,7 @@ public final class CApiContext extends CExtContext {
      * Simple root node that executes a reference decrease.
      */
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("ptr", "managedRefCount"), EMPTY_TRUFFLESTRING_ARRAY);
         private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiReferenceCleanerRootNode.class);
 
         @Child private CalleeContext calleeContext;
@@ -592,7 +599,7 @@ public final class CApiContext extends CExtContext {
             }
             return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
         } else {
-            LOGGER.warning(() -> String.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
+            LOGGER.warning(() -> PythonUtils.formatJString("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
         }
         return new PythonAbstractNativeObject(nativePtr);
     }
@@ -641,7 +648,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public AllocInfo traceFree(Object ptr, @SuppressWarnings("unused") PFrame.Reference curFrame, @SuppressWarnings("unused") String clazzName) {
+    public AllocInfo traceFree(Object ptr, @SuppressWarnings("unused") PFrame.Reference curFrame, @SuppressWarnings("unused") TruffleString clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
@@ -651,15 +658,15 @@ public final class CApiContext extends CExtContext {
         AllocInfo allocatedValue = allocatedNativeMemory.remove(ptr);
         Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
-            LOGGER.severe(String.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
+            LOGGER.severe(PythonUtils.formatJString("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
         } else if (allocatedValue == null) {
-            LOGGER.info(String.format("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
+            LOGGER.info(PythonUtils.formatJString("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
         }
         return allocatedValue;
     }
 
     @TruffleBoundary
-    public void traceAlloc(Object ptr, PFrame.Reference curFrame, String clazzName, long size) {
+    public void traceAlloc(Object ptr, PFrame.Reference curFrame, TruffleString clazzName, long size) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
@@ -671,12 +678,12 @@ public final class CApiContext extends CExtContext {
     }
 
     @SuppressWarnings("unused")
-    public void trackObject(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public void trackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement tracking of container objects for cycle detection
     }
 
     @SuppressWarnings("unused")
-    public void untrackObject(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public void untrackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement untracking of container objects
     }
 
@@ -687,7 +694,7 @@ public final class CApiContext extends CExtContext {
      * error if the memory is already allocated.
      */
     @TruffleBoundary
-    public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
@@ -802,17 +809,17 @@ public final class CApiContext extends CExtContext {
     }
 
     public static final class AllocInfo {
-        public final String typeName;
+        public final TruffleString typeName;
         public final PFrame.Reference allocationSite;
         public final long size;
 
-        public AllocInfo(String typeName, PFrame.Reference allocationSite, long size) {
+        public AllocInfo(TruffleString typeName, PFrame.Reference allocationSite, long size) {
             this.typeName = typeName;
             this.allocationSite = allocationSite;
             this.size = size;
         }
 
-        public AllocInfo(PFrame.Reference allocationSite, String typeName) {
+        public AllocInfo(PFrame.Reference allocationSite, TruffleString typeName) {
             this(typeName, allocationSite, -1);
         }
     }
@@ -892,11 +899,11 @@ public final class CApiContext extends CExtContext {
 
         public static NativeCAPISymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();
-            String getterFunctionName = "get_" + llvmType.name() + "_typeid";
-            if (!NativeCAPISymbol.isValid(getterFunctionName)) {
+            TruffleString getterFunctionName = cat(T_GET_, toTruffleStringUncached(llvmType.name()), T_TYPE_ID);
+            if (!NativeCAPISymbol.isValid(getterFunctionName, TruffleString.EqualNode.getUncached())) {
                 throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
             }
-            return NativeCAPISymbol.getByName(getterFunctionName);
+            return NativeCAPISymbol.getByName(getterFunctionName, TruffleString.EqualNode.getUncached());
         }
 
         public static boolean isPointer(LLVMType llvmType) {
@@ -941,16 +948,15 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
 
-            String libPythonName = "libpython" + context.getSoAbi();
-            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
-            TruffleFile capiFile = homePath.resolve(libPythonName);
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+            TruffleFile capiFile = homePath.resolve("libpython" + context.getSoAbi().toJavaStringUncached());
             Object capiLibrary;
             try {
-                SourceBuilder capiSrcBuilder = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, capiFile);
+                SourceBuilder capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
@@ -979,12 +985,12 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
+    public Object initCApiModule(Node location, Object llvmLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
         Object pyinitFunc;
         try {
-            pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName);
+            pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
@@ -1015,14 +1021,14 @@ public final class CApiContext extends CExtContext {
              */
             Object clazz = GetClassNode.getUncached().execute(result);
             if (clazz == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, "init function of %s returned uninitialized object", initFuncName);
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
             return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;
-            module.setAttribute(__FILE__, spec.path);
+            module.setAttribute(T___FILE__, spec.path);
 
             // add to 'sys.modules'
             PDict sysModules = context.getSysModules();

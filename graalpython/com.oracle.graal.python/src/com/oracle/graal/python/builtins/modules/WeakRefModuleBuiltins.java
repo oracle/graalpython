@@ -79,7 +79,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.HiddenKey;
 
-@CoreFunctions(defineModule = "_weakref", isEager = true)
+import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
+
+@CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public class WeakRefModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
@@ -118,10 +122,10 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
+        PythonModule weakrefModule = core.lookupBuiltinModule(T__WEAKREF);
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
         PythonBuiltinClass refType = core.lookupType(PythonBuiltinClassType.PReferenceType);
-        weakrefModule.setAttribute("ref", refType);
+        weakrefModule.setAttribute(T_REF, refType);
         refType.setAttribute(weakRefQueueKey, weakRefQueue);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {

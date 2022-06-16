@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -110,7 +111,7 @@ public class SSLCipherSelector {
             if (cipherString.startsWith("@STRENGTH")) {
                 selected.sort(Comparator.comparingInt(SSLCipher::getStrengthBits).reversed());
             } else if (cipherString.startsWith("@SECLEVEL=")) {
-                throw PRaiseNode.raiseUncached(node, NotImplementedError, "@SECLEVEL not implemented");
+                throw PRaiseNode.raiseUncached(node, NotImplementedError, toTruffleStringUncached("@SECLEVEL not implemented"));
             } else {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
             }
@@ -132,7 +133,7 @@ public class SSLCipherSelector {
             List<SSLCipher> ciphers = SSLCipherStringMapping.get(component);
             if (ciphers == null) {
                 if (component.equals("PROFILE=SYSTEM")) {
-                    throw PRaiseNode.raiseUncached(node, NotImplementedError, "PROFILE=SYSTEM not implemented");
+                    throw PRaiseNode.raiseUncached(node, NotImplementedError, toTruffleStringUncached("PROFILE=SYSTEM not implemented"));
                 }
                 return Collections.emptyList();
             }

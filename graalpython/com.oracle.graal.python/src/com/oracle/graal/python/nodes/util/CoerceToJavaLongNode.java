@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -112,7 +112,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     @TruffleBoundary
     @Specialization(guards = "!isNumber(x)", replaces = "toLong")
     public long toLongUncached(Object x) {
-        Object result = LookupAndCallUnaryDynamicNode.getUncached().executeObject(x, __INT__);
+        Object result = LookupAndCallUnaryDynamicNode.getUncached().executeObject(x, T___INT__);
         return CoerceToJavaLongNode.this.toLong(x, PRaiseNode.getUncached(), result);
     }
 

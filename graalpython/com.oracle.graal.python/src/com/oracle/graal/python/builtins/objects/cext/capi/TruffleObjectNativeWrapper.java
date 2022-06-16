@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.GP_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.J_GP_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
@@ -72,7 +72,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE.getMemberName(), OB_TYPE.getMemberName(), OB_REFCNT.getMemberName()};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {J_GP_OBJECT, OB_BASE.getMemberNameJavaString(), OB_TYPE.getMemberNameJavaString(), OB_REFCNT.getMemberNameJavaString()};
 
     public TruffleObjectNativeWrapper(Object foreignObject) {
         super(foreignObject);
@@ -107,7 +107,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isMemberModifiable(String member) {
         // we only allow to write to 'ob_refcnt'
-        return OB_REFCNT.getMemberName().equals(member);
+        return OB_REFCNT.getMemberNameJavaString().equals(member);
     }
 
     @ExportMessage
@@ -139,7 +139,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
                 Object delegate = lib.getDelegate(object);
 
                 // special key for the debugger
-                if (GP_OBJECT.equals(key)) {
+                if (J_GP_OBJECT.equals(key)) {
                     return delegate;
                 }
                 return readNativeMemberNode.execute(delegate, object, key);
@@ -149,7 +149,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isObBase(String key) {
-            return OB_BASE.getMemberName().equals(key);
+            return OB_BASE.getMemberNameJavaString().equals(key);
         }
     }
 
@@ -160,7 +160,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         try {
-            if (OB_REFCNT.getMemberName().equals(member)) {
+            if (OB_REFCNT.getMemberNameJavaString().equals(member)) {
                 Object delegate = lib.getDelegate(this);
                 writeNativeMemberNode.execute(delegate, this, member, value);
             } else {

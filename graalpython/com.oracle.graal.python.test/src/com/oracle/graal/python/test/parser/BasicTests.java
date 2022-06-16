@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.test.parser;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.File;
 
 import org.junit.Assert;
@@ -131,7 +133,7 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void inline01() throws Exception {
-        FrameDescriptor fd = PythonFrame.createTestFrameDescriptor("a", "b");
+        FrameDescriptor fd = PythonFrame.createTestFrameDescriptor(tsLiteral("a"), tsLiteral("b"));
         Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
         checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
     }
@@ -947,29 +949,29 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void isIdentifier() throws Exception {
-        Assert.assertTrue(StringUtils.isIdentifier("hello"));
-        Assert.assertTrue(StringUtils.isIdentifier("_"));
-        Assert.assertTrue(StringUtils.isIdentifier("b0"));
-        Assert.assertTrue(StringUtils.isIdentifier("bc"));
-        Assert.assertTrue(StringUtils.isIdentifier("b_"));
-        Assert.assertTrue(StringUtils.isIdentifier("µ"));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("hello")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("_")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("b0")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("bc")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("b_")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("µ")));
 
-        Assert.assertTrue(StringUtils.isIdentifier("for"));
-        Assert.assertTrue(StringUtils.isIdentifier("break"));
-        Assert.assertTrue(StringUtils.isIdentifier("while"));
-        Assert.assertTrue(StringUtils.isIdentifier("return"));
-        Assert.assertTrue(StringUtils.isIdentifier("def"));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("for")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("break")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("while")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("return")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("def")));
 
-        Assert.assertFalse(StringUtils.isIdentifier(" hello"));
-        Assert.assertFalse(StringUtils.isIdentifier("hello "));
-        Assert.assertFalse(StringUtils.isIdentifier("hel lo"));
-        Assert.assertFalse(StringUtils.isIdentifier("hel?o"));
-        Assert.assertFalse(StringUtils.isIdentifier("hel!o"));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral(" hello")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hello ")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel lo")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel?o")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel!o")));
 
-        Assert.assertFalse(StringUtils.isIdentifier(" "));
-        Assert.assertFalse(StringUtils.isIdentifier("["));
-        Assert.assertFalse(StringUtils.isIdentifier("©"));
-        Assert.assertFalse(StringUtils.isIdentifier("0"));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral(" ")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("[")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("©")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("0")));
     }
 
     @Test

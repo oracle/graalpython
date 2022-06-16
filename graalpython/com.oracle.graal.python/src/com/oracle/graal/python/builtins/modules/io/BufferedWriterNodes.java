@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidWriteBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -215,7 +215,7 @@ public class BufferedWriterNodes {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PBytes memobj = factory.createBytes(buf, len);
-            Object res = callMethod.execute(frame, self.getRaw(), WRITE, memobj);
+            Object res = callMethod.execute(frame, self.getRaw(), T_WRITE, memobj);
             if (res == PNone.NONE) {
                 /*
                  * Non-blocking stream would have blocked. Special return code!
@@ -268,23 +268,23 @@ public class BufferedWriterNodes {
                    blocking another time, possibly indefinitely. */
                 /*-
                 (mq) Singles will be thrown elsewhere,
-                 so we might not need to check it. 
+                 so we might not need to check it.
                  Though, mutil-threading might require it.
                 if (PyErr_CheckSignals() < 0)
                     return null;
                 */
             }
 
-            /*- 
+            /*-
                This ensures that after return from this function,
                VALID_WRITE_BUFFER(self) returns false.
-            
+
                This is a required condition because when a tell() is called
                after flushing and if VALID_READ_BUFFER(self) is false, we need
                VALID_WRITE_BUFFER(self) to be false to have
                RAW_OFFSET(self) == 0.
-            
-               Issue: https://bugs.python.org/issue32228 
+
+               Issue: https://bugs.python.org/issue32228
             */
             self.resetWrite(); // _bufferedwriter_reset_buf
         }

@@ -25,6 +25,12 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -37,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.oracle.graal.python.util.PythonUtils;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
@@ -46,6 +53,7 @@ import org.graalvm.options.OptionType;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -53,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * The options for Python. Note that some options have an effect on the AST structure, and thus must
@@ -61,7 +70,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
  */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
-    private static final String EXECUTABLE_LIST_SEPARATOR = "🏆";
+    private static final String J_EXECUTABLE_LIST_SEPARATOR = "🏆";
+    private static final TruffleString T_EXECUTABLE_LIST_SEPARATOR = tsLiteral(J_EXECUTABLE_LIST_SEPARATOR);
 
     public enum HPyBackendMode {
         NFI,
@@ -76,21 +86,23 @@ public final class PythonOptions {
         }
     });
 
+    private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
+
     private PythonOptions() {
         // no instances
     }
 
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> SysPrefix = new OptionKey<>("");
+    public static final OptionKey<TruffleString> SysPrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, help = "Set the location of sys.base_prefix. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> SysBasePrefix = new OptionKey<>("");
+    public static final OptionKey<TruffleString> SysBasePrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Set the location of lib-graalpython. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> CoreHome = new OptionKey<>("");
+    public static final OptionKey<TruffleString> CoreHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> StdLibHome = new OptionKey<>("");
+    public static final OptionKey<TruffleString> StdLibHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
@@ -108,10 +120,10 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IgnoreEnvironmentFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.", usageSyntax = "<path>[:<path>]", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> PythonPath = new OptionKey<>("");
+    public static final OptionKey<TruffleString> PythonPath = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher.", usageSyntax = "<Encoding>[:<errors>]", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> StandardStreamEncoding = new OptionKey<>("");
+    public static final OptionKey<TruffleString> StandardStreamEncoding = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
@@ -131,11 +143,11 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "If this is set, GraalPython will write .pyc files in a mirror directory tree at this path, " +
                     "instead of in __pycache__ directories within the source tree. " +
                     "Equivalent to setting the PYTHONPYCACHEPREFIX environment variable for the standard launcher.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> PyCachePrefix = new OptionKey<>("");
+    public static final OptionKey<TruffleString> PyCachePrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", //
                     usageSyntax = "<action>[:<message>[:<category>[:<module>[:<line>]]]][,<action>[:<message>[:<category>[:<module>[:<line>]]]]]", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> WarnOptions = new OptionKey<>("");
+    public static final OptionKey<TruffleString> WarnOptions = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to setting PYTHONHASHSEED environment variable", usageSyntax = "random|[0,4294967295]", stability = OptionStability.STABLE) //
     public static final OptionKey<Optional<Integer>> HashSeed = new OptionKey<>(Optional.empty(),
@@ -151,7 +163,7 @@ public final class PythonOptions {
                     }));
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native|llvm") //
-    public static final OptionKey<String> PosixModuleBackend = new OptionKey<>("java");
+    public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
                     "- 'default' means the 'check_source' flag in hash-based pycs" +
@@ -162,10 +174,10 @@ public final class PythonOptions {
                     "  valid" +
                     "The default value is 'default'." +
                     "See PEP 552 'Deterministic pycs' for more details.", usageSyntax = "default|always|never", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> CheckHashPycsMode = new OptionKey<>("default");
+    public static final OptionKey<TruffleString> CheckHashPycsMode = new OptionKey<>(T_DEFAULT, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> CAPI = new OptionKey<>("");
+    public static final OptionKey<TruffleString> CAPI = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks", usageSyntax = "true|false") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
@@ -194,7 +206,7 @@ public final class PythonOptions {
     public static final OptionKey<Integer> HPyTraceUpcalls = new OptionKey<>(0);
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<String> JNIHome = new OptionKey<>("");
+    public static final OptionKey<TruffleString> JNIHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
@@ -223,14 +235,11 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.") //
     public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<length>", help = "Minimal size of string, when lazy strings are used. Default 20") //
-    public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
-
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "<path>", help = "Used by the launcher to pass the path to be executed") //
-    public static final OptionKey<String> InputFilePath = new OptionKey<>("");
+    public static final OptionKey<TruffleString> InputFilePath = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
@@ -256,11 +265,11 @@ public final class PythonOptions {
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<path>", help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
-    public static final OptionKey<String> Executable = new OptionKey<>("");
+    public static final OptionKey<TruffleString> Executable = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + EXECUTABLE_LIST_SEPARATOR +
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + J_EXECUTABLE_LIST_SEPARATOR +
                     "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
-    public static final OptionKey<String> ExecutableList = new OptionKey<>("");
+    public static final OptionKey<TruffleString> ExecutableList = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
     public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
@@ -434,18 +443,15 @@ public final class PythonOptions {
     }
 
     @TruffleBoundary
-    public static String[] getExecutableList(PythonContext context) {
-        String option = context.getOption(ExecutableList);
+    public static TruffleString[] getExecutableList(PythonContext context) {
+        TruffleString option = context.getOption(ExecutableList);
         if (option.isEmpty()) {
-            return splitString(context.getOption(Executable), " ");
+            return StringUtils.split(context.getOption(Executable), T_SPACE, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+                            TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
         } else {
-            return splitString(context.getOption(ExecutableList), EXECUTABLE_LIST_SEPARATOR);
+            return StringUtils.split(context.getOption(ExecutableList), T_EXECUTABLE_LIST_SEPARATOR, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+                            TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
         }
-    }
-
-    @TruffleBoundary
-    private static String[] splitString(String str, String sep) {
-        return str.split(sep);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NameError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -59,10 +60,10 @@ public final class LoadBuildClassNode extends ExpressionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         PythonModule builtins = getContext().getBuiltins();
-        Object result = read.execute(builtins, BuiltinNames.__BUILD_CLASS__);
+        Object result = read.execute(builtins, BuiltinNames.T___BUILD_CLASS__);
         if (result == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, NameError, "__build_class__ not found");
+            throw PRaiseNode.raiseUncached(this, NameError, ErrorMessages.BUILD_CLASS_NOT_FOUNFD);
         }
         return result;
     }

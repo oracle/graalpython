@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,9 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
@@ -84,7 +87,7 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public static String doubleToString(double item) {
+    public static TruffleString doubleToString(double item) {
         String d = Double.toString(item);
         int exp = d.indexOf("E");
         if (exp != -1) {
@@ -106,7 +109,7 @@ public class PFloat extends PythonBuiltinObject {
             }
             d = d.toLowerCase();
         }
-        return d;
+        return toTruffleStringUncached(d);
     }
 
     @ExportMessage

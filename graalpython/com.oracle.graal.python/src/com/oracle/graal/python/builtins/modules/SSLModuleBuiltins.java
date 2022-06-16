@@ -41,10 +41,16 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SSL;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANT_OPEN_FILE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -97,14 +103,16 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_ssl")
+@CoreFunctions(defineModule = J__SSL)
 public class SSLModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleLogger LOGGER = PythonLanguage.getLogger(SSLModuleBuiltins.class);
 
     // Taken from CPython
-    static final String DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
+    static final String J_DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
+    static final TruffleString T_DEFAULT_CIPHER_STRING = tsLiteral(J_DEFAULT_CIPHER_STRING);
 
     private static List<SSLProtocol> supportedProtocols;
     private static SSLProtocol minimumVersion;
@@ -137,7 +145,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     static {
         SSLCipher[] computed;
         try {
-            computed = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
+            computed = SSLCipherSelector.selectCiphers(null, J_DEFAULT_CIPHER_STRING);
         } catch (PException e) {
             computed = new SSLCipher[0];
         }
@@ -205,89 +213,98 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         loadDefaults();
-        PythonModule module = core.lookupBuiltinModule("_ssl");
+        PythonModule module = core.lookupBuiltinModule(T__SSL);
         PythonObjectFactory factory = core.factory();
-        module.setAttribute("OPENSSL_VERSION_NUMBER", 0);
+        module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
         PTuple versionInfo = factory.createTuple(new int[]{0, 0, 0, 0, 0});
-        module.setAttribute("OPENSSL_VERSION_INFO", versionInfo);
-        module.setAttribute("OPENSSL_VERSION", "GraalVM JSSE");
-        module.setAttribute("_DEFAULT_CIPHERS", DEFAULT_CIPHER_STRING);
-        module.setAttribute("_OPENSSL_API_VERSION", versionInfo);
+        module.setAttribute(tsLiteral("OPENSSL_VERSION_INFO"), versionInfo);
+        module.setAttribute(tsLiteral("OPENSSL_VERSION"), toTruffleStringUncached("GraalVM JSSE"));
+        module.setAttribute(tsLiteral("_DEFAULT_CIPHERS"), T_DEFAULT_CIPHER_STRING);
+        module.setAttribute(tsLiteral("_OPENSSL_API_VERSION"), versionInfo);
 
-        module.setAttribute("CERT_NONE", SSL_CERT_NONE);
-        module.setAttribute("CERT_OPTIONAL", SSL_CERT_OPTIONAL);
-        module.setAttribute("CERT_REQUIRED", SSL_CERT_REQUIRED);
+        module.setAttribute(tsLiteral("CERT_NONE"), SSL_CERT_NONE);
+        module.setAttribute(tsLiteral("CERT_OPTIONAL"), SSL_CERT_OPTIONAL);
+        module.setAttribute(tsLiteral("CERT_REQUIRED"), SSL_CERT_REQUIRED);
 
-        module.setAttribute("HAS_SNI", true);
+        module.setAttribute(tsLiteral("HAS_SNI"), true);
         // We have ECDH ciphers, but we don't yet expose the methods that let you pick the curve
-        module.setAttribute("HAS_ECDH", false);
-        module.setAttribute("HAS_NPN", false);
-        module.setAttribute("HAS_ALPN", true);
-        module.setAttribute("HAS_SSLv2", false);
+        module.setAttribute(tsLiteral("HAS_ECDH"), false);
+        module.setAttribute(tsLiteral("HAS_NPN"), false);
+        module.setAttribute(tsLiteral("HAS_ALPN"), true);
+        module.setAttribute(tsLiteral("HAS_SSLv2"), false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
-        module.setAttribute("HAS_SSLv3", hasSSLv3);
-        module.setAttribute("HAS_TLSv1", supportedProtocols.contains(SSLProtocol.TLSv1));
-        module.setAttribute("HAS_TLSv1_1", supportedProtocols.contains(SSLProtocol.TLSv1_1));
-        module.setAttribute("HAS_TLSv1_2", supportedProtocols.contains(SSLProtocol.TLSv1_2));
-        module.setAttribute("HAS_TLSv1_3", supportedProtocols.contains(SSLProtocol.TLSv1_3));
+        module.setAttribute(tsLiteral("HAS_SSLv3"), hasSSLv3);
+        module.setAttribute(tsLiteral("HAS_TLSv1"), supportedProtocols.contains(SSLProtocol.TLSv1));
+        module.setAttribute(tsLiteral("HAS_TLSv1_1"), supportedProtocols.contains(SSLProtocol.TLSv1_1));
+        module.setAttribute(tsLiteral("HAS_TLSv1_2"), supportedProtocols.contains(SSLProtocol.TLSv1_2));
+        module.setAttribute(tsLiteral("HAS_TLSv1_3"), supportedProtocols.contains(SSLProtocol.TLSv1_3));
 
-        module.setAttribute("PROTO_MINIMUM_SUPPORTED", SSLProtocol.PROTO_MINIMUM_SUPPORTED);
-        module.setAttribute("PROTO_MAXIMUM_SUPPORTED", SSLProtocol.PROTO_MAXIMUM_SUPPORTED);
-        module.setAttribute("PROTO_SSLv3", SSLProtocol.SSLv3.getId());
-        module.setAttribute("PROTO_TLSv1", SSLProtocol.TLSv1.getId());
-        module.setAttribute("PROTO_TLSv1_1", SSLProtocol.TLSv1_1.getId());
-        module.setAttribute("PROTO_TLSv1_2", SSLProtocol.TLSv1_2.getId());
-        module.setAttribute("PROTO_TLSv1_3", SSLProtocol.TLSv1_3.getId());
+        module.setAttribute(tsLiteral("PROTO_MINIMUM_SUPPORTED"), SSLProtocol.PROTO_MINIMUM_SUPPORTED);
+        module.setAttribute(tsLiteral("PROTO_MAXIMUM_SUPPORTED"), SSLProtocol.PROTO_MAXIMUM_SUPPORTED);
+        module.setAttribute(tsLiteral("PROTO_SSLv3"), SSLProtocol.SSLv3.getId());
+        module.setAttribute(tsLiteral("PROTO_TLSv1"), SSLProtocol.TLSv1.getId());
+        module.setAttribute(tsLiteral("PROTO_TLSv1_1"), SSLProtocol.TLSv1_1.getId());
+        module.setAttribute(tsLiteral("PROTO_TLSv1_2"), SSLProtocol.TLSv1_2.getId());
+        module.setAttribute(tsLiteral("PROTO_TLSv1_3"), SSLProtocol.TLSv1_3.getId());
 
         if (hasSSLv3) {
-            module.setAttribute("PROTOCOL_SSLv3", SSLMethod.SSL3.getPythonId());
+            module.setAttribute(tsLiteral("PROTOCOL_SSLv3"), SSLMethod.SSL3.getPythonId());
         }
-        module.setAttribute("PROTOCOL_SSLv23", SSLMethod.TLS.getPythonId());
-        module.setAttribute("PROTOCOL_TLS", SSLMethod.TLS.getPythonId());
-        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLMethod.TLS_CLIENT.getPythonId());
-        module.setAttribute("PROTOCOL_TLS_SERVER", SSLMethod.TLS_SERVER.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1", SSLMethod.TLS1.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1_1", SSLMethod.TLS1_1.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1_2", SSLMethod.TLS1_2.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_SSLv23"), SSLMethod.TLS.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLS"), SSLMethod.TLS.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLS_CLIENT"), SSLMethod.TLS_CLIENT.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLS_SERVER"), SSLMethod.TLS_SERVER.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLSv1"), SSLMethod.TLS1.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLSv1_1"), SSLMethod.TLS1_1.getPythonId());
+        module.setAttribute(tsLiteral("PROTOCOL_TLSv1_2"), SSLMethod.TLS1_2.getPythonId());
 
-        module.setAttribute("SSL_ERROR_SSL", SSLErrorCode.ERROR_SSL.getErrno());
-        module.setAttribute("SSL_ERROR_WANT_READ", SSLErrorCode.ERROR_WANT_READ.getErrno());
-        module.setAttribute("SSL_ERROR_WANT_WRITE", SSLErrorCode.ERROR_WANT_WRITE.getErrno());
-        module.setAttribute("SSL_ERROR_WANT_X509_LOOKUP", SSLErrorCode.ERROR_WANT_X509_LOOKUP.getErrno());
-        module.setAttribute("SSL_ERROR_SYSCALL", SSLErrorCode.ERROR_SYSCALL.getErrno());
-        module.setAttribute("SSL_ERROR_ZERO_RETURN", SSLErrorCode.ERROR_ZERO_RETURN.getErrno());
-        module.setAttribute("SSL_ERROR_WANT_CONNECT", SSLErrorCode.ERROR_WANT_CONNECT.getErrno());
-        module.setAttribute("SSL_ERROR_EOF", SSLErrorCode.ERROR_EOF.getErrno());
-        module.setAttribute("SSL_ERROR_INVALID_ERROR_CODE", 10);
+        module.setAttribute(tsLiteral("SSL_ERROR_SSL"), SSLErrorCode.ERROR_SSL.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_WANT_READ"), SSLErrorCode.ERROR_WANT_READ.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_WANT_WRITE"), SSLErrorCode.ERROR_WANT_WRITE.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_WANT_X509_LOOKUP"), SSLErrorCode.ERROR_WANT_X509_LOOKUP.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_SYSCALL"), SSLErrorCode.ERROR_SYSCALL.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_ZERO_RETURN"), SSLErrorCode.ERROR_ZERO_RETURN.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_WANT_CONNECT"), SSLErrorCode.ERROR_WANT_CONNECT.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_EOF"), SSLErrorCode.ERROR_EOF.getErrno());
+        module.setAttribute(tsLiteral("SSL_ERROR_INVALID_ERROR_CODE"), 10);
 
-        module.setAttribute("OP_ALL", SSLOptions.DEFAULT_OPTIONS);
-        module.setAttribute("OP_NO_SSLv2", SSLOptions.SSL_OP_NO_SSLv2);
-        module.setAttribute("OP_NO_SSLv3", SSLOptions.SSL_OP_NO_SSLv3);
-        module.setAttribute("OP_NO_TLSv1", SSLOptions.SSL_OP_NO_TLSv1);
-        module.setAttribute("OP_NO_TLSv1_1", SSLOptions.SSL_OP_NO_TLSv1_1);
-        module.setAttribute("OP_NO_TLSv1_2", SSLOptions.SSL_OP_NO_TLSv1_2);
-        module.setAttribute("OP_NO_TLSv1_3", SSLOptions.SSL_OP_NO_TLSv1_3);
+        module.setAttribute(tsLiteral("OP_ALL"), SSLOptions.DEFAULT_OPTIONS);
+        module.setAttribute(tsLiteral("OP_NO_SSLv2"), SSLOptions.SSL_OP_NO_SSLv2);
+        module.setAttribute(tsLiteral("OP_NO_SSLv3"), SSLOptions.SSL_OP_NO_SSLv3);
+        module.setAttribute(tsLiteral("OP_NO_TLSv1"), SSLOptions.SSL_OP_NO_TLSv1);
+        module.setAttribute(tsLiteral("OP_NO_TLSv1_1"), SSLOptions.SSL_OP_NO_TLSv1_1);
+        module.setAttribute(tsLiteral("OP_NO_TLSv1_2"), SSLOptions.SSL_OP_NO_TLSv1_2);
+        module.setAttribute(tsLiteral("OP_NO_TLSv1_3"), SSLOptions.SSL_OP_NO_TLSv1_3);
 
-        module.setAttribute("VERIFY_DEFAULT", 0);
-        module.setAttribute("VERIFY_CRL_CHECK_LEAF", X509_V_FLAG_CRL_CHECK);
-        module.setAttribute("VERIFY_CRL_CHECK_CHAIN", X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
-        module.setAttribute("VERIFY_X509_STRICT", X509_V_FLAG_X509_STRICT);
-        module.setAttribute("VERIFY_X509_TRUSTED_FIRST", X509_V_FLAG_TRUSTED_FIRST);
+        module.setAttribute(tsLiteral("VERIFY_DEFAULT"), 0);
+        module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_LEAF"), X509_V_FLAG_CRL_CHECK);
+        module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_CHAIN"), X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+        module.setAttribute(tsLiteral("VERIFY_X509_STRICT"), X509_V_FLAG_X509_STRICT);
+        module.setAttribute(tsLiteral("VERIFY_X509_TRUSTED_FIRST"), X509_V_FLAG_TRUSTED_FIRST);
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})
-    @ArgumentClinic(name = "txt", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "txt", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     abstract static class Txt2ObjNode extends PythonBinaryClinicBuiltinNode {
+
+        private static final TruffleString T_OID_TLS_SERVER = tsLiteral("1.3.6.1.5.5.7.3.1");
+        private static final TruffleString T_OID_TLS_CLIENT = tsLiteral("1.3.6.1.5.5.7.3.2");
+        private static final TruffleString T_SERVER_AUTH = tsLiteral("serverAuth");
+        private static final TruffleString T_CLIENT_AUTH = tsLiteral("clientAuth");
+        private static final TruffleString T_TLS_WEB_SERVER_AUTHENTICATION = tsLiteral("TLS Web Server Authentication");
+        private static final TruffleString T_TLS_WEB_CLIENT_AUTHENTICATION = tsLiteral("TLS Web Client Authentication");
+
         @Specialization
         @SuppressWarnings("unused")
-        Object txt2obj(String txt, boolean name) {
+        Object txt2obj(TruffleString txt, boolean name,
+                        @Cached TruffleString.EqualNode equalNode) {
             // TODO implement properly
-            if ("1.3.6.1.5.5.7.3.1".equals(txt)) {
-                return factory().createTuple(new Object[]{129, "serverAuth", "TLS Web Server Authentication", txt});
-            } else if ("1.3.6.1.5.5.7.3.2".equals(txt)) {
-                return factory().createTuple(new Object[]{130, "clientAuth", "TLS Web Client Authentication", txt});
+            if (equalNode.execute(T_OID_TLS_SERVER, txt, TS_ENCODING)) {
+                return factory().createTuple(new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
+            } else if (equalNode.execute(T_OID_TLS_CLIENT, txt, TS_ENCODING)) {
+                return factory().createTuple(new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
             }
             throw raise(NotImplementedError);
         }
@@ -350,12 +367,15 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_default_verify_paths")
     @GenerateNodeFactory
     abstract static class GetDefaultVerifyPathsNode extends PythonBuiltinNode {
+        private static final TruffleString T_SSL_CERT_FILE = tsLiteral("SSL_CERT_FILE");
+        private static final TruffleString T_SSL_CERT_DIR = tsLiteral("SSL_CERT_DIR");
+
         @Specialization
         Object getDefaultPaths() {
             // there is no default location given by graalpython
             // in case the env variables SSL_CERT_FILE or SSL_CERT_DIR
             // are provided, ssl.py#get_default_verify_paths will take care of it
-            return factory().createTuple(new Object[]{"SSL_CERT_FILE", "", "SSL_CERT_DIR", ""});
+            return factory().createTuple(new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
         }
     }
 
@@ -364,8 +384,10 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, Object path,
-                        @Cached PyUnicodeFSDecoderNode asPath) {
-            return decode(toTruffleFile(frame, asPath, path));
+                        @Cached PyUnicodeFSDecoderNode asPath,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            return decode(toTruffleFile(frame, asPath, path, toJavaStringNode, eqNode));
         }
 
         @TruffleBoundary
@@ -387,16 +409,17 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject, TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.EqualNode eqNode)
+                        throws PException {
             TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, fileObject));
+                file = getContext().getEnv().getPublicTruffleFile(toJavaStringNode.execute(asPath.execute(frame, fileObject)));
                 if (!file.exists()) {
                     throw raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
                 return file;
             } catch (Exception e) {
-                throw raiseOSError(frame, e);
+                throw raiseOSError(frame, e, eqNode);
             }
         }
     }

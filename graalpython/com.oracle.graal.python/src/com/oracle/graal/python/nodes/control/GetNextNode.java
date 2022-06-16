@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -126,7 +126,7 @@ public abstract class GetNextNode extends PNodeWithContext {
         private Object executeImpl(Object iterator) {
             Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.getUncached().execute(iterator), iterator);
             if (nextMethod == PNone.NO_VALUE) {
-                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, __NEXT__);
+                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, T___NEXT__);
             }
             return CallUnaryMethodNode.getUncached().executeObject(nextMethod, iterator);
         }

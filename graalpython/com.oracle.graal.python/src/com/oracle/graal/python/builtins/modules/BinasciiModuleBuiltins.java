@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BinasciiEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.PGuards.isAscii;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -70,11 +72,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -83,6 +86,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 @CoreFunctions(defineModule = "binascii")
 public class BinasciiModuleBuiltins extends PythonBuiltins {
@@ -101,9 +107,10 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @ExportLibrary(PythonBufferAccessLibrary.class)
         static final class AsciiStringBuffer {
-            private final String str;
+            private final TruffleString str;
 
-            AsciiStringBuffer(String str) {
+            AsciiStringBuffer(TruffleString str) {
+                assert str.getCodeRangeUncached(TS_ENCODING) == CodeRange.ASCII;
                 this.str = str;
             }
 
@@ -114,37 +121,49 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             }
 
             @ExportMessage
-            int getBufferLength() {
-                return str.length();
+            int getBufferLength(
+                            @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                return codePointLengthNode.execute(str, TS_ENCODING);
             }
 
             @ExportMessage
             @TruffleBoundary
             byte readByte(int byteOffset,
-                            @Cached PRaiseNode raise) {
-                // TODO make this efficient when we get TruffleStrings
-                char ch = str.charAt(byteOffset);
-                if (ch >= 128) {
-                    throw raise.raise(ValueError, "string argument should contain only ASCII characters");
-                }
+                            @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                int ch = codePointAtIndexNode.execute(str, byteOffset, TS_ENCODING);
+                assert 0 <= ch && ch < 128;    // guaranteed because str is ASCII
                 return (byte) ch;
             }
         }
 
-        @Specialization
-        Object string(String value) {
+        @Specialization(guards = "isAscii(value, getCodeRangeNode)", limit = "1")
+        Object asciiString(TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             return new AsciiStringBuffer(value);
+        }
+
+        @Specialization(guards = "!isAscii(value, getCodeRangeNode)", limit = "1")
+        Object nonAsciiString(TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
         Object string(PString value,
-                        @Cached CastToJavaStringNode cast) {
-            return string(cast.execute(value));
+                        @Cached CastToTruffleStringNode cast,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached ConditionProfile asciiProfile) {
+            TruffleString ts = cast.execute(value);
+            if (asciiProfile.profile(isAscii(ts, getCodeRangeNode))) {
+                return asciiString(ts, getCodeRangeNode);
+            } else {
+                return nonAsciiString(ts, getCodeRangeNode);
+            }
         }
 
         @Fallback
         Object error(@SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, "argument should be bytes, buffer or ASCII string, not '%p'", value);
+            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
         @ClinicConverterFactory
@@ -194,14 +213,14 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
                 }
                 int expectedPadding = 0;
                 if (base64chars % 4 == 1) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4");
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
                 } else if (base64chars % 4 == 2) {
                     expectedPadding = 2;
                 } else if (base64chars % 4 == 3) {
                     expectedPadding = 1;
                 }
                 if (padding < expectedPadding) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, "Incorrect padding");
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
                 }
                 // Find the end of the expected padding, if any
                 int decodeLen = lastBase64Char + 1;

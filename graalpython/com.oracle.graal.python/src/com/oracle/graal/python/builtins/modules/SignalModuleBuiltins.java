@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,6 +83,8 @@ import com.oracle.truffle.api.object.HiddenKey;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
+
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
     private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
@@ -101,12 +103,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("SIG_DFL", Signals.SIG_DFL);
-        builtinConstants.put("SIG_IGN", Signals.SIG_IGN);
+        addBuiltinConstant("SIG_DFL", Signals.SIG_DFL);
+        addBuiltinConstant("SIG_IGN", Signals.SIG_IGN);
         for (int i = 0; i < Signals.signalNames.length; i++) {
             String name = Signals.signalNames[i];
             if (name != null) {
-                builtinConstants.put("SIG" + name, i);
+                addBuiltinConstant("SIG" + name, i);
             }
         }
     }
@@ -115,7 +117,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
-        PythonModule signalModule = core.lookupBuiltinModule("_signal");
+        PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         signalModule.setAttribute(signalQueueKey, signalQueue);
         signalModule.setAttribute(signalSemaKey, signalSema);
 

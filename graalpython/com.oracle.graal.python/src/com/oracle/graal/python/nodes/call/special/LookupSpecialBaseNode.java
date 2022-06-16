@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,9 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupSpecialBaseNode extends Node {
     public abstract Object execute(Frame frame, Object type, Object receiver);
-
-    public static LookupSpecialBaseNode create(String key) {
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-        if (slot != null) {
-            return LookupSpecialMethodSlotNode.create(slot);
-        }
-        return LookupSpecialMethodNode.create(key);
-    }
 }

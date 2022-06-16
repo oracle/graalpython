@@ -25,7 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -53,12 +54,13 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
-    private final String name;
-    private final String qualname;
+    private final TruffleString name;
+    private final TruffleString qualname;
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final Signature signature;
@@ -67,19 +69,19 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, int flags, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, int numDefaults, int flags, RootCallTarget callTarget) {
         this(lang, name, enclosingType, generateDefaults(numDefaults), null, flags, callTarget);
     }
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         this(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang), name, enclosingType, defaults, kwDefaults, flags, callTarget);
     }
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         super(cls, shape);
         this.name = name;
         if (enclosingType != null) {
-            this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);
+            this.qualname = StringUtils.cat(GetNameNode.doSlowPath(enclosingType), T_DOT, name);
         } else {
             this.qualname = name;
         }
@@ -92,7 +94,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     private static PKeyword[] generateKwDefaults(Signature signature) {
-        String[] keywordNames = signature.getKeywordNames();
+        TruffleString[] keywordNames = signature.getKeywordNames();
         PKeyword[] kwDefaults = new PKeyword[keywordNames.length];
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
@@ -183,11 +185,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return callTarget;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public String getQualname() {
+    public TruffleString getQualname() {
         return qualname;
     }
 
@@ -207,7 +209,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
             return this;
         } else {
             PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, flags, callTarget);
-            func.setAttribute(__DOC__, getAttribute(__DOC__));
+            func.setAttribute(T___DOC__, getAttribute(T___DOC__));
             return func;
         }
     }
@@ -227,12 +229,12 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @ExportMessage
-    String getExecutableName() {
+    TruffleString getExecutableName() {
         return getName();
     }
 
     public void setDescriptor(BuiltinMethodDescriptor value) {
-        assert value.getName().equals(getName()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
+        assert value.getName().equals(getName().toJavaStringUncached()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
         // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
         // times from different threads, all of them should set the same value
         VarHandle.storeStoreFence();

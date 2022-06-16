@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_crypt")
 public class CryptModuleBuiltins extends PythonBuiltins {
@@ -64,12 +65,12 @@ public class CryptModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "crypt", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"word", "salt"})
-    @ArgumentClinic(name = "word", conversion = ArgumentClinic.ClinicConversion.String)
-    @ArgumentClinic(name = "salt", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "word", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "salt", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class CryptNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object crypt(VirtualFrame frame, String word, String salt,
+        Object crypt(VirtualFrame frame, TruffleString word, TruffleString salt,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.crypt(getPosixSupport(), word, salt);

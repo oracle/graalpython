@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,16 +43,18 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCData;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
-import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.UNPICKLE;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.T_UNPICKLE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DICT_MUST_BE_A_DICTIONARY_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -135,7 +137,7 @@ public class CDataBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
@@ -144,14 +146,14 @@ public class CDataBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         Object reduce(VirtualFrame frame, CDataObject self,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached("create(__DICT__)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached GetClassNode getClassNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(self);
@@ -166,14 +168,14 @@ public class CDataBuiltins extends PythonBuiltins {
                 int offset = self.b_ptr.offset;
                 t1[1] = factory().createBytes(PythonUtils.arrayCopyOfRange(byteArrayStorage.value, offset, len), self.b_size);
             } else {
-                throw raise(NotImplementedError, "Storage is not covered yet.");
+                throw raise(NotImplementedError, toTruffleStringUncached("Storage is not covered yet."));
             }
             Object clazz = getClassNode.execute(self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
-            PythonModule ctypes = getContext().lookupBuiltinModule("_ctypes");
-            Object unpickle = dylib.getOrDefault(ctypes.getStorage(), UNPICKLE, null);
+            PythonModule ctypes = getContext().lookupBuiltinModule(T__CTYPES);
+            Object unpickle = dylib.getOrDefault(ctypes.getStorage(), T_UNPICKLE, null);
             if (unpickle == null) {
-                throw raise(NotImplementedError, "unpickle isn't supported yet.");
+                throw raise(NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
             }
             Object[] t3 = new Object[]{unpickle, factory().createTuple(t2)};
             return factory().createTuple(t3); // "O(O(NN))"
@@ -181,14 +183,14 @@ public class CDataBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(SpecialAttributeNames.class)
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object PyCData_setstate(VirtualFrame frame, CDataObject self, PTuple args,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
-                        @Cached("create(__DICT__)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -219,7 +221,7 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         private void memmove(Object dest, Object src, int len) {
-            throw raise(NotImplementedError, "memmove is partially supported."); // TODO
+            throw raise(NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
         }
     }
 }

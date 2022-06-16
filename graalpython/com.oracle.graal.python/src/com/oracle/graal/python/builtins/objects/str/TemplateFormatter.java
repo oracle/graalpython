@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_S_IN_FIELD_
 import static com.oracle.graal.python.nodes.ErrorMessages.UNMATCHED_S;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -71,11 +73,12 @@ import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class TemplateFormatter {
 
@@ -95,13 +98,13 @@ public final class TemplateFormatter {
 
     private int lastEnd = -1;
 
-    public TemplateFormatter(String template) {
-        this.template = template;
+    public TemplateFormatter(TruffleString template) {
+        this.template = template.toJavaStringUncached();
         this.empty = "";
     }
 
     @TruffleBoundary
-    public String build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    public TruffleString build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, PyObjectGetItem getItemNode) {
         this.args = argsArg;
         this.keywords = kwArgs;
         this.autoNumbering = 0;
@@ -109,14 +112,14 @@ public final class TemplateFormatter {
         return buildString(node, 0, template.length(), 2, formatNode, getItemNode);
     }
 
-    private String buildString(Node node, int start, int end, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    private TruffleString buildString(Node node, int start, int end, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
         if (level == 0) {
             throw PRaiseNode.raiseUncached(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
         return doBuildString(node, start, end, level - 1, this.template, formatNode, getItemNode);
     }
 
-    private String doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, PyObjectGetItem getItemNode) {
+    private TruffleString doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, PyObjectGetItem getItemNode) {
         StringBuilder out = new StringBuilder();
         int lastLiteral = start;
         int i = start;
@@ -149,7 +152,7 @@ public final class TemplateFormatter {
                     if (this.parserList != null) {
                         int endLiteral = i - 1;
                         assert endLiteral > lastLiteral;
-                        String literal = this.template.substring(lastLiteral, endLiteral);
+                        TruffleString literal = toTruffleStringUncached(this.template.substring(lastLiteral, endLiteral));
                         this.parserList.add(new Object[]{literal, PNone.NONE, PNone.NONE, PNone.NONE});
                         this.lastEnd = i;
                     }
@@ -188,7 +191,7 @@ public final class TemplateFormatter {
             }
         }
         out.append(s.substring(lastLiteral, end));
-        return out.toString();
+        return toTruffleStringUncached(out.toString());
     }
 
     private static class Field {
@@ -324,7 +327,7 @@ public final class TemplateFormatter {
                 if (start == i) {
                     throw PRaiseNode.raiseUncached(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
                 }
-                String attr = name.substring(start, i);
+                TruffleString attr = toTruffleStringUncached(name.substring(start, i));
                 if (result != null) {
                     result = PyObjectLookupAttr.getUncached().execute(null, result, attr);
                 } else {
@@ -350,7 +353,7 @@ public final class TemplateFormatter {
                 try {
                     index = toInt(node, name.substring(start, i));
                 } catch (NumberFormatException | ArrayIndexOutOfBoundsException nfe1) {
-                    item = name.substring(start, i);
+                    item = toTruffleStringUncached(name.substring(start, i));
                 }
                 if (index > -1) {
                     if (index > SysModuleBuiltins.MAXSIZE) {
@@ -385,13 +388,17 @@ public final class TemplateFormatter {
         Character conversion = filed.conversion;
         int specStart = filed.idx;
 
-        String spec = this.template.substring(specStart, end);
+        TruffleString spec = toTruffleStringUncached(this.template.substring(specStart, end));
         if (this.parserList != null) {
             // used from formatterParser()
             if (level == 1) { // ignore recursive calls
                 int startm1 = start - 1;
                 assert startm1 >= this.lastEnd;
-                this.parserList.add(new Object[]{this.template.substring(this.lastEnd, startm1), name, spec, conversion != null ? Character.toString(conversion) : PNone.NONE});
+                this.parserList.add(new Object[]{
+                                toTruffleStringUncached(this.template.substring(this.lastEnd, startm1)),
+                                toTruffleStringUncached(name),
+                                spec,
+                                conversion != null ? toTruffleStringUncached(Character.toString(conversion)) : PNone.NONE});
                 this.lastEnd = end + 1;
             }
             return this.empty;
@@ -444,7 +451,7 @@ public final class TemplateFormatter {
         if (index >= 0) {
             first = index;
         } else {
-            first = name.substring(0, i);
+            first = toTruffleStringUncached(name.substring(0, i));
         }
         //
         this.parserList = new ArrayList<>();
@@ -457,7 +464,7 @@ public final class TemplateFormatter {
             case 'r':
                 return PyObjectReprAsObjectNode.getUncached().execute(null, obj);
             case 's':
-                return PyObjectStrAsJavaStringNode.getUncached().execute(null, obj);
+                return PyObjectStrAsTruffleStringNode.getUncached().execute(null, obj);
             case 'a':
                 return PyObjectAsciiNode.getUncached().execute(null, obj);
             default:
@@ -471,25 +478,26 @@ public final class TemplateFormatter {
         this.lastEnd = 0;
         buildString(node, 0, this.template.length(), 2, null, null);
         if (this.lastEnd < this.template.length()) {
-            parserList.add(new Object[]{this.template.substring(this.lastEnd), PNone.NONE, PNone.NONE, PNone.NONE});
+            parserList.add(new Object[]{toTruffleStringUncached(this.template.substring(this.lastEnd)), PNone.NONE, PNone.NONE, PNone.NONE});
         }
         return parserList;
     }
 
     private Object getKeyword(Node node, String key, PyObjectGetItem getItemNode) {
+        TruffleString tKey = toTruffleStringUncached(key);
         if (keywords instanceof PKeyword[]) {
             for (PKeyword kwArg : (PKeyword[]) keywords) {
-                if (key.equals(kwArg.getName())) {
+                if (tKey.equalsUncached(kwArg.getName(), TS_ENCODING)) {
                     return kwArg.getValue();
                 }
             }
         } else {
-            Object result = getItemNode.execute(null, keywords, key);
+            Object result = getItemNode.execute(null, keywords, tKey);
             if (result != null) {
                 return result;
             }
         }
-        throw PRaiseNode.raiseUncached(node, KeyError, key);
+        throw PRaiseNode.raiseUncached(node, KeyError, tKey);
     }
 
 }

@@ -40,13 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.superobject;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF_CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__THISCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF_CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___THISCLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -65,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
@@ -97,7 +102,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -108,6 +112,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
 public final class SuperBuiltins extends PythonBuiltins {
@@ -167,7 +172,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, alwaysNeedsCallerFrame = true)
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
@@ -232,7 +237,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         protected ReadLocalVariableNode createRead(VirtualFrame frame) {
             FrameDescriptor descriptor = frame.getFrameDescriptor();
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
-                if (SpecialAttributeNames.__CLASS__.equals(descriptor.getSlotName(slot))) {
+                Object slotName = descriptor.getSlotName(slot);
+                if (slotName instanceof TruffleString && T___CLASS__.equalsUncached((TruffleString) slotName, TS_ENCODING)) {
                     return ReadLocalVariableNode.create(slot);
                 }
             }
@@ -316,7 +322,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
             PDict locals = (PDict) target.getLocalsDict();
-            Object cls = hlib.getItemWithState(locals.getDictStorage(), SpecialAttributeNames.__CLASS__, PArguments.getThreadState(frame));
+            Object cls = hlib.getItemWithState(locals.getDictStorage(), SpecialAttributeNames.T___CLASS__, PArguments.getThreadState(frame));
             if (cls instanceof PCell) {
                 cls = getGetRefNode().execute((PCell) cls);
                 if (cls == null) {
@@ -400,7 +406,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 return objectType;
             } else {
                 try {
-                    Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
+                    Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.T___CLASS__);
                     if (ensureIsTypeNode().execute(classObject)) {
                         if (getIsSubtype().execute(frame, classObject, cls)) {
                             return classObject;
@@ -415,7 +421,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -441,7 +447,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
@@ -463,7 +469,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object get(VirtualFrame frame, SuperObject self, Object attr) {
+        public Object get(VirtualFrame frame, SuperObject self, Object attr,
+                        @Cached TruffleString.EqualNode equalNode) {
             Object startType = getObjectType.execute(self);
             if (startType == null) {
                 return genericGetAttr(frame, self, attr);
@@ -473,15 +480,17 @@ public final class SuperBuiltins extends PythonBuiltins {
              * We want __class__ to return the class of the super object (i.e. super, or a
              * subclass), not the class of su->obj.
              */
-            String stringAttr = null;
+            TruffleString stringAttr = null;
             if (attr instanceof PString) {
-                stringAttr = ((PString) attr).getValue();
-            } else if (attr instanceof String) {
-                stringAttr = (String) attr;
+                stringAttr = ((PString) attr).getValueUncached();
+            } else if (isJavaString(attr)) {
+                stringAttr = toTruffleStringUncached((String) attr);
+            } else if (attr instanceof TruffleString) {
+                stringAttr = (TruffleString) attr;
             }
             if (stringAttr != null) {
-                if (stringAttr.equals(SpecialAttributeNames.__CLASS__)) {
-                    return genericGetAttr(frame, self, SpecialAttributeNames.__CLASS__);
+                if (equalNode.execute(stringAttr, T___CLASS__, TS_ENCODING)) {
+                    return genericGetAttr(frame, self, T___CLASS__);
                 }
             }
 
@@ -546,7 +555,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __THISCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___THISCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ThisClassNode extends PythonUnaryBuiltinNode {
         @Child GetTypeNode getType = GetTypeNodeGen.create();
@@ -561,7 +570,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SELF__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___SELF__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonUnaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -576,7 +585,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SELF_CLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___SELF_CLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
         @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
@@ -591,21 +600,22 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SuperReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(SuperObject self,
+        TruffleString repr(SuperObject self,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetTypeNode getType,
-                        @Cached GetObjectTypeNode getObjectType) {
+                        @Cached GetObjectTypeNode getObjectType,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             final Object type = getType.execute(self);
             final Object objType = getObjectType.execute(self);
-            final String typeName = type != null ? getNameNode.execute(type) : "NULL";
+            final Object typeName = type != null ? getNameNode.execute(type) : "NULL";
             if (objType != null) {
-                return PythonUtils.format("<super: %s, <%s object>>", typeName, getNameNode.execute(objType));
+                return simpleTruffleStringFormatNode.format("<super: %s, <%s object>>", typeName, getNameNode.execute(objType));
             } else {
-                return PythonUtils.format("<super: %s, NULL>", typeName);
+                return simpleTruffleStringFormatNode.format("<super: %s, NULL>", typeName);
             }
         }
     }

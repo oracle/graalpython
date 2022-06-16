@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
@@ -57,8 +59,11 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SendNode extends PNodeWithContext {
+    private static final TruffleString T_SEND = tsLiteral("send");
+
     // Returns true when the generator finished
     public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object iter, Object arg);
 
@@ -100,7 +105,7 @@ public abstract class SendNode extends PNodeWithContext {
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
-            Object value = callMethodNode.execute(virtualFrame, obj, "send", arg);
+            Object value = callMethodNode.execute(virtualFrame, obj, T_SEND, arg);
             localFrame.setObject(stackTop, value);
             return false;
         } catch (PException e) {

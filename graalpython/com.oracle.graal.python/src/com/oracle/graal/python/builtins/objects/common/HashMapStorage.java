@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.ensureNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -65,6 +69,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Hashing storage that can be used for any type of key that does not override {@code __hash__} and
@@ -154,7 +159,7 @@ public class HashMapStorage extends HashingStorage {
             // Hopefully it will be uncommon that the object we search for will have the same hash
             // as some of the items in the storage (it may even equal to some of those items), so
             // the uncached equals call does not hurt that much here
-            return PyObjectRichCompareBool.EqNode.getUncached().execute(null, value, otherValue);
+            return PyObjectRichCompareBool.EqNode.getUncached().execute(null, value, ensureNoJavaString(otherValue));
         }
 
         @Override
@@ -216,7 +221,7 @@ public class HashMapStorage extends HashingStorage {
     static class SetItemWithState {
         @Specialization
         static HashingStorage setItemString(HashMapStorage self, String key, Object value, @SuppressWarnings("unused") ThreadState state) {
-            put(self.values, key, value);
+            put(self.values, key, assertNoJavaString(value));
             return self;
         }
 
@@ -224,7 +229,7 @@ public class HashMapStorage extends HashingStorage {
         static HashingStorage setItem(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
                         @Cached CastToJavaStringNode castNode,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
-            put(self.values, castNode.execute(key), value);
+            put(self.values, castNode.execute(key), assertNoJavaString(value));
             return self;
         }
 
@@ -315,7 +320,25 @@ public class HashMapStorage extends HashingStorage {
     }
 
     private static Iterator<Object> getKeysIterator(LinkedHashMap<Object, Object> map) {
-        return map.keySet().iterator();
+        return fixStrings(map.keySet().iterator());
+    }
+
+    private static Iterator<Object> fixStrings(Iterator<Object> it) {
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                Object o = it.next();
+                if (o instanceof String) {
+                    o = toTruffleStringUncached((String) o);
+                }
+                return o;
+            }
+        };
     }
 
     @ExportMessage
@@ -328,11 +351,11 @@ public class HashMapStorage extends HashingStorage {
     private static Iterator<Object> getReverseIterator(LinkedHashMap<Object, Object> values) {
         ArrayList<Object> keys = new ArrayList<>(values.keySet());
         Collections.reverse(keys);
-        return keys.iterator();
+        return fixStrings(keys.iterator());
     }
 
-    public void put(String key, Object value) {
-        put(values, key, value);
+    public void put(TruffleString key, Object value) {
+        put(values, key.toJavaStringUncached(), value);
     }
 
     @TruffleBoundary

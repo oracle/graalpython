@@ -55,6 +55,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -74,10 +77,10 @@ public final class PythonCextSysBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PySysGetObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object writeStr(VirtualFrame frame, String name,
+        public Object writeStr(VirtualFrame frame, TruffleString name,
                         @Cached PyObjectLookupAttr lookupNode) {
             try {
-                Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule("sys"), name);
+                Object value = lookupNode.execute(frame, getCore().lookupBuiltinModule(T_SYS), name);
                 if (value == PNone.NO_VALUE) {
                     return getContext().getNativeNull();
                 }

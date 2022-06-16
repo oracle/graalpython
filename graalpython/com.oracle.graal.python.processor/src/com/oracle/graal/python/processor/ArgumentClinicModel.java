@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -221,6 +221,9 @@ public class ArgumentClinicModel {
                 imports.add(factory.fullClassName);
                 if (annotation.defaultValue().startsWith("PNone.")) {
                     imports.add("com.oracle.graal.python.builtins.objects.PNone");
+                }
+                if (annotation.defaultValue().startsWith("T_")) {
+                    imports.add("static com.oracle.graal.python.nodes.StringLiterals.*");
                 }
 
                 return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(factory.acceptedPrimitiveTypes)), castNodeFactory, imports);

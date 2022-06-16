@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
@@ -55,9 +56,12 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
 public final class ContextVarBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_VALUE = tsLiteral("value");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

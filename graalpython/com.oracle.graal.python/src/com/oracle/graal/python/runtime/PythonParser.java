@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -41,6 +41,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public interface PythonParser {
 
@@ -99,23 +100,23 @@ public interface PythonParser {
     }
 
     public abstract class ParserErrorCallback {
-        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section, TruffleString message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, source, section, message, arguments);
         }
 
-        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments);
 
-        public final RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
+        public final RuntimeException raiseInvalidSyntax(Node location, TruffleString message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, location, message, arguments);
         }
 
-        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments);
 
         public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
-        public abstract void warn(PythonBuiltinClassType type, String format, Object... args);
+        public abstract void warn(PythonBuiltinClassType type, TruffleString format, Object... args);
 
         public abstract PythonContext getContext();
     }

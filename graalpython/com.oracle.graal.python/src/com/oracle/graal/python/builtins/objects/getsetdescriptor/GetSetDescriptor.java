@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,22 +48,23 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
     private final Object get;
     private final Object set;
-    private final String name;
+    private final TruffleString name;
     private final boolean allowsDelete;
     private final Object type;
 
-    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type) {
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, TruffleString name, Object type) {
         this(lang, get, set, name, type, false);
     }
 
-    public GetSetDescriptor(Object clazz, Shape shape, Object get, Object set, String name, Object type, boolean allowsDelete) {
+    public GetSetDescriptor(Object clazz, Shape shape, Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {
         super(clazz, shape);
         // every descriptor has a '__doc__' attribute
-        setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
+        setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
         this.get = get;
         this.set = set;
         this.name = name;
@@ -71,7 +72,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         this.allowsDelete = allowsDelete;
     }
 
-    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type, boolean allowsDelete) {
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {
         this(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang), get, set, name, type, allowsDelete);
     }
 
@@ -83,7 +84,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         return set;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 

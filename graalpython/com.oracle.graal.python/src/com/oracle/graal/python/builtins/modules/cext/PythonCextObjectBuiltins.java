@@ -42,10 +42,11 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+
+import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -122,6 +123,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import java.io.PrintWriter;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -277,7 +279,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectCallMethodNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object receiverObj, String methodName, Object argsObj, int singleArg,
+        static Object doGeneric(VirtualFrame frame, Object receiverObj, TruffleString methodName, Object argsObj, int singleArg,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CastArgsNode castArgsNode,
@@ -642,7 +644,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
         }
 
         protected static boolean hasBytes(VirtualFrame frame, Object obj, PyObjectLookupAttr lookupAttrNode) {
-            return lookupAttrNode.execute(frame, obj, __BYTES__) != PNone.NO_VALUE;
+            return lookupAttrNode.execute(frame, obj, T___BYTES__) != PNone.NO_VALUE;
         }
 
         protected static boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -720,7 +722,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
              */
             boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
             if (pointsToHandleSpace && !isValidHandle || traceNativeMemory && !isWrapper && !cApiContext.isAllocated(ptrObject)) {
-                stderr.println(String.format("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
+                stderr.println(PythonUtils.formatJString("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
                 stderr.flush();
                 return 0;
             }
@@ -760,7 +762,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.REPR, pythonObject);
+                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.T_REPR, pythonObject);
                 stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point

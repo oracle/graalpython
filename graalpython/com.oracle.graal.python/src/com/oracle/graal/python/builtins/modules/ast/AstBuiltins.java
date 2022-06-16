@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
@@ -64,7 +64,7 @@ public class AstBuiltins extends PythonBuiltins {
         return AstBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
@@ -74,7 +74,7 @@ public class AstBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization

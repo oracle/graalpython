@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,14 +41,19 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
 
 import com.ibm.icu.impl.Punycode;
 import com.ibm.icu.text.StringPrepParseException;
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -56,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -77,6 +84,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class CExtContext {
 
@@ -86,6 +95,10 @@ public abstract class CExtContext {
             return null;
         }
     };
+
+    protected static final TruffleString T_HPY_INIT = tsLiteral("HPyInit_");
+    private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
+    private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
 
     public static final int METH_VARARGS = 0x0001;
     public static final int METH_KEYWORDS = 0x0002;
@@ -178,25 +191,16 @@ public abstract class CExtContext {
      */
     @ValueType
     public static final class ModuleSpec {
-        private volatile CharsetEncoder asciiEncoder;
-
-        public final String name;
-        public final String path;
+        public final TruffleString name;
+        public final TruffleString path;
         public final Object originalModuleSpec;
-        private String encodedName;
+        private TruffleString encodedName;
         private boolean ascii;
 
-        public ModuleSpec(String name, String path, Object originalModuleSpec) {
+        public ModuleSpec(TruffleString name, TruffleString path, Object originalModuleSpec) {
             this.name = name;
             this.path = path;
             this.originalModuleSpec = originalModuleSpec;
-        }
-
-        private CharsetEncoder ensureASCIIEncoder() {
-            if (asciiEncoder == null) {
-                asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
-            }
-            return asciiEncoder;
         }
 
         /**
@@ -205,13 +209,13 @@ public abstract class CExtContext {
          * set to either ascii_only_prefix or nonascii_prefix, as appropriate.
          */
         @TruffleBoundary
-        public String getEncodedName() {
+        TruffleString getEncodedName() {
             if (encodedName != null) {
                 return encodedName;
             }
 
             // Get the short name (substring after last dot)
-            String basename = name.substring(name.lastIndexOf('.') + 1);
+            TruffleString basename = getBaseName(name);
 
             boolean canEncode = canEncode(basename);
 
@@ -220,41 +224,55 @@ public abstract class CExtContext {
             } else {
                 ascii = false;
                 try {
-                    basename = Punycode.encode(basename, null).toString();
+                    basename = TruffleString.fromJavaStringUncached(Punycode.encode(basename.toJavaStringUncached(), null).toString(), TS_ENCODING);
                 } catch (StringPrepParseException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
 
             // replace '-' by '_'; note: this is fast and does not use regex
-            return (encodedName = basename.replace('-', '_'));
+            return (encodedName = StringNodes.StringReplaceNode.getUncached().execute(basename, T_DASH, T_UNDERSCORE, -1));
         }
 
         @TruffleBoundary
-        private boolean canEncode(String basename) {
-            CharsetEncoder encoder = ensureASCIIEncoder();
-            encoder.reset();
-            return encoder.canEncode(basename);
+        private boolean canEncode(TruffleString basename) {
+            return TruffleString.GetCodeRangeNode.getUncached().execute(basename, TS_ENCODING) == CodeRange.ASCII;
         }
 
         @TruffleBoundary
-        public String getInitFunctionName(boolean hpy) {
+        public TruffleString getInitFunctionName(boolean hpy) {
             /*
              * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
              * is queried
              */
-            String s = getEncodedName();
+            TruffleString s = getEncodedName();
             if (hpy) {
-                return "HPyInit_" + s;
+                return StringUtils.cat(T_HPY_INIT, s);
             }
-            return (ascii ? "PyInit_" : "PyInitU_") + s;
+            return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
         }
+    }
+
+    @TruffleBoundary
+    protected static TruffleString getBaseName(TruffleString name) {
+        int len = TruffleString.CodePointLengthNode.getUncached().execute(name, TS_ENCODING);
+        if (len == 1) {
+            return name.equalsUncached(T_DOT, TS_ENCODING) ? T_EMPTY_STRING : name;
+        }
+        int idx = name.lastIndexOfStringUncached(T_DOT, len, 0, TS_ENCODING);
+        if (idx < 0) {
+            return name;
+        }
+        if (idx == len - 1) {
+            return T_EMPTY_STRING;
+        }
+        return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
     }
 
     /**
      * This method loads a C extension module (C API or HPy API) and will initialize the
      * corresponding native contexts if necessary.
-     * 
+     *
      * @param location The node that's requesting this operation. This is required for reporting
      *            correct source code location in case exceptions occur.
      * @param context The Python context object.
@@ -281,9 +299,9 @@ public abstract class CExtContext {
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
-        String hpyInitFuncName = spec.getInitFunctionName(true);
+        TruffleString hpyInitFuncName = spec.getInitFunctionName(true);
         try {
-            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
+            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
                 GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, false, llvmInteropLib, checkHPyResultNode);
             }
@@ -293,11 +311,11 @@ public abstract class CExtContext {
         }
     }
 
-    protected static Object loadLLVMLibrary(Node location, PythonContext context, String name, String path) throws ImportException, IOException {
+    protected static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
         Env env = context.getEnv();
         try {
-            String extSuffix = context.getSoAbi();
-            CallTarget callTarget = env.parseInternal(Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
+            TruffleString extSuffix = context.getSoAbi();
+            CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
             return callTarget.call();
         } catch (SecurityException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
@@ -307,7 +325,7 @@ public abstract class CExtContext {
     }
 
     @TruffleBoundary
-    protected static PException reportImportError(RuntimeException e, String name, String path) throws ImportException {
+    protected static PException reportImportError(RuntimeException e, TruffleString name, TruffleString path) throws ImportException {
         StringBuilder sb = new StringBuilder();
         PBaseException pythonCause = null;
         PException pcause = null;
@@ -315,7 +333,7 @@ public abstract class CExtContext {
             PBaseException excObj = ((PException) e).getEscapedException();
             pythonCause = excObj;
             pcause = (PException) e;
-            sb.append(LookupAndCallUnaryDynamicNode.getUncached().executeObject(excObj, SpecialMethodNames.__REPR__));
+            sb.append(LookupAndCallUnaryDynamicNode.getUncached().executeObject(excObj, SpecialMethodNames.T___REPR__));
         } else {
             // that call will cause problems if the format string contains '%p'
             sb.append(e.getMessage());
@@ -345,8 +363,9 @@ public abstract class CExtContext {
 
     @TruffleBoundary
     public static PException wrapJavaException(Throwable e, Node raisingNode) {
-        String message = e.getMessage();
-        PBaseException excObject = PythonObjectFactory.getUncached().createBaseException(SystemError, message != null ? message : e.toString(), PythonUtils.EMPTY_OBJECT_ARRAY);
+        TruffleString message = toTruffleStringUncached(e.getMessage());
+        PBaseException excObject = PythonObjectFactory.getUncached().createBaseException(SystemError, message != null ? message : toTruffleStringUncached(e.toString()),
+                        PythonUtils.EMPTY_OBJECT_ARRAY);
         return ExceptionHandlingStatementNode.wrapJavaException(e, raisingNode, excObject);
     }
 }

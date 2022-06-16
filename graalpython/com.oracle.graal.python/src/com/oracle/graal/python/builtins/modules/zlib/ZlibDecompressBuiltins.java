@@ -45,11 +45,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibDecomp
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.DEF_BUF_SIZE;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_STREAM_ERROR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.INCONSISTENT_STREAM_STATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_GREATER_THAN_ZERO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -137,7 +139,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"maxLength >= 0", "!self.isInitialized()"})
         PBytes error(ZLibCompObject self, Object data, int maxLength) {
-            throw raise(ZLibError, "Error %d %s: %s", Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
+            throw raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
         }
 
         @SuppressWarnings("unused")
@@ -181,7 +183,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
         static PNone error(ZLibCompObject.JavaZlibCompObject self, PythonContext ctxt, PythonObjectFactory factory,
                         @Cached.Shared("r") @Cached PRaiseNode raise) {
-            throw raise.raise(NotImplementedError, "JDK based zlib doesn't support copying");
+            throw raise.raise(NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
@@ -202,7 +204,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UndescoreCopyNode extends CopyNode {
     }

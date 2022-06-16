@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -115,12 +115,12 @@ public class WithNode extends ExceptionHandlingStatementNode {
         Object enterCallable = enterSpecialGetter.execute(frame, clazz, withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __ENTER__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, T___ENTER__);
         }
         Object exitCallable = exitSpecialGetter.execute(frame, clazz, withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, T___EXIT__);
         }
         doEnter(frame, withObject, enterCallable);
         Object result;

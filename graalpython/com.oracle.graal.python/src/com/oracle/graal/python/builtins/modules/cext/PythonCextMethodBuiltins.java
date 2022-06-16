@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -70,7 +71,7 @@ public final class PythonCextMethodBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 8, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
         @Override
@@ -79,7 +80,7 @@ public final class PythonCextMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
+        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PythonCextBuiltins.CFunctionNewExMethodNode cFunctionNewExMethodNode,
                         @Cached CExtNodes.ToNewRefNode newRefNode) {

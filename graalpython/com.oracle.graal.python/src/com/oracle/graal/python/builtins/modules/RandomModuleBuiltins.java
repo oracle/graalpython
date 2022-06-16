@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,9 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "_random")
 public class RandomModuleBuiltins extends PythonBuiltins {
@@ -52,7 +55,9 @@ public class RandomModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PRandom, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class PRandomNode extends PythonBuiltinNode {
-        @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create("seed");
+        private static final TruffleString T_SEED = tsLiteral("seed");
+
+        @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create(T_SEED);
 
         @Specialization
         PRandom random(VirtualFrame frame, Object cls, Object seed) {

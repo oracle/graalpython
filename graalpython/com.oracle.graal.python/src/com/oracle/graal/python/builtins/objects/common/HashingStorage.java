@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -155,7 +156,7 @@ public abstract class HashingStorage {
         protected boolean hasKeysAttribute(Object o) {
             if (lookupKeysAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(KEYS));
+                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(T_KEYS));
             }
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
@@ -191,7 +192,7 @@ public abstract class HashingStorage {
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Shared("callKeys") @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
@@ -208,7 +209,7 @@ public abstract class HashingStorage {
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared("callKeys") @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
@@ -672,7 +673,7 @@ public abstract class HashingStorage {
                 }
 
                 // really check for Java String since PString can be subclassed
-                isStringKey = isStringKey || getItemNode.execute(frame, element, 0) instanceof String;
+                isStringKey = isStringKey || isJavaString(getItemNode.execute(frame, element, 0));
 
                 elements.add(element);
             }

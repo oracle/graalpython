@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent PyObject_GetAttr*. Like Python, this method raises when the attribute doesn't exist.
@@ -68,8 +69,8 @@ public abstract class PyObjectGetAttr extends Node {
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
     @Specialization(guards = "name == cachedName", limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
-                    @SuppressWarnings("unused") @Cached("name") String cachedName,
+    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
+                    @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Cached("create(name)") GetFixedAttributeNode getAttrNode) {
         return getAttrNode.execute(frame, receiver);
     }
@@ -81,12 +82,14 @@ public abstract class PyObjectGetAttr extends Node {
                     @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
                     @Cached CallBinaryMethodNode callGetattribute,
                     @Cached CallBinaryMethodNode callGetattr,
-                    @Cached IsBuiltinClassProfile errorProfile) {
+                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
         if (!getClass.isAdoptable()) {
             // It pays to try this in the uncached case, avoiding a full call to __getattribute__
-            Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name);
+            Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 if (result == PNone.NO_VALUE) {
                     Object getattr = lookupGetattr.execute(frame, type, receiver);

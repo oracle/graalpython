@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallUnaryNode extends Node {
@@ -68,14 +69,14 @@ public abstract class LookupAndCallUnaryNode extends Node {
         public abstract Object execute(Object receiver);
     }
 
-    protected final String name;
+    protected final TruffleString name;
     private final SpecialMethodSlot slot;
     protected final Supplier<NoAttributeHandler> handlerFactory;
     @Child private NoAttributeHandler handler;
 
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
 
-    public static LookupAndCallUnaryNode create(String name) {
+    public static LookupAndCallUnaryNode create(TruffleString name) {
         return LookupAndCallUnaryNodeGen.create(name, null);
     }
 
@@ -83,7 +84,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return LookupAndCallUnaryNodeGen.create(slot, null);
     }
 
-    public static LookupAndCallUnaryNode create(String name, Supplier<NoAttributeHandler> handlerFactory) {
+    public static LookupAndCallUnaryNode create(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
         return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
@@ -97,13 +98,13 @@ public abstract class LookupAndCallUnaryNode extends Node {
         this.handlerFactory = handlerFactory;
     }
 
-    LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory) {
+    LookupAndCallUnaryNode(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
         this.slot = null;
         this.name = name;
         this.handlerFactory = handlerFactory;
     }
 
-    public String getMethodName() {
+    public TruffleString getMethodName() {
         return name;
     }
 
@@ -126,12 +127,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return null;
     }
 
-    protected static final PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+    protected static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    protected static final boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+    protected static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
         return getClassNode.execute(receiver) == clazz;
     }
 
@@ -193,10 +194,10 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @GenerateUncached
     public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
-        public abstract Object executeObject(Object receiver, String name);
+        public abstract Object executeObject(Object receiver, TruffleString name);
 
         @Specialization
-        static Object doObject(Object receiver, String name,
+        static Object doObject(Object receiver, TruffleString name,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,

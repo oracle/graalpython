@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,12 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -64,7 +64,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -73,6 +72,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class BufferStorageNodes {
     @ImportStatic(BufferFormat.class)
@@ -142,26 +142,20 @@ public abstract class BufferStorageNodes {
         }
 
         @Specialization(guards = "format == CHAR")
-        static Object unpackChar(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
+        static PBytes unpackChar(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createBytes(new byte[]{bytes[offset]});
         }
 
         @Specialization(guards = "format == UNICODE")
-        static Object unpackUnicode(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
-                        @Cached PRaiseNode raiseNode) {
+        static TruffleString unpackUnicode(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             int codePoint = PythonUtils.arrayAccessor.getInt(bytes, offset);
             if (!Character.isValidCodePoint(codePoint)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.UNMAPPABLE_CHARACTER);
             }
-            return codePointToString(codePoint);
-        }
-
-        @TruffleBoundary
-        private static String codePointToString(int codePoint) {
-            StringBuilder sb = new StringBuilder(2);
-            sb.appendCodePoint(codePoint);
-            return sb.toString();
+            return fromCodePointNode.execute(codePoint, TS_ENCODING, true);
         }
     }
 
@@ -290,10 +284,12 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == UNICODE")
         void packDouble(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            String str = cast.cast(object, "array item must be unicode character");
-            if (PString.codePointCount(str, 0, str.length()) == 1) {
-                int codePoint = PString.codePointAt(str, 0);
+                        @Cached StringNodes.CastToTruffleStringCheckedNode cast,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            TruffleString str = cast.cast(object, ErrorMessages.ARRAY_ITEM_MUST_BE_UNICODE);
+            if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
+                int codePoint = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
                 PythonUtils.arrayAccessor.putInt(bytes, offset, codePoint);
             } else {
                 throw raise(TypeError);

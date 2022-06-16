@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,11 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 
 import java.util.List;
 
@@ -76,7 +76,7 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         return TupleGetterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -87,7 +87,7 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
         @Specialization()
@@ -115,7 +115,7 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class TupleGetterSetNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -125,7 +125,7 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELETE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class TupleGetterDeleteNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -135,7 +135,7 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class TupleGetterDocNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(value)")

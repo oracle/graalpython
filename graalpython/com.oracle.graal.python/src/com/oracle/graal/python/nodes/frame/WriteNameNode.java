@@ -50,20 +50,21 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeChild(value = "rhs", type = ExpressionNode.class)
 public abstract class WriteNameNode extends StatementNode implements WriteNode, AccessNameNode {
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
-    protected WriteNameNode(String attributeId) {
+    protected WriteNameNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static WriteNameNode create(String attributeId, ExpressionNode rhs) {
+    public static WriteNameNode create(TruffleString attributeId, ExpressionNode rhs) {
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
-    public static WriteNameNode create(String attributeId) {
+    public static WriteNameNode create(TruffleString attributeId) {
         return WriteNameNodeGen.create(attributeId, null);
     }
 
@@ -89,7 +90,7 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
         setItem.executeWith(frame, frameLocals, attributeId, value);
     }
 
-    public final String getAttributeId() {
+    public final TruffleString getAttributeId() {
         return attributeId;
     }
 }

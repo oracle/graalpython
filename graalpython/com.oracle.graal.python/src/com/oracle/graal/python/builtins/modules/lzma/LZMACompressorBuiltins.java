@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.COMPRESSOR_HAS_BEEN_FL
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_SPECIFY_FILTERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPEATED_CALL_TO_FLUSH;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -93,7 +93,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
         return LZMACompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "check", "preset", "filters"})
     @ArgumentClinic(name = "format", conversion = ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_XZ", useDefaultForNone = true)
     @ArgumentClinic(name = "check", conversion = ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "preset", conversionClass = ExpectUINT32Node.class, defaultValue = "PNone.NO_VALUE")

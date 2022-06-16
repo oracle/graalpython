@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class PTextIOBase extends PythonBuiltinObject {
 
     private boolean ok; /* initialized? */
     private Object decoder;
-    private String readnl;
-    private String writenl; /* ASCII-encoded; NULL stands for \n */
+    private TruffleString readnl;
+    private TruffleString writenl; /* ASCII-encoded; NULL stands for \n */
     private boolean readuniversal;
     private boolean readtranslate;
 
@@ -81,15 +82,15 @@ abstract class PTextIOBase extends PythonBuiltinObject {
         return decoder != null;
     }
 
-    public final String getReadNewline() {
+    public final TruffleString getReadNewline() {
         return readnl;
     }
 
-    public final void setReadNewline(String readnl) {
+    public final void setReadNewline(TruffleString readnl) {
         this.readnl = readnl;
     }
 
-    public final String getWriteNewline() {
+    public final TruffleString getWriteNewline() {
         return writenl;
     }
 
@@ -97,7 +98,7 @@ abstract class PTextIOBase extends PythonBuiltinObject {
         return writenl != null;
     }
 
-    public final void setWriteNewline(String writenl) {
+    public final void setWriteNewline(TruffleString writenl) {
         this.writenl = writenl;
     }
 

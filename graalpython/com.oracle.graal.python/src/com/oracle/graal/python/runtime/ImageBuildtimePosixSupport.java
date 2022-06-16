@@ -64,6 +64,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PosixSupportLibrary.class)
 public class ImageBuildtimePosixSupport extends PosixSupport {
@@ -144,13 +145,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String getBackend(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final TruffleString getBackend(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
         return nativeLib.getBackend(nativePosixSupport);
     }
 
     @ExportMessage
-    final String strerror(int errorCode,
+    final TruffleString strerror(int errorCode,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
         return nativeLib.strerror(nativePosixSupport, errorCode);
@@ -610,7 +611,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String ctermid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+    final TruffleString ctermid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.ctermid(nativePosixSupport);
     }
@@ -874,7 +875,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String crypt(String word, String salt,
+    final TruffleString crypt(TruffleString word, TruffleString salt,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.crypt(nativePosixSupport, word, salt);
@@ -888,7 +889,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final Object createPathFromString(String path,
+    final Object createPathFromString(TruffleString path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         if (ImageInfo.inImageBuildtimeCode()) {
             return PosixSupportLibrary.getUncached().createPathFromString(emulatedPosixSupport, path);
@@ -906,7 +907,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final String getPathAsString(Object path,
+    final TruffleString getPathAsString(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         if (ImageInfo.inImageBuildtimeCode()) {
             return PosixSupportLibrary.getUncached().getPathAsString(emulatedPosixSupport, path);

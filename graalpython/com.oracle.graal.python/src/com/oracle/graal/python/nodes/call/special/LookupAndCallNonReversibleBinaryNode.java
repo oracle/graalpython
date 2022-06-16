@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,14 +58,15 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
 abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryNode {
     protected final SpecialMethodSlot slot;
-    protected final String name;
+    protected final TruffleString name;
 
-    LookupAndCallNonReversibleBinaryNode(String name, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
+    LookupAndCallNonReversibleBinaryNode(TruffleString name, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
         super(handlerFactory, ignoreDescriptorException);
         this.name = name;
         this.slot = null;
@@ -165,12 +166,12 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
     }
 
     @Override
-    public final String getName() {
+    public final TruffleString getName() {
         return name;
     }
 
     @Override
-    public final String getRname() {
+    public final TruffleString getRname() {
         return null;
     }
 }

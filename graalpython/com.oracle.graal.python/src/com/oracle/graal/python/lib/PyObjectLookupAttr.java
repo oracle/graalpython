@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -70,6 +73,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent to use for the various PyObject_LookupAttr* functions available in CPython. Note that
@@ -81,7 +85,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  */
 @GenerateUncached
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
-
 public abstract class PyObjectLookupAttr extends Node {
 
     public abstract Object execute(Frame frame, Object receiver, Object name);
@@ -118,19 +121,19 @@ public abstract class PyObjectLookupAttr extends Node {
         return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
     }
 
-    protected static final boolean isBuiltinTypeType(Object type) {
+    protected static boolean isBuiltinTypeType(Object type) {
         return type == PythonBuiltinClassType.PythonClass;
     }
 
-    protected static final boolean isTypeSlot(String name) {
-        return SpecialMethodSlot.canBeSpecial(name) || name.equals("mro");
+    protected static boolean isTypeSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        return SpecialMethodSlot.canBeSpecial(name, codePointLengthNode, codePointAtIndexNode) || name.equalsUncached(T_MRO, TS_ENCODING);
     }
 
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
     @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"})
-    static final Object doBuiltinObject(VirtualFrame frame, Object object, String name,
-                    @Cached("name") String cachedName,
+    static Object doBuiltinObject(VirtualFrame frame, Object object, TruffleString name,
+                    @Cached("name") TruffleString cachedName,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
@@ -144,8 +147,8 @@ public abstract class PyObjectLookupAttr extends Node {
     // module-level __getattr__ as well
     @SuppressWarnings("unused")
     @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
-    static final Object doBuiltinModule(VirtualFrame frame, Object object, String name,
-                    @Cached("name") String cachedName,
+    static Object doBuiltinModule(VirtualFrame frame, Object object, TruffleString name,
+                    @Cached("name") TruffleString cachedName,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
@@ -157,7 +160,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Cached CallNode callGetattr) {
         Object value = readNode.execute(object, cachedName);
         if (noValueFound.profile(value == PNone.NO_VALUE)) {
-            Object getAttr = readGetattr.execute(object, SpecialMethodNames.__GETATTR__);
+            Object getAttr = readGetattr.execute(object, SpecialMethodNames.T___GETATTR__);
             if (getAttr != PNone.NO_VALUE) {
                 // (tfel): I'm not profiling this, since modules with __getattr__ are kind of rare
                 try {
@@ -179,8 +182,8 @@ public abstract class PyObjectLookupAttr extends Node {
     // attributes via metaclass inheritance. For all non-type-slot attributes it therefore
     // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name)"}, limit = "1")
-    static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"}, limit = "1")
+    static Object doBuiltinTypeType(VirtualFrame frame, Object object, TruffleString name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
                     @Cached LookupAttributeInMRONode.Dynamic readNode,
@@ -188,7 +191,9 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
-                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object value = readNode.execute(object, name);
         if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
@@ -211,8 +216,8 @@ public abstract class PyObjectLookupAttr extends Node {
     // is that it looks for a __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
     @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
-    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
-                    @Cached("name") String cachedName,
+    static Object doBuiltinType(VirtualFrame frame, Object object, TruffleString name,
+                    @Cached("name") TruffleString cachedName,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupInMetaclassHierachy,
@@ -247,12 +252,14 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
                     @Cached CallBinaryMethodNode callGetattribute,
                     @Cached CallBinaryMethodNode callGetattr,
-                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
         if (!getClass.isAdoptable()) {
             // It pays to try this in the uncached case, avoiding a full call to __getattribute__
-            Object result = readAttributeQuickly(type, getattribute, receiver, name);
+            Object result = readAttributeQuickly(type, getattribute, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 if (result == PNone.NO_VALUE) {
                     Object getattr = lookupGetattr.execute(frame, type, receiver);
@@ -303,19 +310,20 @@ public abstract class PyObjectLookupAttr extends Node {
      * ModuleBuiltins.GetAttributeNode}. This method returns {@code PNone.NO_VALUE} when the
      * attribute is not found and the original would've raised an AttributeError. It returns {@code
      * null} when no shortcut was applicable. If {@code PNone.NO_VALUE} was returned, name is
-     * guaranteed to be a {@code java.lang.String}. Note it is often necessary to call
+     * guaranteed to be a {@code java.lang.TruffleString}. Note it is often necessary to call
      * {@code __getattr__} if this returns {@code PNone.NO_VALUE}.
      */
-    static final Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name) {
-        if (name instanceof String) {
+    static Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        if (name instanceof TruffleString) {
             if (getattribute == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
-                String stringName = (String) name;
+                TruffleString stringName = (TruffleString) name;
                 PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
                 if (bases.length == 1) {
                     PythonAbstractClass base = bases[0];
                     if (base instanceof PythonBuiltinClass &&
                                     ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
-                        if (!(stringName.charAt(0) == '_' && stringName.charAt(1) == '_')) {
+                        if (!(codePointAtIndexNode.execute(stringName, 0, TS_ENCODING) == '_' && codePointAtIndexNode.execute(stringName, 1, TS_ENCODING) == '_')) {
                             // not a special name, so this attribute cannot be inherited, and can
                             // only be on the type or the object. If it's on the type, return to
                             // the generic code.
@@ -331,8 +339,8 @@ public abstract class PyObjectLookupAttr extends Node {
                 // this is slightly simpler than the previous case, since we don't need to check
                 // the type. There may be a module-level __getattr__, however. Since that would be
                 // a call anyway, we return to the generic code in that case
-                String stringName = (String) name;
-                if (!SpecialMethodSlot.canBeSpecial(stringName)) {
+                TruffleString stringName = (TruffleString) name;
+                if (!SpecialMethodSlot.canBeSpecial(stringName, codePointLengthNode, codePointAtIndexNode)) {
                     // not a special name, so this attribute cannot be on the module class
                     ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
                     Object result = readUncached.execute(receiver, stringName);

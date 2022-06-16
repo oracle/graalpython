@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PRINT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -67,6 +69,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum BinaryArithmetic {
     Add(BinaryArithmeticFactory.AddNodeGen::create),
@@ -99,7 +102,7 @@ public enum BinaryArithmetic {
      * ternary operator. Note: this is just a root node and won't do any signature checking.
      */
     static final class CallBinaryArithmeticRootNode extends CallArithmeticRootNode {
-        static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
+        static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, tsArray("$self", "other"), null);
 
         @Child private BinaryOpNode callBinaryNode;
 
@@ -154,8 +157,8 @@ public enum BinaryArithmetic {
                 }
 
                 @CompilerDirectives.TruffleBoundary
-                private String getErrorMessage(Object arg) {
-                    if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equals(PRINT)) {
+                private TruffleString getErrorMessage(Object arg) {
+                    if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equalsUncached(T_PRINT, TS_ENCODING)) {
                         return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT;
                     }
                     return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;

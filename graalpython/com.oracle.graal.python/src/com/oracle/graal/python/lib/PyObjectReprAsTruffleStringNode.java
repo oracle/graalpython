@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,11 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.str;
+package com.oracle.graal.python.lib;
 
-public interface PCharSequence extends CharSequence {
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-    boolean isMaterialized();
+/**
+ * Equivalent of CPython's {@code PyObject_Repr}. Converts the object to a string using its
+ * {@code __repr__} special method. Falls back to default object {@code __repr__} implementation.
+ * <p>
+ * The output is always coerced to a {@link TruffleString}
+ *
+ * @see PyObjectReprAsObjectNode
+ */
+@GenerateUncached
+public abstract class PyObjectReprAsTruffleStringNode extends PNodeWithContext {
+    public abstract TruffleString execute(Frame frame, Object object);
 
-    String materialize();
+    @Specialization
+    static TruffleString repr(VirtualFrame frame, Object obj,
+                    @Cached PyObjectReprAsObjectNode reprNode,
+                    @Cached CastToTruffleStringNode cast) {
+        return cast.execute(reprNode.execute(frame, obj));
+    }
+
+    public static PyObjectReprAsTruffleStringNode create() {
+        return PyObjectReprAsTruffleStringNodeGen.create();
+    }
+
+    public static PyObjectReprAsTruffleStringNode getUncached() {
+        return PyObjectReprAsTruffleStringNodeGen.getUncached();
+    }
 }

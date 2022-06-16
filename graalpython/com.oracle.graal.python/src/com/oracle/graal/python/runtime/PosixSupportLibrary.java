@@ -62,6 +62,7 @@ import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Internal abstraction layer for POSIX functionality. Instance of the implementation is stored in
@@ -77,9 +78,9 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int ST_MODE = 0;
     public static final int ST_SIZE = 6;
 
-    public abstract String getBackend(Object recevier);
+    public abstract TruffleString getBackend(Object recevier);
 
-    public abstract String strerror(Object receiver, int errorCode);
+    public abstract TruffleString strerror(Object receiver, int errorCode);
 
     public abstract long getpid(Object receiver);
 
@@ -207,7 +208,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     /**
      * Equivalent of POSIX {@code utimensat()}.
-     * 
+     *
      * @param timespec an array of 4 longs in this order:
      *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
      *            to set both times to 'now' TODO change long[] timespec to Timespec[] timespec
@@ -266,7 +267,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getsid(Object receiver, long pid) throws PosixException;
 
-    public abstract String ctermid(Object receiver) throws PosixException;
+    public abstract TruffleString ctermid(Object receiver) throws PosixException;
 
     // note: this leaks memory in nfi backend and is not synchronized
     // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
@@ -296,7 +297,7 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract long mmapGetPointer(Object receiver, Object mmap);
 
     public static final class PwdResult {
-        public final String name;
+        public final TruffleString name;
         /**
          * This value represents unsigned 64 bit integer.
          */
@@ -305,10 +306,10 @@ public abstract class PosixSupportLibrary extends Library {
          * This value represents unsigned 64 bit integer.
          */
         public final long gid;
-        public final String dir;
-        public final String shell;
+        public final TruffleString dir;
+        public final TruffleString shell;
 
-        public PwdResult(String name, long uid, long gid, String dir, String shell) {
+        public PwdResult(TruffleString name, long uid, long gid, TruffleString dir, TruffleString shell) {
             this.name = name;
             this.uid = uid;
             this.gid = gid;
@@ -354,16 +355,16 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract PwdResult[] getpwentries(Object receiver) throws PosixException;
 
     /**
-     * Converts a {@code String} into the internal representation of paths used by the library
-     * implementation. The implementation should return {@code null} if the path after any necessary
-     * conversion contains embedded null characters.
+     * Converts a {@code TruffleString} into the internal representation of paths used by the
+     * library implementation. The implementation should return {@code null} if the path after any
+     * necessary conversion contains embedded null characters.
      *
      * @param receiver the receiver of the message
-     * @param path the path as a {@code String}
+     * @param path the path as a {@code TruffleString}
      * @return an opaque object representing the path or {@code null} if the path contains null
      *         characters
      */
-    public abstract Object createPathFromString(Object receiver, String path);
+    public abstract Object createPathFromString(Object receiver, TruffleString path);
 
     /**
      * Converts a {@code byte} array into the internal representation of paths used by the library
@@ -377,7 +378,7 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract Object createPathFromBytes(Object receiver, byte[] path);
 
-    public abstract String getPathAsString(Object receiver, Object path);
+    public abstract TruffleString getPathAsString(Object receiver, Object path);
 
     public abstract Buffer getPathAsBytes(Object receiver, Object path);
 
@@ -597,7 +598,7 @@ public abstract class PosixSupportLibrary extends Library {
      * {@code 255.255.255.255}. Since it is not possible to tell whether an error occurred, this
      * message does not throw exception and leaves the decision to the caller who might have more
      * information.
-     * 
+     *
      * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
      *            createPathFromBytes or createPathFromString)
      * @return address in host byte order or {@link PosixConstants#INADDR_NONE} if the input is
@@ -623,7 +624,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Corresponds to POSIX {@code inet_ntoa} function, but the address is expected in host byte
      * order (and is signed) for consistency with other messages.
-     * 
+     *
      * @param address tha IPv4 address in host byte order
      * @return opaque string in IPv4 dotted-decimal notation to be converted using
      *         {@link PosixSupportLibrary#getPathAsString(Object, Object)} or
@@ -683,10 +684,10 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param node {@code null} or the host name converted using
      *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
-     *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
+     *            {@link PosixSupportLibrary#createPathFromString(Object, TruffleString)}
      * @param service {@code null} or the service name converted using
      *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
-     *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
+     *            {@link PosixSupportLibrary#createPathFromString(Object, TruffleString)}
      * @param family one of the {@code AF_xxx} constants, or {@link PosixConstants#AF_UNSPEC} to get
      *            addresses of any family
      * @param sockType one of the {@code SOCK_xxx} constants, or 0 to get addresses of any type
@@ -722,7 +723,7 @@ public abstract class PosixSupportLibrary extends Library {
      * @throws PosixException when an error occurs in the underlying crypt call
      * @see "crypt(3) manpage"
      */
-    public abstract String crypt(Object receiver, String word, String salt) throws PosixException;
+    public abstract TruffleString crypt(Object receiver, TruffleString word, TruffleString salt) throws PosixException;
 
     /**
      * Provides messages for manipulating {@link AddrInfoCursor}.
@@ -787,14 +788,20 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = 3013253817849329391L;
 
         private final int errorCode;
+        private final TruffleString msg;
 
-        public GetAddrInfoException(int errorCode, String message) {
-            super(message);
+        public GetAddrInfoException(int errorCode, TruffleString message) {
+            super(message.toJavaStringUncached());
             this.errorCode = errorCode;
+            msg = message;
         }
 
         public int getErrorCode() {
             return errorCode;
+        }
+
+        public final TruffleString getMessageAsTruffleString() {
+            return msg;
         }
 
         @SuppressWarnings("sync-override")
@@ -865,10 +872,20 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = -115762483478883093L;
 
         private final int errorCode;
+        private final TruffleString msg;
 
-        public PosixException(int errorCode, String message) {
-            super(message);
+        public PosixException(int errorCode, TruffleString message) {
             this.errorCode = errorCode;
+            msg = message;
+        }
+
+        public final TruffleString getMessageAsTruffleString() {
+            return msg;
+        }
+
+        @Override
+        public String getMessage() {
+            return msg.toJavaStringUncached();
         }
 
         public int getErrorCode() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,17 +48,18 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
     @Child private LookupAttributeInMRONode lookupInMRONode;
     @Child private GetClassNode getClassNode = GetClassNode.create();
 
-    private LookupInheritedAttributeNode(String key) {
+    private LookupInheritedAttributeNode(TruffleString key) {
         lookupInMRONode = LookupAttributeInMRONode.create(key);
     }
 
-    public static LookupInheritedAttributeNode create(String key) {
+    public static LookupInheritedAttributeNode create(TruffleString key) {
         return new LookupInheritedAttributeNode(key);
     }
 
@@ -80,10 +81,10 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
     @GenerateUncached
     public abstract static class Dynamic extends Node {
-        public abstract Object execute(Object object, String key);
+        public abstract Object execute(Object object, TruffleString key);
 
         @Specialization
-        Object doCached(Object object, String key,
+        Object doCached(Object object, TruffleString key,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
 

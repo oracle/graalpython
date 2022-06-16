@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
+
 @CoreFunctions(defineModule = "_queue")
 public class QueueModuleBuiltins extends PythonBuiltins {
     @Override
@@ -65,11 +67,11 @@ public class QueueModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(BuiltinNames.EMPTY, core.lookupType(PythonBuiltinClassType.Empty));
+        addBuiltinConstant(BuiltinNames.T_EMPTY_CLASS_NAME, core.lookupType(PythonBuiltinClassType.Empty));
     }
 
     // _queue.SimpleQueue
-    @Builtin(name = BuiltinNames.SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
+    @Builtin(name = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
                     minNumOfPositionalArgs = 1, //
                     doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
     @GenerateNodeFactory

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -226,7 +226,7 @@ public class RandomBuiltins extends PythonBuiltins {
         @Specialization(guards = "k <= 0")
         @SuppressWarnings("unused")
         int nonPositive(PRandom random, int k) {
-            throw raise(ValueError, "number of bits must be greater than zero");
+            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_GREATER_THAN_ZERO);
         }
 
         @Specialization(guards = {"k >= 1", "k <= 31"})

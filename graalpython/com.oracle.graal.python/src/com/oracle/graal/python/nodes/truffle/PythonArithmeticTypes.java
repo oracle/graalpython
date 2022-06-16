@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import com.oracle.truffle.api.dsl.ImplicitCast;
 import com.oracle.truffle.api.dsl.TypeCast;
 import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This type system is supposed to be used in builtin nodes to reduce the number of specializations
@@ -46,6 +47,12 @@ import com.oracle.truffle.api.dsl.TypeSystem;
  */
 @TypeSystem
 public abstract class PythonArithmeticTypes {
+
+    // see comment in TruffleStringMigrationPythonTypes
+    @ImplicitCast
+    public static TruffleString fromJavaString(String value) {
+        return TruffleStringMigrationPythonTypes.fromJavaString(value);
+    }
 
     @ImplicitCast
     public static double PFloatToDouble(PFloat value) {

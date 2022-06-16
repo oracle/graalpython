@@ -53,17 +53,18 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     private final PBytecodeRootNode rootNode;
-    private final String originalName;
+    private final TruffleString originalName;
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     @TruffleBoundary
-    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, String originalName) {
+    public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, TruffleString originalName) {
         super(language, frameDescriptor);
         this.rootNode = rootNode;
         this.originalName = originalName;
@@ -84,7 +85,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
 
     @Override
     public String getName() {
-        return originalName;
+        return originalName.toJavaStringUncached();
     }
 
     @Override

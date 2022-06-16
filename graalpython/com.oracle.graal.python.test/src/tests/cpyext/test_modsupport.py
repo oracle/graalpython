@@ -649,3 +649,17 @@ class TestModsupport(CPyExtTestCase):
         callfunction="wrap_PyModule_SetDocString",
         arguments=["PyObject* object", "char* doc"],
     )
+
+    def compare_new_object(x, y):
+        return isinstance(x, ModuleType) and x.__name__ == y[0]
+
+    test_PyModule_NewObject = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ('testmodule',),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* a"],
+        cmpfunc=compare_new_object
+    )

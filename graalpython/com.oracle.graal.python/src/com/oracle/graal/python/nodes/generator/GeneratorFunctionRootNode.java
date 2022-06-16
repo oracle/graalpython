@@ -59,6 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
@@ -66,11 +67,11 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
     private final ExecutionCellSlots cellSlots;
-    private final String originalName;
+    private final TruffleString originalName;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, TruffleString originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
                     Signature signature, GeneratorInfo generatorInfo) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
@@ -115,7 +116,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public String getName() {
-        return originalName;
+        return originalName.toJavaStringUncached();
     }
 
     @Override

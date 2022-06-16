@@ -107,7 +107,7 @@ public abstract class DictNodes {
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
@@ -148,7 +148,7 @@ public abstract class DictNodes {
         }
 
         protected static boolean hasKeysAttr(VirtualFrame frame, Object other, PyObjectLookupAttr lookupKeys) {
-            return lookupKeys.execute(frame, other, SpecialMethodNames.KEYS) != PNone.NO_VALUE;
+            return lookupKeys.execute(frame, other, SpecialMethodNames.T_KEYS) != PNone.NO_VALUE;
         }
 
         public static UpdateNode create() {

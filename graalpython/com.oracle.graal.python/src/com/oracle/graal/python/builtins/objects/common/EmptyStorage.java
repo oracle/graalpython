@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
@@ -76,7 +80,8 @@ public class EmptyStorage extends HashingStorage {
                     @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
-        if (notString.profile(!(key instanceof String))) {
+        key = assertNoJavaString(key);
+        if (notString.profile(!(key instanceof TruffleString))) {
             // must call __hash__ for potential side-effect
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             hashNode.execute(frame, key);
@@ -88,7 +93,7 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = PDict.createNewStorage(key instanceof String, 1);
+        HashingStorage newStore = PDict.createNewStorage(isJavaString(key), 1);
         if (gotState.profile(state != null)) {
             lib.setItemWithState(newStore, key, value, state);
         } else {
@@ -102,7 +107,8 @@ public class EmptyStorage extends HashingStorage {
                     @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
-        if (notString.profile(!(key instanceof String))) {
+        key = assertNoJavaString(key);
+        if (notString.profile(!(key instanceof TruffleString))) {
             // must call __hash__ for potential side-effect
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             hashNode.execute(frame, key);

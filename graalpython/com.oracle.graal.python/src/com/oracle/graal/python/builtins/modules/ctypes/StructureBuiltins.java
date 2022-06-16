@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins._fields_;
+import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__fields_;
 import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -64,13 +64,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Structure, PythonBuiltinClassType.Union})
 public class StructureBuiltins extends PythonBuiltins {
@@ -80,7 +81,7 @@ public class StructureBuiltins extends PythonBuiltins {
         return StructureBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends PythonBuiltinNode {
 
@@ -93,7 +94,7 @@ public class StructureBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class InitNode extends PythonBuiltinNode {
 
@@ -102,13 +103,14 @@ public class StructureBuiltins extends PythonBuiltins {
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached GetBaseClassNode getBaseClassNode) {
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached TruffleString.EqualNode equalNode) {
             if (args.length > 0) {
                 int res = _init_pos_args(frame, self, getClassNode.execute(self), args, kwds, 0,
-                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode);
+                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode, equalNode);
                 if (res < args.length) {
                     throw raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
@@ -130,37 +132,38 @@ public class StructureBuiltins extends PythonBuiltins {
          * This function is called to initialize a Structure or Union with positional arguments. It
          * calls itself recursively for all Structure or Union base classes, then retrieves the
          * _fields_ member to associate the argument position with the correct field name.
-         * 
+         *
          * Returns -1 on error, or the index of next argument on success.
          */
         int _init_pos_args(VirtualFrame frame, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
                         GetItemNode getItemNode,
-                        CastToJavaStringNode toString,
+                        CastToTruffleStringNode toString,
                         HashingStorageLibrary hlib,
                         PyTypeStgDictNode pyTypeStgDictNode,
-                        GetBaseClassNode getBaseClassNode) {
+                        GetBaseClassNode getBaseClassNode,
+                        TruffleString.EqualNode equalNode) {
             Object fields;
             int index = idx;
 
             Object base = getBaseClassNode.execute(type);
             if (pyTypeStgDictNode.execute(base) != null) {
                 index = _init_pos_args(frame, self, base, args, kwds, index,
-                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode);
+                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode, equalNode);
             }
 
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            fields = hlib.getItem(dict.getDictStorage(), _fields_);
+            fields = hlib.getItem(dict.getDictStorage(), T__fields_);
             if (fields == null) {
                 return index;
             }
 
             for (int i = 0; i < dict.length && (i + index) < args.length; ++i) {
                 Object pair = getItemNode.execute(frame, fields, i);
-                String name = toString.execute(getItemNode.execute(frame, pair, 0));
+                TruffleString name = toString.execute(getItemNode.execute(frame, pair, 0));
                 Object val = args[i + index];
                 if (kwds.length > 0) {
-                    if (KeywordsStorage.findStringKey(kwds, name) != -1) {
+                    if (KeywordsStorage.findStringKey(kwds, name, equalNode) != -1) {
                         throw raise(TypeError, DUPLICATE_VALUES_FOR_FIELD_S, name);
                     }
                 }

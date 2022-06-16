@@ -54,6 +54,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 /**
@@ -81,11 +82,11 @@ public final class PythonClass extends PythonManagedClass {
     private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
     private byte mroShapeInvalidationsCount;
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, PythonAbstractClass[] baseClasses) {
         super(lang, typeClass, classShape, null, name, baseClasses);
     }
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
         super(lang, typeClass, classShape, null, name, invokeMro, false, baseClasses);
     }
 
@@ -140,20 +141,22 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     @ExportMessage
-    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return getName();
+            return toJavaStringNode.execute(getName());
         } finally {
             gil.release(mustRelease);
         }
     }
 
     @ExportMessage
-    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return getQualName();
+            return toJavaStringNode.execute(getQualName());
         } finally {
             gil.release(mustRelease);
         }
@@ -169,7 +172,7 @@ public final class PythonClass extends PythonManagedClass {
      */
     protected static SourceSection findSourceSection(PythonManagedClass self) {
         for (Object key : self.getShape().getKeys()) {
-            if (key instanceof String) {
+            if (key instanceof TruffleString) {
                 Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, key);
                 InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
                 if (uncached.hasSourceLocation(value)) {
@@ -296,13 +299,14 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     @Override
-    public boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object newValue) {
-        return super.canSkipOnAttributeUpdate(key, newValue) && mroShapeSubTypes == null;
+    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object newValue, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        return super.canSkipOnAttributeUpdate(key, newValue, codePointLengthNode, codePointAtIndexNode) && mroShapeSubTypes == null;
     }
 
     @TruffleBoundary
     @Override
-    public void onAttributeUpdate(String key, Object newValue) {
+    public void onAttributeUpdate(TruffleString key, Object newValue) {
         super.onAttributeUpdate(key, newValue);
         if (hasMroShapeSubTypes()) {
             if (newValue == PNone.NO_VALUE || mroShapeInvalidationsCount >= MRO_SHAPE_INVALIDATIONS_MAX) {

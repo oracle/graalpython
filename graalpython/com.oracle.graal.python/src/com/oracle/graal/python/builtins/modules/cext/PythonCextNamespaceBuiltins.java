@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -65,6 +66,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -94,7 +97,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
                 HashingStorageIterator<DictEntry> it = entries.iterator();
                 while (it.hasNext()) {
                     DictEntry e = it.next();
-                    dyLib.put(ns, e.key, e.value);
+                    dyLib.put(ns, assertNoJavaString(e.key), e.value);
                 }
                 return ns;
             } catch (PException e) {
@@ -116,7 +119,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
                 HashingStorageIterator<DictEntry> it = entries.iterator();
                 while (it.hasNext()) {
                     DictEntry e = it.next();
-                    dyLib.put(ns, e.key, e.value);
+                    dyLib.put(ns, assertNoJavaString(e.key), e.value);
                 }
                 return ns;
             } catch (PException e) {

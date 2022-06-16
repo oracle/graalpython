@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.ellipsis;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -55,10 +56,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PEllipsis)
 @SuppressWarnings("unused")
 public class EllipsisBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_ELLIPSIS = tsLiteral("Ellipsis");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -68,26 +72,26 @@ public class EllipsisBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.getBuiltins().setAttribute("Ellipsis", PEllipsis.INSTANCE);
+        core.getBuiltins().setAttribute(T_ELLIPSIS, PEllipsis.INSTANCE);
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         static Object doit(PEllipsis self) {
-            return "Ellipsis";
+            return T_ELLIPSIS;
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object doit(PEllipsis self, Object ignored) {
-            return "Ellipsis";
+            return T_ELLIPSIS;
         }
     }
 }

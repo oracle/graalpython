@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -219,9 +220,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Override
         public PList executeWithGlobalState(Object list) {
             Object builtins = PythonContext.get(this).getBuiltins();
-            Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, "list");
+            Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
             LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
-            return (PList) CallNode.getUncached().execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
+            return (PList) CallNode.getUncached().execute(null, getCall.execute(listType, SpecialMethodNames.T___CALL__), listType, list);
         }
 
         @Override

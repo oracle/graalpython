@@ -6,8 +6,8 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Processes a printf-style formatting string or byte array and creates the resulting string or byte
@@ -91,7 +92,7 @@ abstract class FormatProcessor<T> {
 
     protected abstract boolean isMapping(Object obj);
 
-    static Object lookupAttribute(Object owner, String name) {
+    static Object lookupAttribute(Object owner, TruffleString name) {
         return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(owner), name);
     }
 
@@ -191,7 +192,7 @@ abstract class FormatProcessor<T> {
         } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__() or __index__() depending on the spec type
             try {
-                String magicName = useIndexMagicMethod(specType) ? __INDEX__ : __INT__;
+                TruffleString magicName = useIndexMagicMethod(specType) ? T___INDEX__ : T___INT__;
                 Object attribute = lookupAttribute(arg, magicName);
                 return call(attribute, arg);
             } catch (PException e) {

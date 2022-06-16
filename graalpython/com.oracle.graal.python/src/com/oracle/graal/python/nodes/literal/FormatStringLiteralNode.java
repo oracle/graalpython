@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,28 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public class FormatStringLiteralNode extends LiteralNode {
-    private static final String EMPTY_STRING = "";
 
     /**
-     * The parts array can basically contains only StringLiteralNodes and
-     * FormatSringExpressionNodes.
+     * The parts array can basically contain only StringLiteralNodes and
+     * FormatStringExpressionNodes.
      */
     @Children ExpressionNode[] parts;
-    @Children CastToJavaStringNode[] castToJavaStringNodes;
+    @Children CastToTruffleStringNode[] castToStringNodes;
+    @Child TruffleStringBuilder.AppendStringNode appendStringNode;
+    @Child TruffleStringBuilder.ToStringNode toStringNode;
 
     public FormatStringLiteralNode(ExpressionNode[] parts) {
         this.parts = parts;
@@ -68,43 +73,49 @@ public class FormatStringLiteralNode extends LiteralNode {
 
     @Override
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    public TruffleString execute(VirtualFrame frame) {
         if (parts.length == 0) {
-            return EMPTY_STRING;
+            return T_EMPTY_STRING;
         }
 
         // Get all the Strings and calculate the resulting String size
-        String[] values = new String[parts.length];
+        TruffleString[] values = new TruffleString[parts.length];
         int length = 0;
-        ensureCastNodes();
+        ensureNodes();
         for (int i = 0; i < parts.length; i++) {
             Object stringPart = parts[i].execute(frame);
             try {
-                values[i] = castToJavaStringNodes[i].execute(stringPart);
+                values[i] = castToStringNodes[i].execute(stringPart);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            length += values[i].length();
+            length += values[i].byteLength(TS_ENCODING);
         }
 
         // Create the result
-        char[] result = new char[length];
-        int nextIndex = 0;
-        for (String value : values) {
-            PythonUtils.getChars(value, 0, value.length(), result, nextIndex);
-            nextIndex += value.length();
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, length);
+        for (TruffleString value : values) {
+            appendStringNode.execute(sb, value);
         }
-        return PythonUtils.newString(result);
+        return toStringNode.execute(sb);
     }
 
-    private void ensureCastNodes() {
-        if (castToJavaStringNodes == null) {
+    private void ensureNodes() {
+        if (castToStringNodes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            CastToJavaStringNode[] nodes = new CastToJavaStringNode[parts.length];
+            CastToTruffleStringNode[] nodes = new CastToTruffleStringNode[parts.length];
             for (int i = 0; i < nodes.length; i++) {
-                nodes[i] = CastToJavaStringNode.create();
+                nodes[i] = CastToTruffleStringNode.create();
             }
-            castToJavaStringNodes = insert(nodes);
+            castToStringNodes = insert(nodes);
+        }
+        if (appendStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendStringNode = insert(TruffleStringBuilder.AppendStringNode.create());
+        }
+        if (toStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            toStringNode = insert(TruffleStringBuilder.ToStringNode.create());
         }
     }
 }

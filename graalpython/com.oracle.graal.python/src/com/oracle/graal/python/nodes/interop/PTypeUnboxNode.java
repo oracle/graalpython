@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PTypeUnboxNode extends Node {
     public static PTypeUnboxNode create() {
@@ -56,8 +57,8 @@ public abstract class PTypeUnboxNode extends Node {
     public abstract Object execute(Object value);
 
     @Specialization
-    String access(PString obj) {
-        return obj.getValue();
+    TruffleString access(PString obj) {
+        return obj.getValueUncached();
     }
 
     @Specialization

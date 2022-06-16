@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITEOBJ_WITH_NULL_FILE;
 
@@ -98,7 +98,7 @@ public final class PythonCextFileBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object value = strNode.executeWith(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, WRITE);
+                Object writeCallable = getAttr.execute(frame, f, T_WRITE);
                 callNode.execute(frame, writeCallable, value);
                 return 0;
             } catch (PException e) {
@@ -115,7 +115,7 @@ public final class PythonCextFileBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object value = reprNode.execute(frame, obj);
-                Object writeCallable = getAttr.execute(frame, f, WRITE);
+                Object writeCallable = getAttr.execute(frame, f, T_WRITE);
                 callNode.execute(frame, writeCallable, value);
                 return 0;
             } catch (PException e) {

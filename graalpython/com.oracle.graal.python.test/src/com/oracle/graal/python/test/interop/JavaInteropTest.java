@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
@@ -303,6 +304,9 @@ public class JavaInteropTest {
             assertNotNull("libraries found", libraries);
             Value dacapo = null;
             for (Object k : libraries.getHashKeysIterator().as(Iterable.class)) {
+                if (k instanceof TruffleString) {
+                    k = ((TruffleString) k).toJavaStringUncached();
+                }
                 System.err.println("k " + k);
                 if ("DACAPO".equals(k)) {
                     dacapo = libraries.getHashValue(k);

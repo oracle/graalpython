@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SLASH;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -54,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -61,15 +65,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,6 +89,9 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -95,66 +102,70 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
+        addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         super.initialize(core);
     }
 
     abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
 
-        public abstract Source execute(VirtualFrame frame, Object pattern, String flags, String options);
+        private static final TruffleString T_STR_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonStr,Encoding=UTF-32");
+        private static final TruffleString T_BYTES_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonBytes,Encoding=BYTES");
 
-        @TruffleBoundary
-        private static String decodeLatin1(byte[] bytes, int length) {
-            try {
-                return new String(bytes, 0, length, "Latin1");
-            } catch (UnsupportedEncodingException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+        public abstract Source execute(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options);
+
+        private static Source constructRegexSource(TruffleString flavorAndEncoding, TruffleString options, TruffleString pattern, TruffleString flags, ConditionProfile nonEmptyOptionsProfile,
+                        TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode, TruffleString.ToJavaStringNode toJavaStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, flavorAndEncoding);
+            if (nonEmptyOptionsProfile.profile(!options.isEmpty())) {
+                appendStringNode.execute(sb, T_COMMA);
+                appendStringNode.execute(sb, options);
             }
+            appendStringNode.execute(sb, T_SLASH);
+            appendStringNode.execute(sb, pattern);
+            appendStringNode.execute(sb, T_SLASH);
+            appendStringNode.execute(sb, flags);
+            return createSourceBoundary(toJavaStringNode.execute(toStringNode.execute(sb)));
         }
 
-        // TruffleBoundary because of StringBuilder#append in compiled code
         @TruffleBoundary
-        private static Source constructRegexSource(String options, String pattern, String flags) {
-            String regexSourceStr = options + "/" + pattern + "/" + flags;
+        private static Source createSourceBoundary(String regexSourceStr) {
             return Source.newBuilder("regex", regexSourceStr, "re").mimeType("application/tregex").internal(true).build();
         }
 
         @Specialization
-        protected Source doString(String pattern, String flags, String options,
-                        @Cached ConditionProfile nonEmptyOptionsProfile) {
-            StringBuilder allOptions = PythonUtils.newStringBuilder("Flavor=PythonStr,Encoding=UTF-16");
-            if (nonEmptyOptionsProfile.profile(!options.isEmpty())) {
-                PythonUtils.append(allOptions, ',');
-                PythonUtils.append(allOptions, options);
-            }
-            return constructRegexSource(PythonUtils.sbToString(allOptions), pattern, flags);
+        protected Source doString(TruffleString pattern, TruffleString flags, TruffleString options,
+                        @Shared("nonEmptyOptions") @Cached ConditionProfile nonEmptyOptionsProfile,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return constructRegexSource(T_STR_FLAVOR_AND_ENCODING, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
         }
 
-        @Specialization(limit = "3")
-        protected Source doGeneric(VirtualFrame frame, Object pattern, String flags, String options,
-                        @Cached ConditionProfile nonEmptyOptionsProfile,
-                        @Cached CastToJavaStringNode cast,
-                        @CachedLibrary("pattern") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        @Specialization
+        protected Source doGeneric(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options,
+                        @Shared("nonEmptyOptions") @Cached ConditionProfile nonEmptyOptionsProfile,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached CastToTruffleStringNode cast,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
             try {
-                return doString(cast.execute(pattern), flags, options, nonEmptyOptionsProfile);
+                return doString(cast.execute(pattern), flags, options, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
             } catch (CannotCastException ce) {
                 Object buffer;
                 try {
                     buffer = bufferAcquireLib.acquireReadonly(pattern, frame, this);
                 } catch (PException e) {
-                    throw raise(TypeError, "expected string or bytes-like object");
+                    throw raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
                 }
                 try {
-                    StringBuilder allOptions = PythonUtils.newStringBuilder("Flavor=PythonBytes,Encoding=BYTES");
-                    if (nonEmptyOptionsProfile.profile(!options.isEmpty())) {
-                        PythonUtils.append(allOptions, ',');
-                        PythonUtils.append(allOptions, options);
-                    }
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                     int bytesLen = bufferLib.getBufferLength(buffer);
-                    String patternStr = decodeLatin1(bytes, bytesLen);
-                    return constructRegexSource(PythonUtils.sbToString(allOptions), patternStr, flags);
+                    TruffleString patternStr = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
+                    return constructRegexSource(T_BYTES_FLAVOR_AND_ENCODING, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }
@@ -172,15 +183,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached BranchProfile potentialSyntaxError,
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile unsupportedRegexError,
-                        @Cached CastToJavaStringNode flagsToStringNode,
-                        @Cached CastToJavaStringNode optionsToStringNode,
+                        @Cached CastToTruffleStringNode flagsToStringNode,
+                        @Cached CastToTruffleStringNode optionsToStringNode,
                         @Cached ToRegexSourceNode toRegexSourceNode,
                         @Cached CallNode callFallbackCompilerNode,
                         @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
-                        @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib) {
+                        @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
-                String flagsStr = flagsToStringNode.execute(flags);
-                String optionsStr = optionsToStringNode.execute(options);
+                TruffleString flagsStr = flagsToStringNode.execute(flags);
+                TruffleString optionsStr = optionsToStringNode.execute(options);
                 Source regexSource = toRegexSourceNode.execute(frame, pattern, flagsStr, optionsStr);
                 Object compiledRegex = getContext().getEnv().parseInternal(regexSource).call();
                 if (compiledRegexLib.isNull(compiledRegex)) {
@@ -188,26 +200,27 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     if (getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
                         return callFallbackCompilerNode.execute(frame, fallbackCompiler, pattern, flags);
                     } else {
-                        throw raise(ValueError, "regular expression not supported, no fallback engine present");
+                        throw raise(ValueError, ErrorMessages.REGULAR_EXPRESSION_NOT_SUPPORTED);
                     }
                 } else {
                     return compiledRegex;
                 }
             } catch (RuntimeException e) {
-                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib);
+                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
             }
         }
 
-        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary lib) {
+        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary lib, TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 if (lib.isException(e)) {
                     potentialSyntaxError.enter();
                     if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
                         syntaxError.enter();
-                        Object reason = lib.asString(lib.getExceptionMessage(e));
+                        TruffleString reason = switchEncodingNode.execute(lib.asTruffleString(lib.getExceptionMessage(e)), TS_ENCODING);
                         SourceSection sourceSection = lib.getSourceLocation(e);
                         int position = sourceSection.getCharIndex();
-                        throw raise(ValueError, reason, position);
+                        // passed like Object array concats the values
+                        throw raise(ValueError, new Object[]{reason, position});
                     }
                 }
             } catch (UnsupportedMessageException e1) {
@@ -225,7 +238,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @Cached CastToJavaStringNode cast,
+                        @Cached CastToTruffleStringNode cast,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
             PythonContext context = getContext();
@@ -242,7 +255,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 return interop.execute(callable, input, fromIndex);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
-                throw raise(TypeError, "%m", e);
+                throw raise(TypeError, ErrorMessages.M, e);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }

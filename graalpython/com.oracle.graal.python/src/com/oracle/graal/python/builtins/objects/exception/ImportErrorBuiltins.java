@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,13 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -71,6 +75,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ImportError)
 public final class ImportErrorBuiltins extends PythonBuiltins {
@@ -99,10 +104,13 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
      * 'takesVarArgs = true' and ' takesVarKeywordArgs = true' because otherwise the created root
      * node would fail.
      */
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, //
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, //
                     takesVarArgs = true, varArgsMarker = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ImportErrorInitNode extends PythonVarargsBuiltinNode {
+        private static final TruffleString NAME = tsLiteral("name");
+        private static final TruffleString PATH = tsLiteral("path");
+
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length == 0) {
@@ -115,19 +123,18 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
+                        @Cached TruffleString.EqualNode equalNode) {
             baseExceptionInitNode.execute(self, args);
             Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args, null);
             for (PKeyword kw : kwargs) {
-                switch (kw.getName()) {
-                    case "name":
-                        attrs[IDX_NAME] = kw.getValue();
-                        break;
-                    case "path":
-                        attrs[IDX_PATH] = kw.getValue();
-                        break;
-                    default:
-                        throw raise(PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
+                TruffleString kwName = kw.getName();
+                if (equalNode.execute(kwName, NAME, TS_ENCODING)) {
+                    attrs[IDX_NAME] = kw.getValue();
+                } else if (equalNode.execute(kwName, PATH, TS_ENCODING)) {
+                    attrs[IDX_PATH] = kw.getValue();
+                } else {
+                    throw raise(PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
                 }
             }
             self.setExceptionAttributes(attrs);
@@ -165,7 +172,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
         private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageLibrary hashlib, BaseExceptionAttrNode attrNode) {
@@ -175,10 +182,10 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
             if (name != null || path != null) {
                 HashingStorage storage = (dict != null) ? hashlib.copy(dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 if (name != null) {
-                    storage = hashlib.setItem(storage, "name", name);
+                    storage = hashlib.setItem(storage, T_NAME, name);
                 }
                 if (path != null) {
-                    storage = hashlib.setItem(storage, "path", path);
+                    storage = hashlib.setItem(storage, T_PATH, path);
                 }
                 return factory().createDict(storage);
             } else if (dict != null) {
@@ -205,7 +212,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization

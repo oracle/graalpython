@@ -40,13 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_IDS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CREATE_DATETIME_CAPSULE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATE_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_TIME_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATETIME_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATE_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DELTA_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_TIME_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SET_PY_DATETIME_IDS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PyMappingKeysNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
@@ -57,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -65,7 +70,6 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNodeGen.ExecutePositionalStarargsInteropNodeGen;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -88,6 +92,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -122,28 +127,37 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
-    private static final String DATE_TYPE = "DateType";
-    private static final String DATETIME_TYPE = "DateTimeType";
-    private static final String TIME_TYPE = "TimeType";
-    private static final String DELTA_TYPE = "DeltaType";
-    private static final String TZ_INFO_TYPE = "TZInfoType";
+    static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
 
-    private static final String TIMEZONE_UTC = "TimeZone_UTC";
+    private static final String J_DATE_TYPE = "DateType";
+    private static final String J_DATETIME_TYPE = "DateTimeType";
+    private static final String J_TIME_TYPE = "TimeType";
+    private static final String J_DELTA_TYPE = "DeltaType";
+    private static final String J_TZ_INFO_TYPE = "TZInfoType";
 
-    private static final String DATE_FROM_DATE = "Date_FromDate";
-    private static final String DATETIME_FROM_DATE_AND_TIME = "DateTime_FromDateAndTime";
-    private static final String TIME_FROM_TIME = "Time_FromTime";
-    private static final String DELTA_FROM_DELTA = "Delta_FromDelta";
-    private static final String TIMEZONE_FROM_TIMEZONE = "TimeZone_FromTimeZone";
-    private static final String DATETIME_FROM_TIMESTAMP = "DateTime_FromTimestamp";
-    private static final String DATE_FROM_TIMESTAMP = "Date_FromTimestamp";
-    private static final String TIME_FROM_TIME_AND_FOLD = "Time_FromTimeAndFold";
-    private static final String DATETIME_FROM_DATE_AND_TIME_AND_FOLD = "DateTime_FromDateAndTimeAndFold";
+    private static final String J_TIMEZONE_UTC = "TimeZone_UTC";
+
+    private static final String J_DATE_FROM_DATE = "Date_FromDate";
+    private static final String J_DATETIME_FROM_DATE_AND_TIME = "DateTime_FromDateAndTime";
+    private static final String J_TIME_FROM_TIME = "Time_FromTime";
+    private static final String J_DELTA_FROM_DELTA = "Delta_FromDelta";
+    private static final String J_TIMEZONE_FROM_TIMEZONE = "TimeZone_FromTimeZone";
+    private static final String J_DATETIME_FROM_TIMESTAMP = "DateTime_FromTimestamp";
+    private static final String J_DATE_FROM_TIMESTAMP = "Date_FromTimestamp";
+    private static final String J_TIME_FROM_TIME_AND_FOLD = "Time_FromTimeAndFold";
+    private static final String J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD = "DateTime_FromDateAndTimeAndFold";
+
+    private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
+    private static final TruffleString T_TZINFO = tsLiteral("tzinfo");
+    private static final TruffleString T_TIMEZONE = tsLiteral("timezone");
+    private static final TruffleString T_UTC = tsLiteral("utc");
+    private static final TruffleString T_FROMTIMESTAMP = tsLiteral("fromtimestamp");
+    private static final TruffleString T_FOLD = tsLiteral("fold");
 
     // IMPORTANT: if you modify this array, also adopt INVOCABLE_MEMBER_START_IDX
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {DATE_TYPE, DATETIME_TYPE, TIME_TYPE, DELTA_TYPE, TZ_INFO_TYPE, TIMEZONE_UTC,
-                    DATE_FROM_DATE, DATETIME_FROM_DATE_AND_TIME, TIME_FROM_TIME, DELTA_FROM_DELTA, TIMEZONE_FROM_TIMEZONE,
-                    DATETIME_FROM_TIMESTAMP, DATE_FROM_TIMESTAMP, DATETIME_FROM_DATE_AND_TIME_AND_FOLD, TIME_FROM_TIME_AND_FOLD};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {J_DATE_TYPE, J_DATETIME_TYPE, J_TIME_TYPE, J_DELTA_TYPE, J_TZ_INFO_TYPE, J_TIMEZONE_UTC,
+                    J_DATE_FROM_DATE, J_DATETIME_FROM_DATE_AND_TIME, J_TIME_FROM_TIME, J_DELTA_FROM_DELTA, J_TIMEZONE_FROM_TIMEZONE,
+                    J_DATETIME_FROM_TIMESTAMP, J_DATE_FROM_TIMESTAMP, J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD, J_TIME_FROM_TIME_AND_FOLD};
 
     // IMPORTANT: this is the index of the first function; keep it in sync with MEMBERS !!
     private static final int INVOCABLE_MEMBER_START_IDX = 6;
@@ -182,7 +196,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     }
 
     public static void initWrapper(CApiContext capiContext) {
-        Object datetime = AbstractImportNode.importModule("datetime");
+        Object datetime = AbstractImportNode.importModule(T_DATETIME);
         PyDateTimeCAPIWrapper wrapper = new PyDateTimeCAPIWrapper();
 
         PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
@@ -190,25 +204,25 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         PyObjectSetAttr setAttr = PyObjectSetAttr.getUncached();
         PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
 
-        Object date = getAttr.execute(null, datetime, "date");
-        setAttr.execute(null, date, "__basicsize__", callCapiFunction.call(FUN_GET_DATETIME_DATE_BASICSIZE, capiContext.getLLVMLibrary()));
+        Object date = getAttr.execute(null, datetime, T_DATE);
+        setAttr.execute(null, date, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DATE_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.dateType = toSulongNode.execute(date);
 
-        Object dt = getAttr.execute(null, datetime, "datetime");
-        setAttr.execute(null, dt, "__basicsize__", callCapiFunction.call(FUN_GET_DATETIME_DATETIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        Object dt = getAttr.execute(null, datetime, T_DATETIME);
+        setAttr.execute(null, dt, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DATETIME_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.datetimeType = toSulongNode.execute(dt);
 
-        Object time = getAttr.execute(null, datetime, "time");
-        setAttr.execute(null, time, "__basicsize__", callCapiFunction.call(FUN_GET_DATETIME_TIME_BASICSIZE, capiContext.getLLVMLibrary()));
+        Object time = getAttr.execute(null, datetime, T_TIME);
+        setAttr.execute(null, time, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_TIME_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.timeType = toSulongNode.execute(time);
 
-        Object delta = getAttr.execute(null, datetime, "timedelta");
-        setAttr.execute(null, delta, "__basicsize__", callCapiFunction.call(FUN_GET_DATETIME_DELTA_BASICSIZE, capiContext.getLLVMLibrary()));
+        Object delta = getAttr.execute(null, datetime, T_TIMEDELTA);
+        setAttr.execute(null, delta, T___BASICSIZE__, callCapiFunction.call(FUN_GET_DATETIME_DELTA_BASICSIZE, capiContext.getLLVMLibrary()));
         wrapper.deltaType = toSulongNode.execute(delta);
 
-        wrapper.tzInfoType = toSulongNode.execute(getAttr.execute(null, datetime, "tzinfo"));
-        Object timezoneType = getAttr.execute(null, datetime, "timezone");
-        wrapper.timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, "utc"));
+        wrapper.tzInfoType = toSulongNode.execute(getAttr.execute(null, datetime, T_TZINFO));
+        Object timezoneType = getAttr.execute(null, datetime, T_TIMEZONE);
+        wrapper.timezoneUTC = toSulongNode.execute(getAttr.execute(null, timezoneType, T_UTC));
 
         wrapper.dateFromDateWrapper = new ConstructorWrapper();
         wrapper.datetimeFromDateAndTimeWrapper = new ConstructorWrapper();
@@ -223,8 +237,8 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
 
-        setAttr.execute(null, datetime, "datetime_CAPI", CExtNodesFactory.ToJavaNodeGen.getUncached().execute(callCapiFunction.call(FUN_CREATE_DATETIME_CAPSULE, wrapper)));
-        assert getAttr.execute(null, datetime, "datetime_CAPI") != PythonContext.get(null).getNativeNull();
+        setAttr.execute(null, datetime, T_DATETIME_CAPI, CExtNodesFactory.ToJavaNodeGen.getUncached().execute(callCapiFunction.call(FUN_CREATE_DATETIME_CAPSULE, wrapper)));
+        assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 
     @ExportMessage
@@ -276,35 +290,35 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     private Object getMember(String member) throws UnknownIdentifierException {
         switch (member) {
-            case DATE_TYPE:
+            case J_DATE_TYPE:
                 return dateType;
-            case DATETIME_TYPE:
+            case J_DATETIME_TYPE:
                 return datetimeType;
-            case TIME_TYPE:
+            case J_TIME_TYPE:
                 return timeType;
-            case DELTA_TYPE:
+            case J_DELTA_TYPE:
                 return deltaType;
-            case TZ_INFO_TYPE:
+            case J_TZ_INFO_TYPE:
                 return tzInfoType;
-            case TIMEZONE_UTC:
+            case J_TIMEZONE_UTC:
                 return timezoneUTC;
-            case DATE_FROM_DATE:
+            case J_DATE_FROM_DATE:
                 return dateFromDateWrapper;
-            case DATETIME_FROM_DATE_AND_TIME:
+            case J_DATETIME_FROM_DATE_AND_TIME:
                 return datetimeFromDateAndTimeWrapper;
-            case TIME_FROM_TIME:
+            case J_TIME_FROM_TIME:
                 return timeFromTimeWrapper;
-            case DELTA_FROM_DELTA:
+            case J_DELTA_FROM_DELTA:
                 return deltaFromDeltaWrapper;
-            case DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
+            case J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
                 return datetimeFromDateAndTimeAdFoldWrapper;
-            case TIME_FROM_TIME_AND_FOLD:
+            case J_TIME_FROM_TIME_AND_FOLD:
                 return timeFromTimeAndFold;
-            case TIMEZONE_FROM_TIMEZONE:
+            case J_TIMEZONE_FROM_TIMEZONE:
                 return timezoneFromTimezoneWrapper;
-            case DATETIME_FROM_TIMESTAMP:
+            case J_DATETIME_FROM_TIMESTAMP:
                 return datetimeFromTimestamp;
-            case DATE_FROM_TIMESTAMP:
+            case J_DATE_FROM_TIMESTAMP:
                 return dateFromTimestamp;
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -348,56 +362,54 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     void writeMember(String member, Object value,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                     @Exclusive @Cached ToJavaNode toJavaNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             switch (member) {
-                case DATE_TYPE:
+                case J_DATE_TYPE:
                     dateType = toJavaNode.execute(value);
                     break;
-                case DATETIME_TYPE:
+                case J_DATETIME_TYPE:
                     datetimeType = toJavaNode.execute(value);
                     break;
-                case TIME_TYPE:
+                case J_TIME_TYPE:
                     timeType = toJavaNode.execute(value);
                     break;
-                case DELTA_TYPE:
+                case J_DELTA_TYPE:
                     deltaType = toJavaNode.execute(value);
                     break;
-                case TZ_INFO_TYPE:
+                case J_TZ_INFO_TYPE:
                     tzInfoType = toJavaNode.execute(value);
                     break;
-                case TIMEZONE_UTC:
+                case J_TIMEZONE_UTC:
                     timezoneUTC = toJavaNode.execute(value);
                     break;
-                case DATE_FROM_DATE:
+                case J_DATE_FROM_DATE:
                     dateFromDateWrapper = value;
                     break;
-                case DATETIME_FROM_DATE_AND_TIME:
+                case J_DATETIME_FROM_DATE_AND_TIME:
                     datetimeFromDateAndTimeWrapper = value;
                     break;
-                case TIME_FROM_TIME:
+                case J_TIME_FROM_TIME:
                     timeFromTimeWrapper = value;
                     break;
-                case DELTA_FROM_DELTA:
+                case J_DELTA_FROM_DELTA:
                     deltaFromDeltaWrapper = value;
                     break;
-                case DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
+                case J_DATETIME_FROM_DATE_AND_TIME_AND_FOLD:
                     datetimeFromDateAndTimeAdFoldWrapper = value;
                     break;
-                case TIME_FROM_TIME_AND_FOLD:
+                case J_TIME_FROM_TIME_AND_FOLD:
                     timeFromTimeAndFold = value;
                     break;
-                case TIMEZONE_FROM_TIMEZONE:
+                case J_TIMEZONE_FROM_TIMEZONE:
                     timezoneFromTimezoneWrapper = value;
                     break;
-                case DATETIME_FROM_TIMESTAMP:
+                case J_DATETIME_FROM_TIMESTAMP:
                     datetimeFromTimestamp = value;
                     break;
-                case DATE_FROM_TIMESTAMP:
+                case J_DATE_FROM_TIMESTAMP:
                     dateFromTimestamp = value;
                     break;
                 default:
@@ -510,7 +522,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
             Object[] callArgs = PythonUtils.arrayCopyOf(convertedArgs, convertedArgs.length - 2);
             Object type = convertedArgs[convertedArgs.length - 1];
             Object fold = convertedArgs[convertedArgs.length - 2];
-            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, type, callArgs, new PKeyword[]{new PKeyword("fold", fold)})));
+            return incRefNode.inc(toSulongNode.execute(callNode.execute(null, type, callArgs, new PKeyword[]{new PKeyword(T_FOLD, fold)})));
         }
     }
 
@@ -553,7 +565,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                 } else {
                     kwds = PKeyword.EMPTY_KEYWORDS;
                 }
-                Object fromTSCallable = lookupNode.execute(null, type, "fromtimestamp");
+                Object fromTSCallable = lookupNode.execute(null, type, T_FROMTIMESTAMP);
                 return incRefNode.inc(toSulongNode.execute(callNode.execute(null, fromTSCallable, callArgs, kwds)));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);

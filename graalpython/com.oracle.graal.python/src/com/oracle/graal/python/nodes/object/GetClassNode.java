@@ -74,6 +74,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
@@ -121,7 +122,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    static Object getString(@SuppressWarnings("unused") String object) {
+    static Object getString(@SuppressWarnings("unused") TruffleString object) {
         return PythonBuiltinClassType.PString;
     }
 

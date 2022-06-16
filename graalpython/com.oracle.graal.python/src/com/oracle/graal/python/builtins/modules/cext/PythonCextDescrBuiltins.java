@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -91,7 +92,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
 
     // directly called without landing function
     @Builtin(name = "PyDescr_NewGetSet", minNumOfPositionalArgs = 6, parameterNames = {"name", "cls", "getter", "setter", "doc", "closure"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class PyDescrNewGetSetNode extends PythonClinicBuiltinNode {
         @Override
@@ -100,7 +101,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeCallable(String name, Object cls, Object getter, Object setter, Object doc, Object closure,
+        Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         @Cached PythonCextBuiltins.CreateGetSetNode createGetSetNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode) {
             GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
@@ -111,7 +112,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
 
     // directly called without landing function
     @Builtin(name = "PyDescr_NewClassMethod", parameterNames = {"methodDefPtr", "name", "doc", "flags", "wrapper", "cfunc", "primary"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
         @Override
@@ -120,7 +121,7 @@ public final class PythonCextDescrBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
+        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PythonCextBuiltins.NewClassMethodNode newClassMethodNode,
                         @Cached CExtNodes.ToNewRefNode newRefNode) {

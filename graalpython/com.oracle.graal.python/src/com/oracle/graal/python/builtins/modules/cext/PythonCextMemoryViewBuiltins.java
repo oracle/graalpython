@@ -43,9 +43,12 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS;
+import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -66,6 +69,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -95,7 +99,9 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                         @Cached CastNode castNode,
                         @Cached ContiguousNode contiguousNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             assert buffertype == PY_BUF_READ || buffertype == PY_BUF_WRITE;
             char order = (char) orderInt;
             assert order == 'C' || order == 'F' || order == 'A';
@@ -114,8 +120,8 @@ public final class PythonCextMemoryViewBuiltins extends PythonBuiltins {
                     if (buffertype == PY_BUF_WRITE) {
                         return raiseNativeNode.raise(frame, getContext().getNativeNull(), BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
                     }
-                    PMemoryView mvBytes = memoryViewFromObject.execute(frame, toBytesNode.execute(frame, mv, Character.toString(order)));
-                    if ("B".equals(mv.getFormatString())) {
+                    PMemoryView mvBytes = memoryViewFromObject.execute(frame, toBytesNode.execute(frame, mv, fromCodePointNode.execute(order, TS_ENCODING, true)));
+                    if (eqNode.execute(T_UINT_8_TYPE_CODE, mv.getFormatString(), TS_ENCODING)) {
                         return mvBytes;
                     } else {
                         try {

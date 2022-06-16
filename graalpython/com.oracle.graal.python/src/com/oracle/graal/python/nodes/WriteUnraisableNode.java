@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.IOException;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -53,6 +57,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -60,59 +65,72 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 public abstract class WriteUnraisableNode extends Node {
-    public final void execute(VirtualFrame frame, PBaseException exception, String message, Object object) {
+
+    private static final TruffleString T_IGNORED = tsLiteral("Exception ignored ");
+
+    public final void execute(VirtualFrame frame, PBaseException exception, TruffleString message, Object object) {
         executeInternal(frame, exception, message, object);
     }
 
-    public final void execute(PBaseException exception, String message, Object object) {
+    public final void execute(PBaseException exception, TruffleString message, Object object) {
         executeInternal(null, exception, message, object);
     }
 
-    protected abstract void executeInternal(Frame frame, PBaseException exception, String message, Object object);
+    protected abstract void executeInternal(Frame frame, PBaseException exception, TruffleString message, Object object);
 
     @Specialization
-    static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,
+    static void writeUnraisable(VirtualFrame frame, PBaseException exception, TruffleString message, Object object,
                     @Cached PyObjectLookupAttr lookup,
                     @Cached CallNode callNode,
                     @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
-                    @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
+                    @Cached GetExceptionTracebackNode getExceptionTracebackNode,
+                    @Cached TruffleString.ConcatNode concatNode,
+                    @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         PythonContext context = PythonContext.get(getClassNode);
         try {
-            PythonModule sysModule = context.lookupBuiltinModule("sys");
-            Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.UNRAISABLEHOOK);
+            PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
+            Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
             Object messageObj = PNone.NONE;
             if (message != null) {
-                messageObj = formatMessage(message);
+                messageObj = formatMessage(message, concatNode);
             }
             Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
             callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
-            ignoreException(context, message);
+            ignoreException(context, message, concatNode, copyToByteArrayNode);
         }
     }
 
     @TruffleBoundary
-    private static void ignoreException(PythonContext context, String message) {
+    private static void ignoreException(PythonContext context, TruffleString message, TruffleString.ConcatNode concatNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         try {
             if (message != null) {
-                context.getEnv().err().write(formatMessage(message).getBytes());
+                TruffleString formatedMsg = formatMessage(message, concatNode);
+                byte[] data = new byte[formatedMsg.byteLength(TS_ENCODING)];
+                copyToByteArrayNode.execute(formatedMsg, 0, data, 0, data.length, TS_ENCODING);
+                context.getEnv().err().write(data);
             } else {
-                context.getEnv().err().write("Exception ignored in sys.unraisablehook".getBytes());
+                context.getEnv().err().write(ignoredMsg());
             }
         } catch (IOException ioException) {
-            ioException.printStackTrace();
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
+    private static TruffleString formatMessage(TruffleString message, TruffleString.ConcatNode concatNode) {
+        return concatNode.execute(T_IGNORED, message, TS_ENCODING, true);
+    }
+
     @TruffleBoundary
-    private static String formatMessage(String message) {
-        return "Exception ignored " + message;
+    private static byte[] ignoredMsg() {
+        return "Exception ignored in sys.unraisablehook".getBytes();
     }
 
     public static WriteUnraisableNode create() {

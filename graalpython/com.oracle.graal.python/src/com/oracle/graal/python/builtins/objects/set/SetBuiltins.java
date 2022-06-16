@@ -25,20 +25,21 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -98,7 +99,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(__HASH__, PNone.NONE);
+        addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override
@@ -106,7 +107,7 @@ public final class SetBuiltins extends PythonBuiltins {
         return SetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class InitNode extends PythonBuiltinNode {
@@ -156,7 +157,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "add", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_ADD, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
@@ -168,8 +169,8 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
@@ -187,7 +188,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
@@ -358,8 +359,8 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class AndNode extends PythonBinaryBuiltinNode {
@@ -380,7 +381,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IAndNode extends PythonBinaryBuiltinNode {
 
@@ -495,8 +496,8 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
@@ -515,7 +516,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IXorNode extends PythonBinaryBuiltinNode {
 
@@ -592,8 +593,8 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -613,7 +614,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ISUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ISUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ISubNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
@@ -750,7 +751,7 @@ public final class SetBuiltins extends PythonBuiltins {
                 }
                 return PNone.NONE;
             }
-            throw raise(PythonErrorType.KeyError, key);
+            throw raise(PythonErrorType.KeyError, new Object[]{key});
 
         }
     }

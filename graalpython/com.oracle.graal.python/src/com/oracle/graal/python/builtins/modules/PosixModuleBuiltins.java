@@ -25,12 +25,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -56,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -99,8 +103,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
@@ -130,6 +134,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "posix", isEager = true)
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -203,7 +209,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     private void addConstant(IntConstant c) {
         if (c.defined) {
-            builtinConstants.put(c.name, c.getValueIfDefined());
+            addBuiltinConstant(c.name, c.getValueIfDefined());
         }
     }
 
@@ -216,21 +222,22 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        ArrayList<String> haveFunctions = new ArrayList<>();
-        Collections.addAll(haveFunctions, "HAVE_FACCESSAT", "HAVE_FCHDIR", "HAVE_FCHMOD", "HAVE_FCHMODAT", "HAVE_FDOPENDIR", "HAVE_FSTATAT", "HAVE_FTRUNCATE", "HAVE_FUTIMES", "HAVE_LUTIMES",
-                        "HAVE_MKDIRAT", "HAVE_OPENAT", "HAVE_READLINKAT", "HAVE_RENAMEAT", "HAVE_SYMLINKAT", "HAVE_UNLINKAT");
+        ArrayList<TruffleString> haveFunctions = new ArrayList<>();
+        Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
+                        tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
+                        tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
         // Not implemented yet:
         // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
         // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
         // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
         if (PosixConstants.HAVE_FUTIMENS.value) {
-            haveFunctions.add("HAVE_FUTIMENS");
+            haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
         }
         if (PosixConstants.HAVE_UTIMENSAT.value) {
-            haveFunctions.add("HAVE_UTIMENSAT");
+            haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
         }
-        builtinConstants.put("_have_functions", core.factory().createList(haveFunctions.toArray()));
-        builtinConstants.put("environ", core.factory().createDict());
+        addBuiltinConstant("_have_functions", core.factory().createList(haveFunctions.toArray()));
+        addBuiltinConstant("environ", core.factory().createDict());
 
         StructSequence.initType(core, STAT_RESULT_DESC);
         StructSequence.initType(core, TERMINAL_SIZE_DESC);
@@ -243,11 +250,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         // define a class in one module (os) and make it public in another (posix), so we create
         // them directly in the 'os' module, and expose them in the `posix` module as well.
         // Note that the classes are still re-imported by os.py.
-        PythonModule posix = core.lookupBuiltinModule("posix");
+        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
         posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
         posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
 
-        posix.setAttribute("error", core.lookupType(PythonBuiltinClassType.OSError));
+        posix.setAttribute(tsLiteral("error"), core.lookupType(PythonBuiltinClassType.OSError));
     }
 
     @Override
@@ -260,28 +267,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
-            String value;
             if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
-                value = core.getContext().getOption(PythonOptions.Executable);
+                TruffleString value = core.getContext().getOption(PythonOptions.Executable);
 
                 try {
                     PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
                     Object posixSupport = core.getContext().getPosixSupport();
-                    Object k = posixLib.createPathFromString(posixSupport, pyenvLauncherKey);
+                    Object k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
                     Object v = posixLib.createPathFromString(posixSupport, value);
                     posixLib.setenv(posixSupport, k, v, true);
                 } catch (PosixException ignored) {
                 }
+                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.toJavaStringUncached().getBytes()));
             } else {
-                value = entry.getValue();
+                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes((entry.getValue().getBytes())));
             }
-            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.getBytes()));
         }
-        PythonModule posix = core.lookupBuiltinModule("posix");
-        Object environAttr = posix.getAttribute("environ");
+        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }
 
@@ -1187,7 +1193,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetcwdNode extends PythonBuiltinNode {
         @Specialization
-        String getcwd(VirtualFrame frame,
+        TruffleString getcwd(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getPathAsString(getPosixSupport(), posixLib.getcwd(getPosixSupport()));
@@ -1770,7 +1776,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!path.wasBufferLike")
-        String readlinkAsString(VirtualFrame frame, PosixPath path, int dirFd,
+        TruffleString readlinkAsString(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getPathAsString(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path.value));
@@ -1791,7 +1797,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String getStrError(int code,
+        TruffleString getStrError(int code,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.strerror(getPosixSupport(), code);
         }
@@ -2038,9 +2044,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "sysconf", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class SysconfNode extends PythonUnaryClinicBuiltinNode {
+
+        public static final TruffleString T_SC_CLK_TCK = tsLiteral("SC_CLK_TCK");
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -2048,12 +2056,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int sysconf(String mask) {
-            if ("SC_CLK_TCK".equals(mask)) {
+        int sysconf(TruffleString mask,
+                        @Cached TruffleString.EqualNode equalNode) {
+            if (equalNode.execute(mask, T_SC_CLK_TCK, TS_ENCODING)) {
                 return 100; // it's 100 on most default kernel configs. TODO: use real value through
                             // NFI
             }
-            throw raise(PythonBuiltinClassType.ValueError, "unrecognized configuration name: %s", mask);
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME, mask);
         }
     }
 
@@ -2082,7 +2091,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CtermId extends PythonBuiltinNode {
         @Specialization
-        String ctermid(VirtualFrame frame,
+        TruffleString ctermid(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.ctermid(getPosixSupport());
@@ -2129,7 +2138,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPath(value)")
         Object callFspath(VirtualFrame frame, Object value,
-                        @Cached("create(__FSPATH__)") LookupAndCallUnaryNode callFSPath) {
+                        @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath) {
             Object pathObject = callFSPath.executeObject(frame, value);
             if (isPath(pathObject)) {
                 return pathObject;
@@ -2166,14 +2175,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         public abstract PBytes execute(Object obj);
 
         @Specialization
-        PBytes doString(String str) {
-            return factory().createBytes(BytesUtils.utf8StringToBytes(str));
+        PBytes doString(TruffleString str,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8);
+            byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
+            copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, Encoding.UTF_8);
+            return factory().createBytes(bytes);
         }
 
         @Specialization
         PBytes doPString(PString pstr,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            return doString(castToJavaStringNode.execute(pstr));
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            return doString(castToStringNode.execute(pstr), switchEncodingNode, copyToByteArrayNode);
         }
 
         @Specialization
@@ -2191,17 +2207,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object obj);
 
         @Specialization
-        Object doString(String str,
+        Object doString(TruffleString str,
                         @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
             return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
         }
 
         @Specialization
         Object doPString(PString pstr,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
-            String str = castToJavaStringNode.execute(pstr);
-            return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
+            return doString(castToStringNode.execute(pstr), posixLib);
         }
 
         @Specialization
@@ -2493,7 +2508,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "nullable")
         PosixFileHandle doNone(@SuppressWarnings("unused") PNone value,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return new PosixPath(null, checkPath(posixLib.createPathFromString(getPosixSupport(), ".")), false);
+            return new PosixPath(null, checkPath(posixLib.createPathFromString(getPosixSupport(), T_DOT)), false);
         }
 
         @Specialization(guards = "allowFd")
@@ -2518,16 +2533,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PosixFileHandle doUnicode(String value,
+        PosixFileHandle doUnicode(TruffleString value,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)), false);
         }
 
         @Specialization
         PosixFileHandle doUnicode(PString value,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            String str = castToJavaStringNode.execute(value);
+            TruffleString str = castToStringNode.execute(value);
             return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)), false);
         }
 
@@ -2568,9 +2583,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached("create(__FSPATH__)") LookupAndCallUnaryNode callFSPath,
+                        @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             Object pathObject = callFSPath.executeObject(frame, value);
             if (pathObject == PNone.NO_VALUE) {
@@ -2583,10 +2598,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return doBytes((PBytes) pathObject, toByteArrayNode, posixLib);
             }
             if (pathObject instanceof PString) {
-                return doUnicode((PString) pathObject, castToJavaStringNode, posixLib);
+                return doUnicode((PString) pathObject, castToStringNode, posixLib);
             }
-            if (pathObject instanceof String) {
-                return doUnicode((String) pathObject, posixLib);
+            if (pathObject instanceof TruffleString) {
+                return doUnicode((TruffleString) pathObject, posixLib);
             }
             throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
@@ -2715,7 +2730,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 index = pyNumberIndexNode.execute(frame, value);
             } catch (PException ex) {
-                throw raise(TypeError, "uid should be integer, not %p", value);
+                throw raise(TypeError, ErrorMessages.UID_SHOULD_BE_INTEGER_NOT_P, value);
             }
             try {
                 return checkValue(asLongAndOverflowNode.execute(frame, index));
@@ -2730,7 +2745,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private long checkValue(long value) {
             if (value < -1) {
-                throw raise(OverflowError, "uid is less than minimum");
+                throw raise(OverflowError, ErrorMessages.UID_IS_LESS_THAN_MINIMUM);
             }
             return value;
         }
@@ -2763,7 +2778,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
      * implementation
      *
-     * @see PosixSupportLibrary#createPathFromString(Object, String)
+     * @see PosixSupportLibrary#createPathFromString(Object, TruffleString)
      * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
      */
     public static class PosixPath extends PosixFileHandle {

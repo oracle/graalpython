@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,12 @@ package com.oracle.graal.python.builtins.modules.io;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PNLDecoder extends PythonBuiltinObject {
 
     private Object decoder;
-    private String errors;
+    private TruffleString errors;
     private boolean pendingCR;
     private boolean translate;
     private int seenNewline;
@@ -71,11 +72,11 @@ public final class PNLDecoder extends PythonBuiltinObject {
         this.decoder = decoder;
     }
 
-    public String getErrors() {
+    public TruffleString getErrors() {
         return errors;
     }
 
-    public void setErrors(String errors) {
+    public void setErrors(TruffleString errors) {
         this.errors = errors;
     }
 

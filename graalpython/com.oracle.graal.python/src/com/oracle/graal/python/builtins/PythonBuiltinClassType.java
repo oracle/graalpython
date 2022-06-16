@@ -25,28 +25,35 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
-import static com.oracle.graal.python.nodes.BuiltinNames.CONTEXTVARS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_REV_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_ITEMITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_KEYITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_VALUEITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
-import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
-import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.PARTIAL;
-import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
-import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
-import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_REV_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_ITEMS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_KEYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_VALUEITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -67,96 +74,97 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.Message;
 import com.oracle.truffle.api.library.ReflectionLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // InteropLibrary is proxied through ReflectionLibrary
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
-    ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
-    Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    ForeignObject(J_FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
+    Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
-    MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
-    WrapperDescriptor(WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
+    MemberDescriptor(J_MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
+    WrapperDescriptor(J_WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinFunction("method_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinMethod("builtin_function_or_method", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinClassMethod("classmethod_descriptor", Flags.PRIVATE_DERIVED_WODICT),
-    PByteArray("bytearray", BUILTINS),
-    PBytes("bytes", BUILTINS),
+    PByteArray("bytearray", J_BUILTINS),
+    PBytes("bytes", J_BUILTINS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
     PSimpleNamespace("SimpleNamespace", null, "types", Flags.PUBLIC_BASE_WDICT),
     PKeyWrapper("KeyWrapper", "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
-    PPartial(PARTIAL, "_functools", "functools", Flags.PUBLIC_BASE_WDICT),
-    PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
-    PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
-    PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
-    PDequeIter(DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
-    PDequeRevIter(DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
-    PComplex("complex", BUILTINS),
-    PDict("dict", BUILTINS),
-    PDictItemIterator(DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseItemIterator(DICT_REVERSE_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictItemsView(DICT_ITEMS, Flags.PRIVATE_DERIVED_WODICT),
-    PDictKeyIterator(DICT_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseKeyIterator(DICT_REVERSE_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictKeysView(DICT_KEYS, Flags.PRIVATE_DERIVED_WODICT),
-    PDictValueIterator(DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseValueIterator(DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictValuesView(DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT),
-    PEllipsis("ellipsis", BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
-    PEnumerate("enumerate", BUILTINS),
-    PMap("map", BUILTINS),
-    PFloat("float", BUILTINS),
+    PPartial(J_PARTIAL, "_functools", "functools", Flags.PUBLIC_BASE_WDICT),
+    PDefaultDict(J_DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
+    PDeque(J_DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PTupleGetter(J_TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
+    PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
+    PComplex("complex", J_BUILTINS),
+    PDict("dict", J_BUILTINS),
+    PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictItemsView(J_DICT_ITEMS, Flags.PRIVATE_DERIVED_WODICT),
+    PDictKeyIterator(J_DICT_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictKeysView(J_DICT_KEYS, Flags.PRIVATE_DERIVED_WODICT),
+    PDictValueIterator(J_DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictValuesView(J_DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT),
+    PEllipsis("ellipsis", J_BUILTINS, Flags.PRIVATE_DERIVED_WODICT),
+    PEnumerate("enumerate", J_BUILTINS),
+    PMap("map", J_BUILTINS),
+    PFloat("float", J_BUILTINS),
     PFrame("frame", Flags.PRIVATE_DERIVED_WODICT),
-    PFrozenSet("frozenset", BUILTINS),
+    PFrozenSet("frozenset", J_BUILTINS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT),
     PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT),
-    PInt("int", BUILTINS),
-    PList("list", BUILTINS),
+    PInt("int", J_BUILTINS),
+    PList("list", J_BUILTINS),
     PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT),
-    PMemoryView("memoryview", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    PMemoryView("memoryview", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PMethod("method", Flags.PRIVATE_DERIVED_WODICT),
     PMMap("mmap", "mmap"),
     PNone("NoneType", Flags.PRIVATE_DERIVED_WODICT),
     PNotImplemented("NotImplementedType", Flags.PRIVATE_DERIVED_WODICT),
-    PProperty(PROPERTY, BUILTINS, Flags.PUBLIC_BASE_WODICT),
-    PSimpleQueue(SIMPLE_QUEUE, "_queue", Flags.PUBLIC_BASE_WODICT),
+    PProperty(J_PROPERTY, J_BUILTINS, Flags.PUBLIC_BASE_WODICT),
+    PSimpleQueue(J_SIMPLE_QUEUE, "_queue", Flags.PUBLIC_BASE_WODICT),
     PRandom("Random", "_random"),
-    PRange("range", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    PRange("range", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PForeignArrayIterator("foreign_iterator"),
-    PReverseIterator("reversed", BUILTINS),
-    PSet("set", BUILTINS),
-    PSlice("slice", BUILTINS),
-    PString("str", BUILTINS),
+    PReverseIterator("reversed", J_BUILTINS),
+    PSet("set", J_BUILTINS),
+    PSlice("slice", J_BUILTINS),
+    PString("str", J_BUILTINS),
     PTraceback("traceback"),
-    PTuple("tuple", BUILTINS),
-    PythonClass("type", BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PTuple("tuple", J_BUILTINS),
+    PythonClass("type", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PythonModule("module", Flags.PRIVATE_BASE_WDICT),
     PythonModuleDef("moduledef", Flags.PRIVATE_DERIVED_WODICT),
-    PythonObject("object", BUILTINS),
-    Super("super", BUILTINS),
+    PythonObject("object", J_BUILTINS),
+    Super("super", J_BUILTINS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
-    PZip("zip", BUILTINS),
+    PZip("zip", J_BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
-    PBuffer("buffer", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
-    PThread("start_new_thread", "_thread"),
-    PThreadLocal("_local", "_thread"),
-    PLock("LockType", "_thread"),
-    PRLock("RLock", "_thread"),
+    PBuffer("buffer", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
+    PThread("start_new_thread", J__THREAD),
+    PThreadLocal("_local", J__THREAD),
+    PLock("LockType", J__THREAD),
+    PRLock("RLock", J__THREAD),
     PSemLock("SemLock", "_multiprocessing"),
-    PSocket("socket", "_socket"),
-    PStaticmethod("staticmethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
-    PClassmethod("classmethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
-    PInstancemethod("instancemethod", BUILTINS, Flags.PUBLIC_BASE_WDICT),
-    PScandirIterator("ScandirIterator", "posix", Flags.PRIVATE_DERIVED_WODICT),
-    PDirEntry("DirEntry", "posix", Flags.PUBLIC_DERIVED_WODICT),
+    PSocket("socket", J__SOCKET),
+    PStaticmethod("staticmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PClassmethod("classmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PInstancemethod("instancemethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
+    PScandirIterator("ScandirIterator", J_POSIX, Flags.PRIVATE_DERIVED_WODICT),
+    PDirEntry("DirEntry", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     LsprofProfiler("Profiler", "_lsprof"),
-    PStruct("Struct", "_struct"),
-    PStructUnpackIterator("unpack_iterator", "_struct"),
+    PStruct("Struct", J__STRUCT),
+    PStructUnpackIterator("unpack_iterator", J__STRUCT),
     Pickler("Pickler", "_pickle"),
     PicklerMemoProxy("PicklerMemoProxy", "_pickle"),
     UnpicklerMemoProxy("UnpicklerMemoProxy", "_pickle"),
@@ -206,10 +214,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PUnraisableHookArgs("UnraisableHookArgs", "sys", Flags.PUBLIC_DERIVED_WODICT),
-    PSSLSession("SSLSession", "_ssl"),
-    PSSLContext("_SSLContext", "_ssl"),
-    PSSLSocket("_SSLSocket", "_ssl"),
-    PMemoryBIO("MemoryBIO", "_ssl"),
+    PSSLSession("SSLSession", J__SSL),
+    PSSLContext("_SSLContext", J__SSL),
+    PSSLSocket("_SSLSocket", J__SSL),
+    PMemoryBIO("MemoryBIO", J__SSL),
 
     // itertools
     PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT),
@@ -246,132 +254,132 @@ public enum PythonBuiltinClassType implements TruffleObject {
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
 
     // HPy
-    DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
+    DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.J_HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
 
     // _ctype
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),
-    CThunkObject("CThunkObject", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT),
-    PyCStructType("PyCStructType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    UnionType("UnionType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    PyCPointerType("PyCPointerType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    PyCArrayType("PyCArrayType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    PyCSimpleType("PyCSimpleType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    PyCFuncPtrType("PyCFuncPtrType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    Structure("Structure", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    Union("Union", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = UnionType
-    PyCPointer("_Pointer", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCPointerType
-    PyCArray("Array", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCArrayType
-    PyCData("_CData", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    SimpleCData("_SimpleCData", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
-    PyCFuncPtr("PyCFuncPtr", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCFuncPtrType
-    CField("CField", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    DictRemover("DictRemover", "_ctypes", Flags.PUBLIC_BASE_WDICT),
-    StructParam("StructParam_Type", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = UnionType
+    PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCPointerType
+    PyCArray("Array", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCArrayType
+    PyCData("_CData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    SimpleCData("_SimpleCData", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    PyCFuncPtr("PyCFuncPtr", J__CTYPES, Flags.PUBLIC_BASE_WDICT), // type = PyCFuncPtrType
+    CField("CField", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    DictRemover("DictRemover", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
+    StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     ArgError("ArgumentError", "ctypes", Flags.EXCEPTION),
 
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
-    PBaseException("BaseException", BUILTINS, Flags.EXCEPTION),
-    SystemExit("SystemExit", BUILTINS, Flags.EXCEPTION),
-    KeyboardInterrupt("KeyboardInterrupt", BUILTINS, Flags.EXCEPTION),
-    GeneratorExit("GeneratorExit", BUILTINS, Flags.EXCEPTION),
-    Exception("Exception", BUILTINS, Flags.EXCEPTION),
-    StopIteration("StopIteration", BUILTINS, Flags.EXCEPTION),
-    StopAsyncIteration("StopAsyncIteration", BUILTINS, Flags.EXCEPTION),
-    ArithmeticError("ArithmeticError", BUILTINS, Flags.EXCEPTION),
-    FloatingPointError("FloatingPointError", BUILTINS, Flags.EXCEPTION),
-    OverflowError("OverflowError", BUILTINS, Flags.EXCEPTION),
-    ZeroDivisionError("ZeroDivisionError", BUILTINS, Flags.EXCEPTION),
-    AssertionError("AssertionError", BUILTINS, Flags.EXCEPTION),
-    AttributeError("AttributeError", BUILTINS, Flags.EXCEPTION),
-    BufferError("BufferError", BUILTINS, Flags.EXCEPTION),
-    EOFError("EOFError", BUILTINS, Flags.EXCEPTION),
-    ImportError("ImportError", BUILTINS, Flags.EXCEPTION),
-    ModuleNotFoundError("ModuleNotFoundError", BUILTINS, Flags.EXCEPTION),
-    LookupError("LookupError", BUILTINS, Flags.EXCEPTION),
-    IndexError("IndexError", BUILTINS, Flags.EXCEPTION),
-    KeyError("KeyError", BUILTINS, Flags.EXCEPTION),
-    MemoryError("MemoryError", BUILTINS, Flags.EXCEPTION),
-    NameError("NameError", BUILTINS, Flags.EXCEPTION),
-    UnboundLocalError("UnboundLocalError", BUILTINS, Flags.EXCEPTION),
-    OSError("OSError", BUILTINS, Flags.EXCEPTION),
-    BlockingIOError("BlockingIOError", BUILTINS, Flags.EXCEPTION),
-    ChildProcessError("ChildProcessError", BUILTINS, Flags.EXCEPTION),
-    ConnectionError("ConnectionError", BUILTINS, Flags.EXCEPTION),
-    BrokenPipeError("BrokenPipeError", BUILTINS, Flags.EXCEPTION),
-    ConnectionAbortedError("ConnectionAbortedError", BUILTINS, Flags.EXCEPTION),
-    ConnectionRefusedError("ConnectionRefusedError", BUILTINS, Flags.EXCEPTION),
-    ConnectionResetError("ConnectionResetError", BUILTINS, Flags.EXCEPTION),
-    FileExistsError("FileExistsError", BUILTINS, Flags.EXCEPTION),
-    FileNotFoundError("FileNotFoundError", BUILTINS, Flags.EXCEPTION),
-    InterruptedError("InterruptedError", BUILTINS, Flags.EXCEPTION),
-    IsADirectoryError("IsADirectoryError", BUILTINS, Flags.EXCEPTION),
-    NotADirectoryError("NotADirectoryError", BUILTINS, Flags.EXCEPTION),
-    PermissionError("PermissionError", BUILTINS, Flags.EXCEPTION),
-    ProcessLookupError("ProcessLookupError", BUILTINS, Flags.EXCEPTION),
-    TimeoutError("TimeoutError", BUILTINS, Flags.EXCEPTION),
+    PBaseException("BaseException", J_BUILTINS, Flags.EXCEPTION),
+    SystemExit("SystemExit", J_BUILTINS, Flags.EXCEPTION),
+    KeyboardInterrupt("KeyboardInterrupt", J_BUILTINS, Flags.EXCEPTION),
+    GeneratorExit("GeneratorExit", J_BUILTINS, Flags.EXCEPTION),
+    Exception("Exception", J_BUILTINS, Flags.EXCEPTION),
+    StopIteration("StopIteration", J_BUILTINS, Flags.EXCEPTION),
+    StopAsyncIteration("StopAsyncIteration", J_BUILTINS, Flags.EXCEPTION),
+    ArithmeticError("ArithmeticError", J_BUILTINS, Flags.EXCEPTION),
+    FloatingPointError("FloatingPointError", J_BUILTINS, Flags.EXCEPTION),
+    OverflowError("OverflowError", J_BUILTINS, Flags.EXCEPTION),
+    ZeroDivisionError("ZeroDivisionError", J_BUILTINS, Flags.EXCEPTION),
+    AssertionError("AssertionError", J_BUILTINS, Flags.EXCEPTION),
+    AttributeError("AttributeError", J_BUILTINS, Flags.EXCEPTION),
+    BufferError("BufferError", J_BUILTINS, Flags.EXCEPTION),
+    EOFError("EOFError", J_BUILTINS, Flags.EXCEPTION),
+    ImportError("ImportError", J_BUILTINS, Flags.EXCEPTION),
+    ModuleNotFoundError("ModuleNotFoundError", J_BUILTINS, Flags.EXCEPTION),
+    LookupError("LookupError", J_BUILTINS, Flags.EXCEPTION),
+    IndexError("IndexError", J_BUILTINS, Flags.EXCEPTION),
+    KeyError("KeyError", J_BUILTINS, Flags.EXCEPTION),
+    MemoryError("MemoryError", J_BUILTINS, Flags.EXCEPTION),
+    NameError("NameError", J_BUILTINS, Flags.EXCEPTION),
+    UnboundLocalError("UnboundLocalError", J_BUILTINS, Flags.EXCEPTION),
+    OSError("OSError", J_BUILTINS, Flags.EXCEPTION),
+    BlockingIOError("BlockingIOError", J_BUILTINS, Flags.EXCEPTION),
+    ChildProcessError("ChildProcessError", J_BUILTINS, Flags.EXCEPTION),
+    ConnectionError("ConnectionError", J_BUILTINS, Flags.EXCEPTION),
+    BrokenPipeError("BrokenPipeError", J_BUILTINS, Flags.EXCEPTION),
+    ConnectionAbortedError("ConnectionAbortedError", J_BUILTINS, Flags.EXCEPTION),
+    ConnectionRefusedError("ConnectionRefusedError", J_BUILTINS, Flags.EXCEPTION),
+    ConnectionResetError("ConnectionResetError", J_BUILTINS, Flags.EXCEPTION),
+    FileExistsError("FileExistsError", J_BUILTINS, Flags.EXCEPTION),
+    FileNotFoundError("FileNotFoundError", J_BUILTINS, Flags.EXCEPTION),
+    InterruptedError("InterruptedError", J_BUILTINS, Flags.EXCEPTION),
+    IsADirectoryError("IsADirectoryError", J_BUILTINS, Flags.EXCEPTION),
+    NotADirectoryError("NotADirectoryError", J_BUILTINS, Flags.EXCEPTION),
+    PermissionError("PermissionError", J_BUILTINS, Flags.EXCEPTION),
+    ProcessLookupError("ProcessLookupError", J_BUILTINS, Flags.EXCEPTION),
+    TimeoutError("TimeoutError", J_BUILTINS, Flags.EXCEPTION),
     ZipImportError("ZipImportError", "zipimport", Flags.EXCEPTION),
     ZLibError("error", "zlib", Flags.EXCEPTION),
     CSVError("Error", "_csv", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
-    StructError("StructError", "_struct", Flags.EXCEPTION),
+    StructError("StructError", J__STRUCT, Flags.EXCEPTION),
     PickleError("PickleError", "_pickle", Flags.EXCEPTION),
     PicklingError("PicklingError", "_pickle", Flags.EXCEPTION),
     UnpicklingError("UnpicklingError", "_pickle", Flags.EXCEPTION),
-    SocketGAIError("gaierror", "_socket", Flags.EXCEPTION),
-    SocketHError("herror", "_socket", Flags.EXCEPTION),
-    SocketTimeout("timeout", "_socket", Flags.EXCEPTION),
+    SocketGAIError("gaierror", J__SOCKET, Flags.EXCEPTION),
+    SocketHError("herror", J__SOCKET, Flags.EXCEPTION),
+    SocketTimeout("timeout", J__SOCKET, Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
-    SSLError("SSLError", "_ssl", Flags.EXCEPTION),
-    SSLZeroReturnError("SSLZeroReturnError", "_ssl", Flags.EXCEPTION),
-    SSLWantReadError("SSLWantReadError", "_ssl", Flags.EXCEPTION),
-    SSLWantWriteError("SSLWantWriteError", "_ssl", Flags.EXCEPTION),
-    SSLSyscallError("SSLSyscallError", "_ssl", Flags.EXCEPTION),
-    SSLEOFError("SSLEOFError", "_ssl", Flags.EXCEPTION),
-    SSLCertVerificationError("SSLCertVerificationError", "_ssl", Flags.EXCEPTION),
+    SSLError("SSLError", J__SSL, Flags.EXCEPTION),
+    SSLZeroReturnError("SSLZeroReturnError", J__SSL, Flags.EXCEPTION),
+    SSLWantReadError("SSLWantReadError", J__SSL, Flags.EXCEPTION),
+    SSLWantWriteError("SSLWantWriteError", J__SSL, Flags.EXCEPTION),
+    SSLSyscallError("SSLSyscallError", J__SSL, Flags.EXCEPTION),
+    SSLEOFError("SSLEOFError", J__SSL, Flags.EXCEPTION),
+    SSLCertVerificationError("SSLCertVerificationError", J__SSL, Flags.EXCEPTION),
     PForeignException("ForeignException", Flags.FOREIGN_EXCEPTION),
 
     // todo: all OS errors
 
-    ReferenceError("ReferenceError", BUILTINS, Flags.EXCEPTION),
-    RuntimeError("RuntimeError", BUILTINS, Flags.EXCEPTION),
-    NotImplementedError("NotImplementedError", BUILTINS, Flags.EXCEPTION),
-    SyntaxError("SyntaxError", BUILTINS, Flags.EXCEPTION),
-    IndentationError("IndentationError", BUILTINS, Flags.EXCEPTION),
-    TabError("TabError", BUILTINS, Flags.EXCEPTION),
-    SystemError("SystemError", BUILTINS, Flags.EXCEPTION),
-    TypeError("TypeError", BUILTINS, Flags.EXCEPTION),
-    ValueError("ValueError", BUILTINS, Flags.EXCEPTION),
-    UnicodeError("UnicodeError", BUILTINS, Flags.EXCEPTION),
-    UnicodeDecodeError("UnicodeDecodeError", BUILTINS, Flags.EXCEPTION),
-    UnicodeEncodeError("UnicodeEncodeError", BUILTINS, Flags.EXCEPTION),
-    UnicodeTranslateError("UnicodeTranslateError", BUILTINS, Flags.EXCEPTION),
-    RecursionError("RecursionError", BUILTINS, Flags.EXCEPTION),
+    ReferenceError("ReferenceError", J_BUILTINS, Flags.EXCEPTION),
+    RuntimeError("RuntimeError", J_BUILTINS, Flags.EXCEPTION),
+    NotImplementedError("NotImplementedError", J_BUILTINS, Flags.EXCEPTION),
+    SyntaxError("SyntaxError", J_BUILTINS, Flags.EXCEPTION),
+    IndentationError("IndentationError", J_BUILTINS, Flags.EXCEPTION),
+    TabError("TabError", J_BUILTINS, Flags.EXCEPTION),
+    SystemError("SystemError", J_BUILTINS, Flags.EXCEPTION),
+    TypeError("TypeError", J_BUILTINS, Flags.EXCEPTION),
+    ValueError("ValueError", J_BUILTINS, Flags.EXCEPTION),
+    UnicodeError("UnicodeError", J_BUILTINS, Flags.EXCEPTION),
+    UnicodeDecodeError("UnicodeDecodeError", J_BUILTINS, Flags.EXCEPTION),
+    UnicodeEncodeError("UnicodeEncodeError", J_BUILTINS, Flags.EXCEPTION),
+    UnicodeTranslateError("UnicodeTranslateError", J_BUILTINS, Flags.EXCEPTION),
+    RecursionError("RecursionError", J_BUILTINS, Flags.EXCEPTION),
 
     IOUnsupportedOperation("UnsupportedOperation", "io", Flags.EXCEPTION),
 
     Empty("Empty", "_queue", Flags.EXCEPTION),
 
     // warnings
-    Warning("Warning", BUILTINS, Flags.EXCEPTION),
-    BytesWarning("BytesWarning", BUILTINS, Flags.EXCEPTION),
-    DeprecationWarning("DeprecationWarning", BUILTINS, Flags.EXCEPTION),
-    FutureWarning("FutureWarning", BUILTINS, Flags.EXCEPTION),
-    ImportWarning("ImportWarning", BUILTINS, Flags.EXCEPTION),
-    PendingDeprecationWarning("PendingDeprecationWarning", BUILTINS, Flags.EXCEPTION),
-    ResourceWarning("ResourceWarning", BUILTINS, Flags.EXCEPTION),
-    RuntimeWarning("RuntimeWarning", BUILTINS, Flags.EXCEPTION),
-    SyntaxWarning("SyntaxWarning", BUILTINS, Flags.EXCEPTION),
-    UnicodeWarning("UnicodeWarning", BUILTINS, Flags.EXCEPTION),
-    UserWarning("UserWarning", BUILTINS, Flags.EXCEPTION),
+    Warning("Warning", J_BUILTINS, Flags.EXCEPTION),
+    BytesWarning("BytesWarning", J_BUILTINS, Flags.EXCEPTION),
+    DeprecationWarning("DeprecationWarning", J_BUILTINS, Flags.EXCEPTION),
+    FutureWarning("FutureWarning", J_BUILTINS, Flags.EXCEPTION),
+    ImportWarning("ImportWarning", J_BUILTINS, Flags.EXCEPTION),
+    PendingDeprecationWarning("PendingDeprecationWarning", J_BUILTINS, Flags.EXCEPTION),
+    ResourceWarning("ResourceWarning", J_BUILTINS, Flags.EXCEPTION),
+    RuntimeWarning("RuntimeWarning", J_BUILTINS, Flags.EXCEPTION),
+    SyntaxWarning("SyntaxWarning", J_BUILTINS, Flags.EXCEPTION),
+    UnicodeWarning("UnicodeWarning", J_BUILTINS, Flags.EXCEPTION),
+    UserWarning("UserWarning", J_BUILTINS, Flags.EXCEPTION),
 
     // contextvars
-    ContextVarsToken("Token", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
-    ContextVarsContext("Context", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
-    ContextVar("ContextVar", CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVarsContext("Context", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextVar("ContextVar", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
 
     // A marker for @Builtin that is not a class. Must always come last.
     nil(null);
@@ -399,12 +407,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         }
     }
 
-    private final String name;
-    private final String publishInModule;
-    private final String moduleName;
+    private final TruffleString name;
+    private final TruffleString publishInModule;
+    private final TruffleString moduleName;
     // This is the name qualified by module used for printing. But the actual __qualname__ is just
     // plain name without module
-    private final String printName;
+    private final TruffleString printName;
     private final boolean basetype;
     private final boolean isBuiltinWithDict;
     private final boolean isException;
@@ -432,13 +440,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
-        this.name = name;
-        this.publishInModule = publishInModule;
-        this.moduleName = flags.isPublic ? moduleName : null;
-        if (moduleName != null && moduleName != BUILTINS) {
-            printName = moduleName + "." + name;
+        this.name = toTruffleStringUncached(name);
+        this.publishInModule = toTruffleStringUncached(publishInModule);
+        this.moduleName = flags.isPublic && moduleName != null ? toTruffleStringUncached(moduleName) : null;
+        if (moduleName != null && moduleName != J_BUILTINS) {
+            printName = toTruffleStringUncached(moduleName + "." + name);
         } else {
-            printName = name;
+            printName = this.name;
         }
         this.basetype = flags.isBaseType;
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
@@ -461,11 +469,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return basetype;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public String getPrintName() {
+    public TruffleString getPrintName() {
         return printName;
     }
 
@@ -481,11 +489,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return isBuiltinWithDict;
     }
 
-    public String getPublishInModule() {
+    public TruffleString getPublishInModule() {
         return publishInModule;
     }
 
-    public String getModuleName() {
+    public TruffleString getModuleName() {
         return moduleName;
     }
 
@@ -523,7 +531,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return name;
+        return name.toJavaStringUncached();
     }
 
     public final Shape getInstanceShape(PythonLanguage lang) {

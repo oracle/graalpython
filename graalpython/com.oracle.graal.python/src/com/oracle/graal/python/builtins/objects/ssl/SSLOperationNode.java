@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
@@ -69,6 +71,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This class implements equivalents of OpenSSL transport functions ({@code SSL_read} etc) on top of
@@ -165,7 +168,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
-                    @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                    @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert socket.getSocket() != null;
         TimeoutHelper timeoutHelper = null;
         if (socket.getSocket().getTimeoutNs() > 0) {
@@ -205,7 +209,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                              * The engine requested more data, but we think we already got enough
                              * data
                              */
-                            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, "Packet size mismatch");
+                            throw constructAndRaiseNode.raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ErrorMessages.PACKET_SIZE_MISMATCH);
                         }
                         int len1 = packetLen - networkInboundBIO.getPending();
                         networkInboundBIO.ensureWriteCapacity(len1);
@@ -231,7 +235,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
                         }
                         break;
                     case WANTS_WRITE:
@@ -252,7 +256,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
                         }
                         break;
                 }
@@ -530,6 +534,6 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         if (e.getCause() instanceof CertificateException) {
             throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }
-        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, e.toString());
+        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.toString()));
     }
 }

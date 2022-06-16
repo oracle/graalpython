@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Base class for all expressions. Expressions always return a value.
@@ -235,8 +236,8 @@ public abstract class ExpressionNode extends PNode {
         return new ExpressionWithSideEffects(this, sideEffects);
     }
 
-    public static ExpressionNode createComparisonOperation(String operator, ExpressionNode left, ExpressionNode right) {
-        switch (operator) {
+    public static ExpressionNode createComparisonOperation(TruffleString operator, ExpressionNode left, ExpressionNode right) {
+        switch (operator.toJavaStringUncached()) {
             case "<":
                 return BinaryComparisonNodeFactory.LtNodeGen.create(left, right);
             case ">":

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,10 @@
 package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -53,7 +57,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -73,7 +76,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
     }
 
     // _deque_iterator.__iter__()
-    @Builtin(name = SpecialMethodNames.__ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterIterNode extends PythonUnaryBuiltinNode {
 
@@ -84,7 +87,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
     }
 
     // _deque_iterator.__next__()
-    @Builtin(name = SpecialMethodNames.__NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterNextNode extends PythonUnaryBuiltinNode {
 
@@ -112,7 +115,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
     }
 
     // _deque_iterator.__length_hint__()
-    @Builtin(name = SpecialMethodNames.__LENGTH_HINT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterLengthHintNode extends PythonUnaryBuiltinNode {
 
@@ -123,7 +126,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
     }
 
     // _deque_iterator.__reduce__()
-    @Builtin(name = SpecialMethodNames.__REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterReduceNode extends PythonUnaryBuiltinNode {
 

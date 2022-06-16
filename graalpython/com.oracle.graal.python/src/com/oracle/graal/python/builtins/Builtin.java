@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,7 +29,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.StringLiterals;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(value = Builtins.class)
@@ -106,6 +106,6 @@ public @interface Builtin {
      */
     boolean reverseOperation() default false;
 
-    String raiseErrorName() default PythonUtils.EMPTY_STRING;
+    String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
 
 }

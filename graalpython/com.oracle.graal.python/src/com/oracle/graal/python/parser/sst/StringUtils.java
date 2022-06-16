@@ -41,11 +41,13 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.Locale;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -55,8 +57,10 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 public class StringUtils {
@@ -202,13 +206,13 @@ public class StringUtils {
             return unescapeJavaString(errors, text);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-            String message = PyObjectStrAsJavaStringNode.getUncached().execute(e.getUnreifiedException());
-            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), PythonUtils.format("(unicode error) %s", message));
+            TruffleString message = PyObjectStrAsTruffleStringNode.getUncached().execute(e.getUnreifiedException());
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), toTruffleStringUncached(PythonUtils.formatJString("(unicode error) %s", message)));
         }
     }
 
     public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {
-        errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, "invalid escape sequence '\\%c'", nextChar);
+        errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, INVALID_ESCAPE_SEQUENCE, nextChar);
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
@@ -218,6 +222,7 @@ public class StringUtils {
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
     private static final String UNKNOWN_UNICODE_ERROR = "unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
+    private static final TruffleString INVALID_ESCAPE_SEQUENCE = tsLiteral("invalid escape sequence '\\%c'");
 
     private static int getHexValue(String text, int start, int len) {
         int digit;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.containsJavaString;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
@@ -37,12 +40,14 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
+        assert !containsJavaString(elements);
     }
 
     public ObjectSequenceStorage(Object[] elements, int length) {
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
+        assert !containsJavaString(elements);
     }
 
     public ObjectSequenceStorage(int capacity) {
@@ -58,7 +63,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) {
-        values[idx] = value;
+        values[idx] = assertNoJavaString(value);
     }
 
     @Override
@@ -70,7 +75,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
             values[i] = values[i - 1];
         }
 
-        values[idx] = value;
+        values[idx] = assertNoJavaString(value);
         incLength();
     }
 
@@ -171,6 +176,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (Object[]) arrayObject;
+        assert !containsJavaString(values);
     }
 
     @Override

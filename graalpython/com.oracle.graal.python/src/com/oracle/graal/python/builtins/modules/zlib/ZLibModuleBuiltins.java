@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,8 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -101,18 +103,20 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = ZLibModuleBuiltins.ZLIB)
+@CoreFunctions(defineModule = ZLibModuleBuiltins.J_ZLIB)
 public class ZLibModuleBuiltins extends PythonBuiltins {
 
-    protected static final String ZLIB = "zlib";
+    protected static final String J_ZLIB = "zlib";
+    protected static final TruffleString T_ZLIB = tsLiteral(J_ZLIB);
 
     /*
      * There isn't currently a dynamic way to ask the jdk about the zlib version. so, we got it
      * manually from: "jdk/blob/master/src/java.base/share/native/libzip/zlib/README". The last time
      * zlib been updated in the JDK was on Sep 12, 2017.
      */
-    private static final String JDK_ZLIB_VERSION = "1.2.11";
+    private static final TruffleString T_JDK_ZLIB_VERSION = tsLiteral("1.2.11");
 
     // copied from zlib/blob/master/zlib.h
     /*- Allowed flush values; see deflate() and inflate() below for details */
@@ -152,57 +156,57 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("Z_NO_COMPRESSION", Z_NO_COMPRESSION);
-        builtinConstants.put("Z_BEST_SPEED", Z_BEST_SPEED);
-        builtinConstants.put("Z_BEST_COMPRESSION", Z_BEST_COMPRESSION);
-        builtinConstants.put("Z_DEFAULT_COMPRESSION", Z_DEFAULT_COMPRESSION);
+        addBuiltinConstant("Z_NO_COMPRESSION", Z_NO_COMPRESSION);
+        addBuiltinConstant("Z_BEST_SPEED", Z_BEST_SPEED);
+        addBuiltinConstant("Z_BEST_COMPRESSION", Z_BEST_COMPRESSION);
+        addBuiltinConstant("Z_DEFAULT_COMPRESSION", Z_DEFAULT_COMPRESSION);
 
-        builtinConstants.put("Z_FILTERED", Z_FILTERED);
-        builtinConstants.put("Z_HUFFMAN_ONLY", Z_HUFFMAN_ONLY);
-        builtinConstants.put("Z_RLE", Z_RLE);
-        builtinConstants.put("Z_FIXED", Z_FIXED);
-        builtinConstants.put("Z_DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY);
+        addBuiltinConstant("Z_FILTERED", Z_FILTERED);
+        addBuiltinConstant("Z_HUFFMAN_ONLY", Z_HUFFMAN_ONLY);
+        addBuiltinConstant("Z_RLE", Z_RLE);
+        addBuiltinConstant("Z_FIXED", Z_FIXED);
+        addBuiltinConstant("Z_DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY);
 
-        builtinConstants.put("Z_NO_FLUSH", Z_NO_FLUSH);
-        builtinConstants.put("Z_SYNC_FLUSH", Z_SYNC_FLUSH);
-        builtinConstants.put("Z_FULL_FLUSH", Z_FULL_FLUSH);
-        builtinConstants.put("Z_FINISH", Z_FINISH);
+        addBuiltinConstant("Z_NO_FLUSH", Z_NO_FLUSH);
+        addBuiltinConstant("Z_SYNC_FLUSH", Z_SYNC_FLUSH);
+        addBuiltinConstant("Z_FULL_FLUSH", Z_FULL_FLUSH);
+        addBuiltinConstant("Z_FINISH", Z_FINISH);
 
-        builtinConstants.put("DEFLATED", DEFLATED);
+        addBuiltinConstant("DEFLATED", DEFLATED);
 
-        builtinConstants.put("MAX_WBITS", MAX_WBITS);
-        builtinConstants.put("DEF_MEM_LEVEL", DEF_MEM_LEVEL);
-        builtinConstants.put("DEF_BUF_SIZE", DEF_BUF_SIZE);
+        addBuiltinConstant("MAX_WBITS", MAX_WBITS);
+        addBuiltinConstant("DEF_MEM_LEVEL", DEF_MEM_LEVEL);
+        addBuiltinConstant("DEF_BUF_SIZE", DEF_BUF_SIZE);
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         NFIZlibSupport zlibSupport = core.getContext().getNFIZlibSupport();
-        PythonModule zlibModule = core.lookupBuiltinModule(ZLIB);
+        PythonModule zlibModule = core.lookupBuiltinModule(T_ZLIB);
         // isAvailable() checked already if native access is allowed
-        String ver = JDK_ZLIB_VERSION;
-        String rtver = JDK_ZLIB_VERSION;
+        TruffleString ver = T_JDK_ZLIB_VERSION;
+        TruffleString rtver = T_JDK_ZLIB_VERSION;
         if (zlibSupport.isAvailable()) {
             try {
                 ver = asString(zlibSupport.zlibVersion());
                 rtver = asString(zlibSupport.zlibRuntimeVersion());
-                zlibModule.setAttribute("Z_PARTIAL_FLUSH", Z_PARTIAL_FLUSH);
-                zlibModule.setAttribute("Z_BLOCK", Z_BLOCK);
-                zlibModule.setAttribute("Z_TREES", Z_TREES);
+                zlibModule.setAttribute(tsLiteral("Z_PARTIAL_FLUSH"), Z_PARTIAL_FLUSH);
+                zlibModule.setAttribute(tsLiteral("Z_BLOCK"), Z_BLOCK);
+                zlibModule.setAttribute(tsLiteral("Z_TREES"), Z_TREES);
             } catch (NativeLibrary.NativeLibraryCannotBeLoaded e) {
                 zlibSupport.notAvailable();
                 // ignore and proceed without native zlib support and use jdk's.
             }
         }
-        zlibModule.setAttribute("ZLIB_VERSION", ver);
-        zlibModule.setAttribute("ZLIB_RUNTIME_VERSION", rtver);
+        zlibModule.setAttribute(tsLiteral("ZLIB_VERSION"), ver);
+        zlibModule.setAttribute(tsLiteral("ZLIB_RUNTIME_VERSION"), rtver);
     }
 
-    private static String asString(Object o) {
+    private static TruffleString asString(Object o) {
         if (o != null) {
             try {
-                return InteropLibrary.getUncached().asString(o);
+                return InteropLibrary.getUncached().asTruffleString(o).switchEncodingUncached(TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 // pass through
             }

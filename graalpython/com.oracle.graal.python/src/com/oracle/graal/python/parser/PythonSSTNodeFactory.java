@@ -41,6 +41,9 @@
 
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J___FUTURE__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -103,8 +106,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-
-import static com.oracle.graal.python.nodes.BuiltinNames.__FUTURE__;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonSSTNodeFactory {
 
@@ -134,7 +136,7 @@ public final class PythonSSTNodeFactory {
         return scopeEnvironment;
     }
 
-    public void throwSyntaxError(int startOffset, int endOffset, String message, Object... messageParams) {
+    public void throwSyntaxError(int startOffset, int endOffset, TruffleString message, Object... messageParams) {
         throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message, messageParams);
     }
 
@@ -166,7 +168,7 @@ public final class PythonSSTNodeFactory {
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
-                if (__FUTURE__.equals(from) && asName[0].equals("annotations")) {
+                if (J___FUTURE__.equals(from) && asName[0].equals("annotations")) {
                     futureAnnotations = true;
                 }
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
@@ -223,6 +225,11 @@ public final class PythonSSTNodeFactory {
         int len = identifier.length();
         // Don't mangle __whatever__ or names with dots.
         return len < 3 || identifier.charAt(0) != '_' || identifier.charAt(1) != '_' || (identifier.charAt(len - 1) == '_' && identifier.charAt(len - 2) == '_') || identifier.indexOf('.') != -1;
+    }
+
+    @TruffleBoundary
+    public static TruffleString mangleName(TruffleString privateobj, TruffleString ident) throws OverflowException {
+        return toTruffleStringUncached(mangleName(privateobj.toJavaStringUncached(), ident.toJavaStringUncached()));
     }
 
     /**
@@ -391,8 +398,8 @@ public final class PythonSSTNodeFactory {
     }
 
     private void checkForbiddenName(String name, int startOffset, int endOffset) {
-        if (BuiltinNames.__DEBUG__.equals(name)) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, BuiltinNames.__DEBUG__);
+        if (BuiltinNames.J___DEBUG__.equals(name)) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, BuiltinNames.T___DEBUG__);
         }
     }
 
@@ -443,16 +450,16 @@ public final class PythonSSTNodeFactory {
             if (resultType == PythonBuiltinClassType.PGenerator) {
                 throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "generator expression");
             }
-            String calleeName;
+            TruffleString calleeName;
             switch (resultType) {
                 case PList:
-                    calleeName = BuiltinNames.LIST;
+                    calleeName = BuiltinNames.T_LIST;
                     break;
                 case PSet:
-                    calleeName = BuiltinNames.SET;
+                    calleeName = BuiltinNames.T_SET;
                     break;
                 case PDict:
-                    calleeName = BuiltinNames.DICT;
+                    calleeName = BuiltinNames.T_DICT;
                     break;
                 default:
                     calleeName = null;
@@ -507,22 +514,22 @@ public final class PythonSSTNodeFactory {
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         ScopeKind scopeKind = scopeEnvironment.getScopeKind();
         if (!(scopeKind == ScopeKind.Function || scopeKind == ScopeKind.Generator)) {
-            String message;
+            TruffleString message;
             switch (scopeKind) {
                 case ListComp:
-                    message = "'yield' inside list comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_LIST_COMPREHENSION;
                     break;
                 case DictComp:
-                    message = "'yield' inside dict comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_DICT_COMPREHENSION;
                     break;
                 case SetComp:
-                    message = "'yield' inside set comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_SET_COMPREHENSION;
                     break;
                 case GenExp:
-                    message = "'yield' inside generator expression";
+                    message = ErrorMessages.YIELD_INSIDE_GENERATOR_COMPREHENSION;
                     break;
                 default:
-                    message = "'yield' outside function";
+                    message = ErrorMessages.YIELD_OUTSIDE_FUNCTION;
             }
             throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message);
         }
@@ -618,9 +625,9 @@ public final class PythonSSTNodeFactory {
         return result;
     }
 
-    private static String getModuleDoc(ExpressionNode from) {
+    private static TruffleString getModuleDoc(ExpressionNode from) {
         StringLiteralNode sln = StringUtils.extractDoc(from);
-        String doc = null;
+        TruffleString doc = null;
         if (sln != null) {
             doc = sln.getValue();
         }

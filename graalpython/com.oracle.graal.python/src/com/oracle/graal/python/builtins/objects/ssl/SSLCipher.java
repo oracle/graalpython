@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,15 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
  * Generated using: OpenSSL 1.1.1i FIPS 8 Dec 2020
- * 
+ *
  * This class represents OpenSSL metadata of all SSL/TLS cipher suites.
  **/
 public enum SSLCipher {
@@ -2140,45 +2144,57 @@ public enum SSLCipher {
     TLS_PSK_WITH_NULL_SHA256(50331824, "PSK-NULL-SHA256", "TLSv1.0", "PSK-NULL-SHA256         TLSv1 Kx=PSK      Au=PSK  Enc=None      Mac=SHA256", 0, 0, false, null, "sha256", "kx-psk", "auth-psk"),
     TLS_PSK_WITH_NULL_SHA(50331692, "PSK-NULL-SHA", "SSLv3", "PSK-NULL-SHA            SSLv3 Kx=PSK      Au=PSK  Enc=None      Mac=SHA1", 0, 0, false, null, "sha1", "kx-psk", "auth-psk");
 
+    private static final TruffleString T_ID = tsLiteral("id");
+    private static final TruffleString T_NAME = tsLiteral("name");
+    private static final TruffleString T_PROTOCOL = tsLiteral("protocol");
+    private static final TruffleString T_DESCRIPTION = tsLiteral("description");
+    private static final TruffleString T_STRENGTH_BITS = tsLiteral("strength_bits");
+    private static final TruffleString T_ALG_BITS = tsLiteral("alg_bits");
+    private static final TruffleString T_AEAD = tsLiteral("aead");
+    private static final TruffleString T_SYMMETRIC = tsLiteral("symmetric");
+    private static final TruffleString T_DIGEST = tsLiteral("digest");
+    private static final TruffleString T_KEA = tsLiteral("kea");
+    private static final TruffleString T_AUTH = tsLiteral("auth");
+
     private final int opensslId;
-    private final String opensslName;
-    private final String protocol;
-    private final String description;
+    private final TruffleString opensslName;
+    private final TruffleString protocol;
+    private final TruffleString description;
     private final int strengthBits;
     private final int algorithmBits;
     private final boolean aead;
-    private final String symmetric;
-    private final String digest;
-    private final String kea;
-    private final String auth;
+    private final TruffleString symmetric;
+    private final TruffleString digest;
+    private final TruffleString kea;
+    private final TruffleString auth;
 
     SSLCipher(int opensslId, String opensslName, String protocol, String description, int strengthBits, int algorithmBits, boolean aead, String symmetric, String digest, String kea, String auth) {
         this.opensslId = opensslId;
-        this.opensslName = opensslName;
-        this.protocol = protocol;
-        this.description = description;
+        this.opensslName = toTruffleStringUncached(opensslName);
+        this.protocol = toTruffleStringUncached(protocol);
+        this.description = toTruffleStringUncached(description);
         this.strengthBits = strengthBits;
         this.algorithmBits = algorithmBits;
         this.aead = aead;
-        this.symmetric = symmetric;
-        this.digest = digest;
-        this.kea = kea;
-        this.auth = auth;
+        this.symmetric = toTruffleStringUncached(symmetric);
+        this.digest = toTruffleStringUncached(digest);
+        this.kea = toTruffleStringUncached(kea);
+        this.auth = toTruffleStringUncached(auth);
 
     }
 
     public PKeyword[] asKeywords() {
-        return new PKeyword[]{new PKeyword("id", getOpensslId()),
-                        new PKeyword("name", getOpensslName() != null ? getOpensslName() : PNone.NONE),
-                        new PKeyword("protocol", getProtocol() != null ? getProtocol() : PNone.NONE),
-                        new PKeyword("description", getDescription() != null ? getDescription() : PNone.NONE),
-                        new PKeyword("strength_bits", getStrengthBits()),
-                        new PKeyword("alg_bits", getAlgorithmBits()),
-                        new PKeyword("aead", getAead()),
-                        new PKeyword("symmetric", getSymmetric() != null ? getSymmetric() : PNone.NONE),
-                        new PKeyword("digest", getDigest() != null ? getDigest() : PNone.NONE),
-                        new PKeyword("kea", getKea() != null ? getKea() : PNone.NONE),
-                        new PKeyword("auth", getAuth() != null ? getAuth() : PNone.NONE)
+        return new PKeyword[]{new PKeyword(T_ID, getOpensslId()),
+                        new PKeyword(T_NAME, getOpensslName() != null ? getOpensslName() : PNone.NONE),
+                        new PKeyword(T_PROTOCOL, getProtocol() != null ? getProtocol() : PNone.NONE),
+                        new PKeyword(T_DESCRIPTION, getDescription() != null ? getDescription() : PNone.NONE),
+                        new PKeyword(T_STRENGTH_BITS, getStrengthBits()),
+                        new PKeyword(T_ALG_BITS, getAlgorithmBits()),
+                        new PKeyword(T_AEAD, getAead()),
+                        new PKeyword(T_SYMMETRIC, getSymmetric() != null ? getSymmetric() : PNone.NONE),
+                        new PKeyword(T_DIGEST, getDigest() != null ? getDigest() : PNone.NONE),
+                        new PKeyword(T_KEA, getKea() != null ? getKea() : PNone.NONE),
+                        new PKeyword(T_AUTH, getAuth() != null ? getAuth() : PNone.NONE)
         };
     }
 
@@ -2186,15 +2202,15 @@ public enum SSLCipher {
         return opensslId;
     }
 
-    public String getOpensslName() {
+    public TruffleString getOpensslName() {
         return opensslName;
     }
 
-    public String getProtocol() {
+    public TruffleString getProtocol() {
         return protocol;
     }
 
-    public String getDescription() {
+    public TruffleString getDescription() {
         return description;
     }
 
@@ -2210,19 +2226,19 @@ public enum SSLCipher {
         return aead;
     }
 
-    public String getSymmetric() {
+    public TruffleString getSymmetric() {
         return symmetric;
     }
 
-    public String getDigest() {
+    public TruffleString getDigest() {
         return digest;
     }
 
-    public String getKea() {
+    public TruffleString getKea() {
         return kea;
     }
 
-    public String getAuth() {
+    public TruffleString getAuth() {
         return auth;
     }
 

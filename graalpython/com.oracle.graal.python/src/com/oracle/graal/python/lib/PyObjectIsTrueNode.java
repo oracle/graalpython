@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_IsTrue}. Converts object to a boolean value using its
@@ -108,8 +109,8 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doString(String object) {
-        return object.length() != 0;
+    static boolean doString(TruffleString object) {
+        return !object.isEmpty();
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -48,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 import java.util.Arrays;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
@@ -59,6 +62,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     private int closedHandlesQueueMaxSize = DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE;
     private final LinkedList<GraalHPyHandle> closedHandles = new LinkedList<>();
     private Object onInvalidHandleCallback;
+
+    private static final TruffleString T_NAME = tsLiteral("HPy Debug Mode ABI (GraalVM backend)");
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
@@ -103,8 +108,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     }
 
     @Override
-    protected String getName() {
-        return "HPy Debug Mode ABI (GraalVM backend)";
+    protected TruffleString getName() {
+        return T_NAME;
     }
 
     @TruffleBoundary

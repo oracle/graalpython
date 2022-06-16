@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,20 +49,21 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code _PyArg_CheckPositional}.
  */
 @GenerateUncached
 public abstract class PyArgCheckPositionalNode extends Node {
-    public final boolean execute(String name, Object[] args, int min, int max) {
+    public final boolean execute(TruffleString name, Object[] args, int min, int max) {
         return execute(name, args.length, min, max);
     }
 
-    public abstract boolean execute(String name, int nargs, int min, int max);
+    public abstract boolean execute(TruffleString name, int nargs, int min, int max);
 
     @Specialization
-    static boolean doGeneric(String name, int nargs, int min, int max,
+    static boolean doGeneric(TruffleString name, int nargs, int min, int max,
                     @Cached PRaiseNode raiseNode) {
         assert min >= 0;
         assert min <= max;

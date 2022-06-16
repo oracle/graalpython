@@ -149,7 +149,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), "invalid item for assignment");
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), ErrorMessages.INVALID_ITEM_FOR_ASSIGMENT);
         }
     }
 

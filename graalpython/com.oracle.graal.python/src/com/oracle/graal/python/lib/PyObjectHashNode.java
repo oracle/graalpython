@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -55,10 +56,9 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
@@ -78,16 +79,17 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     }
 
     @Specialization
-    @TruffleBoundary
-    public static long hash(String object) {
-        return avoidNegative1(object.hashCode());
+    public static long hash(TruffleString object,
+                    @Cached TruffleString.HashCodeNode hashCodeNode) {
+        return avoidNegative1(hashCodeNode.execute(object, TS_ENCODING));
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     static long hash(PString object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @Cached CastToJavaStringNode cast) {
-        return hash(cast.execute(object));
+                    @Cached CastToTruffleStringNode cast,
+                    @Cached TruffleString.HashCodeNode hashCodeNode) {
+        return hash(cast.execute(object), hashCodeNode);
     }
 
     @Specialization

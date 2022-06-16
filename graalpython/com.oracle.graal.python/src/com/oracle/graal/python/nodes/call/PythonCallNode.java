@@ -80,9 +80,15 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @NodeChild("calleeNode")
 public abstract class PythonCallNode extends ExpressionNode {
+
+    private static final TruffleString T_UNKNOWN = tsLiteral("~unknown");
 
     @Child private CallNode callNode = CallNode.create();
 
@@ -94,13 +100,13 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
     @Child private PyObjectFunctionStr pyObjectFunctionStr;
-    @Child private StringNodes.CastToJavaStringCheckedNode castToStringNode;
+    @Child private StringNodes.CastToTruffleStringCheckedNode castToStringNode;
 
-    protected final String calleeName;
+    protected final TruffleString calleeName;
 
     protected abstract ExpressionNode getCalleeNode();
 
-    PythonCallNode(String calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
+    PythonCallNode(TruffleString calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
         this.calleeName = calleeName;
         this.argumentNodes = argumentNodes;
         this.positionalArguments = positionalArguments;
@@ -111,7 +117,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         assert !(starArgs instanceof EmptyNode) : "pass null instead";
         assert !(kwArgs instanceof EmptyNode) : "pass null instead";
 
-        String calleeName = "~unknown";
+        TruffleString calleeName = T_UNKNOWN;
         ExpressionNode getCallableNode = calleeNode;
 
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
@@ -266,9 +272,9 @@ public abstract class PythonCallNode extends ExpressionNode {
     @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
-        protected final String key;
+        protected final TruffleString key;
 
-        protected GetCallAttributeNode(String key) {
+        protected GetCallAttributeNode(TruffleString key) {
             this.key = key;
         }
 
@@ -288,15 +294,15 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     protected static final class ForeignInvoke {
         private final Object receiver;
-        private final String identifier;
+        private final TruffleString identifier;
 
-        public ForeignInvoke(Object object, String key) {
+        public ForeignInvoke(Object object, TruffleString key) {
             this.receiver = object;
             this.identifier = key;
         }
     }
 
-    public final String getCalleeName() {
+    public final TruffleString getCalleeName() {
         return calleeName;
     }
 
@@ -320,21 +326,21 @@ public abstract class PythonCallNode extends ExpressionNode {
                 keywordsError.enter();
                 if (castToStringNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castToStringNode = insert(StringNodes.CastToJavaStringCheckedNode.create());
+                    castToStringNode = insert(StringNodes.CastToTruffleStringCheckedNode.create());
                 }
-                String functionName = getFunctionName(frame, callable);
-                String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
+                TruffleString functionName = getFunctionName(frame, callable);
+                TruffleString keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
-                String functionName = getFunctionName(frame, callable);
+                TruffleString functionName = getFunctionName(frame, callable);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, ex.getObject());
             }
         }
         return result;
     }
 
-    private String getFunctionName(VirtualFrame frame, Object callable) {
+    private TruffleString getFunctionName(VirtualFrame frame, Object callable) {
         if (pyObjectFunctionStr == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             pyObjectFunctionStr = insert(PyObjectFunctionStr.create());
@@ -356,9 +362,10 @@ public abstract class PythonCallNode extends ExpressionNode {
                         @Cached BranchProfile typeError,
                         @Cached BranchProfile invokeError,
                         @Cached GetAnyAttributeNode getAttrNode,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
             try {
-                return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
+                return fromForeign.executeConvert(interop.invokeMember(callable.receiver, toJavaStringNode.execute(callable.identifier), arguments));
             } catch (ArityException | UnsupportedTypeException e) {
                 typeError.enter();
                 throw raise.raise(PythonErrorType.TypeError, e);
@@ -430,6 +437,6 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private boolean isBreakpoint(Class<?> tag) {
-        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.BREAKPOINT);
+        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equalsUncached(BuiltinNames.T_BREAKPOINT, TS_ENCODING);
     }
 }

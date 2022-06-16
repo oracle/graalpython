@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeCAPISymbol implements NativeCExtSymbol {
 
@@ -232,23 +236,23 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_CAST("cast"),
     FUN_WSTRING_AT("wstring_at");
 
-    private final String name;
+    private final TruffleString name;
 
     @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
 
-    NativeCAPISymbol(String name) {
-        this.name = name;
+    private NativeCAPISymbol(String name) {
+        this.name = toTruffleStringUncached(name);
     }
 
     @Override
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static NativeCAPISymbol getByName(String name) {
+    public static NativeCAPISymbol getByName(TruffleString name, TruffleString.EqualNode eqNode) {
         for (int i = 0; i < VALUES.length; i++) {
-            if (VALUES[i].name.equals(name)) {
+            if (eqNode.execute(VALUES[i].name, name, TS_ENCODING)) {
                 return VALUES[i];
             }
         }
@@ -256,8 +260,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static boolean isValid(String name) {
-        return getByName(name) != null;
+    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
+        return getByName(name, eqNode) != null;
     }
 
     public static NativeCAPISymbol[] getValues() {

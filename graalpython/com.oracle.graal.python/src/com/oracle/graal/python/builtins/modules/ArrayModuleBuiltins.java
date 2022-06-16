@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,12 +25,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteOrder;
 import java.util.List;
@@ -53,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
@@ -84,8 +89,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 
-@CoreFunctions(defineModule = "array")
+@CoreFunctions(defineModule = J_ARRAY)
 public final class ArrayModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -96,13 +103,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonModule arrayModule = core.lookupBuiltinModule("array");
-        arrayModule.setAttribute("ArrayType", core.lookupType(PythonBuiltinClassType.PArray));
-        arrayModule.setAttribute("typecodes", "bBuhHiIlLqQfd");
+        PythonModule arrayModule = core.lookupBuiltinModule(T_ARRAY);
+        arrayModule.setAttribute(tsLiteral("ArrayType"), core.lookupType(PythonBuiltinClassType.PArray));
+        arrayModule.setAttribute(tsLiteral("typecodes"), tsLiteral("bBuhHiIlLqQfd"));
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @Builtin(name = J_ARRAY, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ArrayNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
@@ -110,28 +117,28 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length == 1")
         Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
                         @Cached IsBuiltinClassProfile isNotSubtypeProfile,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached CastToTruffleStringCheckedNode cast,
                         @Cached ArrayNodeInternal arrayNodeInternal) {
             checkKwargs(cls, kwargs, isNotSubtypeProfile);
-            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), PNone.NO_VALUE);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), PNone.NO_VALUE);
         }
 
         @Specialization(guards = "args.length == 2")
         Object array3(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
                         @Cached IsBuiltinClassProfile isNotSubtypeProfile,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached CastToTruffleStringCheckedNode cast,
                         @Cached ArrayNodeInternal arrayNodeInternal) {
             checkKwargs(cls, kwargs, isNotSubtypeProfile);
-            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), args[1]);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], ErrorMessages.ARG_1_MUST_BE_UNICODE_NOT_P, args[0]), args[1]);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object cls, Object[] args, PKeyword[] kwargs) {
             if (args.length < 2) {
-                throw raise(TypeError, S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN, "array", 2, args.length);
+                throw raise(TypeError, S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN, T_ARRAY, 2, args.length);
             } else {
-                throw raise(TypeError, S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN, "array", 3, args.length);
+                throw raise(TypeError, S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN, T_ARRAY, 3, args.length);
             }
         }
 
@@ -158,18 +165,22 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             @Child private PythonObjectFactory factory;
             @CompilationFinal private ValueProfile formatProfile = ValueProfile.createIdentityProfile();
 
-            public abstract PArray execute(VirtualFrame frame, Object cls, String typeCode, Object initializer);
+            public abstract PArray execute(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer);
 
             @Specialization(guards = "isNoValue(initializer)")
-            PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
-                BufferFormat format = getFormatChecked(typeCode);
+            PArray array(Object cls, TruffleString typeCode, @SuppressWarnings("unused") PNone initializer,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 return getFactory().createArray(cls, typeCode, format);
             }
 
             @Specialization
-            PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range,
-                            @Cached ArrayNodes.PutValueNode putValueNode) {
-                BufferFormat format = getFormatChecked(typeCode);
+            PArray arrayWithRangeInitializer(Object cls, TruffleString typeCode, PIntRange range,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 PArray array;
                 try {
                     array = getFactory().createArray(cls, typeCode, format, range.getIntLength());
@@ -190,19 +201,23 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
-                            @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
-                PArray array = getFactory().createArray(cls, typeCode, getFormatChecked(typeCode));
+            PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PBytesLike bytes,
+                            @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                PArray array = getFactory().createArray(cls, typeCode, getFormatChecked(typeCode, lengthNode, atIndexNode));
                 fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 return array;
             }
 
             @Specialization(guards = "isString(initializer)")
-            PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
-                            @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode) {
-                BufferFormat format = getFormatChecked(typeCode);
+            PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
+                            @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 if (format != BufferFormat.UNICODE) {
-                    throw raise(TypeError, "cannot use a str to initialize an array with typecode '%s'", typeCode);
+                    throw raise(TypeError, ErrorMessages.CANNOT_USE_STR_TO_INITIALIZE_ARRAY, typeCode);
                 }
                 PArray array = getFactory().createArray(cls, typeCode, format);
                 fromUnicodeNode.execute(frame, array, initializer);
@@ -210,10 +225,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            PArray arrayArrayInitializer(VirtualFrame frame, Object cls, String typeCode, PArray initializer,
+            PArray arrayArrayInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PArray initializer,
                             @Cached ArrayNodes.PutValueNode putValueNode,
-                            @Cached ArrayNodes.GetValueNode getValueNode) {
-                BufferFormat format = getFormatChecked(typeCode);
+                            @Cached ArrayNodes.GetValueNode getValueNode, @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 try {
                     PArray array = getFactory().createArray(cls, typeCode, format, initializer.getLength());
                     for (int i = 0; i < initializer.getLength(); i++) {
@@ -227,12 +243,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            PArray arraySequenceInitializer(VirtualFrame frame, Object cls, String typeCode, PSequence initializer,
+            PArray arraySequenceInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PSequence initializer,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.LenNode lenNode,
-                            @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-                BufferFormat format = getFormatChecked(typeCode);
+                            @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 SequenceStorage storage = getSequenceStorageNode.execute(initializer);
                 int length = lenNode.execute(storage);
                 try {
@@ -248,14 +266,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"})
-            PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
+            PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, Object initializer,
                             @Cached PyObjectGetIter getIter,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached GetNextNode nextNode,
-                            @Cached IsBuiltinClassProfile errorProfile) {
+                            @Cached IsBuiltinClassProfile errorProfile,
+                            @Cached TruffleString.CodePointLengthNode lengthNode,
+                            @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 Object iter = getIter.execute(frame, initializer);
 
-                BufferFormat format = getFormatChecked(typeCode);
+                BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 PArray array = getFactory().createArray(cls, typeCode, format);
 
                 int length = 0;
@@ -281,18 +301,18 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 return array;
             }
 
-            private BufferFormat getFormatChecked(String typeCode) {
-                if (typeCode.length() != 1) {
-                    throw raise(TypeError, "array() argument 1 must be a unicode character, not str");
+            private BufferFormat getFormatChecked(TruffleString typeCode, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
+                if (lengthNode.execute(typeCode, TS_ENCODING) != 1) {
+                    throw raise(TypeError, ErrorMessages.ARRAY_ARG_1_MUST_BE_UNICODE);
                 }
-                BufferFormat format = BufferFormat.forArray(typeCode);
+                BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
                 if (format == null) {
-                    throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                    throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
                 }
                 return formatProfile.profile(format);
             }
 
-            private PException raise(PythonBuiltinClassType type, String message, Object... args) {
+            private PException raise(PythonBuiltinClassType type, TruffleString message, Object... args) {
                 if (raiseNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     raiseNode = insert(PRaiseNode.create());
@@ -319,45 +339,49 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
-    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "mformatCode == cachedCode")
-        Object reconstructCached(VirtualFrame frame, Object arrayType, String typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
+        Object reconstructCached(VirtualFrame frame, Object arrayType, TruffleString typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
                         @Cached("mformatCode") int cachedCode,
                         @Cached("createIdentityProfile()") ValueProfile formatProfile,
                         @Cached PyObjectCallMethodObjArgs callDecode,
                         @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
-            BufferFormat format = BufferFormat.forArray(typeCode);
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
-                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
             return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
         }
 
         @Specialization(replaces = "reconstructCached")
-        Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
+        Object reconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes,
                         @Cached PyObjectCallMethodObjArgs callDecode,
                         @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
-            BufferFormat format = BufferFormat.forArray(typeCode);
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
             if (format == null) {
-                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
             }
             return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
         }
 
-        private Object doReconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
+        private Object doReconstruct(VirtualFrame frame, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
-                throw raise(TypeError, "%n is not a subtype of array", arrayType);
+                throw raise(TypeError, ErrorMessages.N_NOT_SUBTYPE_OF_ARRAY, arrayType);
             }
             MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);
             if (machineFormat != null) {
@@ -366,10 +390,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     array = factory().createArray(arrayType, typeCode, machineFormat.format);
                     fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 } else {
-                    String newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
+                    TruffleString newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
                     array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
                     if (machineFormat.unicodeEncoding != null) {
-                        Object decoded = callDecode.execute(frame, bytes, "decode", machineFormat.unicodeEncoding);
+                        Object decoded = callDecode.execute(frame, bytes, T_DECODE, machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);
                     } else {
                         fromBytesNode.executeWithoutClinic(frame, array, bytes);
@@ -380,14 +404,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
                 return array;
             } else {
-                throw raise(ValueError, "third argument must be a valid machine format code.");
+                throw raise(ValueError, ErrorMessages.THIRD_ARG_MUST_BE_A_VALID_MACHINE_CODE_FMT);
             }
         }
 
         @Specialization(guards = "!isPBytes(value)")
         @SuppressWarnings("unused")
-        Object error(Object arrayType, String typeCode, int mformatCode, Object value) {
-            throw raise(TypeError, "fourth argument should be bytes, not %p", value);
+        Object error(Object arrayType, TruffleString typeCode, int mformatCode, Object value) {
+            throw raise(TypeError, ErrorMessages.FOURTH_ARG_SHOULD_BE_BYTES, value);
         }
 
         protected static boolean isPBytes(Object obj) {

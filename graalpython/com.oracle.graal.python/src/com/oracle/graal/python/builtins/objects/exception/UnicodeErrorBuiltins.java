@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,6 +67,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeError)
 public final class UnicodeErrorBuiltins extends PythonBuiltins {
@@ -92,7 +93,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static String getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToJavaStringNode castNode) {
+    public static TruffleString getArgAsString(Object[] args, int index, PNodeWithRaise raiseNode, CastToTruffleStringNode castNode) {
         if (args.length < index + 1 || !PGuards.isString(args[index])) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         } else {
@@ -113,12 +114,12 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization
         @CompilerDirectives.TruffleBoundary
-        PBytes doString(String value,
+        PBytes doString(TruffleString value,
                         @Cached PythonObjectFactory factory) {
-            // TODO: cbasca cPython works directly with bytes while we have Java strings which are
-            // encoded, here we decode using the system encoding but this might not be the correct /
-            // ideal case
-            return factory.createBytes(value.getBytes());
+            // TODO GR-37601: cbasca cPython works directly with bytes while we have Java strings
+            // which are encoded, here we decode using the system encoding but this might not be the
+            // correct / ideal case
+            return factory.createBytes(value.toJavaStringUncached().getBytes());
         }
 
         @Specialization

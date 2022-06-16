@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyNumber_Check}. Returns true if the argument provides numeric
@@ -70,7 +71,7 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doString(@SuppressWarnings("unused") String object) {
+    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return false;
     }
 

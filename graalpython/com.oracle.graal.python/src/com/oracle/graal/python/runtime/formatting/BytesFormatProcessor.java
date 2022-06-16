@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
@@ -119,7 +121,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     @Override
     protected boolean isMapping(Object obj) {
         // bytesobject.c _PyBytes_FormatEx()
-        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof String) && PyMappingCheckNode.getUncached().execute(obj);
+        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.getUncached().execute(obj);
     }
 
     @Override
@@ -205,7 +207,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
             case 'r':
             case 'a': // ascii
-                String result = PyObjectAsciiNode.getUncached().execute(null, getArg());
+                String result = PyObjectAsciiNode.getUncached().execute(null, getArg()).toJavaStringUncached();
                 fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.formatAsciiString(result);
                 return fb;
@@ -220,18 +222,18 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             return toBytes((PBytesLike) arg);
         }
         // try calling __bytes__
-        Object attribute = lookupAttribute(arg, __BYTES__);
+        Object attribute = lookupAttribute(arg, T___BYTES__);
         if (attribute != PNone.NO_VALUE) {
             Object bytesResult = call(attribute, arg);
             if (!(bytesResult instanceof PBytes)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, arg);
+                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
             }
             return toBytes((PBytes) bytesResult);
         }
         // otherwise: use the buffer protocol
         byte[] result = byteBufferAsBytesOrNull(arg);
         if (result == null) {
-            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
         }
         return result;
     }

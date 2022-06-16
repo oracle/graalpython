@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,18 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_EXPECTING_CLOSING_BRACE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_HASH_IN_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_INVALID_CONVERSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_SINGLE_BRACE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_TOO_MANY_NESTED_PARS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_UNMATCHED_PAR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_UNTERMINATED_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_NESTED_TOO_DEEPLY;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -49,20 +61,9 @@ import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.source.Source;
 import java.util.Arrays;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class FormatStringParser {
-
-    // error messages from parsing
-    public static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "f-string: empty expression not allowed";
-    public static final String ERROR_MESSAGE_SINGLE_BRACE = "f-string: single '}' is not allowed";
-    public static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
-    public static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
-    public static final String ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION = "f-string expression part cannot include a backslash";
-    public static final String ERROR_MESSAGE_HASH_IN_EXPRESSION = "f-string expression part cannot include '#'";
-    public static final String ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH = "f-string: closing parenthesis '%c' does not match opening parenthesis '%c'";
-    public static final String ERROR_MESSAGE_UNMATCHED_PAR = "f-string: unmatched '%c'";
-    public static final String ERROR_MESSAGE_TOO_MANY_NESTED_PARS = "f-string: too many nested parenthesis";
-    public static final String ERROR_MESSAGE_EXPECTING_CLOSING_BRACE = "f-string: expecting '}'";
 
     // token types and Token data holder (public for testing purposes)
     public static final byte TOKEN_TYPE_STRING = 1;
@@ -303,7 +304,7 @@ public final class FormatStringParser {
                     } else if (recursionLevel == 2) {
                         // we are inside formatting expression of another formatting expression,
                         // example: f'{42:{42:{42}}}'. This level of nesting is not allowed.
-                        throw raiseInvalidSyntax(errorCallback, "f-string: expressions nested too deeply");
+                        throw raiseInvalidSyntax(errorCallback, ERROR_MESSAGE_NESTED_TOO_DEEPLY);
                     } else {
                         index--;
                         state = STATE_EXPRESSION;
@@ -586,12 +587,12 @@ public final class FormatStringParser {
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, closing, opening);
     }
 
-    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, String message) {
+    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, TruffleString message) {
         Source source = Source.newBuilder(PythonLanguage.ID, "unknown", "<fstring>").build();
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), message);
     }
 
-    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, String message, Object... args) {
+    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, TruffleString message, Object... args) {
         Source source = Source.newBuilder(PythonLanguage.ID, "unknown", "<fstring>").build();
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), message, args);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,6 +61,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
@@ -73,15 +77,15 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raise(PythonBuiltinClassType type, String message) {
+    public final PException raise(PythonBuiltinClassType type, TruffleString message) {
         throw execute(this, type, null, PNone.NO_VALUE, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+    public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
         throw execute(this, type, null, PNone.NO_VALUE, format, arguments);
     }
 
-    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
+    public final PException raise(PythonBuiltinClassType type, Object[] arguments) {
         throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
     }
 
@@ -93,7 +97,7 @@ public abstract class PRaiseNode extends Node {
         throw execute(this, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+    public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
         throw execute(this, type, null, cause, format, arguments);
     }
 
@@ -101,24 +105,16 @@ public abstract class PRaiseNode extends Node {
         throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType, Object message) {
-        throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType, TruffleString message) {
+        throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, assertNoJavaString(message), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, String format, Object... arguments) {
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, TruffleString format, Object... arguments) {
         throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, PNone.NO_VALUE, format, arguments);
-    }
-
-    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, Object... arguments) {
-        throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
     }
 
     public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, Exception e) {
         throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
-    }
-
-    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, cause, format, arguments);
     }
 
     /**
@@ -196,21 +192,27 @@ public abstract class PRaiseNode extends Node {
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
     static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
                     Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
         throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, factory.createTuple(arguments)));
     }
 
     @Specialization(guards = {"isNoValue(cause)"})
-    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, TruffleString format, Object[] arguments,
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert format != null;
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
         throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, format, arguments));
     }
 
     @Specialization(guards = {"!isNoValue(cause)"})
-    static PException doBuiltinTypeWithCause(Node raisingNode, PythonBuiltinClassType type, Object[] data, PBaseException cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    static PException doBuiltinTypeWithCause(Node raisingNode, PythonBuiltinClassType type, Object[] data, PBaseException cause, TruffleString format, Object[] arguments,
+                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert format != null;
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
         PBaseException baseException = factory.createBaseException(type, data, format, arguments);
         baseException.setContext(cause);
         baseException.setCause(cause);
@@ -218,9 +220,9 @@ public abstract class PRaiseNode extends Node {
     }
 
     @TruffleBoundary
-    private static String getMessage(Exception e) {
+    private static TruffleString getMessage(Exception e) {
         String msg = e.getMessage();
-        return msg != null ? msg : e.getClass().getSimpleName();
+        return toTruffleStringUncached(msg != null ? msg : e.getClass().getSimpleName());
     }
 
     public static PRaiseNode create() {
@@ -229,5 +231,13 @@ public abstract class PRaiseNode extends Node {
 
     public static PRaiseNode getUncached() {
         return PRaiseNodeGen.getUncached();
+    }
+
+    private static void ensureNoJavaStrings(Object[] arguments, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof String) {
+                arguments[i] = fromJavaStringNode.execute((String) arguments[i], TS_ENCODING);
+            }
+        }
     }
 }

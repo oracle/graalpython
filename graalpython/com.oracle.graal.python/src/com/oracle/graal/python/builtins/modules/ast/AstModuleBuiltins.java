@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,9 +55,17 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_ast")
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+@CoreFunctions(defineModule = AstModuleBuiltins.J__AST)
 public class AstModuleBuiltins extends PythonBuiltins {
+
+    static final String J__AST = "_ast";
+    static final TruffleString T__AST = tsLiteral(J__AST);
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();
@@ -66,14 +74,14 @@ public class AstModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("PyCF_ONLY_AST", 0);
+        addBuiltinConstant("PyCF_ONLY_AST", 0);
     }
 
     @Override
     @SuppressWarnings("unused")
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonModule astModule = core.lookupBuiltinModule("_ast");
+        PythonModule astModule = core.lookupBuiltinModule(T__AST);
         PythonBuiltinClass astType = core.lookupType(PythonBuiltinClassType.AST);
         /*
          * These classes are not builtin in CPython and the ast module relies on them having
@@ -197,8 +205,9 @@ public class AstModuleBuiltins extends PythonBuiltins {
     }
 
     private static PythonClass makeType(PythonLanguage language, PythonObjectFactory factory, PythonModule astModule, String name, PythonAbstractClass base) {
-        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, name, new PythonAbstractClass[]{base});
-        astModule.setAttribute(name, newType);
+        TruffleString tsName = toTruffleStringUncached(name);
+        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, tsName, new PythonAbstractClass[]{base});
+        astModule.setAttribute(tsName, newType);
         return newType;
     }
 }

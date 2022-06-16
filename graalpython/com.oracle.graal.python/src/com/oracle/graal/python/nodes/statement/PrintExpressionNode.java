@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_DISPLAYHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,7 +60,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class PrintExpressionNode extends ExpressionNode {
     @Child IsBuiltinClassProfile exceptionTypeProfile;
     @Child PRaiseNode raiseNode;
-    @Child GetAttributeNode getAttribute = GetAttributeNode.create(DISPLAYHOOK);
+    @Child GetAttributeNode getAttribute = GetAttributeNode.create(T_DISPLAYHOOK);
     @Child CallNode callNode = CallNode.create();
     @Child ExpressionNode valueNode;
 
@@ -71,7 +72,7 @@ public class PrintExpressionNode extends ExpressionNode {
     public Object execute(VirtualFrame frame) {
         Object value = valueNode.execute(frame);
         PythonContext context = PythonContext.get(this);
-        PythonModule sysModule = context.lookupBuiltinModule("sys");
+        PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object displayhook;
         try {
             displayhook = getAttribute.executeObject(frame, sysModule);

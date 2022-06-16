@@ -57,6 +57,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
+
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public final class PythonCextWarnBuiltins extends PythonBuiltins {
@@ -81,7 +83,7 @@ public final class PythonCextWarnBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 // TODO: pass source again once we update to newer lib-python
-                warnNode.execute(frame, getCore().lookupBuiltinModule("_warnings"), message, category, (int) stackLevel, PNone.NONE);
+                warnNode.execute(frame, getCore().lookupBuiltinModule(T__WARNINGS), message, category, (int) stackLevel, PNone.NONE);
                 return PNone.NONE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);

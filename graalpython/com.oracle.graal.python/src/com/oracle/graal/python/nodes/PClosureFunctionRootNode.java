@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final int[] cellVarSlots;
@@ -60,7 +61,7 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
         this.signature = signature;
     }
 
-    public final String[] getCellVars() {
+    public final TruffleString[] getCellVars() {
         return PythonFrame.extractSlotNames(getFrameDescriptor(), cellVarSlots);
     }
 

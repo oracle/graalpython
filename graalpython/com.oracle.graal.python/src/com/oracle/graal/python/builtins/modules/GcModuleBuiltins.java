@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -58,7 +58,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put("DEBUG_LEAK", 0);
+        addBuiltinConstant("DEBUG_LEAK", 0);
         super.initialize(core);
     }
 

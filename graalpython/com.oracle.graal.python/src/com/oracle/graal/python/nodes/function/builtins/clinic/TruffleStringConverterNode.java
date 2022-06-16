@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,55 +38,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method.
- * <p>
- * The output is always coerced to a Java {@link String}
- *
- * @see PyObjectStrAsObjectNode
- */
-@GenerateUncached
-public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
+public abstract class TruffleStringConverterNode extends ArgumentCastNodeWithRaise {
+    private final String builtinName;
 
-    public final String execute(Object object) {
-        return execute(null, object);
+    public TruffleStringConverterNode(String builtinName) {
+        this.builtinName = builtinName;
     }
 
     @Specialization
-    static String doString(String obj) {
-        return obj;
+    static Object doString(TruffleString value) {
+        return value;
     }
 
-    @Specialization
-    static String doGeneric(VirtualFrame frame, Object obj,
-                    @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode castToString) {
+    @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
+    Object doOthers(Object value,
+                    @Cached CastToTruffleStringNode castToStringNode) {
         try {
-            return castToString.execute(strNode.execute(frame, obj));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
+            return castToStringNode.execute(value);
+        } catch (CannotCastException ex) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
         }
     }
 
-    public static PyObjectStrAsJavaStringNode create() {
-        return PyObjectStrAsJavaStringNodeGen.create();
+    // to be overridden in the subclass
+    protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
+        return false;
     }
 
-    public static PyObjectStrAsJavaStringNode getUncached() {
-        return PyObjectStrAsJavaStringNodeGen.getUncached();
+    @ClinicConverterFactory
+    public static TruffleStringConverterNode create(@BuiltinName String builtinName) {
+        return TruffleStringConverterNodeGen.create(builtinName);
     }
 }

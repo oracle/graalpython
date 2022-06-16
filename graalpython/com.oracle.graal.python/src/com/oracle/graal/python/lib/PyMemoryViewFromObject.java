@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
@@ -93,8 +95,10 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
 
     @Specialization
     PMemoryView fromMMap(PMMap object,
-                    @Cached PythonObjectFactory factory) {
-        return factory.createMemoryViewForManagedObject(object, 1, (int) object.getLength(), false, "B");
+                    @Cached PythonObjectFactory factory,
+                    @Cached TruffleString.CodePointLengthNode lengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
+        return factory.createMemoryViewForManagedObject(object, 1, (int) object.getLength(), false, T_UINT_8_TYPE_CODE, lengthNode, atIndexNode);
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
@@ -107,7 +111,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
                     @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
                     @Cached CallNode callNode,
                     @Cached PythonObjectFactory factory,
-                    @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
+                    @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
+                    @Cached TruffleString.CodePointLengthNode lengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
         Object type = getClassNode.execute(object);
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
         if (hasSlotProfile.profile(getBufferAttr != PNone.NO_VALUE)) {
@@ -137,15 +143,15 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
             int flags = initFlagsNode.execute(cBuffer.getDims(), cBuffer.getItemSize(), shape, strides, suboffsets);
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = new NativeSequenceStorage(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), SequenceStorage.ListStorageType.Byte);
-
+            TruffleString format = cBuffer.getFormat();
             return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
-                            BufferFormat.forMemoryView(cBuffer.getFormat()),
-                            cBuffer.getFormat(), cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
+                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
+                            format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
             Object buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
-                            bufferLib.getFormatString(buffer));
+                            bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
