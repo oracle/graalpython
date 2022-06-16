@@ -581,13 +581,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
-        String path = source.getPath();
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        TruffleString path = toTruffleStringUncached(source.getPath());
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? toTruffleStringUncached(source.getName()) : tsLiteral("<string>");
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
-        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        final TruffleString text = section.isAvailable() ? toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString()) : null;
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
         instance.setExceptionAttributes(excAttrs);
