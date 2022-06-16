@@ -1439,6 +1439,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // to be replaced with the exception
                     stackFrame.setObject(stackTop, pe);
                     bci = decodeBCI((int) newTarget);
+                    oparg = 0;
                 }
             }
         }
