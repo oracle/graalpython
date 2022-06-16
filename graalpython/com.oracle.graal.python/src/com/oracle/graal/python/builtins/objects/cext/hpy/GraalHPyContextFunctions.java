@@ -3564,7 +3564,8 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        private static boolean nameMatches(PyCapsule capsule, Object namePtr, InteropLibrary interopLib, FromCharPointerNode fromCharPointerNode, CastToTruffleStringNode castStr, TruffleString.EqualNode equalNode) {
+        private static boolean nameMatches(PyCapsule capsule, Object namePtr, InteropLibrary interopLib, FromCharPointerNode fromCharPointerNode, CastToTruffleStringNode castStr,
+                        TruffleString.EqualNode equalNode) {
             boolean isCapsuleNameNull = capsule.getName() == null;
             boolean isNamePtrNull = interopLib.isNull(namePtr);
 
