@@ -93,7 +93,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     @Specialization
     TruffleString str(long object,
                     @Cached TruffleString.FromLongNode fromLongNode) {
-        return fromLongNode.execute(object, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings));
+        return fromLongNode.execute(object, TS_ENCODING, false);
     }
 
     @Specialization(guards = "!isTruffleString(obj)")

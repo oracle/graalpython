@@ -503,7 +503,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString doIt(TruffleString self, TruffleString other,
                         @Shared("concat") @Cached TruffleString.ConcatNode concatNode) {
-            return concatNode.execute(self, other, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings));
+            return concatNode.execute(self, other, TS_ENCODING, false);
         }
 
         @Specialization
@@ -2506,7 +2506,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (index < 0 || index >= len) {
                 throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
-            return substringNode.execute(str, index, 1, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings) && len < LAZY_CODEPOINT_THRESHOLD);
+            return substringNode.execute(str, index, 1, TS_ENCODING, false);
         }
     }
 
