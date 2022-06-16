@@ -167,6 +167,26 @@ public final class CodeUnit {
         return currentOffset;
     }
 
+    public int findMaxOffset() {
+        int currentOffset = startOffset;
+        int maxOffset = startOffset;
+
+        for (int i = 0; i < srcOffsetTable.length; i++) {
+            byte diff = srcOffsetTable[i];
+            int overflow = 0;
+            while (diff == (byte) 128) {
+                overflow += 127;
+                diff = srcOffsetTable[++i];
+            }
+            if (diff < 0) {
+                overflow = -overflow;
+            }
+            currentOffset += overflow + diff;
+            maxOffset = Math.max(maxOffset, currentOffset);
+        }
+        return maxOffset;
+    }
+
     public boolean takesVarKeywordArgs() {
         return (flags & HAS_VAR_KW_ARGS) != 0;
     }

@@ -2522,15 +2522,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
              * TODO We could still expose the disassembled bytecode for a debugger to have something
              * to step through.
              */
-            return source.createUnavailableSection();
+            sourceSection = source.createUnavailableSection();
+            return sourceSection;
         } else {
-            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
-            for (int bci = 0; bci < co.code.length; bci++) {
-                int offset = co.bciToSrcOffset(bci);
-                min = Math.min(min, offset);
-                max = Math.max(max, offset);
-            }
-            sourceSection = source.createSection(min, max - min);
+            sourceSection = source.createSection(co.startOffset, co.findMaxOffset() - co.startOffset);
             return sourceSection;
         }
     }
