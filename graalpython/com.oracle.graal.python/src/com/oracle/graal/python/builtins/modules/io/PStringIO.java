@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,56 +40,41 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import com.oracle.graal.python.util.PythonUtils;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public final class PStringIO extends PTextIOBase {
 
-    private static final class Accu {
-        static final int STATE_REALIZED = 1;
-        static final int STATE_ACCUMULATING = 2;
-        /*
-         * The stringio object can be in two states: accumulating or realized. In accumulating
-         * state, the internal buffer contains nothing and the contents are given by the embedded
-         * _PyAccu structure. In realized state, the internal buffer is meaningful and the _PyAccu
-         * is destroyed.
-         */
-        int state = -1;
-        StringBuilder sb = PythonUtils.newStringBuilder();
-
-        String finish() {
-            String str = PythonUtils.sbToString(sb);
-            sb = PythonUtils.newStringBuilder();
-            return str;
-        }
-
-        void clear() {
-            sb = PythonUtils.newStringBuilder();
-        }
-    }
+    /*
+     * The PStringIO object can be in two states: accumulating or realized. In accumulating state,
+     * the internal buffer contains nothing and the contents are given by the string builder. In
+     * realized state, the internal buffer is meaningful and the string builder is destroyed.
+     * Invariant: buf == null iff sb != null
+     */
 
     private boolean closed;
 
-    private String buf;
+    private TruffleString buf;
+    private TruffleStringBuilder sb;
     private int pos;
     private int stringSize;
 
-    private final Accu accu = new Accu();
-
     public PStringIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        buf = "";
+        buf = T_EMPTY_STRING;
     }
 
-    public boolean hasBuf() {
-        return buf != null;
-    }
-
-    public String getBuf() {
+    public TruffleString getBuf() {
+        assert !isAccumulating();
         return buf;
     }
 
-    public void setBuf(String buf) {
+    public void setBuf(TruffleString buf) {
+        assert !isAccumulating();
         this.buf = buf;
     }
 
@@ -121,42 +106,43 @@ public final class PStringIO extends PTextIOBase {
         return closed;
     }
 
-    public void realize() {
-        if (accu.state == Accu.STATE_REALIZED) {
+    public void realize(TruffleStringBuilder.ToStringNode toStringNode) {
+        if (!isAccumulating()) {
             return;
         }
-        assert (accu.state == Accu.STATE_ACCUMULATING);
-        accu.state = Accu.STATE_REALIZED;
-
-        buf = accu.finish();
+        buf = toStringNode.execute(sb);
+        sb = null;
     }
 
-    public boolean isAccumlating() {
-        return accu.state == Accu.STATE_ACCUMULATING;
+    public boolean isAccumulating() {
+        return sb != null;
     }
 
-    public void setAccumlating() {
-        accu.state = Accu.STATE_ACCUMULATING;
+    public void setAccumulating() {
+        assert stringSize == 0 && !isAccumulating();
+        sb = TruffleStringBuilder.create(TS_ENCODING);
     }
 
-    public void append(String str) {
-        PythonUtils.append(accu.sb, str);
+    public void append(TruffleString str, TruffleStringBuilder.AppendStringNode appendStringNode) {
+        assert isAccumulating();
+        appendStringNode.execute(sb, str);
     }
 
     public void setRealized() {
-        accu.state = Accu.STATE_REALIZED;
+        sb = null;
+        buf = T_EMPTY_STRING;
     }
 
-    public String makeIntermediate() {
-        assert (accu.state == Accu.STATE_ACCUMULATING);
-        return PythonUtils.sbToString(accu.sb);
+    public TruffleString makeIntermediate(TruffleStringBuilder.ToStringNode toStringNode) {
+        assert isAccumulating();
+        return toStringNode.execute(sb);
     }
 
     @Override
     public void clearAll() {
         super.clearAll();
-        buf = "";
-        accu.clear();
+        buf = T_EMPTY_STRING;
+        sb = null;
         setWriteNewline(null);
     }
 }

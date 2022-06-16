@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent to use for the various PyDict_GetItem* functions available in CPython. Note that these
@@ -64,14 +65,14 @@ public abstract class PyDictGetItem extends Node {
 
     // We never need a frame for reading string keys
     @Specialization(limit = "3")
-    static final Object getString(@SuppressWarnings("unused") PDict dict, String item,
+    static Object getString(@SuppressWarnings("unused") PDict dict, TruffleString item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
         return lib.getItem(dictStorage, item);
     }
 
     @Specialization(replaces = "getString", limit = "3")
-    static final Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
+    static Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @Cached ConditionProfile frameCondition,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
@@ -79,7 +80,7 @@ public abstract class PyDictGetItem extends Node {
     }
 
     @Specialization(replaces = "getItemCached")
-    static final Object getItem(PDict dict, Object item,
+    static Object getItem(PDict dict, Object item,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         return lib.getItem(dict.getDictStorage(), item);
     }

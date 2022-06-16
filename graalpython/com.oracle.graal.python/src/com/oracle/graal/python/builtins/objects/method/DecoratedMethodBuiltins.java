@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,11 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISABSTRACTMETHOD__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FUNC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
 
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         return DecoratedMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -89,7 +90,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FuncNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -98,7 +99,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
@@ -121,7 +122,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ISABSTRACTMETHOD__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___ISABSTRACTMETHOD__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -129,7 +130,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached ConditionProfile hasAttrProfile) {
-            Object result = lookup.execute(frame, self.getCallable(), __ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, self.getCallable(), T___ISABSTRACTMETHOD__);
             if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
                 return isTrue.execute(frame, result);
             }

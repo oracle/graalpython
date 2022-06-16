@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,8 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.util.PythonUtils;
+
+import static com.oracle.graal.python.parser.sst.FactorySSTVisitor.ts;
 
 public final class ArgListBuilder {
 
@@ -144,7 +146,7 @@ public final class ArgListBuilder {
             int len = nameArgNodes.size();
             result = new ExpressionNode[len];
             for (int i = 0; i < len; i++) {
-                result[i] = new KeywordLiteralNode((ExpressionNode) nameArgNodes.get(i).accept(visitor), nameArgNames.get(i));
+                result[i] = new KeywordLiteralNode((ExpressionNode) nameArgNodes.get(i).accept(visitor), ts(nameArgNames.get(i)));
             }
         }
         return result;

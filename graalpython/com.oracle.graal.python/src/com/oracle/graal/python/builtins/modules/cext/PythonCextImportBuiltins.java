@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.IMPORT_ALL;
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
@@ -53,11 +53,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -77,10 +79,10 @@ public final class PythonCextImportBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyImportImportModuleNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object imp(String name,
+        public Object imp(TruffleString name,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return AbstractImportNode.importModule(name, IMPORT_ALL);
+                return AbstractImportNode.importModule(name, T_IMPORT_ALL);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -89,8 +91,9 @@ public final class PythonCextImportBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object imp(PString name,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return imp(name.getValue(), transformExceptionToNativeNode);
+            return imp(castToStringNode.execute(name), transformExceptionToNativeNode);
         }
     }
 

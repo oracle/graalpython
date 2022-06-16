@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -54,13 +53,12 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class UnicodeObjectNodes {
 
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
-        private static Charset UTF32LE = Charset.forName("UTF-32LE");
-        private static Charset UTF32BE = Charset.forName("UTF-32BE");
 
         public final PBytes executeNativeOrder(Object obj, long elementSize) {
             return execute(obj, elementSize, ByteOrder.nativeOrder());
@@ -79,21 +77,25 @@ public abstract class UnicodeObjectNodes {
         @Specialization
         static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
                         @Cached StringMaterializeNode materializeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(materializeNode.execute(s), elementSize, byteOrder, factory);
+            return doUnicode(materializeNode.execute(s), elementSize, byteOrder, switchEncodingNode, copyToByteArrayNode, factory);
         }
 
         @Specialization
         @TruffleBoundary
-        static PBytes doUnicode(String s, long elementSize, ByteOrder byteOrder,
+        static PBytes doUnicode(TruffleString s, long elementSize, ByteOrder byteOrder,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            Charset utf32Charset = byteOrder == ByteOrder.LITTLE_ENDIAN ? UTF32LE : UTF32BE;
+            TruffleString.Encoding encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_32LE : TruffleString.Encoding.UTF_32BE;
 
             // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
             // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
             // MSBs.
             if (elementSize == 2L) {
-                ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
+                ByteBuffer bytes = ByteBuffer.wrap(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
                 // FIXME unsafe narrowing
                 int size = bytes.remaining() / 2;
                 ByteBuffer buf = ByteBuffer.allocate(size);
@@ -109,10 +111,18 @@ public abstract class UnicodeObjectNodes {
                 buf.get(barr);
                 return factory.createBytes(barr);
             } else if (elementSize == 4L) {
-                return factory.createBytes(s.getBytes(utf32Charset));
+                return factory.createBytes(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
+        }
+
+        private static byte[] getBytes(TruffleString s, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode, TruffleString.Encoding encoding) {
+            TruffleString utf32String = switchEncodingNode.execute(s, encoding);
+            int len = utf32String.byteLength(encoding);
+            byte[] b = new byte[len];
+            copyToByteArrayNode.execute(utf32String, 0, b, 0, len, encoding);
+            return b;
         }
     }
 }

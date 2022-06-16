@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,13 +52,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyFloat_FromString}. Converts a string to a python float (Java
@@ -68,20 +69,21 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class PyFloatFromString extends PNodeWithContext {
     public abstract double execute(Frame frame, Object obj);
 
-    public abstract double execute(Frame frame, String obj);
+    public abstract double execute(Frame frame, TruffleString obj);
 
     @Specialization
-    static double doString(VirtualFrame frame, String object,
-                    @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
+    static double doString(VirtualFrame frame, TruffleString object,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                    @Shared("repr") @Cached PyObjectReprAsTruffleStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
-        return convertStringToDouble(frame, object, object, reprNode, raiseNode);
+        return convertStringToDouble(frame, toJavaStringNode.execute(object), object, reprNode, raiseNode);
     }
 
     @Specialization
     double doGeneric(VirtualFrame frame, Object object,
                     @Cached(parameters = "3") BufferAcquireGenerateUncachedNode acquireNode,
                     @Cached CastToJavaStringNode cast,
-                    @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
+                    @Shared("repr") @Cached PyObjectReprAsTruffleStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         String string = null;
         try {
@@ -98,7 +100,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
                     PythonBufferAccessLibrary accessLib = acquireNode.getAccessLib();
                     byte[] bytes = accessLib.getInternalOrCopiedByteArray(buffer);
                     int len = accessLib.getBufferLength(buffer);
-                    string = PythonUtils.newString(bytes, 0, len);
+                    string = newString(bytes, 0, len);
                 } finally {
                     acquireNode.release(frame, buffer);
                 }
@@ -110,7 +112,12 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         throw raiseNode.raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", object);
     }
 
-    private static double convertStringToDouble(VirtualFrame frame, String src, Object origObj, PyObjectReprAsJavaStringNode reprNode, PRaiseNode raiseNode) {
+    @TruffleBoundary(allowInlining = true)
+    private static String newString(byte[] bytes, int offset, int length) {
+        return new String(bytes, offset, length);
+    }
+
+    private static double convertStringToDouble(VirtualFrame frame, String src, Object origObj, PyObjectReprAsTruffleStringNode reprNode, PRaiseNode raiseNode) {
         String str = FloatUtils.removeUnicodeAndUnderscores(src);
         // Adapted from CPython's float_from_string_inner
         if (str != null) {
@@ -124,7 +131,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
                 }
             }
         }
-        String repr;
+        TruffleString repr;
         try {
             repr = reprNode.execute(frame, origObj);
         } catch (PException e) {

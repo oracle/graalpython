@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 
 import java.util.List;
 
@@ -56,17 +56,19 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuilt
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrGetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrSetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescriptorCheckNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Built-in functions that are only used for {@link PythonBuiltinClassType#GetSetDescriptor}.
@@ -78,7 +80,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         return GetSetDescriptorTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -92,23 +94,25 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(GetSetDescriptor descr,
-                        @Cached GetNameNode getName) {
-            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(descr.getType()));
+        TruffleString repr(GetSetDescriptor descr,
+                        @Shared("gerName") @Cached GetNameNode getName,
+                        @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(descr.getType()));
         }
 
         @Specialization
-        Object repr(HiddenKeyDescriptor descr,
-                        @Cached GetNameNode getName) {
-            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getKey(), getName.execute(descr.getType()));
+        TruffleString repr(HiddenKeyDescriptor descr,
+                        @Shared("gerName") @Cached GetNameNode getName,
+                        @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getKey().getName(), getName.execute(descr.getType()));
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
@@ -126,14 +130,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrGetNode getNode) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey(), obj)) {
                 return descr;
             }
             return getNode.execute(frame, descr, obj);
         }
     }
 
-    @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -150,14 +154,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, Object value,
                         @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrSetNode setNode) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey(), obj)) {
                 return descr;
             }
             return setNode.execute(frame, descr, obj, value);
         }
     }
 
-    @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELETE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetSetDeleteNode extends PythonBinaryBuiltinNode {
 
@@ -175,7 +179,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj,
                         @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrDeleteNode deleteNode) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey(), obj)) {
                 return descr;
             }
             return deleteNode.execute(frame, descr, obj);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,26 +31,41 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ENCODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE_EX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SINGLE_QUOTE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -73,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -82,6 +96,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -98,7 +113,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -117,16 +132,21 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
 public class ArrayBuiltins extends PythonBuiltins {
+
+    public static final TruffleString T_ARRAY_RECONSTRUCTOR = tsLiteral("_array_reconstructor");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ArrayBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "left.getFormat() == right.getFormat()")
@@ -152,11 +172,11 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Fallback
         Object error(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only append array (not \"%p\") to array", right);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_APPEND_ARRAY_TO_ARRAY, right);
         }
     }
 
-    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -168,11 +188,11 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Fallback
         Object error(@SuppressWarnings("unused") Object left, Object right) {
-            throw raise(TypeError, "can only extend array (not \"%p\") with array", right);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_ARRAY_WITH_ARRAY, right);
         }
     }
 
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryClinicBuiltinNode {
@@ -199,11 +219,11 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
     @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBinaryClinicBuiltinNode {
@@ -233,7 +253,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(BufferFormat.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -356,7 +376,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends AbstractComparisonNode {
 
@@ -371,7 +391,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends AbstractComparisonNode {
 
@@ -386,7 +406,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends AbstractComparisonNode {
 
@@ -401,7 +421,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends AbstractComparisonNode {
 
@@ -416,7 +436,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -432,43 +452,48 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static String repr(VirtualFrame frame, PArray self,
+        static TruffleString repr(VirtualFrame frame, PArray self,
                         @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
                         @Cached ConditionProfile isEmptyProfile,
                         @Cached ConditionProfile isUnicodeProfile,
-                        @Cached CastToJavaStringNode cast,
+                        @Cached CastToTruffleStringNode cast,
                         @Cached ToUnicodeNode toUnicodeNode,
-                        @Cached ArrayNodes.GetValueNode getValueNode) {
-            StringBuilder sb = PythonUtils.newStringBuilder();
-            PythonUtils.append(sb, "array('");
-            PythonUtils.append(sb, self.getFormatString());
-            PythonUtils.append(sb, '\'');
+                        @Cached ArrayNodes.GetValueNode getValueNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, T_ARRAY);
+            appendStringNode.execute(sb, T_LPAREN);
+            appendStringNode.execute(sb, T_SINGLE_QUOTE);
+            appendStringNode.execute(sb, self.getFormatString());
+            appendStringNode.execute(sb, T_SINGLE_QUOTE);
             if (isEmptyProfile.profile(self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
-                    PythonUtils.append(sb, ", ");
-                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
+                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
-                    PythonUtils.append(sb, ", [");
+                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    appendStringNode.execute(sb, T_LBRACKET);
                     for (int i = 0; i < self.getLength(); i++) {
                         if (i > 0) {
-                            PythonUtils.append(sb, ", ");
+                            appendStringNode.execute(sb, T_COMMA_SPACE);
                         }
                         Object value = getValueNode.execute(self, i);
-                        PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, value)));
+                        appendStringNode.execute(sb, cast.execute(reprNode.executeObject(frame, value)));
                     }
-                    PythonUtils.append(sb, ']');
+                    appendStringNode.execute(sb, T_RBRACKET);
                 }
             }
-            PythonUtils.append(sb, ')');
-            return PythonUtils.sbToString(sb);
+            appendStringNode.execute(sb, T_RPAREN);
+            return toStringNode.execute(sb);
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
@@ -507,7 +532,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
@@ -569,7 +594,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                     PythonUtils.arraycopy(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize);
                 }
             } else {
-                throw raise(ValueError, "attempt to assign array of size %d to extended slice of size %d", needed, sliceLength);
+                throw raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
             }
             return PNone.NONE;
         }
@@ -583,11 +608,11 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isArray(other)")
         @SuppressWarnings("unused")
         Object setitemWrongType(PArray self, PSlice slice, Object other) {
-            throw raise(TypeError, "can only assign array (not \"%p\") to array slice", other);
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
         }
     }
 
-    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         public abstract Object executeSlice(VirtualFrame frame, PArray self, PSlice slice);
@@ -634,7 +659,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -644,7 +669,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
 
@@ -654,7 +679,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
+    @Builtin(name = J___REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class ReduceExNode extends PythonBinaryClinicBuiltinNode {
@@ -669,7 +694,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookup,
                         @Cached ToListNode toListNode) {
             Object cls = getClassNode.execute(self);
-            Object dict = lookup.execute(frame, self, __DICT__);
+            Object dict = lookup.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -683,15 +708,15 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
-            PythonModule arrayModule = getCore().lookupBuiltinModule("array");
+            PythonModule arrayModule = getCore().lookupBuiltinModule(T_ARRAY);
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(self);
-            Object dict = lookupDict.execute(frame, self, __DICT__);
+            Object dict = lookupDict.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object reconstructor = getReconstructor.execute(frame, arrayModule, "_array_reconstructor");
+            Object reconstructor = getReconstructor.execute(frame, arrayModule, T_ARRAY_RECONSTRUCTOR);
             PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
@@ -712,7 +737,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class TypeCodeNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static String getTypeCode(PArray self) {
+        static TruffleString getTypeCode(PArray self) {
             return self.getFormatString();
         }
     }
@@ -728,7 +753,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "append", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AppendNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -748,7 +773,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
+    @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ExtendNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "self.getFormat() == value.getFormat()")
@@ -836,7 +861,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object error(PArray self, PArray value) {
             // CPython allows extending an array with an arbitrary iterable. Except a differently
             // formatted array. Weird
-            throw raise(TypeError, "can only extend with array of same kind");
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_EXTEND_WITH_ARRAY_OF_SAME_KIND);
         }
     }
 
@@ -890,7 +915,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raise(ValueError, "array.remove(x): x not in array");
+            throw raise(ValueError, ErrorMessages.ARRAY_REMOVE_X_NOT_IN_ARRAY);
         }
     }
 
@@ -903,7 +928,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached("forPop()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             if (self.getLength() == 0) {
-                throw raise(IndexError, "pop from empty array");
+                throw raise(IndexError, ErrorMessages.POP_FROM_EMPTY_ARRAY);
             }
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             Object value = getValueNode.execute(self, index);
@@ -936,7 +961,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 try {
                     int bufferLength = bufferLib.getBufferLength(buffer);
                     if (bufferLength % itemsize != 0) {
-                        throw raise(ValueError, "bytes length not a multiple of item size");
+                        throw raise(ValueError, ErrorMessages.BYTES_ARRAY_NOT_MULTIPLE_OF_ARRAY_SIZE);
                     }
                     int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
                     self.checkCanResize(this);
@@ -971,11 +996,11 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached BranchProfile notEnoughBytesProfile,
                         @Cached FromBytesNode fromBytesNode) {
             if (nNegativeProfile.profile(n < 0)) {
-                throw raise(ValueError, "negative count");
+                throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
             }
             int itemsize = self.getFormat().bytesize;
             int nbytes = n * itemsize;
-            Object readResult = callMethod.execute(frame, file, "read", nbytes);
+            Object readResult = callMethod.execute(frame, file, T_READ, nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, readResult);
                 fromBytesNode.executeWithoutClinic(frame, self, readResult);
@@ -983,11 +1008,11 @@ public class ArrayBuiltins extends PythonBuiltins {
                 // does it this way
                 if (readLength != nbytes) {
                     notEnoughBytesProfile.enter();
-                    throw raise(EOFError, "read() didn't return enough bytes");
+                    throw raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
                 }
             } else {
                 notBytesProfile.enter();
-                throw raise(TypeError, "read() didn't return bytes");
+                throw raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
             }
             return PNone.NONE;
         }
@@ -1027,7 +1052,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object self, Object arg) {
-            throw raise(TypeError, "arg must be list");
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_LIST);
         }
     }
 
@@ -1040,8 +1065,8 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            Object bytes = callMethod.execute(frame, str, "encode", "utf-8");
+            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.FROM_STRING_IS_DEPRECATED, 1);
+            Object bytes = callMethod.execute(frame, str, T_ENCODE, T_UTF8);
             return fromBytesNode.executeWithoutClinic(frame, self, bytes);
         }
 
@@ -1050,28 +1075,32 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
+            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.FROM_STRING_IS_DEPRECATED, 1);
             return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str, frame, this));
         }
     }
 
     @Builtin(name = "fromunicode", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "str"})
-    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object fromunicode(VirtualFrame frame, PArray self, String str,
-                        @Cached ArrayNodes.PutValueNode putValueNode) {
+        Object fromunicode(VirtualFrame frame, PArray self, TruffleString str,
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             try {
-                int length = PString.codePointCount(str, 0, str.length());
+                int length = codePointLengthNode.execute(str, TS_ENCODING);
                 int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.checkCanResize(this);
                 self.resizeStorage(newLength);
-                for (int codePointIndex = 0, charIndex = 0; codePointIndex < length; codePointIndex++) {
-                    int charCount = PString.charCount(PString.codePointAt(str, charIndex));
-                    String value = PString.substring(str, charIndex, charIndex + charCount);
-                    putValueNode.execute(frame, self, self.getLength() + codePointIndex, value);
-                    charIndex += charCount;
+                TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
+                int codePointIndex = 0;
+                while (it.hasNext()) {
+                    TruffleString value = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
+                    putValueNode.execute(frame, self, self.getLength() + codePointIndex++, value);
                 }
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -1084,7 +1113,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object self, Object arg) {
-            throw raise(TypeError, "fromunicode() argument must be str, not %p", arg);
+            throw raise(TypeError, ErrorMessages.FROMUNICODE_ARG_MUST_BE_STR_NOT_P, arg);
         }
 
         @Override
@@ -1121,7 +1150,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         static Object tostring(VirtualFrame frame, PArray self,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ToBytesNode toBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.", 1);
+            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.TO_STRING_IS_DEPRECATED, 1);
             return toBytesNode.execute(frame, self);
         }
     }
@@ -1130,17 +1159,19 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ToUnicodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object tounicode(PArray self,
+        TruffleString tounicode(PArray self,
                         @Cached ConditionProfile formatProfile,
-                        @Cached ArrayNodes.GetValueNode getValueNode) {
+                        @Cached ArrayNodes.GetValueNode getValueNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             if (formatProfile.profile(self.getFormat() != BufferFormat.UNICODE)) {
-                throw raise(ValueError, "tounicode() may only be called on unicode type arrays");
+                throw raise(ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
-            StringBuilder sb = PythonUtils.newStringBuilder(self.getLength());
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             for (int i = 0; i < self.getLength(); i++) {
-                PythonUtils.append(sb, (String) getValueNode.execute(self, i));
+                appendStringNode.execute(sb, (TruffleString) getValueNode.execute(self, i));
             }
-            return PythonUtils.sbToString(sb);
+            return toStringNode.execute(sb);
         }
     }
 
@@ -1162,7 +1193,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         buffer = new byte[blocksize];
                     }
                     PythonUtils.arraycopy(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
-                    callMethod.execute(frame, file, "write", factory().createBytes(buffer));
+                    callMethod.execute(frame, file, T_WRITE, factory().createBytes(buffer));
                     remaining -= blocksize;
                 }
             }
@@ -1225,7 +1256,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                     return i;
                 }
             }
-            throw raise(ValueError, "array.index(x): x not in array");
+            throw raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
         }
     }
 

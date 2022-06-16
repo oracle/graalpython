@@ -40,8 +40,15 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
+import static com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.T__INITIALIZING;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -50,13 +57,14 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyFrameGetBuiltins;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -64,7 +72,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -74,8 +82,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -86,10 +94,13 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class AbstractImportNode extends StatementNode {
 
-    @CompilationFinal(dimensions = 1) public static final String[] IMPORT_ALL = new String[]{"*"};
+    @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
+    public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
     @Child ImportName importNameNode;
 
@@ -101,26 +112,26 @@ public abstract class AbstractImportNode extends StatementNode {
         return PythonLanguage.get(this);
     }
 
-    protected final Object importModule(VirtualFrame frame, String name) {
-        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
+    protected final Object importModule(VirtualFrame frame, TruffleString name) {
+        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
     }
 
-    public static final Object importModule(String name) {
-        return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
+    public static Object importModule(TruffleString name) {
+        return importModule(name, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
     }
 
-    public static final Object importModule(String name, String[] fromList) {
+    public static final Object importModule(TruffleString name, TruffleString[] fromList) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), 0);
     }
 
     @TruffleBoundary
-    public static final Object importModule(String name, Object[] fromList, Object level) {
+    public static final Object importModule(TruffleString name, Object[] fromList, Object level) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), level);
     }
 
     @TruffleBoundary
-    public static final Object importModule(String name, Object fromList, Object level) {
-        Object builtinImport = PyFrameGetBuiltins.getUncached().execute().getAttribute(__IMPORT__);
+    public static final Object importModule(TruffleString name, Object fromList, Object level) {
+        Object builtinImport = PyFrameGetBuiltins.getUncached().execute().getAttribute(T___IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
@@ -129,11 +140,11 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     @TruffleBoundary
-    public static final Object importModule(PythonContext context, String name, String[] fromList, int level) {
+    public static final Object importModule(PythonContext context, TruffleString name, TruffleString[] fromList, int level) {
         return ImportNameNodeGen.getUncached().execute(null, context, PyFrameGetBuiltins.getUncached().execute(), name, PNone.NONE, fromList, level);
     }
 
-    protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
+    protected final Object importModule(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
         if (!context.isInitialized()) {
@@ -148,7 +159,7 @@ public abstract class AbstractImportNode extends StatementNode {
         }
         if (emulateJython()) {
             if (fromList.length > 0) {
-                context.pushCurrentImport(PString.cat(name, ".", fromList[0]));
+                context.pushCurrentImport(StringUtils.cat(name, T_DOT, fromList[0]));
             } else {
                 context.pushCurrentImport(name);
             }
@@ -168,17 +179,17 @@ public abstract class AbstractImportNode extends StatementNode {
      */
     @GenerateUncached
     public abstract static class ImportName extends Node {
-        public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
+        public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
         @Specialization(limit = "1")
-        static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level,
+        static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
                         @Cached PConstructAndRaiseNode raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
-            Object importFunc = builtinsDylib.getOrDefault(builtins, __IMPORT__, null);
+            Object importFunc = builtinsDylib.getOrDefault(builtins, T___IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
             }
@@ -208,29 +219,33 @@ public abstract class AbstractImportNode extends StatementNode {
      */
     @GenerateUncached
     public abstract static class PyImportImportModuleLevelObject extends Node {
-        public abstract Object execute(Frame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
+        public static final TruffleString T__HANDLE_FROMLIST = tsLiteral("_handle_fromlist");
+
+        public abstract Object execute(Frame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
         @SuppressWarnings("unused")
         @Specialization(guards = "level < 0")
-        Object levelLtZero(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level) {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "level must be >= 0");
+        Object levelLtZero(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level) {
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.LEVEL_MUST_BE_AT_LEAST_ZERO);
         }
 
-        protected static final int indexOfDot(String name) {
-            return name.indexOf('.');
+        protected static boolean containsDot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+            return indexOfCodePointNode.execute(name, '.', 0, codePointLengthNode.execute(name, TS_ENCODING), TS_ENCODING) >= 0;
         }
 
-        @Specialization(guards = {"level == 0", "fromList.length == 0", "dotIndex < 0"})
-        public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
+        @Specialization(guards = {"level == 0", "fromList.length == 0", "!containsDot(name, codePointLengthNode, indexOfCodePointNode)"}, limit = "1")
+        public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, TruffleString name, @SuppressWarnings("unused") Object globals,
+                        @SuppressWarnings("unused") TruffleString[] fromList,
                         @SuppressWarnings("unused") int level,
-                        @SuppressWarnings("unused") @Bind("indexOfDot(name)") int dotIndex,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyDictGetItem getModuleNode,
                         @Cached EnsureInitializedNode ensureInitialized,
-                        @Cached FindAndLoad findAndLoad) {
-            final String absName = name;
-            if (name.length() == 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Empty module name");
+                        @Cached FindAndLoad findAndLoad,
+                        @Shared("cpLen") @Cached @SuppressWarnings("unused") TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared("indexOf") @Cached @SuppressWarnings("unused") TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+            final TruffleString absName = name;
+            if (name.isEmpty()) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
             }
             PDict sysModules = context.getSysModules();
             Object mod = getModuleNode.execute(frame, sysModules, absName); // import_get_module
@@ -247,15 +262,15 @@ public abstract class AbstractImportNode extends StatementNode {
 
         @ValueType
         private static final class ModuleFront {
-            private String front;
+            private TruffleString front;
 
-            private ModuleFront(String front) {
+            private ModuleFront(TruffleString front) {
                 this.front = front;
             }
         }
 
         @Specialization(guards = "level >= 0", replaces = "levelZeroNoFromlist")
-        static Object genericImport(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level,
+        static Object genericImport(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @Cached ResolveName resolveName,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyDictGetItem getModuleNode,
@@ -264,13 +279,16 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached PyObjectCallMethodObjArgs callHandleFromlist,
                         @Cached PythonObjectFactory factory,
                         @Cached FindAndLoad findAndLoad,
-                        @Cached ConditionProfile recursiveCase) {
-            String absName;
+                        @Cached ConditionProfile recursiveCase,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            TruffleString absName;
             if (level > 0) {
                 absName = resolveName.execute(frame, name, globals, level);
             } else {
-                if (name.length() == 0) {
-                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Empty module name");
+                if (name.isEmpty()) {
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
                 }
                 absName = name;
             }
@@ -282,14 +300,14 @@ public abstract class AbstractImportNode extends StatementNode {
                 mod = findAndLoad.execute(frame, context, absName);
             }
             if (fromList.length == 0) {
-                int nameLength = name.length();
+                int nameLength = codePointLengthNode.execute(name, TS_ENCODING);
                 if (level == 0 || nameLength > 0) {
-                    int dotIndex = name.indexOf('.');
-                    if (dotIndex == -1) {
+                    int dotIndex = indexOfCodePointNode.execute(name, '.', 0, nameLength, TS_ENCODING);
+                    if (dotIndex < 0) {
                         return mod;
                     }
                     if (level == 0) {
-                        Object front = new ModuleFront(name.substring(0, dotIndex));
+                        Object front = new ModuleFront(substringNode.execute(name, 0, dotIndex, TS_ENCODING, true));
                         // cpython recurses, we have transformed the recursion into a loop
                         do {
                             // we omit a few arguments in the recursion, because that makes things
@@ -302,16 +320,17 @@ public abstract class AbstractImportNode extends StatementNode {
                                                            // module
                                             ensureInitialized,  // used multiple times on the
                                                                 // 'front' module
-                                            findAndLoad); // used multiple times, but always to call
+                                            findAndLoad,  // used multiple times, but always to call
                                                           // the exact same function
+                                            codePointLengthNode, indexOfCodePointNode, substringNode);
                         } while (recursiveCase.profile(front instanceof ModuleFront));
                         return front;
                     } else {
                         int cutoff = nameLength - dotIndex;
-                        String toReturn = absName.substring(0, absName.length() - cutoff);
+                        TruffleString toReturn = substringNode.execute(absName, 0, codePointLengthNode.execute(absName, TS_ENCODING) - cutoff, TS_ENCODING, true);
                         Object finalModule = getModuleNode.execute(frame, sysModules, toReturn); // import_get_module
                         if (finalModule == null) {
-                            throw raiseNode.raise(PythonBuiltinClassType.KeyError, "'%s' not in sys.modules as expected", toReturn);
+                            throw raiseNode.raise(PythonBuiltinClassType.KeyError, ErrorMessages.S_NOT_IN_SYS_MODS, toReturn);
                         }
                         return finalModule;
                     }
@@ -319,9 +338,9 @@ public abstract class AbstractImportNode extends StatementNode {
                     return mod;
                 }
             } else {
-                Object path = getPathNode.execute(frame, mod, SpecialAttributeNames.__PATH__);
+                Object path = getPathNode.execute(frame, mod, SpecialAttributeNames.T___PATH__);
                 if (path != PNone.NO_VALUE) {
-                    return callHandleFromlist.execute(frame, context.getImportlib(), "_handle_fromlist",
+                    return callHandleFromlist.execute(frame, context.getImportlib(), T__HANDLE_FROMLIST,
                                     mod,
                                     factory.createTuple(fromList),
                                     context.importFunc());
@@ -331,14 +350,17 @@ public abstract class AbstractImportNode extends StatementNode {
             }
         }
 
-        static final Object genericImportRecursion(VirtualFrame frame, PythonContext context, ModuleFront front,
+        static Object genericImportRecursion(VirtualFrame frame, PythonContext context, ModuleFront front,
                         PRaiseNode raiseNode,
                         PyDictGetItem getModuleNode,
                         EnsureInitializedNode ensureInitialized,
-                        FindAndLoad findAndLoad) {
-            String absName = front.front;
-            if (absName.length() == 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Empty module name");
+                        FindAndLoad findAndLoad,
+                        TruffleString.CodePointLengthNode codePointLengthNode,
+                        TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        TruffleString.SubstringNode substringNode) {
+            TruffleString absName = front.front;
+            if (absName.isEmpty()) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
             }
             PDict sysModules = context.getSysModules();
             Object mod = getModuleNode.execute(frame, sysModules, absName); // import_get_module
@@ -349,12 +371,12 @@ public abstract class AbstractImportNode extends StatementNode {
             }
             // fromList.length == 0
             // level == 0
-            int dotIndex = absName.indexOf('.');
-            if (dotIndex == -1) {
+            int dotIndex = indexOfCodePointNode.execute(absName, '.', 0, codePointLengthNode.execute(absName, TS_ENCODING), TS_ENCODING);
+            if (dotIndex < 0) {
                 return mod;
             }
             // level == 0
-            front.front = absName.substring(0, dotIndex);
+            front.front = substringNode.execute(absName, 0, dotIndex, TS_ENCODING, true);
             return front;
         }
     }
@@ -375,9 +397,9 @@ public abstract class AbstractImportNode extends StatementNode {
                         // CPython uses PyObject_GetAttr, but ignores the exception here
                         @Cached PyObjectIsTrueNode isTrue) {
             try {
-                Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.__SPEC__);
+                Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.T___SPEC__);
                 if (hasSpec.profile(spec != PNone.NO_VALUE)) {
-                    Object initializing = getInitNode.execute(frame, spec, "_initializing");
+                    Object initializing = getInitNode.execute(frame, spec, T__INITIALIZING);
                     return isTrue.execute(frame, initializing);
                 } else {
                     return false;
@@ -399,14 +421,17 @@ public abstract class AbstractImportNode extends StatementNode {
      */
     @GenerateUncached
     abstract static class EnsureInitializedNode extends Node {
-        protected abstract void execute(Frame frame, PythonContext context, Object mod, String name);
+
+        public static final TruffleString T_LOCK_UNLOCK_MODULE = tsLiteral("_lock_unlock_module");
+
+        protected abstract void execute(Frame frame, PythonContext context, Object mod, TruffleString name);
 
         @Specialization
-        static void ensureInitialized(VirtualFrame frame, PythonContext context, Object mod, String name,
+        static void ensureInitialized(VirtualFrame frame, PythonContext context, Object mod, TruffleString name,
                         @Cached PyModuleIsInitializing isInitializing,
                         @Cached PyObjectCallMethodObjArgs callLockUnlock) {
             if (isInitializing.execute(frame, mod)) {
-                callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name);
+                callLockUnlock.execute(frame, context.getImportlib(), T_LOCK_UNLOCK_MODULE, name);
                 // blocks until done
             }
         }
@@ -423,6 +448,7 @@ public abstract class AbstractImportNode extends StatementNode {
         private static final byte NO_SPEC_PKG = 0b0001;
         private static final byte CANNOT_CAST = 0b00001;
         private static final byte GOT_NO_NAME = 0b000001;
+        public static final TruffleString T_PARENT = tsLiteral("parent");
 
         protected static final byte[] uncachedByte() {
             return new byte[]{Byte.MIN_VALUE};
@@ -432,20 +458,26 @@ public abstract class AbstractImportNode extends StatementNode {
             return new byte[1];
         }
 
-        abstract String execute(Frame frame, String name, Object globals, int level);
+        abstract TruffleString execute(Frame frame, TruffleString name, Object globals, int level);
 
         @Specialization
-        String resolveName(VirtualFrame frame, String name, Object globals, int level,
+        TruffleString resolveName(VirtualFrame frame, TruffleString name, Object globals, int level,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
                         @Cached PyObjectGetAttr getParent,
-                        @Cached CastToJavaStringNode castPackageNode,
+                        @Cached CastToTruffleStringNode castPackageNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached(value = "singleByte()", uncached = "uncachedByte()", dimensions = 1) byte[] branchStates) {
             PDict globalsDict = getDictNode.execute(globals);
-            Object pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PACKAGE__);
-            Object spec = getSpecNode.execute(frame, globalsDict, SpecialAttributeNames.__SPEC__);
-            String pkgString;
+            Object pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.T___PACKAGE__);
+            Object spec = getSpecNode.execute(frame, globalsDict, SpecialAttributeNames.T___SPEC__);
+            TruffleString pkgString;
             if (pkg == PNone.NONE) {
                 pkg = null;
             }
@@ -461,7 +493,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "package must be a string");
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.PACKAGE_MUST_BE_A_STRING);
                 }
                 if (spec != null && spec != PNone.NONE) {
                     if ((branchStates[0] & SPEC_IS_STH) == 0) {
@@ -479,7 +511,7 @@ public abstract class AbstractImportNode extends StatementNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     branchStates[0] |= PKG_IS_NULL;
                 }
-                pkg = getParent.execute(frame, spec, "parent");
+                pkg = getParent.execute(frame, spec, T_PARENT);
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
@@ -487,7 +519,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__spec__.parent must be a string");
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.SPEC_PARENT_MUST_BE_A_STRING);
                 }
             } else {
                 if ((branchStates[0] & NO_SPEC_PKG) == 0) {
@@ -501,13 +533,13 @@ public abstract class AbstractImportNode extends StatementNode {
 
                 // (tfel): we use the byte field to cut off this branch unless needed, and for
                 // footprint when use the same node for __package__, __name__, and __path__ lookup
-                pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__NAME__);
+                pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.T___NAME__);
                 if (pkg == null) {
                     if ((branchStates[0] & GOT_NO_NAME) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= GOT_NO_NAME;
                     }
-                    PRaiseNode.raiseUncached(this, PythonBuiltinClassType.KeyError, "'__name__' not in globals");
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.KeyError, ErrorMessages.NAME_NOT_IN_GLOBALS);
                 }
                 try {
                     pkgString = castPackageNode.execute(pkg);
@@ -516,41 +548,44 @@ public abstract class AbstractImportNode extends StatementNode {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__name__ must be a string");
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.NAME_MUST_BE_A_STRING);
                 }
-                Object path = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PATH__);
+                Object path = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.T___PATH__);
                 if (path == null) {
-                    int dotIdx = pkgString.indexOf('.');
-                    if (dotIdx == -1) {
+                    int dotIdx = indexOfCodePointNode.execute(pkgString, '.', 0, codePointLengthNode.execute(pkgString, TS_ENCODING), TS_ENCODING);
+                    if (dotIdx < 0) {
                         throw noParentError(frame);
                     }
-                    pkgString = pkgString.substring(0, dotIdx);
+                    pkgString = substringNode.execute(pkgString, 0, dotIdx, TS_ENCODING, true);
                 }
             }
 
-            int lastDotIdx = pkgString.length();
+            int lastDotIdx = codePointLengthNode.execute(pkgString, TS_ENCODING);
             if (lastDotIdx == 0) {
                 throw noParentError(frame);
             }
 
             for (int levelUp = 1; levelUp < level; levelUp += 1) {
-                lastDotIdx = pkgString.lastIndexOf('.', lastDotIdx - 1);
-                if (lastDotIdx == -1) {
-                    throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, "attempted relative import beyond top-level package");
+                lastDotIdx = lastIndexOfCodePointNode.execute(pkgString, '.', lastDotIdx, 0, TS_ENCODING);
+                if (lastDotIdx < 0) {
+                    throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL);
                 }
             }
 
-            String base = pkgString.substring(0, lastDotIdx);
-            if (name.length() == 0) {
+            TruffleString base = substringNode.execute(pkgString, 0, lastDotIdx, TS_ENCODING, true);
+            if (name.isEmpty()) {
                 return base;
             }
 
-            String absName = PString.cat(base, ".", name);
-            return absName;
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, base.byteLength(TS_ENCODING) + tsbCapacity(1) + name.byteLength(TS_ENCODING));
+            appendStringNode.execute(sb, base);
+            appendStringNode.execute(sb, T_DOT);
+            appendStringNode.execute(sb, name);
+            return toStringNode.execute(sb);
         }
 
-        private static final RuntimeException noParentError(VirtualFrame frame) {
-            throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, "attempted relative import with no known parent package");
+        private static RuntimeException noParentError(VirtualFrame frame) {
+            throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL);
         }
     }
 
@@ -559,10 +594,10 @@ public abstract class AbstractImportNode extends StatementNode {
      */
     @GenerateUncached
     abstract static class FindAndLoad extends Node {
-        protected abstract Object execute(Frame frame, PythonContext context, String absName);
+        protected abstract Object execute(Frame frame, PythonContext context, TruffleString absName);
 
         @Specialization
-        static Object findAndLoad(VirtualFrame frame, PythonContext context, String absName,
+        static Object findAndLoad(VirtualFrame frame, PythonContext context, TruffleString absName,
                         // TODO: (tfel) audit and import timing
                         // @Cached ReadAttributeFromDynamicObjectNode readPath,
                         // @Cached ReadAttributeFromDynamicObjectNode readMetaPath,
@@ -580,7 +615,7 @@ public abstract class AbstractImportNode extends StatementNode {
             // sysPath == PNone.NO_VALUE ? PNone.NONE : sysPath,
             // sysMetaPath == PNone.NO_VALUE ? PNone.NONE : sysMetaPath,
             // sysPathHooks == PNone.NO_VALUE ? PNone.NONE : sysPathHooks);
-            return callFindAndLoad.execute(frame, context.getImportlib(), "_find_and_load", absName, context.importFunc());
+            return callFindAndLoad.execute(frame, context.getImportlib(), T__FIND_AND_LOAD, absName, context.importFunc());
         }
     }
 

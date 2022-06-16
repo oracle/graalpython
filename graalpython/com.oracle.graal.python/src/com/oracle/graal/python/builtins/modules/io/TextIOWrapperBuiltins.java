@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,37 +46,51 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.BUFFER;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.DECODE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODING;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ERRORS;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FILENO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.LINE_BUFFERING;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.MODE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.NAME;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.RECONFIGURE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SETSTATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE_THROUGH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHUNK_SIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._DEALLOC_WARN;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._FINALIZING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_BUFFER;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ENCODING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ERRORS;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FILENO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_LINE_BUFFERING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_NAME;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_RECONFIGURE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE_THROUGH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHUNK_SIZE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J__FINALIZING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_DECODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ENCODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FILENO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_GETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_NAME;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T__DEALLOC_WARN;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.setNewline;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED;
@@ -95,18 +109,22 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NEGATIVE_SEEK_POSITION
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_POSSIBLE_TO_SET_THE_ENCODING_OR;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_READABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_WRITABLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_P_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.TELLING_POSITION_DISABLED_BY_NEXT_CALL;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -119,7 +137,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -152,6 +171,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PTextIOWrapper)
 public final class TextIOWrapperBuiltins extends PythonBuiltins {
@@ -225,10 +246,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "encoding", "errors", "newline", "line_buffering", "write_through"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "line_buffering", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @ArgumentClinic(name = "write_through", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -241,20 +262,20 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
-                        String errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
+                        TruffleString errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initNode) {
             initNode.execute(frame, self, buffer, encodingArg, errors, newlineArg, lineBuffering, writeThrough);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object detach(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            callMethod.execute(frame, self, FLUSH);
+            callMethod.execute(frame, self, T_FLUSH);
             Object buffer = self.getBuffer();
             self.setBuffer(null);
             self.setDetached(true);
@@ -262,12 +283,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = RECONFIGURE, minNumOfPositionalArgs = 1, keywordOnlyNames = {"encoding", "errors", "newline", "line_buffering", "write_through"})
+    @Builtin(name = J_RECONFIGURE, minNumOfPositionalArgs = 1, keywordOnlyNames = {"encoding", "errors", "newline", "line_buffering", "write_through"})
     @GenerateNodeFactory
     abstract static class ReconfigureNode extends PythonBuiltinNode {
 
         protected static boolean isValid(PTextIO self, Object encodingObj, Object errorsObj, Object newlineObj) {
-            if (self.getDecodedChars() != null) {
+            if (self.hasDecodedChars()) {
                 return isPNone(encodingObj) && isPNone(errorsObj) && isNoValue(newlineObj);
             }
             return true;
@@ -277,14 +298,17 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         Object reconfigure(VirtualFrame frame, PTextIO self, Object encodingObj,
                         Object errorsObj, Object newlineObj,
                         Object lineBufferingObj, Object writeThroughObj,
-                        @Cached IONodes.ToStringNode toStringNode,
+                        @Cached IONodes.ToTruffleStringNode toStringNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
-            String newline = null;
+            TruffleString newline = null;
             if (!isPNone(newlineObj)) {
                 newline = toStringNode.execute(newlineObj);
-                validateNewline(newline, getRaiseNode());
+                validateNewline(newline, getRaiseNode(), codePointLengthNode, codePointAtIndexNode);
             }
 
             boolean lineBuffering, writeThrough;
@@ -298,10 +322,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             } else {
                 writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
-            callMethod.execute(frame, self, FLUSH);
+            callMethod.execute(frame, self, T_FLUSH);
             self.setB2cratio(0);
             if (!isNoValue(newlineObj)) {
-                setNewline(self, newline);
+                setNewline(self, newline, equalNode);
             }
 
             changeEncodingNode.execute(frame, self, encodingObj, errorsObj, !isNoValue(newlineObj));
@@ -317,8 +341,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "str"})
-    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "str"})
+    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class WriteNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
@@ -328,33 +352,34 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.hasEncoder()"})
-        Object write(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") String data) {
+        Object write(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") TruffleString data) {
             throw raise(IOUnsupportedOperation, NOT_WRITABLE);
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasEncoder()"})
-        Object write(VirtualFrame frame, PTextIO self, String data,
+        Object write(VirtualFrame frame, PTextIO self, TruffleString data,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached PyObjectCallMethodObjArgs callMethodEncode,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
+                        @Cached StringReplaceNode replaceNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             boolean haslf = false;
             boolean needflush = false;
-            String text = data;
-            int textlen = PString.length(text);
-
+            TruffleString text = data;
             if ((self.isWriteTranslate() && self.hasWriteNewline()) || self.isLineBuffering()) {
-                if (PString.indexOf(text, "\n", 0) != -1) {
+                if (indexOfCodePointNode.execute(text, '\n', 0, codePointLengthNode.execute(text, TS_ENCODING), TS_ENCODING) >= 0) {
                     haslf = true;
                 }
             }
 
             if (haslf && self.isWriteTranslate() && self.hasWriteNewline()) {
-                text = PythonUtils.replace(text, "\n", self.getWriteNewline());
+                text = replaceNode.execute(text, T_NEWLINE, self.getWriteNewline(), -1);
             }
 
-            if (self.isLineBuffering() && (haslf || PString.indexOf(text, "\r", 0) != -1)) {
+            if (self.isLineBuffering() && (haslf || indexOfCodePointNode.execute(text, '\r', 0, codePointLengthNode.execute(text, TS_ENCODING), TS_ENCODING) >= 0)) {
                 needflush = true;
             }
 
@@ -371,7 +396,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             else
              */
-            Object b = callMethodEncode.execute(frame, self.getEncoder(), ENCODE, text);
+            Object b = callMethodEncode.execute(frame, self.getEncoder(), T_ENCODE, text);
 
             if (b != text && !(b instanceof PBytes)) {
                 throw raise(TypeError, ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P, b);
@@ -386,7 +411,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
 
             if (needflush) {
-                callMethodFlush.execute(frame, self.getBuffer(), FLUSH);
+                callMethodFlush.execute(frame, self.getBuffer(), T_FLUSH);
             }
 
             self.clearDecodedChars();
@@ -395,11 +420,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 decoderResetNode.execute(frame, self);
             }
 
-            return textlen;
+            return codePointLengthNode.execute(data, TS_ENCODING);
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -410,30 +435,36 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasDecoder()", "n < 0"})
-        static Object readAll(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") int n,
+        static TruffleString readAll(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") int n,
                         @Cached TextIOWrapperNodes.DecodeNode decodeNode,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.ConcatNode concatNode) {
             writeFlushNode.execute(frame, self);
 
             /* Read everything */
-            Object bytes = callMethod.execute(frame, self.getBuffer(), READ);
-            String decoded = decodeNode.execute(frame, self.getDecoder(), bytes, true);
-            StringBuilder result = getDecodedChars(self, -1);
-            PythonUtils.append(result, decoded);
+            Object bytes = callMethod.execute(frame, self.getBuffer(), T_READ);
+            TruffleString decoded = decodeNode.execute(frame, self.getDecoder(), bytes, true);
+            TruffleString result = self.consumeAllDecodedChars(substringNode, !decoded.isEmpty());
+            result = concatNode.execute(result, decoded, TS_ENCODING, false);
             self.clearDecodedChars();
             self.clearSnapshot();
-            return PythonUtils.sbToString(result);
+            return result;
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "self.hasDecoder()", "n >= 0"})
-        static Object read(VirtualFrame frame, PTextIO self, int n,
+        static TruffleString read(VirtualFrame frame, PTextIO self, int n,
                         @Cached TextIOWrapperNodes.ReadChunkNode readChunkNode,
-                        @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode) {
+                        @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             writeFlushNode.execute(frame, self);
-            StringBuilder result = getDecodedChars(self, n);
-            int remaining = n - result.length();
-            StringBuilder chunks = null;
+            TruffleString result = self.consumeDecodedChars(n, substringNode, false);
+            int remaining = n - codePointLengthNode.execute(result, TS_ENCODING);
+            TruffleStringBuilder chunks = null;
             /* Keep reading chunks until we have n characters to return */
             while (remaining > 0) {
                 boolean res = readChunkNode.execute(frame, self, remaining);
@@ -441,59 +472,30 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 if (!res) /* EOF */ {
                     break;
                 }
-                if (chunks == null) {
-                    chunks = PythonUtils.newStringBuilder();
-                }
-                if (result.length() > 0) {
-                    PythonUtils.append(chunks, result);
+                if (!result.isEmpty()) {
+                    if (chunks == null) {
+                        chunks = TruffleStringBuilder.create(TS_ENCODING);
+                    }
+                    appendStringNode.execute(chunks, result);
                 }
 
-                result = getDecodedChars(self, remaining);
-                remaining -= result.length();
+                result = self.consumeDecodedChars(remaining, substringNode, chunks != null);
+                remaining -= codePointLengthNode.execute(result, TS_ENCODING);
             }
             if (chunks != null) {
-                PythonUtils.append(chunks, result);
-                return PythonUtils.sbToString(chunks);
+                appendStringNode.execute(chunks, result);
+                return toStringNode.execute(chunks);
             }
-
-            return PythonUtils.sbToString(result);
+            return result;
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)", "!self.hasDecoder()"})
         Object noDecoder(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") int n) {
             throw raise(IOUnsupportedOperation, NOT_READABLE);
         }
-
-        private static StringBuilder getDecodedChars(PTextIO self, int len) {
-            StringBuilder chars = PythonUtils.newStringBuilder();
-            int avail;
-            int n = len;
-
-            if (!self.hasDecodedChars()) {
-                return chars;
-            }
-
-            /* decoded_chars is guaranteed to be "ready". */
-            avail = self.getDecodedChars().length() - self.getDecodedCharsUsed();
-
-            assert (avail >= 0);
-
-            if (n < 0 || n > avail) {
-                n = avail;
-            }
-
-            if (self.getDecodedCharsUsed() > 0 || n < avail) {
-                PythonUtils.append(chars, PythonUtils.substring(self.getDecodedChars(), self.getDecodedCharsUsed(), self.getDecodedCharsUsed() + n));
-            } else {
-                chars = self.getDecodedChars();
-            }
-
-            self.incDecodedCharsUsed(n);
-            return chars;
-        }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
@@ -504,13 +506,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)"})
-        static Object readline(VirtualFrame frame, PTextIO self, int limit,
+        static TruffleString readline(VirtualFrame frame, PTextIO self, int limit,
                         @Cached TextIOWrapperNodes.ReadlineNode readlineNode) {
             return readlineNode.execute(frame, self, limit);
         }
     }
 
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FLUSH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)"})
@@ -519,11 +521,11 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             self.setTelling(self.isSeekable());
             writeFlushNode.execute(frame, self);
-            return callMethod.execute(frame, self.getBuffer(), FLUSH);
+            return callMethod.execute(frame, self.getBuffer(), T_FLUSH);
         }
     }
 
-    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
@@ -538,72 +540,72 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {
-                    callMethodDeallocWarn.execute(frame, self.getBuffer(), _DEALLOC_WARN);
+                    callMethodDeallocWarn.execute(frame, self.getBuffer(), T__DEALLOC_WARN);
                 }
 
                 try {
-                    callMethodFlush.execute(frame, self, FLUSH);
+                    callMethodFlush.execute(frame, self, T_FLUSH);
                 } catch (PException e) {
                     try {
-                        callMethodClose.execute(frame, self.getBuffer(), CLOSE);
+                        callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);
                         throw e;
                     } catch (PException ee) {
                         chainExceptions(ee.getEscapedException(), e);
                         throw ee.getExceptionForReraise();
                     }
                 }
-                return callMethodClose.execute(frame, self.getBuffer(), CLOSE);
+                return callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);
             }
         }
     }
 
-    @Builtin(name = FILENO, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FILENO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FilenoNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object fileno(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getBuffer(), FILENO);
+            return callMethod.execute(frame, self.getBuffer(), T_FILENO);
         }
     }
 
-    @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object seekable(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getBuffer(), SEEKABLE);
+            return callMethod.execute(frame, self.getBuffer(), T_SEEKABLE);
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object readable(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getBuffer(), READABLE);
+            return callMethod.execute(frame, self.getBuffer(), T_READABLE);
         }
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class WritableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object writable(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getBuffer(), WRITABLE);
+            return callMethod.execute(frame, self.getBuffer(), T_WRITABLE);
         }
     }
 
-    @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAttyNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object isatty(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getBuffer(), ISATTY);
+            return callMethod.execute(frame, self.getBuffer(), T_ISATTY);
         }
     }
 
@@ -612,7 +614,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         encoderResetNode.execute(frame, self, cookie.startPos == 0 && cookie.decFlags == 0);
     }
 
-    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "cookie", "whence"})
+    @Builtin(name = J_SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "cookie", "whence"})
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {
@@ -631,12 +633,13 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
                         @Cached TextIOWrapperNodes.CheckClosedNode checkClosedNode,
-                        @Cached TextIOWrapperNodes.CheckDecodedNode checkDecodedNode,
+                        @Cached TextIOWrapperNodes.DecodeNode decodeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodSeek,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
@@ -656,7 +659,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                      * Seeking to the current position should attempt to sync the underlying buffer
                      * with the current position.
                      */
-                    cookieObj = callMethodTell.execute(frame, self, TELL);
+                    cookieObj = callMethodTell.execute(frame, self, T_TELL);
                     break;
 
                 case SEEK_END:
@@ -665,7 +668,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
-                    callMethodFlush.execute(frame, self, FLUSH);
+                    callMethodFlush.execute(frame, self, T_FLUSH);
 
                     self.clearDecodedChars();
                     self.clearSnapshot();
@@ -673,7 +676,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         decoderResetNode.execute(frame, self);
                     }
 
-                    Object res = callMethodSeek.execute(frame, self.getBuffer(), SEEK, 0, 2);
+                    Object res = callMethodSeek.execute(frame, self.getBuffer(), T_SEEK, 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
                         encoderResetNode.execute(frame, self, eqNode.execute(frame, res, 0));
@@ -702,7 +705,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 cookie = PTextIO.CookieType.parse(l, overflow, getRaiseNode());
             }
 
-            callMethodFlush.execute(frame, self, FLUSH);
+            callMethodFlush.execute(frame, self, T_FLUSH);
 
             /*
              * The strategy of seek() is to go back to the safe start point and replay the effect of
@@ -710,7 +713,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
              */
 
             /* Seek back to the safe start point. */
-            callMethodSeek.execute(frame, self.getBuffer(), SEEK, cookie.startPos);
+            callMethodSeek.execute(frame, self.getBuffer(), T_SEEK, cookie.startPos);
 
             self.clearDecodedChars();
             self.clearSnapshot();
@@ -720,7 +723,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
             if (cookie.charsToSkip != 0) {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
-                Object inputChunk = callMethodRead.execute(frame, self.getBuffer(), READ, cookie.bytesToFeed);
+                Object inputChunk = callMethodRead.execute(frame, self.getBuffer(), T_READ, cookie.bytesToFeed);
 
                 if (!(inputChunk instanceof PBytes)) {
                     throw raise(TypeError, UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S, inputChunk);
@@ -730,15 +733,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 // TODO avoid copy?
                 self.setSnapshotNextInput(bufferLib.getCopiedByteArray(inputChunk));
 
-                String decoded = checkDecodedNode.execute(frame, self, inputChunk, cookie.needEOF != 0);
-                self.appendDecodedChars(decoded);
-                self.setDecodedCharsUsed(0);
+                TruffleString decoded = decodeNode.execute(frame, self.getDecoder(), inputChunk, cookie.needEOF != 0);
+                int decodedLen = self.setDecodedChars(decoded, codePointLengthNode);
 
                 /* Skip chars_to_skip of the decoded characters. */
-                if (self.getDecodedChars().length() < cookie.charsToSkip) {
+                if (decodedLen < cookie.charsToSkip) {
                     throw raise(OSError, CAN_T_RESTORE_LOGICAL_FILE_POSITION);
                 }
-                self.setDecodedCharsUsed(cookie.charsToSkip);
+                self.incDecodedCharsUsed(cookie.charsToSkip);
             } else {
                 self.setSnapshotDecFlags(cookie.decFlags);
                 self.setSnapshotNextInput(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -766,7 +768,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TELL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -796,8 +798,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell) {
             writeFlushNode.execute(frame, self);
-            callMethodFlush.execute(frame, self, FLUSH);
-            return callMethodTell.execute(frame, self.getBuffer(), TELL);
+            callMethodFlush.execute(frame, self, T_FLUSH);
+            return callMethodTell.execute(frame, self.getBuffer(), T_TELL);
         }
 
         protected static boolean hasUsedDecodedChar(PTextIO self) {
@@ -849,7 +851,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Shared("writeFlush") @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                        @Cached IONodes.ToStringNode toString,
+                        @Cached IONodes.ToTruffleStringNode toString,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Shared("callTell") @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Cached PyObjectCallMethodObjArgs callMethodDecode,
@@ -865,7 +868,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             int decodedCharsUsed = self.getDecodedCharsUsed();
 
             /* Decoder state will be restored at the end */
-            Object savedState = callMethodGetState.execute(frame, self.getDecoder(), GETSTATE);
+            Object savedState = callMethodGetState.execute(frame, self.getDecoder(), T_GETSTATE);
             /* Fast search for an acceptable start point, close to our current pos */
             int skipBytes = (int) (self.getB2cratio() * decodedCharsUsed);
             int skipBack = 1;
@@ -874,7 +877,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* Decode up to temptative start point */
                 decoderSetStateNode.execute(frame, self, cookie, factory());
                 PBytes in = factory().createBytes(snapshotNextInput, skipBytes);
-                int charsDecoded = decoderDecode(frame, self, in, callMethodDecode, toString);
+                int charsDecoded = decoderDecode(frame, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState);
                     int decFlags = asSizeNode.executeExact(frame, state[1]);
@@ -903,7 +906,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             cookie.startPos += skipBytes;
             cookie.charsToSkip = decodedCharsUsed;
             if (decodedCharsUsed == 0) {
-                callMethodSetState.execute(frame, self.getDecoder(), SETSTATE, savedState);
+                callMethodSetState.execute(frame, self.getDecoder(), T_SETSTATE, savedState);
 
                 /* The returned cookie corresponds to the last safe start point. */
                 cookie.charsToSkip = decodedCharsUsed;
@@ -914,7 +917,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             byte[] input = PythonUtils.arrayCopyOfRange(snapshotNextInput, skipBytes, nextInputLength);
             while (input.length > 0) {
                 PBytes start = factory().createBytes(input, 1);
-                int n = decoderDecode(frame, self, start, callMethodDecode, toString);
+                int n = decoderDecode(frame, self, start, callMethodDecode, toString, codePointLengthNode);
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
@@ -937,7 +940,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             if (input.length == 0) {
                 /* We didn't get enough decoded data; signal EOF to get more. */
-                Object decoded = callMethodDecode.execute(frame, self.getDecoder(), DECODE, "",
+                Object decoded = callMethodDecode.execute(frame, self.getDecoder(), T_DECODE, T_EMPTY_STRING,
                                 /* final = */ true);
 
                 if (!isString.isString(decoded)) {
@@ -953,7 +956,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(OSError, CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION);
                 }
             }
-            callMethodSetState.execute(frame, self.getDecoder(), SETSTATE, savedState);
+            callMethodSetState.execute(frame, self.getDecoder(), T_SETSTATE, savedState);
 
             /* The returned cookie corresponds to the last safe start point. */
             cookie.charsToSkip = decodedCharsUsed;
@@ -962,14 +965,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         static void fail(VirtualFrame frame, PTextIO self, Object savedState,
                         PyObjectCallMethodObjArgs callMethodSetState) {
-            callMethodSetState.execute(frame, self.getDecoder(), SETSTATE, savedState);
+            callMethodSetState.execute(frame, self.getDecoder(), T_SETSTATE, savedState);
         }
 
         Object[] decoderGetstate(VirtualFrame frame, PTextIO self, Object saved_state,
                         SequenceNodes.GetObjectArrayNode getArray,
                         PyObjectCallMethodObjArgs callMethodGetState,
                         PyObjectCallMethodObjArgs callMethodSetState) {
-            Object state = callMethodGetState.execute(frame, self.getDecoder(), GETSTATE);
+            Object state = callMethodGetState.execute(frame, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
                 fail(frame, self, saved_state, callMethodSetState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);
@@ -989,13 +992,14 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
         static int decoderDecode(VirtualFrame frame, PTextIO self, PBytes start,
                         PyObjectCallMethodObjArgs callMethodDecode,
-                        IONodes.ToStringNode toString) {
-            Object decoded = callMethodDecode.execute(frame, self.getDecoder(), DECODE, start);
-            return PString.length(toString.execute(decoded));
+                        IONodes.ToTruffleStringNode toString,
+                        TruffleString.CodePointLengthNode codePointLengthNode) {
+            Object decoded = callMethodDecode.execute(frame, self.getDecoder(), T_DECODE, start);
+            return codePointLengthNode.execute(toString.execute(decoded), TS_ENCODING);
         }
     }
 
-    @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "pos"})
+    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "pos"})
     @ArgumentClinic(name = "pos", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class TruncateNode extends AttachedCheckPythonBinaryClinicBuiltinNode {
@@ -1009,21 +1013,21 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         static Object truncate(VirtualFrame frame, PTextIO self, Object pos,
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodTruncate) {
-            callMethodFlush.execute(frame, self, FLUSH);
-            return callMethodTruncate.execute(frame, self.getBuffer(), TRUNCATE, pos);
+            callMethodFlush.execute(frame, self, T_FLUSH);
+            return callMethodTruncate.execute(frame, self.getBuffer(), T_TRUNCATE, pos);
         }
     }
 
-    @Builtin(name = ENCODING, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ENCODING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class EncodingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doit(PTextIO self) {
+        static TruffleString doit(PTextIO self) {
             return self.getEncoding();
         }
     }
 
-    @Builtin(name = BUFFER, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_BUFFER, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class BufferNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1032,7 +1036,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = LINE_BUFFERING, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_LINE_BUFFERING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class LineBufferingNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1041,7 +1045,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE_THROUGH, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_WRITE_THROUGH, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class WriteThroughNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1050,7 +1054,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = _FINALIZING, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J__FINALIZING, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FinalizingNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1059,27 +1063,27 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = NAME, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_NAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object name(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getBuffer(), NAME);
+            return getAttr.execute(frame, self.getBuffer(), T_NAME);
         }
     }
 
-    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object closed(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectGetAttr lookupAttr) {
-            return lookupAttr.execute(frame, self.getBuffer(), CLOSED);
+            return lookupAttr.execute(frame, self.getBuffer(), T_CLOSED);
         }
     }
 
-    @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NewlinesNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"checkAttached(self)", "!self.hasDecoder()"})
@@ -1091,20 +1095,20 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"checkAttached(self)", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getDecoder(), NEWLINES);
+            return getAttr.execute(frame, self.getDecoder(), T_NEWLINES);
         }
     }
 
-    @Builtin(name = ERRORS, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_ERRORS, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ErrorsNode extends InitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.isOK()")
-        static Object doit(PTextIO self) {
+        static TruffleString doit(PTextIO self) {
             return self.getErrors();
         }
     }
 
-    @Builtin(name = _CHUNK_SIZE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J__CHUNK_SIZE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class ChunkSizeNode extends PythonBuiltinNode {
 
@@ -1135,15 +1139,15 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)"})
-        Object doit(VirtualFrame frame, PTextIO self,
+        TruffleString doit(VirtualFrame frame, PTextIO self,
                         @Cached TextIOWrapperNodes.ReadlineNode readlineNode) {
             self.setTelling(false);
-            String line = readlineNode.execute(frame, self, -1);
-            if (PString.length(line) == 0) {
+            TruffleString line = readlineNode.execute(frame, self, -1);
+            if (line.isEmpty()) {
                 self.clearSnapshot();
                 self.setTelling(self.isSeekable());
                 throw raiseStopIteration();
@@ -1152,41 +1156,42 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends InitCheckPythonUnaryBuiltinNode {
+
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(Repr)") LookupAndCallUnaryNode repr,
-                        @Cached IONodes.ToStringNode toString,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
+                        @Cached IONodes.ToTruffleStringNode toString,
                         @Cached IsBuiltinClassProfile isValueError) {
             if (!getContext().reprEnter(self)) {
-                throw raise(RuntimeError, "reentrant call inside %p.__repr__", self);
-            } else {
+                throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P_REPR, self);
+            }
+            try {
+                Object nameobj = PNone.NO_VALUE;
                 try {
-                    StringBuilder sb = PythonUtils.newStringBuilder();
-                    PythonUtils.append(sb, "<_io.TextIOWrapper");
-                    Object nameobj = PNone.NO_VALUE;
-                    try {
-                        nameobj = lookup.execute(frame, self, NAME);
-                    } catch (PException e) {
-                        e.expect(ValueError, isValueError);
-                        /* Ignore ValueError raised if the underlying stream was detached */
-                    }
-                    if (!(nameobj instanceof PNone)) {
-                        Object name = repr.executeObject(frame, nameobj);
-                        PythonUtils.append(sb, PythonUtils.format(" name=%s", toString.execute(name)));
-                    }
-                    Object modeobj = lookup.execute(frame, self, MODE);
-                    if (modeobj != PNone.NO_VALUE) {
-                        PythonUtils.append(sb, PythonUtils.format(" mode='%s'", toString.execute(modeobj)));
-                    }
-                    PythonUtils.append(sb, PythonUtils.format(" encoding='%s'>", self.getEncoding()));
-                    return PythonUtils.sbToString(sb);
-                } finally {
-                    getContext().reprLeave(self);
+                    nameobj = lookup.execute(frame, self, T_NAME);
+                } catch (PException e) {
+                    e.expect(ValueError, isValueError);
+                    /* Ignore ValueError raised if the underlying stream was detached */
                 }
+                Object modeobj = lookup.execute(frame, self, T_MODE);
+                if (nameobj instanceof PNone) {
+                    if (modeobj == PNone.NO_VALUE) {
+                        return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper encoding='%s'>", self.getEncoding());
+                    }
+                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper mode='%s' encoding='%s'>", toString.execute(modeobj), self.getEncoding());
+                }
+                Object name = repr.executeObject(frame, nameobj);
+                if (modeobj == PNone.NO_VALUE) {
+                    return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s encoding='%s'>", toString.execute(name), self.getEncoding());
+                }
+                return simpleTruffleStringFormatNode.format("<_io.TextIOWrapper name=%s mode='%s' encoding='%s'>", toString.execute(name), toString.execute(modeobj), self.getEncoding());
+            } finally {
+                getContext().reprLeave(self);
             }
         }
     }

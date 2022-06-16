@@ -79,7 +79,7 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
         } catch (SameDictKeyException e) {
             keywordsError.enter();
             Object functionName = getFunctionName(virtualFrame, stackTop, localFrame, functionStr);
-            String keyName = castToStringNode.execute(e.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
+            String keyName = castToStringNode.cast(e.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
         } catch (NonMappingException e) {
             keywordsError.enter();

@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
@@ -84,7 +86,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "_thread")
+@CoreFunctions(defineModule = J__THREAD)
 public class ThreadModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey THREAD_COUNT = new HiddenKey("thread_count");
 
@@ -95,9 +97,9 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
-        builtinConstants.put("TIMEOUT_MAX", TIMEOUT_MAX);
-        builtinConstants.put(THREAD_COUNT, 0);
+        addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
+        addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
+        addBuiltinConstant(THREAD_COUNT, 0);
         super.initialize(core);
     }
 
@@ -201,7 +203,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
-            PythonModule threadModule = context.lookupBuiltinModule("_thread");
+            PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment

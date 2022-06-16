@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -24,6 +24,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.oracle.graal.python.nodes.frame;
+
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class FrameSlotIDs {
     private static final class ReturnSlotID {
@@ -65,6 +67,6 @@ public abstract class FrameSlotIDs {
     };
 
     public static boolean isUserFrameSlot(Object key) {
-        return key instanceof String;
+        return key instanceof TruffleString;
     }
 }

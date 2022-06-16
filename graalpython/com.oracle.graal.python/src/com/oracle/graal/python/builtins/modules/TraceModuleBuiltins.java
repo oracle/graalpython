@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +80,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.tools.coverage.CoverageTracker;
 import com.oracle.truffle.tools.coverage.RootCoverage;
 import com.oracle.truffle.tools.coverage.SectionCoverage;
@@ -112,10 +115,10 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             SourceSectionFilter.Builder filter = SourceSectionFilter.newBuilder();
             filter.includeInternal(false).mimeTypeIs(PythonLanguage.MIME_TYPE);
             PythonContext context = getContext();
-            String stdLibHome = context.getStdlibHome();
+            TruffleString stdLibHome = context.getStdlibHome();
             filter.sourceIs((src) -> {
                 String path = src.getPath();
-                return path != null && !path.contains(stdLibHome);
+                return path != null && !path.contains(stdLibHome.toJavaStringUncached());
             });
 
             Object[] ignoreMods = toArray.execute(getStore.execute(ignoremods));
@@ -170,7 +173,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (tracker == null) {
-                throw raise(PythonBuiltinClassType.NotImplementedError, "coverage tracker not available");
+                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("coverage tracker not available"));
             }
             writeNode.execute(mod, TRACK_FUNCS, countfuncs);
 

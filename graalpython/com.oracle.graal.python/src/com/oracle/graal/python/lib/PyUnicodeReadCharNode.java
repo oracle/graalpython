@@ -42,18 +42,19 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsDouble}. Converts an object into a Java double. Raises
@@ -65,16 +66,18 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
 
     @Specialization
     int doGeneric(Object type, long lindex,
-                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached CastToTruffleStringNode castToStringNode,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                     @Cached PRaiseNode raiseNode) {
         try {
-            String s = castToJavaStringNode.execute(type);
+            TruffleString s = castToStringNode.execute(type);
             int index = PInt.intValueExact(lindex);
             // avoid StringIndexOutOfBoundsException
-            if (index < 0 || index >= PString.length(s)) {
+            if (index < 0 || index >= codePointLengthNode.execute(s, TS_ENCODING)) {
                 throw raiseNode.raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
-            return PString.charAt(s, index);
+            return codePointAtIndexNode.execute(s, index, TS_ENCODING);
         } catch (CannotCastException e) {
             throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         } catch (OverflowException e) {

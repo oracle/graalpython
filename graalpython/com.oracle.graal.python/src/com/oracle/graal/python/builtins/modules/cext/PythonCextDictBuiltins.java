@@ -45,7 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 
 import java.util.List;
 
@@ -617,7 +618,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object updateCallable = lookupAttr.execute(frame, a, "update");
+                Object updateCallable = lookupAttr.execute(frame, a, T_UPDATE);
                 callNode.execute(updateCallable, new Object[]{b});
                 return 0;
             } catch (PException e) {
@@ -663,7 +664,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @Cached BranchProfile noKeyProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object attr = getAttrNode.execute(frame, a, KEYS);
+                Object attr = getAttrNode.execute(frame, a, T_KEYS);
                 PList keys = listNode.execute(frame, callNode.execute(frame, attr));
 
                 SequenceStorage keysStorage = keys.getSequenceStorage();

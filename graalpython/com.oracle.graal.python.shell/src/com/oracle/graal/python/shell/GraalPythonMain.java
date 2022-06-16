@@ -74,7 +74,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static final String LANGUAGE_ID = "python";
 
     // provided by GraalVM bash launchers, ignored in native image mode
-    protected static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    protected static final String J_BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
 
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
@@ -394,7 +394,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             return ProcessProperties.getExecutableName();
         }
-        return GraalPythonMain.BASH_LAUNCHER_EXEC_NAME;
+        return GraalPythonMain.J_BASH_LAUNCHER_EXEC_NAME;
     }
 
     /**

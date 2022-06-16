@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,17 +77,17 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
-    public static final String BUF = "buf";
-    public static final String OBJ = "obj";
-    public static final String LEN = "len";
-    public static final String ITEMSIZE = "itemsize";
-    public static final String READONLY = "readonly";
-    public static final String NDIM = "ndim";
-    public static final String FORMAT = "format";
-    public static final String SHAPE = "shape";
-    public static final String STRIDES = "strides";
-    public static final String SUBOFFSETS = "suboffsets";
-    public static final String INTERNAL = "internal";
+    public static final String J_BUF = "buf";
+    public static final String J_OBJ = "obj";
+    public static final String J_LEN = "len";
+    public static final String J_ITEMSIZE = "itemsize";
+    public static final String J_READONLY = "readonly";
+    public static final String J_NDIM = "ndim";
+    public static final String J_FORMAT = "format";
+    public static final String J_SHAPE = "shape";
+    public static final String J_STRIDES = "strides";
+    public static final String J_SUBOFFSETS = "suboffsets";
+    public static final String J_INTERNAL = "internal";
 
     public PyMemoryViewBufferWrapper(PythonObject delegate) {
         super(delegate);
@@ -101,17 +101,17 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected boolean isMemberReadable(String member) {
         switch (member) {
-            case BUF:
-            case OBJ:
-            case LEN:
-            case ITEMSIZE:
-            case READONLY:
-            case NDIM:
-            case FORMAT:
-            case SHAPE:
-            case STRIDES:
-            case SUBOFFSETS:
-            case INTERNAL:
+            case J_BUF:
+            case J_OBJ:
+            case J_LEN:
+            case J_ITEMSIZE:
+            case J_READONLY:
+            case J_NDIM:
+            case J_FORMAT:
+            case J_SHAPE:
+            case J_STRIDES:
+            case J_SUBOFFSETS:
+            case J_INTERNAL:
                 return true;
             default:
                 return false;
@@ -162,7 +162,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() == null"})
+        @Specialization(guards = {"eq(J_BUF, key)", "object.getBufferPointer() == null"})
         static Object getBufManaged(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
@@ -183,7 +183,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() != null"})
+        @Specialization(guards = {"eq(J_BUF, key)", "object.getBufferPointer() != null"})
         static Object getBufNative(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode) {
             if (object.getOffset() == 0) {
@@ -193,7 +193,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(OBJ, key)"})
+        @Specialization(guards = {"eq(J_OBJ, key)"})
         static Object getObj(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (object.getOwner() != null) {
@@ -203,27 +203,27 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(LEN, key)"})
+        @Specialization(guards = {"eq(J_LEN, key)"})
         static Object getLen(PMemoryView object, @SuppressWarnings("unused") String key) {
             return (long) object.getLength();
         }
 
-        @Specialization(guards = {"eq(ITEMSIZE, key)"})
+        @Specialization(guards = {"eq(J_ITEMSIZE, key)"})
         static Object getItemsize(PMemoryView object, @SuppressWarnings("unused") String key) {
             return (long) object.getItemSize();
         }
 
-        @Specialization(guards = {"eq(NDIM, key)"})
+        @Specialization(guards = {"eq(J_NDIM, key)"})
         static Object getINDim(PMemoryView object, @SuppressWarnings("unused") String key) {
             return object.getDimensions();
         }
 
-        @Specialization(guards = {"eq(READONLY, key)"})
+        @Specialization(guards = {"eq(J_READONLY, key)"})
         static Object getReadonly(PMemoryView object, @SuppressWarnings("unused") String key) {
             return object.isReadOnly() ? 1 : 0;
         }
 
-        @Specialization(guards = {"eq(FORMAT, key)"})
+        @Specialization(guards = {"eq(J_FORMAT, key)"})
         static Object getFormat(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
@@ -234,19 +234,19 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(SHAPE, key)"})
+        @Specialization(guards = {"eq(J_SHAPE, key)"})
         static Object getShape(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
             return intArrayToNativePySSizeArray.execute(object.getBufferShape());
         }
 
-        @Specialization(guards = {"eq(STRIDES, key)"})
+        @Specialization(guards = {"eq(J_STRIDES, key)"})
         static Object getStrides(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
             return intArrayToNativePySSizeArray.execute(object.getBufferStrides());
         }
 
-        @Specialization(guards = {"eq(SUBOFFSETS, key)"})
+        @Specialization(guards = {"eq(J_SUBOFFSETS, key)"})
         static Object getSuboffsets(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
@@ -257,7 +257,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = {"eq(INTERNAL, key)"})
+        @Specialization(guards = {"eq(J_INTERNAL, key)"})
         static Object getInternal(@SuppressWarnings("unused") PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
@@ -62,11 +63,17 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___WEAKREF__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT_SUBCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.Dic
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
@@ -164,7 +170,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -203,6 +209,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class TypeNodes {
 
@@ -495,34 +502,34 @@ public abstract class TypeNodes {
     @GenerateUncached
     public abstract static class GetNameNode extends Node {
 
-        public abstract String execute(Object obj);
+        public abstract TruffleString execute(Object obj);
 
         @Specialization
-        String doManagedClass(PythonManagedClass obj) {
+        TruffleString doManagedClass(PythonManagedClass obj) {
             return obj.getName();
         }
 
         @Specialization
-        String doBuiltinClassType(PythonBuiltinClassType obj) {
+        TruffleString doBuiltinClassType(PythonBuiltinClassType obj) {
             return obj.getName();
         }
 
         @Specialization
-        String doNativeClass(PythonNativeClass obj,
+        TruffleString doNativeClass(PythonNativeClass obj,
                         @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            return castToJavaStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return castToStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
         }
 
         @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
         @TruffleBoundary
-        public static String doSlowPath(Object obj) {
+        public static TruffleString doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) obj).getName();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return CastToJavaStringNode.getUncached().execute(CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME));
+                return CastToTruffleStringNode.getUncached().execute(CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME));
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -1007,7 +1014,7 @@ public abstract class TypeNodes {
             return isSameTypeNode;
         }
 
-        private String getTypeName(Object clazz) {
+        private TruffleString getTypeName(Object clazz) {
             if (getTypeNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTypeNameNode = insert(TypeNodes.GetNameNode.create());
@@ -1016,7 +1023,7 @@ public abstract class TypeNodes {
         }
 
         private Object getSlotsFromType(Object type) {
-            Object slots = getReadAttr().execute(type, __SLOTS__);
+            Object slots = getReadAttr().execute(type, T___SLOTS__);
             return slots != PNone.NO_VALUE ? slots : null;
         }
 
@@ -1055,7 +1062,7 @@ public abstract class TypeNodes {
         private LookupAttributeInMRONode getLookupSlots() {
             if (lookupSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSlotsNode = insert(LookupAttributeInMRONode.create(__SLOTS__));
+                lookupSlotsNode = insert(LookupAttributeInMRONode.create(T___SLOTS__));
             }
             return lookupSlotsNode;
         }
@@ -1063,7 +1070,7 @@ public abstract class TypeNodes {
         private LookupAttributeInMRONode getLookupNewNode() {
             if (lookupNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(__NEW__));
+                lookupNewNode = insert(LookupAttributeInMRONode.createForLookupOfUnmanagedClasses(T___NEW__));
             }
             return lookupNewNode;
         }
@@ -1122,6 +1129,14 @@ public abstract class TypeNodes {
         // what cpython does in same_slots_added() is a compare on a sorted slots list
         // ((PyHeapTypeObject *)a)->ht_slots which is populated in type_new() and
         // NOT the same like the unsorted __slots__ attribute.
+        for (int i = 0; i < aArray.length; ++i) {
+            if (aArray[i] instanceof TruffleString) {
+                aArray[i] = ((TruffleString) aArray[i]).toJavaStringUncached();
+            }
+            if (bArray[i] instanceof TruffleString) {
+                bArray[i] = ((TruffleString) bArray[i]).toJavaStringUncached();
+            }
+        }
         Arrays.sort(bArray);
         Arrays.sort(aArray);
         for (int i = 0; i < aArray.length; i++) {
@@ -1198,8 +1213,10 @@ public abstract class TypeNodes {
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true, DynamicObjectLibrary.getUncached());
-            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true, DynamicObjectLibrary.getUncached());
+            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+                            DynamicObjectLibrary.getUncached());
+            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+                            DynamicObjectLibrary.getUncached());
             return typeNewMethod != baseNewMethod;
         }
 
@@ -1208,7 +1225,8 @@ public abstract class TypeNodes {
             assert PGuards.isString(slotsObject) || PGuards.isPSequence(slotsObject) : "slotsObject must be either a String or a PSequence";
 
             if (PGuards.isString(slotsObject)) {
-                return (slotsObject.equals(__DICT__) || slotsObject.equals(__WEAKREF__)) ? 0 : 1;
+                TruffleString slotName = (TruffleString) slotsObject;
+                return (T___DICT__.equalsUncached(slotName, TS_ENCODING) || T___WEAKREF__.equalsUncached(slotName, TS_ENCODING)) ? 0 : 1;
             } else {
                 SequenceStorage storage = ((PSequence) slotsObject).getSequenceStorage();
 
@@ -1218,7 +1236,8 @@ public abstract class TypeNodes {
                 for (int i = 0; i < length; i++) {
                     // omit __DICT__ and __WEAKREF__, they cause no class layout conflict
                     // see also test_slts.py#test_no_bases_have_class_layout_conflict
-                    if (!(slots[i].equals(__DICT__) || slots[i].equals(__WEAKREF__))) {
+                    Object s = slots[i];
+                    if (!(s instanceof TruffleString && (T___DICT__.equalsUncached((TruffleString) s, TS_ENCODING) || T___WEAKREF__.equalsUncached((TruffleString) s, TS_ENCODING)))) {
                         count++;
                     }
                 }
@@ -1227,7 +1246,7 @@ public abstract class TypeNodes {
         }
 
         private static Object getSlotsFromType(Object type, ReadAttributeFromObjectNode readAttr) {
-            Object slots = readAttr.execute(type, __SLOTS__);
+            Object slots = readAttr.execute(type, T___SLOTS__);
             return slots != PNone.NO_VALUE ? slots : null;
         }
     }
@@ -1351,7 +1370,7 @@ public abstract class TypeNodes {
         static PythonAbstractClass[] invokeMro(PythonAbstractClass cls) {
             Object type = GetClassNode.getUncached().execute(cls);
             if (IsTypeNode.getUncached().execute(type) && type instanceof PythonClass) {
-                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
+                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T_MRO);
                 if (mroMeth instanceof PFunction) {
                     Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
                     if (mroObj instanceof PSequence) {
@@ -1457,7 +1476,7 @@ public abstract class TypeNodes {
             }
             if (!notMerged.isEmpty()) {
                 Iterator<PythonAbstractClass> it = notMerged.iterator();
-                StringBuilder bases = new StringBuilder(GetNameNode.doSlowPath(it.next()));
+                StringBuilder bases = new StringBuilder(GetNameNode.doSlowPath(it.next()).toJavaStringUncached());
                 while (it.hasNext()) {
                     bases.append(", ").append(GetNameNode.doSlowPath(it.next()));
                 }
@@ -1635,12 +1654,12 @@ public abstract class TypeNodes {
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
     public abstract static class CreateTypeNode extends Node {
-        public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, String name, PTuple bases, Object metaclass, PKeyword[] kwds);
+        public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
         @Child private PyObjectSetAttr writeAttrNode;
-        @Child private CastToJavaStringNode castToStringNode;
+        @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
             if (readAttrNode == null) {
@@ -1666,22 +1685,22 @@ public abstract class TypeNodes {
             return writeAttrNode;
         }
 
-        private CastToJavaStringNode ensureCastToStringNode() {
+        private CastToTruffleStringNode ensureCastToStringNode() {
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToJavaStringNode.create());
+                castToStringNode = insert(CastToTruffleStringNode.create());
             }
             return castToStringNode;
         }
 
         @Specialization
-        protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, String name, PTuple bases, Object metaclass, PKeyword[] kwds,
+        protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
                         @Cached HashingStorage.InitNode initNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
-                        @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached BranchProfile updatedStorage,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Cached PythonObjectFactory factory,
@@ -1711,21 +1730,21 @@ public abstract class TypeNodes {
                 callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
 
                 // set '__module__' attribute
-                Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.__MODULE__);
+                Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
+                        TruffleString moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
                         if (moduleName != null) {
-                            ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.__MODULE__, moduleName);
+                            ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.T___MODULE__, moduleName);
                         }
                     }
                 }
 
                 // delete __qualname__ from namespace
-                if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.__QUALNAME__)) {
-                    HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.__QUALNAME__);
+                if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__)) {
+                    HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__);
                     if (newStore != namespace.getDictStorage()) {
                         updatedStorage.enter();
                         namespace.setDictStorage(newStore);
@@ -1733,15 +1752,15 @@ public abstract class TypeNodes {
                 }
 
                 // set __class__ cell contents
-                Object classcell = hashingStoragelib.getItem(namespace.getDictStorage(), SpecialAttributeNames.__CLASSCELL__);
+                Object classcell = hashingStoragelib.getItem(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.__CLASSCELL__)) {
-                        HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.__CLASSCELL__);
+                    if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__)) {
+                        HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                         if (newStore != namespace.getDictStorage()) {
                             updatedStorage.enter();
                             namespace.setDictStorage(newStore);
@@ -1749,8 +1768,8 @@ public abstract class TypeNodes {
                     }
                 }
 
-                if (newType.getAttribute(SpecialAttributeNames.__DOC__) == PNone.NO_VALUE) {
-                    newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
+                if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
+                    newType.setAttribute(SpecialAttributeNames.T___DOC__, PNone.NONE);
                 }
 
                 SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
@@ -1763,12 +1782,12 @@ public abstract class TypeNodes {
             }
         }
 
-        private String getModuleNameFromGlobals(PythonObject globals, HashingStorageLibrary hlib) {
+        private TruffleString getModuleNameFromGlobals(PythonObject globals, HashingStorageLibrary hlib) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
-                nameAttr = ensureReadAttrNode().execute(globals, SpecialAttributeNames.__NAME__);
+                nameAttr = ensureReadAttrNode().execute(globals, SpecialAttributeNames.T___NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), SpecialAttributeNames.__NAME__);
+                nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), SpecialAttributeNames.T___NAME__);
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid globals object");
@@ -1796,7 +1815,7 @@ public abstract class TypeNodes {
         @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private GetMroNode getMroNode;
         @Child private PyObjectSetAttr writeAttrNode;
-        @Child private CastToJavaStringNode castToStringNode;
+        @Child private CastToTruffleStringNode castToStringNode;
 
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -1811,13 +1830,13 @@ public abstract class TypeNodes {
             return dontNeedExceptionState;
         }
 
-        public abstract PythonClass execute(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass);
+        public abstract PythonClass execute(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass);
 
         @Specialization
-        protected PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
+        protected PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLib,
-                        @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
-                        @Cached("create(__WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
+                        @Cached("create(T___DICT__)") LookupAttributeInMRONode getDictAttrNode,
+                        @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached GetItemsizeNode getItemSize,
                         @Cached WriteAttributeToObjectNode writeItemSize,
@@ -1825,7 +1844,12 @@ public abstract class TypeNodes {
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached PRaiseNode raise,
                         @Cached GetObjectArrayNode getObjectArray,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
             Python3Core core = context.getCore();
@@ -1844,7 +1868,7 @@ public abstract class TypeNodes {
                     } else if (array[i] instanceof PythonBuiltinClassType) {
                         basesArray[i] = core.lookupType((PythonBuiltinClassType) array[i]);
                     } else {
-                        throw raise.raise(PythonBuiltinClassType.NotImplementedError, "creating a class with non-class bases");
+                        throw raise.raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.CREATING_CLASS_NON_CLS_BASES);
                     }
                 }
             }
@@ -1853,10 +1877,10 @@ public abstract class TypeNodes {
 
             assert metaclass != null;
 
-            if (!StringUtils.canEncodeUTF8(name)) {
-                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", name, 0, name.length(), "can't encode class name");
+            if (!isValidNode.execute(name, TS_ENCODING)) {
+                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", name, 0, codePointLengthNode.execute(name, TS_ENCODING), "can't encode class name");
             }
-            if (StringUtils.containsNullCharacter(name)) {
+            if (indexOfCodePointNode.execute(name, 0, 0, codePointLengthNode.execute(name, TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
             }
 
@@ -1868,7 +1892,7 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(frame, pythonClass, namespace, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode, factory, raise);
+            copyDictSlots(frame, pythonClass, namespace, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -1878,11 +1902,11 @@ public abstract class TypeNodes {
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
-            Object hashMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.__HASH__);
+            Object hashMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.T___HASH__);
             if (hashMethod == null) {
-                Object eqMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.__EQ__);
+                Object eqMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.T___EQ__);
                 if (eqMethod != null) {
-                    pythonClass.setAttribute(SpecialMethodNames.__HASH__, PNone.NONE);
+                    pythonClass.setAttribute(SpecialMethodNames.T___HASH__, PNone.NONE);
                 }
             }
 
@@ -1905,7 +1929,7 @@ public abstract class TypeNodes {
                 // Make it into a list
                 SequenceStorage slotsStorage;
                 Object slotsObject;
-                if (slots[0] instanceof String) {
+                if (slots[0] instanceof TruffleString) {
                     slotsObject = slots[0];
                     slotsStorage = new ObjectSequenceStorage(slots);
                 } else if (slots[0] instanceof PTuple) {
@@ -1925,24 +1949,24 @@ public abstract class TypeNodes {
                 }
 
                 for (int i = 0; i < slotlen; i++) {
-                    String slotName;
+                    TruffleString slotName;
                     Object element = getSlotItemNode().execute(frame, slotsStorage, i);
                     // Check valid slot name
-                    if (element instanceof String) {
-                        slotName = (String) element;
+                    if (element instanceof TruffleString) {
+                        slotName = (TruffleString) element;
                         if (!(boolean) isIdentifier.execute(frame, slotName)) {
                             throw raise.raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
                         }
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
-                    if (__DICT__.equals(slotName)) {
+                    if (equalNode.execute(slotName, T___DICT__, TS_ENCODING)) {
                         if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, getItemSize, writeItemSize)) {
                             throw raise.raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
                         addDictDescrAttribute(basesArray, pythonClass, factory);
-                    } else if (__WEAKREF__.equals(slotName)) {
+                    } else if (equalNode.execute(slotName, T___WEAKREF__, TS_ENCODING)) {
                         if (!mayAddWeakRef || addWeakRef) {
                             throw raise.raise(TypeError, ErrorMessages.WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
@@ -1952,9 +1976,9 @@ public abstract class TypeNodes {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
                         try {
-                            String mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
+                            TruffleString mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
 
-                            HiddenKey hiddenSlotKey = createTypeKey(mangledName);
+                            HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
                             HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                             pythonClass.setAttribute(mangledName, slotDesc);
                         } catch (OverflowException e) {
@@ -1965,7 +1989,7 @@ public abstract class TypeNodes {
                 }
                 Object state = IndirectCallContext.enter(frame, language, context, this);
                 try {
-                    pythonClass.setAttribute(__SLOTS__, slotsObject);
+                    pythonClass.setAttribute(T___SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
                         // TODO: tfel - check if secondary bases provide weakref or dict when we
                         // don't already have one
@@ -1981,7 +2005,7 @@ public abstract class TypeNodes {
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
                 }
-                Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__);
+                Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__);
                 if (!addDict && dict == PNone.NO_VALUE) {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
@@ -1994,12 +2018,12 @@ public abstract class TypeNodes {
         private void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonObjectFactory factory) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
             // initialized yet
-            if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
+            if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                                 l -> new BuiltinFunctionRootNode(l, dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true), ObjectBuiltins.DictNode.class,
                                 StandaloneBuiltinFactory.class);
-                setAttribute(__DICT__, dictBuiltin, callTarget, pythonClass, factory);
+                setAttribute(T___DICT__, dictBuiltin, callTarget, pythonClass, factory);
             }
         }
 
@@ -2009,7 +2033,7 @@ public abstract class TypeNodes {
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
                             WeakRefModuleBuiltinsFactory.class);
-            setAttribute(__WEAKREF__, builtin, callTarget, pythonClass, factory);
+            setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
         }
 
         @TruffleBoundary
@@ -2017,7 +2041,7 @@ public abstract class TypeNodes {
             return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
         }
 
-        private void setAttribute(String name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
+        private void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
             PBuiltinFunction function = factory.createBuiltinFunction(name, pythonClass, 1, flags, callTarget);
             GetSetDescriptor desc = factory.createGetSetDescriptor(function, function, name, pythonClass, true);
@@ -2030,7 +2054,7 @@ public abstract class TypeNodes {
             for (PythonAbstractClass c : basesArray) {
                 // TODO: what about native?
                 if (c instanceof PythonClass) {
-                    if (((PythonClass) c).getAttribute(__SLOTS__) != PNone.NO_VALUE) {
+                    if (((PythonClass) c).getAttribute(T___SLOTS__) != PNone.NO_VALUE) {
                         return true;
                     }
                 }
@@ -2120,80 +2144,95 @@ public abstract class TypeNodes {
             return writeAttrNode;
         }
 
-        private CastToJavaStringNode ensureCastToStringNode() {
+        private CastToTruffleStringNode ensureCastToStringNode() {
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToJavaStringNode.create());
+                castToStringNode = insert(CastToTruffleStringNode.create());
             }
             return castToStringNode;
         }
 
         private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet,
-                        PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise) {
+                        PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, TruffleString.IsValidNode isValidNode, TruffleString.EqualNode equalNode,
+                        TruffleString.CodePointLengthNode codePointLengthNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
             for (DictEntry entry : hashingStorageLib.entries(namespace.getDictStorage())) {
-                Object key = entry.getKey();
+                Object keyObj = entry.getKey();
                 Object value = entry.getValue();
-                if (__SLOTS__.equals(key)) {
-                    slots[0] = value;
-                } else if (SpecialMethodNames.__NEW__.equals(key)) {
-                    // see CPython: if it's a plain function, make it a static function
-                    if (value instanceof PFunction) {
-                        pythonClass.setAttribute(key, factory.createStaticmethodFromCallableObj(value));
-                    } else {
-                        pythonClass.setAttribute(key, value);
+                if (keyObj instanceof TruffleString) {
+                    TruffleString key = (TruffleString) keyObj;
+                    if (equalNode.execute(T___SLOTS__, key, TS_ENCODING)) {
+                        slots[0] = value;
+                        continue;
                     }
-                } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
-                                SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
-                    // see CPython: Special-case __init_subclass__ and
-                    // __class_getitem__: if they are plain functions, make them
-                    // classmethods
-                    if (value instanceof PFunction) {
-                        pythonClass.setAttribute(key, factory.createClassmethodFromCallableObj(value));
-                    } else {
-                        pythonClass.setAttribute(key, value);
-                    }
-                } else if (SpecialAttributeNames.__DOC__.equals(key)) {
-                    // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
-                    // forcibly encodes the string as UTF-8, and raises an error if that is not
-                    // possible.
-                    String doc = null;
-                    if (value instanceof String) {
-                        doc = (String) value;
-                    } else if (value instanceof PString) {
-                        doc = ((PString) value).getValue();
-                    }
-                    if (doc != null) {
-                        if (!StringUtils.canEncodeUTF8(doc)) {
-                            throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", doc, 0, doc.length(), "can't encode docstring");
+                    if (equalNode.execute(T___NEW__, key, TS_ENCODING)) {
+                        // see CPython: if it's a plain function, make it a static function
+                        if (value instanceof PFunction) {
+                            pythonClass.setAttribute(key, factory.createStaticmethodFromCallableObj(value));
+                        } else {
+                            pythonClass.setAttribute(key, value);
                         }
+                        continue;
                     }
-                    pythonClass.setAttribute(key, value);
-                } else if (SpecialAttributeNames.__QUALNAME__.equals(key)) {
-                    try {
-                        pythonClass.setQualName(ensureCastToStringNode().execute(value));
-                        qualnameSet[0] = true;
-                    } catch (CannotCastException e) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
+                    if (equalNode.execute(T___INIT_SUBCLASS__, key, TS_ENCODING) || equalNode.execute(T___CLASS_GETITEM__, key, TS_ENCODING)) {
+                        // see CPython: Special-case __init_subclass__ and
+                        // __class_getitem__: if they are plain functions, make them
+                        // classmethods
+                        if (value instanceof PFunction) {
+                            pythonClass.setAttribute(key, factory.createClassmethodFromCallableObj(value));
+                        } else {
+                            pythonClass.setAttribute(key, value);
+                        }
+                        continue;
                     }
-                } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
-                    // don't populate this attribute
-                } else if (key instanceof String && typeDict == null) {
-                    pythonClass.setAttribute(key, value);
-                } else {
-                    // Creates DynamicObjectStorage which ignores non-string keys
-                    typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
-                    // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
-                    HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
-                    typeDict.setDictStorage(updatedStore);
+                    if (equalNode.execute(T___DOC__, key, TS_ENCODING)) {
+                        // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
+                        // forcibly encodes the string as UTF-8, and raises an error if that is not
+                        // possible.
+                        TruffleString doc = null;
+                        if (value instanceof TruffleString) {
+                            doc = (TruffleString) value;
+                        } else if (value instanceof PString) {
+                            doc = ((PString) value).getValueUncached();
+                        }
+                        if (doc != null) {
+                            if (!isValidNode.execute(doc, TS_ENCODING)) {
+                                throw constructAndRaiseNode.raiseUnicodeEncodeError(frame, "utf-8", doc, 0, codePointLengthNode.execute(doc, TS_ENCODING), "can't encode docstring");
+                            }
+                        }
+                        pythonClass.setAttribute(key, value);
+                        continue;
+                    }
+                    if (equalNode.execute(T___QUALNAME__, key, TS_ENCODING)) {
+                        try {
+                            pythonClass.setQualName(ensureCastToStringNode().execute(value));
+                            qualnameSet[0] = true;
+                        } catch (CannotCastException e) {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
+                        }
+                        continue;
+                    }
+                    if (equalNode.execute(T___CLASSCELL__, key, TS_ENCODING)) {
+                        // don't populate this attribute
+                        continue;
+                    }
+                    if (typeDict == null) {
+                        pythonClass.setAttribute(key, value);
+                        continue;
+                    }
                 }
+                // Creates DynamicObjectStorage which ignores non-string keys
+                typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+                // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
+                HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), keyObj, value);
+                typeDict.setDictStorage(updatedStore);
             }
         }
 
         @TruffleBoundary
-        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace,
+        private PTuple copySlots(TruffleString className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace,
                         HashingStorageLibrary nslib, PythonObjectFactory factory, PRaiseNode raise) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;
@@ -2201,8 +2240,8 @@ public abstract class TypeNodes {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
                 // types
-                String slotName = (String) getSlotItemNode().execute(null, slotList, i);
-                if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
+                TruffleString slotName = (TruffleString) getSlotItemNode().execute(null, slotList, i);
+                if ((add_dict && T___DICT__.equalsUncached(slotName, TS_ENCODING)) || (add_weak && T___WEAKREF__.equalsUncached(slotName, TS_ENCODING))) {
                     continue;
                 }
 
@@ -2218,7 +2257,7 @@ public abstract class TypeNodes {
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (!slotName.equals(SpecialAttributeNames.__CLASSCELL__) && !slotName.equals(SpecialAttributeNames.__QUALNAME__) && nslib.hasKey(namespace.getDictStorage(), slotName)) {
+                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) && nslib.hasKey(namespace.getDictStorage(), slotName)) {
                     // __qualname__ and __classcell__ will be deleted later
                     throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
@@ -2227,10 +2266,9 @@ public abstract class TypeNodes {
             assert j == slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak);
 
             // sort newSlots
-            Arrays.sort(newSlots.getInternalArray());
+            Arrays.sort(newSlots.getInternalArray(), (a, b) -> compareStringsUncached((TruffleString) a, (TruffleString) b));
 
             return factory.createTuple(newSlots);
-
         }
 
         /**
@@ -2242,8 +2280,8 @@ public abstract class TypeNodes {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.__DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.__BASICSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
                         long itemsize = ensureCastToIntNode().execute(getItemSize.execute(cls));
                         if (dictoffset == 0) {
                             addedNewDict = true;
@@ -2255,8 +2293,8 @@ public abstract class TypeNodes {
                                 basicsize += SIZEOF_PY_OBJECT_PTR;
                             }
                         }
-                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
-                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___DICTOFFSET__, dictoffset);
+                        ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__, basicsize);
                         writeItemSize.execute(pythonClass, TYPE_ITEMSIZE, itemsize);
                         break;
                     }

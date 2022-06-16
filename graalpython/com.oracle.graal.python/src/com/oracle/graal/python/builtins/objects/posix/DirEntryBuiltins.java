@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.posix;
 
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FSPATH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
@@ -67,16 +67,16 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHan
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -85,6 +85,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
 public class DirEntryBuiltins extends PythonBuiltins {
@@ -108,7 +109,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.produceBytes()")
-        String nameAsString(VirtualFrame frame, PDirEntry self,
+        TruffleString nameAsString(VirtualFrame frame, PDirEntry self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getPathAsString(getPosixSupport(), posixLib.dirEntryGetName(getPosixSupport(), self.dirEntryData));
@@ -118,18 +119,16 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static String repr(VirtualFrame frame, PDirEntry self,
+        static TruffleString repr(VirtualFrame frame, PDirEntry self,
                         @Cached NameNode nameNode,
                         @Cached("create(Repr)") LookupAndCallUnaryNode reprNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            StringBuilder sb = PythonUtils.newStringBuilder("<DirEntry ");
-            PythonUtils.append(sb, castToStringNode.execute(reprNode.executeObject(frame, nameNode.execute(frame, self))));
-            PythonUtils.append(sb, '>');
-            return PythonUtils.sbToString(sb);
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<DirEntry %s>", castToStringNode.execute(reprNode.executeObject(frame, nameNode.execute(frame, self))));
         }
     }
 
@@ -196,7 +195,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FSPATH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___FSPATH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FspathNode extends PythonUnaryBuiltinNode {
         @Specialization

@@ -46,6 +46,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected final GeneratorInfo generatorInfo;
@@ -54,15 +55,17 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     @CompilationFinal private RootCallTarget generatorCallTarget;
     @CompilationFinal private PCode generatorCode;
 
-    public GeneratorFunctionDefinitionNode(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<String, ExpressionNode> annotations) {
+    public GeneratorFunctionDefinitionNode(TruffleString name, TruffleString qualname, TruffleString enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults,
+                    KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<TruffleString, ExpressionNode> annotations) {
         super(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, annotations);
         this.frameDescriptor = frameDescriptor;
         this.generatorInfo = generatorInfo;
     }
 
-    public static GeneratorFunctionDefinitionNode create(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<String, ExpressionNode> annotations) {
+    public static GeneratorFunctionDefinitionNode create(TruffleString name, TruffleString qualname, TruffleString enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults,
+                    KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<TruffleString, ExpressionNode> annotations) {
         return new GeneratorFunctionDefinitionNode(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, frameDescriptor, definitionCellSlots, generatorInfo, annotations);
     }
 

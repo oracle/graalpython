@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -634,3 +634,9 @@ if sys.implementation.name == "graalpython":
         i = Integer('22')
         assert repr(Integer).startswith('<JavaClass[java.lang.Integer] at')
         assert repr(i) == '22'
+
+    def test_jython_star_import():
+        if __graalpython__.jython_emulation_enabled:
+            g = {}
+            exec('from java.lang.Byte import *', g)
+            assert type(g['MAX_VALUE']) is int

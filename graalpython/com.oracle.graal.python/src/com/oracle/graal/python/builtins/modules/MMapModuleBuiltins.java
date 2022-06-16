@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,8 @@ import static com.oracle.graal.python.runtime.PosixConstants.MAP_SHARED;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_WRITE;
 import static com.oracle.graal.python.runtime.PosixSupportLibrary.ST_SIZE;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -77,9 +79,12 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "mmap")
 public class MMapModuleBuiltins extends PythonBuiltins {
+
+    public static final TruffleString T_INIT_BUFFERPROTOCOL = tsLiteral("init_bufferprotocol");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -87,22 +92,22 @@ public class MMapModuleBuiltins extends PythonBuiltins {
     }
 
     public MMapModuleBuiltins() {
-        builtinConstants.put("ACCESS_DEFAULT", PMMap.ACCESS_DEFAULT);
-        builtinConstants.put("ACCESS_READ", PMMap.ACCESS_READ);
-        builtinConstants.put("ACCESS_WRITE", PMMap.ACCESS_WRITE);
-        builtinConstants.put("ACCESS_COPY", PMMap.ACCESS_COPY);
+        addBuiltinConstant("ACCESS_DEFAULT", PMMap.ACCESS_DEFAULT);
+        addBuiltinConstant("ACCESS_READ", PMMap.ACCESS_READ);
+        addBuiltinConstant("ACCESS_WRITE", PMMap.ACCESS_WRITE);
+        addBuiltinConstant("ACCESS_COPY", PMMap.ACCESS_COPY);
 
-        builtinConstants.put("PAGESIZE", 4096);
+        addBuiltinConstant("PAGESIZE", 4096);
 
         for (PosixConstants.IntConstant c : PosixConstants.mmapFlags) {
             if (c.defined) {
-                builtinConstants.put(c.name, c.getValueIfDefined());
+                addBuiltinConstant(c.name, c.getValueIfDefined());
             }
         }
 
         for (PosixConstants.IntConstant c : PosixConstants.mmapProtection) {
             if (c.defined) {
-                builtinConstants.put(c.name, c.getValueIfDefined());
+                addBuiltinConstant(c.name, c.getValueIfDefined());
             }
         }
     }
@@ -111,8 +116,8 @@ public class MMapModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
-            PythonModule mmap = (PythonModule) AbstractImportNode.importModule("_mmap");
-            Object innitBufferCallable = PyObjectLookupAttr.getUncached().execute(null, mmap, "init_bufferprotocol");
+            PythonModule mmap = (PythonModule) AbstractImportNode.importModule(toTruffleStringUncached("_mmap"));
+            Object innitBufferCallable = PyObjectLookupAttr.getUncached().execute(null, mmap, T_INIT_BUFFERPROTOCOL);
             CallUnaryMethodNode.getUncached().executeObject(innitBufferCallable, PythonBuiltinClassType.PMMap);
         });
     }

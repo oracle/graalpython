@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,11 +52,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.StringOrBytesToOpaquePathNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.UidConversionNode;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsClinicProviders.GetpwnamNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwnamNodeFactory;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwuidNodeFactory;
-import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsClinicProviders.GetpwnamNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -77,10 +78,15 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "pwd")
 public class PwdModuleBuiltins extends PythonBuiltins {
 
+    private static final TruffleString T_NOT_AVAILABLE = tsLiteral("NOT_AVAILABLE");
     static final StructSequence.BuiltinTypeDescriptor STRUCT_PASSWD_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructPasswd,
                     // @formatter:off The formatter joins these lines making it less readable
@@ -119,10 +125,10 @@ public class PwdModuleBuiltins extends PythonBuiltins {
     private static Object[] createPwuidObject(PwdResult pwd, PythonObjectFactory factory, ConditionProfile unsignedConversionProfile) {
         return new Object[]{
                         pwd.name,
-                        "NOT_AVAILABLE",
+                        T_NOT_AVAILABLE,
                         PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.uid),
                         PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.gid),
-                        /* gecos: */ "",
+                        /* gecos: */ T_EMPTY_STRING,
                         pwd.dir,
                         pwd.shell
         };
@@ -165,12 +171,12 @@ public class PwdModuleBuiltins extends PythonBuiltins {
         }
 
         private PException raiseUidNotFound() {
-            throw raise(PythonBuiltinClassType.KeyError, "getpwuid(): uid not found");
+            throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWUID_NOT_FOUND);
         }
     }
 
     @Builtin(name = "getpwnam", minNumOfPositionalArgs = 1, parameterNames = {"name"})
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class GetpwnamNode extends PythonUnaryClinicBuiltinNode {
 
@@ -180,7 +186,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGetpwname(VirtualFrame frame, String name,
+        Object doGetpwname(VirtualFrame frame, TruffleString name,
                         @Cached GilNode gil,
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -200,7 +206,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
-                throw raise(PythonBuiltinClassType.KeyError, "getpwnam(): name not found: '%s'", name);
+                throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
             }
             return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), unsignedConversionProfile));
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,9 +42,10 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 
 import java.util.List;
 
@@ -74,17 +75,17 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         return BufferedWriterMixinBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), WRITABLE);
+            return callMethod.execute(frame, self.getRaw(), T_WRITABLE);
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
@@ -94,7 +95,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
-                        @Cached("create(WRITE)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_WRITE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedWriterNodes.WriteNode writeNode) {
             try {
                 lock.enter(self);
@@ -112,7 +113,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_FLUSH, minNumOfPositionalArgs = 1)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
@@ -120,7 +121,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
                         @Cached EnterBufferedNode lock,
-                        @Cached("create(FLUSH)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_FLUSH)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {

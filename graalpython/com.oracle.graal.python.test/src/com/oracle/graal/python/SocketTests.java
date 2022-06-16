@@ -73,6 +73,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_USER_TIMEOUT;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
@@ -958,11 +959,11 @@ public class SocketTests {
     }
 
     private Object s2p(String s) {
-        return lib.createPathFromString(posixSupport, s);
+        return lib.createPathFromString(posixSupport, toTruffleStringUncached(s));
     }
 
     private String p2s(Object p) {
-        return lib.getPathAsString(posixSupport, p);
+        return lib.getPathAsString(posixSupport, p).toJavaStringUncached();
     }
 
     private void expectErrno(OSErrorEnum... expectedErrorCodes) {

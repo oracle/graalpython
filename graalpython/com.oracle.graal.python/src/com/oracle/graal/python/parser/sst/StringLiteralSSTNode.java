@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 
 package com.oracle.graal.python.parser.sst;
+
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_MIX_MESSAGE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,8 +157,6 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
 
     }
-
-    private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
 
     private static class BytesBuilder {
         List<byte[]> bytes = new ArrayList<>();

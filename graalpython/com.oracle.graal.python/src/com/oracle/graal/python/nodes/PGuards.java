@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -110,6 +109,11 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 public abstract class PGuards {
     /**
@@ -123,16 +127,23 @@ public abstract class PGuards {
         return expected.equals(other);
     }
 
+    public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, ConditionProfile profile) {
+        if (profile.profile(expected == other)) {
+            return true;
+        }
+        return equalNode.execute(expected, other, TS_ENCODING);
+    }
+
+    public static boolean stringEquals(TruffleString key, TruffleString cachedKey, TruffleString.EqualNode equalNode) {
+        return equalNode.execute(cachedKey, key, TS_ENCODING);
+    }
+
     public static boolean isSameObject(Object left, Object right) {
         return left == right;
     }
 
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
-    }
-
-    public static boolean isEmpty(String string) {
-        return string.length() == 0;
     }
 
     public static boolean isNone(Object value) {
@@ -345,19 +356,15 @@ public abstract class PGuards {
     }
 
     public static boolean isString(Object obj) {
-        return obj instanceof String || obj instanceof PString;
+        return isJavaString(obj) || obj instanceof TruffleString || obj instanceof PString;
     }
 
-    public static boolean isJavaString(Object obj) {
-        return obj instanceof String;
+    public static boolean isTruffleString(Object obj) {
+        return obj instanceof TruffleString;
     }
 
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
-        return obj instanceof String || profile.profileObject(obj, PythonBuiltinClassType.PString);
-    }
-
-    public static boolean isNativeString(PString x) {
-        return x.getCharSequence() instanceof NativeCharSequence;
+        return isJavaString(obj) || obj instanceof TruffleString || profile.profileObject(obj, PythonBuiltinClassType.PString);
     }
 
     public static boolean isBuiltinFunction(Object obj) {
@@ -603,5 +610,9 @@ public abstract class PGuards {
 
     public static boolean isMinusOne(long l) {
         return l == -1;
+    }
+
+    public static boolean isAscii(TruffleString str, TruffleString.GetCodeRangeNode getCodeRangeNode) {
+        return getCodeRangeNode.execute(str, TS_ENCODING) == CodeRange.ASCII;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,14 +42,23 @@ package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -78,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -114,7 +124,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -148,12 +158,16 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
 public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, Comparable<Object> {
-    private static final String PRIVATE_PREFIX = "__";
+
+    private static final TruffleString T_PRIVATE_PREFIX = tsLiteral("__");
+    private static final int PRIVATE_PREFIX_LENGTH = T_PRIVATE_PREFIX.codePointLengthUncached(TS_ENCODING);
     private DynamicObjectNativeWrapper nativeWrapper;
 
     // @ImportStatic doesn't work for this for some reason
@@ -194,12 +208,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Cached PInteropSetAttributeNode setAttributeNode,
                     @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            setAttributeNode.execute(this, key, value);
+            setAttributeNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING), value);
         } catch (PException e) {
             e.expectAttributeError(attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -211,12 +226,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readMember(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("lookup") @Cached PyObjectLookupAttr lookup,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         Object value;
         try {
-            value = lookup.execute(null, this, key);
+            value = lookup.execute(null, this, fromJavaStringNode.execute(key, TS_ENCODING));
         } finally {
             gil.release(mustRelease);
         }
@@ -409,55 +425,63 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberReadable(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.READABLE);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.READABLE);
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.MODIFIABLE);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.MODIFIABLE);
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.INSERTABLE);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.INSERTABLE);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.INVOCABLE);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.INVOCABLE);
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.REMOVABLE);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.REMOVABLE);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.READ_SIDE_EFFECTS);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.READ_SIDE_EFFECTS);
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
-        return keyInfoNode.execute(this, member, PKeyInfoNode.WRITE_SIDE_EFFECTS);
+        return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.WRITE_SIDE_EFFECTS);
     }
 
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
@@ -470,11 +494,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object memberObj;
             try {
-                Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+                Object attrGetattribute = lookupGetattributeNode.execute(this, T___GETATTRIBUTE__);
                 if (profileGetattribute.profile(attrGetattribute == PNone.NO_VALUE)) {
                     throw UnknownIdentifierException.create(member);
                 }
-                memberObj = callGetattributeNode.executeObject(attrGetattribute, this, member);
+                memberObj = callGetattributeNode.executeObject(attrGetattribute, this, fromJavaStringNode.execute(member, TS_ENCODING));
                 if (profileMember.profile(memberObj == PNone.NO_VALUE)) {
                     throw UnknownIdentifierException.create(member);
                 }
@@ -517,40 +541,50 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.RegionEqualNode regionEqualNode,
+                    @Cached TruffleString.ConcatNode concatNode,
+                    @Cached StringMaterializeNode materializeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            HashSet<String> keys = new HashSet<>();
+            HashSet<TruffleString> keys = new HashSet<>();
             Object klass = getClass.execute(this);
             for (PythonAbstractClass o : getMroNode.execute(klass)) {
                 if (o instanceof PythonManagedClass) {
-                    addKeysFromObject(keys, (PythonManagedClass) o, includeInternal);
+                    addKeysFromObject(keys, (PythonManagedClass) o, includeInternal, codePointLengthNode, regionEqualNode);
                 }
                 // TODO handle native class
             }
             if (this instanceof PythonObject) {
-                addKeysFromObject(keys, (PythonObject) this, includeInternal);
+                addKeysFromObject(keys, (PythonObject) this, includeInternal, codePointLengthNode, regionEqualNode);
             }
             if (includeInternal) {
                 // we use the internal flag to also return dictionary keys for mappings
                 if (checkMapping.execute(this)) {
-                    Object keysMethod = lookupKeys.execute(null, this, KEYS);
+                    Object keysMethod = lookupKeys.execute(null, this, T_KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
                         PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
                         int len = lenNode.execute(mapKeys);
                         for (int i = 0; i < len; i++) {
                             Object key = getItemNode.execute(mapKeys, i);
-                            if (key instanceof String) {
-                                keys.add("[" + (String) key);
+                            TruffleString tsKey = null;
+                            if (key instanceof TruffleString) {
+                                tsKey = (TruffleString) key;
+                            } else if (isJavaString(key)) {
+                                tsKey = toTruffleStringUncached((String) key);
                             } else if (key instanceof PString) {
-                                keys.add("[" + ((PString) key).getValue());
+                                tsKey = materializeNode.execute((PString) key);
+                            }
+                            if (tsKey != null) {
+                                keys.add(concatNode.execute(tsKey, T_LBRACKET, TS_ENCODING, false));
                             }
                         }
                     }
                 }
             }
 
-            return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+            return new Keys(keys.toArray(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY));
         } finally {
             gil.release(mustRelease);
         }
@@ -601,8 +635,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
-    @TruffleBoundary
-    private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
+    private static void addKeysFromObject(HashSet<TruffleString> keys, PythonObject o, boolean includeInternal, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.RegionEqualNode regionEqualNode) {
         HashingStorage dictStorage;
         PDict dict = GetDictIfExistsNode.getUncached().execute(o);
         if (dict != null) {
@@ -612,26 +646,34 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                                        // code easier
         }
         for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dictStorage)) {
-            String strKey;
-            if (e.getKey() instanceof String) {
-                strKey = (String) e.getKey();
+            TruffleString strKey;
+            Object key = e.getKey();
+            if (key instanceof TruffleString) {
+                strKey = (TruffleString) key;
+            } else if (isJavaString(key)) {
+                strKey = toTruffleStringUncached((String) key);
             } else {
                 continue;
             }
-            if (includeInternal || !strKey.startsWith(PRIVATE_PREFIX)) {
+            if (includeInternal || !startsWithPrivatePrefix(strKey, codePointLengthNode, regionEqualNode)) {
                 keys.add(strKey);
             }
         }
     }
 
-    private static final String DATETIME_MODULE_NAME = "datetime";
-    private static final String TIME_MODULE_NAME = "time";
-    private static final String DATE_TYPE = "date";
-    private static final String DATETIME_TYPE = "datetime";
-    private static final String TIME_TYPE = "time";
-    private static final String STRUCT_TIME_TYPE = "struct_time";
+    private static boolean startsWithPrivatePrefix(TruffleString strKey, TruffleString.CodePointLengthNode codePointLengthNode, RegionEqualNode regionEqualNode) {
+        int strLen = codePointLengthNode.execute(strKey, TS_ENCODING);
+        return strLen >= PRIVATE_PREFIX_LENGTH && regionEqualNode.execute(strKey, 0, T_PRIVATE_PREFIX, 0, PRIVATE_PREFIX_LENGTH, TS_ENCODING);
+    }
 
-    private static Object readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename, TypeNodes.IsTypeNode isTypeNode) {
+    private static final TruffleString T_DATETIME_MODULE_NAME = T_DATETIME;
+    private static final TruffleString T_TIME_MODULE_NAME = T_TIME;
+    private static final TruffleString T_DATE_TYPE = T_DATE;
+    private static final TruffleString T_DATETIME_TYPE = T_DATETIME;
+    private static final TruffleString T_TIME_TYPE = T_TIME;
+    private static final TruffleString T_STRUCT_TIME_TYPE = T_STRUCT_TIME;
+
+    private static Object readType(ReadAttributeFromObjectNode readTypeNode, Object module, TruffleString typename, TypeNodes.IsTypeNode isTypeNode) {
         Object type = readTypeNode.execute(module, typename);
         if (isTypeNode.execute(type)) {
             return type;
@@ -654,16 +696,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
-                                isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATE_TYPE, isTypeNode))) {
                     return true;
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
@@ -688,10 +730,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
-                                isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATE_TYPE, isTypeNode))) {
                     try {
                         int year = castToIntNode.execute(lib.readMember(this, "year"));
                         int month = castToIntNode.execute(lib.readMember(this, "month"));
@@ -702,9 +744,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
                         int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
@@ -734,15 +776,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) || isSubtype.execute(objType, readType(readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
@@ -767,10 +809,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
-                                isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
                     try {
                         int hour = castToIntNode.execute(lib.readMember(this, "hour"));
                         int min = castToIntNode.execute(lib.readMember(this, "minute"));
@@ -782,9 +824,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
                         int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
@@ -815,9 +857,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         try {
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -829,7 +871,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
                         return false;
                     }
-                } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
+                } else if (isSubtype.execute(objType, readType(readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -843,9 +885,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tm_zone = lib.readMember(this, "tm_zone");
                         if (tm_zone != PNone.NONE) {
@@ -872,6 +914,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
                     @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -880,9 +923,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             Object objType = getClassNode.execute(this);
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
-            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            Object module = importedModules.getItem(T_DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_DATETIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -895,7 +938,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
                         throw UnsupportedMessageException.create();
                     }
-                } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
+                } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -910,9 +953,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     }
                 }
             }
-            module = importedModules.getItem(TIME_MODULE_NAME);
+            module = importedModules.getItem(T_TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, T_STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tm_zone = lib.readMember(this, "tm_zone");
                         if (tm_zone != PNone.NONE) {
@@ -921,7 +964,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                 int seconds = castToIntNode.execute(tm_gmtoffset);
                                 return createZoneId(seconds);
                             }
-                            if (tm_zone instanceof String) {
+                            if (tm_zone instanceof TruffleString) {
+                                return createZoneId(toJavaStringNode.execute((TruffleString) tm_zone));
+                            }
+                            if (isJavaString(tm_zone)) {
                                 return createZoneId((String) tm_zone);
                             }
                         }
@@ -966,10 +1012,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         private static final int INVOCABLE = 0x20;
         private static final int INSERTABLE = 0x40;
 
-        public abstract boolean execute(Object receiver, String fieldName, int infoType);
+        public abstract boolean execute(Object receiver, TruffleString fieldName, int infoType);
 
         @Specialization
-        static boolean access(Object object, String attrKeyName, int type,
+        static boolean access(Object object, TruffleString attrKeyName, int type,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
@@ -1011,10 +1057,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             if (owner == object) {
                                 // can only modify if the object is not immutable
                                 return !isImmutable.execute(owner);
-                            } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
+                            } else if (getSetNode.execute(attr, T___SET__) == PNone.NO_VALUE) {
                                 // an inherited attribute may be overridable unless it's a setter
                                 return !isImmutable.execute(object);
-                            } else if (getSetNode.execute(attr, __SET__) != PNone.NO_VALUE) {
+                            } else if (getSetNode.execute(attr, T___SET__) != PNone.NO_VALUE) {
                                 return true;
                             }
                         }
@@ -1027,7 +1073,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                     // for other attributes, we look for a __call__ method later
                                     return true;
                                 }
-                                if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
+                                if (getGetNode.execute(attr, T___GET__) != PNone.NO_VALUE) {
                                     // is a getter, read may have side effects, we cannot tell if
                                     // the result will be invocable
                                     return false;
@@ -1040,14 +1086,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
                             // attr is inherited and might be a descriptor object other than a
                             // function
-                            return getGetNode.execute(attr, __GET__) != PNone.NO_VALUE;
+                            return getGetNode.execute(attr, T___GET__) != PNone.NO_VALUE;
                         }
                         return false;
                     case WRITE_SIDE_EFFECTS:
                         if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
                             // attr is inherited and might be a descriptor object other than a
                             // function
-                            return getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE;
+                            return getSetNode.execute(attr, T___SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, T___DELETE__) != PNone.NO_VALUE;
                         }
                         return false;
                     default:
@@ -1264,26 +1310,27 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached CallBinaryMethodNode callGetattributeNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
                         @Cached CallBinaryMethodNode callGetattrNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached ConditionProfile hasGetattrProfile) {
             if (!libAttrName.isString(attrName)) {
-                throw raiseNode.raise(TypeError, "attribute name must be string, not '%p'", attrName);
+                throw raiseNode.raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrName);
             }
 
-            String attrNameStr;
+            TruffleString attrNameStr;
             try {
-                attrNameStr = libAttrName.asString(attrName);
+                attrNameStr = switchEncodingNode.execute(libAttrName.asTruffleString(attrName), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
             }
 
             try {
-                Object attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
+                Object attrGetattribute = lookupGetattributeNode.execute(object, T___GETATTRIBUTE__);
                 return callGetattributeNode.executeObject(attrGetattribute, object, attrNameStr);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                Object attrGetattr = lookupGetattrNode.execute(object, __GETATTR__);
+                Object attrGetattr = lookupGetattrNode.execute(object, T___GETATTR__);
                 if (hasGetattrProfile.profile(attrGetattr != PNone.NO_VALUE)) {
                     return callGetattrNode.executeObject(attrGetattr, object, attrNameStr);
                 }
@@ -1308,7 +1355,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached CallBinaryMethodNode callSetItemNode,
                         @Cached ConditionProfile profile) throws UnsupportedMessageException {
 
-            Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
+            Object attrSetitem = getAttributeNode.execute(primary, T___SETITEM__);
             if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
                 callSetItemNode.executeObject(attrSetitem, key, convert.executeConvert(value));
             } else {
@@ -1324,23 +1371,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @GenerateUncached
     public abstract static class PInteropSetAttributeNode extends Node {
 
-        public abstract void execute(Object primary, String attrName, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
+        public abstract void execute(Object primary, TruffleString attrName, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization
-        public static void doSpecialObject(PythonAbstractObject primary, String attrName, Object value,
+        public static void doSpecialObject(PythonAbstractObject primary, TruffleString attrName, Object value,
                         @Cached PForeignToPTypeNode convert,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallTernaryMethodNode callSetAttrNode,
                         @Cached ConditionProfile profile,
                         @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object attrSetattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
+            Object attrSetattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.T___SETATTR__);
             if (profile.profile(attrSetattr != PNone.NO_VALUE)) {
                 try {
                     callSetAttrNode.execute(null, attrSetattr, primary, attrName, convert.executeConvert(value));
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
-                    throw UnknownIdentifierException.create(attrName);
+                    throw UnknownIdentifierException.create(attrName.toJavaStringUncached());
                 }
             } else {
                 throw UnsupportedMessageException.create();
@@ -1370,7 +1417,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallBinaryMethodNode callSetAttrNode,
                         @Cached ConditionProfile profile) throws UnsupportedMessageException {
-            Object attrDelattr = lookupSetAttrNode.execute(primary, __DELITEM__);
+            Object attrDelattr = lookupSetAttrNode.execute(primary, T___DELITEM__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
                 callSetAttrNode.executeObject(attrDelattr, primary, key);
             } else {
@@ -1398,14 +1445,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, String attrName,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallBinaryMethodNode callSetAttrNode,
                         @Cached ConditionProfile profile,
                         @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELATTR__);
+            Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.T___DELATTR__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.executeObject(attrDelattr, primary, attrName);
+                    callSetAttrNode.executeObject(attrDelattr, primary, fromJavaStringNode.execute(attrName, TS_ENCODING));
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -1439,24 +1487,24 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @SuppressWarnings("unused")
     public abstract static class ToDisplaySideEffectingNode extends Node {
 
-        public abstract String execute(PythonAbstractObject receiver);
+        public abstract TruffleString execute(PythonAbstractObject receiver);
 
         @Specialization
-        public String doDefault(PythonAbstractObject receiver,
+        public TruffleString doDefault(PythonAbstractObject receiver,
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Cached ConditionProfile toStringUsed) {
             Object toStrAttr;
-            String names;
+            TruffleString names;
             PythonContext context = PythonContext.get(this);
             if (context.getOption(PythonOptions.UseReprForPrintString)) {
-                names = BuiltinNames.REPR;
+                names = BuiltinNames.T_REPR;
             } else {
-                names = BuiltinNames.STR;
+                names = BuiltinNames.T_STR;
             }
 
-            String result = null;
+            TruffleString result = null;
             PythonModule builtins = context.getBuiltins();
             if (toStringUsed.profile(builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
@@ -1480,7 +1528,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public static class ToDisplayString {
 
         @Specialization(guards = "allowSideEffects")
-        public static String doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
+        public static TruffleString doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
                         @Cached ToDisplaySideEffectingNode toDisplayCallnode,
                         @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -1492,7 +1540,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @Specialization(guards = "!allowSideEffects")
-        public static String doNonSideEffecting(PythonAbstractObject receiver,
+        public static TruffleString doNonSideEffecting(PythonAbstractObject receiver,
                         boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
@@ -1505,8 +1553,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @TruffleBoundary
-    final String toStringBoundary() {
-        return toString();
+    final TruffleString toStringBoundary() {
+        return toTruffleStringUncached(toString());
     }
 
     @ExportMessage
@@ -1541,6 +1589,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @TruffleBoundary
     public static int systemHashCode(Object value) {
         return System.identityHashCode(value);
+    }
+
+    @TruffleBoundary
+    public static String systemHashCodeAsHexString(Object value) {
+        return Integer.toHexString(System.identityHashCode(value));
+    }
+
+    @TruffleBoundary
+    public static int objectHashCode(Object value) {
+        return value.hashCode();
+    }
+
+    @TruffleBoundary
+    public static String objectHashCodeAsHexString(Object value) {
+        return Integer.toHexString(value.hashCode());
     }
 
     @ExportMessage

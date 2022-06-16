@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects.keywrapper;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OTHER_ARG_MUST_BE_KEY;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
 import java.util.List;
 
@@ -79,7 +79,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        core.lookupType(PythonBuiltinClassType.PKeyWrapper).setAttribute(__HASH__, PNone.NONE);
+        core.lookupType(PythonBuiltinClassType.PKeyWrapper).setAttribute(T___HASH__, PNone.NONE);
     }
 
     abstract static class WrapperKeyCompareNode extends PythonBinaryBuiltinNode {
@@ -128,7 +128,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class KWLeNode extends WrapperKeyCompareNode {
         @Override
@@ -137,7 +137,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class KWLtNode extends WrapperKeyCompareNode {
         @Override
@@ -146,7 +146,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class KWGeNode extends WrapperKeyCompareNode {
         @Override
@@ -155,7 +155,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class KWGtNode extends WrapperKeyCompareNode {
         @Override
@@ -164,7 +164,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class KWEqNode extends WrapperKeyCompareNode {
         @Override
@@ -173,7 +173,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "obj"})
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "obj"})
     @GenerateNodeFactory
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization

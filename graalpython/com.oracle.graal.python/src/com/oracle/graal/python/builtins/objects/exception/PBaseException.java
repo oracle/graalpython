@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.containsJavaString;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -71,16 +74,18 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
+    public static final TruffleString T_CODE = tsLiteral("code");
 
     private PTuple args; // can be null for lazily generated message
 
     // in case of lazily generated messages, these will be used to construct the message:
     private final boolean hasMessageFormat;
-    private final String messageFormat;
+    private final TruffleString messageFormat;
     private final Object[] messageArgs;
 
     private PException exception;
@@ -104,6 +109,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
+        assert !containsJavaString(exceptionAttributes);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = false;
@@ -111,7 +117,7 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, String format, Object[] formatArgs) {
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, TruffleString format, Object[] formatArgs) {
         super(cls, instanceShape);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
@@ -131,6 +137,7 @@ public final class PBaseException extends PythonObject {
     }
 
     public void setExceptionAttributes(Object[] exceptionAttributes) {
+        assert !containsJavaString(exceptionAttributes);
         this.exceptionAttributes = exceptionAttributes;
     }
 
@@ -203,7 +210,7 @@ public final class PBaseException extends PythonObject {
         this.args = args;
     }
 
-    public String getMessageFormat() {
+    public TruffleString getMessageFormat() {
         return messageFormat;
     }
 
@@ -219,12 +226,12 @@ public final class PBaseException extends PythonObject {
     @TruffleBoundary
     public String getFormattedMessage() {
         final Object clazz = GetClassNode.getUncached().execute(this);
-        String typeName = GetNameNode.doSlowPath(clazz);
+        String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(messageFormat.toJavaStringUncached(), getMessageArgs());
             } else if (hasMessageFormat) {
-                return typeName + ": " + messageFormat;
+                return typeName + ": " + messageFormat.toJavaStringUncached();
             } else {
                 return typeName;
             }
@@ -245,7 +252,7 @@ public final class PBaseException extends PythonObject {
         // We *MUST NOT* call anything here that may need a context!
         StringBuilder sb = new StringBuilder(this.getInitialPythonClass().toString());
         if (messageArgs != null && messageArgs.length > 0) {
-            sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
+            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append("\", args = (");
             for (Object arg : messageArgs) {
                 if (arg instanceof PythonObject) {
                     sb.append(arg);
@@ -262,7 +269,7 @@ public final class PBaseException extends PythonObject {
             }
             sb.append(") )");
         } else if (hasMessageFormat) {
-            sb.append("(fmt=\"").append(messageFormat).append('"');
+            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append('"');
         }
         return sb.toString();
     }
@@ -379,7 +386,7 @@ public final class PBaseException extends PythonObject {
             if (getExceptionType(getClassNode, gil) == ExceptionType.EXIT) {
                 try {
                     // Avoiding getattr because this message shouldn't have side-effects
-                    Object code = readNode.execute(this, "code");
+                    Object code = readNode.execute(this, T_CODE);
                     if (code == PNone.NO_VALUE) {
                         return 1;
                     }

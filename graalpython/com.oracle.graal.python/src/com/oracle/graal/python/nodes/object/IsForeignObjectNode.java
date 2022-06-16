@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Checks whether the object is a foreign object, i.e. is neither a python primitive value, nor a
@@ -90,7 +91,7 @@ public abstract class IsForeignObjectNode extends PNodeWithContext {
     }
 
     @Specialization
-    static boolean doString(@SuppressWarnings("unused") String object) {
+    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return false;
     }
 

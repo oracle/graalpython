@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -99,7 +100,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
                         throw (AbstractTruffleException) exception;
                     } else {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.raise(SystemError, "expected exception on the stack");
+                        throw raiseNode.raise(SystemError, ErrorMessages.EXPECTED_EXCEPTION_ON_THE_STACK);
                     }
                 }
             } finally {

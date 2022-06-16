@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public interface AccessNameNode {
     default boolean hasLocals(VirtualFrame frame) {
@@ -57,5 +58,5 @@ public interface AccessNameNode {
         return specialArgument instanceof PDict && PGuards.isBuiltinDict((PDict) specialArgument);
     }
 
-    public abstract String getAttributeId();
+    public abstract TruffleString getAttributeId();
 }

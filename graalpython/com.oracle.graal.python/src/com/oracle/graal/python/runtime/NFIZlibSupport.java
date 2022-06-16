@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /*-
  * Generated using:
@@ -379,7 +380,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param crc uLong crc
      * @param buf Byte *buf
      * @param len uInt len
@@ -391,7 +392,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param crc uLong crc
      * @param buf Byte *buf
      * @param len uInt len
@@ -403,7 +404,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      *
      * @return zlib_stream*
      */
@@ -413,7 +414,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream* zst
      *
      */
@@ -423,7 +424,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @return int
      */
@@ -433,17 +434,17 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @return char*
      */
-    public String getStreamErrorMsg(Object zst,
+    public TruffleString getStreamErrorMsg(Object zst,
                     NativeLibrary.InvokeNativeFunction invokeNode) {
         return invokeNode.callString(typedNativeLib, ZlibNativeFunctions.zlib_get_stream_msg, zst);
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @return int
      */
@@ -453,7 +454,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @return int
      */
@@ -463,7 +464,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @return int
      */
@@ -473,7 +474,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param option int option
      * @return uInt
@@ -484,7 +485,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param option int option
      * @param dest Byte *dest
@@ -496,7 +497,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      *
      * @return zlib_stream*
      */
@@ -506,7 +507,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param in Byte *in
      * @param in_len ssize_t in_len
@@ -520,7 +521,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param in Byte *in
      * @param in_len ssize_t in_len
@@ -534,7 +535,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param level int level
      * @param method int method
@@ -551,7 +552,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param level int level
      * @param method int method
@@ -566,7 +567,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param in Byte *in
      * @param in_len ssize_t in_len
@@ -579,7 +580,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param in Byte *in
      * @param buf_size ssize_t buf_size
@@ -592,7 +593,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param new_copy zlib_stream *new_copy
      * @return int
@@ -603,7 +604,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param wbits int wbits
      * @param dict Byte *dict
@@ -616,7 +617,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param wbits int wbits
      * @return int
@@ -627,7 +628,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param in Byte *in
      * @param in_len ssize_t in_len
@@ -641,7 +642,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param length ssize_t length
      * @return int
@@ -652,7 +653,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream *zst
      * @param new_copy zlib_stream *new_copy
      * @return int

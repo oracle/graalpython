@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T_FROM_PARAM;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD;
 import static com.oracle.graal.python.nodes.ErrorMessages.RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -83,6 +84,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
 public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
@@ -96,14 +98,16 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
     protected static final int PARAMFLAG_FOUT = 0x2;
     protected static final int PARAMFLAG_FLCID = 0x4;
 
-    protected static final String _flags_ = "_flags_";
-    protected static final String _argtypes_ = "_argtypes_";
-    protected static final String _restype_ = "_restype_";
-    protected static final String _check_retval_ = "_check_retval_";
-    protected static final String __ctypes_from_outparam__ = "__ctypes_from_outparam__";
+    protected static final TruffleString T_FLAGS_ = tsLiteral("_flags_");
+    protected static final TruffleString T_ARGTYPES_ = tsLiteral("_argtypes_");
+    protected static final TruffleString T_RESTYPE_ = tsLiteral("_restype_");
+    protected static final TruffleString T__check_retval_ = tsLiteral("_check_retval_");
+    protected static final TruffleString T___ctypes_from_outparam__ = tsLiteral("__ctypes_from_outparam__");
+
+    private static final TruffleString T_X_BRACES = tsLiteral("X{}");
 
     @ImportStatic(PyCPointerTypeBuiltins.class)
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrTypeNewNode extends PythonBuiltinNode {
 
@@ -127,7 +131,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
              * .from_param method - we do not know the types of the arguments (although, in
              * practice, most argtypes would be a ctypes type).
              */
-            stgdict.format = "X{}";
+            stgdict.format = T_X_BRACES;
             stgdict.flags |= TYPEFLAG_ISPOINTER;
 
             /* create the new instance (which is a class, since we are a metatype!) */
@@ -146,14 +150,14 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             stgdict.setfunc = FieldSet.nil;
             stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
-            Object ob = hlib.getItem(stgdict.getDictStorage(), _flags_);
+            Object ob = hlib.getItem(stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
                 throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(ob) | TYPEFLAG_ISPOINTER;
 
             /* _argtypes_ is optional... */
-            ob = hlib.getItem(stgdict.getDictStorage(), _argtypes_);
+            ob = hlib.getItem(stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
@@ -164,14 +168,14 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 stgdict.converters = converters;
             }
 
-            ob = hlib.getItem(stgdict.getDictStorage(), _restype_);
+            ob = hlib.getItem(stgdict.getDictStorage(), T_RESTYPE_);
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
                 if (dict == null && !callableCheck.execute(ob)) {
                     throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
-                stgdict.checker = lookupAttr.execute(ob, _check_retval_);
+                stgdict.checker = lookupAttr.execute(ob, T__check_retval_);
                 if (dict != null) {
                     stgdict.ffi_type_pointer = dict.ffi_type_pointer.getAsArray();
                 }
@@ -211,9 +215,9 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                  *      Although specific examples reported relate specifically to unions and
                  *      not bitfields, the bitfields check is also being disabled as a
                  *      precaution.
-
+                
                     StgDictObject *stgdict = PyType_stgdict(tp);
-
+                
                     if (stgdict != NULL) {
                         if (stgdict.flags & TYPEFLAG_HASUNION) {
                             Py_DECREF(converters);
@@ -241,11 +245,11 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                     }
                  */
 
-                cnv = lookupAttr.execute(tp, from_param);
+                cnv = lookupAttr.execute(tp, T_FROM_PARAM);
                 if (cnv == PNone.NO_VALUE) {
                     // (mq) This is a workaround for our lookup since we do not search within the
                     // type (bug)
-                    cnv = lookupAttr.execute(GetClassNode.getUncached().execute(tp), from_param);
+                    cnv = lookupAttr.execute(GetClassNode.getUncached().execute(tp), T_FROM_PARAM);
                     // if (cnv instanceof PBuiltinFunction) {
                     // cnv = ((PBuiltinFunction) cnv).boundToObject(tp, factory);
                     // }

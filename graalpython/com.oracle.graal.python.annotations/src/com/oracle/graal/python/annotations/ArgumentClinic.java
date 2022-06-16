@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ public @interface ArgumentClinic {
      * Specifies a predefined conversion routine to use. Other fields of this annotation specify
      * configuration for the conversion routine. Note that not all routines support all the
      * configuration options.
-     * 
+     *
      * Conversion routines are implemented in {@code ConverterFactory}. It creates Java code
      * snippets that instantiate the actual cast nodes, which should implement
      * {@code ArgumentCastNode}.
@@ -89,9 +89,9 @@ public @interface ArgumentClinic {
      */
     String[] args() default {};
 
-    public static final String VALUE_EMPTY_STRING = "\"\"";
-    public static final String VALUE_NONE = "PNone.NONE";
-    public static final String VALUE_NO_VALUE = "PNone.NO_VALUE";
+    String VALUE_EMPTY_TSTRING = "T_EMPTY_STRING";
+    String VALUE_NONE = "PNone.NONE";
+    String VALUE_NO_VALUE = "PNone.NO_VALUE";
 
     enum PrimitiveType {
         Boolean,
@@ -116,10 +116,10 @@ public @interface ArgumentClinic {
          */
         IntToBoolean,
         /**
-         * GraalPython specific converter that narrows any String representation to Java String.
+         * GraalPython specific converter that narrows any String representation to Truffle String.
          * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
-        String,
+        TString,
         /**
          * Corresponds to CPython's {@code int} converter. Supports {@link #defaultValue()}, and
          * {@link #useDefaultForNone()}.

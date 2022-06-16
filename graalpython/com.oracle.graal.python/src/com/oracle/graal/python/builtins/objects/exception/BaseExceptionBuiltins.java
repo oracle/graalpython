@@ -28,17 +28,22 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_IS_NOT_A_DICT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SUPPRESS_CONTEXT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CAUSE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SUPPRESS_CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TRACEBACK__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.IllegalFormatException;
 import java.util.List;
@@ -58,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -76,10 +81,9 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -91,6 +95,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
 public class BaseExceptionBuiltins extends PythonBuiltins {
@@ -104,7 +110,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         return BaseExceptionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionInitNode extends PythonVarargsBuiltinNode {
 
@@ -155,30 +161,32 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         private final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
 
         @TruffleBoundary
-        private String getFormattedMessage(String format, Object... args) {
+        private String getFormattedMessage(TruffleString format, Object... args) {
+            String jFormat = format.toJavaStringUncached();
             try {
                 // pre-format for custom error message formatter
-                if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
-                    return formatter.format(format, args);
+                if (ErrorMessageFormatter.containsCustomSpecifier(jFormat)) {
+                    return formatter.format(jFormat, args);
                 }
-                return String.format(format, args);
+                return String.format(jFormat, args);
             } catch (IllegalFormatException e) {
                 // According to PyUnicode_FromFormat, invalid format specifiers are just ignored.
-                return format;
+                return jFormat;
             }
         }
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
                         @Cached ConditionProfile nullArgsProfile,
-                        @Cached ConditionProfile hasMessageFormat) {
+                        @Cached ConditionProfile hasMessageFormat,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(args == null)) {
                 if (hasMessageFormat.profile(!self.hasMessageFormat())) {
                     args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
-                    args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
+                    args = factory().createTuple(new Object[]{fromJavaStringNode.execute(getFormattedMessage(self.getMessageFormat(), self.getMessageArgs()), TS_ENCODING)});
                 }
                 self.setArgs(args);
             }
@@ -205,7 +213,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @ImportStatic(BaseExceptionBuiltins.class)
     public abstract static class CauseNode extends PythonBuiltinNode {
@@ -233,7 +241,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @ImportStatic(BaseExceptionBuiltins.class)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
@@ -261,7 +269,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUPPRESS_CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___SUPPRESS_CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
@@ -287,7 +295,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __TRACEBACK__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___TRACEBACK__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
@@ -332,7 +340,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -354,7 +362,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -369,7 +377,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
@@ -378,12 +386,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CastToJavaStringNode castStringNode) {
+                        @Cached CastToTruffleStringNode castStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "()");
-            return PythonUtils.sbToString(sb);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
+            appendStringNode.execute(sb, T_EMPTY_PARENS);
+            return toStringNode.execute(sb);
         }
 
         @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
@@ -393,15 +403,17 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached GetItemNode getItemNode,
-                        @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castStringNode) {
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached CastToTruffleStringNode castStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, (String) reprNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0)));
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
+            appendStringNode.execute(sb, T_LPAREN);
+            appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0)));
+            appendStringNode.execute(sb, T_RPAREN);
+            return toStringNode.execute(sb);
         }
 
         @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1")
@@ -411,12 +423,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.ReprNode reprNode,
-                        @Cached CastToJavaStringNode castStringNode) {
+                        @Cached CastToTruffleStringNode castStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, (String) reprNode.execute(frame, self.getArgs()));
-            return PythonUtils.sbToString(sb);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
+            appendStringNode.execute(sb, reprNode.execute(frame, self.getArgs()));
+            return toStringNode.execute(sb);
         }
 
         protected int argsLen(VirtualFrame frame, PBaseException self, SequenceStorageNodes.LenNode lenNode, ArgsNode argsNode) {
@@ -424,7 +438,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -432,7 +446,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         Object strNoArgs(VirtualFrame frame, PBaseException self,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ArgsNode argsNode) {
-            return PythonUtils.EMPTY_STRING;
+            return T_EMPTY_STRING;
         }
 
         @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
@@ -457,7 +471,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BaseExceptionSetStateNode extends PythonBinaryBuiltinNode {
         @CompilerDirectives.ValueType
@@ -491,7 +505,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             public abstract ExcState execute(VirtualFrame frame, Object key, ExcState state);
 
             @Specialization
-            public static ExcState doIt(VirtualFrame frame, String key, ExcState state,
+            public static ExcState doIt(VirtualFrame frame, TruffleString key, ExcState state,
                             @Cached PyObjectSetAttr setAttr,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
                 final Object value = lib.getItem(state.dictStorage, key);

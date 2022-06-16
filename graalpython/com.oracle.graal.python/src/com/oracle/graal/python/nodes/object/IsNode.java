@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -72,6 +73,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -201,7 +203,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                     @Cached CExtNodes.PointerCompareNode isNode) {
-        return isNode.execute(__EQ__, left, right);
+        return isNode.execute(T___EQ__, left, right);
     }
 
     // code
@@ -255,9 +257,10 @@ public abstract class IsNode extends Node implements BinaryOp {
     @Specialization
     static boolean doPString(PString left, PString right,
                     @Cached StringNodes.StringMaterializeNode materializeNode,
-                    @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+                    @Cached StringNodes.IsInternedStringNode isInternedStringNode,
+                    @Cached TruffleString.EqualNode equalNode) {
         if (isInternedStringNode.execute(left) && isInternedStringNode.execute(right)) {
-            return materializeNode.execute(left).equals(materializeNode.execute(right));
+            return equalNode.execute(materializeNode.execute(left), materializeNode.execute(right), TS_ENCODING);
         }
         return left == right;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,15 +42,16 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
-import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins._handle;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__HANDLE;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.FUNCFLAG_CDECL;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getFunctionFromLongObject;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FIN;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FLCID;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FOUT;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.__ctypes_from_outparam__;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.T___ctypes_from_outparam__;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PyCFuncPtrTypeNewNode.converters_from_argtypes;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CTYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALL_TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
@@ -70,13 +71,15 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THE_ERRCHECK_ATTRIBUTE
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -102,7 +105,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -120,10 +123,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -131,6 +133,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtr)
 public class PyCFuncPtrBuiltins extends PythonBuiltins {
@@ -152,7 +155,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
      * object (with an integer handle)), paramflags "is|..." - vtable index, method name, creates
      * callable calling COM vtbl
      */
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrNewNode extends PythonBuiltinNode {
 
@@ -220,7 +223,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
 
-            throw raise(NotImplementedError, "callbacks aren't supported yet.");
+            throw raise(NotImplementedError, toTruffleStringUncached("callbacks aren't supported yet."));
             /*-
             CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags);
             PyCFuncPtrObject self = factory().createPyCFuncPtrObject(type);
@@ -228,7 +231,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.callable = callable;
             self.thunk = thunk;
             self.b_ptr = PtrValue.object(thunk.pcl_exec);
-            
+
             keepRefNode.execute(self, 0, thunk, factory());
             return self;
             */
@@ -262,13 +265,13 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags) {
-            throw raise(NotImplementedError, "callbacks aren't supported yet.");
+            throw raise(NotImplementedError, toTruffleStringUncached("callbacks aren't supported yet."));
             /*- TODO
             int nArgs = converters.length;
             CThunkObject p = CThunkObject_new(nArgs);
-            
+
             p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
-            
+
             p.flags = flags;
             int i;
             for (i = 0; i < nArgs; ++i) {
@@ -276,7 +279,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
             p.atypes[i] = null;
-            
+
             p.restype = restype;
             if (restype == PNone.NONE) {
                 p.setfunc = FieldSet.nil;
@@ -289,7 +292,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.setfunc = dict.setfunc;
                 p.ffi_restype = dict.ffi_type_pointer;
             }
-            
+
             ffi_abi cc = FFI_DEFAULT_ABI;
             int result = ffi_prep_cif(p.cif, cc, nArgs, _ctypes_get_ffi_type(restype, pyTypeStgDictNode), p.atypes);
             if (result != FFI_OK) {
@@ -299,7 +302,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             if (result != FFI_OK) {
                 throw raise(RuntimeError, FFI_PREP_CLOSURE_FAILED_WITH_D, result);
             }
-            
+
             p.converters = converters;
             p.callable = callable;
             return p;
@@ -353,7 +356,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_restype(PyCFuncPtrObject self, Object value,
-                        @Cached("create(_check_retval_)") LookupAttributeInMRONode lookupAttr,
+                        @Cached("create(T__check_retval_)") LookupAttributeInMRONode lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyCallableCheckNode callableCheck) {
             if (value == PNone.NONE) {
@@ -427,21 +430,22 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object PyCFuncPtr_repr(CDataObject self,
+        TruffleString PyCFuncPtr_repr(CDataObject self,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
+                        @Cached GetNameNode getNameNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object clazz = getClassNode.execute(self);
-            return PythonUtils.format("<%s object at %s>",
+            return simpleTruffleStringFormatNode.format("<%s object at %s>",
                             getNameNode.execute(clazz), getNameNode.execute(getClassNode.execute(self)));
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCFuncPtrCallNode extends PythonVarargsBuiltinNode {
 
@@ -453,11 +457,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetNameNode getNameNode,
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
-                        @Cached CallProcNode callProcNode) {
+                        @Cached CallProcNode callProcNode,
+                        @Cached TruffleString.EqualNode equalNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
@@ -470,7 +475,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             int[] props = new int[3];
             NativeFunction pProc = getFunctionFromLongObject(self.b_ptr.getNativePointer(), getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
-                            pyTypeCheck, getArray, castToJavaIntExactNode, castToJavaStringNode, pyTypeStgDictNode, callNode, getNameNode);
+                            pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];
             int outmask = props[poutmask_idx];
             int numretvals = props[pnumretvals_idx];
@@ -494,7 +499,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
             CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
-            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().lookupBuiltinModule("_ctypes").getBuiltins();
+            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().lookupBuiltinModule(T__CTYPES).getBuiltins();
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,
@@ -522,12 +527,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                             lookupAndCallUnaryDynamicNode);
         }
 
-        protected Object _get_arg(int[] pindex, String name, Object defval, Object[] inargs, PKeyword[] kwds) {
+        protected Object _get_arg(int[] pindex, TruffleString name, Object defval, Object[] inargs, PKeyword[] kwds, TruffleString.EqualNode equalNode) {
             if (pindex[0] < inargs.length) {
                 return inargs[pindex[0]++];
             }
             if (kwds != null && name != null) {
-                int v = KeywordsStorage.findStringKey(kwds, name);
+                int v = KeywordsStorage.findStringKey(kwds, name, equalNode);
                 if (v != -1) {
                     ++pindex[0];
                     return kwds[v].getValue();
@@ -569,10 +574,11 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         PyTypeCheck pyTypeCheck,
                         GetInternalObjectArrayNode getArray,
                         CastToJavaIntExactNode castToJavaIntExactNode,
-                        CastToJavaStringNode castToJavaStringNode,
+                        CastToTruffleStringNode castToTruffleStringNode,
                         PyTypeStgDictNode pyTypeStgDictNode,
                         CallNode callNode,
-                        GetNameNode getNameNode) {
+                        GetNameNode getNameNode,
+                        TruffleString.EqualNode equalNode) {
             /*
              * It's a little bit difficult to determine how many arguments the function call
              * requires/accepts. For simplicity, we count the consumed args and compare this to the
@@ -599,7 +605,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 Object ob;
                 int tsize = item.length;
                 int flag = castToJavaIntExactNode.execute(item[0]);
-                String name = tsize > 1 ? castToJavaStringNode.execute(item[1]) : null;
+                TruffleString name = tsize > 1 ? castToTruffleStringNode.execute(item[1]) : null;
                 Object defval = tsize > 2 ? item[2] : null;
 
                 switch (flag & (PARAMFLAG_FIN | PARAMFLAG_FOUT | PARAMFLAG_FLCID)) {
@@ -620,7 +626,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                     case 0:
                     case PARAMFLAG_FIN:
                         /* 'in' parameter. Copy it from inargs. */
-                        ob = _get_arg(inargs_index, name, defval, inargs, kwds);
+                        ob = _get_arg(inargs_index, name, defval, inargs, kwds, equalNode);
                         callargs[i] = ob;
                         break;
                     case PARAMFLAG_FOUT:
@@ -726,7 +732,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                     index++;
                 } else if ((bit & outmask) != 0) {
                     v = callargs[i];
-                    v = lookupAndCallUnaryDynamicNode.executeObject(v, __ctypes_from_outparam__);
+                    v = lookupAndCallUnaryDynamicNode.executeObject(v, T___ctypes_from_outparam__);
                     if (v == null || numretvals == 1) {
                         return v;
                     }
@@ -745,6 +751,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
     protected abstract static class PyCFuncPtrFromDllNode extends PNodeWithRaise {
 
+        private static final char[] PzZ = "PzZ".toCharArray();
+
         abstract Object execute(VirtualFrame frame, Object type, Object[] args, PythonContext context, PythonObjectFactory factory);
 
         @Specialization
@@ -754,11 +762,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached PyLongAsVoidPtr asVoidPtr,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached CastToJavaStringNode toString,
+                        @Cached CastToTruffleStringNode toString,
                         @Cached KeepRefNode keepRefNode,
                         @Cached GetAnyAttributeNode getAttributeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached AuditNode auditNode) {
+                        @Cached AuditNode auditNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             // PyArg_ParseTuple(args, "O|O", &tuple, &paramflags);
             PTuple tuple = (PTuple) args[0];
             Object[] paramflags = null;
@@ -768,17 +777,17 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             // PyArg_ParseTuple(ftuple, "O&O;illegal func_spec argument", _get_name, &name, &dll)
             Object[] ftuple = getArray.execute(tuple.getSequenceStorage());
-            String name = toString.execute(ftuple[0]);
+            TruffleString name = toString.execute(ftuple[0]);
             Object dll = ftuple[1];
             auditNode.audit("ctypes.dlsym", dll, name);
 
-            Object obj = getAttributeNode.executeObject(frame, dll, _handle);
+            Object obj = getAttributeNode.executeObject(frame, dll, T__HANDLE);
             if (!(obj instanceof PythonNativeVoidPtr) && !longCheckNode.execute(obj)) { // PyLong_Check
                 throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             DLHandler handle = getHandleFromLongObject(obj, context, asVoidPtr, getRaiseNode());
             Object address = dlSymNode.execute(frame, handle, name, context, factory, AttributeError);
-            _validate_paramflags(type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode);
+            _validate_paramflags(type, paramflags, pyTypeCheck, getArray, pyTypeStgDictNode, codePointAtIndexNode);
 
             PyCFuncPtrObject self = factory.createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
@@ -796,7 +805,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         void _validate_paramflags(Object type, Object[] paramflags,
                         PyTypeCheck pyTypeCheck,
                         GetInternalObjectArrayNode getArray,
-                        PyTypeStgDictNode pyTypeStgDictNode) {
+                        PyTypeStgDictNode pyTypeStgDictNode,
+                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             Object[] argtypes = dict.argtypes;
 
@@ -831,7 +841,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                     case PARAMFLAG_FIN | PARAMFLAG_FOUT:
                         break;
                     case PARAMFLAG_FOUT:
-                        _check_outarg_type(typ, i + 1, pyTypeCheck, pyTypeStgDictNode);
+                        _check_outarg_type(typ, i + 1, pyTypeCheck, pyTypeStgDictNode, codePointAtIndexNode);
                         break;
                     default:
                         throw raise(TypeError, PARAMFLAG_VALUE_D_NOT_SUPPORTED, flag);
@@ -842,7 +852,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         /* Return 1 if usable, 0 else and exception set. */
         void _check_outarg_type(Object arg, int index,
                         PyTypeCheck pyTypeCheck,
-                        PyTypeStgDictNode pyTypeStgDictNode) {
+                        PyTypeStgDictNode pyTypeStgDictNode,
+                        TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             if (pyTypeCheck.isPyCPointerTypeObject(arg)) {
                 return;
             }
@@ -853,20 +864,20 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             StgDictObject dict = pyTypeStgDictNode.execute(arg);
             if (dict != null /* simple pointer types, c_void_p, c_wchar_p, BSTR, ... */
-                            && PGuards.isString(dict.proto)
+                            && PGuards.isTruffleString(dict.proto)
                             /*
                              * We only allow c_void_p, c_char_p and c_wchar_p as a simple output
                              * parameter type
                              */
-                            && strchr("PzZ", PString.charAt((String) dict.proto, 0))) {
+                            && strchr(PzZ, codePointAtIndexNode.execute((TruffleString) dict.proto, 0, TS_ENCODING))) {
                 return;
             }
 
             throw raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.getUncached().execute(arg));
         }
 
-        protected static boolean strchr(String chars, char code) {
-            for (char c : PString.toCharArray(chars)) {
+        protected static boolean strchr(char[] chars, int code) {
+            for (char c : chars) {
                 if (c == code) {
                     return true;
                 }

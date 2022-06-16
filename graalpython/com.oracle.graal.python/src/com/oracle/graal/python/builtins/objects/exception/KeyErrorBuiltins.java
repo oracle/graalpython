@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 
 import java.util.List;
 
@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -68,7 +68,7 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
         return KeyErrorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class KeyErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -77,7 +77,7 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
-                        @Cached PyObjectReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectReprAsTruffleStringNode reprNode) {
             Object args = argsNode.executeGet(frame, self);
             if (args instanceof PTuple) {
                 SequenceStorage storage = ((PTuple) args).getSequenceStorage();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This class implements the equivalent of {@code Py_buffer} on a Java level. This class basically
@@ -49,7 +50,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  * appropriate.<br>
  * This class is intended to be used to store the converted result values created by a call to
  * {@code PyBufferProcs.bf_getbuffer} and can then be used to release the buffer.
- * 
+ *
  * <pre>
  *     typedef struct {
  *         void *buf;
@@ -65,7 +66,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  *         void *internal;
  * } Py_buffer;
  * </pre>
- * 
+ *
  */
 @ValueType
 public final class CExtPyBuffer implements TruffleObject {
@@ -76,13 +77,13 @@ public final class CExtPyBuffer implements TruffleObject {
     private final int itemSize;
     private final boolean readOnly;
     private final int dims;
-    private final String format;
+    private final TruffleString format;
     private final int[] shape;
     private final int[] strides;
     private final int[] suboffsets;
     private final Object internal;
 
-    public CExtPyBuffer(Object buf, Object obj, int len, int itemSize, boolean readOnly, int dims, String format, int[] shape, int[] strides, int[] suboffsets, Object internal) {
+    public CExtPyBuffer(Object buf, Object obj, int len, int itemSize, boolean readOnly, int dims, TruffleString format, int[] shape, int[] strides, int[] suboffsets, Object internal) {
         this.buf = buf;
         this.obj = obj;
         this.len = len;
@@ -120,7 +121,7 @@ public final class CExtPyBuffer implements TruffleObject {
         return dims;
     }
 
-    public String getFormat() {
+    public TruffleString getFormat() {
         return format;
     }
 

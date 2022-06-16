@@ -25,6 +25,10 @@
  */
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_PROBLEM;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_INTENT;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -44,6 +48,7 @@ import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -80,6 +85,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer, FStringExprParser {
 
@@ -134,7 +140,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             node.accept(new SSTSerializerVisitor(dos));
             dos.close();
         } catch (IOException e) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Error during serialization: %s", e.getMessage());
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.ERROR_DURING_SERIALIZATION, e.getMessage());
         }
 
         return baos.toByteArray();
@@ -198,7 +204,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             // Just to be sure that the serialization version is ok.
             byte version = dis.readByte();
             if (version != SerializationUtils.VERSION) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Bad data of serialization");
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.BAD_DATA_OF_SERIALIZATION);
             }
             String name = decodeHome(dis.readUTF()).intern();
             String path = decodeHome(dis.readUTF()).intern();
@@ -220,7 +226,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             source = sb.build();
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.NOT_POSSIBLE_GET_CORRECT_BYTECODE, e.getClass().getSimpleName(), e.getMessage());
         }
         if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
             ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
@@ -351,14 +357,14 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             try {
                 PythonFileDetector.findEncodingStrict(sourceText);
             } catch (PythonFileDetector.InvalidEncodingException e) {
-                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), ENCODING_PROBLEM, e.getEncodingName());
             }
         }
         // We need to reject inputs starting with indent, but doing it in ANTLR is expensive, so we
         // do it here manually
         Matcher matcher = START_INDENT_REGEX.matcher(sourceText);
         if (matcher.find()) {
-            throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), "unexpected indent");
+            throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), UNEXPECTED_INTENT);
         }
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(sourceText);
@@ -427,19 +433,19 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         ParserErrorCallback collectWarnings = new ParserErrorCallback() {
 
             @Override
-            public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, String message, Object... arguments) {
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, TruffleString message, Object... arguments) {
                 return errors.raiseInvalidSyntax(type, src, section, message, arguments);
             }
 
             @Override
-            public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments) {
                 return errors.raiseInvalidSyntax(type, location, message, arguments);
             }
 
             @Override
-            public void warn(PythonBuiltinClassType type, String format, Object... args) {
+            public void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
                 assert type == PythonBuiltinClassType.DeprecationWarning;
-                warnings.add(String.format(format, args));
+                warnings.add(String.format(format.toJavaStringUncached(), args));
             }
 
             @Override
@@ -458,7 +464,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     public static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
-        String message = null;
+        TruffleString message = null;
         Object[] messageArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
         if (e instanceof PException) {
             PException pException = (PException) e;
@@ -483,10 +489,11 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             }
         } else {
             // from parser we are getting RuntimeExceptions
-            message = e instanceof RuntimeException ? e.getMessage() : null;
+            message = e instanceof RuntimeException ? toTruffleStringUncached(e.getMessage()) : null;
         }
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
         ErrorType errorType = PythonErrorStrategy.getErrorType(e, section);
-        throw errors.raiseInvalidSyntax(errorType, source, section, message != null ? message : "invalid syntax", messageArgs);
+        TruffleString tmessage = message != null ? message : ErrorMessages.INVALID_SYNTAX;
+        throw errors.raiseInvalidSyntax(errorType, source, section, tmessage, messageArgs);
     }
 }

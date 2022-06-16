@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,60 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -115,6 +163,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
 public class IntBuiltins extends PythonBuiltins {
@@ -135,7 +184,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -303,8 +352,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = SpecialMethodNames.__ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -372,8 +421,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = SpecialMethodNames.__SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -447,8 +496,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
@@ -527,8 +576,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = SpecialMethodNames.__FLOORDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends IntBinaryBuiltinNode {
@@ -639,8 +688,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = SpecialMethodNames.__DIVMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class DivModNode extends IntBinaryBuiltinNode {
@@ -674,7 +723,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends IntBinaryBuiltinNode {
@@ -784,8 +833,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = SpecialMethodNames.__MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -870,8 +919,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
-    @Builtin(name = SpecialMethodNames.__POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
+    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
@@ -1130,7 +1179,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ABS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -1184,7 +1233,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CEIL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___CEIL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
@@ -1204,7 +1253,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOOR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___FLOOR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -1224,7 +1273,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__POS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
@@ -1244,7 +1293,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEG__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class NegNode extends PythonUnaryBuiltinNode {
@@ -1280,7 +1329,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INVERT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___INVERT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
@@ -1310,7 +1359,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LSHIFT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
@@ -1475,7 +1524,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RSHIFT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
@@ -1661,8 +1710,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RAND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = SpecialMethodNames.__AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class AndNode extends BinaryBitwiseNode {
@@ -1688,8 +1737,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = SpecialMethodNames.__OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class OrNode extends BinaryBitwiseNode {
@@ -1715,8 +1764,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RXOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = SpecialMethodNames.__XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class XorNode extends BinaryBitwiseNode {
@@ -1741,7 +1790,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -1872,7 +1921,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -1921,7 +1970,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1988,7 +2037,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         static boolean doVoidPtr(PythonNativeVoidPtr x, long y,
                         @Cached CExtNodes.PointerCompareNode ltNode) {
-            return ltNode.execute(__LT__, x, y);
+            return ltNode.execute(T___LT__, x, y);
         }
 
         @SuppressWarnings("unused")
@@ -1998,7 +2047,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -2042,7 +2091,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -2087,7 +2136,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -2139,29 +2188,25 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ToBytesNode extends PythonBuiltinNode {
 
-        private static final String MESSAGE_INT_TO_BIG = "int too big to convert";
-        private static final String MESSAGE_LENGTH_ARGUMENT = "length argument must be non-negative";
-        private static final String MESSAGE_CONVERT_NEGATIVE = "can't convert negative int to unsigned";
-
         public abstract PBytes execute(VirtualFrame frame, Object self, Object byteCount, Object StringOrder, Object signed);
 
-        // used for obtaining int, which will be the size of craeted array
+        // used for obtaining int, which will be the size of created array
         @Child private ToBytesNode recursiveNode;
         @Child private PyNumberAsSizeNode asSizeNode;
 
         @TruffleBoundary
-        private boolean isBigEndian(String order) {
-            if (order.equals("big")) {
+        private boolean isBigEndian(TruffleString order) {
+            if (order.equalsUncached(T_BIG, TS_ENCODING)) {
                 return true;
             }
-            if (order.equals("little")) {
+            if (order.equalsUncached(T_LITTLE, TS_ENCODING)) {
                 return false;
             }
             throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
         }
 
         @Specialization
-        PBytes fromLong(long self, int byteCount, String byteorder, PNone signed) {
+        PBytes fromLong(long self, int byteCount, TruffleString byteorder, PNone signed) {
             return fromLong(self, byteCount, byteorder, false);
         }
 
@@ -2170,13 +2215,13 @@ public class IntBuiltins extends PythonBuiltins {
         private final ConditionProfile overflowProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        PBytes fromLong(long self, int byteCount, String byteorder, boolean signed) {
+        PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed) {
             if (negativeByteCountProfile.profile(byteCount < 0)) {
-                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }
             if (self < 0) {
                 if (negativeNumberProfile.profile(!signed)) {
-                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                    throw raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
                 }
             }
             return factory().createBytes(fromLong(self, byteCount, isBigEndian(byteorder), signed,
@@ -2188,7 +2233,7 @@ public class IntBuiltins extends PythonBuiltins {
                         PRaiseNode raise) {
             byte signByte = 0;
             if (self < 0) {
-                assert signed : MESSAGE_CONVERT_NEGATIVE;
+                assert signed : ErrorMessages.MESSAGE_CONVERT_NEGATIVE;
                 signByte = -1;
             }
             int index;
@@ -2214,7 +2259,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
 
             if (overflowProfile.profile(!signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
-                throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                throw raise.raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
             }
 
             if (signed) {
@@ -2227,29 +2272,29 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed) {
+        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, TruffleString byteorder, PNone signed) {
             return fromLongLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed) {
+        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, TruffleString byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
         @Specialization
-        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed) {
+        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, TruffleString byteorder, PNone signed) {
             return fromLongPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed) {
+        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, TruffleString byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
         @Specialization
-        PBytes fromPIntInt(PInt self, int byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, PNone signed) {
             return fromPIntInt(self, byteCount, byteorder, false);
         }
 
@@ -2258,7 +2303,7 @@ public class IntBuiltins extends PythonBuiltins {
                         PRaiseNode raise) {
             if (value.compareTo(BigInteger.ZERO) < 0) {
                 if (!signed) {
-                    throw raise.raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                    throw raise.raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
                 }
                 return -1;
             }
@@ -2271,9 +2316,9 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, boolean signed) {
+        public PBytes fromPIntInt(PInt self, int byteCount, TruffleString byteorder, boolean signed) {
             if (negativeByteCountProfile.profile(byteCount < 0)) {
-                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.MESSAGE_LENGTH_ARGUMENT);
             }
             return factory().createBytes(fromBigInteger(self, byteCount, isBigEndian(byteorder), signed,
                             overflowProfile, getRaiseNode()));
@@ -2299,7 +2344,7 @@ public class IntBuiltins extends PythonBuiltins {
                 }
                 if (overflowProfile.profile(len > byteCount)) {
                     // the corrected len is still bigger then we need.
-                    throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                    throw raise.raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
                 }
                 // the array starts with sign bytes and has to be truncated to the requested
                 // size
@@ -2340,23 +2385,23 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, TruffleString byteorder, PNone signed) {
             return fromPIntLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed) {
+        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, TruffleString byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
         @Specialization
-        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, TruffleString byteorder, PNone signed) {
             return fromPIntPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed) {
+        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, TruffleString byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
@@ -2393,7 +2438,7 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "from_bytes", minNumOfPositionalArgs = 3, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
-    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ImportStatic(SpecialMethodNames.class)
     @GenerateNodeFactory
@@ -2427,11 +2472,11 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private boolean isBigEndian(String order) {
-            if (order.equals("big")) {
+        private boolean isBigEndian(TruffleString order) {
+            if (order.equalsUncached(T_BIG, TS_ENCODING)) {
                 return true;
             }
-            if (order.equals("little")) {
+            if (order.equalsUncached(T_LITTLE, TS_ENCODING)) {
                 return false;
             }
             throw raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
@@ -2449,18 +2494,18 @@ public class IntBuiltins extends PythonBuiltins {
             }
             if (constructNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructNode = insert(LookupAndCallVarargsNode.create(SpecialMethodNames.__CALL__));
+                constructNode = insert(LookupAndCallVarargsNode.create(SpecialMethodNames.T___CALL__));
             }
             return constructNode.execute(null, cl, new Object[]{cl, factory().createInt(number)});
         }
 
-        private Object compute(Object cl, byte[] bytes, String byteorder, boolean signed) {
+        private Object compute(Object cl, byte[] bytes, TruffleString byteorder, boolean signed) {
             BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
             return createIntObject(cl, bi);
         }
 
         @Specialization
-        Object fromObject(VirtualFrame frame, Object cl, Object object, String byteorder, boolean signed,
+        Object fromObject(VirtualFrame frame, Object cl, Object object, TruffleString byteorder, boolean signed,
                         @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.BytesFromObject bytesFromObject) {
@@ -2468,7 +2513,7 @@ public class IntBuiltins extends PythonBuiltins {
             Object bytesObj = callBytes.executeObject(frame, object);
             if (bytesObj != PNone.NO_VALUE) {
                 if (!(bytesObj instanceof PBytes)) {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__);
+                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__);
                 }
                 bytes = bufferLib.getCopiedByteArray(bytesObj);
             } else {
@@ -2483,7 +2528,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
@@ -2507,42 +2552,37 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static String doI(int self) {
-            return Integer.toString(self);
+        static TruffleString doL(long self,
+                        @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
+            return fromLongNode.execute(self, TS_ENCODING, false);
         }
 
         @Specialization
-        @TruffleBoundary
-        static String doL(long self) {
-            return Long.toString(self);
+        static TruffleString doPInt(PInt self,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return fromJavaStringNode.execute(self.toString(), TS_ENCODING);
         }
 
         @Specialization
-        @TruffleBoundary
-        static String doPInt(PInt self) {
-            return self.toString();
-        }
-
-        @Specialization
-        static String doNativeVoidPtr(VirtualFrame frame, PythonNativeVoidPtr self,
-                        @Cached PyObjectHashNode hashNode) {
-            return doL(hashNode.execute(frame, self));
+        static TruffleString doNativeVoidPtr(VirtualFrame frame, PythonNativeVoidPtr self,
+                        @Cached PyObjectHashNode hashNode,
+                        @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
+            return doL(hashNode.execute(frame, self), fromLongNode);
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
-    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
+    @Builtin(name = J___FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
         @Child private PyNumberFloatNode floatNode;
@@ -2555,12 +2595,12 @@ public class IntBuiltins extends PythonBuiltins {
         // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
         // boolean's __str__ and not int's __str__ (that specialization is inherited)
         @Specialization(guards = "!formatString.isEmpty()")
-        Object formatB(boolean self, String formatString) {
+        TruffleString formatB(boolean self, TruffleString formatString) {
             return formatI(self ? 1 : 0, formatString);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        Object formatI(int self, String formatString) {
+        TruffleString formatI(int self, TruffleString formatString) {
             PRaiseNode raiseNode = getRaiseNode();
             Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
@@ -2571,12 +2611,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        Object formatL(VirtualFrame frame, long self, String formatString) {
+        TruffleString formatL(VirtualFrame frame, long self, TruffleString formatString) {
             return formatPI(frame, factory().createInt(self), formatString);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        Object formatPI(VirtualFrame frame, PInt self, String formatString) {
+        TruffleString formatPI(VirtualFrame frame, PInt self, TruffleString formatString) {
             PRaiseNode raiseNode = getRaiseNode();
             Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
@@ -2597,8 +2637,8 @@ public class IntBuiltins extends PythonBuiltins {
             return floatNode.execute(frame, self);
         }
 
-        private static Spec getSpec(String formatString, PRaiseNode raiseNode) {
-            Spec spec = InternalFormat.fromText(raiseNode, formatString, __FORMAT__);
+        private static Spec getSpec(TruffleString formatString, PRaiseNode raiseNode) {
+            Spec spec = InternalFormat.fromText(raiseNode, formatString);
             return spec.withDefaults(Spec.NUMERIC);
         }
 
@@ -2609,21 +2649,21 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String formatDouble(PRaiseNode raiseNode, Spec spec, double value) {
+        private static TruffleString formatDouble(PRaiseNode raiseNode, Spec spec, double value) {
             FloatFormatter formatter = new FloatFormatter(raiseNode, spec);
             formatter.format(value);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatInt(int self, PRaiseNode raiseNode, Spec spec) {
+        private static TruffleString formatInt(int self, PRaiseNode raiseNode, Spec spec) {
             IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatPInt(PInt self, PRaiseNode raiseNode, Spec spec) {
+        private static TruffleString formatPInt(PInt self, PRaiseNode raiseNode, Spec spec) {
             IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self.getValue());
             return formatter.pad().getResult();
@@ -2643,7 +2683,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
@@ -2750,12 +2790,12 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__TRUNC__, minNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
+    @Builtin(name = J___TRUNC__, minNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
     abstract static class TruncNode extends IntNode {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__INT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___INT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonUnaryBuiltinNode {
@@ -2805,12 +2845,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INDEX__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -2829,7 +2869,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FloatNode extends PythonUnaryBuiltinNode {

@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -130,10 +130,10 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         PFunction function = factory.createFunction(code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption, defaultsStableAssumption);
 
         if (annotations != null) {
-            dylib.put(function, __ANNOTATIONS__, annotations);
+            dylib.put(function, T___ANNOTATIONS__, annotations);
         }
         if (doc != null) {
-            dylib.put(function, __DOC__, doc);
+            dylib.put(function, T___DOC__, doc);
         }
 
         localFrame.setObject(++stackTop, function);

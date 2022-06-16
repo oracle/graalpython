@@ -41,10 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
@@ -64,12 +63,15 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 import sun.misc.Unsafe;
@@ -138,14 +140,14 @@ public abstract class CArrayWrappers {
     }
 
     /**
-     * Encodes the provided String as UTF-8 bytes and copies the bytes (and an additional NUL char)
-     * to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
+     * Encodes the provided TruffleString as UTF-8 bytes and copies the bytes (and an additional NUL
+     * char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
      */
-    @TruffleBoundary
-    public static long stringToNativeUtf8Bytes(String string) {
-        ByteBuffer encoded = StandardCharsets.UTF_8.encode(string);
-        byte[] data = new byte[encoded.remaining() + 1];
-        encoded.get(data, 0, data.length - 1);
+    public static long stringToNativeUtf8Bytes(TruffleString string, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        // TODO GR-37216: use CopyToNative
+        TruffleString utf8 = switchEncodingNode.execute(string, Encoding.UTF_8);
+        byte[] data = new byte[utf8.byteLength(Encoding.UTF_8)];
+        copyToByteArrayNode.execute(utf8, 0, data, 0, data.length, Encoding.UTF_8);
         return byteArrayToNativeInt8(data, true);
     }
 
@@ -181,24 +183,25 @@ public abstract class CArrayWrappers {
 
     /**
      * Unlike a {@link PythonObjectNativeWrapper} object that wraps a Python unicode object, this
-     * wrapper let's a Java String look like a {@code char*}.
+     * wrapper let's a TruffleString look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static final class CStringWrapper extends CArrayWrapper {
 
-        public CStringWrapper(String delegate) {
+        public CStringWrapper(TruffleString delegate) {
             super(delegate);
         }
 
-        public String getString(PythonNativeWrapperLibrary lib) {
-            return ((String) lib.getDelegate(this));
+        public TruffleString getString(PythonNativeWrapperLibrary lib) {
+            return ((TruffleString) lib.getDelegate(this));
         }
 
         @ExportMessage
         long getArraySize(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return ((String) lib.getDelegate(this)).length();
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return codePointLengthNode.execute(getString(lib), TS_ENCODING) + 1;
         }
 
         @ExportMessage
@@ -208,14 +211,20 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        byte readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
+        final byte readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
-                String s = (String) lib.getDelegate(this);
-                if (idx >= 0 && idx < s.length()) {
-                    return (byte) s.charAt(idx);
-                } else if (idx == s.length()) {
+                TruffleString s = getString(lib);
+                // TODO GR-37217: use sys.getdefaultencoding if the string contains non-latin1
+                // codepoints
+                assert s.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
+                int len = codePointLengthNode.execute(s, TS_ENCODING);
+                if (idx >= 0 && idx < len) {
+                    return (byte) codePointAtIndexNode.execute(s, idx, TS_ENCODING);
+                } else if (idx == len) {
                     return 0;
                 }
             } catch (OverflowException e) {
@@ -226,9 +235,10 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long identifier,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return 0 <= identifier && identifier < getArraySize(lib);
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return 0 <= identifier && identifier < getArraySize(lib, codePointLengthNode);
         }
 
         @ExportMessage
@@ -240,21 +250,24 @@ public abstract class CArrayWrappers {
         @ExportMessage
         Object getNativeType(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
-            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
+                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getArraySize(lib, codePointLengthNode));
         }
 
         @ExportMessage
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             if (!PythonContext.get(lib).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
             if (!lib.isNative(this)) {
-                setNativePointer(stringToNativeUtf8Bytes(getString(lib)));
+                setNativePointer(stringToNativeUtf8Bytes(getString(lib), switchEncodingNode, copyToByteArrayNode));
             }
         }
     }
@@ -335,7 +348,7 @@ public abstract class CArrayWrappers {
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             if (!PythonContext.get(lib).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
             if (!lib.isNative(this)) {
@@ -401,7 +414,7 @@ public abstract class CArrayWrappers {
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             if (!PythonContext.get(lib).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
             if (!lib.isNative(this)) {

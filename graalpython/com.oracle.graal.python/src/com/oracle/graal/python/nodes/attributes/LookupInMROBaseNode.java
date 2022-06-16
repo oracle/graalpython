@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -48,12 +47,4 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 @ImportStatic(PythonOptions.class)
 public abstract class LookupInMROBaseNode extends PNodeWithContext {
     public abstract Object execute(Object klass);
-
-    public static LookupInMROBaseNode create(String key) {
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-        if (slot != null) {
-            return LookupCallableSlotInMRONode.create(slot);
-        }
-        return LookupAttributeInMRONode.create(key);
-    }
 }

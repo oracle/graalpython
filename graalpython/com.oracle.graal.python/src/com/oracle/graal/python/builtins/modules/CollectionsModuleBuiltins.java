@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_REV_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 
 import java.util.List;
 
@@ -80,7 +84,7 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
     }
 
     // _collections.deque
-    @Builtin(name = BuiltinNames.DEQUE, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDeque, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J_DEQUE, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDeque, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class DequeNode extends PythonVarargsBuiltinNode {
 
@@ -101,7 +105,7 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
     }
 
     // _collections._deque_iterator
-    @Builtin(name = BuiltinNames.DEQUE_ITER, constructsClass = PythonBuiltinClassType.PDequeIter, //
+    @Builtin(name = J_DEQUE_ITER, constructsClass = PythonBuiltinClassType.PDequeIter, //
                     minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
     @GenerateNodeFactory
     abstract static class DequeIterNode extends PythonTernaryBuiltinNode {
@@ -133,12 +137,12 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
                 }
                 return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
             }
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
         }
     }
 
     // _collections._deque_reverse_iterator
-    @Builtin(name = BuiltinNames.DEQUE_REV_ITER, constructsClass = PythonBuiltinClassType.PDequeRevIter, //
+    @Builtin(name = J_DEQUE_REV_ITER, constructsClass = PythonBuiltinClassType.PDequeRevIter, //
                     minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
     @GenerateNodeFactory
     abstract static class DequeRevIterNode extends PythonTernaryBuiltinNode {
@@ -170,12 +174,12 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
                 }
                 return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
             }
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
         }
     }
 
     // _collections.defaultdict
-    @Builtin(name = BuiltinNames.DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J_DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
         @Specialization
@@ -186,7 +190,7 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
     }
 
     // _collections._tuplegetter
-    @Builtin(name = TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
+    @Builtin(name = J_TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class TupleGetterNode extends PythonTernaryClinicBuiltinNode {

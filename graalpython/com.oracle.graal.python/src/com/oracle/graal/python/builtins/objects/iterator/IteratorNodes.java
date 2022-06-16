@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,9 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -94,6 +96,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class IteratorNodes {
 
@@ -132,11 +136,13 @@ public abstract class IteratorNodes {
                         @Cached ConditionProfile hasLenProfile,
                         @Cached ConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode raiseNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached GilNode gil) {
             if (iLib.isString(iterable)) {
                 gil.release(true);
                 try {
-                    return iLib.asString(iterable).length();
+                    return codePointLengthNode.execute(switchEncodingNode.execute(iLib.asTruffleString(iterable), TS_ENCODING), TS_ENCODING);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 } finally {
@@ -160,7 +166,7 @@ public abstract class IteratorNodes {
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, __LEN__, len);
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LEN__, len);
                     }
                 }
             }
@@ -180,7 +186,7 @@ public abstract class IteratorNodes {
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, __LENGTH_HINT__, len);
+                        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
                     }
                 }
             }
@@ -269,8 +275,9 @@ public abstract class IteratorNodes {
         }
 
         @Specialization
-        static int doString(PStringIterator it) {
-            return ensurePositive(it.value.length());
+        static int doString(PStringIterator it,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return ensurePositive(codePointLengthNode.execute(it.value, TS_ENCODING));
         }
 
         @Specialization
@@ -310,7 +317,7 @@ public abstract class IteratorNodes {
         @Specialization
         static boolean doGeneric(Object it,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
-            return lookupAttributeNode.execute(it, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
+            return lookupAttributeNode.execute(it, SpecialMethodNames.T___NEXT__) != PNone.NO_VALUE;
         }
     }
 
@@ -318,20 +325,32 @@ public abstract class IteratorNodes {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
         @Specialization
-        public static Object[] doIt(String iterable,
-                        @Cached LoopConditionProfile loopProfile) {
-            Object[] result = new Object[iterable.length()];
+        public static Object[] doIt(TruffleString iterable,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            Object[] result = new Object[codePointLengthNode.execute(iterable, TS_ENCODING)];
             loopProfile.profileCounted(result.length);
-            for (int i = 0; loopProfile.inject(i < result.length); i++) {
-                result[i] = Character.toString(iterable.charAt(i));
+            TruffleStringIterator it = createCodePointIteratorNode.execute(iterable, TS_ENCODING);
+            int i = 0;
+            while (loopProfile.inject(it.hasNext())) {
+                // TODO: GR-37219: use SubstringNode with lazy=true?
+                result[i++] = fromCodePointNode.execute(nextNode.execute(it), TS_ENCODING, true);
             }
             return result;
         }
 
         @Specialization
         public static Object[] doIt(PString iterable,
-                        @Cached LoopConditionProfile loopProfile) {
-            return doIt(iterable.getValue(), loopProfile);
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
+            return doIt(castToStringNode.execute(iterable), loopProfile, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization

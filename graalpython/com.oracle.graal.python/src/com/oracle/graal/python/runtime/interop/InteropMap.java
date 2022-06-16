@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * A container class used to store per-node attributes used by the instrumentation framework.
@@ -123,8 +124,8 @@ public final class InteropMap implements TruffleObject {
     @TruffleBoundary
     public static InteropMap fromPythonObject(PythonObject globals) {
         Map<String, Object> map = new HashMap<>();
-        for (String name : globals.getAttributeNames()) {
-            map.put(name, globals.getAttribute(name));
+        for (TruffleString name : globals.getAttributeNames()) {
+            map.put(name.toJavaStringUncached(), globals.getAttribute(name));
         }
         return new InteropMap(map);
     }

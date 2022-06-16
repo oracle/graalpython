@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -55,17 +56,16 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum TernaryArithmetic {
-    Pow(SpecialMethodNames.__POW__, "**", "pow");
+    Pow(SpecialMethodNames.T___POW__, "**", "pow");
 
-    private final String methodName;
-    private final String operator;
+    private final TruffleString methodName;
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
-    TernaryArithmetic(String methodName, String operator, String operatorFunction) {
+    TernaryArithmetic(TruffleString methodName, @SuppressWarnings("unused") String operator, String operatorFunction) {
         this.methodName = methodName;
-        this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
@@ -80,12 +80,8 @@ public enum TernaryArithmetic {
         };
     }
 
-    public String getMethodName() {
+    public TruffleString getMethodName() {
         return methodName;
-    }
-
-    public String getOperator() {
-        return operator;
     }
 
     /**
@@ -95,7 +91,7 @@ public enum TernaryArithmetic {
      * signature checking.
      */
     static final class CallTernaryArithmeticRootNode extends CallArithmeticRootNode {
-        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
+        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, tsArray("x", "y", "z"), null);
 
         @Child private LookupAndCallTernaryNode callTernaryNode;
 

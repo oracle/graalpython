@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,21 +43,33 @@ package com.oracle.graal.python.builtins.modules.io;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRWPair;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.PEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_PEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_PEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -95,7 +107,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
         return BufferedRWPairBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "reader", "writer", "buffer_size"})
     @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
@@ -173,97 +185,97 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object read(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), READ, args);
+            return callMethod.execute(frame, self.getReader(), T_READ, args);
         }
     }
 
-    @Builtin(name = PEEK, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_PEEK, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PeekNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object peek(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), PEEK, args);
+            return callMethod.execute(frame, self.getReader(), T_PEEK, args);
         }
     }
 
-    @Builtin(name = READ1, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_READ1, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class Read1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object read1(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), READ1, args);
+            return callMethod.execute(frame, self.getReader(), T_READ1, args);
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_READINTO, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object readInto(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), READINTO, args);
+            return callMethod.execute(frame, self.getReader(), T_READINTO, args);
         }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_READINTO1, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object readInto1(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), READINTO1, args);
+            return callMethod.execute(frame, self.getReader(), T_READINTO1, args);
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WriteNode extends WriterInitCheckPythonBinaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object write(VirtualFrame frame, PRWPair self, Object args,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), WRITE, args);
+            return callMethod.execute(frame, self.getWriter(), T_WRITE, args);
         }
     }
 
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_FLUSH, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends WriterInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), FLUSH);
+            return callMethod.execute(frame, self.getWriter(), T_FLUSH);
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends ReaderInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getReader(), READABLE);
+            return callMethod.execute(frame, self.getReader(), T_READABLE);
         }
     }
 
-    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_WRITABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends WriterInitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getWriter(), WRITABLE);
+            return callMethod.execute(frame, self.getWriter(), T_WRITABLE);
         }
     }
 
-    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_CLOSE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
@@ -276,7 +288,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
             PException writeEx = null;
             if (self.getWriter() != null) {
                 try {
-                    callMethodWriter.execute(frame, self.getWriter(), CLOSE);
+                    callMethodWriter.execute(frame, self.getWriter(), T_CLOSE);
                 } catch (PException e) {
                     hasException.enter();
                     writeEx = e;
@@ -288,7 +300,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
             PException readEx;
             if (self.getReader() != null) {
                 try {
-                    Object res = callMethodReader.execute(frame, self.getReader(), CLOSE);
+                    Object res = callMethodReader.execute(frame, self.getReader(), T_CLOSE);
                     if (gotException.profile(writeEx != null)) {
                         throw writeEx;
                     }
@@ -314,7 +326,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAttyNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -323,23 +335,23 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
                         @Cached IsNode isNode,
                         @Cached ConditionProfile isSameProfile) {
-            Object res = callMethodWriter.execute(frame, self.getWriter(), ISATTY);
+            Object res = callMethodWriter.execute(frame, self.getWriter(), T_ISATTY);
             if (isSameProfile.profile(isNode.isTrue(res))) {
                 /* either True or exception */
                 return res;
             }
-            return callMethodReader.execute(frame, self.getReader(), ISATTY);
+            return callMethodReader.execute(frame, self.getReader(), T_ISATTY);
         }
     }
 
-    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.getWriter() != null")
         static Object doit(VirtualFrame frame, PRWPair self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getWriter(), CLOSED);
+            return getAttr.execute(frame, self.getWriter(), T_CLOSED);
         }
 
         @SuppressWarnings("unused")

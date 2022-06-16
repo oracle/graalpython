@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes._CHUNK_SIZE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T__CHUNK_SIZE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -53,7 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -68,16 +69,19 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Built-in functions shared between {@link PythonBuiltinClassType#GetSetDescriptor} and
@@ -90,33 +94,42 @@ public class DescriptorBuiltins extends PythonBuiltins {
         return DescriptorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor self,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            return PythonUtils.format("%s.%s", readQualNameNode.executeObject(frame, self.getType()), self.getName());
+        static TruffleString doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor self,
+                        @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor self,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            return PythonUtils.format("%s.%s", readQualNameNode.executeObject(frame, self.getType()), self.getKey().getName());
+        static TruffleString doHiddenKeyDescriptor(VirtualFrame frame, HiddenKeyDescriptor self,
+                        @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getKey().getName());
+        }
+
+        @TruffleBoundary
+        private static String toStr(Object o) {
+            // TODO GR-37980
+            return o.toString();
         }
     }
 
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doGetSetDescriptor(GetSetDescriptor self) {
+        static TruffleString doGetSetDescriptor(GetSetDescriptor self) {
             return self.getName();
         }
 
         @Specialization
-        static Object doHiddenKeyDescriptor(HiddenKeyDescriptor self) {
-            return self.getKey().getName();
+        static TruffleString doHiddenKeyDescriptor(HiddenKeyDescriptor self,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return fromJavaStringNode.execute(self.getKey().getName(), TS_ENCODING);
         }
     }
 
@@ -129,8 +142,16 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
         @Child private IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
 
+        public boolean execute(Object descrType, TruffleString name, Object obj) {
+            return executeInternal(descrType, name, obj);
+        }
+
+        public boolean execute(Object descrType, HiddenKey name, Object obj) {
+            return executeInternal(descrType, name, obj);
+        }
+
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        public boolean execute(Object descrType, String name, Object obj) {
+        private boolean executeInternal(Object descrType, Object nameObj, Object obj) {
             if (PGuards.isNone(obj)) {
                 // object's descriptors (__class__,...) need to work on every object including None
                 if (!isBuiltinPythonClassObject.profileClass(descrType, PythonBuiltinClassType.PythonObject)) {
@@ -140,6 +161,12 @@ public class DescriptorBuiltins extends PythonBuiltins {
             Object type = getPythonClass(obj);
             if (isSubtype(type, descrType)) {
                 return false;
+            }
+            String name;
+            if (nameObj instanceof HiddenKey) {
+                name = ((HiddenKey) nameObj).getName();
+            } else {
+                name = nameObj.toString();
             }
             throw getRaiseNode().raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
         }
@@ -196,12 +223,13 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj,
-                        @Cached ReadAttributeFromObjectNode readNode) {
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             Object val = readNode.execute(obj, descr.getKey());
             if (val != PNone.NO_VALUE) {
                 return val;
             }
-            throw getRaiseNode().raise(AttributeError, descr.getKey().getName());
+            throw getRaiseNode().raise(AttributeError, fromJavaStringNode.execute(descr.getKey().getName(), TS_ENCODING));
         }
     }
 
@@ -237,10 +265,10 @@ public class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter();
                 if (descr.getSet() != null) {
-                    if (PString.equals(descr.getName(), _CHUNK_SIZE)) {
+                    if (descr.getName().equalsUncached(T__CHUNK_SIZE, TS_ENCODING)) {
                         // This is a special error message case. see
                         // Modules/_io/textio.c:textiowrapper_chunk_size_set
-                        throw getRaiseNode().raise(AttributeError, "cannot delete attribute");
+                        throw getRaiseNode().raise(AttributeError, ErrorMessages.CANNOT_DELETE);
                     }
                     throw getRaiseNode().raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
                 } else {
@@ -259,7 +287,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
                 writeNode.execute(obj, descr.getKey(), PNone.NO_VALUE);
                 return PNone.NONE;
             }
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "%s", descr.getKey().getName());
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getKey().getName());
         }
     }
 

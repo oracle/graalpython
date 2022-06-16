@@ -43,9 +43,9 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
-import com.oracle.graal.python.builtins.Builtin;
-
 import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -119,10 +120,10 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
     @Builtin(name = "PyCode_NewEmpty", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyCodeNewEmpty extends PythonTernaryBuiltinNode {
-        public abstract PCode execute(String filename, String funcname, int lineno);
+        public abstract PCode execute(TruffleString filename, TruffleString funcname, int lineno);
 
         @Specialization
-        static PCode newEmpty(String filename, String funcname, int lineno,
+        static PCode newEmpty(TruffleString filename, TruffleString funcname, int lineno,
                         @Cached CodeNodes.CreateCodeNode createCodeNode) {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
                             EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,

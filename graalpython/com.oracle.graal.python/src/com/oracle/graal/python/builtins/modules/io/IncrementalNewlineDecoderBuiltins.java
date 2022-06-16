@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,15 +42,23 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.DECODE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.RESET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_DECODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_GETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_RESET;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_DECODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_GETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_RESET;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SETSTATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_STATE_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_CR;
+import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -61,7 +69,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -73,7 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -82,6 +89,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PIncrementalNewlineDecoder)
 public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
@@ -96,9 +105,9 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     public static final int SEEN_ALL = (SEEN_CR | SEEN_LF | SEEN_CRLF);
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "decoder", "translate", "errors"})
     @ArgumentClinic(name = "translate", conversion = ArgumentClinic.ClinicConversion.Boolean)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
 
@@ -108,7 +117,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone doInit(PNLDecoder self, Object decoder, boolean translate, String errors) {
+        static PNone doInit(PNLDecoder self, Object decoder, boolean translate, TruffleString errors) {
             self.setDecoder(decoder);
             self.setErrors(errors);
             self.setTranslate(translate);
@@ -118,11 +127,11 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         public static void internalInit(PNLDecoder self, Object decoder, boolean translate) {
-            doInit(self, decoder, translate, STRICT);
+            doInit(self, decoder, translate, T_STRICT);
         }
     }
 
-    @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "input", "final"})
+    @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "input", "final"})
     @ArgumentClinic(name = "final", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
@@ -132,12 +141,21 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return IncrementalNewlineDecoderBuiltinsClinicProviders.DecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        static String noDecoder(PNLDecoder self, String input, boolean isFinal) {
-            String output = input;
-            int outputLen = PString.length(output);
+        @Specialization(guards = "!self.hasDecoder()")
+        static TruffleString noDecoder(PNLDecoder self, Object input, boolean isFinal,
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.ConcatNode concatNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleString output = toString.execute(input);
+            int outputLen = codePointLengthNode.execute(output, TS_ENCODING);
             if (self.isPendingCR() && (isFinal || outputLen > 0)) {
                 /* Prefix output with CR */
-                output = PString.cat('\r', output); /* output remains ready */
+                output = concatNode.execute(T_CR, output, TS_ENCODING, false);
                 self.setPendingCR(false);
                 outputLen++;
             }
@@ -147,8 +165,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
              * one pass
              */
             if (!isFinal) {
-                if (outputLen > 0 && PString.charAt(output, outputLen - 1) == '\r') {
-                    output = PString.substring(output, 0, outputLen - 1);
+                if (outputLen > 0 && codePointAtIndexNode.execute(output, outputLen - 1, TS_ENCODING) == '\r') {
+                    output = substringNode.execute(output, 0, outputLen - 1, TS_ENCODING, false);
                     self.setPendingCR(true);
                 }
             }
@@ -157,7 +175,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
              * Record which newlines are read and do newline translation if desired, all in one
              * pass.
              */
-            int len = PString.length(output);
+            int len = codePointLengthNode.execute(output, TS_ENCODING);
             int seenNewline = self.getSeenNewline();
             boolean onlyLF = false;
 
@@ -170,7 +188,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
              * the libc's optimized memchr.
              */
             if (seenNewline == SEEN_LF || seenNewline == 0) {
-                onlyLF = PString.indexOf(output, "\r", 0) == -1;
+                onlyLF = indexOfCodePointNode.execute(output, '\r', 0, len, TS_ENCODING) < 0;
             }
 
             if (onlyLF) {
@@ -178,7 +196,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                  * If not already seen, quick scan for a possible "\n" character. (there's nothing
                  * else to be done, even when in translation mode)
                  */
-                if (seenNewline == 0 && PString.indexOf(output, "\n", 0) != -1) {
+                if (seenNewline == 0 && indexOfCodePointNode.execute(output, '\n', 0, len, TS_ENCODING) >= 0) {
                     seenNewline |= SEEN_LF;
                 }
                 /*
@@ -190,17 +208,17 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                     return output;
                 }
 
-                char[] inString = PString.toCharArray(output);
                 int i = 0;
                 while (i < len && seenNewline != SEEN_ALL) {
-                    while (i < len && inString[i] > '\n') {
+                    while (i < len && codePointAtIndexNode.execute(output, i, TS_ENCODING) > '\r') {
                         i++;
                     }
-                    char c = i < len ? inString[i++] : '\0';
+                    int c = i < len ? codePointAtIndexNode.execute(output, i++, TS_ENCODING) : '\0';
                     if (c == '\n') {
                         seenNewline |= SEEN_LF;
                     } else if (c == '\r') {
-                        if (inString[i] == '\n') {
+                        assert i < len || isFinal;
+                        if (i < len && codePointAtIndexNode.execute(output, i, TS_ENCODING) == '\n') {
                             seenNewline |= SEEN_CRLF;
                             i++;
                         } else {
@@ -209,57 +227,57 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                     }
                 }
             } else {
-                char[] inString = PString.toCharArray(output);
-                char[] translated = new char[len];
-                int in = 0, out = 0;
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, output.byteLength(TS_ENCODING));
+                int in = 0;
                 while (true) {
-                    char c = '\0';
-                    while (in < len && (c = inString[in++]) > '\r') {
-                        translated[out++] = c;
+                    int c = '\0';
+                    while (in < len && (c = codePointAtIndexNode.execute(output, in++, TS_ENCODING)) > '\r') {
+                        appendCodePointNode.execute(sb, c, 1, true);
                     }
                     if (c == '\n') {
-                        translated[out++] = c;
+                        appendCodePointNode.execute(sb, c, 1, true);
                         seenNewline |= SEEN_LF;
                         continue;
                     }
                     if (c == '\r') {
-                        if (in < len && inString[in] == '\n') {
+                        if (in < len && codePointAtIndexNode.execute(output, in, TS_ENCODING) == '\n') {
                             in++;
                             seenNewline |= SEEN_CRLF;
                         } else {
                             seenNewline |= SEEN_CR;
                         }
-                        translated[out++] = '\n';
+                        appendCodePointNode.execute(sb, '\n', 1, true);
                         continue;
                     }
                     if (in >= len) {
                         break;
                     }
-                    translated[out++] = c;
+                    appendCodePointNode.execute(sb, c, 1, true);
                 }
-                output = PythonUtils.newString(PythonUtils.arrayCopyOf(translated, out));
+                output = toStringNode.execute(sb);
             }
             self.setSeenNewline(self.getSeenNewline() | seenNewline);
 
             return output;
         }
 
-        @Specialization(guards = "!self.hasDecoder()")
-        static String noDecoder(PNLDecoder self, Object input, boolean isFinal,
-                        @Cached CastToJavaStringNode toString) {
-            return noDecoder(self, toString.execute(input), isFinal);
-        }
-
         @Specialization(guards = "self.hasDecoder()")
-        static String withDecoder(VirtualFrame frame, PNLDecoder self, Object input, boolean isFinal,
-                        @Cached CastToJavaStringNode toString,
+        static TruffleString withDecoder(VirtualFrame frame, PNLDecoder self, Object input, boolean isFinal,
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.ConcatNode concatNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object res = callMethod.execute(frame, self.getDecoder(), DECODE, input, isFinal);
-            return noDecoder(self, toString.execute(res), isFinal);
+            Object res = callMethod.execute(frame, self.getDecoder(), T_DECODE, input, isFinal);
+            return noDecoder(self, res, isFinal, toString, codePointLengthNode, codePointAtIndexNode, indexOfCodePointNode, substringNode, concatNode, appendCodePointNode, toStringNode);
         }
     }
 
-    @Builtin(name = GETSTATE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_GETSTATE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetStateNode extends PythonUnaryBuiltinNode {
 
@@ -276,7 +294,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object state = callMethod.execute(frame, self.getDecoder(), GETSTATE);
+            Object state = callMethod.execute(frame, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
@@ -293,7 +311,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SETSTATE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_SETSTATE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
@@ -325,7 +343,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
             PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});
-            return callMethod.execute(frame, self.getDecoder(), SETSTATE, tuple);
+            return callMethod.execute(frame, self.getDecoder(), T_SETSTATE, tuple);
         }
 
         @Fallback
@@ -334,7 +352,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = RESET, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_RESET, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ResetNode extends PythonUnaryBuiltinNode {
 
@@ -349,30 +367,30 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             noDecoder(self);
-            return callMethod.execute(frame, self.getDecoder(), RESET);
+            return callMethod.execute(frame, self.getDecoder(), T_RESET);
         }
     }
 
-    @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NewlineNode extends PythonBuiltinNode {
         @Specialization
         Object newline(PNLDecoder self) {
             switch (self.getSeenNewline()) {
                 case SEEN_CR:
-                    return "\r";
+                    return T_CR;
                 case SEEN_LF:
-                    return "\n";
+                    return T_NEWLINE;
                 case SEEN_CRLF:
-                    return "\r\n";
+                    return T_CRLF;
                 case SEEN_CR | SEEN_LF:
-                    return factory().createTuple(new Object[]{"\r", "\n"});
+                    return factory().createTuple(new Object[]{T_CR, T_NEWLINE});
                 case SEEN_CR | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{"\r", "\r\n"});
+                    return factory().createTuple(new Object[]{T_CR, T_CRLF});
                 case SEEN_LF | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{"\n", "\r\n"});
+                    return factory().createTuple(new Object[]{T_NEWLINE, T_CRLF});
                 case SEEN_CR | SEEN_LF | SEEN_CRLF:
-                    return factory().createTuple(new Object[]{"\r", "\n", "\r\n"});
+                    return factory().createTuple(new Object[]{T_CR, T_NEWLINE, T_CRLF});
                 default:
                     return PNone.NONE;
             }

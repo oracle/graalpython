@@ -40,20 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CA_ISSUERS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CRL_DISTRIBUTION_POINTS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ISSUER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_AFTER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_BEFORE;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_OCSP;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SERIAL_NUMBER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT_ALT_NAME;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_VERSION;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_CA_ISSUERS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_CRL_DISTRIBUTION_POINTS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_ISSUER;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_NOT_AFTER;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_NOT_BEFORE;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_OCSP;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_SERIAL_NUMBER;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_SUBJECT;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_SUBJECT_ALT_NAME;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_VERSION;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_OCSP;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -85,6 +87,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -114,6 +117,16 @@ import com.oracle.truffle.api.TruffleFile;
 
 public final class CertUtils {
     public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
+    private static final TruffleString T_UNSUPPORTED = tsLiteral("<unsupported>");
+    private static final TruffleString T_OTHERNAME = tsLiteral("othername");
+    private static final TruffleString T_EMAIL = tsLiteral("email");
+    private static final TruffleString T_DNS = tsLiteral("DNS");
+    private static final TruffleString T_X_400_NAME = tsLiteral("X400Name");
+    private static final TruffleString T_DIR_NAME = tsLiteral("DirName");
+    private static final TruffleString T_EDI_PARTY_NAME = tsLiteral("EdiPartyName");
+    private static final TruffleString T_URI = tsLiteral("URI");
+    private static final TruffleString T_IP_ADDRESS = tsLiteral("IP Address");
+    private static final TruffleString T_REGISTERED_ID = tsLiteral("Registered ID");
 
     static {
         Security.addProvider(BOUNCYCASTLE_PROVIDER);
@@ -179,16 +192,16 @@ public final class CertUtils {
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
         try {
-            storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
-            storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-            storage = setItem(hlib, storage, JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
-            storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
-            storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
-            storage = setItem(hlib, storage, JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
-            storage = setItem(hlib, storage, JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-            storage = setItem(hlib, storage, JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
-            storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
-            storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
+            storage = setItem(hlib, storage, T_JAVA_X509_OCSP, parseOCSP(cert, factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_NOT_AFTER, getNotAfter(cert));
+            storage = setItem(hlib, storage, T_JAVA_X509_NOT_BEFORE, getNotBefore(cert));
+            storage = setItem(hlib, storage, T_JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
+            storage = setItem(hlib, storage, T_JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
+            storage = setItem(hlib, storage, T_JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
             throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
         }
@@ -196,7 +209,7 @@ public final class CertUtils {
         return dict;
     }
 
-    private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, String key, Object value) {
+    private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, TruffleString key, Object value) {
         if (value != null) {
             return hlib.setItem(storage, key, value);
         } else {
@@ -205,10 +218,10 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static String getSerialNumber(X509Certificate x509Certificate) {
+    private static TruffleString getSerialNumber(X509Certificate x509Certificate) {
         String sn = x509Certificate.getSerialNumber().toString(16).toUpperCase();
         // i2a_ASN1_INTEGER pads the number to have even number of digits
-        return sn.length() % 2 == 0 ? sn : '0' + sn;
+        return toTruffleStringUncached(sn.length() % 2 == 0 ? sn : '0' + sn);
     }
 
     @TruffleBoundary
@@ -217,12 +230,12 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static String getNotAfter(X509Certificate x509Certificate) {
+    private static TruffleString getNotAfter(X509Certificate x509Certificate) {
         return formatDate(x509Certificate.getNotAfter());
     }
 
     @TruffleBoundary
-    private static String getNotBefore(X509Certificate x509Certificate) {
+    private static TruffleString getNotBefore(X509Certificate x509Certificate) {
         return formatDate(x509Certificate.getNotBefore());
     }
 
@@ -230,8 +243,8 @@ public final class CertUtils {
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("MMM ppd HH:mm:ss yyyy z");
 
     @TruffleBoundary
-    private static String formatDate(Date d) {
-        return ZonedDateTime.ofInstant(d.toInstant(), zoneId).format(DF);
+    private static TruffleString formatDate(Date d) {
+        return toTruffleStringUncached(ZonedDateTime.ofInstant(d.toInstant(), zoneId).format(DF));
     }
 
     @TruffleBoundary
@@ -240,7 +253,7 @@ public final class CertUtils {
         for (String component : name.split(",")) {
             String[] kv = component.split("=");
             if (kv.length == 2) {
-                PTuple innerTuple = factory.createTuple(new String[]{ASN1Helper.translateKeyToPython(kv[0].trim()), kv[1].trim()});
+                PTuple innerTuple = factory.createTuple(new Object[]{ASN1Helper.translateKeyToPython(kv[0].trim()), toTruffleStringUncached(kv[1].trim())});
                 result.add(factory.createTuple(new Object[]{innerTuple}));
             }
         }
@@ -259,40 +272,40 @@ public final class CertUtils {
                 if (altName.size() == 2 && altName.get(0) instanceof Integer) {
                     int type = (Integer) altName.get(0);
                     Object value = altName.get(1);
-                    String stringValue;
+                    TruffleString stringValue;
                     if (value instanceof String) {
-                        stringValue = (String) value;
+                        stringValue = toTruffleStringUncached((String) value);
                     } else {
-                        stringValue = "<unsupported>";
+                        stringValue = T_UNSUPPORTED;
                     }
                     switch (type) {
                         // see openssl v3_alt.c#i2v_GENERAL_NAME()
                         case 0:
-                            tuples.add(factory.createTuple(new Object[]{"othername", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_OTHERNAME, stringValue}));
                             break;
                         case 1:
-                            tuples.add(factory.createTuple(new Object[]{"email", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_EMAIL, stringValue}));
                             break;
                         case 2:
-                            tuples.add(factory.createTuple(new Object[]{"DNS", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_DNS, stringValue}));
                             break;
                         case 3:
-                            tuples.add(factory.createTuple(new Object[]{"X400Name", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_X_400_NAME, stringValue}));
                             break;
                         case 4:
-                            tuples.add(factory.createTuple(new Object[]{"DirName", createTupleForX509Name(stringValue, factory)}));
+                            tuples.add(factory.createTuple(new Object[]{T_DIR_NAME, value instanceof String ? createTupleForX509Name((String) value, factory) : factory.createEmptyTuple()}));
                             break;
                         case 5:
-                            tuples.add(factory.createTuple(new Object[]{"EdiPartyName", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_EDI_PARTY_NAME, stringValue}));
                             break;
                         case 6:
-                            tuples.add(factory.createTuple(new Object[]{"URI", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_URI, stringValue}));
                             break;
                         case 7:
-                            tuples.add(factory.createTuple(new Object[]{"IP Address", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_IP_ADDRESS, stringValue}));
                             break;
                         case 8:
-                            tuples.add(factory.createTuple(new Object[]{"Registered ID", stringValue}));
+                            tuples.add(factory.createTuple(new Object[]{T_REGISTERED_ID, stringValue}));
                             break;
                         default:
                             continue;
@@ -454,7 +467,7 @@ public final class CertUtils {
 
     @TruffleBoundary
     private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
-        List<String> result = new ArrayList<>();
+        List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
         if (bytes == null) {
             return null;
@@ -483,7 +496,7 @@ public final class CertUtils {
                         fullName.iterateSequence((name, r2) -> {
                             String nextUri = name.getGeneralNameURI();
                             if (nextUri != null) {
-                                r2.add(nextUri);
+                                r2.add(toTruffleStringUncached(nextUri));
                             }
                         }, r);
                     }
@@ -491,7 +504,7 @@ public final class CertUtils {
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new String[result.size()]));
+            return factory.createTuple(result.toArray(new Object[result.size()]));
         } else {
             return null;
         }
@@ -499,7 +512,7 @@ public final class CertUtils {
 
     @TruffleBoundary
     private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
-        List<String> result = new ArrayList<>();
+        List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
             return null;
@@ -520,14 +533,14 @@ public final class CertUtils {
                     if (Arrays.equals(accessMethod.getRawData(), OID_CA_ISSUERS)) {
                         String uri = elements.get(1).getGeneralNameURI();
                         if (uri != null) {
-                            r.add(uri);
+                            r.add(toTruffleStringUncached(uri));
                         }
                     }
                 }
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new String[result.size()]));
+            return factory.createTuple(result.toArray(new Object[result.size()]));
         } else {
             return null;
         }
@@ -535,7 +548,7 @@ public final class CertUtils {
 
     @TruffleBoundary
     private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
-        List<String> result = new ArrayList<>();
+        List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
             return null;
@@ -556,14 +569,14 @@ public final class CertUtils {
                     if (Arrays.equals(accessMethod.getRawData(), OID_OCSP)) {
                         String uri = elements.get(1).getGeneralNameURI();
                         if (uri != null) {
-                            r.add(uri);
+                            r.add(toTruffleStringUncached(uri));
                         }
                     }
                 }
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new String[result.size()]));
+            return factory.createTuple(result.toArray(new Object[result.size()]));
         } else {
             return null;
         }

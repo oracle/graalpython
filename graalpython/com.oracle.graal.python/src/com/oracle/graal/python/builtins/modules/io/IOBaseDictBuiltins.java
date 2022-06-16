@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PFileIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PStringIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 
 import java.util.List;
 
@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -77,7 +78,7 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
     /*
      * builtin __dict__ is readonly
      */
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
@@ -89,7 +90,7 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         Object setDict(PythonObject self, @SuppressWarnings("unused") Object d) {
-            throw raise(PythonBuiltinClassType.AssertionError, "attribute '__dict__' of '%p' objects is not writable", self);
+            throw raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
         }
     }
 }

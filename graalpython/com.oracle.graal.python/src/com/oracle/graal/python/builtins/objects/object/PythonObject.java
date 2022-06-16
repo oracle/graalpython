@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
@@ -117,24 +119,25 @@ public class PythonObject extends PythonAbstractObject {
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public final Object getAttribute(Object key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), key, PNone.NO_VALUE);
+        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), assertNoJavaString(key), PNone.NO_VALUE);
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public void setAttribute(Object name, Object value) {
-        assert name instanceof String || name instanceof HiddenKey : name.getClass().getSimpleName();
+    public void setAttribute(Object nameObj, Object value) {
+        Object name = assertNoJavaString(nameObj);
+        assert name instanceof TruffleString || name instanceof HiddenKey : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary.getUncached().put(getStorage(), name, value);
+        DynamicObjectLibrary.getUncached().put(getStorage(), name, assertNoJavaString(value));
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public List<String> getAttributeNames() {
-        ArrayList<String> keyList = new ArrayList<>();
+    public List<TruffleString> getAttributeNames() {
+        ArrayList<TruffleString> keyList = new ArrayList<>();
         for (Object o : getStorage().getShape().getKeyList()) {
-            if (o instanceof String && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
-                keyList.add((String) o);
+            if (o instanceof TruffleString && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
+                keyList.add((TruffleString) o);
             }
         }
         return keyList;
@@ -158,9 +161,9 @@ public class PythonObject extends PythonAbstractObject {
         String className = "unknown";
         Object storedPythonClass = DynamicObjectLibrary.getUncached().getOrDefault(this, CLASS, null);
         if (storedPythonClass instanceof PythonManagedClass) {
-            className = ((PythonManagedClass) storedPythonClass).getQualName();
+            className = ((PythonManagedClass) storedPythonClass).getQualName().toJavaStringUncached();
         } else if (storedPythonClass instanceof PythonBuiltinClassType) {
-            className = ((PythonBuiltinClassType) storedPythonClass).getName();
+            className = ((PythonBuiltinClassType) storedPythonClass).getName().toJavaStringUncached();
         } else if (PGuards.isNativeClass(storedPythonClass)) {
             className = "native";
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,17 +56,18 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DeleteNameNode extends StatementNode implements AccessNameNode {
     @Child private DeleteGlobalNode deleteGlobalNode;
     @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
-    protected DeleteNameNode(String attributeId) {
+    protected DeleteNameNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static DeleteNameNode create(String attributeId) {
+    public static DeleteNameNode create(TruffleString attributeId) {
         return DeleteNameNodeGen.create(attributeId);
     }
 
@@ -124,7 +125,7 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
         getDeleteGlobalNode().executeVoid(frame);
     }
 
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 }

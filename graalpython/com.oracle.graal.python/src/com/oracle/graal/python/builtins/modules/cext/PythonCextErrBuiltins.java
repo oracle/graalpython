@@ -41,19 +41,23 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
-import static com.oracle.graal.python.nodes.BuiltinNames.LAST_TRACEBACK;
-import static com.oracle.graal.python.nodes.BuiltinNames.LAST_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.LAST_VALUE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.exception.PBaseException.T_CODE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TRACEBACK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_MODULE_CLASS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CAUSE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TRACEBACK__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -124,6 +128,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -329,8 +334,11 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
     abstract static class PyErrNewExceptionNode extends PythonTernaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object newEx(VirtualFrame frame, String name, Object base, PDict dict,
+        Object newEx(VirtualFrame frame, TruffleString name, Object base, PDict dict,
                         @CachedLibrary(value = "dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode,
                         @Cached GetItemNode getItemNode,
                         @Cached SetItemNode setItemNode,
                         @Cached PRaiseNativeNode raiseNativeNode,
@@ -341,14 +349,15 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                int dotIdx = name.indexOf(".");
+                int length = codePointLengthNode.execute(name, TS_ENCODING);
+                int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
                 if (dotIdx < 0) {
                     notDotProfile.enter();
                     return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
                 }
                 if (lib.getItemWithFrame(dict.getDictStorage(), base, hasFrameProfile, frame) == null) {
                     notModuleProfile.enter();
-                    setItemNode.execute(frame, dict, __MODULE__, name.substring(0, dotIdx));
+                    setItemNode.execute(frame, dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
                 }
                 PTuple bases;
                 if (baseProfile.profile(base instanceof PTuple)) {
@@ -356,7 +365,8 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                 } else {
                     bases = factory().createTuple(new Object[]{base});
                 }
-                return typeNode.execute(frame, PythonBuiltinClassType.PythonClass, name.substring(dotIdx + 1), bases, dict, PKeyword.EMPTY_KEYWORDS);
+                return typeNode.execute(frame, PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, length - dotIdx - 1, TS_ENCODING, false), bases, dict,
+                                PKeyword.EMPTY_KEYWORDS);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getContext().getNativeNull();
@@ -369,11 +379,11 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
     abstract static class PyErrNewExceptionWithDocNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization
-        static Object raise(VirtualFrame frame, String name, String doc, Object base, PDict dict,
+        static Object raise(VirtualFrame frame, TruffleString name, TruffleString doc, Object base, PDict dict,
                         @Cached PyErrNewExceptionNode newExNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode) {
             Object ex = newExNode.execute(frame, name, base, dict);
-            writeAtrrNode.execute(ex, __DOC__, doc);
+            writeAtrrNode.execute(ex, T___DOC__, doc);
             return ex;
         }
     }
@@ -477,8 +487,12 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
             if (tb == getContext().getNativeNull()) {
                 tb = PNone.NONE;
             }
-            writeAttrNode.execute(val, __TRACEBACK__, tb);
-            writeUnraisableNode.execute(frame, (PBaseException) val, msg instanceof String ? (String) msg : null, (obj instanceof PNone) ? PNone.NONE : obj);
+            TruffleString m = null;
+            if (msg instanceof TruffleString) {
+                m = (TruffleString) msg;
+            }
+            writeAttrNode.execute(val, T___TRACEBACK__, tb);
+            writeUnraisableNode.execute(frame, (PBaseException) val, m, (obj instanceof PNone) ? PNone.NONE : obj);
             getThreadStateNode.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
@@ -524,14 +538,14 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
             if (tb == nativeNull) {
                 tb = PNone.NONE;
             }
-            if (PyObjectLookupAttr.getUncached().execute(null, val, __TRACEBACK__) == PNone.NONE) {
-                WriteAttributeToObjectNode.getUncached().execute(val, __TRACEBACK__, tb);
+            if (PyObjectLookupAttr.getUncached().execute(null, val, T___TRACEBACK__) == PNone.NONE) {
+                WriteAttributeToObjectNode.getUncached().execute(val, T___TRACEBACK__, tb);
             }
 
             if (set_sys_last_vars != 0) {
                 writeLastVars(sys, type, val, tb, restoreNode);
             }
-            Object exceptHook = PyObjectLookupAttr.getUncached().execute(null, sys, EXCEPTHOOK);
+            Object exceptHook = PyObjectLookupAttr.getUncached().execute(null, sys, T_EXCEPTHOOK);
             if (exceptHook != PNone.NO_VALUE) {
                 hanleExceptHook(exceptHook, type, val, tb, excInfoNode, getItemNode, sys, errDisplayNode);
             }
@@ -541,9 +555,9 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private void writeLastVars(PythonModule sys, Object type, Object val, Object tb, PyErrRestoreNode restoreNode) {
             try {
-                WriteAttributeToObjectNode.getUncached().execute(sys, LAST_TYPE, type);
-                WriteAttributeToObjectNode.getUncached().execute(sys, LAST_VALUE, val);
-                WriteAttributeToObjectNode.getUncached().execute(sys, LAST_TRACEBACK, tb);
+                WriteAttributeToObjectNode.getUncached().execute(sys, T_LAST_TYPE, type);
+                WriteAttributeToObjectNode.getUncached().execute(sys, T_LAST_VALUE, val);
+                WriteAttributeToObjectNode.getUncached().execute(sys, T_LAST_TRACEBACK, tb);
             } catch (PException e) {
                 restoreNode.execute(null, PNone.NONE, PNone.NONE, PNone.NONE);
             }
@@ -561,12 +575,12 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                 Object tb1 = getItemNode.execute(null, sysInfo, 2);
                 // not quite the same as 'PySys_WriteStderr' but close
                 Object stdErr = ((SysModuleBuiltins) sys.getBuiltins()).getStdErr();
-                Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdErr, "write");
+                Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdErr, T_WRITE);
                 CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
                 errDisplayNode.execute(null, type1, val1, tb1);
                 CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
                 errDisplayNode.execute(null, type, val, tb);
-                PyObjectCallMethodObjArgs.getUncached().execute(null, stdErr, "flush");
+                PyObjectCallMethodObjArgs.getUncached().execute(null, stdErr, T_FLUSH);
             }
         }
 
@@ -577,7 +591,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
             int rc = 0;
             Object returnObject = null;
             Object val = getItemNode.execute(null, sysInfo, 1);
-            Object codeAttr = PyObjectLookupAttr.getUncached().execute(null, val, "code");
+            Object codeAttr = PyObjectLookupAttr.getUncached().execute(null, val, T_CODE);
             if (val != PNone.NONE && !(codeAttr instanceof PNone)) {
                 returnObject = codeAttr;
             }
@@ -590,9 +604,9 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                     writeFileNode.execute(null, returnObject, stdErr, 1);
                 } else {
                     Object stdOut = sys.getStdOut();
-                    Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdOut, "write");
+                    Object writeMethod = PyObjectGetAttr.getUncached().execute(null, stdOut, T_WRITE);
                     CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
-                    PyObjectCallMethodObjArgs.getUncached().execute(null, stdOut, "flush");
+                    PyObjectCallMethodObjArgs.getUncached().execute(null, stdOut, T_FLUSH);
                 }
             }
             exitNode.execute(null, rc);
@@ -607,7 +621,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached PyObjectSetAttr setAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setAttrNode.execute(frame, exc, __CAUSE__, cause);
+                setAttrNode.execute(frame, exc, T___CAUSE__, cause);
                 return PNone.NONE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
@@ -624,7 +638,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return getAttrNode.execute(frame, exc, __CONTEXT__);
+                return getAttrNode.execute(frame, exc, T___CONTEXT__);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getContext().getNativeNull();
@@ -640,7 +654,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached PyObjectSetAttr setAttrNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                setAttrNode.execute(frame, exc, __CONTEXT__, context);
+                setAttrNode.execute(frame, exc, T___CONTEXT__, context);
                 return PNone.NONE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);

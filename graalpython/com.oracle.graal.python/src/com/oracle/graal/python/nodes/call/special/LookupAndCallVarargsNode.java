@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,18 +47,19 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LookupAndCallVarargsNode extends Node {
-    protected final String name;
+    protected final TruffleString name;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
-    public static LookupAndCallVarargsNode create(String name) {
+    public static LookupAndCallVarargsNode create(TruffleString name) {
         return LookupAndCallVarargsNodeGen.create(name);
     }
 
-    LookupAndCallVarargsNode(String name) {
+    LookupAndCallVarargsNode(TruffleString name) {
         this.name = name;
     }
 

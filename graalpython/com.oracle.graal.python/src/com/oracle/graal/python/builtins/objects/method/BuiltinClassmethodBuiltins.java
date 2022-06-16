@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OBJCLASS__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_QUESTIONMARK;
 
 import java.util.List;
 
@@ -57,18 +63,19 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinClassMethod)
 public class BuiltinClassmethodBuiltins extends PythonBuiltins {
@@ -78,82 +85,83 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
         return BuiltinClassmethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NAME__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___NAME__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object name(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), __NAME__);
+            return getAttr.execute(frame, self.getCallable(), T___NAME__);
         }
     }
 
-    @Builtin(name = __QUALNAME__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___QUALNAME__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object qualname(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), __QUALNAME__);
+            return getAttr.execute(frame, self.getCallable(), T___QUALNAME__);
         }
     }
 
-    @Builtin(name = __OBJCLASS__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___OBJCLASS__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object objclass(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), __OBJCLASS__);
+            return getAttr.execute(frame, self.getCallable(), T___OBJCLASS__);
         }
     }
 
-    @Builtin(name = __DOC__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___DOC__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doc(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), __DOC__);
+            return getAttr.execute(frame, self.getCallable(), T___DOC__);
         }
     }
 
-    @Builtin(name = __TEXT_SIGNATURE__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___TEXT_SIGNATURE__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object textSignature(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
-            return getAttr.execute(frame, self.getCallable(), __TEXT_SIGNATURE__);
+            return getAttr.execute(frame, self.getCallable(), T___TEXT_SIGNATURE__);
         }
     }
 
-    @Builtin(name = __REPR__, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object repr(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectStrAsJavaStringNode asJavaStringNode,
+        static TruffleString repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectStrAsTruffleStringNode asTruffleStringNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached PyObjectLookupAttr lookupName,
-                        @Cached PyObjectGetAttr getObjClass) {
-            Object mayBeName = lookupName.execute(frame, self.getCallable(), __NAME__);
-            String name = mayBeName != PNone.NO_VALUE ? asJavaStringNode.execute(frame, mayBeName) : "?";
-            String typeName = getNameNode.execute(getObjClass.execute(frame, self.getCallable(), __OBJCLASS__));
-            return PythonUtils.format("<method '%s' of '%s' objects>", name, typeName);
+                        @Cached PyObjectGetAttr getObjClass,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            Object mayBeName = lookupName.execute(frame, self.getCallable(), T___NAME__);
+            TruffleString name = mayBeName != PNone.NO_VALUE ? asTruffleStringNode.execute(frame, mayBeName) : T_QUESTIONMARK;
+            TruffleString typeName = getNameNode.execute(getObjClass.execute(frame, self.getCallable(), T___OBJCLASS__));
+            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", name, typeName);
         }
     }
 
-    @Builtin(name = __REDUCE__, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectGetAttr getAttr) {
             PythonModule builtins = getContext().getBuiltins();
-            Object gettattr = getAttr.execute(frame, builtins, GETATTR);
-            Object type = getAttr.execute(frame, self, __OBJCLASS__);
-            Object name = getAttr.execute(frame, self, __NAME__);
+            Object gettattr = getAttr.execute(frame, builtins, T_GETATTR);
+            Object type = getAttr.execute(frame, self, T___OBJCLASS__);
+            Object name = getAttr.execute(frame, self, T___NAME__);
             return factory().createTuple(new Object[]{gettattr, factory().createTuple(new Object[]{type, name})});
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,9 +54,13 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OFFSET_CANNOT_BE_NEGAT
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_WRITABLE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -100,7 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,6 +113,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {
                 PythonBuiltinClassType.PyCStructType,
@@ -125,14 +132,16 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         return CDataTypeBuiltinsFactory.getFactories();
     }
 
-    public static final String from_param = "from_param";
-    public static final String from_address = "from_address";
-    public static final String from_buffer = "from_buffer";
-    public static final String from_buffer_copy = "from_buffer_copy";
-    public static final String in_dll = "in_dll";
+    protected static final String J_FROM_PARAM = "from_param";
+    protected static final TruffleString T_FROM_PARAM = tsLiteral(J_FROM_PARAM);
+    protected static final String J_FROM_ADDRESS = "from_address";
+    protected static final String J_FROM_BUFFER = "from_buffer";
+    protected static final String J_FROM_BUFFER_COPY = "from_buffer_copy";
+    protected static final String J_IN_DLL = "in_dll";
 
-    protected static final String _as_parameter_ = "_as_parameter_";
-    protected static final String _handle = "_handle";
+    protected static final TruffleString T__AS_PARAMETER_ = tsLiteral("_as_parameter_");
+    protected static final String J__HANDLE = "_handle";
+    protected static final TruffleString T__HANDLE = tsLiteral(J__HANDLE);
 
     @ImportStatic(CDataTypeBuiltins.class)
     protected abstract static class CDataTypeFromParamNode extends PNodeWithRaise {
@@ -142,7 +151,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached("create(_as_parameter_)") LookupInheritedAttributeNode lookupAttrId,
+                        @Cached("create(T__AS_PARAMETER_)") LookupInheritedAttributeNode lookupAttrId,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode) {
@@ -180,7 +189,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_PARAM, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class FromParamNode extends PythonBinaryBuiltinNode {
 
@@ -191,7 +200,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = from_address, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_ADDRESS, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class FromAddressNode extends PythonBinaryBuiltinNode {
 
@@ -211,7 +220,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     // PyArg_ParseTuple(args, "O|n:from_buffer", &obj, &offset);
-    @Builtin(name = from_buffer, minNumOfPositionalArgs = 2, parameterNames = {"self", "buffer", "offset"}, declaresExplicitSelf = true)
+    @Builtin(name = J_FROM_BUFFER, minNumOfPositionalArgs = 2, parameterNames = {"self", "buffer", "offset"}, declaresExplicitSelf = true)
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class FromBufferNode extends PythonTernaryClinicBuiltinNode {
@@ -259,7 +268,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     // PyArg_ParseTuple(args, "y*|n:from_buffer_copy", &buffer, &offset);
-    @Builtin(name = from_buffer_copy, minNumOfPositionalArgs = 2, parameterNames = {"self", "buffer", "offset"})
+    @Builtin(name = J_FROM_BUFFER_COPY, minNumOfPositionalArgs = 2, parameterNames = {"self", "buffer", "offset"})
     @ArgumentClinic(name = "buffer", conversion = ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -306,8 +315,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
     // PyArg_ParseTuple(args, "Os:in_dll", &dll, &name);
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = in_dll, minNumOfPositionalArgs = 1, parameterNames = {"type", "dll", "name"}, declaresExplicitSelf = true)
-    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @Builtin(name = J_IN_DLL, minNumOfPositionalArgs = 1, parameterNames = {"type", "dll", "name"}, declaresExplicitSelf = true)
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class InDllNode extends PythonTernaryClinicBuiltinNode {
 
@@ -317,9 +326,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, String name,
+        Object CDataType_in_dll(VirtualFrame frame, Object type, Object dll, TruffleString name,
                         @Cached PyLongCheckNode longCheckNode,
-                        @Cached("create(_handle)") GetAttributeNode getAttributeNode,
+                        @Cached("create(T__HANDLE)") GetAttributeNode getAttributeNode,
                         @Cached PyCDataAtAddress atAddress,
                         @Cached AuditNode auditNode,
                         @Cached PyLongAsVoidPtr asVoidPtr,
@@ -380,7 +389,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 pd.b_ptr = PtrValue.memoryView((PMemoryView) obj);
             } else {
                 // TODO get Objects from numeric pointers.
-                throw raise(NotImplementedError, "Storage is not implemented.");
+                throw raise(NotImplementedError, toTruffleStringUncached("Storage is not implemented."));
             }
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
@@ -592,6 +601,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(keep)")
         void KeepRef(CDataObject target, int index, Object keep, PythonObjectFactory factory,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             CDataObject ob = PyCData_GetContainer(target, factory);
             if (!PGuards.isDict(ob.b_objects)) {
@@ -599,29 +611,38 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 return;
             }
             PDict dict = (PDict) ob.b_objects;
-            Object key = unique_key(target, index, getRaiseNode());
+            Object key = unique_key(target, index, getRaiseNode(), appendStringNode, toStringNode, fromJavaStringNode);
             dict.setDictStorage(lib.setItem(dict.getDictStorage(), key, keep));
         }
     }
 
     private static final int MAX_KEY_SIZE = 256;
 
-    static String unique_key(CDataObject cdata, int index,
-                    PRaiseNode raiseNode) {
+    static TruffleString unique_key(CDataObject cdata, int index,
+                    PRaiseNode raiseNode, TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.ToStringNode toStringNode, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        assert TS_ENCODING == Encoding.UTF_32;
+        final int bytesPerCodepoint = 4;      // assumes utf-32
+
         CDataObject target = cdata;
-        StringBuilder sb = PythonUtils.newStringBuilder();
-        int bytesLeft;
-        PythonUtils.append(sb, PythonUtils.format("%x", index));
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        appendStringNode.execute(sb, fromJavaStringNode.execute(toHex(index), TS_ENCODING));
         while (target.b_base != null) {
-            bytesLeft = MAX_KEY_SIZE - PythonUtils.sbLength(sb) - 1;
+            int bytesLeft = MAX_KEY_SIZE - sb.byteLength() / bytesPerCodepoint - 1;
             /* Hex format needs 2 characters per byte */
             if (bytesLeft < Integer.BYTES * 2) {
                 throw raiseNode.raise(ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
             }
-            PythonUtils.append(sb, PythonUtils.format(":%x", target.b_index));
+            appendStringNode.execute(sb, T_COLON);
+            appendStringNode.execute(sb, fromJavaStringNode.execute(toHex(target.b_index), TS_ENCODING));
             target = target.b_base;
         }
-        return PythonUtils.sbToString(sb);
+        return toStringNode.execute(sb);
+    }
+
+    @TruffleBoundary
+    private static String toHex(int value) {
+        return Integer.toHexString(value);
     }
 
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {

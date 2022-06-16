@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,17 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -57,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
@@ -80,7 +88,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -91,11 +98,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
 public class ZipImporterBuiltins extends PythonBuiltins {
-
-    private static final String INIT_WAS_NOT_CALLED = "zipimporter.__init__() wasn't called";
 
     /**
      * This stream is need to find locations of zip entries in the zip file. The main purpose of
@@ -205,7 +212,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         return ZipImporterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -214,15 +221,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @SuppressWarnings("try")
-        private void initZipImporter(PZipImporter self, String path) {
+        private void initZipImporter(PZipImporter self, TruffleString path) {
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 if (path == null || path.isEmpty()) {
                     throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
                 }
 
-                TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path);
-                String prefix = "";
-                String archive = "";
+                TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path.toJavaStringUncached());
+                TruffleString prefix = T_EMPTY_STRING;
+                TruffleString archive = T_EMPTY_STRING;
+                TruffleString fileNameSeparator = toTruffleStringUncached(getContext().getEnv().getFileNameSeparator());
                 while (true) {
                     boolean isRegularFile;
                     try {
@@ -232,14 +240,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     }
                     if (isRegularFile) {
                         // we don't have to store absolute path
-                        archive = tfile.getPath();
+                        archive = toTruffleStringUncached(tfile.getPath());
                         break;
                     }
                     TruffleFile parentFile = tfile.getParent();
                     if (parentFile == null) {
                         break;
                     }
-                    prefix = tfile.getName() + getContext().getEnv().getFileNameSeparator() + prefix;
+                    prefix = cat(toTruffleStringUncached(tfile.getName()), fileNameSeparator, prefix);
                     tfile = parentFile;
                 }
 
@@ -287,9 +295,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                 } else {
                                     throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANNOT_HANDLE_ZIP_FILE, archive);
                                 }
-
+                                TruffleString entryName = toTruffleStringUncached(entry.getName());
                                 PTuple tuple = factory().createTuple(new Object[]{
-                                                tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
+                                                cat(toTruffleStringUncached(tfile.getPath()), fileNameSeparator, entryName),
                                                 // for our implementation currently we don't need
                                                 // these
                                                 // these properties to store there. Keeping them for
@@ -303,7 +311,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                                 // content
                                                 lastZipEntryPos = zipEntryPos
                                 });
-                                filesDict.setItem(entry.getName(), tuple);
+                                filesDict.setItem(entryName, tuple);
                                 // count local file header from the last zipentry
                                 lastZipLocFileHeaderSize = 30 + entry.getName().length();
                                 extraField = entry.getExtra();
@@ -346,7 +354,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone init(PZipImporter self, String path) {
+        public PNone init(PZipImporter self, TruffleString path) {
             initZipImporter(self, path);
             return PNone.NONE;
         }
@@ -354,13 +362,15 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         public PNone init(PZipImporter self, PBytes path,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage store = path.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = PythonUtils.newStringBuilder();
-            BytesUtils.repr(sb, bytes, len);
-            initZipImporter(self, PythonUtils.sbToString(sb));
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            BytesUtils.repr(sb, bytes, len, appendCodePointNode);
+            initZipImporter(self, toStringNode.execute(sb));
             return PNone.NONE;
         }
 
@@ -378,39 +388,39 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        @TruffleBoundary
-        String doit(PZipImporter self) {
-            String archive = self.getArchive();
-            String prefix = self.getPrefix();
-            StringBuilder sb = new StringBuilder("<zipimporter object \"");
-            if (archive == null) {
-                sb.append("???");
-            } else if (prefix != null && !prefix.isEmpty()) {
-                sb.append(archive);
-                sb.append(getContext().getEnv().getPathSeparator());
-                sb.append(prefix);
+        private static final TruffleString T_NO_ARCHIVE = tsLiteral("<zipimporter object \"???\">");
+
+        @Specialization(guards = "self.getArchive() == null")
+        TruffleString doNoArchive(@SuppressWarnings("unused") PZipImporter self) {
+            return T_NO_ARCHIVE;
+        }
+
+        @Specialization(guards = "self.getArchive() != null")
+        TruffleString doit(PZipImporter self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString archive = self.getArchive();
+            TruffleString prefix = self.getPrefix();
+            if (prefix != null && !prefix.isEmpty()) {
+                return simpleTruffleStringFormatNode.format("<zipimporter object \"%s%s%s\">", archive, getContext().getEnv().getPathSeparator(), prefix);
             } else {
-                sb.append(archive);
+                return simpleTruffleStringFormatNode.format("<zipimporter object \"%s\">", archive);
             }
-            sb.append("\">");
-            return sb.toString();
         }
 
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
 
     }
 
     @Builtin(name = "find_module", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "path", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
     public abstract static class FindModuleNode extends PythonTernaryClinicBuiltinNode {
@@ -428,10 +438,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
          * @return the zipimporter or none, if the module is not found
          */
         @Specialization
-        public Object doit(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path,
+        public Object doit(PZipImporter self, TruffleString fullname, @SuppressWarnings("unused") Object path,
                         @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
             return self.findModule(fullname) == null ? PNone.NONE : self;
         }
@@ -439,7 +449,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class FindLoaderNode extends PythonTernaryClinicBuiltinNode {
         @Override
@@ -448,13 +458,13 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object findLoader(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
+        public Object findLoader(PZipImporter self, TruffleString fullname, @SuppressWarnings("unused") Object path) {
             PZipImporter.ModuleInfo mi = self.getModuleInfo(fullname);
             if (mi != ModuleInfo.NOT_FOUND) {
                 return makeTuple(self, makeList());
             }
 
-            String modPath = self.makeFilename(fullname);
+            TruffleString modPath = self.makeFilename(fullname);
             if (self.isDir(modPath)) {
                 return makeTuple(makeList(self.getModulePath(modPath)));
             }
@@ -479,7 +489,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_code", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -490,11 +500,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Child private CompileNode compileNode;
 
         @Specialization
-        public PCode doit(VirtualFrame frame, PZipImporter self, String fullname,
+        public PCode doit(VirtualFrame frame, PZipImporter self, TruffleString fullname,
                         @Cached ConditionProfile canNotFind,
                         @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
             if (compileNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -509,7 +519,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
-            PCode code = compileNode.execute(frame, md.code, md.path, "exec", 0, false, -1);
+            PCode code = compileNode.execute(frame, md.code, md.path, T_EXEC, 0, false, -1);
             return code;
         }
 
@@ -519,7 +529,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_data", minNumOfPositionalArgs = 2, parameterNames = {"self", "pathname"})
-    @ArgumentClinic(name = "pathname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "pathname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class GetDataNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -530,23 +540,26 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         @SuppressWarnings("try")
-        public PBytes doit(PZipImporter self, String pathname) {
+        public PBytes doit(PZipImporter self, TruffleString pathname) {
             if (self.getPrefix() == null) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
-            String archive = self.getArchive();
-            int len = archive.length();
-            int index = 0;
-            if (pathname.startsWith(archive) && pathname.substring(len).startsWith(getContext().getEnv().getFileNameSeparator())) {
-                index = len + 1;
+            TruffleString archive = self.getArchive();
+            int archiveLen = archive.byteLength(TS_ENCODING);
+            TruffleString fileNameSeparator = toTruffleStringUncached(getContext().getEnv().getFileNameSeparator());
+            int sepLen = fileNameSeparator.byteLength(TS_ENCODING);
+            int pathnameLen = pathname.byteLength(TS_ENCODING);
+            TruffleString key = pathname;
+            if (pathnameLen >= archiveLen + sepLen && pathname.regionEqualByteIndexUncached(0, archive, 0, archiveLen, TS_ENCODING) &&
+                            pathname.regionEqualByteIndexUncached(archiveLen, fileNameSeparator, 0, sepLen, TS_ENCODING)) {
+                key = pathname.substringByteIndexUncached(archiveLen + sepLen, pathnameLen - archiveLen - sepLen, TS_ENCODING, true);
             }
-            String key = pathname.substring(index, pathname.length());
             if (key.isEmpty()) {
-                throw raise(PythonErrorType.OSError, "%s", pathname);
+                throw raise(PythonErrorType.OSError, ErrorMessages.S, pathname);
             }
             PTuple tocEntry = (PTuple) self.getFiles().getItem(key);
             if (tocEntry == null) {
-                throw raise(PythonErrorType.OSError, "%s", pathname);
+                throw raise(PythonErrorType.OSError, ErrorMessages.S, pathname);
             }
             Object[] tocEntries = GetObjectArrayNodeGen.getUncached().execute(tocEntry);
             long fileSize = (long) tocEntries[3];
@@ -555,14 +568,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             long streamPosition = (long) tocEntries[6];
             ZipInputStream zis = null;
-            TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
+            TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive.toJavaStringUncached());
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ);
                             GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);
                 ZipEntry entry = zis.getNextEntry();
-                if (entry == null || !entry.getName().equals(key)) {
+                if (entry == null || !toTruffleStringUncached(entry.getName()).equalsUncached(key, TS_ENCODING)) {
                     throw raise(PythonErrorType.ZipImportError, ErrorMessages.ZIPIMPORT_WRONG_CACHED_FILE_POS);
                 }
                 int byteSize = (int) fileSize;
@@ -591,7 +604,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_filename", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class GetFileNameNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -600,11 +613,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
+        public Object doit(VirtualFrame frame, PZipImporter self, TruffleString fullname,
                         @Cached ConditionProfile canNotFind,
                         @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
             ModuleCodeData moduleCodeData;
             try {
@@ -621,7 +634,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_source", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class GetSourceNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -630,11 +643,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doit(VirtualFrame frame, PZipImporter self, String fullname,
+        public TruffleString doit(VirtualFrame frame, PZipImporter self, TruffleString fullname,
                         @Cached ConditionProfile canNotFind,
                         @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
             ModuleCodeData md;
             try {
@@ -651,7 +664,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "is_package", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class IsPackageNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -660,11 +673,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean doit(PZipImporter self, String fullname,
+        public boolean doit(PZipImporter self, TruffleString fullname,
                         @Cached ConditionProfile canNotFind,
                         @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
-                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INIT_WAS_NOT_CALLED);
             }
             ModuleInfo moduleInfo = self.getModuleInfo(fullname);
             if (canNotFind.profile(moduleInfo == ModuleInfo.NOT_FOUND)) {
@@ -676,7 +689,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "load_module", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
-    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class LoadModuleNode extends PythonBinaryClinicBuiltinNode {
         @Override
@@ -685,25 +698,25 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
+        public Object doit(VirtualFrame frame, PZipImporter self, TruffleString fullname,
                         @Cached GetCodeNode getCodeNode,
                         @Cached ConditionProfile canNotFind,
                         @Cached ConditionProfile initWasNotCalled) {
             PCode code = getCodeNode.doit(frame, self, fullname, canNotFind, initWasNotCalled);
 
-            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
-            PDict sysModules = (PDict) sysModule.getAttribute(MODULES);
+            PythonModule sysModule = getCore().lookupBuiltinModule(T_SYS);
+            PDict sysModules = (PDict) sysModule.getAttribute(T_MODULES);
             PythonModule module = (PythonModule) sysModules.getItem(fullname);
             if (module == null) {
                 module = factory().createPythonModule(fullname);
                 sysModules.setItem(fullname, module);
             }
 
-            module.setAttribute(SpecialAttributeNames.__LOADER__, self);
-            module.setAttribute(SpecialAttributeNames.__FILE__, code.getFilename());
+            module.setAttribute(SpecialAttributeNames.T___LOADER__, self);
+            module.setAttribute(SpecialAttributeNames.T___FILE__, code.getFilename());
             if (ModuleInfo.PACKAGE == self.getModuleInfo(fullname)) {
                 PList list = factory().createList(new Object[]{self.makePackagePath(fullname)});
-                module.setAttribute(SpecialAttributeNames.__PATH__, list);
+                module.setAttribute(SpecialAttributeNames.T___PATH__, list);
             }
 
             CodeNodes.GetCodeCallTargetNode.getUncached().execute(code).call(PArguments.withGlobals(module));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,23 +45,28 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedR
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.minusLastBlock;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.PEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_PEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEG_OR_NEG_1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -98,6 +103,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
 public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
@@ -126,7 +132,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached ConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
-            Object res = callMethodReadInto.execute(frame, self.getRaw(), READINTO, memobj);
+            Object res = callMethodReadInto.execute(frame, self.getRaw(), T_READINTO, memobj);
             if (res == PNone.NONE) {
                 /* Non-blocking stream would have blocked. Special return code! */
                 return BLOCKED;
@@ -182,13 +188,13 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            return callMethod.execute(frame, self.getRaw(), READABLE);
+            return callMethod.execute(frame, self.getRaw(), T_READABLE);
         }
     }
 
@@ -197,13 +203,13 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
      * occurs or until read() would block.
      */
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ImportStatic({AbstractBufferedIOBuiltins.class})
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
-        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(READ);
+        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(T_READ);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -344,7 +350,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             }
         }
 
-        public static final String READALL = "readall";
+        public static final TruffleString T_READALL = tsLiteral("readall");
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_all
@@ -353,7 +359,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Cached EnterBufferedNode lock,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
-                        @Cached("create(READALL)") LookupAttributeInMRONode readallAttr,
+                        @Cached("create(T_READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached GetClassNode getClassNode,
@@ -408,7 +414,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     }
 
                     /* Read until EOF or until read() would block. */
-                    Object r = callMethod.execute(frame, self.getRaw(), READ);
+                    Object r = callMethod.execute(frame, self.getRaw(), T_READ);
                     if (r != PNone.NONE && !(r instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }
@@ -440,7 +446,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = READ1, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READ1, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
@@ -453,7 +459,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
                         @Cached EnterBufferedNode lock,
-                        @Cached("create(READ)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_READ)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawReadNode rawReadNode) {
             checkIsClosedNode.execute(frame, self);
             int n = size;
@@ -484,12 +490,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
-        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(READLINE);
+        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(T_READLINE);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
@@ -589,7 +595,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoNode {
@@ -619,10 +625,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached ConditionProfile notFound,
                         @Cached ConditionProfile reachedLimit) {
             int limit = size;
-            /*- 
+            /*-
                 First, try to find a line in the buffer. This can run unlocked because
                 the calls to the C API are simple enough that they can't trigger
-                any thread switch. 
+                any thread switch.
             */
             int n = safeDowncast(self);
             if (limit >= 0 && n > limit) {
@@ -691,7 +697,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
@@ -703,7 +709,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
-                        @Cached("create(READLINE)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] res = readlineNode.execute(frame, self, size);
@@ -711,7 +717,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = PEEK, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = J_PEEK, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0", useDefaultForNone = true)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
@@ -750,7 +756,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Cached EnterBufferedNode lock,
-                        @Cached("create(PEEK)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_PEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
@@ -766,14 +772,14 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self,
-                        @Cached("create(READLINE)") CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, self, -1);

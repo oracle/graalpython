@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,19 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_FIELD_NAME_SPLIT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_PARSER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__STRING;
+
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
-
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.str.TemplateFormatter;
-import static com.oracle.graal.python.nodes.BuiltinNames.FORMATTER_FIELD_NAME_SPLIT;
-import static com.oracle.graal.python.nodes.BuiltinNames.FORMATTER_PARSER;
-import static com.oracle.graal.python.nodes.BuiltinNames._STRING;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -62,16 +63,17 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = _STRING)
+@CoreFunctions(defineModule = J__STRING)
 public class StringModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StringModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = FORMATTER_PARSER, minNumOfPositionalArgs = 1, parameterNames = {"self"})
-    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = J_FORMATTER_PARSER, minNumOfPositionalArgs = 1, parameterNames = {"self"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class FormaterParserNode extends PythonUnaryClinicBuiltinNode {
         @Override
@@ -80,7 +82,7 @@ public class StringModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PSequenceIterator formatterParser(VirtualFrame frame, String self) {
+        PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
             PythonLanguage language = PythonLanguage.get(this);
@@ -103,17 +105,17 @@ public class StringModuleBuiltins extends PythonBuiltins {
         return factory.createSequenceIterator(factory.createList(tuples));
     }
 
-    @Builtin(name = FORMATTER_FIELD_NAME_SPLIT, minNumOfPositionalArgs = 1, parameterNames = {"self"})
-    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = J_FORMATTER_FIELD_NAME_SPLIT, minNumOfPositionalArgs = 1, parameterNames = {"self"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class FormaterFieldNameSplitNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class FormatterFieldNameSplitNode extends PythonUnaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return StringModuleBuiltinsClinicProviders.FormaterFieldNameSplitNodeClinicProviderGen.INSTANCE;
+            return StringModuleBuiltinsClinicProviders.FormatterFieldNameSplitNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        Object formatterParser(VirtualFrame frame, String self) {
+        Object formatterParser(VirtualFrame frame, TruffleString self) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
             PythonLanguage language = PythonLanguage.get(this);

@@ -43,22 +43,23 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PContextVar extends PythonBuiltinObject {
-    private final String name;
+    private final TruffleString name;
     private final Object def;
     private final ThreadLocal<Object> value;
 
     public static final Object NO_DEFAULT = new Object();
 
-    public PContextVar(Object cls, Shape instanceShape, String name, Object def) {
+    public PContextVar(Object cls, Shape instanceShape, TruffleString name, Object def) {
         super(cls, instanceShape);
         this.name = name;
         this.def = def;
         this.value = new ThreadLocal<>();
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 

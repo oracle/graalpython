@@ -26,6 +26,12 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -105,6 +111,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -118,7 +127,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("version", CURRENT_VERSION);
+        addBuiltinConstant(T_VERSION, CURRENT_VERSION);
     }
 
     @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"value", "file", "version"})
@@ -131,7 +140,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         protected static LookupAndCallBinaryNode createCallWriteNode() {
-            return LookupAndCallBinaryNode.create("write");
+            return LookupAndCallBinaryNode.create(T_WRITE);
         }
 
         @Specialization
@@ -178,7 +187,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
         protected static LookupAndCallBinaryNode createCallReadNode() {
-            return LookupAndCallBinaryNode.create("read");
+            return LookupAndCallBinaryNode.create(T_READ);
         }
 
         @Specialization
@@ -187,7 +196,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
-                throw raise(PythonBuiltinClassType.TypeError, "file.read() returned not bytes but %p", buffer);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
                 return Marshal.loadFile(file);
@@ -292,10 +301,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             static final long serialVersionUID = 5323687983726237118L;
 
             final PythonBuiltinClassType type;
-            final String message;
+            final TruffleString message;
             final Object[] arguments;
 
-            MarshalError(PythonBuiltinClassType type, String message, Object... arguments) {
+            MarshalError(PythonBuiltinClassType type, TruffleString message, Object... arguments) {
                 super(null, null);
                 this.type = type;
                 this.message = message;
@@ -342,7 +351,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
          * to read enough bytes into a buffer.
          */
         static final class FileLikeInputStream extends InputStream {
-            private static final String METHOD = "readinto";
             private final Object fileLike;
             private final PyObjectCallMethodObjArgs callReadIntoNode;
             private final PyNumberAsSizeNode asSize;
@@ -359,7 +367,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             @Override
             public int read() {
-                Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
+                Object readIntoResult = callReadIntoNode.execute(null, fileLike, T_READINTO, buffer);
                 int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                 if (numRead > 1) {
                     throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
@@ -373,7 +381,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 ByteSequenceStorage tempStore = new ByteSequenceStorage(b, len);
                 buffer.setSequenceStorage(tempStore);
                 try {
-                    Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
+                    Object readIntoResult = callReadIntoNode.execute(null, fileLike, T_READINTO, buffer);
                     int numRead = asSize.executeExact(null, readIntoResult, ValueError);
                     if (numRead > len) {
                         throw new MarshalError(ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
@@ -600,7 +608,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private double readDoubleString() throws NumberFormatException {
-            return Double.parseDouble(readShortString());
+            return Double.parseDouble(readShortString().toJavaStringUncached());
         }
 
         private void writeReferenceOrComplexObject(Object v) {
@@ -709,16 +717,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeDoubleString(((PComplex) v).getReal());
                         writeDoubleString(((PComplex) v).getImag());
                     }
-                } else if (v instanceof String) {
+                } else if (isJavaString(v)) {
                     writeByte(TYPE_UNICODE | flag);
-                    writeString((String) v);
+                    writeString(TruffleString.fromJavaStringUncached((String) v, TS_ENCODING));
+                } else if (v instanceof TruffleString) {
+                    writeByte(TYPE_UNICODE | flag);
+                    writeString((TruffleString) v);
                 } else if (PyUnicodeCheckExactNodeGen.getUncached().execute(v)) {
                     if (version >= 3 && IsInternedStringNodeGen.getUncached().execute((PString) v)) {
                         writeByte(TYPE_INTERNED | flag);
                     } else {
                         writeByte(TYPE_UNICODE | flag);
                     }
-                    writeString(((PString) v).getValue());
+                    writeString(((PString) v).getValueUncached());
                 } else if (PyTupleCheckExactNodeGen.getUncached().execute(v)) {
                     Object[] items = GetObjectArrayNodeGen.getUncached().execute(v);
                     if (version >= 4 && items.length < 256) {
@@ -781,10 +792,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_BYTE);
                     writeBytes((byte[]) v);
-                } else if (v instanceof String[]) {
+                } else if (v instanceof TruffleString[]) {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_STRING);
-                    writeStringArray((String[]) v);
+                    writeStringArray((TruffleString[]) v);
                 } else if (v instanceof Object[]) {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_OBJECT);
@@ -857,7 +868,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeStringArray(String[] a) throws IOException {
+        private void writeStringArray(TruffleString[] a) throws IOException {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeString(a[i]);
@@ -1020,15 +1031,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeString(String v) throws IOException {
-            byte[] bytes = v.getBytes(StandardCharsets.UTF_8);
-            writeSize(bytes.length);
-            out.write(bytes);
+        private void writeString(TruffleString v) throws IOException {
+            InternalByteArray ba = v.switchEncodingUncached(Encoding.UTF_8).getInternalByteArrayUncached(Encoding.UTF_8);
+            writeSize(ba.getLength());
+            out.write(ba.getArray(), ba.getOffset(), ba.getLength());
         }
 
-        private String readString() {
+        private TruffleString readString() {
             int sz = readSize();
-            return new String(readNBytes(sz), 0, sz, StandardCharsets.UTF_8);
+            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true).switchEncodingUncached(TS_ENCODING);
+        }
+
+        private TruffleString readTruffleString() {
+            int sz = readSize();
+            byte[] data = new byte[sz];
+            readNBytes(sz, data);
+            return TruffleString.fromByteArrayUncached(data, Encoding.UTF_8, false).switchEncodingUncached(TS_ENCODING);
         }
 
         private void writeShortString(String v) throws IOException {
@@ -1038,15 +1056,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             out.write(bytes);
         }
 
-        private String readShortString() {
+        private TruffleString readShortString() {
             int sz = readByteSize();
             byte[] bytes = readNBytes(sz);
-            return new String(bytes, 0, sz, StandardCharsets.ISO_8859_1);
+            return TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.ISO_8859_1, true).switchEncodingUncached(TS_ENCODING);
         }
 
         private Object readAscii(long sz, boolean intern) {
             byte[] bytes = readNBytes((int) sz);
-            String value = new String(bytes, 0, (int) sz, StandardCharsets.US_ASCII);
+            TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, (int) sz, Encoding.US_ASCII, true).switchEncodingUncached(TS_ENCODING);
             if (intern) {
                 return StringNodes.InternStringNode.getUncached().execute(value);
             } else {
@@ -1122,9 +1140,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return a;
         }
 
-        private String[] readStringArray() {
+        private TruffleString[] readStringArray() {
             int length = readInt();
-            String[] a = new String[length];
+            TruffleString[] a = new TruffleString[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readString();
             }
@@ -1145,8 +1163,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (version != Compiler.BYTECODE_VERSION) {
                 throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, version);
             }
-            String name = readString();
-            String qualname = readString();
+            TruffleString name = readString();
+            TruffleString qualname = readString();
             int argCount = readInt();
             int kwOnlyArgCount = readInt();
             int positionalOnlyArgCount = readInt();
@@ -1154,10 +1172,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] code = readBytes();
             byte[] srcOffsetTable = readBytes();
             int flags = readInt();
-            String[] names = readStringArray();
-            String[] varnames = readStringArray();
-            String[] cellvars = readStringArray();
-            String[] freevars = readStringArray();
+            TruffleString[] names = readStringArray();
+            TruffleString[] varnames = readStringArray();
+            TruffleString[] cellvars = readStringArray();
+            TruffleString[] freevars = readStringArray();
             int[] cell2arg = readIntArray();
             if (cell2arg.length == 0) {
                 cell2arg = null;
@@ -1197,7 +1215,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode() {
-            String fileName = readString().intern();
+            TruffleString fileName = readTruffleString();
             int flags = readInt();
 
             int codeLen = readSize();

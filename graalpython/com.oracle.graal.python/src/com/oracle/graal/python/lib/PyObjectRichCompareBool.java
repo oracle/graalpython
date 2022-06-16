@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,12 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStrings;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Performs one of comparison operations. The nodes for all operations are inner classes of this
@@ -96,10 +98,6 @@ public abstract class PyObjectRichCompareBool {
 
         protected boolean op(double a, double b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
-        }
-
-        protected boolean op(String a, String b) {
-            return op(StringUtils.compareToUnicodeAware(a, b), 0);
         }
 
         protected SpecialMethodSlot getSlot() {
@@ -236,11 +234,6 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Specialization
-        boolean doSS(String a, String b) {
-            return op(a, b);
-        }
-
-        @Specialization
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
                         @Cached IsNode isNode,
                         @Cached GetClassNode getClassA,
@@ -322,9 +315,10 @@ public abstract class PyObjectRichCompareBool {
             return a == b || (Double.isNaN(a) && Double.isNaN(b));
         }
 
-        @Override
-        protected boolean op(String a, String b) {
-            return a.equals(b);
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return equalNode.execute(a, b, TS_ENCODING);
         }
 
         @Override
@@ -384,9 +378,10 @@ public abstract class PyObjectRichCompareBool {
             return a != b;
         }
 
-        @Override
-        protected boolean op(String a, String b) {
-            return !a.equals(b);
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return !equalNode.execute(a, b, TS_ENCODING);
         }
 
         @Override
@@ -447,6 +442,12 @@ public abstract class PyObjectRichCompareBool {
             return a < b;
         }
 
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return compareStrings(a, b, compareIntsUTF32Node) < 0;
+        }
+
         @Override
         protected SpecialMethodSlot getSlot() {
             return SpecialMethodSlot.Lt;
@@ -492,6 +493,12 @@ public abstract class PyObjectRichCompareBool {
         @Override
         protected boolean op(double a, double b) {
             return a <= b;
+        }
+
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return compareStrings(a, b, compareIntsUTF32Node) <= 0;
         }
 
         @Override
@@ -540,6 +547,12 @@ public abstract class PyObjectRichCompareBool {
             return a > b;
         }
 
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return compareStrings(a, b, compareIntsUTF32Node) > 0;
+        }
+
         @Override
         protected SpecialMethodSlot getSlot() {
             return SpecialMethodSlot.Gt;
@@ -584,6 +597,12 @@ public abstract class PyObjectRichCompareBool {
         @Override
         protected boolean op(double a, double b) {
             return a >= b;
+        }
+
+        @Specialization(insertBefore = "doGeneric")
+        boolean doSS(TruffleString a, TruffleString b,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return compareStrings(a, b, compareIntsUTF32Node) >= 0;
         }
 
         @Override

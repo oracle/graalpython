@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.test.PythonTests.ts;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.math.BigInteger;
 import java.util.Collections;
 
@@ -63,9 +66,12 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Function;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @RunWith(Parameterized.class)
 public class PathConversionNodeTests extends ConversionNodeTests {
+
+    private static final TruffleString T_ABC = TruffleString.fromJavaStringUncached("abc", TS_ENCODING);
 
     @Parameter(0) public String backendName;
     private Function<PosixPath, String> pathToString;
@@ -109,14 +115,14 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void string() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, "abc", false));
-        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString("abc"), false));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, T_ABC, false));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString(T_ABC), false));
     }
 
     @Test
     public void stringWithZero() {
         expectPythonMessage("ValueError: fun: embedded null character in arg");
-        call(false, false, "a\0c");
+        call(false, false, ts("a\0c"));
     }
 
     @Test

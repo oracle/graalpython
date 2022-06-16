@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,12 +51,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonFrame {
 
-    public static FrameDescriptor createTestFrameDescriptor(String... names) {
+    public static FrameDescriptor createTestFrameDescriptor(TruffleString... names) {
         FrameDescriptor.Builder builder = FrameDescriptor.newBuilder();
-        for (String name : names) {
+        for (TruffleString name : names) {
             builder.addSlot(FrameSlotKind.Illegal, name, null);
         }
         return builder.build();
@@ -96,14 +97,14 @@ public abstract class PythonFrame {
         }
     }
 
-    public static String[] extractSlotNames(FrameDescriptor descriptor, int[] slots) {
+    public static TruffleString[] extractSlotNames(FrameDescriptor descriptor, int[] slots) {
         if (slots == null || slots.length == 0) {
-            return PythonUtils.EMPTY_STRING_ARRAY;
+            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
-        String[] result = new String[slots.length];
+        TruffleString[] result = new TruffleString[slots.length];
         for (int i = 0; i < result.length; i++) {
             Object identifier = descriptor.getSlotName(slots[i]);
-            result[i] = identifier == FrameSlotIDs.FREEVAR__CLASS__ ? __CLASS__ : (String) identifier;
+            result[i] = identifier == FrameSlotIDs.FREEVAR__CLASS__ ? T___CLASS__ : (TruffleString) identifier;
         }
         return result;
     }

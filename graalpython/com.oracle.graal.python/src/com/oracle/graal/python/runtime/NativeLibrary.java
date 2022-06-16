@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.Objects;
 import java.util.logging.Level;
 
@@ -62,6 +64,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
@@ -244,11 +247,10 @@ public class NativeLibrary {
         throw NativeLibraryCannotBeLoaded.INSTANCE;
     }
 
-    public static String getLibPath(PythonContext context, String name) {
+    private static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
-        String libPythonName = name + context.getSoAbi();
-        TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
-        TruffleFile file = homePath.resolve(libPythonName);
+        TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+        TruffleFile file = homePath.resolve(name + context.getSoAbi().toJavaStringUncached());
         return file.getPath();
     }
 
@@ -284,6 +286,7 @@ public class NativeLibrary {
     public abstract static class InvokeNativeFunction extends PNodeWithContext {
         private static final InvokeNativeFunction UNCACHED = InvokeNativeFunctionNodeGen.create(InteropLibrary.getUncached());
         @Child private InteropLibrary resultInterop;
+        @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
 
         public InvokeNativeFunction(InteropLibrary resultInterop) {
             this.resultInterop = resultInterop;
@@ -317,9 +320,9 @@ public class NativeLibrary {
             }
         }
 
-        public <T extends Enum<T> & NativeFunction> String callString(TypedNativeLibrary<T> lib, T function, Object... args) {
+        public <T extends Enum<T> & NativeFunction> TruffleString callString(TypedNativeLibrary<T> lib, T function, Object... args) {
             try {
-                return ensureResultInterop().asString(call(lib, function, args));
+                return ensureSwitchEncoding().execute(ensureResultInterop().asTruffleString(call(lib, function, args)), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
@@ -394,5 +397,14 @@ public class NativeLibrary {
             }
             return resultInterop;
         }
+
+        public TruffleString.SwitchEncodingNode ensureSwitchEncoding() {
+            if (switchEncodingNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                switchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
+            }
+            return switchEncodingNode;
+        }
+
     }
 }

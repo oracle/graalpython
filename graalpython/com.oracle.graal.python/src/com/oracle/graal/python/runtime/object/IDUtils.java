@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class IDUtils {
     private static final long MAX_OBJECT_ID = (1L << 62) - 1;
@@ -85,8 +86,8 @@ public final class IDUtils {
     public static final long ID_EMPTY_FROZENSET = getId(ReservedID.emptyFrozenSet);
 
     private final Map<Object, Long> weakIdMap = Collections.synchronizedMap(new WeakIdentityHashMap<>());
-    // for Python interned strings and java strings
-    private final Map<String, Long> weakStringIdMap = Collections.synchronizedMap(new WeakHashMap<>());
+    // for Python interned strings and Truffle strings
+    private final Map<TruffleString, Long> weakStringIdMap = Collections.synchronizedMap(new WeakHashMap<>());
     private final AtomicLong globalId = new AtomicLong(ID_OFFSET);
 
     private static long asMaskedReservedObjectId(long id) {
@@ -148,7 +149,7 @@ public final class IDUtils {
     }
 
     @CompilerDirectives.TruffleBoundary
-    public long getNextStringId(String string) {
+    public long getNextStringId(TruffleString string) {
         return weakStringIdMap.computeIfAbsent(string, value -> getNextObjectId());
     }
 }

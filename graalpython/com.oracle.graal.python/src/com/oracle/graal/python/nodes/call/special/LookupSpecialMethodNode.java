@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Similar to CPython's lookup_maybe_method. If the found method is a function, it is returned
@@ -56,13 +57,13 @@ import com.oracle.truffle.api.nodes.Node;
  * nodes handle this wrapper.
  */
 public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
-    protected final String name;
+    protected final TruffleString name;
 
-    public LookupSpecialMethodNode(String name) {
+    public LookupSpecialMethodNode(TruffleString name) {
         this.name = name;
     }
 
-    public static LookupSpecialMethodNode create(String name) {
+    public static LookupSpecialMethodNode create(TruffleString name) {
         return LookupSpecialMethodNodeGen.create(name);
     }
 
@@ -76,7 +77,7 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
     @GenerateUncached
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Frame frame, Object type, String name, Object receiver);
+        public abstract Object execute(Frame frame, Object type, TruffleString name, Object receiver);
 
         public static Dynamic create() {
             return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
@@ -87,7 +88,7 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
         }
 
         @Specialization
-        Object lookup(VirtualFrame frame, Object type, String name, Object receiver,
+        Object lookup(VirtualFrame frame, Object type, TruffleString name, Object receiver,
                         @Cached MaybeBindDescriptorNode bind,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr) {
             Object descriptor = lookupAttr.execute(type, name);

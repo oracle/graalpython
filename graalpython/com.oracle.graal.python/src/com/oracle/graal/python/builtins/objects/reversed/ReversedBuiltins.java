@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,12 +26,13 @@
 package com.oracle.graal.python.builtins.objects.reversed;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -73,7 +75,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         return ReversedBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -98,16 +100,17 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PStringReverseIterator self) {
+        Object next(PStringReverseIterator self,
+                        @Cached TruffleString.SubstringNode substringNode) {
             if (self.index >= 0) {
-                return Character.toString(self.value.charAt(self.index--));
+                return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
             throw raiseStopIteration();
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -117,7 +120,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
 
@@ -155,7 +158,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
@@ -179,7 +182,7 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callReduce,
+                        @Cached("create(T___REDUCE__)") LookupAndCallUnaryNode callReduce,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             Object content = callReduce.executeObject(frame, self.getPSequence());
             return reduceInternal(self, content, self.index, getClassNode);
@@ -197,7 +200,7 @@ public class ReversedBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization

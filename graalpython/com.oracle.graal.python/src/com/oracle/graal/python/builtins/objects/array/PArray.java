@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,10 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
+import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
 
@@ -42,18 +46,19 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // TODO interop library
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
-    private final String formatString;
+    private final TruffleString formatString;
     private int length;
     private byte[] buffer;
     private volatile int exports;
 
-    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format) {
+    public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format) {
         super(clazz, instanceShape);
         this.formatString = formatString;
         this.format = format;
@@ -61,7 +66,7 @@ public final class PArray extends PythonBuiltinObject {
         this.buffer = new byte[0];
     }
 
-    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format, int length) throws OverflowException {
+    public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
         this.formatString = formatString;
         this.format = format;
@@ -74,14 +79,14 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @Ignore
-    public String getFormatString() {
+    public TruffleString getFormatString() {
         return formatString;
     }
 
     @ExportMessage(name = "getFormatString")
-    public String getFormatStringForBuffer() {
-        if ("u".equals(formatString)) {
-            return "w";
+    public TruffleString getFormatStringForBuffer() {
+        if (T_UNICODE_TYPE_CODE_U.equalsUncached(formatString, TS_ENCODING)) {
+            return T_UNICODE_TYPE_CODE_W;
         }
         return formatString;
     }
@@ -196,22 +201,22 @@ public final class PArray extends PythonBuiltinObject {
         IEEE_754_FLOAT_BE(15, BufferFormat.FLOAT, ByteOrder.BIG_ENDIAN),
         IEEE_754_DOUBLE_LE(16, BufferFormat.DOUBLE, ByteOrder.LITTLE_ENDIAN),
         IEEE_754_DOUBLE_BE(17, BufferFormat.DOUBLE, ByteOrder.BIG_ENDIAN),
-        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, "utf-32-le"),
-        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, "utf-32-be"),
+        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-32-le")),
+        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, tsLiteral("utf-32-be")),
         // These two need to come after UTF32, so that forFormat doesn't pick them for UNICODE
-        UTF16_LE(18, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, "utf-16-le"),
-        UTF16_BE(19, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, "utf-16-be");
+        UTF16_LE(18, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-16-le")),
+        UTF16_BE(19, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, tsLiteral("utf-16-be"));
 
         public final int code;
         public final BufferFormat format;
         public final ByteOrder order;
-        public final String unicodeEncoding;
+        public final TruffleString unicodeEncoding;
 
         MachineFormat(int code, BufferFormat format, ByteOrder order) {
             this(code, format, order, null);
         }
 
-        MachineFormat(int code, BufferFormat format, ByteOrder order, String unicodeEncoding) {
+        MachineFormat(int code, BufferFormat format, ByteOrder order, TruffleString unicodeEncoding) {
             this.code = code;
             this.format = format;
             this.order = order;

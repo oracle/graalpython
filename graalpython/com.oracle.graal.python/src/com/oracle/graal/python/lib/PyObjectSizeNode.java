@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_Size} and {@code PyObject_Length} (alias of the former).
@@ -87,8 +89,9 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
     protected abstract Object executeObject(Frame frame, Object object);
 
     @Specialization
-    static int doString(String object) {
-        return object.length();
+    static int doTruffleString(TruffleString str,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+        return codePointLengthNode.execute(str, TS_ENCODING);
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")

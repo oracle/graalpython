@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -54,7 +55,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -63,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -78,7 +80,7 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
             this.keywords = keywords;
         }
 
-        void addKeyword(String key, Object value) {
+        void addKeyword(TruffleString key, Object value) {
             assert i < keywords.length : "CopyKeywordsNode: current index (over hashingStorage) exceeds keywords array length!";
             keywords[i++] = new PKeyword(key, value);
         }
@@ -100,21 +102,21 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
 
         @Specialization(rewriteOn = CannotCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
         public CopyKeywordsState add(Object key, CopyKeywordsState state,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
             Object value = lib.getItem(state.hashingStorage, key);
-            state.addKeyword(castToJavaStringNode.execute(key), value);
+            state.addKeyword(castToTruffleStringNode.execute(key), value);
             return state;
         }
 
-        @Specialization(replaces = "add", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(replaces = J_ADD, limit = "getCallSiteInlineCacheMaxDepth()")
         public CopyKeywordsState addExc(Object key, CopyKeywordsState state,
                         @Cached PRaiseNode raiseNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
             try {
                 Object value = lib.getItem(state.hashingStorage, key);
-                state.addKeyword(castToJavaStringNode.execute(key), value);
+                state.addKeyword(castToTruffleStringNode.execute(key), value);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
             }
@@ -135,7 +137,7 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
     @Specialization(guards = "!isBuiltinDict(starargs)")
     void doDict(PDict starargs, PKeyword[] keywords,
                     @Cached GetNextNode getNextNode,
-                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
                     @Cached PyObjectGetIter getIter,
                     @Cached PyObjectGetItem getItem,
@@ -147,7 +149,7 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
             try {
                 key = getNextNode.execute(null, iter);
                 Object value = getItem.execute(null, starargs, key);
-                keywords[i++] = new PKeyword(castToJavaStringNode.execute(key), value);
+                keywords[i++] = new PKeyword(castToTruffleStringNode.execute(key), value);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 break;

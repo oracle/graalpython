@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -55,6 +57,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -137,13 +140,14 @@ public final class PMMap extends PythonObject {
     byte readByte(int byteOffset,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached BranchProfile gotException,
-                    @Cached PConstructAndRaiseNode raiseNode) {
+                    @Cached PConstructAndRaiseNode raiseNode,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         try {
             return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
             // TODO(fa) how to handle?
             gotException.enter();
-            throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
+            throw raiseNode.raiseOSError(null, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
         }
     }
 

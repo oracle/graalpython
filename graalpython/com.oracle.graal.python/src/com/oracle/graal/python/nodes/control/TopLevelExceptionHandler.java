@@ -41,7 +41,10 @@
 package com.oracle.graal.python.nodes.control;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -54,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -133,7 +137,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                 } catch (StackOverflowError e) {
                     PythonContext context = getContext();
                     context.reacquireGilAfterStackOverflow();
-                    PBaseException newException = context.factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
                 } catch (ThreadDeath e) {
@@ -153,7 +157,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     private void checkInitialized() {
         Python3Core core = getContext();
         if (core.isCoreInitialized() && (PythonLanguage.MIME_TYPE.equals(source.getMimeType()) || PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType()))) {
-            getContext().initializeMainModule(source.getPath());
+            getContext().initializeMainModule(toTruffleStringUncached(source.getPath()));
         }
     }
 
@@ -166,10 +170,10 @@ public final class TopLevelExceptionHandler extends RootNode {
             Object type = GetClassNode.getUncached().execute(pythonException);
             Object tb = GetExceptionTracebackNode.getUncached().execute(pythonException);
 
-            PythonModule sys = getContext().lookupBuiltinModule("sys");
-            sys.setAttribute(BuiltinNames.LAST_TYPE, type);
-            sys.setAttribute(BuiltinNames.LAST_VALUE, pythonException);
-            sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
+            PythonModule sys = getContext().lookupBuiltinModule(T_SYS);
+            sys.setAttribute(BuiltinNames.T_LAST_TYPE, type);
+            sys.setAttribute(BuiltinNames.T_LAST_VALUE, pythonException);
+            sys.setAttribute(BuiltinNames.T_LAST_TRACEBACK, tb);
 
             ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
             if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
@@ -263,7 +267,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             // If we failed to dig out the exit code we just print and leave
             Object stderr = theContext.getStderr();
             Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
-            PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, "write", message);
+            PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, T_WRITE, message);
             return true;
         }
         return false;

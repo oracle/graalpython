@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -52,7 +53,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnionType)
 public class UnionTypeBuiltins extends PythonBuiltins {
@@ -70,7 +71,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
         return UnionTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class NewNode extends StructUnionTypeNewNode {
         @Override
@@ -79,16 +80,17 @@ public class UnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+        protected PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached WriteAttributeToObjectNode writeNode,
                         @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             writeNode.execute(object, key, value);
-            if (PString.equals(key, StructUnionTypeBuiltins._fields_)) {
+            if (equalNode.execute(key, StructUnionTypeBuiltins.T__fields_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, false, factory());
             }
             return PNone.NONE;

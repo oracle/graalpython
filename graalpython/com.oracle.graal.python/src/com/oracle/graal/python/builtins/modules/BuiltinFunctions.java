@@ -27,54 +27,72 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
-import static com.oracle.graal.python.nodes.BuiltinNames.ALL;
-import static com.oracle.graal.python.nodes.BuiltinNames.ANY;
-import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
-import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
-import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
-import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
-import static com.oracle.graal.python.nodes.BuiltinNames.CHR;
-import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
-import static com.oracle.graal.python.nodes.BuiltinNames.DELATTR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DIR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DIVMOD;
-import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
-import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
-import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
-import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
-import static com.oracle.graal.python.nodes.BuiltinNames.HASATTR;
-import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
-import static com.oracle.graal.python.nodes.BuiltinNames.HEX;
-import static com.oracle.graal.python.nodes.BuiltinNames.ID;
-import static com.oracle.graal.python.nodes.BuiltinNames.ISINSTANCE;
-import static com.oracle.graal.python.nodes.BuiltinNames.ISSUBCLASS;
-import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.LEN;
-import static com.oracle.graal.python.nodes.BuiltinNames.MAX;
-import static com.oracle.graal.python.nodes.BuiltinNames.MIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.NEXT;
-import static com.oracle.graal.python.nodes.BuiltinNames.OCT;
-import static com.oracle.graal.python.nodes.BuiltinNames.ORD;
-import static com.oracle.graal.python.nodes.BuiltinNames.POW;
-import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
-import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
-import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
-import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
-import static com.oracle.graal.python.nodes.BuiltinNames.SORTED;
-import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ANY;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_CALLABLE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_CHR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_COMPILE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DELATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DIR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_DIVMOD;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EVAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GETATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_HASATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_HASH;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_HEX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ID;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ISINSTANCE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ISSUBCLASS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_LEN;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_MIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_NEXT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_OCT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ORD;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_POW;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PRINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REPR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_ROUND;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SETATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SORTED;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SUM;
+import static com.oracle.graal.python.nodes.BuiltinNames.J___BUILD_CLASS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_BREAKPOINTHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EVAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_MINUS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -147,8 +165,8 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -207,7 +225,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -253,9 +271,12 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.utilities.TriState;
 
-@CoreFunctions(defineModule = BuiltinNames.BUILTINS, isEager = true)
+@CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
@@ -265,19 +286,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put(__GRAALPYTHON__, core.lookupBuiltinModule(__GRAALPYTHON__));
+        addBuiltinConstant(T___GRAALPYTHON__, core.lookupBuiltinModule(T___GRAALPYTHON__));
         super.initialize(core);
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
-        builtinsModule.setAttribute(__DEBUG__, !core.getContext().getOption(PythonOptions.PythonOptimizeFlag));
+        PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
+        builtinsModule.setAttribute(T___DEBUG__, !core.getContext().getOption(PythonOptions.PythonOptimizeFlag));
     }
 
     // abs(x)
-    @Builtin(name = ABS, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ABS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -292,7 +313,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object absObject(VirtualFrame frame, Object object,
-                        @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbs) {
+                        @Cached("create(T___ABS__)") LookupAndCallUnaryNode callAbs) {
             Object result = callAbs.executeObject(frame, object);
             if (result == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
@@ -398,7 +419,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = ALL, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ALL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
@@ -455,7 +476,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = ANY, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ANY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
 
@@ -513,23 +534,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // bin(object)
-    @Builtin(name = BIN, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_BIN, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
+        static final TruffleString T_BIN_PREFIX = tsLiteral("0b");
+        static final TruffleString T_HEX_PREFIX = tsLiteral("0x");
+        static final TruffleString T_OCT_PREFIX = tsLiteral("0o");
+
         @TruffleBoundary
-        protected String buildString(boolean isNegative, String number) {
-            StringBuilder sb = new StringBuilder();
+        protected TruffleString buildString(boolean isNegative, TruffleString number, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(3) + number.byteLength(TS_ENCODING));
             if (isNegative) {
-                sb.append('-');
+                appendStringNode.execute(sb, T_MINUS);
             }
-            sb.append(prefix());
-            sb.append(number);
-            return sb.toString();
+            appendStringNode.execute(sb, prefix());
+            appendStringNode.execute(sb, number);
+            return toStringNode.execute(sb);
         }
 
-        protected String prefix() {
-            return "0b";
+        protected TruffleString prefix() {
+            return T_BIN_PREFIX;
         }
 
         @TruffleBoundary
@@ -548,54 +573,62 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        String doL(long x,
-                        @Cached ConditionProfile isMinLong) {
+        TruffleString doL(long x,
+                        @Cached ConditionProfile isMinLong,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             if (isMinLong.profile(x == Long.MIN_VALUE)) {
-                return buildString(true, bigToString(bigAbs(PInt.longToBigInteger(x))));
+                return buildString(true, fromJavaStringNode.execute(bigToString(bigAbs(PInt.longToBigInteger(x))), TS_ENCODING), appendStringNode, toStringNode);
             }
-            return buildString(x < 0, longToString(Math.abs(x)));
+            return buildString(x < 0, fromJavaStringNode.execute(longToString(Math.abs(x)), TS_ENCODING), appendStringNode, toStringNode);
         }
 
         @Specialization
-        String doD(double x,
+        TruffleString doD(double x,
                         @Cached PRaiseNode raise) {
             throw raise.raiseIntegerInterpretationError(x);
         }
 
         @Specialization
-        @TruffleBoundary
-        String doPI(PInt x) {
+        TruffleString doPI(PInt x,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) < 0, bigToString(value.abs()));
+            return buildString(value.signum() < 0, fromJavaStringNode.execute(bigToString(PInt.abs(value)), TS_ENCODING), appendStringNode, toStringNode);
         }
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
-        String doO(VirtualFrame frame, Object x,
+        TruffleString doO(VirtualFrame frame, Object x,
                         @Cached ConditionProfile isMinLong,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
-                        @Cached BranchProfile isPInt) {
+                        @Cached BranchProfile isPInt,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object index = indexNode.execute(frame, x);
             if (index instanceof Boolean || index instanceof Integer) {
                 isInt.enter();
-                return doL(asSizeNode.executeExact(frame, index), isMinLong);
+                return doL(asSizeNode.executeExact(frame, index), isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof Long) {
                 isLong.enter();
-                return doL((long) index, isMinLong);
+                return doL((long) index, isMinLong, fromJavaStringNode, appendStringNode, toStringNode);
             } else if (index instanceof PInt) {
                 isPInt.enter();
-                return doPI((PInt) index);
+                return doPI((PInt) index, fromJavaStringNode, appendStringNode, toStringNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(PythonBuiltinClassType.NotImplementedError, "bin/oct/hex with native integer subclasses");
+                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
             }
         }
     }
 
     // oct(object)
-    @Builtin(name = OCT, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_OCT, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class OctNode extends BinNode {
@@ -612,8 +645,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Override
-        protected String prefix() {
-            return "0o";
+        protected TruffleString prefix() {
+            return T_OCT_PREFIX;
         }
 
         public static OctNode create() {
@@ -622,7 +655,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hex(object)
-    @Builtin(name = HEX, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_HEX, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class HexNode extends BinNode {
@@ -639,8 +672,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Override
-        protected String prefix() {
-            return "0x";
+        protected TruffleString prefix() {
+            return T_HEX_PREFIX;
         }
 
         public static HexNode create() {
@@ -649,7 +682,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // callable(object)
-    @Builtin(name = CALLABLE, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_CALLABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
@@ -665,7 +698,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
-            if (GraalPythonTranslationErrorNode.MESSAGE.equals(object)) {
+            if (GraalPythonTranslationErrorNode.T_MESSAGE.equals(object)) {
                 return true;
             }
 
@@ -674,22 +707,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // chr(i)
-    @Builtin(name = CHR, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"i"})
+    @Builtin(name = J_CHR, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"i"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "i", conversion = ArgumentClinic.ClinicConversion.Int)
     public abstract static class ChrNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        public String charFromInt(int arg) {
+        public TruffleString charFromInt(int arg,
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             if (arg >= 0 && arg <= 1114111) {
-                return doChr(arg);
+                return fromCodePointNode.execute(arg, TS_ENCODING, true);
             } else {
                 throw raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
             }
-        }
-
-        @TruffleBoundary
-        private static String doChr(int arg) {
-            return new String(Character.toChars(arg));
         }
 
         @Override
@@ -699,7 +728,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hash(object)
-    @Builtin(name = HASH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_HASH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -710,7 +739,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // dir([object])
-    @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
 
@@ -721,7 +750,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ConditionProfile inGenerator,
-                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
 
@@ -736,10 +765,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object dir(VirtualFrame frame, Object object,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached("create(__DIR__)") LookupAndCallUnaryNode callDir) {
+                        @Cached("create(T___DIR__)") LookupAndCallUnaryNode callDir) {
             Object result = callDir.executeObject(frame, object);
             if (result == NO_VALUE) {
-                throw raise(TypeError, "object does not provide __dir__");
+                throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
             }
             PList list = constructListNode.execute(frame, result);
             sortNode.execute(frame, list);
@@ -748,7 +777,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // divmod(a, b)
-    @Builtin(name = DIVMOD, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_DIVMOD, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(BinaryArithmetic.class)
@@ -783,10 +812,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // eval(expression, globals=None, locals=None)
-    @Builtin(name = EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
+    @Builtin(name = J_EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
-        protected static final String funcname = "eval";
         private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
@@ -801,8 +829,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        protected String getMode() {
-            return "eval";
+        protected TruffleString getMode() {
+            return T_EVAL;
         }
 
         protected boolean isMapping(Object object) {
@@ -818,7 +846,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(VirtualFrame frame, Object source) {
-            PCode code = getCompileNode().execute(frame, source, "<string>", getMode(), 0, false, -1);
+            PCode code = getCompileNode().execute(frame, source, T_STRING_SOURCE, getMode(), 0, false, -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -840,7 +868,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
             if (builtins != null) {
                 PDict builtinsDict = getOrCreateDictNode(builtins);
-                setBuiltins.execute(frame, globals, __BUILTINS__, builtinsDict);
+                setBuiltins.execute(frame, globals, T___BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
                 return;
@@ -913,12 +941,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
         PNone badGlobals(@SuppressWarnings("unused") Object source, Object globals, @SuppressWarnings("unused") Object locals) {
-            throw raise(TypeError, ErrorMessages.GLOBALS_MUST_BE_DICT, funcname, globals);
+            throw raise(TypeError, ErrorMessages.GLOBALS_MUST_BE_DICT, getMode(), globals);
         }
 
         @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(locals)"})
         PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
-            throw raise(TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, funcname, locals);
+            throw raise(TypeError, ErrorMessages.LOCALS_MUST_BE_MAPPING, getMode(), locals);
         }
 
         private CompileNode getCompileNode() {
@@ -942,14 +970,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
+    @Builtin(name = J_EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
     @GenerateNodeFactory
     abstract static class ExecNode extends EvalNode {
         protected abstract Object executeInternal(VirtualFrame frame);
 
         @Override
-        protected String getMode() {
-            return "exec";
+        protected TruffleString getMode() {
+            return T_EXEC;
         }
 
         @Override
@@ -965,7 +993,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
+    @Builtin(name = J_COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
@@ -991,8 +1019,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int PyCF_ONLY_AST = 0x0400;
         private static final int PyCF_TYPE_COMMENTS = 0x1000;
 
+        private static final TruffleString T_SINGLE = tsLiteral("single");
+
         /**
-         * Decides wether this node should attempt to map the filename to a URI for the benefit of
+         * Decides whether this node should attempt to map the filename to a URI for the benefit of
          * Truffle tooling
          */
         private final boolean mayBeFromFile;
@@ -1008,38 +1038,41 @@ public final class BuiltinFunctions extends PythonBuiltins {
             this.lstrip = false;
         }
 
-        public abstract PCode execute(VirtualFrame frame, Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+        public abstract PCode execute(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        PCode compile(String expression, String filename, String mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
+        PCode compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
             checkFlags(kwFlags);
             checkOptimize(kwOptimize, kwOptimize);
             checkSource(expression);
 
-            String code = expression;
+            TruffleString code = expression;
             PythonContext context = getContext();
             ParserMode pm;
-            if (mode.equals("exec")) {
+            if (mode.equalsUncached(T_EXEC, TS_ENCODING)) {
                 pm = ParserMode.File;
                 // CPython adds a newline and we need to do the same in order to produce
                 // SyntaxError with the same offset when the line is incomplete
-                if (!code.endsWith("\n")) {
-                    code += '\n';
+                if (code.isEmpty() || code.codePointAtIndexUncached(code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
+                    code = code.concatUncached(T_NEWLINE, TS_ENCODING, true);
                 }
-            } else if (mode.equals("eval")) {
+            } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
                 pm = ParserMode.Eval;
-            } else if (mode.equals("single")) {
+            } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
                 pm = ParserMode.Statement;
             } else {
                 throw raise(ValueError, ErrorMessages.COMPILE_MUST_BE);
             }
-            if (lstrip) {
-                code = code.replaceFirst("^[ \t]", "");
+            if (lstrip && !code.isEmpty()) {
+                int c = code.codePointAtIndexUncached(0, TS_ENCODING);
+                if (c == ' ' || c == '\t') {
+                    code = code.substringUncached(1, code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING, true);
+                }
             }
             CallTarget ct;
-            String finalCode = code;
+            TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
                 if (pm == ParserMode.File) {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(kwOptimize));
@@ -1071,22 +1104,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
         PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
-                        @Cached PyObjectStrAsJavaStringNode asStrNode,
+                        @Cached PyObjectStrAsTruffleStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached WarnNode warnNode) {
+                        @Cached WarnNode warnNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (wSource instanceof PCode) {
                 return (PCode) wSource;
             }
-            String filename;
+            TruffleString filename;
             // TODO use PyUnicode_FSDecode
             if (acquireLib.hasBuffer(wFilename)) {
                 Object filenameBuffer = acquireLib.acquireReadonly(wFilename, frame, this);
                 try {
-                    filename = PythonUtils.newString(bufferLib.getCopiedByteArray(filenameBuffer));
+                    TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(filenameBuffer), Encoding.UTF_8, false);
+                    filename = switchEncodingNode.execute(utf8, TS_ENCODING);
                     if (!(wFilename instanceof PBytes)) {
                         warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
                     }
@@ -1096,7 +1132,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 filename = asPath.execute(frame, wFilename);
             }
-            String mode;
+            TruffleString mode;
             try {
                 mode = castStr.execute(wMode);
             } catch (CannotCastException e) {
@@ -1120,13 +1156,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
-            String source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode);
+            TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
             checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
         }
 
-        private void checkSource(String source) throws PException {
-            if (source.indexOf(0) > -1) {
+        private void checkSource(TruffleString source) throws PException {
+            if (source.indexOfCodePointUncached(0, 0, source.codePointLengthUncached(TS_ENCODING), TS_ENCODING) > -1) {
                 throw raise(ValueError, ErrorMessages.SRC_CODE_CANNOT_CONTAIN_NULL_BYTES);
             }
         }
@@ -1144,11 +1180,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         // modeled after _Py_SourceAsString
-        String sourceAsString(VirtualFrame frame, Object source, String filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib, PythonBufferAccessLibrary bufferLib,
-                        CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsJavaStringNode asStrNode) {
+        TruffleString sourceAsString(VirtualFrame frame, Object source, TruffleString filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib, PythonBufferAccessLibrary bufferLib,
+                        CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsTruffleStringNode asStrNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (interopLib.isString(source)) {
                 try {
-                    return interopLib.asString(source);
+                    return switchEncodingNode.execute(interopLib.asTruffleString(source), TS_ENCODING);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
@@ -1165,19 +1201,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(source);
                     int bytesLen = bufferLib.getBufferLength(source);
                     Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
-                    String pythonEncodingNameFromJavaName = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
+                    TruffleString pythonEncodingNameFromJavaName = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
                     CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, bytesLen, CodingErrorAction.REPORT);
                     if (!decoder.decodingStep(true)) {
                         try {
-                            handleDecodingErrorNode.execute(decoder, "strict", source);
+                            handleDecodingErrorNode.execute(decoder, T_STRICT, source);
                             throw CompilerDirectives.shouldNotReachHere();
                         } catch (PException e) {
-                            throw raiseInvalidSyntax(filename, "(unicode error) %s", asStrNode.execute(frame, e.getEscapedException()));
+                            throw raiseInvalidSyntax(filename, ErrorMessages.UNICODE_ERROR, asStrNode.execute(frame, e.getEscapedException()));
                         }
                     }
                     return decoder.getString();
                 } catch (PythonFileDetector.InvalidEncodingException e) {
-                    throw raiseInvalidSyntax(filename, "encoding problem: %s", e.getEncodingName());
+                    throw raiseInvalidSyntax(filename, ErrorMessages.ENCODING_PROBLEM, e.getEncodingName());
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }
@@ -1185,10 +1221,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private RuntimeException raiseInvalidSyntax(String filename, String format, Object... args) {
+        private RuntimeException raiseInvalidSyntax(TruffleString filename, TruffleString format, Object... args) {
             PythonContext context = getContext();
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
-            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile, null);
+            Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, null);
             throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), format, args);
         }
 
@@ -1202,7 +1238,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // delattr(object, name)
-    @Builtin(name = DELATTR, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_DELATTR, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
         @Child private DeleteAttributeNode delNode = DeleteAttributeNode.create();
@@ -1215,29 +1251,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // getattr(object, name[, default])
-    @Builtin(name = GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J_GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
         public static GetAttrNode create() {
             return GetAttrNodeFactory.create();
         }
 
-        public abstract Object executeWithArgs(VirtualFrame frame, Object primary, String name, Object defaultValue);
+        public abstract Object executeWithArgs(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue);
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
-        public Object getAttrDefault(VirtualFrame frame, Object primary, String name, PNone defaultValue,
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "isNoValue(defaultValue)"})
+        public Object getAttrDefault(VirtualFrame frame, Object primary, TruffleString name, PNone defaultValue,
                         @Cached ConditionProfile stringProfile,
-                        @Cached("name") String cachedName,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
-        Object getAttr(VirtualFrame frame, Object primary, String name, Object defaultValue,
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, equalNode, stringProfile)", "!isNoValue(defaultValue)"})
+        Object getAttr(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Cached ConditionProfile stringProfile,
-                        @Cached("name") String cachedName,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached("name") TruffleString cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
@@ -1249,13 +1287,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
-        Object getAttrFromObject(VirtualFrame frame, Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
+        Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, @SuppressWarnings("unused") PNone defaultValue,
                         @Cached GetAnyAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary, name);
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
-        Object getAttrFromObject(VirtualFrame frame, Object primary, String name, Object defaultValue,
+        Object getAttrFromObject(VirtualFrame frame, Object primary, TruffleString name, Object defaultValue,
                         @Cached GetAnyAttributeNode getAttributeNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
@@ -1268,7 +1306,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object getAttr2(VirtualFrame frame, Object object, PString name, Object defaultValue) {
-            return executeWithArgs(frame, object, name.getValue(), defaultValue);
+            return executeWithArgs(frame, object, name.getValueUncached(), defaultValue);
         }
 
         @Specialization(guards = "!isString(name)")
@@ -1279,7 +1317,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // id(object)
-    @Builtin(name = ID, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ID, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1399,7 +1437,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // isinstance(object, classinfo)
-    @Builtin(name = ISINSTANCE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_ISINSTANCE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsInstanceNode extends RecursiveBinaryCheckBaseNode {
 
@@ -1450,7 +1488,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // issubclass(class, classinfo)
-    @Builtin(name = ISSUBCLASS, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends RecursiveBinaryCheckBaseNode {
 
@@ -1481,7 +1519,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // iter(object[, sentinel])
-    @Builtin(name = ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class IterNode extends PythonBinaryBuiltinNode {
@@ -1505,7 +1543,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // len(s)
-    @Builtin(name = LEN, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1613,7 +1651,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
 
             if (!hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
-                throw raise(PythonBuiltinClassType.TypeError, "Cannot specify a default for %s with multiple positional arguments", getName());
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_SPECIFY_DEFAULT_FOR_S, getName());
             }
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
@@ -1662,7 +1700,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"}, doc = "max(iterable, *[, default=obj, key=func]) -> value\n" +
+    @Builtin(name = J_MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"}, doc = "max(iterable, *[, default=obj, key=func]) -> value\n" +
                     "max(arg1, arg2, *args, *[, key=func]) -> value\n\n" + "With a single iterable argument, return its biggest item. The\n" +
                     "default keyword-only argument specifies an object to return if\n" + "the provided iterable is empty.\n" + "With two or more arguments, return the largest argument.")
     @GenerateNodeFactory
@@ -1672,7 +1710,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
-    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
+    @Builtin(name = J_MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
@@ -1680,7 +1718,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // next(iterator[, default])
     @SuppressWarnings("unused")
-    @Builtin(name = NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaultObject)")
@@ -1702,7 +1740,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected LookupAndCallUnaryNode createNextCall() {
-            return LookupAndCallUnaryNode.create(__NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
+            return LookupAndCallUnaryNode.create(T___NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
                 @Override
                 public Object execute(Object iterator) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
@@ -1712,30 +1750,35 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // ord(c)
-    @Builtin(name = ORD, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class OrdNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        public int ord(String chr) {
-            if (chr.codePointCount(0, chr.length()) != 1) {
-                throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", chr.length());
+        public int ord(TruffleString chr,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            int len = codePointLengthNode.execute(chr, TS_ENCODING);
+            if (len != 1) {
+                throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
-            return chr.codePointAt(0);
+            return codePointAtIndexNode.execute(chr, 0, TS_ENCODING);
         }
 
         @Specialization
         public int ord(PString pchr,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            String chr;
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            TruffleString chr;
             try {
-                chr = castToJavaStringNode.execute(pchr);
+                chr = castToStringNode.execute(pchr);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-            return ord(chr);
+            return ord(chr, codePointLengthNode, codePointAtIndexNode);
         }
 
         @Specialization
@@ -1757,7 +1800,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
+    @Builtin(name = J_PRINT, takesVarArgs = true, keywordOnlyNames = {"sep", "end", "file", "flush"}, doc = "\n" +
                     "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
                     "\n" +
                     "Prints the values to a stream, or to sys.stdout by default.\n" +
@@ -1768,8 +1811,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     "flush: whether to forcibly flush the stream.")
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
-        private static final String DEFAULT_END = "\n";
-        private static final String DEFAULT_SEPARATOR = " ";
         @Child private ReadAttributeFromObjectNode readStdout;
         @CompilationFinal private PythonModule cachedSys;
 
@@ -1781,11 +1822,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, getWriteMethod, callWrite, callFlush, strNode);
+            return printAllGiven(frame, values, T_SPACE, T_NEWLINE, stdout, false, getWriteMethod, callWrite, callFlush, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
-        static PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
+        static PNone printAllGiven(VirtualFrame frame, Object[] values, TruffleString sep, TruffleString end, Object file, boolean flush,
                         @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
@@ -1793,7 +1834,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             int lastValue = values.length - 1;
             // Note: the separate lookup is necessary due to different __getattr__ treatment than
             // method lookup
-            Object writeMethod = getWriteMethod.execute(frame, file, "write");
+            Object writeMethod = getWriteMethod.execute(frame, file, T_WRITE);
             for (int i = 0; i < lastValue; i++) {
                 callWrite.execute(frame, writeMethod, strNode.execute(frame, values[i]));
                 callWrite.execute(frame, writeMethod, sep);
@@ -1803,31 +1844,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             callWrite.execute(frame, writeMethod, end);
             if (flush) {
-                callFlush.execute(frame, file, "flush");
+                callFlush.execute(frame, file, T_FLUSH);
             }
             return PNone.NONE;
         }
 
         @Specialization(replaces = {"printAllGiven", "printNoKeywords"})
         PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
-                        @Cached CastToJavaStringNode castSep,
-                        @Cached CastToJavaStringNode castEnd,
+                        @Cached CastToTruffleStringNode castSep,
+                        @Cached CastToTruffleStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
                         @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
-            String sep;
+            TruffleString sep;
             try {
-                sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
+                sep = sepIn instanceof PNone ? T_SPACE : castSep.execute(sepIn);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.SEP_MUST_BE_NONE_OR_STRING, sepIn);
             }
 
-            String end;
+            TruffleString end;
             try {
-                end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
+                end = endIn instanceof PNone ? T_NEWLINE : castEnd.execute(endIn);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "end", sepIn);
             }
@@ -1852,7 +1893,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (getLanguage().isSingleContext()) {
                 if (cachedSys == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = getContext().lookupBuiltinModule("sys");
+                    cachedSys = getContext().lookupBuiltinModule(T_SYS);
                 }
                 sys = cachedSys;
             } else {
@@ -1860,13 +1901,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     cachedSys = null;
                 }
-                sys = getContext().lookupBuiltinModule("sys");
+                sys = getContext().lookupBuiltinModule(T_SYS);
             }
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readStdout = insert(ReadAttributeFromObjectNode.create());
             }
-            Object stdout = readStdout.execute(sys, "stdout");
+            Object stdout = readStdout.execute(sys, T_STDOUT);
             if (stdout instanceof PNone) {
                 throw raise(RuntimeError, ErrorMessages.LOST_SYSSTDOUT);
             }
@@ -1875,7 +1916,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // repr(object)
-    @Builtin(name = REPR, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -1887,7 +1928,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // format(object, [format_spec])
-    @Builtin(name = FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
+    @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
@@ -1895,7 +1936,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "isNoValue(formatSpec)")
         Object format(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
                         @Shared("callFormat") @Cached("create(Format)") LookupAndCallBinaryNode callFormat) {
-            return format(frame, obj, "", callFormat);
+            return format(frame, obj, T_EMPTY_STRING, callFormat);
         }
 
         @Specialization(guards = "!isNoValue(formatSpec)")
@@ -1906,7 +1947,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
             }
             if (!PGuards.isString(res)) {
-                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
+                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
             }
             return res;
         }
@@ -1917,19 +1958,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // ascii(object)
-    @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ASCII, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsciiNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public static String ascii(VirtualFrame frame, Object obj,
+        public static TruffleString ascii(VirtualFrame frame, Object obj,
                         @Cached PyObjectAsciiNode asciiNode) {
             return asciiNode.execute(frame, obj);
         }
     }
 
     // round(number[, ndigits])
-    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
+    @Builtin(name = J_ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
@@ -1937,7 +1978,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(Round)") LookupAndCallUnaryNode callRound) {
             Object result = callRound.executeObject(frame, x);
             if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, T___ROUND__);
             }
             return result;
         }
@@ -1947,14 +1988,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create(Round)") LookupAndCallBinaryNode callRound) {
             Object result = callRound.executeObject(frame, x, n);
             if (result == NOT_IMPLEMENTED) {
-                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, T___ROUND__);
             }
             return result;
         }
     }
 
     // setattr(object, name, value)
-    @Builtin(name = SETATTR, minNumOfPositionalArgs = 3)
+    @Builtin(name = J_SETATTR, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -1966,7 +2007,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hasattr(object, name)
-    @Builtin(name = HASATTR, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_HASATTR, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class HasAttrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1977,7 +2018,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // sorted(iterable, key, reverse)
-    @Builtin(name = SORTED, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
+    @Builtin(name = J_SORTED, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
     @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
     public abstract static class SortedNode extends PythonClinicBuiltinNode {
@@ -2004,7 +2045,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     }
 
-    @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J_BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
         @Child private ReadAttributeFromObjectNode getBreakpointhookNode;
@@ -2023,8 +2064,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = hlib.getItem(sysModules.getDictStorage(), "sys");
-                Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
+                Object sysModule = hlib.getItem(sysModules.getDictStorage(), T_SYS);
+                Object breakpointhook = getBreakpointhookNode.execute(sysModule, T_BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSBREAKPOINTHOOK);
                 }
@@ -2040,7 +2081,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
+    @Builtin(name = J_POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
         static BinaryOpNode binaryPow() {
@@ -2065,7 +2106,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // sum(iterable[, start])
-    @Builtin(name = SUM, minNumOfPositionalArgs = 1, parameterNames = {"iterable", "start"})
+    @Builtin(name = J_SUM, minNumOfPositionalArgs = 1, parameterNames = {"iterable", "start"})
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
@@ -2238,7 +2279,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)")
         Object vars(VirtualFrame frame, Object obj,
                         @Cached PyObjectLookupAttr lookupAttr) {
-            Object dict = lookupAttr.execute(frame, obj, __DICT__);
+            Object dict = lookupAttr.execute(frame, obj, T___DICT__);
             if (dict == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.VARS_ARGUMENT_MUST_HAVE_DICT);
             }
@@ -2249,9 +2290,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "open", minNumOfPositionalArgs = 1, parameterNames = {"file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"})
     @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "true")
     @ArgumentClinic(name = "buffering", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "PNone.NONE", useDefaultForNone = true)
     @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
     @ImportStatic(IONodes.IOMode.class)
     @GenerateNodeFactory
@@ -2278,7 +2319,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Cached PythonObjectFactory factory,
                         @Cached GetClassNode getMroClass,
-                        @Cached(parameters = "__MRO_ENTRIES__") LookupAttributeInMRONode getMroEntries,
+                        @Cached("create(T___MRO_ENTRIES__)") LookupAttributeInMRONode getMroEntries,
                         @Cached CallBinaryMethodNode callMroEntries) {
             CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
@@ -2306,7 +2347,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return null;
                 }
                 if (!PGuards.isPTuple(newBase)) {
-                    throw raise(PythonErrorType.TypeError, "__mro_entries__ must return a tuple");
+                    throw raise(PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
                 PTuple newBaseTuple = (PTuple) newBase;
                 if (newBases == null) {
@@ -2364,15 +2405,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = BuiltinNames.__BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
+        private static final TruffleString T_METACLASS = tsLiteral("metaclass");
+        public static final TruffleString T_BUILD_JAVA_CLASS = tsLiteral("build_java_class");
+
         @TruffleBoundary
-        private static Object buildJavaClass(Object namespace, String name, Object base) {
+        private static Object buildJavaClass(Object namespace, TruffleString name, Object base) {
             // uncached PythonContext get, since this code path is slow in any case
-            Object module = PythonContext.get(null).lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
-            Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
+            Object module = PythonContext.get(null).lookupBuiltinModule(T___GRAALPYTHON__);
+            Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, T_BUILD_JAVA_CLASS);
             return CallNode.getUncached().execute(buildFunction, namespace, name, base);
         }
 
@@ -2380,7 +2424,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
-                        @Cached("create(__PREPARE__)") GetAttributeNode getPrepare,
+                        @Cached("create(T___PREPARE__)") GetAttributeNode getPrepare,
                         @Cached(parameters = "GetItem") LookupCallableSlotInMRONode getGetItem,
                         @Cached GetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
@@ -2392,17 +2436,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile noAttributeProfile) {
 
             if (arguments.length < 1) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_NOT_ENOUGH_ARGS);
             }
 
             if (!PGuards.isFunction(function)) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: func must be a function");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_FUNC_MUST_BE_FUNC);
             }
-            String name;
+            TruffleString name;
             try {
-                name = CastToJavaStringNode.getUncached().execute(arguments[0]);
+                name = CastToTruffleStringNode.getUncached().execute(arguments[0]);
             } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: name is not a string");
+                throw raise(PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_NAME_NOT_STRING);
             }
 
             Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
@@ -2432,7 +2476,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
                     mkw = keywords;
                     for (int i = 0; i < keywords.length; i++) {
-                        if ("metaclass".equals(keywords[i].getName())) {
+                        if (T_METACLASS.equalsUncached(keywords[i].getName(), TS_ENCODING)) {
                             meta = keywords[i].getValue();
                             mkw = new PKeyword[keywords.length - 1];
 
@@ -2476,9 +2520,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
                 if (init.isClass) {
-                    throw raise(PythonErrorType.TypeError, "%N.__prepare__() must return a mapping, not %p", init.meta, ns);
+                    throw raise(PythonErrorType.TypeError, ErrorMessages.N_PREPARE_MUST_RETURN_MAPPING, init.meta, ns);
                 } else {
-                    throw raise(PythonErrorType.TypeError, "<metaclass>.__prepare__() must return a mapping, not %p", ns);
+                    throw raise(PythonErrorType.TypeError, ErrorMessages.MTCLS_PREPARE_MUST_RETURN_MAPPING, ns);
                 }
             }
             Object[] bodyArguments = PArguments.create(0);
@@ -2486,7 +2530,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setSpecialArgument(bodyArguments, ns);
             callBody.executeCall(frame, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
-                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, origBases);
+                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
             }
             Object cls = callType.execute(frame, init.meta, new Object[]{name, init.bases, ns}, init.mkw);
 

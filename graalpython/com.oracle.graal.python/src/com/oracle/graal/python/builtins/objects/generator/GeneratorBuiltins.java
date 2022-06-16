@@ -27,11 +27,13 @@ package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -46,12 +48,14 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -78,7 +82,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -93,6 +96,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public class GeneratorBuiltins extends PythonBuiltins {
@@ -248,7 +252,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 Object returnValue = result.value;
                 if (returnValue != PNone.NONE) {
-                    throw raiseNode.raise(StopIteration, returnValue);
+                    throw raiseNode.raise(StopIteration, new Object[]{returnValue});
                 } else {
                     throw raiseNode.raise(StopIteration);
                 }
@@ -272,7 +276,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         return GeneratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
@@ -281,19 +285,19 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object setName(PGenerator self, String value) {
+        static Object setName(PGenerator self, TruffleString value) {
             self.setName(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PGenerator self, Object value,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __NAME__, "string"));
+                        @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
+            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___NAME__, "string"));
         }
     }
 
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
@@ -302,19 +306,19 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object setQualname(PGenerator self, String value) {
+        static Object setQualname(PGenerator self, TruffleString value) {
             self.setQualname(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PGenerator self, Object value,
-                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __QUALNAME__, "string"));
+                        @Cached StringNodes.CastToTruffleStringCheckedNode cast) {
+            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, T___QUALNAME__, "string"));
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -324,7 +328,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1, doc = "Implement next(self).")
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1, doc = "Implement next(self).")
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -380,7 +384,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                             @Cached BranchProfile isNotInstanceProfile,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
                 if (isInstanceNode.executeWith(frame, value, type)) {
                     checkExceptionClass(type);
                     return value;
@@ -393,7 +397,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type});
                 if (instance instanceof PBaseException) {
@@ -407,7 +411,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached GetObjectArrayNode getObjectArrayNode,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object[] array = getObjectArrayNode.execute(value);
                 Object[] args = new Object[array.length + 1];
@@ -424,7 +428,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"}, limit = "1")
             PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type, value});
                 if (instance instanceof PBaseException) {
@@ -649,13 +653,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(PGenerator self) {
-            return self.toString();
+        TruffleString repr(PGenerator self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<generator object %s at %d>", self.getName(), PythonAbstractObject.objectHashCode(self));
         }
     }
 }

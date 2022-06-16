@@ -41,8 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
 
@@ -179,14 +182,14 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_GET_HPYFUNC_RELEASEBUFFERPROC_TYPEID("graal_hpy_get_HPyFunc_releasebufferproc_typeid"),
     GRAAL_HPY_GET_HPYFUNC_DESTROYFUNC_TYPEID("graal_hpy_get_HPyFunc_destroyfunc_typeid");
 
-    private final String name;
+    private final TruffleString name;
 
-    GraalHPyNativeSymbol(String name) {
-        this.name = name;
+    private GraalHPyNativeSymbol(String name) {
+        this.name = toTruffleStringUncached(name);
     }
 
     @Override
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
@@ -197,16 +200,16 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     }
 
     @ExplodeLoop
-    public static GraalHPyNativeSymbol getByName(String name) {
+    public static GraalHPyNativeSymbol getByName(TruffleString name, TruffleString.EqualNode eqNode) {
         for (int i = 0; i < VALUES.length; i++) {
-            if (VALUES[i].name.equals(name)) {
+            if (eqNode.execute(VALUES[i].name, name, TS_ENCODING)) {
                 return VALUES[i];
             }
         }
         return null;
     }
 
-    public static boolean isValid(String name) {
-        return getByName(name) != null;
+    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
+        return getByName(name, eqNode) != null;
     }
 }

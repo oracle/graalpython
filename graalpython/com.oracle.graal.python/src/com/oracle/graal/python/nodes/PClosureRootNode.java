@@ -55,6 +55,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PClosureRootNode extends PRootNode {
     private final boolean isSingleContext;
@@ -123,17 +124,17 @@ public abstract class PClosureRootNode extends PRootNode {
 
     public abstract void initializeFrame(VirtualFrame frame);
 
-    public final String[] getFreeVars() {
+    public final TruffleString[] getFreeVars() {
         if (freeVarSlots == null || freeVarSlots.length == 0) {
-            return PythonUtils.EMPTY_STRING_ARRAY;
+            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
         FrameDescriptor descriptor = getFrameDescriptor();
-        String[] result = new String[freeVarSlots.length];
+        TruffleString[] result = new TruffleString[freeVarSlots.length];
         int count = 0;
         for (int i = 0; i < result.length; i++) {
             Object identifier = descriptor.getSlotName(freeVarSlots[i]);
-            if (identifier instanceof String) {
-                result[count++] = (String) identifier;
+            if (identifier instanceof TruffleString) {
+                result[count++] = (TruffleString) identifier;
             }
         }
         return result.length == count ? result : Arrays.copyOf(result, count);

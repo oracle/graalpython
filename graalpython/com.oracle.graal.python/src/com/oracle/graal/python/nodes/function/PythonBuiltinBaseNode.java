@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
     @Child private PythonObjectFactory objectFactory;
@@ -93,18 +94,18 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, null);
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, filename2);
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, int code, String message) {
+    public final PException raiseOSError(VirtualFrame frame, int code, TruffleString message) {
         return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
     }
 
@@ -116,19 +117,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCal
         return getConstructAndRaiseNode().raiseOSError(frame, oserror, e);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e, filename);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename, String filename2) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e, filename, filename2);
+    public final PException raiseOSError(VirtualFrame frame, Exception e, TruffleString.EqualNode eqNode) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
     }
 }

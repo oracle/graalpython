@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,14 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,23 +41,28 @@ import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public class PZipImporter extends PythonBuiltinObject {
+
+    private static final TruffleString T_INIT_PY = tsLiteral("__init__.py");
+
     /**
      * pathname of the Zip archive
      */
-    private String archive;
+    private TruffleString archive;
 
     /**
      * file prefix: "a/sub/directory/"
      */
-    private String prefix;
+    private TruffleString prefix;
 
     /**
      * dict with file info {path: toc_entry}
@@ -72,14 +85,14 @@ public class PZipImporter extends PythonBuiltinObject {
     /**
      * The separatorChar used in the context for this importer
      */
-    private final String separator;
+    private final TruffleString separator;
 
     private static class SearchOrderEntry {
 
-        String suffix;
+        TruffleString suffix;
         EnumSet<EntryType> type;
 
-        SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
+        SearchOrderEntry(TruffleString suffix, EnumSet<EntryType> type) {
             this.suffix = suffix;
             this.type = type;
         }
@@ -87,11 +100,11 @@ public class PZipImporter extends PythonBuiltinObject {
 
     protected static class ModuleCodeData {
 
-        String code;
+        TruffleString code;
         boolean isPackage;
-        String path;
+        TruffleString path;
 
-        ModuleCodeData(String code, boolean isPackage, String path) {
+        ModuleCodeData(TruffleString code, boolean isPackage, TruffleString path) {
             this.code = code;
             this.isPackage = isPackage;
             this.path = path;
@@ -113,7 +126,7 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(Object cls, Shape instanceShape, PDict zipDirectoryCache, String separator) {
+    public PZipImporter(Object cls, Shape instanceShape, PDict zipDirectoryCache, TruffleString separator) {
         super(cls, instanceShape);
         this.archive = null;
         this.prefix = null;
@@ -124,15 +137,10 @@ public class PZipImporter extends PythonBuiltinObject {
 
     private SearchOrderEntry[] defineSearchOrder() {
         return new SearchOrderEntry[]{
-                        new SearchOrderEntry(joinStrings(separator, "__init__.py"),
+                        new SearchOrderEntry(cat(separator, T_INIT_PY),
                                         enumSetOf(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
-                        new SearchOrderEntry(PythonLanguage.EXTENSION, enumSetOf(EntryType.IS_SOURCE))
+                        new SearchOrderEntry(T_PY_EXTENSION, enumSetOf(EntryType.IS_SOURCE))
         };
-    }
-
-    @TruffleBoundary
-    private static String joinStrings(String a, String b) {
-        return a + b;
     }
 
     @TruffleBoundary
@@ -153,7 +161,7 @@ public class PZipImporter extends PythonBuiltinObject {
      *
      * @return pathname of the Zip archive
      */
-    public String getArchive() {
+    public TruffleString getArchive() {
         return archive;
     }
 
@@ -161,7 +169,7 @@ public class PZipImporter extends PythonBuiltinObject {
      *
      * @return file prefix: "a/sub/directory/"
      */
-    public String getPrefix() {
+    public TruffleString getPrefix() {
         return prefix;
     }
 
@@ -173,11 +181,11 @@ public class PZipImporter extends PythonBuiltinObject {
         return files;
     }
 
-    public void setArchive(String archive) {
+    public void setArchive(TruffleString archive) {
         this.archive = archive;
     }
 
-    public void setPrefix(String prefix) {
+    public void setPrefix(TruffleString prefix) {
         this.prefix = prefix;
     }
 
@@ -185,26 +193,27 @@ public class PZipImporter extends PythonBuiltinObject {
         this.files = files;
     }
 
-    protected String getSubname(String fullname) {
-        int i = fullname.lastIndexOf(".");
+    protected TruffleString getSubname(TruffleString fullname) {
+        int len = fullname.codePointLengthUncached(TS_ENCODING);
+        int i = fullname.lastIndexOfCodePointUncached('.', len, 0, TS_ENCODING);
         if (i >= 0) {
-            return fullname.substring(i + 1);
+            return fullname.substringUncached(i + 1, len - i - 1, TS_ENCODING, true);
         }
         return fullname;
     }
 
     @TruffleBoundary
-    protected String makeFilename(String fullname) {
-        return prefix + getSubname(fullname).replace(".", separator);
+    protected TruffleString makeFilename(TruffleString fullname) {
+        return cat(prefix, StringReplaceNode.getUncached().execute(getSubname(fullname), T_DOT, separator, -1));
     }
 
-    protected PTuple getEntry(String filenameAndSuffix) {
+    protected PTuple getEntry(TruffleString filenameAndSuffix) {
         return (PTuple) files.getItem(filenameAndSuffix);
     }
 
     @TruffleBoundary
-    protected String makePackagePath(String fullname) {
-        return archive + separator + prefix + getSubname(fullname);
+    protected TruffleString makePackagePath(TruffleString fullname) {
+        return cat(archive, separator, prefix, getSubname(fullname));
     }
 
     /**
@@ -214,11 +223,11 @@ public class PZipImporter extends PythonBuiltinObject {
      * @throws IOException
      */
     @TruffleBoundary
-    public static String getCodeFromArchive(String filenameAndSuffix, String archive) throws IOException {
+    public static TruffleString getCodeFromArchive(TruffleString filenameAndSuffix, TruffleString archive) throws IOException {
         ZipFile zip = null;
         try {
-            zip = new ZipFile(archive);
-            ZipEntry entry = zip.getEntry(filenameAndSuffix);
+            zip = new ZipFile(archive.toJavaStringUncached());
+            ZipEntry entry = zip.getEntry(filenameAndSuffix.toJavaStringUncached());
             InputStream in = zip.getInputStream(entry);
 
             // reading the file should be done better?
@@ -227,14 +236,15 @@ public class PZipImporter extends PythonBuiltinObject {
             if (size < 0) {
                 size = (int) entry.getCompressedSize();
             }
-            StringBuilder code = new StringBuilder(size < 16 ? 16 : size);
+            TruffleString lineSeparator = toTruffleStringUncached(System.lineSeparator());
+            TruffleStringBuilder code = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(size < 16 ? 16 : size));
             String line;
             while ((line = reader.readLine()) != null) {
-                code.append(line);
-                code.append(System.lineSeparator());
+                code.appendStringUncached(toTruffleStringUncached(line));
+                code.appendStringUncached(lineSeparator);
             }
             reader.close();
-            return code.toString();
+            return code.toStringUncached();
         } catch (IOException e) {
             throw e;
         } finally {
@@ -255,11 +265,11 @@ public class PZipImporter extends PythonBuiltinObject {
      * @return the module's information
      */
     @TruffleBoundary
-    protected final ModuleInfo getModuleInfo(String fullname) {
-        String path = makeFilename(fullname);
+    protected final ModuleInfo getModuleInfo(TruffleString fullname) {
+        TruffleString path = makeFilename(fullname);
 
         for (SearchOrderEntry entry : searchOrder) {
-            PTuple importEntry = getEntry(path + entry.suffix);
+            PTuple importEntry = getEntry(cat(path, entry.suffix));
             if (importEntry == null) {
                 continue;
             }
@@ -273,10 +283,10 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected boolean isDir(String path) {
-        String dirPath = path + separator;
+    protected boolean isDir(TruffleString path) {
+        TruffleString dirPath = cat(path, separator);
         for (Object key : files.keys()) {
-            if (key.equals(dirPath)) {
+            if (key instanceof TruffleString && ((TruffleString) key).equalsUncached(dirPath, TS_ENCODING)) {
                 return true;
             }
         }
@@ -284,8 +294,8 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected String getModulePath(String modPath) {
-        return this.archive + separator + modPath;
+    protected TruffleString getModulePath(TruffleString modPath) {
+        return cat(this.archive, separator, modPath);
     }
 
     /**
@@ -293,7 +303,7 @@ public class PZipImporter extends PythonBuiltinObject {
      * @param fullname
      * @return itself if the module is in this importer, otherwise null
      */
-    protected final PZipImporter findModule(String fullname) {
+    protected final PZipImporter findModule(TruffleString fullname) {
         ModuleInfo moduleInfo = getModuleInfo(fullname);
         if (moduleInfo == ModuleInfo.ERROR || moduleInfo == ModuleInfo.NOT_FOUND) {
             return null;
@@ -302,18 +312,14 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected final ModuleCodeData getModuleCode(String fullname) throws IOException {
-        String path = makeFilename(fullname);
-        String fullPath = makePackagePath(fullname);
-
-        if (path.length() < 0) {
-            return null;
-        }
+    protected final ModuleCodeData getModuleCode(TruffleString fullname) throws IOException {
+        TruffleString path = makeFilename(fullname);
+        TruffleString fullPath = makePackagePath(fullname);
 
         for (SearchOrderEntry entry : searchOrder) {
-            String suffix = entry.suffix;
-            String searchPath = path + suffix;
-            String fullSearchPath = fullPath + suffix;
+            TruffleString suffix = entry.suffix;
+            TruffleString searchPath = cat(path, suffix);
+            TruffleString fullSearchPath = cat(fullPath, suffix);
 
             PTuple tocEntry = getEntry(searchPath);
             if (tocEntry == null) {
@@ -322,7 +328,7 @@ public class PZipImporter extends PythonBuiltinObject {
 
             boolean isPackage = entry.type.contains(EntryType.IS_PACKAGE);
 
-            String code;
+            TruffleString code;
             try {
                 code = getCodeFromArchive(searchPath, archive);
             } catch (IOException e) {

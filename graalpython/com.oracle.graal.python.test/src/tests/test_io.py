@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -265,18 +265,52 @@ class IOBaseTests(unittest.TestCase):
     def test_bytesio_unsharing(self):
         f = _io.BytesIO()
         f.write(b"1234")
-        first_pickled = f.getvalue() 
+        first_pickled = f.getvalue()
         f.seek(0)
-        f.truncate() 
+        f.truncate()
         f.write(b"1234")
-        second_pickled = f.getvalue()   
+        second_pickled = f.getvalue()
         f.seek(0)
-        f.truncate()    
+        f.truncate()
         f.write(b"abcd")
-        third_pickled = f.getvalue()    
+        third_pickled = f.getvalue()
         self.assertEqual(first_pickled, b'1234')
         self.assertEqual(second_pickled, b'1234')
         self.assertEqual(third_pickled, b'abcd')
+
+    def test_stringio_overwrite(self):
+        s = _io.StringIO('hello')
+        s.seek(2)
+        s.write('ab')
+        self.assertEqual('heabo', s.getvalue())
+
+    def test_cr_not_ignored(self):
+        d = _io.IncrementalNewlineDecoder(None, translate=False)
+        d.decode("h\rello")
+        self.assertEqual('\r', d.newlines)
+
+    def test_cr_not_ignored2(self):
+        d = _io.IncrementalNewlineDecoder(None, translate=False)
+        d.decode("h\n\r")
+        d.decode("\n")
+        self.assertEqual(('\n', '\r\n'), d.newlines)
+
+    def test_find_non_universal_line_ending(self):
+        import io
+
+        class MockRawIO(io.RawIOBase):
+            def __init__(self):
+                self.src = [b'ab\r', b'\ncd']
+
+            def readable(self):
+                return True
+
+            def read(self, n=None):
+                return self.src.pop(0) if self.src else b''
+
+        t = _io.TextIOWrapper(MockRawIO(), newline="\r\n")
+        self.assertEqual(["ab\r\n", "cd"], t.readlines())
+
 
 if __name__ == '__main__':
     unittest.main()

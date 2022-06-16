@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -92,6 +94,7 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
@@ -125,9 +128,9 @@ public final class PCode extends PythonBuiltinObject {
     // is a tuple containing the names of the local variables (starting with the argument names)
     private Object[] varnames;
     // name of file in which this code object was created
-    private String filename;
+    private TruffleString filename;
     // name with which this code object was defined
-    private String name;
+    private TruffleString name;
     // number of first line in Python source code
     private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
@@ -145,7 +148,7 @@ public final class PCode extends PythonBuiltinObject {
         initializeSignature(callTarget);
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, String filename) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
         this(cls, instanceShape, callTarget);
         this.flags = flags;
         this.firstlineno = firstlineno;
@@ -153,7 +156,7 @@ public final class PCode extends PythonBuiltinObject {
         this.filename = filename;
     }
 
-    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] lnotab, String filename) {
+    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
         super(cls, instanceShape);
         this.callTargetSupplier = callTargetSupplier;
         this.flags = flags;
@@ -163,7 +166,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
-                    Object[] varnames, Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
+                    Object[] varnames, Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
         super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
@@ -186,52 +189,55 @@ public final class PCode extends PythonBuiltinObject {
         return (objects != null) ? new HashSet<>(Arrays.asList(objects)) : new HashSet<>();
     }
 
-    private static String[] extractFreeVars(RootNode rootNode) {
+    private static TruffleString[] extractFreeVars(RootNode rootNode) {
         if (rootNode instanceof PClosureRootNode) {
             return ((PClosureRootNode) rootNode).getFreeVars();
         } else if (rootNode instanceof PBytecodeRootNode) {
             return ((PBytecodeRootNode) rootNode).getCodeUnit().freevars;
         } else {
-            return PythonUtils.EMPTY_STRING_ARRAY;
+            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
     }
 
-    private static String[] extractCellVars(RootNode rootNode) {
+    private static TruffleString[] extractCellVars(RootNode rootNode) {
         if (rootNode instanceof PClosureFunctionRootNode) {
             return ((PClosureFunctionRootNode) rootNode).getCellVars();
         } else if (rootNode instanceof PBytecodeRootNode) {
             return ((PBytecodeRootNode) rootNode).getCodeUnit().cellvars;
         } else {
-            return PythonUtils.EMPTY_STRING_ARRAY;
+            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
     }
 
     @TruffleBoundary
-    private static void setRootNodeFileName(RootNode rootNode, String filename) {
+    private static void setRootNodeFileName(RootNode rootNode, TruffleString filename) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         PythonContext.get(rootNode).setCodeFilename(funcRootNode.getCallTarget(), filename);
     }
 
     @TruffleBoundary
-    public static String extractFileName(RootNode rootNode) {
+    public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
         PythonContext context = PythonContext.get(rootNode);
-        String filename;
+        TruffleString filename;
         if (context != null) {
             filename = context.getCodeFilename(funcRootNode.getCallTarget());
         } else {
-            return funcRootNode.getName();
+            return toTruffleStringUncached(funcRootNode.getName());
         }
         if (filename != null) {
             // for compiled modules, _imp._fix_co_filename will set the filename
             return filename;
-        } else if (src != null) {
-            return getSourceSectionFileName(src);
-        } else {
-            return funcRootNode.getName();
         }
+        String jFilename;
+        if (src != null) {
+            jFilename = getSourceSectionFileName(src);
+        } else {
+            jFilename = funcRootNode.getName();
+        }
+        return toTruffleStringUncached(jFilename);
     }
 
     @TruffleBoundary
@@ -257,8 +263,8 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static String extractName(RootNode rootNode) {
-        return rootNode.getName();
+    private static TruffleString extractName(RootNode rootNode) {
+        return toTruffleStringUncached(rootNode.getName());
     }
 
     @TruffleBoundary
@@ -267,20 +273,20 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Object[] extractVarnames(RootNode rootNode, String[] parameterIds, String[] keywordNames, Object[] freeVars, Object[] cellVars) {
+    private static Object[] extractVarnames(RootNode rootNode, TruffleString[] parameterIds, TruffleString[] keywordNames, Object[] freeVars, Object[] cellVars) {
         Set<Object> freeVarsSet = asSet(freeVars);
         Set<Object> cellVarsSet = asSet(cellVars);
 
-        ArrayList<String> varNameList = new ArrayList<>(); // must be ordered!
+        ArrayList<TruffleString> varNameList = new ArrayList<>(); // must be ordered!
         varNameList.addAll(Arrays.asList(parameterIds));
         varNameList.addAll(Arrays.asList(keywordNames));
 
         for (Object identifier : PythonFrame.getIdentifiers(rootNode.getFrameDescriptor())) {
-            if (identifier instanceof String) {
-                String varName = (String) identifier;
+            if (identifier instanceof TruffleString) {
+                TruffleString varName = (TruffleString) identifier;
 
                 if (!varNameList.contains(varName)) {
-                    if (StringUtils.isIdentifier(varName)) {
+                    if (StringUtils.isIdentifierUncached(varName)) {
                         if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                             varNameList.add(varName);
                         }
@@ -439,7 +445,7 @@ public final class PCode extends PythonBuiltinObject {
         return cellvars;
     }
 
-    public void setFilename(String filename) {
+    public void setFilename(TruffleString filename) {
         CompilerAsserts.neverPartOfCompilation();
         this.filename = filename;
         RootNode rootNode = getRootNode();
@@ -452,7 +458,8 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public String getFilename() {
+    @TruffleBoundary
+    public TruffleString getFilename() {
         if (filename == null) {
             filename = extractFileName(getRootNode());
         }
@@ -466,7 +473,8 @@ public final class PCode extends PythonBuiltinObject {
         return firstlineno;
     }
 
-    public String getName() {
+    @TruffleBoundary
+    public TruffleString getName() {
         if (name == null) {
             name = extractName(getRootNode());
         }
@@ -657,8 +665,8 @@ public final class PCode extends PythonBuiltinObject {
     @Override
     @TruffleBoundary
     public String toString() {
-        String codeName = this.getName() == null ? "None" : this.getName();
-        String codeFilename = this.getFilename() == null ? "None" : this.getFilename();
+        String codeName = this.getName() == null ? "None" : this.getName().toJavaStringUncached();
+        String codeFilename = this.getFilename() == null ? "None" : this.getFilename().toJavaStringUncached();
         int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
@@ -679,14 +687,14 @@ public final class PCode extends PythonBuiltinObject {
         return factory.createBytes(bytes);
     }
 
-    public String co_name() {
-        String codeName = this.getName();
+    public TruffleString co_name() {
+        TruffleString codeName = this.getName();
         assert codeName != null : "PCode.co_name cannot be null!";
         return codeName;
     }
 
-    public String co_filename() {
-        String fName = this.getFilename();
+    public TruffleString co_filename() {
+        TruffleString fName = this.getFilename();
         assert fName != null : "PCode.co_filename cannot be null";
         return fName;
     }

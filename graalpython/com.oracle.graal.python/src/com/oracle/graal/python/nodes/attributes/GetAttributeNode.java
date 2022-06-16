@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
@@ -83,20 +84,20 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         return getFixedAttributeNode.executeObject(frame, object);
     }
 
-    protected GetAttributeNode(String key, ExpressionNode object) {
+    protected GetAttributeNode(TruffleString key, ExpressionNode object) {
         getFixedAttributeNode = GetFixedAttributeNode.create(key);
         objectExpression = object;
     }
 
-    public final String getKey() {
+    public final TruffleString getKey() {
         return getFixedAttributeNode.key;
     }
 
-    public static GetAttributeNode create(String key, ExpressionNode object) {
+    public static GetAttributeNode create(TruffleString key, ExpressionNode object) {
         return new GetAttributeNode(key, object);
     }
 
-    public static GetAttributeNode create(String key) {
+    public static GetAttributeNode create(TruffleString key) {
         return new GetAttributeNode(key, null);
     }
 
@@ -183,13 +184,13 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
     }
 
     public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
-        private final String key;
+        private final TruffleString key;
 
-        public GetFixedAttributeNode(String key) {
+        public GetFixedAttributeNode(TruffleString key) {
             this.key = key;
         }
 
-        public final String getKey() {
+        public final TruffleString getKey() {
             return key;
         }
 
@@ -282,7 +283,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        public static GetFixedAttributeNode create(String key) {
+        public static GetFixedAttributeNode create(TruffleString key) {
             return GetFixedAttributeNodeGen.create(key);
         }
     }

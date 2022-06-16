@@ -75,6 +75,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -555,7 +556,7 @@ public abstract class MaterializeFrameNode extends Node {
         private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
                         ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
-            String identifier = info.getVariableName(slot);
+            TruffleString identifier = info.getVariableName(slot);
             Object value = frameToSync.getValue(slot);
             if (value != null && profile.profile(value instanceof PCell)) {
                 value = ((PCell) value).getRef();

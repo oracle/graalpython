@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,10 +63,10 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyErrStackItem extends PythonNativeWrapper {
 
-    public static final String EXC_TYPE = "exc_type";
-    public static final String EXC_VALUE = "exc_value";
-    public static final String EXC_TRACEBACK = "exc_traceback";
-    public static final String PREVIOUS_ITEM = "previous_item";
+    public static final String J_EXC_TYPE = "exc_type";
+    public static final String J_EXC_VALUE = "exc_value";
+    public static final String J_EXC_TRACEBACK = "exc_traceback";
+    public static final String J_PREVIOUS_ITEM = "previous_item";
 
     private final PBaseException exception;
 
@@ -83,13 +83,13 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, PREVIOUS_ITEM});
+        return new PythonAbstractObject.Keys(new Object[]{J_EXC_TYPE, J_EXC_VALUE, J_EXC_TRACEBACK, J_PREVIOUS_ITEM});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
-        return EXC_TYPE.equals(key) || EXC_VALUE.equals(key) || EXC_TRACEBACK.equals(key) || PREVIOUS_ITEM.equals(key);
+        return J_EXC_TYPE.equals(key) || J_EXC_VALUE.equals(key) || J_EXC_TRACEBACK.equals(key) || J_PREVIOUS_ITEM.equals(key);
     }
 
     @ExportMessage
@@ -100,13 +100,13 @@ public final class PyErrStackItem extends PythonNativeWrapper {
         Object result = null;
         if (exception != null) {
             switch (key) {
-                case EXC_TYPE:
+                case J_EXC_TYPE:
                     result = getClassNode.execute(exception);
                     break;
-                case EXC_VALUE:
+                case J_EXC_VALUE:
                     result = exception;
                     break;
-                case EXC_TRACEBACK:
+                case J_EXC_TRACEBACK:
                     if (exception.getTraceback() != null) {
                         result = getTracebackNode.execute(exception.getTraceback());
                     }

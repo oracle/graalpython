@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,9 +108,9 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
-        builtinConstants.put("RUSAGE_SELF", RUSAGE_SELF);
-        builtinConstants.put("RUSAGE_THREAD", RUSAGE_THREAD);
+        addBuiltinConstant("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
+        addBuiltinConstant("RUSAGE_SELF", RUSAGE_SELF);
+        addBuiltinConstant("RUSAGE_THREAD", RUSAGE_THREAD);
         StructSequence.initType(core, STRUCT_RUSAGE_DESC);
     }
 
@@ -229,7 +230,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         PTuple getruusage(@SuppressWarnings("unused") Object who) {
-            throw raise(ValueError, "rusage usage not yet implemented for specified arg.");
+            throw raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
         }
     }
 }

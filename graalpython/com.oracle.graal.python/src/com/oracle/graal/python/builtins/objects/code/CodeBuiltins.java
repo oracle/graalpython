@@ -26,11 +26,13 @@
 
 package com.oracle.graal.python.builtins.objects.code;
 
-import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_STRING;
+import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_TSTRING;
 import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_NONE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +44,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,6 +65,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public class CodeBuiltins extends PythonBuiltins {
@@ -73,8 +79,9 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_freevars(factory());
+        protected Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(self.getFreeVars(), internStringNode, factory());
         }
     }
 
@@ -82,8 +89,9 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_cellvars(factory());
+        protected Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(self.getCellVars(), internStringNode, factory());
         }
     }
 
@@ -91,10 +99,11 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object get(PCode self) {
-            String filename = self.getFilename();
+        protected static Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            TruffleString filename = self.getFilename();
             if (filename != null) {
-                return filename;
+                return internStringNode.execute(filename);
             }
             return PNone.NONE;
         }
@@ -114,8 +123,9 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected static Object get(PCode self) {
-            return self.co_name();
+        protected static Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStringNode.execute(self.co_name());
         }
     }
 
@@ -186,8 +196,9 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_consts(factory());
+        protected Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(self.getConstants(factory()), internStringNode, factory());
         }
     }
 
@@ -195,8 +206,9 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_names(factory());
+        protected Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(self.getNames(), internStringNode, factory());
         }
     }
 
@@ -204,8 +216,9 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
-            return self.co_varnames(factory());
+        protected Object get(PCode self,
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(self.getVarnames(), internStringNode, factory());
         }
     }
 
@@ -223,19 +236,41 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static Object repr(PCode self) {
-            return self.toString();
+        static TruffleString repr(PCode self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString codeName = self.getName() == null ? T_NONE : self.getName();
+            TruffleString codeFilename = self.getFilename() == null ? T_NONE : self.getFilename();
+            int codeFirstLineNo = self.getFirstLineNo() == 0 ? -1 : self.getFirstLineNo();
+            return simpleTruffleStringFormatNode.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class CodeEqNode extends PythonBinaryBuiltinNode {
+
+        @TruffleBoundary
+        static Object[] fixStrings(Object[] array) {
+            Object[] result;
+            if (!hasStrings(array)) {
+                result = array;
+            } else {
+                result = new Object[array.length];
+                for (int i = 0; i < array.length; ++i) {
+                    if (array[i] instanceof TruffleString) {
+                        result[i] = ((TruffleString) array[i]).toJavaStringUncached();
+                    } else {
+                        result[i] = array[i];
+                    }
+                }
+            }
+            return result;
+        }
+
         @Specialization
         @TruffleBoundary
         boolean eq(PCode self, PCode other) {
@@ -247,10 +282,10 @@ public class CodeBuiltins extends PythonBuiltins {
                 if (other.getRootNode() == null) {
                     return false;
                 }
-                if (!self.getName().equals(other.getName())) {
+                if (!self.getName().equalsUncached(other.getName(), TS_ENCODING)) {
                     return false;
                 }
-                if (!self.getFilename().equals(other.getFilename())) {
+                if (!self.getFilename().equalsUncached(other.getFilename(), TS_ENCODING)) {
                     return false;
                 }
                 // we cannot really check the "code string" or AST for equality, so we just compare
@@ -271,29 +306,29 @@ public class CodeBuiltins extends PythonBuiltins {
                 }
                 // compare names, varnames, freevars, and cellvars, because those are parsing scope
                 // dependent and cannot be gleaned by comparing the source string
-                Object[] l = self.getNames();
-                Object[] r = other.getNames();
+                Object[] l = fixStrings(self.getNames());
+                Object[] r = fixStrings(other.getNames());
                 Arrays.sort(l);
                 Arrays.sort(r);
                 if (!Arrays.equals(l, r)) {
                     return false;
                 }
-                l = self.getVarnames();
-                r = other.getVarnames();
+                l = fixStrings(self.getVarnames());
+                r = fixStrings(other.getVarnames());
                 Arrays.sort(l);
                 Arrays.sort(r);
                 if (!Arrays.equals(l, r)) {
                     return false;
                 }
-                l = self.getFreeVars();
-                r = other.getFreeVars();
+                l = fixStrings(self.getFreeVars());
+                r = fixStrings(other.getFreeVars());
                 Arrays.sort(l);
                 Arrays.sort(r);
                 if (!Arrays.equals(l, r)) {
                     return false;
                 }
-                l = self.getCellVars();
-                r = other.getCellVars();
+                l = fixStrings(self.getCellVars());
+                r = fixStrings(other.getCellVars());
                 Arrays.sort(l);
                 Arrays.sort(r);
                 if (!Arrays.equals(l, r)) {
@@ -311,7 +346,7 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -354,8 +389,8 @@ public class CodeBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "co_varnames", conversion = ArgumentClinic.ClinicConversion.Tuple)
     @ArgumentClinic(name = "co_freevars", conversion = ArgumentClinic.ClinicConversion.Tuple)
     @ArgumentClinic(name = "co_cellvars", conversion = ArgumentClinic.ClinicConversion.Tuple)
-    @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = VALUE_EMPTY_STRING, useDefaultForNone = true)
-    @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = VALUE_EMPTY_STRING, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
     @ArgumentClinic(name = "co_lnotab", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonClinicBuiltinNode {
@@ -371,8 +406,8 @@ public class CodeBuiltins extends PythonBuiltins {
                         int coFirstlineno, Object coCode,
                         Object[] coConsts, Object[] coNames,
                         Object[] coVarnames, Object[] coFreevars,
-                        Object[] coCellvars, String coFilename,
-                        String coName, Object coLnotab,
+                        Object[] coCellvars, TruffleString coFilename,
+                        TruffleString coName, Object coLnotab,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             try {
@@ -402,5 +437,34 @@ public class CodeBuiltins extends PythonBuiltins {
                 }
             }
         }
+    }
+
+    private static boolean hasStrings(Object[] values) {
+        for (Object o : values) {
+            if (o instanceof TruffleString) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static PTuple internStrings(Object[] values, InternStringNode internStringNode, PythonObjectFactory factory) {
+        if (values == null) {
+            return factory.createEmptyTuple();
+        }
+        Object[] result;
+        if (!hasStrings(values)) {
+            result = values;
+        } else {
+            result = new Object[values.length];
+            for (int i = 0; i < values.length; ++i) {
+                if (values[i] instanceof TruffleString) {
+                    result[i] = internStringNode.execute(values[i]);
+                } else {
+                    result[i] = values[i];
+                }
+            }
+        }
+        return factory.createTuple(result);
     }
 }

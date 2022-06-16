@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -85,7 +86,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
                     @Exclusive @Cached PyLongCheckNode checkResultNode,
                     @Shared("asInt") @Cached PyLongAsIntNode asIntNode,
                     @Shared("raise") @Cached PRaiseNode raise) {
-        Object filenoMethod = lookupFileno.execute(frame, object, "fileno");
+        Object filenoMethod = lookupFileno.execute(frame, object, T_FILENO);
         if (filenoMethod != PNone.NO_VALUE) {
             Object result = callFileno.execute(frame, filenoMethod);
             if (checkResultNode.execute(result)) {

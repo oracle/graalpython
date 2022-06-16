@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -45,9 +45,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // TODO: (tfel) Duplication here with BinaryOpNode
-@NodeInfo(shortName = __DELITEM__)
+@NodeInfo(shortName = J___DELITEM__)
 @NodeChild(value = "leftNode", type = ExpressionNode.class)
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
 public abstract class DeleteItemNode extends StatementNode {
@@ -55,7 +56,7 @@ public abstract class DeleteItemNode extends StatementNode {
 
     public abstract ExpressionNode getRightNode();
 
-    public abstract Object executeWith(VirtualFrame frame, PythonObject globals, String attributeId);
+    public abstract Object executeWith(VirtualFrame frame, PythonObject globals, TruffleString attributeId);
 
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(

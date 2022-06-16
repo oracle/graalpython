@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,14 +25,18 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class Signature {
-    public static final Signature EMPTY = new Signature(-1, false, -1, false, PythonUtils.EMPTY_STRING_ARRAY, PythonUtils.EMPTY_STRING_ARRAY);
+    public static final Signature EMPTY = new Signature(-1, false, -1, false, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
 
     private final int varArgIndex;
     private final int positionalOnlyArgIndex;
@@ -40,55 +44,51 @@ public final class Signature {
     private final boolean takesVarKeywordArgs;
     private final boolean checkEnclosingType;
 
-    @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
-    @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] positionalParameterNames;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] keywordOnlyNames;
 
-    private final String raiseErrorName;
+    private final TruffleString raiseErrorName;
 
     public Signature(Builtin builtin,
-                    String[] parameterIds) {
+                    TruffleString[] parameterIds) {
         this(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterIds.length : -1,
-                        builtin.varArgsMarker(), parameterIds, builtin.keywordOnlyNames(), false, builtin.raiseErrorName());
+                        builtin.varArgsMarker(), parameterIds, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
     }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    String[] parameterIds, String[] keywordNames) {
+                    TruffleString[] parameterIds, TruffleString[] keywordNames) {
         this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames);
     }
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    String[] parameterIds, String[] keywordNames) {
+                    TruffleString[] parameterIds, TruffleString[] keywordNames) {
         this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, false);
     }
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType) {
-        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, "");
+                    TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, T_EMPTY_STRING);
     }
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType, String raiseErrorName) {
+                    TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType, TruffleString raiseErrorName) {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
         this.isVarArgsMarker = varArgsMarker;
-        this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_STRING_ARRAY;
-        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_STRING_ARRAY;
+        this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         this.checkEnclosingType = checkEnclosingType;
         this.raiseErrorName = raiseErrorName;
     }
 
-    public static Signature createOneArgumentWithVarKwArgs() {
-        return new Signature(-1, true, -1, false, new String[]{"a"}, null);
-    }
-
     public static Signature createVarArgsAndKwArgsOnly() {
-        return new Signature(-1, true, 0, false, (String[]) null, (String[]) null);
+        return new Signature(-1, true, 0, false, null, null);
     }
 
     public Signature createWithSelf() {
-        String[] parameterIdsWithSelf = new String[getParameterIds().length + 1];
-        parameterIdsWithSelf[0] = SELF;
+        TruffleString[] parameterIdsWithSelf = new TruffleString[getParameterIds().length + 1];
+        parameterIdsWithSelf[0] = T_SELF;
         PythonUtils.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
 
         return new Signature(-1, takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
@@ -128,11 +128,11 @@ public final class Signature {
         return takesVarKeywordArgs;
     }
 
-    public final String[] getParameterIds() {
+    public final TruffleString[] getParameterIds() {
         return positionalParameterNames;
     }
 
-    public final String[] getKeywordNames() {
+    public final TruffleString[] getKeywordNames() {
         return keywordOnlyNames;
     }
 
@@ -160,7 +160,7 @@ public final class Signature {
         return checkEnclosingType;
     }
 
-    public final String getRaiseErrorName() {
+    public final TruffleString getRaiseErrorName() {
         return raiseErrorName;
     }
 }

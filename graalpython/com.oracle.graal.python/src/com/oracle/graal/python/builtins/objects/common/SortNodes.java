@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SortNodes {
     private static class SortingPair {
@@ -93,7 +96,7 @@ public abstract class SortNodes {
     }
 
     private static class ObjectComparatorRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"a", "b"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("a", "b"), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
 
         @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
@@ -223,9 +226,9 @@ public abstract class SortNodes {
             int len = storage.length();
             Comparator<Object> comparator;
             if (reverse) {
-                comparator = (a, b) -> StringUtils.compareToUnicodeAware((String) b, (String) a);
+                comparator = (a, b) -> StringUtils.compareStringsUncached((TruffleString) b, (TruffleString) a);
             } else {
-                comparator = (a, b) -> StringUtils.compareToUnicodeAware((String) a, (String) b);
+                comparator = (a, b) -> StringUtils.compareStringsUncached((TruffleString) a, (TruffleString) b);
             }
             Arrays.sort(array, 0, len, comparator);
         }
@@ -235,7 +238,7 @@ public abstract class SortNodes {
             Object[] array = storage.getInternalArray();
             for (int i = 0; isStringOnlyLoopProfile.profile(i < length); i++) {
                 Object value = array[i];
-                if (isStringOnlyBreakProfile.profile(!(value instanceof String))) {
+                if (isStringOnlyBreakProfile.profile(!(value instanceof TruffleString))) {
                     LoopNode.reportLoopCount(this, i);
                     return false;
                 }
@@ -340,7 +343,7 @@ public abstract class SortNodes {
             LONG(Long.class, Comparator.comparing(a -> ((Long) a.key))),
             DOUBLE(Double.class, Comparator.comparing(a -> ((Double) a.key))),
             BOOLEAN(Boolean.class, Comparator.comparing(a -> ((Boolean) a.key))),
-            STRING(String.class, (a, b) -> StringUtils.compareToUnicodeAware((String) a.key, (String) b.key));
+            STRING(TruffleString.class, (a, b) -> StringUtils.compareStringsUncached((TruffleString) a.key, (TruffleString) b.key));
 
             final Class<?> clazz;
             final Comparator<SortingPair> comparator;

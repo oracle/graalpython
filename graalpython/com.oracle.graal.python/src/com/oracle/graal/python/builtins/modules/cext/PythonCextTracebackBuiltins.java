@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -61,6 +62,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -80,7 +82,7 @@ public final class PythonCextTracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
         @Specialization
-        Object tbHere(String funcname, String filename, int lineno,
+        Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
                         @Cached PyCodeNewEmpty newCode,
                         @Cached PyTraceBackHereNode pyTraceBackHereNode) {
             PFrame frame = factory().createPFrame(null, newCode.execute(filename, funcname, lineno), factory().createDict(), factory().createDict());

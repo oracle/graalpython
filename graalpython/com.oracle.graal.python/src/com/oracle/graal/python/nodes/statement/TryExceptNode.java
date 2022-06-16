@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -65,10 +67,14 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class TryExceptNode extends ExceptionHandlingStatementNode implements TruffleObject {
+
+    public static final TruffleString T_BASE_EXCEPTION = tsLiteral("BaseException");
+
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
@@ -234,7 +240,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
                 if (catchesFunction == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    ArrayList<Object> literalCatches = new ArrayList<>();
+                    ArrayList<TruffleString> literalCatches = new ArrayList<>();
                     for (ExceptNode node : exceptNodes) {
                         PNode exceptType = node.getExceptType();
                         if (exceptType instanceof ReadNameNode) {
@@ -250,10 +256,10 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                                 }
                             }
                         } else {
-                            literalCatches.add("BaseException");
+                            literalCatches.add(T_BASE_EXCEPTION);
                         }
                     }
-                    catchesFunction = new CatchesFunction(literalCatches.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+                    catchesFunction = new CatchesFunction(literalCatches.toArray(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY));
                 }
                 return catchesFunction;
             } else {
@@ -280,9 +286,9 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
     @ExportLibrary(InteropLibrary.class)
     static class CatchesFunction implements TruffleObject {
-        private String[] caughtClasses;
+        private final TruffleString[] caughtClasses;
 
-        CatchesFunction(String[] caughtClasses) {
+        CatchesFunction(TruffleString[] caughtClasses) {
             this.caughtClasses = caughtClasses;
         }
 
@@ -306,7 +312,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
                     ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
 
-                    for (String c : caughtClasses) {
+                    for (TruffleString c : caughtClasses) {
                         Object cls = readAttr.execute(PythonContext.get(gil).getBuiltins(), c);
                         if (TypeNodes.IsTypeNode.getUncached().execute(cls)) {
                             if (isSubtype.execute(GetClassNode.getUncached().execute(exception), cls)) {

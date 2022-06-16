@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import javax.net.ssl.SSLException;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PSSLSocket extends PythonBuiltinObject {
     private final PSSLContext context;
@@ -53,7 +54,7 @@ public final class PSSLSocket extends PythonBuiltinObject {
     private final PSocket socket;
     private final SSLEngine engine;
     private Object owner;
-    private String serverHostname;
+    private TruffleString serverHostname;
 
     private final PMemoryBIO networkInboundBIO;
     private final PMemoryBIO networkOutboundBIO;
@@ -115,11 +116,11 @@ public final class PSSLSocket extends PythonBuiltinObject {
         this.owner = owner;
     }
 
-    public String getServerHostname() {
+    public TruffleString getServerHostname() {
         return serverHostname;
     }
 
-    public void setServerHostname(String serverHostname) {
+    public void setServerHostname(TruffleString serverHostname) {
         this.serverHostname = serverHostname;
     }
 

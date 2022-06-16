@@ -40,15 +40,17 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 /**
  * Obtains a string representation of a function for error reporting. Equivalent of CPython's
@@ -56,13 +58,14 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 @GenerateUncached
 public abstract class PyObjectFunctionStr extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object function);
+    public abstract TruffleString execute(Frame frame, Object function);
 
     @Specialization
-    String str(VirtualFrame frame, Object function,
+    TruffleString str(VirtualFrame frame, Object function,
                     @Cached PyObjectLookupAttr lookupName,
-                    @Cached PyObjectStrAsJavaStringNode asStr) {
-        return PString.cat(asStr.execute(lookupName.execute(frame, function, __NAME__)), "()");
+                    @Cached PyObjectStrAsTruffleStringNode asStr,
+                    @Cached TruffleString.ConcatNode concatNode) {
+        return concatNode.execute(asStr.execute(lookupName.execute(frame, function, T___NAME__)), T_EMPTY_PARENS, TS_ENCODING, false);
         // The following code is for 3.11
         // Object qualname = lookupQualname.execute(frame, function, __QUALNAME__);
         // if (qualname == PNone.NO_VALUE) {

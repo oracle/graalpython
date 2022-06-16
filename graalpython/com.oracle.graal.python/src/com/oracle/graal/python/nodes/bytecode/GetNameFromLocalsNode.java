@@ -59,14 +59,15 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class GetNameFromLocalsNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object locals, String name, boolean cellvar);
+    public abstract Object execute(Frame frame, Object locals, TruffleString name, boolean cellvar);
 
     @Specialization
-    Object getValue(VirtualFrame frame, Object locals, String name, boolean isCellVar,
+    Object getValue(VirtualFrame frame, Object locals, TruffleString name, boolean isCellVar,
                     @Cached PyDictCheckExactNode checkDictNode,
                     @Cached PyDictGetItem getDictItemNode,
                     @Cached PyObjectGetItem getItemNode,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,7 +26,8 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +50,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
@@ -59,8 +61,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     @CompilationFinal private Shape instanceShape;
-    private String name;
-    private String qualName;
+    private TruffleString name;
+    private TruffleString qualName;
 
     /**
      * Access using methods in {@link SpecialMethodSlot}.
@@ -75,12 +77,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private boolean mroInitialized = false;
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, PythonAbstractClass... baseClasses) {
         this(lang, typeClass, classShape, instanceShape, name, true, true, baseClasses);
     }
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, boolean initDocAttr,
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
                     PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);
         this.name = name;
@@ -102,7 +104,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         if (initDocAttr) {
-            setAttribute(__DOC__, PNone.NONE);
+            setAttribute(T___DOC__, PNone.NONE);
         }
 
         if (instanceShape != null) {
@@ -163,19 +165,19 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return methodResolutionOrder;
     }
 
-    public String getQualName() {
+    public TruffleString getQualName() {
         return qualName;
     }
 
-    public void setQualName(String qualName) {
+    public void setQualName(TruffleString qualName) {
         this.qualName = qualName;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(TruffleString name) {
         this.name = name;
     }
 
@@ -198,7 +200,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @Override
     @TruffleBoundary
-    public void setAttribute(Object key, Object value) {
+    public void setAttribute(Object keyObj, Object value) {
+        Object key = assertNoJavaString(keyObj);
         super.setAttribute(key, value);
         onAttributeUpdate(key, value);
     }
@@ -206,23 +209,24 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Fast-path check designed for PE code.
      */
-    public boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
+    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object value, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
-                        !SpecialMethodSlot.canBeSpecial(key);
+                        !SpecialMethodSlot.canBeSpecial(key, codePointLengthNode, codePointAtIndexNode);
     }
 
     public final void onAttributeUpdate(Object key, Object value) {
         // In compilation: use a profile and call the String key overload
         CompilerAsserts.neverPartOfCompilation();
-        if (key instanceof String) {
-            onAttributeUpdate((String) key, value);
+        if (key instanceof TruffleString) {
+            onAttributeUpdate((TruffleString) key, value);
         }
     }
 
     @TruffleBoundary
-    public void onAttributeUpdate(String key, Object value) {
+    public void onAttributeUpdate(TruffleString key, Object value) {
         methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
         if (slot != null) {
             SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
         }

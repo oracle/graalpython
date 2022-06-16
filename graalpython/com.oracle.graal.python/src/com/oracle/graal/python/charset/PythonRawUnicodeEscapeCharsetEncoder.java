@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,7 +83,7 @@ public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 // ASCII
                 target.put((byte) codePoint);
             } else {
-                String hexString = PythonUtils.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
+                String hexString = PythonUtils.formatJString((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
                 for (int i = 0; i < hexString.length(); i++) {
                     if (!target.hasRemaining()) {
                         source.position(initialPosition);

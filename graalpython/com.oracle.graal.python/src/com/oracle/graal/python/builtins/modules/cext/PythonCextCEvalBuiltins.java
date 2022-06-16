@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -70,7 +71,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,6 +85,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -178,7 +180,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode kwdefaultsAsPythonObjectNode,
                         @Cached CExtNodes.AsPythonObjectNode closureAsPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode elementToJavaNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
@@ -208,7 +210,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
 
             PKeyword[] keywords = new PKeyword[keywordNames.length];
             for (int i = 0; i < keywordNames.length; i++) {
-                String keywordName = castToJavaStringNode.execute(keywordNames[i]);
+                TruffleString keywordName = castToStringNode.execute(keywordNames[i]);
                 keywords[i] = new PKeyword(keywordName, keywordArguments[i]);
             }
 

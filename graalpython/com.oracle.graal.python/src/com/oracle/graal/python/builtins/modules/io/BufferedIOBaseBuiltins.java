@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,16 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_RETURNED_TOO_MUCH_DATA;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
@@ -73,6 +77,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBufferedIOBase)
 public class BufferedIOBaseBuiltins extends PythonBuiltins {
@@ -82,7 +87,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         return BufferedIOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonBuiltinNode {
 
@@ -91,11 +96,11 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, DETACH);
+            throw raise(IOUnsupportedOperation, T_DETACH);
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
 
@@ -105,11 +110,11 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object read(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, READ);
+            throw raise(IOUnsupportedOperation, T_READ);
         }
     }
 
-    @Builtin(name = READ1, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_READ1, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class Read1Node extends PythonBuiltinNode {
 
@@ -119,14 +124,14 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object read1(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, READ1);
+            throw raise(IOUnsupportedOperation, T_READ1);
         }
     }
 
     abstract static class ReadIntoGenericNode extends PythonBinaryClinicBuiltinNode {
 
         @SuppressWarnings("unused")
-        protected String getMethodName() {
+        protected TruffleString getMethodName() {
             throw CompilerDirectives.shouldNotReachHere("abstract");
         }
 
@@ -164,13 +169,13 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReadIntoGenericNode {
         @Override
-        protected final String getMethodName() {
-            return READ;
+        protected final TruffleString getMethodName() {
+            return T_READ;
         }
 
         @Override
@@ -179,13 +184,13 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @Builtin(name = J_READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoGenericNode {
         @Override
-        protected final String getMethodName() {
-            return READ1;
+        protected final TruffleString getMethodName() {
+            return T_READ1;
         }
 
         @Override
@@ -194,7 +199,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
 
@@ -204,7 +209,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object write(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, WRITE);
+            throw raise(IOUnsupportedOperation, T_WRITE);
         }
     }
 }

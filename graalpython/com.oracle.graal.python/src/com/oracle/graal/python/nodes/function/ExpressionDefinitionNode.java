@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class ExpressionDefinitionNode extends ExpressionNode {
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
@@ -91,7 +92,7 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         return freeVarDefinitionSlots;
     }
 
-    public final String[] getFreeVarDefinitions() {
+    public final TruffleString[] getFreeVarDefinitions() {
         return PythonFrame.extractSlotNames(getRootNode().getFrameDescriptor(), freeVarDefinitionSlots);
     }
 }

@@ -28,11 +28,24 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.T__IMP;
 import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
-import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
-import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PRINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.J_STRING_SOURCE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_GRAALPYTHON;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -236,7 +249,6 @@ import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltin
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
@@ -318,12 +330,12 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -352,6 +364,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -362,25 +375,31 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static final int REC_LIM = 1000;
     private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
-    private final String[] coreFiles;
+    private static final TruffleString T___ANONYMOUS__ = tsLiteral("__anonymous__");
+    private static final TruffleString T_IMPORTLIB = tsLiteral("importlib");
+    private static final TruffleString T_IMPORTLIB_BOOTSTRAP_EXTERNAL = tsLiteral("importlib._bootstrap_external");
+    private static final TruffleString T__FROZEN_IMPORTLIB_EXTERNAL = tsLiteral("_frozen_importlib_external");
+    private static final TruffleString T__FROZEN_IMPORTLIB = tsLiteral("_frozen_importlib");
+    private static final TruffleString T_IMPORTLIB_BOOTSTRAP = tsLiteral("importlib._bootstrap");
+    private final TruffleString[] coreFiles;
 
     public static final Pattern MISSING_PARENTHESES_PATTERN = Pattern.compile("^(print|exec) +([^(][^;]*).*");
 
-    private static String[] initializeCoreFiles() {
+    private static TruffleString[] initializeCoreFiles() {
         // Order matters!
-        List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "type",
-                        "__graalpython__",
-                        "_weakref",
-                        "bytearray",
-                        "unicodedata",
-                        "_sre",
-                        "function",
-                        "_sysconfig",
-                        "zipimport",
-                        "java",
-                        "pip_hook",
-                        "_struct"));
+        List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
+                        toTruffleStringUncached("type"),
+                        toTruffleStringUncached("__graalpython__"),
+                        toTruffleStringUncached("_weakref"),
+                        toTruffleStringUncached("bytearray"),
+                        toTruffleStringUncached("unicodedata"),
+                        toTruffleStringUncached("_sre"),
+                        toTruffleStringUncached("function"),
+                        toTruffleStringUncached("_sysconfig"),
+                        toTruffleStringUncached("zipimport"),
+                        toTruffleStringUncached("java"),
+                        toTruffleStringUncached("pip_hook"),
+                        toTruffleStringUncached("_struct")));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -389,11 +408,11 @@ public abstract class Python3Core extends ParserErrorCallback {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
                 if (!annotation.pythonFile().isEmpty() &&
                                 (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
-                    coreFiles.add(annotation.pythonFile());
+                    coreFiles.add(toTruffleStringUncached(annotation.pythonFile()));
                 }
             }
         }
-        return coreFiles.toArray(new String[coreFiles.size()]);
+        return coreFiles.toArray(new TruffleString[coreFiles.size()]);
     }
 
     private final PythonBuiltins[] builtins;
@@ -730,7 +749,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
     @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
 
-    private final Map<String, PythonModule> builtinModules = new HashMap<>();
+    private final Map<TruffleString, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
@@ -840,14 +859,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         populateBuiltins();
         SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
-        builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
+        builtinsModule = builtinModules.get(BuiltinNames.T_BUILTINS);
     }
 
-    private static final String IMPORTLIB_NAME = "_frozen_importlib";
-    private static final String IMPORTLIB_EXTERNAL_NAME = "_frozen_importlib_external";
-
     private void initializeImportlib() {
-        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, IMPORTLIB_NAME, false);
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
         PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
@@ -856,40 +872,40 @@ public abstract class Python3Core extends ParserErrorCallback {
         PyDictSetItem setItem = PyDictSetItem.getUncached();
 
         // first, a workaround since postInitialize hasn't run yet for the _weakref module aliases
-        writeNode.execute(lookupBuiltinModule("_weakref"), "ref", lookupType(PythonBuiltinClassType.PReferenceType));
+        writeNode.execute(lookupBuiltinModule(T__WEAKREF), T_REF, lookupType(PythonBuiltinClassType.PReferenceType));
 
         if (bootstrap == null) {
             // true when the frozen module is not available
-            bootstrapExternal = createModule("importlib._bootstrap_external");
-            bootstrap = createModule("importlib._bootstrap");
-            loadFile("importlib/_bootstrap_external", getContext().getStdlibHome(), bootstrapExternal);
-            loadFile("importlib/_bootstrap", getContext().getStdlibHome(), bootstrap);
+            bootstrapExternal = createModule(T_IMPORTLIB_BOOTSTRAP_EXTERNAL);
+            bootstrap = createModule(T_IMPORTLIB_BOOTSTRAP);
+            loadFile(toTruffleStringUncached("importlib/_bootstrap_external"), getContext().getStdlibHome(), bootstrapExternal);
+            loadFile(toTruffleStringUncached("importlib/_bootstrap"), getContext().getStdlibHome(), bootstrap);
         } else {
-            bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, IMPORTLIB_EXTERNAL_NAME, true);
-            LOGGER.log(Level.FINE, () -> "import '" + IMPORTLIB_NAME + "' # <frozen>");
-            LOGGER.log(Level.FINE, () -> "import '" + IMPORTLIB_EXTERNAL_NAME + "' # <frozen>");
+            bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB_EXTERNAL, true);
+            LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB + "' # <frozen>");
+            LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB_EXTERNAL + "' # <frozen>");
         }
-        setItem.execute(null, sysModules, IMPORTLIB_NAME, bootstrap);
-        setItem.execute(null, sysModules, IMPORTLIB_EXTERNAL_NAME, bootstrapExternal);
+        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB, bootstrap);
+        setItem.execute(null, sysModules, T__FROZEN_IMPORTLIB_EXTERNAL, bootstrapExternal);
 
         // __package__ needs to be set and doesn't get set by _bootstrap setup
-        writeNode.execute(bootstrap, __PACKAGE__, "importlib");
-        writeNode.execute(bootstrapExternal, __PACKAGE__, "importlib");
+        writeNode.execute(bootstrap, T___PACKAGE__, T_IMPORTLIB);
+        writeNode.execute(bootstrapExternal, T___PACKAGE__, T_IMPORTLIB);
 
-        callNode.execute(null, bootstrap, "_install", getSysModule(), lookupBuiltinModule("_imp"));
-        writeNode.execute(getBuiltins(), "__import__", readNode.execute(bootstrap, "__import__"));
-        callNode.execute(null, bootstrap, "_install_external_importers");
-        importFunc = (PFunction) readNode.execute(bootstrap, "__import__");
+        callNode.execute(null, bootstrap, toTruffleStringUncached("_install"), getSysModule(), lookupBuiltinModule(T__IMP));
+        writeNode.execute(getBuiltins(), T___IMPORT__, readNode.execute(bootstrap, T___IMPORT__));
+        callNode.execute(null, bootstrap, toTruffleStringUncached("_install_external_importers"));
+        importFunc = (PFunction) readNode.execute(bootstrap, T___IMPORT__);
         importlib = bootstrap;
 
         PythonBuiltinClass moduleType = lookupType(PythonBuiltinClassType.PythonModule);
-        writeNode.execute(moduleType, __REPR__, readNode.execute(bootstrap, "_module_repr"));
+        writeNode.execute(moduleType, T___REPR__, readNode.execute(bootstrap, toTruffleStringUncached("_module_repr")));
         SpecialMethodSlot.reinitializeSpecialMethodSlots(moduleType, getLanguage());
     }
 
-    private void initializePython3Core(String coreHome) {
-        loadFile(BuiltinNames.BUILTINS, coreHome);
-        for (String s : coreFiles) {
+    private void initializePython3Core(TruffleString coreHome) {
+        loadFile(BuiltinNames.T_BUILTINS, coreHome);
+        for (TruffleString s : coreFiles) {
             loadFile(s, coreHome);
         }
         initialized = true;
@@ -921,8 +937,8 @@ public abstract class Python3Core extends ParserErrorCallback {
              * access is never allowed during native image build time.
              */
             if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
-                builtinModules.remove(BuiltinNames.BZ2);
-                sysModules.delItem(BuiltinNames.BZ2);
+                builtinModules.remove(BuiltinNames.T_BZ2);
+                sysModules.delItem(BuiltinNames.T_BZ2);
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
@@ -932,7 +948,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     @TruffleBoundary
-    public final PythonModule lookupBuiltinModule(String name) {
+    public final PythonModule lookupBuiltinModule(TruffleString name) {
         return builtinModules.get(name);
     }
 
@@ -941,16 +957,20 @@ public abstract class Python3Core extends ParserErrorCallback {
         return builtinTypes[type.ordinal()];
     }
 
+    /**
+     * Returns an array whose runtime type is {@code Object[]}, but all elements are instances of
+     * {@link TruffleString}.
+     */
     @TruffleBoundary
-    public final String[] builtinModuleNames() {
-        return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
+    public final Object[] builtinModuleNames() {
+        return builtinModules.keySet().toArray();
     }
 
     public final PythonModule getBuiltins() {
         return builtinsModule;
     }
 
-    public final void registerTypeInBuiltins(String name, PythonBuiltinClassType type) {
+    public final void registerTypeInBuiltins(TruffleString name, PythonBuiltinClassType type) {
         assert builtinsModule != null : "builtins module was not yet initialized: cannot register type";
         builtinsModule.setAttribute(name, lookupType(type));
     }
@@ -973,7 +993,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public final void warn(PythonBuiltinClassType type, String format, Object... args) {
+    public final void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
@@ -982,7 +1002,7 @@ public abstract class Python3Core extends ParserErrorCallback {
      */
     public final Object getStderr() {
         try {
-            return PyObjectLookupAttr.getUncached().execute(null, sysModule, "stderr");
+            return PyObjectLookupAttr.getUncached().execute(null, sysModule, T_STDERR);
         } catch (PException e) {
             try {
                 getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
@@ -995,7 +1015,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private void publishBuiltinModules() {
         assert sysModules != null;
-        for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
+        for (Entry<TruffleString, PythonModule> entry : builtinModules.entrySet()) {
             final PythonModule pythonModule = entry.getValue();
             final PythonBuiltins moduleBuiltins = pythonModule.getBuiltins();
             if (moduleBuiltins != null) {
@@ -1031,12 +1051,12 @@ public abstract class Python3Core extends ParserErrorCallback {
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(annotation.defineModule(), builtin);
+                createModule(toTruffleStringUncached(annotation.defineModule()), builtin);
             }
         }
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
-            String module = builtinClass.getPublishInModule();
+            TruffleString module = builtinClass.getPublishInModule();
             if (module != null) {
                 PythonModule pythonModule = lookupBuiltinModule(module);
                 if (pythonModule != null) {
@@ -1055,10 +1075,10 @@ public abstract class Python3Core extends ParserErrorCallback {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
+                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.defineModule())), builtin);
             }
             if (annotation.extendsModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(annotation.extendsModule()), builtin);
+                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.extendsModule())), builtin);
             }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
@@ -1066,22 +1086,22 @@ public abstract class Python3Core extends ParserErrorCallback {
         }
 
         // core machinery
-        sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute(MODULES);
+        sysModule = builtinModules.get(T_SYS);
+        sysModules = (PDict) sysModule.getAttribute(T_MODULES);
     }
 
-    private PythonModule createModule(String name) {
+    private PythonModule createModule(TruffleString name) {
         return createModule(name, null);
     }
 
-    private void addBuiltinModule(String name, PythonModule module) {
+    private void addBuiltinModule(TruffleString name, PythonModule module) {
         builtinModules.put(name, module);
         if (sysModules != null) {
             sysModules.setItem(name, module);
         }
     }
 
-    private PythonModule createModule(String name, PythonBuiltins moduleBuiltins) {
+    private PythonModule createModule(TruffleString name, PythonBuiltins moduleBuiltins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
             mod = factory().createPythonModule(name);
@@ -1094,44 +1114,19 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
-        Map<Object, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
-        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
-            Object constant = entry.getKey();
-            obj.setAttribute(constant, entry.getValue());
-        }
-
-        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();
-        for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
-            String methodName = entry.getKey();
-            Object value;
-            assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
-            if (obj instanceof PythonModule) {
-                value = objectFactory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
-            } else {
-                value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), factory());
-            }
-            obj.setAttribute(methodName, value);
-        }
-
-        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtinsForObj.getBuiltinClasses();
-        for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtinClasses.entrySet()) {
-            boolean isPublic = entry.getValue().getValue();
-            if (isPublic) {
-                PythonBuiltinClass pythonClass = entry.getKey();
-                obj.setAttribute(GetNameNode.doSlowPath(pythonClass), pythonClass);
-            }
-        }
+        builtinsForObj.addConstantsToModuleObject(obj);
+        builtinsForObj.addFunctionsToModuleObject(obj, objectFactory);
     }
 
     @TruffleBoundary
-    private Source getInternalSource(String basename, String prefix) {
+    private Source getInternalSource(TruffleString basename, TruffleString prefix) {
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
-        String suffix = env.getFileNameSeparator() + basename + PythonLanguage.EXTENSION;
+        String suffix = env.getFileNameSeparator() + basename + J_PY_EXTENSION;
         TruffleFile file = env.getInternalTruffleFile(prefix + suffix);
         String errorMessage;
         try {
-            return PythonLanguage.newSource(ctxt, file, basename);
+            return PythonLanguage.newSource(ctxt, file, basename.toJavaStringUncached());
         } catch (IOException e) {
             errorMessage = "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         } catch (SecurityException e) {
@@ -1142,17 +1137,17 @@ public abstract class Python3Core extends ParserErrorCallback {
         throw e;
     }
 
-    private void loadFile(String s, String prefix) {
+    private void loadFile(TruffleString s, TruffleString prefix) {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
-            mod = factory().createPythonModule("__anonymous__");
+            mod = factory().createPythonModule(T___ANONYMOUS__);
         }
         loadFile(s, prefix, mod);
     }
 
-    private void loadFile(String s, String prefix, PythonModule mod) {
-        if (ImpModuleBuiltins.importFrozenModuleObject(this, "graalpython." + s, false, mod) != null) {
+    private void loadFile(TruffleString s, TruffleString prefix, PythonModule mod) {
+        if (ImpModuleBuiltins.importFrozenModuleObject(this, cat(T_GRAALPYTHON, T_DOT, s), false, mod) != null) {
             LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
             return;
         }
@@ -1184,7 +1179,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     @Override
-    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments) {
         CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
@@ -1197,7 +1192,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, TruffleString message, Object... arguments) {
         PBaseException instance;
         Object cls;
         switch (type) {
@@ -1216,13 +1211,13 @@ public abstract class Python3Core extends ParserErrorCallback {
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = toTruffleStringUncached((path != null) ? path : source.getName() != null ? source.getName() : J_STRING_SOURCE);
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
-        String msg = "invalid syntax";
+        String msg = ErrorMessages.INVALID_SYNTAX.toJavaStringUncached();
         if (type == PythonParser.ErrorType.Print) {
             CharSequence line = source.getCharacters(section.getStartLine());
-            line = line.subSequence(line.toString().lastIndexOf(PRINT), line.length());
+            line = line.subSequence(line.toString().lastIndexOf(J_PRINT), line.length());
             Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(line);
             if (matcher.matches()) {
                 String arg = matcher.group(2).trim();
@@ -1242,8 +1237,8 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
-        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = msg;
-        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
+        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = toTruffleStringUncached(msg);
+        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = toTruffleStringUncached(text);
         instance.setExceptionAttributes(excAttrs);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }

@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
@@ -81,13 +82,10 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     public abstract static class Dynamic extends PNodeWithContext {
         public abstract Object execute(Object klass, Object key);
 
-        protected static boolean compareStrings(String key, String cachedKey) {
-            return cachedKey.equals(key);
-        }
-
-        @Specialization(guards = "compareStrings(key, cachedKey)", limit = "2")
-        protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") String key,
-                        @Cached("key") @SuppressWarnings("unused") String cachedKey,
+        @Specialization(guards = "stringEquals(key, cachedKey, equalNode)", limit = "2")
+        protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") TruffleString key,
+                        @Cached("key") @SuppressWarnings("unused") TruffleString cachedKey,
+                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
                         @Cached("create(key)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
         }
@@ -115,16 +113,16 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     private final boolean skipNonStaticBases;
-    protected final String key;
+    protected final TruffleString key;
     @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
     @Child private GetMroStorageNode getMroNode;
 
-    public LookupAttributeInMRONode(String key, boolean skipNonStaticBases) {
+    public LookupAttributeInMRONode(TruffleString key, boolean skipNonStaticBases) {
         this.key = key;
         this.skipNonStaticBases = skipNonStaticBases;
     }
 
-    public static LookupAttributeInMRONode create(String key) {
+    public static LookupAttributeInMRONode create(TruffleString key) {
         return LookupAttributeInMRONodeGen.create(key, false);
     }
 
@@ -132,7 +130,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
      * Specific case to facilitate lookup on native and built-in classes only. This is useful for
      * certain slot wrappers.
      */
-    public static LookupAttributeInMRONode createForLookupOfUnmanagedClasses(String key) {
+    public static LookupAttributeInMRONode createForLookupOfUnmanagedClasses(TruffleString key) {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
 

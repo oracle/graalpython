@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,8 +50,9 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIN
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EISCONN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -99,7 +101,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -110,6 +111,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 public class SocketBuiltins extends PythonBuiltins {
@@ -121,7 +123,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
     private static void checkSelectable(PNodeWithRaise node, PSocket socket) {
         if (!isSelectable(socket)) {
-            throw node.raise(OSError, "unable to select on socket");
+            throw node.raise(OSError, ErrorMessages.UNABLE_TO_SELECT_ON_SOCKET);
         }
     }
 
@@ -129,7 +131,7 @@ public class SocketBuiltins extends PythonBuiltins {
         return socket.getTimeoutNs() <= 0 || socket.getFd() < PosixConstants.FD_SETSIZE.value;
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
     @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "type", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "proto", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
@@ -198,7 +200,7 @@ public class SocketBuiltins extends PythonBuiltins {
             }
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {
-                throw raise(ValueError, "negative file descriptor");
+                throw raise(ValueError, ErrorMessages.NEG_FILE_DESC);
             }
             int family = familyIn;
             try {
@@ -237,7 +239,7 @@ public class SocketBuiltins extends PythonBuiltins {
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            long defaultTimeout = (long) readNode.execute(getContext().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
+            long defaultTimeout = (long) readNode.execute(getContext().lookupBuiltinModule(T__SOCKET), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
                 posixLib.setBlocking(getPosixSupport(), fd, false);
@@ -257,13 +259,13 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        String repr(PSocket self) {
-            return String.format("<socket object, fd=%d, family=%d, type=%d, proto=%d>", self.getFd(), self.getFamily(), self.getType(), self.getProto());
+        TruffleString repr(PSocket self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<socket object, fd=%d, family=%d, type=%d, proto=%d>", self.getFd(), self.getFamily(), self.getType(), self.getProto());
         }
     }
 
@@ -554,7 +556,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
             if (recvlen < 0) {
-                throw raise(ValueError, "negative buffersize in recv");
+                throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV);
             }
             checkSelectable(this, socket);
             if (recvlen == 0) {
@@ -600,7 +602,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
             if (recvlen < 0) {
-                throw raise(ValueError, "negative buffersize in recvfrom");
+                throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM);
             }
             checkSelectable(this, socket);
 
@@ -649,7 +651,7 @@ public class SocketBuiltins extends PythonBuiltins {
             Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
-                    throw raise(ValueError, "negative buffersize in recv_into");
+                    throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECV_INTO);
                 }
                 int buflen = bufferLib.getBufferLength(buffer);
                 int recvlen = recvlenIn;
@@ -657,7 +659,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     recvlen = buflen;
                 }
                 if (buflen < recvlen) {
-                    throw raise(ValueError, "buffer too small for requested bytes");
+                    throw raise(ValueError, ErrorMessages.BUFF_TOO_SMALL);
                 }
 
                 checkSelectable(this, socket);
@@ -713,7 +715,7 @@ public class SocketBuiltins extends PythonBuiltins {
             Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
-                    throw raise(ValueError, "negative buffersize in recvfrom_into");
+                    throw raise(ValueError, ErrorMessages.NEG_BUFF_SIZE_IN_RECVFROM_INTO);
                 }
                 int buflen = bufferLib.getBufferLength(buffer);
                 int recvlen = recvlenIn;
@@ -721,7 +723,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     recvlen = buflen;
                 }
                 if (buflen < recvlen) {
-                    throw raise(ValueError, "nbytes is greater than the length of the buffer");
+                    throw raise(ValueError, ErrorMessages.NBYTES_GREATER_THAT_BUFF);
                 }
 
                 checkSelectable(this, socket);
@@ -1056,7 +1058,7 @@ public class SocketBuiltins extends PythonBuiltins {
             int buflen = asIntNode.execute(frame, buflenObj);
             if (buflen < 0) {
                 // GraalPython-specific because we don't have unsigned integers
-                throw raise(OSError, "setsockopt buflen out of range");
+                throw raise(OSError, ErrorMessages.SETSECKOPT_BUFF_OUT_OFRANGE);
             }
             try {
                 posixLib.setsockopt(getPosixSupport(), socket.getFd(), level, option, null, buflen);
@@ -1069,7 +1071,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object self, Object level, Object option, Object flag1, Object flag2) {
-            throw raise(TypeError, "setsockopt 4-argument form requires 3rd argument to be None");
+            throw raise(TypeError, ErrorMessages.SETSECKOPT_REQUIRERS_3RD_ARG_NULL);
         }
 
         @Override
@@ -1097,7 +1099,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     int len = posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);
                     return factory().createBytes(result, len);
                 } else {
-                    throw raise(OSError, "getsockopt buflen out of range");
+                    throw raise(OSError, ErrorMessages.GETSECKOPT_BUFF_OUT_OFRANGE);
                 }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);

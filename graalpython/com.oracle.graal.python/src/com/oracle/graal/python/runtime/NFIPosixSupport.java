@@ -43,6 +43,8 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -57,13 +59,13 @@ import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKA
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
@@ -71,8 +73,8 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonOS;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -109,6 +111,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -319,10 +322,10 @@ public final class NFIPosixSupport extends PosixSupport {
             CompilerAsserts.neverPartOfCompilation();
 
             PythonOS os = getPythonOS();
-            String multiArch = PythonUtils.getPythonArch() + "-" + os.getName();
+            String multiArch = PythonUtils.getPythonArch().toJavaStringUncached() + "-" + os.getName().toJavaStringUncached();
             String cacheTag = "graalpython-38";
             Env env = context.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainId = toolchain.getIdentifier();
 
@@ -335,7 +338,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
 
             String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
-            TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
+            TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();
         }
@@ -343,7 +346,8 @@ public final class NFIPosixSupport extends PosixSupport {
         @TruffleBoundary
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
-            String withClause = posix.nfiBackend.equals("native") ? "" : "with " + posix.nfiBackend;
+            String backend = posix.nfiBackend.toJavaStringUncached();
+            String withClause = backend.equals("native") ? "" : "with " + backend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder("nfi", src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
 
@@ -385,12 +389,12 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private final PythonContext context;
-    private final String nfiBackend;
+    private final TruffleString nfiBackend;
     private volatile Object nfiLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
 
-    public NFIPosixSupport(PythonContext context, String nfiBackend) {
-        assert nfiBackend.equals("native") || nfiBackend.equals("llvm");
+    public NFIPosixSupport(PythonContext context, TruffleString nfiBackend) {
+        assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING) || nfiBackend.equalsUncached(T_LLVM_LANGUAGE, TS_ENCODING);
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
@@ -419,20 +423,22 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public String getBackend() {
+    public TruffleString getBackend() {
         return nfiBackend;
     }
 
     @ExportMessage
-    public String strerror(int errorCode,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    public TruffleString strerror(int errorCode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
         byte[] buf = new byte[1024];
         invokeNode.call(this, PosixNativeFunction.call_strerror, errorCode, wrap(buf), buf.length);
         // TODO PyUnicode_DecodeLocale
-        return cStringToJavaString(buf);
+        return cStringToTruffleString(buf, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     @ExportMessage
@@ -580,11 +586,6 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
-    @TruffleBoundary
-    private static int[] arrayCopyOf(int[] res, int resIdx) {
-        return Arrays.copyOf(res, resIdx);
-    }
-
     private static int findMax(int[] items, int currentMax) {
         int max = currentMax;
         for (int item : items) {
@@ -684,7 +685,9 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public Object[] uname(
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         byte[] sys = new byte[UNAME_BUF_LENGTH];
         byte[] node = new byte[UNAME_BUF_LENGTH];
         byte[] rel = new byte[UNAME_BUF_LENGTH];
@@ -696,11 +699,11 @@ public final class NFIPosixSupport extends PosixSupport {
         }
         return new Object[]{
                         // TODO PyUnicode_DecodeFSDefault
-                        cStringToJavaString(sys),
-                        cStringToJavaString(node),
-                        cStringToJavaString(rel),
-                        cStringToJavaString(ver),
-                        cStringToJavaString(machine)
+                        cStringToTruffleString(sys, fromByteArrayNode, switchEncodingFromUtf8Node),
+                        cStringToTruffleString(node, fromByteArrayNode, switchEncodingFromUtf8Node),
+                        cStringToTruffleString(rel, fromByteArrayNode, switchEncodingFromUtf8Node),
+                        cStringToTruffleString(ver, fromByteArrayNode, switchEncodingFromUtf8Node),
+                        cStringToTruffleString(machine, fromByteArrayNode, switchEncodingFromUtf8Node)
         };
     }
 
@@ -1072,14 +1075,16 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+    public TruffleString ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         byte[] buf = new byte[L_ctermid.value];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         // TODO PyUnicode_DecodeFSDefault
-        return cStringToJavaString(buf);
+        return cStringToTruffleString(buf, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     @ExportMessage
@@ -1587,13 +1592,15 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public Object[] getnameinfo(UniversalSockAddr usa, int flags,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws GetAddrInfoException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws GetAddrInfoException {
         Buffer host = Buffer.allocate(NI_MAXHOST.value);
         Buffer serv = Buffer.allocate(NI_MAXSERV.value);
         UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
         int res = invokeNode.callInt(this, PosixNativeFunction.call_getnameinfo, wrap(addr.data), addr.getLen(), wrap(host), NI_MAXHOST.value, wrap(serv), NI_MAXSERV.value, flags);
         if (res != 0) {
-            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode));
+            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node));
         }
         return new Object[]{
                         host.withLength(findZero(host.data)),
@@ -1603,19 +1610,25 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws GetAddrInfoException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws GetAddrInfoException {
         long[] ptr = new long[1];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_getaddrinfo, pathToCStringOrNull(node), pathToCStringOrNull(service), family, sockType, protocol, flags, wrap(ptr));
         if (res != 0) {
-            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode));
+            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node));
         }
         assert ptr[0] != 0;     // getaddrinfo should return at least one result
         return new AddrInfoCursorImpl(this, ptr[0], invokeNode);
     }
 
     @ExportMessage
-    public String crypt(String word, String salt,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+    public TruffleString crypt(TruffleString word, TruffleString salt,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
+                    @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         int[] lenArray = new int[1];
         /*
          * From the manpage: Upon successful completion, crypt returns a pointer to a string which
@@ -1627,7 +1640,8 @@ public final class NFIPosixSupport extends PosixSupport {
          */
         // Note GIL is not enough as crypt is using global memory so we need a really global lock
         synchronized (CRYPT_LOCK) {
-            long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word), stringToUTF8CString(salt), wrap(lenArray));
+            long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word, switchEncodingToUtf8Node, copyToByteArrayNode),
+                            stringToUTF8CString(salt, switchEncodingToUtf8Node, copyToByteArrayNode), wrap(lenArray));
             // CPython doesn't handle the case of "invalid hash" return specially and neither do we
             if (resultPtr == 0) {
                 throw getErrnoAndThrowPosixException(invokeNode);
@@ -1635,16 +1649,15 @@ public final class NFIPosixSupport extends PosixSupport {
             int len = lenArray[0];
             byte[] resultBytes = new byte[len];
             UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
-            return PythonUtils.newString(resultBytes);
+            return createString(resultBytes, 0, resultBytes.length, false, fromByteArrayNode, switchEncodingFromUtf8Node);
         }
     }
 
-    private String gai_strerror(int errorCode,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    private TruffleString gai_strerror(int errorCode, InvokeNativeFunction invokeNode, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) {
         byte[] buf = new byte[1024];
         invokeNode.call(this, PosixNativeFunction.call_gai_strerror, errorCode, wrap(buf), buf.length);
         // TODO PyUnicode_DecodeLocale
-        return cStringToJavaString(buf);
+        return cStringToTruffleString(buf, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     /**
@@ -1895,15 +1908,19 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        return getpw(PosixNativeFunction.call_getpwuid_r, uid, invokeNode);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+        return getpw(PosixNativeFunction.call_getpwuid_r, uid, invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        return getpw(PosixNativeFunction.call_getpwname_r, pathToCString(name), invokeNode);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
+        return getpw(PosixNativeFunction.call_getpwname_r, pathToCString(name), invokeNode, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     @ExportMessage
@@ -1915,7 +1932,9 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     public PwdResult[] getpwentries(
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         // Note: this is not thread safe, so potentially problematic while running multiple contexts
         // within one VM
         int sysConfMax = getSysConfPwdSizeMax(invokeNode);
@@ -1942,7 +1961,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 if (code != 0) {
                     throw CompilerDirectives.shouldNotReachHere("get_getpwent_data failed");
                 }
-                result.add(createPwdResult(buffer, output));
+                result.add(createPwdResult(buffer, output, fromByteArrayNode, switchEncodingFromUtf8Node));
             }
         } finally {
             invokeNode.call(this, PosixNativeFunction.call_endpwent);
@@ -1955,7 +1974,8 @@ public final class NFIPosixSupport extends PosixSupport {
         return result.toArray(new PwdResult[0]);
     }
 
-    public PwdResult getpw(PosixNativeFunction pwfun, Object pwfunArg, InvokeNativeFunction invokeNode) throws PosixException {
+    private PwdResult getpw(PosixNativeFunction pwfun, Object pwfunArg, InvokeNativeFunction invokeNode, TruffleString.FromByteArrayNode fromByteArrayNode,
+                    TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         int sysConfMax = getSysConfPwdSizeMax(invokeNode);
         int bufferSize = sysConfMax == -1 ? 1024 : sysConfMax;
         while (bufferSize < PWD_BUFFER_MAX_SIZE) {
@@ -1966,27 +1986,29 @@ public final class NFIPosixSupport extends PosixSupport {
                 return null;
             }
             if (result == 0) {
-                return createPwdResult(data, output);
+                return createPwdResult(data, output, fromByteArrayNode, switchEncodingFromUtf8Node);
             }
             if (result != OSErrorEnum.ERANGE.getNumber() || sysConfMax != -1) {
                 // no point in trying larger buffer if we got different error or the OS already told
                 // us that sysConfMax should be enough...
-                throw new PosixException(result, strerror(result, invokeNode));
+                throw newPosixException(invokeNode, result);
             }
             bufferSize <<= 1;
         }
         throw outOfMemoryPosixError();
     }
 
-    private static PwdResult createPwdResult(byte[] data, long[] output) throws PosixException {
+    private static PwdResult createPwdResult(byte[] data, long[] output, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node)
+                    throws PosixException {
         return new PwdResult(
-                        extractZeroTerminatedString(data, output[0]),
+                        extractZeroTerminatedString(data, output[0], fromByteArrayNode, switchEncodingFromUtf8Node),
                         output[1], output[2],
-                        extractZeroTerminatedString(data, output[3]),
-                        extractZeroTerminatedString(data, output[4]));
+                        extractZeroTerminatedString(data, output[3], fromByteArrayNode, switchEncodingFromUtf8Node),
+                        extractZeroTerminatedString(data, output[4], fromByteArrayNode, switchEncodingFromUtf8Node));
     }
 
-    private static String extractZeroTerminatedString(byte[] buffer, long longOffset) throws PosixException {
+    private static TruffleString extractZeroTerminatedString(byte[] buffer, long longOffset, TruffleString.FromByteArrayNode fromByteArrayNode,
+                    TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         if (longOffset < 0 || longOffset >= buffer.length) {
             throw outOfMemoryPosixError();
         }
@@ -1999,7 +2021,7 @@ public final class NFIPosixSupport extends PosixSupport {
             throw CompilerDirectives.shouldNotReachHere("Could not find the end of the string");
         }
         // TODO PyUnicode_DecodeFSDefault
-        return PythonUtils.newString(buffer, offset, end - offset);
+        return createString(buffer, offset, end - offset, true, fromByteArrayNode, switchEncodingFromUtf8Node);
     }
 
     private static PosixException outOfMemoryPosixError() throws PosixException {
@@ -2024,8 +2046,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object createPathFromString(String path) {
-        return checkPath(getStringBytes(path));
+    public Object createPathFromString(TruffleString path,
+                    @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                    @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        return checkPath(getStringBytes(path, switchEncodingNode, copyToByteArrayNode));
     }
 
     @ExportMessage
@@ -2036,15 +2060,16 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public String getPathAsString(Object path) {
+    public TruffleString getPathAsString(Object path,
+                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
         Buffer result = (Buffer) path;
         if (result.length > Integer.MAX_VALUE) {
             // sanity check that it is safe to cast result.length to int, to be removed once
             // we support large arrays
             throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
         }
-        // TODO PyUnicode_DecodeFSDefault
-        return PythonUtils.newString(result.data, 0, (int) result.length);
+        return createString(result.data, 0, (int) result.length, true, fromByteArrayNode, switchEncodingNode);
     }
 
     @ExportMessage
@@ -2053,9 +2078,19 @@ public final class NFIPosixSupport extends PosixSupport {
         return (Buffer) path;
     }
 
-    private static byte[] getStringBytes(String str) {
+    private static TruffleString createString(byte[] src, int offset, int length, boolean copy, TruffleString.FromByteArrayNode fromByteArrayNode,
+                    TruffleString.SwitchEncodingNode switchEncodingNode) {
+        // TODO PyUnicode_DecodeFSDefault
+        TruffleString utf8 = fromByteArrayNode.execute(src, offset, length, UTF_8, copy);
+        return switchEncodingNode.execute(utf8, TS_ENCODING);
+    }
+
+    private static byte[] getStringBytes(TruffleString str, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         // TODO replace getBytes with PyUnicode_FSConverter equivalent
-        return BytesUtils.utf8StringToBytes(str);
+        TruffleString utf8 = switchEncodingNode.execute(str, UTF_8);
+        byte[] bytes = new byte[utf8.byteLength(UTF_8)];
+        copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, UTF_8);
+        return bytes;
     }
 
     private static Buffer checkPath(byte[] path) {
@@ -2109,8 +2144,9 @@ public final class NFIPosixSupport extends PosixSupport {
         throw newPosixException(invokeNode, getErrno(invokeNode));
     }
 
+    @TruffleBoundary
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
-        throw new PosixException(errno, strerror(errno, invokeNode));
+        throw new PosixException(errno, strerror(errno, invokeNode, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached()));
     }
 
     private Object wrap(byte[] bytes) {
@@ -2134,8 +2170,8 @@ public final class NFIPosixSupport extends PosixSupport {
         return context.getEnv().asGuestValue(buffer.data);
     }
 
-    private static String cStringToJavaString(byte[] buf) {
-        return PythonUtils.newString(buf, 0, findZero(buf));
+    private static TruffleString cStringToTruffleString(byte[] buf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        return createString(buf, 0, findZero(buf), true, fromByteArrayNode, switchEncodingNode);
     }
 
     private static int findZero(byte[] buf) {
@@ -2159,8 +2195,10 @@ public final class NFIPosixSupport extends PosixSupport {
         return wrap(nullTerminate(path.data, (int) path.length));
     }
 
-    private Object stringToUTF8CString(String input) {
-        byte[] utf8 = BytesUtils.utf8StringToBytes(input);
+    private Object stringToUTF8CString(TruffleString input,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
+                    @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        byte[] utf8 = getStringBytes(input, switchEncodingToUtf8Node, copyToByteArrayNode);
         return wrap(nullTerminate(utf8, utf8.length));
     }
 
@@ -2179,11 +2217,6 @@ public final class NFIPosixSupport extends PosixSupport {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
         }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static <T> void add(List<T> list, T value) {
-        list.add(value);
     }
 
     @TruffleBoundary

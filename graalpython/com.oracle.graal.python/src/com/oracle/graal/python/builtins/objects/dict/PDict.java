@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -229,7 +229,7 @@ public class PDict extends PHashingCollection {
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictItems = callMethod.execute(null, self, ITEMS);
+            Object dictItems = callMethod.execute(null, self, T_ITEMS);
             return getIter.execute(null, dictItems);
         } finally {
             gil.release(mustRelease);
@@ -243,7 +243,7 @@ public class PDict extends PHashingCollection {
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictKeys = callMethod.execute(null, self, KEYS);
+            Object dictKeys = callMethod.execute(null, self, T_KEYS);
             return getIter.execute(null, dictKeys);
         } finally {
             gil.release(mustRelease);
@@ -257,7 +257,7 @@ public class PDict extends PHashingCollection {
                     @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictValues = callMethod.execute(null, self, VALUES);
+            Object dictValues = callMethod.execute(null, self, T_VALUES);
             return getIter.execute(null, dictValues);
         } finally {
             gil.release(mustRelease);

@@ -47,10 +47,13 @@ import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 /**
  * A context-independent representation of code for bytecode interpreter. Contains the actual
@@ -69,8 +72,8 @@ public final class CodeUnit {
 
     public static final int DISASSEMBLY_NUM_COLUMNS = 7;
 
-    public final String name;
-    public final String qualname;
+    public final TruffleString name;
+    public final TruffleString qualname;
 
     public final int argCount;
     public final int kwOnlyArgCount;
@@ -82,10 +85,10 @@ public final class CodeUnit {
     public final byte[] srcOffsetTable;
     public final int flags;
 
-    public final String[] names;
-    public final String[] varnames;
-    public final String[] cellvars;
-    public final String[] freevars;
+    public final TruffleString[] names;
+    public final TruffleString[] varnames;
+    public final TruffleString[] cellvars;
+    public final TruffleString[] freevars;
     public final int[] cell2arg;
 
     public final Object[] constants;
@@ -97,10 +100,10 @@ public final class CodeUnit {
 
     public final boolean lambda;
 
-    public CodeUnit(String name, String qualname,
+    public CodeUnit(TruffleString name, TruffleString qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
                     byte[] code, byte[] linetable, int flags,
-                    String[] names, String[] varnames, String[] cellvars, String[] freevars, int[] cell2arg,
+                    TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     short[] exceptionHandlerRanges, int startOffset) {
         this.name = name;
@@ -121,7 +124,7 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
-        this.lambda = name.equals(BuiltinNames.LAMBDA_NAME);
+        this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
     }
 
     OpCodes codeForBC(int bc) {
@@ -255,10 +258,10 @@ public final class CodeUnit {
                 case MAKE_KEYWORD: {
                     Object constant = constants[oparg];
                     if (constant instanceof CodeUnit) {
-                        line[5] = ((CodeUnit) constant).qualname;
+                        line[5] = ((CodeUnit) constant).qualname.toJavaStringUncached();
                     } else {
-                        if (constant instanceof String) {
-                            line[5] = PString.repr((String) constant);
+                        if (constant instanceof TruffleString) {
+                            line[5] = StringNodes.StringReprNode.getUncached().execute((TruffleString) constant).toJavaStringUncached();
                         } else if (constant instanceof byte[]) {
                             byte[] bytes = (byte[]) constant;
                             line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
@@ -273,7 +276,7 @@ public final class CodeUnit {
                 case MAKE_FUNCTION: {
                     line[4] = String.format("% 2d", followingArgs[0]);
                     CodeUnit code = (CodeUnit) constants[oparg];
-                    line[5] = line[5] = code.qualname;
+                    line[5] = line[5] = code.qualname.toJavaStringUncached();
                     break;
                 }
                 case LOAD_LONG:
@@ -296,15 +299,15 @@ public final class CodeUnit {
                 case STORE_DEREF:
                 case DELETE_DEREF:
                     if (oparg >= cellvars.length) {
-                        line[5] = freevars[oparg - cellvars.length];
+                        line[5] = freevars[oparg - cellvars.length].toJavaStringUncached();
                     } else {
-                        line[5] = cellvars[oparg];
+                        line[5] = cellvars[oparg].toJavaStringUncached();
                     }
                     break;
                 case LOAD_FAST:
                 case STORE_FAST:
                 case DELETE_FAST:
-                    line[5] = varnames[oparg];
+                    line[5] = varnames[oparg].toJavaStringUncached();
                     break;
                 case LOAD_NAME:
                 case STORE_NAME:
@@ -318,7 +321,7 @@ public final class CodeUnit {
                 case STORE_ATTR:
                 case DELETE_ATTR:
                 case CALL_METHOD_VARARGS:
-                    line[5] = names[oparg];
+                    line[5] = names[oparg].toJavaStringUncached();
                     break;
                 case FORMAT_VALUE: {
                     int type = oparg & FormatOptions.FVC_MASK;
@@ -343,7 +346,7 @@ public final class CodeUnit {
                 }
                 case CALL_METHOD: {
                     line[4] = String.format("% 2d", followingArgs[0]);
-                    line[5] = names[oparg];
+                    line[5] = names[oparg].toJavaStringUncached();
                     break;
                 }
                 case UNARY_OP:

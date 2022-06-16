@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSemLock})
 public class SemLockBuiltins extends PythonBuiltins {
@@ -80,7 +81,7 @@ public class SemLockBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        builtinConstants.put("SEM_VALUE_MAX", Integer.MAX_VALUE);
+        addBuiltinConstant("SEM_VALUE_MAX", Integer.MAX_VALUE);
         super.initialize(core);
     }
 
@@ -134,7 +135,7 @@ public class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(PSemLock self) {
+        TruffleString getName(PSemLock self) {
             return self.getName();
         }
     }
@@ -188,7 +189,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -200,7 +201,7 @@ public class SemLockBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_rebuild", minNumOfPositionalArgs = 4, parameterNames = {"handle", "kind", "maxvalue", "name"})
     @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class RebuildNode extends PythonClinicBuiltinNode {
         @Override
@@ -209,7 +210,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, String name) {
+        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name) {
             SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
             if (semaphore == null) {
@@ -246,7 +247,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization

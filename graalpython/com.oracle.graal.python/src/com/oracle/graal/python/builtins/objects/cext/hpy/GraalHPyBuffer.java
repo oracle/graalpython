@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,15 +62,16 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This class implements an interop object that behaves like {@code HPy_buffer} and is backed by
  * {@link CExtPyBuffer}. Therefore, this object is just a view and is read-only. The idea is to use
  * this view for releasing a buffer since releasing usually doesn't need all values and so we try to
  * avoid to do costly conversions eagerly.
- * 
+ *
  * The {@code HPy_buffer} structure:
- * 
+ *
  * <pre>
  *     typedef struct {
  *         void *buf;
@@ -86,25 +87,25 @@ import com.oracle.truffle.api.library.ExportMessage;
  *         void *internal;
  * } HPy_buffer;
  * </pre>
- * 
+ *
  */
 @ExportLibrary(InteropLibrary.class)
 @SuppressWarnings("static-method")
 public final class GraalHPyBuffer implements TruffleObject {
-    private static final String MEMBER_BUF = "buf";
-    private static final String MEMBER_OBJ = "obj";
-    private static final String MEMBER_LEN = "len";
-    private static final String MEMBER_ITEMSIZE = "itemsize";
-    private static final String MEMBER_READONLY = "readonly";
-    private static final String MEMBER_NDIM = "ndim";
-    private static final String MEMBER_FORMAT = "format";
-    private static final String MEMBER_SHAPE = "shape";
-    private static final String MEMBER_STRIDES = "strides";
-    private static final String MEMBER_SUBOFFSETS = "suboffsets";
-    private static final String MEMBER_INTERNAL = "internal";
+    private static final String J_MEMBER_BUF = "buf";
+    private static final String J_MEMBER_OBJ = "obj";
+    private static final String J_MEMBER_LEN = "len";
+    private static final String J_MEMBER_ITEMSIZE = "itemsize";
+    private static final String J_MEMBER_READONLY = "readonly";
+    private static final String J_MEMBER_NDIM = "ndim";
+    private static final String J_MEMBER_FORMAT = "format";
+    private static final String J_MEMBER_SHAPE = "shape";
+    private static final String J_MEMBER_STRIDES = "strides";
+    private static final String J_MEMBER_SUBOFFSETS = "suboffsets";
+    private static final String J_MEMBER_INTERNAL = "internal";
 
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = new String[]{MEMBER_BUF, MEMBER_OBJ, MEMBER_LEN, MEMBER_ITEMSIZE, MEMBER_READONLY, MEMBER_NDIM, MEMBER_FORMAT,
-                    MEMBER_SHAPE, MEMBER_STRIDES, MEMBER_SUBOFFSETS, MEMBER_INTERNAL};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = new String[]{J_MEMBER_BUF, J_MEMBER_OBJ, J_MEMBER_LEN, J_MEMBER_ITEMSIZE, J_MEMBER_READONLY, J_MEMBER_NDIM,
+                    J_MEMBER_FORMAT, J_MEMBER_SHAPE, J_MEMBER_STRIDES, J_MEMBER_SUBOFFSETS, J_MEMBER_INTERNAL};
 
     private final GraalHPyContext context;
     private final CExtPyBuffer buffer;
@@ -123,8 +124,8 @@ public final class GraalHPyBuffer implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{MEMBER_BUF, MEMBER_OBJ, MEMBER_LEN, MEMBER_ITEMSIZE, MEMBER_READONLY,
-                        MEMBER_NDIM, MEMBER_FORMAT, MEMBER_SHAPE, MEMBER_STRIDES, MEMBER_SUBOFFSETS, MEMBER_INTERNAL});
+        return new PythonAbstractObject.Keys(new Object[]{J_MEMBER_BUF, J_MEMBER_OBJ, J_MEMBER_LEN, J_MEMBER_ITEMSIZE, J_MEMBER_READONLY,
+                        J_MEMBER_NDIM, J_MEMBER_FORMAT, J_MEMBER_SHAPE, J_MEMBER_STRIDES, J_MEMBER_SUBOFFSETS, J_MEMBER_INTERNAL});
     }
 
     @ExportMessage
@@ -140,36 +141,36 @@ public final class GraalHPyBuffer implements TruffleObject {
     @ExportMessage
     static class ReadMember {
         @Specialization(guards = "receiver.getSupplier() == cachedSupplier")
-        static Object readMember(GraalHPyBuffer receiver, String key,
+        static Object readMember(GraalHPyBuffer receiver, String member,
                         @Cached(value = "receiver.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
                         @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) throws UnknownIdentifierException {
-            switch (key) {
-                case MEMBER_BUF:
+            switch (member) {
+                case J_MEMBER_BUF:
                     return receiver.buffer.getBuf();
-                case MEMBER_OBJ:
+                case J_MEMBER_OBJ:
                     Object obj = receiver.buffer.getObj();
                     return toNativeNode.execute(receiver.context, obj != null ? obj : PNone.NO_VALUE);
-                case MEMBER_LEN:
+                case J_MEMBER_LEN:
                     return receiver.buffer.getLen();
-                case MEMBER_ITEMSIZE:
+                case J_MEMBER_ITEMSIZE:
                     return receiver.buffer.getItemSize();
-                case MEMBER_READONLY:
+                case J_MEMBER_READONLY:
                     return PInt.intValue(receiver.buffer.isReadOnly());
-                case MEMBER_NDIM:
+                case J_MEMBER_NDIM:
                     return receiver.buffer.getDims();
-                case MEMBER_FORMAT:
+                case J_MEMBER_FORMAT:
                     return receiver.buffer.getFormat() != null ? new CStringWrapper(receiver.buffer.getFormat()) : toNativeNode.execute(receiver.context, PNone.NO_VALUE);
-                case MEMBER_SHAPE:
+                case J_MEMBER_SHAPE:
                     return toCArray(receiver.context, toNativeNode, receiver.buffer.getShape());
-                case MEMBER_STRIDES:
+                case J_MEMBER_STRIDES:
                     return toCArray(receiver.context, toNativeNode, receiver.buffer.getStrides());
-                case MEMBER_SUBOFFSETS:
+                case J_MEMBER_SUBOFFSETS:
                     return toCArray(receiver.context, toNativeNode, receiver.buffer.getSuboffsets());
-                case MEMBER_INTERNAL:
+                case J_MEMBER_INTERNAL:
                     return receiver.buffer.getInternal();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnknownIdentifierException.create(key);
+            throw UnknownIdentifierException.create(member);
         }
 
         private static Object toCArray(CExtContext context, CExtToNativeNode toNativeNode, int[] arr) {
@@ -195,7 +196,9 @@ public final class GraalHPyBuffer implements TruffleObject {
     void toNative(
                     @Cached PCallHPyFunction callBufferToNativeNode,
                     @Cached(value = "this.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
-                    @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) {
+                    @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode,
+                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                    @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         if (nativePointer == null) {
             /*
              * This is basically the same as reading the members one-by-one via 'readMember' but
@@ -209,7 +212,7 @@ public final class GraalHPyBuffer implements TruffleObject {
                             buffer.getItemSize(), // itemsize
                             PInt.intValue(buffer.isReadOnly()), // readonly
                             buffer.getDims(), // ndim
-                            CArrayWrappers.stringToNativeUtf8Bytes(buffer.getFormat()), // format
+                            CArrayWrappers.stringToNativeUtf8Bytes(buffer.getFormat(), switchEncodingNode, copyToByteArrayNode), // format
                             intArrayToNativeInt64(buffer.getShape()), // shape
                             intArrayToNativeInt64(buffer.getStrides()), // strides
                             intArrayToNativeInt64(buffer.getSuboffsets()), // suboffsets

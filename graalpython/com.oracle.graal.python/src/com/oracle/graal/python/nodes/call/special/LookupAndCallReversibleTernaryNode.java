@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTernaryNode {
@@ -68,7 +69,7 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     @Child protected NotImplementedHandler handler;
     protected final Supplier<NotImplementedHandler> handlerFactory;
 
-    LookupAndCallReversibleTernaryNode(String name, Supplier<NotImplementedHandler> handlerFactory) {
+    LookupAndCallReversibleTernaryNode(TruffleString name, Supplier<NotImplementedHandler> handlerFactory) {
         super(name);
         this.handlerFactory = handlerFactory;
     }

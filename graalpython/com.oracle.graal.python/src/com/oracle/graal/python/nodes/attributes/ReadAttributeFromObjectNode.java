@@ -71,6 +71,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
@@ -127,7 +128,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "getStorage(object, cachedDict) == cachedStorage"
     }, limit = "1")
     @SuppressWarnings("unused")
-    protected static Object readFromBuiltinModuleDict(PythonModule object, String key,
+    protected static Object readFromBuiltinModuleDict(PythonModule object, TruffleString key,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,

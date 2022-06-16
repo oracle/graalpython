@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,11 +56,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class MroSequenceStorage extends TypedSequenceStorage {
 
-    private final String className;
+    private final TruffleString className;
     /**
      * This assumption will be invalidated whenever the mro changes.
      */
@@ -70,28 +71,28 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
      * These assumptions will be invalidated whenever the value of the given slot changes. All
      * assumptions will be invalidated if the mro changes.
      */
-    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions;
+    private final Map<TruffleString, List<Assumption>> attributesInMROFinalAssumptions;
     private boolean hasAttributesInMROFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private final PythonAbstractClass[] values;
 
     @TruffleBoundary
-    public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
+    public MroSequenceStorage(TruffleString className, PythonAbstractClass[] elements) {
         this.className = className;
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
-        this.lookupStableAssumption = new CyclicAssumption(className);
+        this.lookupStableAssumption = new CyclicAssumption(className.toJavaStringUncached());
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
     @TruffleBoundary
-    public MroSequenceStorage(String className, int capacity) {
+    public MroSequenceStorage(TruffleString className, int capacity) {
         this.className = className;
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
-        this.lookupStableAssumption = new CyclicAssumption(className);
+        this.lookupStableAssumption = new CyclicAssumption(className.toJavaStringUncached());
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
@@ -137,7 +138,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return new MroSequenceStorage(getClassName(), newArray);
     }
 
-    public String getClassName() {
+    public TruffleString getClassName() {
         return className;
     }
 
@@ -218,7 +219,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return lookupStableAssumption.getAssumption();
     }
 
-    public Assumption createAttributeInMROFinalAssumption(String name) {
+    public Assumption createAttributeInMROFinalAssumption(TruffleString name) {
         CompilerAsserts.neverPartOfCompilation();
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
@@ -232,7 +233,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return assumption;
     }
 
-    public void addAttributeInMROFinalAssumption(String name, Assumption assumption) {
+    public void addAttributeInMROFinalAssumption(TruffleString name, Assumption assumption) {
         CompilerAsserts.neverPartOfCompilation();
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
@@ -248,7 +249,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
      * Returns {@code true} if some assumption was actually invalidated.
      */
     @TruffleBoundary
-    public boolean invalidateAttributeInMROFinalAssumptions(String name) {
+    public boolean invalidateAttributeInMROFinalAssumptions(TruffleString name) {
         List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, Collections.emptyList());
         // the empty check is just to avoid the StringBuilder allocation
         if (!assumptions.isEmpty()) {

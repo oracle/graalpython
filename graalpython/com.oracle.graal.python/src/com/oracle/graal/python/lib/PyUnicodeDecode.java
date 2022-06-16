@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.BuiltinNames._CODECS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_DECODE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_S_RETURNED_P_INSTEAD_OF_STR;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -79,6 +79,6 @@ public abstract class PyUnicodeDecode extends PNodeWithContext {
     @Specialization(replaces = "doFast")
     Object doWithCall(Object object, Object encoding, Object errors,
                     @Cached PyObjectCallMethodObjArgs callNode) {
-        return callNode.execute(null, PythonContext.get(this).getCore().lookupBuiltinModule(_CODECS), DECODE, object, encoding, errors);
+        return callNode.execute(null, PythonContext.get(this).getCore().lookupBuiltinModule(T__CODECS), T_DECODE, object, encoding, errors);
     }
 }

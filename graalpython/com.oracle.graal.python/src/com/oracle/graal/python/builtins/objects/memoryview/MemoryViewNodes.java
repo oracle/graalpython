@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,6 +90,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class MemoryViewNodes {
     static boolean isByteFormat(BufferFormat format) {
@@ -144,17 +145,17 @@ public class MemoryViewNodes {
 
     @ImportStatic(BufferFormat.class)
     public abstract static class UnpackValueNode extends PNodeWithRaise {
-        public abstract Object execute(BufferFormat format, String formatStr, byte[] bytes, int offset);
+        public abstract Object execute(BufferFormat format, TruffleString formatStr, byte[] bytes, int offset);
 
         @Specialization(guards = "format != OTHER")
-        static Object unpack(BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset,
+        static Object unpack(BufferFormat format, @SuppressWarnings("unused") TruffleString formatStr, byte[] bytes, int offset,
                         @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
             return unpackValueNode.execute(format, bytes, offset);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object notImplemented(BufferFormat format, String formatStr, byte[] bytes, int offset) {
+        Object notImplemented(BufferFormat format, TruffleString formatStr, byte[] bytes, int offset) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
@@ -163,10 +164,10 @@ public class MemoryViewNodes {
     public abstract static class PackValueNode extends PNodeWithRaise {
         @Child private IsBuiltinClassProfile isOverflowErrorProfile;
 
-        public abstract void execute(VirtualFrame frame, BufferFormat format, String formatStr, Object object, byte[] bytes, int offset);
+        public abstract void execute(VirtualFrame frame, BufferFormat format, TruffleString formatStr, Object object, byte[] bytes, int offset);
 
         @Specialization(guards = "format != OTHER")
-        void pack(VirtualFrame frame, BufferFormat format, String formatStr, Object value, byte[] bytes, int offset,
+        void pack(VirtualFrame frame, BufferFormat format, TruffleString formatStr, Object value, byte[] bytes, int offset,
                         @Cached BufferStorageNodes.PackValueNode packValueNode) {
             try {
                 packValueNode.execute(frame, format, value, bytes, offset);
@@ -177,15 +178,15 @@ public class MemoryViewNodes {
 
         @Fallback
         @SuppressWarnings("unused")
-        void notImplemented(BufferFormat format, String formatStr, Object object, byte[] bytes, int offset) {
+        void notImplemented(BufferFormat format, TruffleString formatStr, Object object, byte[] bytes, int offset) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
 
-        private PException valueError(String formatStr) {
+        private PException valueError(TruffleString formatStr) {
             throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
         }
 
-        private PException processException(PException e, String formatStr) {
+        private PException processException(PException e, TruffleString formatStr) {
             e.expect(OverflowError, getIsOverflowErrorProfile());
             throw valueError(formatStr);
         }

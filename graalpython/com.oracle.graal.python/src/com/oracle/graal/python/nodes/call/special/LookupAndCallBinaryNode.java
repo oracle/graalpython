@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 // cpython://Objects/abstract.c#binary_op1
 // Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
@@ -80,11 +81,11 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
-    public static LookupAndCallBinaryNode create(String name) {
+    public static LookupAndCallBinaryNode create(TruffleString name) {
         // Use SpecialMethodSlot overload for special slots, if there is a need to create
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
         // to try to lookup a slot and use that if found
-        assert SpecialMethodSlot.findSpecialSlot(name) == null : name;
+        assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
         return LookupAndCallNonReversibleBinaryNodeGen.create(name, null, false);
     }
 
@@ -104,13 +105,13 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
     }
 
-    protected static Object getMethod(Object receiver, String methodName) {
+    protected static Object getMethod(Object receiver, TruffleString methodName) {
         return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver);
     }
 
-    public abstract String getName();
+    public abstract TruffleString getName();
 
-    public abstract String getRname();
+    public abstract TruffleString getRname();
 
     protected final CallBinaryMethodNode ensureDispatch() {
         // this also serves as a branch profile

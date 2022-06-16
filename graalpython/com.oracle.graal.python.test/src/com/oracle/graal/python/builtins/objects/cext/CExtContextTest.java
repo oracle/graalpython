@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.runtime.PythonContext;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public abstract class JavaStringConverterWithDefaultValueNode extends JavaStringConverterNode {
-    private final Object defaultValue;
-    protected final boolean useDefaultForNone;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.strings.TruffleString;
+import static org.junit.Assert.assertEquals;
 
-    public JavaStringConverterWithDefaultValueNode(String builtinName, Object defaultValue, boolean useDefaultForNone) {
-        super(builtinName);
-        this.defaultValue = defaultValue;
-        this.useDefaultForNone = useDefaultForNone;
+public class CExtContextTest {
+
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
     }
 
-    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
-    Object doNoValue(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
-    @Specialization(guards = "useDefaultForNone")
-    Object doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
+    static TruffleString ts(String s) {
+        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
     }
 
-    @Override
-    protected final boolean shouldUseDefaultValue(Object value) {
-        return isHandledPNone(useDefaultForNone, value);
+    @Test
+    public void testGetBaseName() {
+        assertEquals(ts(""), TestCExtContext.getBN(ts("")));
+        assertEquals(ts("a"), TestCExtContext.getBN(ts("a")));
+        assertEquals(ts("aa"), TestCExtContext.getBN(ts("aa")));
+        assertEquals(ts("aa"), TestCExtContext.getBN(ts("a.aa")));
+        assertEquals(ts("bb"), TestCExtContext.getBN(ts("a.aa.bb")));
+        assertEquals(ts(""), TestCExtContext.getBN(ts("a.aa.bb.")));
+        assertEquals(ts("b"), TestCExtContext.getBN(ts("a.b")));
+        assertEquals(ts(""), TestCExtContext.getBN(ts("a.b.")));
     }
 
-    @ClinicConverterFactory
-    public static JavaStringConverterWithDefaultValueNode create(@BuiltinName String builtinName, @DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return JavaStringConverterWithDefaultValueNodeGen.create(builtinName, defaultValue, useDefaultForNone);
+    private static class TestCExtContext extends CExtContext {
+        public TestCExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
+            super(context, llvmLibrary, supplier);
+        }
+
+        @Override
+        protected Store initializeSymbolCache() {
+            throw new RuntimeException("should not reach here");
+        }
+
+        public static TruffleString getBN(TruffleString s) {
+            return getBaseName(s);
+        }
     }
+
 }

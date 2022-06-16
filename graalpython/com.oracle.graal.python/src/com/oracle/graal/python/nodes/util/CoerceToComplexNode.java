@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -95,7 +95,7 @@ public abstract class CoerceToComplexNode extends PNodeWithRaise {
         // TODO taken from BuiltinConstructors, should probably be refactored somehow
         if (callComplexFunc == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            callComplexFunc = insert(LookupAndCallUnaryNode.create(__COMPLEX__));
+            callComplexFunc = insert(LookupAndCallUnaryNode.create(T___COMPLEX__));
         }
         Object result = callComplexFunc.executeObject(frame, x);
         if (result != PNone.NO_VALUE) {

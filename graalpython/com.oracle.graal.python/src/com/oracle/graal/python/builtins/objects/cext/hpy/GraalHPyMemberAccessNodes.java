@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,6 +112,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class GraalHPyMemberAccessNodes {
 
@@ -350,7 +351,7 @@ public class GraalHPyMemberAccessNodes {
             Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(PythonBuiltinClassType.SystemError, "Attempting to read from offset %d but object '%s' has no associated native space.", offset, self);
+                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
             }
 
             Object nativeResult = PNone.NONE;
@@ -384,7 +385,7 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName, int type, int offset) {
             GraalHPyNativeSymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootCallTarget callTarget = language.createCachedCallTarget(
@@ -407,7 +408,7 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true),
                             GraalHPyMemberAccessNodes.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
@@ -429,7 +430,7 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true),
                             HPyBadMemberDescrNode.class, builtin);
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
@@ -468,7 +469,7 @@ public class GraalHPyMemberAccessNodes {
             Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(PythonBuiltinClassType.SystemError, "Attempting to write to offset %d but object '%s' has no associated native space.", offset, self);
+                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);
             }
 
             /*
@@ -540,7 +541,7 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName, int type, int offset) {
             GraalHPyNativeSymbol accessor = getWriteAccessorName(type);
             if (accessor == null) {
                 if (isReadOnlyType(type)) {

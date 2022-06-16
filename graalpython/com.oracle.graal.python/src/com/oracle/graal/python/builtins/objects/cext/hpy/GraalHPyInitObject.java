@@ -57,11 +57,11 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class GraalHPyInitObject implements TruffleObject {
 
-    public static final String SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
-    public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
-    public static final String SET_HPYFIELD_NATIVE_TYPE = "setHPyFieldNativeType";
-    public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
-    public static final String SET_WCHAR_SIZE = "setWcharSize";
+    public static final String J_SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
+    public static final String J_SET_HPY_NATIVE_TYPE = "setHPyNativeType";
+    public static final String J_SET_HPYFIELD_NATIVE_TYPE = "setHPyFieldNativeType";
+    public static final String J_SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
+    public static final String J_SET_WCHAR_SIZE = "setWcharSize";
     private final GraalHPyContext hpyContext;
 
     public GraalHPyInitObject(GraalHPyContext hpyContext) {
@@ -77,18 +77,18 @@ public final class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPYFIELD_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_WCHAR_SIZE});
+        return new PythonAbstractObject.Keys(new String[]{J_SET_HPY_CONTEXT_NATIVE_TYPE, J_SET_HPY_NATIVE_TYPE, J_SET_HPYFIELD_NATIVE_TYPE, J_SET_HPY_ARRAY_NATIVE_TYPE, J_SET_WCHAR_SIZE});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMemberInvocable(String key) {
         switch (key) {
-            case SET_HPY_CONTEXT_NATIVE_TYPE:
-            case SET_HPY_NATIVE_TYPE:
-            case SET_HPYFIELD_NATIVE_TYPE:
-            case SET_HPY_ARRAY_NATIVE_TYPE:
-            case SET_WCHAR_SIZE:
+            case J_SET_HPY_CONTEXT_NATIVE_TYPE:
+            case J_SET_HPY_NATIVE_TYPE:
+            case J_SET_HPYFIELD_NATIVE_TYPE:
+            case J_SET_HPY_ARRAY_NATIVE_TYPE:
+            case J_SET_WCHAR_SIZE:
                 return true;
         }
         return false;
@@ -104,19 +104,19 @@ public final class GraalHPyInitObject implements TruffleObject {
             }
 
             switch (key) {
-                case SET_HPY_CONTEXT_NATIVE_TYPE:
+                case J_SET_HPY_CONTEXT_NATIVE_TYPE:
                     hpyContext.setHPyContextNativeType(arguments[0]);
                     return 0;
-                case SET_HPY_NATIVE_TYPE:
+                case J_SET_HPY_NATIVE_TYPE:
                     hpyContext.setHPyNativeType(arguments[0]);
                     return 0;
-                case SET_HPYFIELD_NATIVE_TYPE:
+                case J_SET_HPYFIELD_NATIVE_TYPE:
                     hpyContext.setHPyFieldNativeType(arguments[0]);
                     return 0;
-                case SET_HPY_ARRAY_NATIVE_TYPE:
+                case J_SET_HPY_ARRAY_NATIVE_TYPE:
                     hpyContext.setHPyArrayNativeType(arguments[0]);
                     return 0;
-                case SET_WCHAR_SIZE:
+                case J_SET_WCHAR_SIZE:
                     hpyContext.setWcharSize(((Number) arguments[0]).longValue());
                     return 0;
             }

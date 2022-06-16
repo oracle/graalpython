@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,13 +78,13 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @SuppressWarnings("static-method")
 public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
-    public static final String NAME = "name";
-    public static final String OFFSET = "offset";
-    public static final String FUNCTION = "function";
-    public static final String WRAPPER = "wrapper";
-    public static final String DOC = "doc";
-    public static final String FLAGS = "flags";
-    public static final String NAME_STROBJ = "name_strobj";
+    public static final String J_NAME = "name";
+    public static final String J_OFFSET = "offset";
+    public static final String J_FUNCTION = "function";
+    public static final String J_WRAPPER = "wrapper";
+    public static final String J_DOC = "doc";
+    public static final String J_FLAGS = "flags";
+    public static final String J_NAME_STROBJ = "name_strobj";
 
     public StructWrapperBaseWrapper(PBuiltinFunction delegate) {
         super(delegate);
@@ -101,19 +101,19 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new InteropArray(new Object[]{NAME, OFFSET, FUNCTION, WRAPPER, DOC, FLAGS, NAME_STROBJ});
+        return new InteropArray(new Object[]{J_NAME, J_OFFSET, J_FUNCTION, J_WRAPPER, J_DOC, J_FLAGS, J_NAME_STROBJ});
     }
 
     @ExportMessage
     boolean isMemberReadable(String member) {
         switch (member) {
-            case NAME:
-            case OFFSET:
-            case FUNCTION:
-            case WRAPPER:
-            case DOC:
-            case FLAGS:
-            case NAME_STROBJ:
+            case J_NAME:
+            case J_OFFSET:
+            case J_FUNCTION:
+            case J_WRAPPER:
+            case J_DOC:
+            case J_FLAGS:
+            case J_NAME_STROBJ:
                 return true;
             default:
                 return false;
@@ -127,19 +127,19 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
         boolean mustRelease = gil.acquire();
         try {
             switch (member) {
-                case NAME:
+                case J_NAME:
                     return new CStringWrapper(getBuiltinFunction().getName());
-                case OFFSET:
+                case J_OFFSET:
                     return 0;
-                case FUNCTION:
+                case J_FUNCTION:
                     PKeyword[] kwDefaults = getBuiltinFunction().getKwDefaults();
                     return ExternalFunctionNodes.getHiddenCallable(kwDefaults);
-                case WRAPPER:
-                case DOC:
-                case NAME_STROBJ:
+                case J_WRAPPER:
+                case J_DOC:
+                case J_NAME_STROBJ:
                     // TODO(fa): if ever necessary, provide proper values here
                     return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
-                case FLAGS:
+                case J_FLAGS:
                     return getBuiltinFunction().getFlags();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();

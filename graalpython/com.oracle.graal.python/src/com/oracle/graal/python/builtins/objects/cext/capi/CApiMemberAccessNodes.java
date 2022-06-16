@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,6 +90,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class CApiMemberAccessNodes {
 
@@ -383,7 +384,7 @@ public class CApiMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, String propertyName, int type, int offset) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
             NativeCAPISymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootCallTarget callTarget = language.createCachedCallTarget(
@@ -406,7 +407,7 @@ public class CApiMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create()), true),
                             CApiMemberAccessNodes.class, BUILTIN.name());
@@ -429,7 +430,7 @@ public class CApiMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(BadMemberDescrNodeGen.create()), true),
                             CApiMemberAccessNodes.class, BUILTIN.name());
@@ -528,7 +529,7 @@ public class CApiMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, String propertyName, int type, int offset) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
             NativeCAPISymbol accessor = getWriteAccessorName(type);
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
             if (accessor == null) {

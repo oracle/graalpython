@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,11 +49,12 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_I
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -84,6 +85,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCArrayType)
 public class PyCArrayTypeBuiltins extends PythonBuiltins {
@@ -93,17 +95,17 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
         return PyCArrayTypeBuiltinsFactory.getFactories();
     }
 
-    protected static final String _length_ = "_length_";
+    protected static final TruffleString T__LENGTH_ = tsLiteral("_length_");
 
     @ImportStatic({PyCPointerTypeBuiltins.class, PyCArrayTypeBuiltins.class, SpecialMethodNames.class})
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PyCArrayTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
         Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @Cached("create(_type_)") LookupAttributeInMRONode lookupAttrId,
-                        @Cached("create(_length_)") LookupAttributeInMRONode lookupAttrIdLength,
+                        @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
+                        @Cached("create(T__LENGTH_)") LookupAttributeInMRONode lookupAttrIdLength,
                         @Cached IsBuiltinClassProfile profile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNode typeNew,

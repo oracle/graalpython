@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Variant of {@link WriteAttributeToObjectNode} that allows to set attributes of builtin types
@@ -66,21 +67,21 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @GenerateUncached
 public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNode {
 
-    public abstract void execute(Object primary, String key, Object value);
+    public abstract void execute(Object primary, TruffleString key, Object value);
 
     protected static boolean isAttrWritable(PythonBuiltinClass self) {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
     @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"}, limit = "1")
-    static void writeToDynamicStorage(PythonBuiltinClass klass, String key, Object value,
+    static void writeToDynamicStorage(PythonBuiltinClass klass, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         dylib.put(klass, key, value);
     }
 
     @Specialization(guards = "dict != null", limit = "1")
-    static void writeToDictNoType(@SuppressWarnings("unused") PythonBuiltinClass klass, String key, Object value,
+    static void writeToDictNoType(@SuppressWarnings("unused") PythonBuiltinClass klass, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
                     @Cached BranchProfile updateStorage,
@@ -89,7 +90,7 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
     }
 
     @Specialization
-    static void doPBCT(PythonBuiltinClassType object, String key, Object value,
+    static void doPBCT(PythonBuiltinClassType object, TruffleString key, Object value,
                     @Cached WriteAttributeToBuiltinTypeNode recursive) {
         recursive.execute(PythonContext.get(recursive).lookupType(object), key, value);
     }
