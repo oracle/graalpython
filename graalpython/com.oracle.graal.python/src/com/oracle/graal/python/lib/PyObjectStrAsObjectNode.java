@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -93,7 +92,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     @Specialization
     TruffleString str(long object,
                     @Cached TruffleString.FromLongNode fromLongNode) {
-        return fromLongNode.execute(object, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings));
+        return fromLongNode.execute(object, TS_ENCODING, false);
     }
 
     @Specialization(guards = "!isTruffleString(obj)")

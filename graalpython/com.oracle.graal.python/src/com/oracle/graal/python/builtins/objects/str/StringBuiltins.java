@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.LAZY_CODEPOINT_THRESHOLD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT;
@@ -151,7 +150,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -504,7 +502,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString doIt(TruffleString self, TruffleString other,
                         @Shared("concat") @Cached TruffleString.ConcatNode concatNode) {
-            return concatNode.execute(self, other, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings));
+            return concatNode.execute(self, other, TS_ENCODING, false);
         }
 
         @Specialization
@@ -2508,7 +2506,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (index < 0 || index >= len) {
                 throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
-            return substringNode.execute(str, index, 1, TS_ENCODING, getContext().getOption(PythonOptions.LazyStrings) && len < LAZY_CODEPOINT_THRESHOLD);
+            return substringNode.execute(str, index, 1, TS_ENCODING, false);
         }
     }
 
