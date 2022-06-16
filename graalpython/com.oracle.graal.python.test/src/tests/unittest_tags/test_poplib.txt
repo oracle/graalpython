@@ -44,9 +44,6 @@
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_SSLClass.test_utf8
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_SSLClass.test_utf8_raises_if_unsupported
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_apop_REDOS
-*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_apop_normal
-*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_capa
-*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_dele
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_exceptions
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_getwelcome
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_list
