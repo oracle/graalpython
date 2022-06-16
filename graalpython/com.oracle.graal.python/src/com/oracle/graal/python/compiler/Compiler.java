@@ -422,7 +422,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return v;
     }
 
-    private String getDocstring(StmtTy[] body) {
+    private TruffleString getDocstring(StmtTy[] body) {
         if (body != null && body.length > 0) {
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr) {
@@ -430,7 +430,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (expr instanceof ExprTy.Constant) {
                     Object value = ((ExprTy.Constant) expr).value;
                     if (value instanceof String) {
-                        return (String) value;
+                        return toTruffleStringUncached((String) value);
                     }
                 }
             }
@@ -674,7 +674,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             // addOp(SETUP_ANNOTATIONS);
         }
         int i = 0;
-        String docstring = getDocstring(stmts);
+        TruffleString docstring = getDocstring(stmts);
         if (docstring != null) {
             i++;
             StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
@@ -1773,7 +1773,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         CodeUnit code;
         try {
-            String docString = getDocstring(node.body);
+            TruffleString docString = getDocstring(node.body);
             addObject(unit.constants, docString == null ? PNone.NONE : docString);
             visitSequence(node.body);
             code = unit.assemble(flags);
