@@ -425,7 +425,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final TruffleString[] cellvars;
     @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
 
-    @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
+    @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
     @CompilationFinal(dimensions = 1) private final int[] extraArgs;
 
     @Children private final Node[] adoptedNodes;
@@ -508,7 +508,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
-        assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
         cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
@@ -663,22 +662,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Override
     public void setOSRMetadata(Object osrMetadata) {
         this.osrMetadata = osrMetadata;
-    }
-
-    private static int decodeBCI(int target) {
-        return (target >>> 16) & 0xffff; // unsigned
-    }
-
-    private static int decodeStackTop(int target) {
-        return (target & 0xffff) - 1;
-    }
-
-    private static int encodeBCI(int bci) {
-        return bci << 16;
-    }
-
-    private static int encodeStackTop(int stackTop) {
-        return stackTop + 1;
     }
 
     @ExplodeLoop
@@ -1492,8 +1475,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw e;
                     }
                 }
-                long newTarget = findHandler(bci);
-                CompilerAsserts.partialEvaluationConstant(newTarget);
+                int targetIndex = findHandler(bci);
+                CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (localException != null) {
                     ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
                 } else {
@@ -1506,7 +1489,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                     }
                 }
-                if (newTarget == -1) {
+                if (targetIndex == -1) {
                     // For tracebacks
                     virtualFrame.setIntStatic(bciSlot, beginBci);
                     if (isGeneratorOrCoroutine) {
@@ -1525,12 +1508,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 } else {
                     pe.setCatchingFrameReference(virtualFrame, this, bci);
-                    int stackSizeOnEntry = decodeStackTop((int) newTarget);
+                    int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(stackFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stacksize, not the top of stack. so the stackTop is
                     // to be replaced with the exception
                     stackFrame.setObject(stackTop, pe);
-                    bci = decodeBCI((int) newTarget);
+                    bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
                 }
             }
@@ -2452,27 +2435,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private long findHandler(int bci) {
+    private int findHandler(int bci) {
         CompilerAsserts.partialEvaluationConstant(bci);
 
-        int targetBCI = -1;
-        int targetStackTop = -1;
         for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
             // The ranges are ordered by their start and non-overlapping
             if (bci < exceptionHandlerRanges[i]) {
                 break;
             } else if (bci < exceptionHandlerRanges[i + 1]) {
                 // bci is inside this try-block range. get the target stack size
-                targetBCI = exceptionHandlerRanges[i + 2] & 0xffff;
-                targetStackTop = exceptionHandlerRanges[i + 3] & 0xffff;
-                break;
+                return i + 2;
             }
         }
-        if (targetBCI == -1) {
-            return -1;
-        } else {
-            return encodeBCI(targetBCI) | encodeStackTop(targetStackTop);
-        }
+        return -1;
     }
 
     @ExplodeLoop
