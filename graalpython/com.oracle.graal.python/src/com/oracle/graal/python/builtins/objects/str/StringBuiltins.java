@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.LAZY_CODEPOINT_THRESHOLD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT;
@@ -151,7 +150,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
