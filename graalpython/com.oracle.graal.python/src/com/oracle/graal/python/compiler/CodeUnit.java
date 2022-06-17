@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,6 +51,7 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -94,13 +97,16 @@ public final class CodeUnit {
     public final short[] exceptionHandlerRanges;
 
     public final int startOffset;
+    public final int startLine;
+
+    public final boolean lambda;
 
     public CodeUnit(TruffleString name, TruffleString qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
                     byte[] code, byte[] linetable, int flags,
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
-                    short[] exceptionHandlerRanges, int startOffset) {
+                    short[] exceptionHandlerRanges, int startOffset, int startLine) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -119,6 +125,8 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
+        this.startLine = startLine;
+        this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
     }
 
     OpCodes codeForBC(int bc) {
@@ -127,7 +135,7 @@ public final class CodeUnit {
 
     public int bciToSrcOffset(int bci) {
         int diffIdx = 0;
-        int currentOffset = 0;
+        int currentOffset = startOffset;
 
         int bytecodeNumber = 0;
         for (int i = 0; i < code.length;) {
@@ -185,6 +193,10 @@ public final class CodeUnit {
 
     public boolean isGeneratorOrCoroutine() {
         return (flags & (IS_GENERATOR | IS_COROUTINE)) != 0;
+    }
+
+    public boolean isLambda() {
+        return lambda;
     }
 
     @SuppressWarnings("fallthrough")

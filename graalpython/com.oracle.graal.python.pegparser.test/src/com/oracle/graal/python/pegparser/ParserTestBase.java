@@ -73,7 +73,7 @@ public class ParserTestBase {
 
     private static final boolean REGENERATE_TREE = false;
 
-    protected ParserErrorCallback lastParserErrorCallback;
+    protected ErrorCallback lastParserErrorCallback;
 
     @Rule public TestName name = new TestName();
 
@@ -125,7 +125,7 @@ public class ParserTestBase {
         parse(source, getFileName(), 1);
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
-        assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ParserErrorCallback.ErrorType.Syntax);
+        assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
@@ -133,7 +133,7 @@ public class ParserTestBase {
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
-        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ParserErrorCallback.ErrorType.Syntax);
+        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
         assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.getMessage() + "\"", error.getMessage().contains(expectedMessage));
     }
 
@@ -142,7 +142,7 @@ public class ParserTestBase {
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
-        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ParserErrorCallback.ErrorType.Syntax);
+        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
     }
 
@@ -202,9 +202,9 @@ public class ParserTestBase {
         ParserTokenizer tokenizer = new ParserTokenizer(source);
         NodeFactory factory = new NodeFactoryImp();
         ArrayList<String> errors = new ArrayList<>();
-        ParserErrorCallback errorCb = new ParserErrorCallback() {
+        ErrorCallback errorCb = new ErrorCallback() {
             @Override
-            public void onError(ParserErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
+            public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
                 errors.add(String.format("%s[%d:%d]:%s", type.name(), sourceRange.startOffset, sourceRange.endOffset, message));
             }
         };

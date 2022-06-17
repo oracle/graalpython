@@ -1213,8 +1213,10 @@ public abstract class TypeNodes {
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
-            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+                            DynamicObjectLibrary.getUncached());
+            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, T___NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true,
+                            DynamicObjectLibrary.getUncached());
             return typeNewMethod != baseNewMethod;
         }
 

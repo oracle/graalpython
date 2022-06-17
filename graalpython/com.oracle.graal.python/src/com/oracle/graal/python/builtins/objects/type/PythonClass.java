@@ -241,6 +241,14 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
+    public void makeStaticBase(DynamicObjectLibrary dylib) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | IS_STATIC_BASE);
+    }
+
+    public boolean isStaticBase(DynamicObjectLibrary dylib) {
+        return (dylib.getShapeFlags(this) & IS_STATIC_BASE) != 0;
+    }
+
     public MroShape getMroShape() {
         return mroShape;
     }

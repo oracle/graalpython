@@ -75,7 +75,7 @@ import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -514,7 +514,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
         ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
         com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
-        ParserErrorCallback errorCb = (errorType, sourceRange, message) -> {
+        ErrorCallback errorCb = (errorType, sourceRange, message) -> {
             throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, toTruffleStringUncached(message));
         };
         FExprParser fexpParser = new FExprParser() {
@@ -527,11 +527,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         };
         try {
             Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-            Compiler compiler = new Compiler();
+            Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse(type);
             // TODO this is needed until we get complete error handling in the parser
             if (mod == null) {
-                throw raiseSyntaxError(source, ParserErrorCallback.ErrorType.Syntax, 0, 0, toTruffleStringUncached("invalid syntax"));
+                throw raiseSyntaxError(source, ErrorCallback.ErrorType.Syntax, 0, 0, toTruffleStringUncached("invalid syntax"));
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(0);
@@ -556,7 +556,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private PException raiseSyntaxError(Source source, ParserErrorCallback.ErrorType errorType, int startOffset, int endOffset, TruffleString message) {
+    private PException raiseSyntaxError(Source source, ErrorCallback.ErrorType errorType, int startOffset, int endOffset, TruffleString message) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {
@@ -581,13 +581,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
-        String path = source.getPath();
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? source.getName() : "<string>";
+        TruffleString path = toTruffleStringUncached(source.getPath());
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? toTruffleStringUncached(source.getName()) : tsLiteral("<string>");
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
-        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        final TruffleString text = section.isAvailable() ? toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString()) : null;
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
         instance.setExceptionAttributes(excAttrs);

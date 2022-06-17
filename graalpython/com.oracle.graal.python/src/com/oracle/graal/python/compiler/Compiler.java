@@ -133,6 +133,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
@@ -146,6 +148,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -155,10 +158,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class Compiler implements SSTreeVisitor<Void> {
     public static final int BYTECODE_VERSION = 21;
 
+    private final ErrorCallback errorCallback;
+
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
     int optimizationLevel = 0;
-    boolean isInteractive = false;
     int nestingLevel = 0;
     CompilationUnit unit;
     List<CompilationUnit> stack = new ArrayList<>();
@@ -167,9 +171,13 @@ public class Compiler implements SSTreeVisitor<Void> {
     public enum Flags {
     }
 
+    public Compiler(ErrorCallback errorCallback) {
+        this.errorCallback = errorCallback;
+    }
+
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
-        this.env = new ScopeEnvironment(mod);
+        this.env = new ScopeEnvironment(mod, errorCallback);
         this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
@@ -224,7 +232,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             stack.add(unit);
         }
         unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
-                        hasSplat, hasKwSplat, node.getSourceRange().startOffset);
+                        hasSplat, hasKwSplat, node.getSourceRange());
         nestingLevel++;
     }
 
@@ -240,12 +248,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void checkForbiddenName(String id, ExprContext context) {
         if (context == ExprContext.Store) {
             if (id.equals("__debug__")) {
-                // TODO: throw error
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "cannot assign to __debug__");
             }
         }
         if (context == ExprContext.Delete) {
             if (id.equals("__debug__")) {
-                // TODO: throw error
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "cannot delete __debug__");
             }
         }
     }
@@ -283,28 +291,28 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private Void addOp(OpCodes code) {
-        addOp(code, 0, null, unit.startOffset);
+        addOp(code, 0, null, unit.currentLocation);
         return null;
     }
 
     private void addOp(OpCodes code, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, null, target, unit.startOffset));
+        b.instr.add(new Instruction(code, 0, null, target, unit.currentLocation));
     }
 
     private Void addOp(OpCodes code, int arg) {
-        addOp(code, arg, null, unit.startOffset);
+        addOp(code, arg, null, unit.currentLocation);
         return null;
     }
 
     private Void addOp(OpCodes code, int arg, byte[] followingArgs) {
-        addOp(code, arg, followingArgs, unit.startOffset);
+        addOp(code, arg, followingArgs, unit.currentLocation);
         return null;
     }
 
-    private void addOp(OpCodes code, int arg, byte[] followingArgs, int srcOffset) {
+    private void addOp(OpCodes code, int arg, byte[] followingArgs, SourceRange location) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, arg, followingArgs, null, srcOffset));
+        b.instr.add(new Instruction(code, arg, followingArgs, null, location));
     }
 
     private Void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
@@ -414,7 +422,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return v;
     }
 
-    private String getDocstring(StmtTy[] body) {
+    private TruffleString getDocstring(StmtTy[] body) {
         if (body != null && body.length > 0) {
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr) {
@@ -422,7 +430,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (expr instanceof ExprTy.Constant) {
                     Object value = ((ExprTy.Constant) expr).value;
                     if (value instanceof String) {
-                        return (String) value;
+                        return toTruffleStringUncached((String) value);
                     }
                 }
             }
@@ -430,14 +438,14 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    private int setLocation(int offset) {
-        int savedOffset = unit.startOffset;
-        unit.startOffset = offset;
-        return savedOffset;
+    private SourceRange setLocation(SourceRange location) {
+        SourceRange savedLocation = unit.currentLocation;
+        unit.currentLocation = location;
+        return savedLocation;
     }
 
-    private int setLocation(SSTNode node) {
-        return setLocation(node.getSourceRange().startOffset);
+    private SourceRange setLocation(SSTNode node) {
+        return setLocation(node.getSourceRange());
     }
 
     private class Collector {
@@ -537,7 +545,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (e instanceof ExprTy.Starred) {
                     // splat
                     collector.flushStackIfNecessary();
-                    e.accept(this);
+                    ((ExprTy.Starred) e).value.accept(this);
                     collector.appendCollection();
                 } else {
                     e.accept(this);
@@ -574,7 +582,21 @@ public class Compiler implements SSTreeVisitor<Void> {
         collector.finishCollection();
     }
 
+    private void validateKeywords(KeywordTy[] keywords) {
+        for (int i = 0; i < keywords.length; i++) {
+            if (keywords[i].arg != null) {
+                checkForbiddenName(keywords[i].arg, ExprContext.Store);
+                for (int j = i + 1; j < keywords.length; j++) {
+                    if (keywords[i].arg.equals(keywords[j].arg)) {
+                        errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "keyword argument repeated: " + keywords[i].arg);
+                    }
+                }
+            }
+        }
+    }
+
     private void collectKeywords(KeywordTy[] keywords, OpCodes callOp) {
+        validateKeywords(keywords);
         boolean hasSplat = false;
         for (KeywordTy k : keywords) {
             if (k.arg == null) {
@@ -633,6 +655,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
         }
         int flags = code.flags & (CodeUnit.HAS_DEFAULTS | CodeUnit.HAS_KWONLY_DEFAULTS | CodeUnit.HAS_ANNOTATIONS | CodeUnit.HAS_CLOSURE);
+        addObject(unit.constants, code.qualname);
         addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) flags});
     }
 
@@ -651,7 +674,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             // addOp(SETUP_ANNOTATIONS);
         }
         int i = 0;
-        String docstring = getDocstring(stmts);
+        TruffleString docstring = getDocstring(stmts);
         if (docstring != null) {
             i++;
             StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
@@ -716,7 +739,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Attribute node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.value.accept(this);
             switch (node.context) {
@@ -729,21 +752,19 @@ public class Compiler implements SSTreeVisitor<Void> {
                     return addOpName(LOAD_ATTR, unit.names, node.attr);
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Await node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         // TODO if !IS_TOP_LEVEL_AWAIT
         if (!unit.scope.isFunction()) {
-            // TODO syntax error
-            throw new IllegalStateException("'await' outside function");
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'await' outside function");
         }
         if (unit.scopeType != CompilationScope.AsyncFunction && unit.scopeType != CompilationScope.Comprehension) {
-            // TODO syntax error
-            throw new IllegalStateException("'await' outside async function");
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'await' outside async function");
         }
         try {
             node.value.accept(this);
@@ -752,13 +773,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             addYieldFrom();
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.BinOp node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.left.accept(this);
             node.right.accept(this);
@@ -807,13 +828,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.BoolOp node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             Block end = new Block();
             ExprTy[] values = node.values;
@@ -832,7 +853,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             unit.useNextBlock(end);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -854,7 +875,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Call node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             // n.b.: we do things completely different from python for calls
             ExprTy func = node.func;
@@ -895,7 +916,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -938,7 +959,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Compare node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.left.accept(this);
             if (node.comparators.length == 1) {
@@ -965,13 +986,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             switch (node.kind) {
                 case OBJECT:
@@ -998,7 +1019,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     throw new UnsupportedOperationException("Not supported yet.");
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1012,12 +1033,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Dict node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             collectIntoDict(node.keys, node.values);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1028,7 +1049,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.FormattedValue node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.value.accept(this);
             int oparg;
@@ -1055,7 +1076,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(FORMAT_VALUE, oparg);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1066,7 +1087,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.IfExp node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             Block end = new Block();
             Block next = new Block();
@@ -1078,13 +1099,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             unit.useNextBlock(end);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.JoinedStr node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             // TODO add optimized op for small chains
             addOp(LOAD_STRING, addObject(unit.constants, T_EMPTY_STRING));
@@ -1092,13 +1113,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_METHOD, addObject(unit.names, "join"), new byte[]{1});
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Lambda node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             checkForbiddenArgs(node.args);
             int flags = collectDefaults(node.args);
@@ -1114,7 +1135,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             makeClosure(code);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1124,14 +1145,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             ExprTy e = elements[i];
             if (e instanceof ExprTy.Starred) {
                 if (unpack) {
-                    // TODO: raise "multiple starred expressions in assignment"
+                    errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "multiple starred expressions in assignment");
                 }
                 unpack = true;
                 int n = elements.length;
                 int countAfter = n - i - 1;
                 if (countAfter != (byte) countAfter) {
-                    // TODO syntax error
-                    throw new IllegalStateException("too many expressions in star-unpacking assignment");
+                    errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "too many expressions in star-unpacking assignment");
                 }
                 addOp(UNPACK_EX, i, new byte[]{(byte) countAfter});
             }
@@ -1151,7 +1171,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.List node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             switch (node.context) {
                 case Store:
@@ -1164,7 +1184,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     return visitSequence(node.elements);
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1191,7 +1211,7 @@ public class Compiler implements SSTreeVisitor<Void> {
          * Create an inner anonymous function to run the comprehension. It takes the outermost
          * iterator as an argument and returns the accumulated sequence
          */
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             enterScope(name, CompilationScope.Comprehension, node, 1, 0, 0, false, false);
             if (type != ComprehensionType.GENEXPR) {
@@ -1210,7 +1230,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(CALL_FUNCTION, 1);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1253,8 +1273,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                  * There is an iterator for every generator on the stack. We need to append to the
                  * collection that's below them
                  */
-                // TODO turn this into an exception
-                assert collectionStackDepth <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
+                if (collectionStackDepth > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                    errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "too many levels of nested comprehensions");
+                }
                 addOp(ADD_TO_COLLECTION, collectionStackDepth | type.typeBits);
             }
         }
@@ -1265,33 +1286,33 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Name node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             addNameOp(node.id, node.context);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.NamedExpr node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             throw new UnsupportedOperationException("Not supported yet.");
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Set node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             collectIntoArray(node.elements, CollectionBits.SET);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1302,7 +1323,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Slice node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             int n = 2;
             if (node.lower != null) {
@@ -1322,25 +1343,24 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(BUILD_SLICE, n);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Starred node) {
-        int savedOffset = setLocation(node);
-        try {
-            // TODO context?
-            node.value.accept(this);
-            return null;
-        } finally {
-            setLocation(savedOffset);
+        // Valid occurrences are handled by other visitors
+        if (node.context == ExprContext.Store) {
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "starred assignment target must be in a list or tuple");
+        } else {
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "can't use starred expression here");
         }
+        return null;
     }
 
     @Override
     public Void visit(ExprTy.Subscript node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.value.accept(this);
             node.slice.accept(this);
@@ -1354,13 +1374,13 @@ public class Compiler implements SSTreeVisitor<Void> {
                     return addOp(DELETE_SUBSCR);
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Tuple node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             switch (node.context) {
                 case Store:
@@ -1398,13 +1418,13 @@ public class Compiler implements SSTreeVisitor<Void> {
                     return visitSequence(node.elements);
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.UnaryOp node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
             node.operand.accept(this);
             switch (node.op) {
@@ -1420,14 +1440,17 @@ public class Compiler implements SSTreeVisitor<Void> {
                     throw new IllegalStateException("Unknown unary operation");
             }
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.Yield node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
+            if (!unit.scope.isFunction()) {
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'yield' outside function");
+            }
             if (node.value != null) {
                 node.value.accept(this);
             } else {
@@ -1437,14 +1460,20 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(RESUME_YIELD);
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
     @Override
     public Void visit(ExprTy.YieldFrom node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         try {
+            if (!unit.scope.isFunction()) {
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'yield' outside function");
+            }
+            if (unit.scopeType == CompilationScope.AsyncFunction) {
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'yield from' inside async function");
+            }
             node.value.accept(this);
             // TODO GET_YIELD_FROM_ITER
             addOp(GET_ITER);
@@ -1452,7 +1481,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             addYieldFrom();
             return null;
         } finally {
-            setLocation(savedOffset);
+            setLocation(savedLocation);
         }
     }
 
@@ -1566,9 +1595,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AugAssign node) {
-        int savedOffset = setLocation(node);
+        SourceRange savedLocation = setLocation(node);
         node.target.copyWithContext(ExprContext.Load).accept(this);
-        setLocation(savedOffset);
+        setLocation(savedLocation);
         node.value.accept(this);
         setLocation(node);
         switch (node.op) {
@@ -1679,7 +1708,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Expr node) {
         setLocation(node);
-        if (interactive) {
+        if (interactive && nestingLevel <= 1) {
             node.value.accept(this);
             addOp(PRINT_EXPR);
         } else if (!(node.value instanceof ExprTy.Constant)) {
@@ -1744,8 +1773,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         CodeUnit code;
         try {
-            String docString = getDocstring(node.body);
-            addObject(unit.constants, docString);
+            TruffleString docString = getDocstring(node.body);
+            addObject(unit.constants, docString == null ? PNone.NONE : docString);
             visitSequence(node.body);
             code = unit.assemble(flags);
         } finally {
@@ -1958,6 +1987,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Return node) {
         setLocation(node);
+        if (!unit.scope.isFunction()) {
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'return' outside function");
+        }
+        if (node.value != null && unit.scope.isGenerator() && unit.scope.isCoroutine()) {
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'return' with value in async generator");
+        }
         if (node.value == null) {
             unwindBlockStack(UnwindType.RETURN_CONST);
             addOp(LOAD_NONE);
@@ -2026,16 +2061,18 @@ public class Compiler implements SSTreeVisitor<Void> {
              * We need to save and restore the outer exception state. In order to restore it even in
              * case of an exception, we need an internal finally handler for this.
              */
-            Block cleanupHandler = new Block();
-            unit.pushBlock(new BlockInfo.ExceptHandler(nextHandler, cleanupHandler));
+            Block commonCleanupHandler = new Block();
+            unit.pushBlock(new BlockInfo.ExceptHandler(nextHandler, commonCleanupHandler));
             /*
              * We use this offset to unwind the exception from the except block, we don't need it on
              * the stack
              */
-            cleanupHandler.unwindOffset = -1;
+            commonCleanupHandler.unwindOffset = -1;
             for (int i = 0; i < node.handlers.length; i++) {
-                assert !hasBareExcept;
                 setLocation(node.handlers[i]);
+                if (hasBareExcept) {
+                    errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "default 'except:' must be last");
+                }
                 unit.useNextBlock(nextHandler);
 
                 if (i < node.handlers.length - 1) {
@@ -2045,16 +2082,22 @@ public class Compiler implements SSTreeVisitor<Void> {
                         // Keep the saved state, it's the same
                         nextHandler = finallyBlockExceptWithSavedExc;
                     } else {
-                        nextHandler = cleanupHandler;
+                        nextHandler = commonCleanupHandler;
                     }
                 }
 
+                Block bindingCleanerExcept = null;
+                String bindingName = node.handlers[i].name;
                 if (node.handlers[i].type != null) {
                     node.handlers[i].type.accept(this);
                     addOp(MATCH_EXC_OR_JUMP, nextHandler);
-                    if (node.handlers[i].name != null) {
+                    if (bindingName != null) {
                         addOp(UNWRAP_EXC);
-                        addNameOp(node.handlers[i].name, ExprContext.Store);
+                        addNameOp(bindingName, ExprContext.Store);
+                        Block handlerWithBinding = new Block();
+                        bindingCleanerExcept = new Block();
+                        unit.pushBlock(new BlockInfo.HandlerBindingCleanup(handlerWithBinding, bindingCleanerExcept, bindingName));
+                        unit.useNextBlock(handlerWithBinding);
                     } else {
                         addOp(POP_TOP);
                     }
@@ -2063,27 +2106,22 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(POP_TOP);
                 }
                 visitSequence(node.handlers[i].body);
+                if (bindingName != null) {
+                    unit.popBlock();
+                    unit.useNextBlock(new Block());
+                    addNameOp(bindingName, ExprContext.Delete);
+                }
                 addOp(POP_EXCEPT);
                 jumpToFinally(finallyBlockNormal, end);
+                if (bindingName != null) {
+                    unit.useNextBlock(bindingCleanerExcept);
+                    addNameOp(bindingName, ExprContext.Delete);
+                    cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
+                }
             }
             unit.popBlock();
-            unit.useNextBlock(cleanupHandler);
-            if (hasFinally) {
-                addOp(ROT_TWO);
-                /*
-                 * POP the saved exception state, the finally block needs to push a new one. The
-                 * saved state will be the same, but PUSH_EXC_INFO also updates the current
-                 * exception info which is now different.
-                 */
-                addOp(POP_EXCEPT);
-                addOp(JUMP_FORWARD, finallyBlockExcept);
-            } else {
-                /*
-                 * We can also reach this code by falling off the except handlers if no types
-                 * matched and there is no finally
-                 */
-                addOp(END_EXC_HANDLER);
-            }
+            unit.useNextBlock(commonCleanupHandler);
+            cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
         }
 
         if (elseBlock != null) {
@@ -2120,6 +2158,25 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(end);
 
         return null;
+    }
+
+    private void cleanupOnExceptionInHandler(boolean hasFinally, Block finallyBlockExcept) {
+        if (hasFinally) {
+            addOp(ROT_TWO);
+            /*
+             * POP the saved exception state, the finally block needs to push a new one. The saved
+             * state will be the same, but PUSH_EXC_INFO also updates the current exception info
+             * which is now different.
+             */
+            addOp(POP_EXCEPT);
+            addOp(JUMP_FORWARD, finallyBlockExcept);
+        } else {
+            /*
+             * We can also reach this code by falling off the except handlers if no types matched
+             * and there is no finally
+             */
+            addOp(END_EXC_HANDLER);
+        }
     }
 
     @Override
@@ -2250,6 +2307,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                         addOp(ROT_TWO);
                     }
                     addOp(POP_EXCEPT);
+                } else if (info instanceof BlockInfo.HandlerBindingCleanup) {
+                    String bindingName = ((BlockInfo.HandlerBindingCleanup) info).bindingName;
+                    if (bindingName != null) {
+                        addNameOp(bindingName, ExprContext.Delete);
+                    }
                 } else if (info instanceof BlockInfo.FinallyHandler) {
                     if (type == UnwindType.RETURN_VALUE) {
                         addOp(ROT_THREE);
@@ -2276,8 +2338,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         BlockInfo.Loop info = unwindBlockStack(UnwindType.BREAK);
         if (info == null) {
-            // TODO syntax error
-            throw new IllegalStateException("'break' outside loop");
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'break' outside loop");
         }
         addOp(JUMP_FORWARD, info.after);
         return null;
@@ -2288,8 +2349,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         BlockInfo.Loop info = unwindBlockStack(UnwindType.CONTINUE);
         if (info == null) {
-            // TODO syntax error
-            throw new IllegalStateException("'continue' not properly in loop");
+            errorCallback.onError(ErrorCallback.ErrorType.Syntax, unit.currentLocation, "'continue' not properly in loop");
         }
         addOp(JUMP_BACKWARD, info.start);
         return null;

@@ -179,8 +179,8 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( expr_ty , 5 , "The \'@\' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )': (1, 'checkVersion(5, "The \'@\' operator is", factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT, a, b, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params, b, a, newTypeComment((Token) tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'factory.createAnnAssignment(setExprContext(a, ExprContext.Store), b, (ExprTy) c, true, $RANGE);'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "\':\' expected after dictionary key" )': (1, 'this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"\':\' expected after dictionary key")'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'this.raiseErrorKnownLocation(ParserErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?")'),
+    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "\':\' expected after dictionary key" )': (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"\':\' expected after dictionary key")'),
+    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?")'),
     'RAISE_SYNTAX_ERROR ( "Cannot have two type comments on def" )': (1, 'this.raiseSyntaxError("Cannot have two type comments on def")'),
     'RAISE_SYNTAX_ERROR ( "bare * has associated type comment" )': (1, 'this.raiseSyntaxError("bare * has associated type comment")'),
     'RAISE_SYNTAX_ERROR ( "expected \':\'" )': (4, 'this.raiseSyntaxError("expected \':\'")'),
@@ -949,7 +949,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.print("super(tokenizer, factory, fexprParser);")
         self.print("}" )
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {" % className)
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {" % className)
         with self.indent():
             self.print("super(tokenizer, factory, fexprParser, errorCb);")
         self.print("}" )

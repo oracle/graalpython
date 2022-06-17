@@ -114,6 +114,15 @@ class BlockInfo {
         }
     }
 
+    static class HandlerBindingCleanup extends AbstractExceptionHandler {
+        final String bindingName;
+
+        public HandlerBindingCleanup(Block tryBlock, Block exceptionHandler, String bindingName) {
+            super(tryBlock, exceptionHandler);
+            this.bindingName = bindingName;
+        }
+    }
+
     static class With extends AbstractExceptionHandler {
         final StmtTy.With node;
 

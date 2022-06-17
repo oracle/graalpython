@@ -500,6 +500,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
+                if (self.usesBytecode()) {
+                    FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    pFrame.setLine(info.getRootNode().getFirstLineno());
+                }
                 PTraceback existingTraceback = null;
                 if (instance.getTraceback() != null) {
                     existingTraceback = ensureGetTracebackNode().execute(instance.getTraceback());

@@ -94,7 +94,9 @@ public abstract class ExitWithNode extends PNodeWithContext {
                 Object excTraceback = getTracebackNode.execute(pythonException);
                 Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrueNode.execute(virtualFrame, result)) {
-                    if (exception instanceof AbstractTruffleException) {
+                    if (exception instanceof PException) {
+                        throw ((PException) exception).getExceptionForReraise();
+                    } else if (exception instanceof AbstractTruffleException) {
                         throw (AbstractTruffleException) exception;
                     } else {
                         CompilerDirectives.transferToInterpreterAndInvalidate();

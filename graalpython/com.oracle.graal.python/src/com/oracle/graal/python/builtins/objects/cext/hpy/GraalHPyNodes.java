@@ -180,6 +180,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1991,6 +1992,7 @@ public class GraalHPyNodes {
         Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
@@ -2092,6 +2094,7 @@ public class GraalHPyNodes {
                 newType.basicSize = basicSize;
                 newType.flags = flags;
                 newType.itemSize = itemSize;
+                newType.makeStaticBase(dylib);
 
                 boolean seenNew = false;
                 boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);

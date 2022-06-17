@@ -1869,12 +1869,12 @@ Traceback (most recent call last):
   ...
 SyntaxError: assignment to yield expression not possible
 
->>> def f(): (yield bar) = y
+>>> def f(): (yield bar) = y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
 SyntaxError: cannot assign to yield expression
 
->>> def f(): (yield bar) += y
+>>> def f(): (yield bar) += y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
 SyntaxError: cannot assign to yield expression

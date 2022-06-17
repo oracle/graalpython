@@ -10,5 +10,5 @@ Flags: CO_GENERATOR
 000020         2 YIELD_VALUE
 000020         3 RESUME_YIELD
 000016         4 STORE_FAST                        1    (b)
-000000         6 LOAD_NONE
-000000         7 RETURN_VALUE
+000016         6 LOAD_NONE
+000016         7 RETURN_VALUE

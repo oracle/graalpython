@@ -81,12 +81,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -323,14 +323,11 @@ public final class SuperBuiltins extends PythonBuiltins {
             // sys._getframe(1).f_code.co_closure?
             PDict locals = (PDict) target.getLocalsDict();
             Object cls = hlib.getItemWithState(locals.getDictStorage(), SpecialAttributeNames.T___CLASS__, PArguments.getThreadState(frame));
-            if (cls instanceof PCell) {
-                cls = getGetRefNode().execute((PCell) cls);
-                if (cls == null) {
-                    // the cell is empty
-                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
-                }
+            if (cls == null) {
+                // the cell is empty
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
             }
-            return cls != null ? cls : PNone.NONE;
+            return cls;
         }
 
         private CellBuiltins.GetRefNode getGetRefNode() {

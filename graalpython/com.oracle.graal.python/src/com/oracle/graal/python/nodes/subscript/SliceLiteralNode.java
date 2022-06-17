@@ -284,7 +284,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization
         SliceInfo doSliceInt(PIntSlice slice) {
-            return new SliceInfo(slice.getIntStart(), slice.getIntStop(), slice.getIntStep());
+            int start = slice.getIntStart();
+            if (slice.isStartNone()) {
+                start = slice.getIntStep() >= 0 ? 0 : Integer.MAX_VALUE;
+            }
+            return new SliceInfo(start, slice.getIntStop(), slice.getIntStep());
         }
 
         @Specialization

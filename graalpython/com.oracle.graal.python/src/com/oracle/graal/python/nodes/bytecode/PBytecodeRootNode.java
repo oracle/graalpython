@@ -144,7 +144,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
-import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitchBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -222,6 +221,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
     private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
     private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
+    private static final KeywordsNode UNCACHED_KEYWORDS = KeywordsNode.getUncached();
+    private static final NodeSupplier<KeywordsNode> NODE_KEYWORDS = KeywordsNode::create;
     private static final SliceNodes.CreateSliceNode UNCACHED_CREATE_SLICE = SliceNodes.CreateSliceNode.getUncached();
     private static final NodeSupplier<SliceNodes.CreateSliceNode> NODE_CREATE_SLICE = SliceNodes.CreateSliceNode::create;
     private static final ListNodes.ConstructListNode UNCACHED_CONSTRUCT_LIST = ListNodes.ConstructListNode.getUncached();
@@ -259,6 +260,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeFunction<TruffleString, DeleteGlobalNode> NODE_DELETE_GLOBAL = DeleteGlobalNode::create;
     private static final PrintExprNode UNCACHED_PRINT_EXPR = PrintExprNode.getUncached();
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
+    private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -417,7 +419,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
-        newBuilder.addSlot(FrameSlotKind.Int, null, null);
+        newBuilder.addSlot(FrameSlotKind.Static, null, null);
         if (co.isGeneratorOrCoroutine()) {
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
@@ -549,7 +551,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -567,7 +568,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, node, uncached, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, Node node, T uncached, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -591,7 +591,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -609,7 +608,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, nodeSupplier);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -627,7 +625,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return doInsertChildNode(nodes, nodeIndex, node, uncached, nodeSupplier);
     }
 
-    @BytecodeInterpreterSwitchBoundary
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int bytecodeIndex, Node node, T uncached, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -760,6 +757,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         long[] localLongConsts = longConsts;
         TruffleString[] localNames = names;
         Node[] localNodes = adoptedNodes;
+        final int bciSlot = bcioffset;
+
+        virtualFrame.setIntStatic(bciSlot, initialBci);
 
         /*
          * This separate tracking of local exception is necessary to make exception state saving
@@ -781,6 +781,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
+            virtualFrame.setIntStatic(bciSlot, bci);
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
@@ -854,7 +855,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.COLLECTION_FROM_COLLECTION: {
                         int type = Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeCollectionFromCollection(virtualFrame, stackFrame, type, stackTop, localNodes, beginBci);
+                        bytecodeCollectionFromCollection(virtualFrame, localFrame, stackFrame, type, stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.COLLECTION_ADD_COLLECTION: {
@@ -932,6 +933,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.CLOSURE_FROM_STACK: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeClosureFromStack(stackFrame, stackTop, oparg);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_CLASSDEREF: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeLoadClassDeref(virtualFrame, localFrame, stackFrame, locals, stackTop, beginBci, localNodes, oparg);
                         break;
                     }
                     case OpCodesConstants.LOAD_DEREF: {
@@ -1410,7 +1416,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 if (newTarget == -1) {
                     // For tracebacks
-                    virtualFrame.setInt(bcioffset, beginBci);
+                    virtualFrame.setIntStatic(bciSlot, beginBci);
                     if (isGeneratorOrCoroutine) {
                         if (localFrame != stackFrame) {
                             // Unwind the generator frame stack
@@ -1433,6 +1439,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // to be replaced with the exception
                     stackFrame.setObject(stackTop, pe);
                     bci = decodeBCI((int) newTarget);
+                    oparg = 0;
                 }
             }
         }
@@ -1532,6 +1539,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         stackFrame.setObject(stackTop--, null);
         cell.setRef(value);
         return stackTop;
+    }
+
+    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg) {
+        TruffleString name;
+        boolean isCellVar;
+        if (oparg < cellvars.length) {
+            name = cellvars[oparg];
+            isCellVar = true;
+        } else {
+            name = freevars[oparg - cellvars.length];
+            isCellVar = false;
+        }
+        GetNameFromLocalsNode getNameFromLocals = insertChildNode(localNodes, bci, NODE_GET_NAME_FROM_LOCALS);
+        Object value = getNameFromLocals.execute(virtualFrame, locals, name, isCellVar);
+        if (value != null) {
+            stackFrame.setObject(++stackTop, value);
+            return stackTop;
+        } else {
+            return bytecodeLoadDeref(localFrame, stackFrame, stackTop, bci, localNodes, oparg);
+        }
     }
 
     private int bytecodeLoadDeref(Frame localFrame, Frame stackFrame, int stackTop, int bci, Node[] localNodes, int oparg) {
@@ -1849,10 +1876,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, NODE_RAISE);
         if (oparg < freeoffset) {
-            int varIdx = oparg - celloffset;
+            int varIdx = oparg;
             throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, cellvars[varIdx]);
         } else {
-            int varIdx = oparg - freeoffset;
+            int varIdx = oparg - cellvars.length;
             throw raiseNode.raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, freevars[varIdx]);
         }
     }
@@ -2013,7 +2040,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeCollectionFromCollection(VirtualFrame virtualFrame, Frame stackFrame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
+    private void bytecodeCollectionFromCollection(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, int type, int stackTop, Node[] localNodes, int nodeIndex) {
         Object sourceCollection = stackFrame.getObject(stackTop);
         Object result;
         switch (type) {
@@ -2045,8 +2072,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
-                result = expandKeywordStarargsNode.execute(sourceCollection);
+                KeywordsNode keywordsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_KEYWORDS, NODE_KEYWORDS);
+                result = keywordsNode.execute(virtualFrame, sourceCollection, stackTop, localFrame);
                 break;
             }
             default:
@@ -2094,14 +2121,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                PKeyword[] array1 = (PKeyword[]) collection1;
-                ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
-                PKeyword[] array2 = expandKeywordStarargsNode.execute(collection2);
-                PKeyword[] combined = new PKeyword[array1.length + array2.length];
-                System.arraycopy(array1, 0, combined, 0, array1.length);
-                System.arraycopy(array2, 0, combined, array1.length, array2.length);
-                result = combined;
-                break;
+                throw CompilerDirectives.shouldNotReachHere("keywords merging handled elsewhere");
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2226,6 +2246,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
              * without the text source. We should store lines and columns separately like CPython.
              */
             return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
+        }
+        return -1;
+    }
+
+    @TruffleBoundary
+    public int getFirstLineno() {
+        if (source != null && source.hasCharacters()) {
+            // TODO the same problem as bciToLine
+            return source.createSection(co.startOffset, 0).getStartLine();
         }
         return -1;
     }

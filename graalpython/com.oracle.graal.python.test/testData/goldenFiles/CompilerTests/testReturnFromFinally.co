@@ -1,52 +1,58 @@
 Disassembly of <module>:
-000009         0 LOAD_NAME                         0    (range)
-000015         2 LOAD_BYTE                         10
-000009         4 CALL_FUNCTION                     1
-000000         6 GET_ITER
-000000   >>    7 FOR_ITER                          67   (to 74)
-000004         9 STORE_NAME                        1    (i)
-000034        11 LOAD_NAME                         1    (i)
-000031        13 POP_AND_JUMP_IF_FALSE             21   (to 34)
-000050        15 LOAD_NAME                         2    (a)
-000080        17 LOAD_NAME                         3    (print)
-000086        19 LOAD_STRING                       0    ('finally')
-000080        21 CALL_FUNCTION                     1
-000080        23 POP_TOP
-000108        24 LOAD_NAME                         4    (b)
-000101        26 ROT_TWO
-000101        27 POP_TOP
-000101        28 ROT_TWO
-000101        29 POP_TOP
-000101        30 RETURN_VALUE
-000101        31 ROT_TWO
-000101        32 POP_TOP
-000101        33 RETURN_VALUE
-000056   >>   34 LOAD_NAME                         3    (print)
-000062        36 LOAD_NAME                         1    (i)
-000056        38 CALL_FUNCTION                     1
-000056        40 POP_TOP
-000056        41 JUMP_FORWARD                      19   (to 60)
-000056        43 PUSH_EXC_INFO                                                           (exc handler 11 - 17; stack: 1 | exc handler 34 - 43; stack: 1)
-000080        44 LOAD_NAME                         3    (print)
-000086        46 LOAD_STRING                       0    ('finally')
-000080        48 CALL_FUNCTION                     1
-000080        50 POP_TOP
-000108        51 LOAD_NAME                         4    (b)
-000101        53 ROT_THREE
-000101        54 POP_EXCEPT
-000101        55 POP_TOP
-000101        56 ROT_TWO
-000101        57 POP_TOP
-000101        58 RETURN_VALUE
-000101        59 END_EXC_HANDLER                                                         (exc handler 44 - 59; stack: 2)
-000080   >>   60 LOAD_NAME                         3    (print)
-000086        62 LOAD_STRING                       0    ('finally')
-000080        64 CALL_FUNCTION                     1
-000080        66 POP_TOP
-000108        67 LOAD_NAME                         4    (b)
-000101        69 ROT_TWO
-000101        70 POP_TOP
-000101        71 RETURN_VALUE
-000101        72 JUMP_BACKWARD                     65   (to 7)
-000101   >>   74 LOAD_NONE
-000101        75 RETURN_VALUE
+000000         0 MAKE_FUNCTION                     0    (foo)
+000000         3 STORE_NAME                        0    (foo)
+000000         5 LOAD_NONE
+000000         6 RETURN_VALUE
+
+Disassembly of foo:
+000022         0 LOAD_GLOBAL                       0    (range)
+000028         2 LOAD_BYTE                         10
+000022         4 CALL_FUNCTION                     1
+000013         6 GET_ITER
+000013   >>    7 FOR_ITER                          67   (to 74)
+000017         9 STORE_FAST                        0    (i)
+000051        11 LOAD_FAST                         0    (i)
+000048        13 POP_AND_JUMP_IF_FALSE             21   (to 34)
+000069        15 LOAD_GLOBAL                       1    (a)
+000105        17 LOAD_GLOBAL                       2    (print)
+000111        19 LOAD_STRING                       1    ('finally')
+000105        21 CALL_FUNCTION                     1
+000105        23 POP_TOP
+000135        24 LOAD_GLOBAL                       3    (b)
+000128        26 ROT_TWO
+000128        27 POP_TOP
+000128        28 ROT_TWO
+000128        29 POP_TOP
+000128        30 RETURN_VALUE
+000128        31 ROT_TWO
+000128        32 POP_TOP
+000128        33 RETURN_VALUE
+000077   >>   34 LOAD_GLOBAL                       2    (print)
+000083        36 LOAD_FAST                         0    (i)
+000077        38 CALL_FUNCTION                     1
+000077        40 POP_TOP
+000077        41 JUMP_FORWARD                      19   (to 60)
+000077        43 PUSH_EXC_INFO                                                           (exc handler 11 - 17; stack: 1 | exc handler 34 - 43; stack: 1)
+000105        44 LOAD_GLOBAL                       2    (print)
+000111        46 LOAD_STRING                       1    ('finally')
+000105        48 CALL_FUNCTION                     1
+000105        50 POP_TOP
+000135        51 LOAD_GLOBAL                       3    (b)
+000128        53 ROT_THREE
+000128        54 POP_EXCEPT
+000128        55 POP_TOP
+000128        56 ROT_TWO
+000128        57 POP_TOP
+000128        58 RETURN_VALUE
+000128        59 END_EXC_HANDLER                                                         (exc handler 44 - 59; stack: 2)
+000105   >>   60 LOAD_GLOBAL                       2    (print)
+000111        62 LOAD_STRING                       1    ('finally')
+000105        64 CALL_FUNCTION                     1
+000105        66 POP_TOP
+000135        67 LOAD_GLOBAL                       3    (b)
+000128        69 ROT_TWO
+000128        70 POP_TOP
+000128        71 RETURN_VALUE
+000128        72 JUMP_BACKWARD                     65   (to 7)
+000128   >>   74 LOAD_NONE
+000128        75 RETURN_VALUE

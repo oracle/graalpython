@@ -46,7 +46,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
-
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
     public static final TruffleString ARRAY_ITEM_MUST_BE_UNICODE = tsLiteral("array item must be unicode character");
     public static final TruffleString S_EXPECTED_SD_ARGS_GOT_D = tsLiteral("%s expected %s%d argument%s, got %d");
@@ -780,6 +779,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_USE_OF_SYS_EXECUTABLE = tsLiteral("internal error: unsupported use of sys.executable");
     public static final TruffleString UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = tsLiteral("utime: cannot use dir_fd and follow_symlinks together on this platform");
     public static final TruffleString VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = tsLiteral("value too large to fit into index-sized integer");
+    public static final TruffleString VARS_ARGUMENT_MUST_HAVE_DICT = tsLiteral("vars() argument must have __dict__ attribute");
     public static final TruffleString WAS_NOT_POSSIBLE_TO_MARSHAL = tsLiteral("Was not possible to marshal");
     public static final TruffleString WAS_NOT_POSSIBLE_TO_MARSHAL_P = tsLiteral("Was not possible to marshal %p");
     public static final TruffleString WEAK_OBJ_GONE_AWAY = tsLiteral("weak object has gone away");

@@ -40,61 +40,66 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyDictCheckExactNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class SetupWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
+/**
+ * Helper node to be used when it's known that a name must be read from a custom locals dict instead
+ * of the frame
+ */
+public abstract class GetNameFromLocalsNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object locals, TruffleString name, boolean cellvar);
 
     @Specialization
-    static int setup(Frame virtualFrame, int stackTopIn, Frame localFrame,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
-                    @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
-                    @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
+    Object getValue(VirtualFrame frame, Object locals, TruffleString name, boolean isCellVar,
+                    @Cached PyDictCheckExactNode checkDictNode,
+                    @Cached PyDictGetItem getDictItemNode,
+                    @Cached PyObjectGetItem getItemNode,
+                    @Cached IsBuiltinClassProfile classProfile,
                     @Cached PRaiseNode raiseNode) {
-        int stackTop = stackTopIn;
-        Object contextManager = localFrame.getObject(stackTop);
-        Object type = getClassNode.execute(contextManager);
-        Object enter = lookupEnter.execute(virtualFrame, type, contextManager);
-        if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
+        if (checkDictNode.execute(locals)) {
+            return getDictItemNode.execute(frame, (PDict) locals, name);
+        } else {
+            try {
+                return getItemNode.execute(frame, locals, name);
+            } catch (PException pe) {
+                if (!classProfile.profileClass(pe, KeyError)) {
+                    if (isCellVar) {
+                        throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, name);
+                    } else {
+                        throw raiseNode.raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, name);
+                    }
+                }
+            }
         }
-        Object exit = lookupExit.execute(virtualFrame, type, contextManager);
-        if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
-        }
-        Object res = callEnter.executeObject(virtualFrame, enter, contextManager);
-        localFrame.setObject(++stackTop, exit);
-        localFrame.setObject(++stackTop, res);
-        return stackTop;
+        return null;
     }
 
-    public static SetupWithNode create() {
-        return SetupWithNodeGen.create();
+    public static GetNameFromLocalsNode create() {
+        return GetNameFromLocalsNodeGen.create();
     }
 
-    public static SetupWithNode getUncached() {
-        return SetupWithNodeGen.getUncached();
+    public static GetNameFromLocalsNode getUncached() {
+        return GetNameFromLocalsNodeGen.getUncached();
     }
 }

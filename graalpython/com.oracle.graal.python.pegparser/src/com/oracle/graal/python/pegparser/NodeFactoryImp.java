@@ -251,7 +251,7 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ParserErrorCallback errorCb) {
+    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb) {
         return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb);
     }
 

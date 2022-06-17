@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -99,10 +100,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PCode extends PythonBuiltinObject {
     public static final long FLAG_VAR_ARGS = 0x4;
     public static final long FLAG_VAR_KW_ARGS = 0x8;
-    static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
-    static final long FLAG_GENERATOR = 0x20;
-    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
-                                          // redundant anyway
+    public static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
+    public static final long FLAG_GENERATOR = 0x20;
+    public static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
+    // redundant anyway
 
     // callTargetSupplier may be null, in which case callTarget and signature will be
     // set. Otherwise, these are lazily created from the supplier.
@@ -138,6 +139,8 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
+    // convert the constants (code units) to code on first access
+    private boolean convertConstants = true;
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
         super(cls, instanceShape);
@@ -189,6 +192,8 @@ public final class PCode extends PythonBuiltinObject {
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
         if (rootNode instanceof PClosureRootNode) {
             return ((PClosureRootNode) rootNode).getFreeVars();
+        } else if (rootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) rootNode).getCodeUnit().freevars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
@@ -197,6 +202,8 @@ public final class PCode extends PythonBuiltinObject {
     private static TruffleString[] extractCellVars(RootNode rootNode) {
         if (rootNode instanceof PClosureFunctionRootNode) {
             return ((PClosureFunctionRootNode) rootNode).getCellVars();
+        } else if (rootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) rootNode).getCodeUnit().cellvars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
@@ -246,7 +253,7 @@ public final class PCode extends PythonBuiltinObject {
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         if (funcRootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) funcRootNode).getStartOffset();
+            return ((PBytecodeRootNode) funcRootNode).getCodeUnit().startLine;
         }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
@@ -262,6 +269,10 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
+        if (rootNode instanceof PBytecodeRootNode) {
+            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            return code.stacksize + code.varnames.length + code.cellvars.length + code.freevars.length;
+        }
         return rootNode.getFrameDescriptor().getNumberOfSlots();
     }
 
@@ -382,6 +393,14 @@ public final class PCode extends PythonBuiltinObject {
         if (funcRootNode instanceof ModuleRootNode) {
             // Not on CPython
             flags |= FLAG_MODULE;
+        }
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            CodeUnit codeUnit = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+            flags = getFlags(flags, codeUnit);
+        }
+        if (funcRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+            CodeUnit codeUnit = ((PBytecodeGeneratorFunctionRootNode) funcRootNode).getBytecodeRootNode().getCodeUnit();
+            flags = getFlags(flags, codeUnit);
         } else {
             // 0x20 - generator
             if (funcRootNode instanceof GeneratorFunctionRootNode) {
@@ -401,6 +420,14 @@ public final class PCode extends PythonBuiltinObject {
                 flags |= FLAG_LAMBDA;
             }
         }
+        return flags;
+    }
+
+    private static int getFlags(int flags, CodeUnit codeUnit) {
+        flags |= codeUnit.isGenerator() ? FLAG_GENERATOR : 0;
+        flags |= codeUnit.takesVarArgs() ? FLAG_VAR_ARGS : 0;
+        flags |= codeUnit.takesVarKeywordArgs() ? FLAG_VAR_KW_ARGS : 0;
+        flags |= codeUnit.isLambda() ? FLAG_LAMBDA : 0;
         return flags;
     }
 
@@ -508,11 +535,35 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public Object[] getConstants() {
+    public Object[] getConstants(PythonObjectFactory factory) {
         if (constants == null) {
             constants = extractConstants(getRootNode());
         }
+        if (convertConstants) {
+            convertConstants = false;
+            RootNode rootNode = getRootNode();
+            for (int i = 0; i < constants.length; i++) {
+                constants[i] = convert(rootNode, constants[i], factory);
+            }
+        }
         return constants;
+    }
+
+    @TruffleBoundary
+    private static Object convert(RootNode rootNode, Object o, PythonObjectFactory factory) {
+        if (o instanceof CodeUnit) {
+            CodeUnit code = ((CodeUnit) o);
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
+            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code.varnames.length, code.stacksize, code.flags, code.constants,
+                            code.names,
+                            code.varnames, code.freevars, code.cellvars, null, code.name, code.startOffset, code.srcOffsetTable);
+        }
+        return o;
+    }
+
+    @TruffleBoundary
+    private static SourceSection getSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
     }
 
     public Object[] getNames() {
@@ -661,7 +712,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        return createTuple(this.getConstants(), factory);
+        return createTuple(this.getConstants(factory), factory);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {

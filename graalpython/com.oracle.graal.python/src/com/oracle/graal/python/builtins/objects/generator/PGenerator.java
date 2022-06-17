@@ -195,7 +195,6 @@ public final class PGenerator extends PythonBuiltinObject {
      * next yield index to use via {@link #handleResult}
      */
     public RootCallTarget getCurrentCallTarget() {
-        assert !finished;
         return callTargets[currentCallTarget];
     }
 

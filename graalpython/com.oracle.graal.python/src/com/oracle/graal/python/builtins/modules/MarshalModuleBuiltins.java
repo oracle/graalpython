@@ -1184,8 +1184,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             long[] primitiveConstants = readLongArray();
             short[] exceptionHandlerRanges = readShortArray();
             int startOffset = readInt();
+            int startLine = readInt();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
-                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset);
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine);
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
@@ -1212,6 +1213,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeLongArray(code.primitiveConstants);
             writeShortArray(code.exceptionHandlerRanges);
             writeInt(code.startOffset);
+            writeInt(code.startLine);
         }
 
         private PCode readCode() {

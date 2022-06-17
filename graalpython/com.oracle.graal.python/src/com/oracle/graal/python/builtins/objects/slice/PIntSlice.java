@@ -88,7 +88,7 @@ public final class PIntSlice extends PSlice {
         return step;
     }
 
-    public boolean isStartIsNone() {
+    public boolean isStartNone() {
         return startIsNone;
     }
 

@@ -1,0 +1,28 @@
+Disassembly of <module>:
+000000         0 MAKE_FUNCTION                     0    (f)
+000000         3 STORE_NAME                        0    (f)
+000030         5 LOAD_NAME                         0    (f)
+000032         7 LOAD_BYTE                         1
+000030         9 CALL_FUNCTION                     1
+000030        11 RETURN_VALUE
+
+Disassembly of f:
+000015         0 LOAD_BUILD_CLASS
+000015         1 LOAD_CLOSURE                      0    (x)
+000015         3 CLOSURE_FROM_STACK                1
+000015         5 MAKE_FUNCTION                     8    (f.<locals>.C)
+000015         8 LOAD_STRING                       3    ('C')
+000015        10 CALL_FUNCTION                     2
+000015        12 STORE_FAST                        1    (C)
+000015        14 LOAD_NONE
+000015        15 RETURN_VALUE
+
+Disassembly of f.<locals>.C:
+000015         0 LOAD_NAME                         0    (__name__)
+000015         2 STORE_NAME                        1    (__module__)
+000015         4 LOAD_STRING                       0    ('f.<locals>.C')
+000015         6 STORE_NAME                        2    (__qualname__)
+000028         8 LOAD_CLASSDEREF                   0
+000024        10 STORE_NAME                        3    (y)
+000024        12 LOAD_NONE
+000024        13 RETURN_VALUE

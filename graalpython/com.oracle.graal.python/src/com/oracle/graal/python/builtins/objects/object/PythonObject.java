@@ -64,6 +64,12 @@ public class PythonObject extends PythonAbstractObject {
      * Indicates that the object has a dict in the form of an actual dictionary
      */
     public static final byte HAS_MATERIALIZED_DICT = 0b1000;
+    /**
+     * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
+     * 
+     * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
+     */
+    public static final byte IS_STATIC_BASE = 0b10000;
 
     private final Object initialPythonClass;
 

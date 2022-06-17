@@ -40,61 +40,50 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectFunctionStr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
-public abstract class SetupWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
+public abstract class KeywordsNode extends PNodeWithContext {
+    public abstract PKeyword[] execute(Frame virtualFrame, Object sourceCollection, int stackTop, Frame localFrame);
 
     @Specialization
-    static int setup(Frame virtualFrame, int stackTopIn, Frame localFrame,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
-                    @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
-                    @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
-                    @Cached PRaiseNode raiseNode) {
-        int stackTop = stackTopIn;
-        Object contextManager = localFrame.getObject(stackTop);
-        Object type = getClassNode.execute(contextManager);
-        Object enter = lookupEnter.execute(virtualFrame, type, contextManager);
-        if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
+    static PKeyword[] kwords(VirtualFrame virtualFrame, Object sourceCollection, int stackTop, Frame localFrame,
+                    @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
+                    @Cached PRaiseNode raise) {
+        try {
+            return expandKeywordStarargsNode.execute(sourceCollection);
+        } catch (NonMappingException e) {
+            Object functionName = getFunctionName(virtualFrame, stackTop, localFrame);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
-        Object exit = lookupExit.execute(virtualFrame, type, contextManager);
-        if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
-            throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
-        }
-        Object res = callEnter.executeObject(virtualFrame, enter, contextManager);
-        localFrame.setObject(++stackTop, exit);
-        localFrame.setObject(++stackTop, res);
-        return stackTop;
     }
 
-    public static SetupWithNode create() {
-        return SetupWithNodeGen.create();
+    private static Object getFunctionName(VirtualFrame virtualFrame, int stackTop, Frame localFrame) {
+        /*
+         * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
+         * this point is [kwargs kw, callable].
+         */
+        Object callable = localFrame.getObject(stackTop - 2);
+        return PyObjectFunctionStr.getUncached().execute(virtualFrame, callable);
     }
 
-    public static SetupWithNode getUncached() {
-        return SetupWithNodeGen.getUncached();
+    public static KeywordsNode create() {
+        return KeywordsNodeGen.create();
+    }
+
+    public static KeywordsNode getUncached() {
+        return KeywordsNodeGen.getUncached();
     }
 }

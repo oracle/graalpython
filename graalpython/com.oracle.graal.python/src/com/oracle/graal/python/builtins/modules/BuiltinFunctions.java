@@ -77,6 +77,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
@@ -2258,6 +2259,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 return readLocalsNode.execute(frame, materializeNode.execute(frame, n, false, false, generatorFrame));
             }
+        }
+
+        public static LocalsNode create() {
+            return BuiltinFunctionsFactory.LocalsNodeFactory.create(null);
+        }
+    }
+
+    @Builtin(name = "vars", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class VarsNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(none)")
+        Object vars(VirtualFrame frame, @SuppressWarnings("unused") PNone none,
+                        @Cached LocalsNode localsNode) {
+            return localsNode.execute(frame);
+        }
+
+        @Specialization(guards = "!isNoValue(obj)")
+        Object vars(VirtualFrame frame, Object obj,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            Object dict = lookupAttr.execute(frame, obj, T___DICT__);
+            if (dict == NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.VARS_ARGUMENT_MUST_HAVE_DICT);
+            }
+            return dict;
         }
     }
 

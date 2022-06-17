@@ -1,29 +1,39 @@
 Disassembly of <module>:
-000009         0 LOAD_NAME                         0    (range)
-000015         2 LOAD_BYTE                         10
-000009         4 CALL_FUNCTION                     1
-000000         6 GET_ITER
-000000   >>    7 FOR_ITER                          34   (to 41)
-000004         9 STORE_NAME                        1    (i)
-000031        11 LOAD_BYTE                         1
-000035        13 LOAD_BYTE                         0
-000031        15 BINARY_OP                         8    (TRUEDIV)
-000031        17 POP_TOP
-000031        18 JUMP_FORWARD                      21   (to 39)
-000031        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
-000046        21 LOAD_NAME                         2    (RuntimeError)
-000039        23 MATCH_EXC_OR_JUMP                 15   (to 38)
-000039        25 UNWRAP_EXC
-000039        26 STORE_NAME                        3    (e)
-000075        28 LOAD_NAME                         4    (a)
-000068        30 ROT_TWO
-000068        31 POP_EXCEPT
-000068        32 ROT_TWO
-000068        33 POP_TOP
-000068        34 RETURN_VALUE
-000068        35 POP_EXCEPT
-000068        36 JUMP_FORWARD                      3    (to 39)
-000068   >>   38 END_EXC_HANDLER                                                         (exc handler 21 - 38; stack: 2)
-000068   >>   39 JUMP_BACKWARD                     32   (to 7)
-000068   >>   41 LOAD_NONE
-000068        42 RETURN_VALUE
+000000         0 MAKE_FUNCTION                     0    (foo)
+000000         3 STORE_NAME                        0    (foo)
+000000         5 LOAD_NONE
+000000         6 RETURN_VALUE
+
+Disassembly of foo:
+000022         0 LOAD_GLOBAL                       0    (range)
+000028         2 LOAD_BYTE                         10
+000022         4 CALL_FUNCTION                     1
+000013         6 GET_ITER
+000013   >>    7 FOR_ITER                          41   (to 48)
+000017         9 STORE_FAST                        0    (i)
+000048        11 LOAD_BYTE                         1
+000052        13 LOAD_BYTE                         0
+000048        15 BINARY_OP                         8    (TRUEDIV)
+000048        17 POP_TOP
+000048        18 JUMP_FORWARD                      28   (to 46)
+000048        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
+000065        21 LOAD_GLOBAL                       1    (RuntimeError)
+000058        23 MATCH_EXC_OR_JUMP                 22   (to 45)
+000058        25 UNWRAP_EXC
+000058        26 STORE_FAST                        1    (e)
+000096        28 LOAD_GLOBAL                       2    (a)
+000089        30 DELETE_FAST                       1    (e)
+000089        32 ROT_TWO
+000089        33 POP_EXCEPT
+000089        34 ROT_TWO
+000089        35 POP_TOP
+000089        36 RETURN_VALUE
+000089        37 DELETE_FAST                       1    (e)
+000089        39 POP_EXCEPT
+000089        40 JUMP_FORWARD                      6    (to 46)
+000089        42 DELETE_FAST                       1    (e)                              (exc handler 28 - 37; stack: 2)
+000089        44 END_EXC_HANDLER
+000089   >>   45 END_EXC_HANDLER                                                         (exc handler 21 - 28; stack: 2 | exc handler 37 - 45; stack: 2)
+000089   >>   46 JUMP_BACKWARD                     39   (to 7)
+000089   >>   48 LOAD_NONE
+000089        49 RETURN_VALUE

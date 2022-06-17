@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -164,6 +166,7 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object doGeneric(VirtualFrame frame, TruffleString typeName, TruffleString typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CallNode callTypeNewNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
@@ -175,6 +178,9 @@ public final class PythonCextStructSeqBuiltins extends PythonBuiltins {
                 PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
                 Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
                 PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, getLanguage(), lib, clearNewNode, fromJavaStringNode);
+                if (cls instanceof PythonClass) {
+                    ((PythonClass) cls).makeStaticBase(dylib);
+                }
                 return toNewRefNode.execute(cls);
             } catch (PException e) {
                 transformToNative(frame, e);
