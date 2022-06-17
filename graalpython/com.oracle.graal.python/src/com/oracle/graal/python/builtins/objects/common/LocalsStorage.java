@@ -254,12 +254,10 @@ public final class LocalsStorage extends HashingStorage {
             HashingStorage result = other;
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);
-                if (identifier instanceof TruffleString) {
-                    if (isUserFrameSlot(identifier)) {
-                        Object value = self.getValue(slot);
-                        if (value != null) {
-                            result = lib.setItem(result, desc.getSlotName(slot), value);
-                        }
+                if (isUserFrameSlot(identifier)) {
+                    Object value = self.getValue(slot);
+                    if (value != null) {
+                        result = lib.setItem(result, desc.getSlotName(slot), value);
                     }
                 }
             }
