@@ -86,7 +86,6 @@ import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
-import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -100,7 +99,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
@@ -223,6 +221,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ExecutePositionalStarargsNode> NODE_EXECUTE_STARARGS = ExecutePositionalStarargsNode::create;
     private static final ExpandKeywordStarargsNode UNCACHED_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode.getUncached();
     private static final NodeSupplier<ExpandKeywordStarargsNode> NODE_EXPAND_KEYWORD_STARARGS = ExpandKeywordStarargsNode::create;
+    private static final KeywordsNode UNCACHED_KEYWORDS = KeywordsNode.getUncached();
+    private static final NodeSupplier<KeywordsNode> NODE_KEYWORDS = KeywordsNode::create;
     private static final SliceNodes.CreateSliceNode UNCACHED_CREATE_SLICE = SliceNodes.CreateSliceNode.getUncached();
     private static final NodeSupplier<SliceNodes.CreateSliceNode> NODE_CREATE_SLICE = SliceNodes.CreateSliceNode::create;
     private static final ListNodes.ConstructListNode UNCACHED_CONSTRUCT_LIST = ListNodes.ConstructListNode.getUncached();
@@ -2071,28 +2071,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                try {
-                    ExpandKeywordStarargsNode expandKeywordStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXPAND_KEYWORD_STARARGS, NODE_EXPAND_KEYWORD_STARARGS);
-                    result = expandKeywordStarargsNode.execute(sourceCollection);
-                } catch (NonMappingException e) {
-                    Object functionName = getFunctionName(virtualFrame, stackTop, localFrame);
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
-                }
+                KeywordsNode keywordsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_KEYWORDS, NODE_KEYWORDS);
+                result = keywordsNode.execute(virtualFrame, sourceCollection, stackTop, localFrame);
                 break;
             }
             default:
                 throw CompilerDirectives.shouldNotReachHere("Unexpected collection type");
         }
         stackFrame.setObject(stackTop, result);
-    }
-
-    private static Object getFunctionName(VirtualFrame virtualFrame, int stackTop, Frame localFrame) {
-        /*
-         * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
-         * this point is [kwargs kw, callable].
-         */
-        Object callable = localFrame.getObject(stackTop - 2);
-        return PyObjectFunctionStr.getUncached().execute(virtualFrame, callable);
     }
 
     private int bytecodeCollectionAddCollection(VirtualFrame virtualFrame, Frame stackFrame, int type, int initialStackTop, Node[] localNodes, int nodeIndex) {
