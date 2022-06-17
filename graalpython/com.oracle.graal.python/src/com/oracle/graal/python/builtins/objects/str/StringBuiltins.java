@@ -162,6 +162,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -2413,6 +2414,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateUncached
     public abstract static class StrGetItemNodeWithSlice extends Node {
 
         public abstract TruffleString execute(TruffleString value, SliceInfo info);

@@ -47,6 +47,7 @@ typedef HPyGlobal* _HPyGlobalPtr;
 #define HPyField void*
 #define HPyThreadState void*
 #define HPyGlobal void*
+#define _HPyCapsule_key int32_t
 #endif
 
 
@@ -283,6 +284,31 @@ struct _HPyContext_s {
     void (*ctx_Global_Store)(HPyContext *ctx, _HPyGlobalPtr global, HPy h);
     HPy (*ctx_Global_Load)(HPyContext *ctx, HPyGlobal global);
     void (*ctx_Dump)(HPyContext *ctx, HPy h);
+    _HPyConst h_ComplexType;
+    _HPyConst h_BytesType;
+    _HPyConst h_MemoryViewType;
+    _HPyConst h_CapsuleType;
+    _HPyConst h_SliceType;
+    HPy (*ctx_MaybeGetAttr_s)(HPyContext *ctx, HPy obj, const char *name);
+    int (*ctx_Slice_Unpack)(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step);
+    HPy (*ctx_ContextVar_New)(HPyContext *ctx, const char *name, HPy default_value);
+    int (*ctx_ContextVar_Get)(HPyContext *ctx, HPy context_var, HPy default_value, _HPyPtr result);
+    HPy (*ctx_ContextVar_Set)(HPyContext *ctx, HPy context_var, HPy value);
+    HPy (*ctx_Capsule_New)(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor);
+    void *(*ctx_Capsule_Get)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name);
+    int (*ctx_Capsule_IsValid)(HPyContext *ctx, HPy capsule, const char *name);
+    int (*ctx_Capsule_Set)(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, void *value);
+    HPy (*ctx_Unicode_FromEncodedObject)(HPyContext *ctx, HPy obj, const char *encoding, const char *errors);
+    HPy (*ctx_Unicode_InternFromString)(HPyContext *ctx, const char *str);
+    HPy (*ctx_Unicode_Substring)(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end);
+    HPy (*ctx_Dict_Keys)(HPyContext *ctx, HPy h);
+    HPy (*ctx_Dict_GetItem)(HPyContext *ctx, HPy op, HPy key);
+    int (*ctx_Sequence_Check)(HPyContext *ctx, HPy h);
+    int (*ctx_SetType)(HPyContext *ctx, HPy obj, HPy type);
+    int (*ctx_Type_IsSubtype)(HPyContext *ctx, HPy sub, HPy type);
+    const char *(*ctx_Type_GetName)(HPyContext *ctx, HPy type);
+    HPy (*ctx_SeqIter_New)(HPyContext *ctx, HPy seq);
+    int (*ctx_Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *value);
 };
 
 #ifdef GRAALVM_PYTHON_LLVM
@@ -293,4 +319,5 @@ struct _HPyContext_s {
 #undef HPyField
 #undef HPyThreadState
 #undef HPyGlobal
+#undef _HPyCapsule_key
 #endif

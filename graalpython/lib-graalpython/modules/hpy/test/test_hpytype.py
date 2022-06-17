@@ -142,6 +142,52 @@ class TestType(HPyTest):
             pass
         assert isinstance(Sub(), mod.Dummy)
 
+    def test_get_name(self):
+        mod = self.make_module("""
+            static HPyType_Spec Dummy_spec = {
+                .name = "mytest.Dummy",
+                .itemsize = 0,
+                .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_BASETYPE,
+                @IS_LEGACY
+            };
+
+            HPyDef_METH(get_tp_name, "get_tp_name", get_tp_name_impl, HPyFunc_O)
+            static HPy get_tp_name_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                return HPyUnicode_FromString(ctx, HPyType_GetName(ctx, arg));
+            }
+
+            @EXPORT(get_tp_name)
+            @EXPORT_TYPE("Dummy", Dummy_spec)
+            @INIT
+        """)
+        assert mod.get_tp_name(int) == 'int'
+        assert mod.get_tp_name(float) == 'float'
+        assert mod.get_tp_name(mod.Dummy) == 'mytest.Dummy'
+
+    def test_get_name(self):
+        mod = self.make_module("""
+            static HPyType_Spec Dummy_spec = {
+                .name = "mytest.Dummy",
+                .itemsize = 0,
+                .flags = HPy_TPFLAGS_DEFAULT | HPy_TPFLAGS_BASETYPE,
+                @IS_LEGACY
+            };
+
+            HPyDef_METH(get_tp_name, "get_tp_name", get_tp_name_impl, HPyFunc_O)
+            static HPy get_tp_name_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                return HPyUnicode_FromString(ctx, HPyType_GetName(ctx, arg));
+            }
+
+            @EXPORT(get_tp_name)
+            @EXPORT_TYPE("Dummy", Dummy_spec)
+            @INIT
+        """)
+        assert mod.get_tp_name(int) == 'int'
+        assert mod.get_tp_name(float) == 'float'
+        assert mod.get_tp_name(mod.Dummy) == 'mytest.Dummy'
+
     def test_doc_string(self):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {

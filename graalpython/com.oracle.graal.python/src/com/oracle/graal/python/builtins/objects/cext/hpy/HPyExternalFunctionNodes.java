@@ -141,7 +141,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
 
-    private static final TruffleString KW_CALLABLE = tsLiteral("$callable");
+    public static final TruffleString KW_CALLABLE = tsLiteral("$callable");
     private static final TruffleString KW_CLOSURE = tsLiteral("$closure");
     private static final TruffleString KW_CONTEXT = tsLiteral("$context");
     private static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = {KW_CALLABLE, KW_CONTEXT};
@@ -652,6 +652,9 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private Object getKwargs(VirtualFrame frame) {
+            if (PArguments.getKeywordArguments(frame).length == 0) {
+                return PNone.NO_VALUE;
+            }
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(EMPTY_TRUFFLESTRING_ARRAY));

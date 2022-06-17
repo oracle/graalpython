@@ -134,6 +134,11 @@ HPyAPI_FUNC HPy_ssize_t HPy_Length(HPyContext *ctx, HPy h)
     return PyObject_Length(_h2py(h));
 }
 
+HPyAPI_FUNC int HPySequence_Check(HPyContext *ctx, HPy h)
+{
+    return PySequence_Check(_h2py(h));
+}
+
 HPyAPI_FUNC int HPyNumber_Check(HPyContext *ctx, HPy h)
 {
     return PyNumber_Check(_h2py(h));
@@ -428,6 +433,19 @@ HPyAPI_FUNC HPy HPy_Type(HPyContext *ctx, HPy obj)
     return _py2h(PyObject_Type(_h2py(obj)));
 }
 
+HPyAPI_FUNC int HPy_SetType(HPyContext *ctx, HPy obj, HPy type)
+{
+        assert(PyType_Check(_h2py(type)));
+        _h2py(obj)->ob_type = (PyTypeObject*) _h2py(type);
+        return 0;
+}
+
+HPyAPI_FUNC const char *HPyType_GetName(HPyContext *ctx, HPy type)
+{
+        assert(PyType_Check(_h2py(type)));
+        return ((PyTypeObject*) _h2py(type))->tp_name;
+}
+
 HPyAPI_FUNC HPy HPy_Repr(HPyContext *ctx, HPy obj)
 {
     return _py2h(PyObject_Repr(_h2py(obj)));
@@ -461,6 +479,11 @@ HPyAPI_FUNC int HPy_RichCompareBool(HPyContext *ctx, HPy v, HPy w, int op)
 HPyAPI_FUNC HPy_hash_t HPy_Hash(HPyContext *ctx, HPy obj)
 {
     return PyObject_Hash(_h2py(obj));
+}
+
+HPyAPI_FUNC HPy HPySeqIter_New(HPyContext *ctx, HPy seq)
+{
+    return _py2h(PySeqIter_New(_h2py(seq)));
 }
 
 HPyAPI_FUNC int HPyBytes_Check(HPyContext *ctx, HPy h)
@@ -558,6 +581,21 @@ HPyAPI_FUNC HPy HPyUnicode_DecodeLatin1(HPyContext *ctx, const char *s, HPy_ssiz
     return _py2h(PyUnicode_DecodeLatin1(s, size, errors));
 }
 
+HPyAPI_FUNC HPy HPyUnicode_FromEncodedObject(HPyContext *ctx, HPy obj, const char *encoding, const char *errors)
+{
+    return _py2h(PyUnicode_FromEncodedObject(_h2py(obj), encoding, errors));
+}
+
+HPyAPI_FUNC HPy HPyUnicode_InternFromString(HPyContext *ctx, const char *str)
+{
+    return _py2h(PyUnicode_InternFromString(str));
+}
+
+HPyAPI_FUNC HPy HPyUnicode_Substring(HPyContext *ctx, HPy obj, HPy_ssize_t start, HPy_ssize_t end)
+{
+    return _py2h(PyUnicode_Substring(_h2py(obj), start, end));
+}
+
 HPyAPI_FUNC int HPyList_Check(HPyContext *ctx, HPy h)
 {
     return PyList_Check(_h2py(h));
@@ -583,14 +621,39 @@ HPyAPI_FUNC HPy HPyDict_New(HPyContext *ctx)
     return _py2h(PyDict_New());
 }
 
+HPyAPI_FUNC HPy HPyDict_Keys(HPyContext *ctx, HPy h)
+{
+    return _py2h(PyDict_Keys(_h2py(h)));
+}
+
 HPyAPI_FUNC int HPyTuple_Check(HPyContext *ctx, HPy h)
 {
     return PyTuple_Check(_h2py(h));
 }
 
+HPyAPI_FUNC int HPySlice_Unpack(HPyContext *ctx, HPy slice, HPy_ssize_t *start, HPy_ssize_t *stop, HPy_ssize_t *step)
+{
+    return PySlice_Unpack(_h2py(slice), start, stop, step);
+}
+
+HPyAPI_FUNC HPy HPyContextVar_New(HPyContext *ctx, const char *name, HPy default_value)
+{
+    return _py2h(PyContextVar_New(name, _h2py(default_value)));
+}
+
+HPyAPI_FUNC HPy HPyContextVar_Set(HPyContext *ctx, HPy context_var, HPy value)
+{
+    return _py2h(PyContextVar_Set(_h2py(context_var), _h2py(value)));
+}
+
 HPyAPI_FUNC HPy HPyImport_ImportModule(HPyContext *ctx, const char *name)
 {
     return _py2h(PyImport_ImportModule(name));
+}
+
+HPyAPI_FUNC int HPyCapsule_IsValid(HPyContext *ctx, HPy capsule, const char *name)
+{
+    return PyCapsule_IsValid(_h2py(capsule), name);
 }
 
 HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState state)
@@ -601,5 +664,34 @@ HPyAPI_FUNC void HPy_ReenterPythonExecution(HPyContext *ctx, HPyThreadState stat
 HPyAPI_FUNC HPyThreadState HPy_LeavePythonExecution(HPyContext *ctx)
 {
     return _threads2h(PyEval_SaveThread());
+}
+
+HPyAPI_FUNC int HPyType_CheckSlot(HPyContext *ctx, HPy type, HPyDef *value)
+{
+            PyObject *result = _h2py(type);
+            struct _typeobject* t = ((struct _typeobject*) result);
+            char msg[256];
+            switch (value->slot.slot) {
+                case HPy_nb_inplace_add:
+                    return t->tp_as_number != NULL && t->tp_as_number->nb_inplace_add == value->slot.cpy_trampoline;
+                case HPy_nb_power:
+                    // TODO: this needs proper cast for C++
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_power == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_subtract:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_subtract == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_true_divide:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_true_divide == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_add:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_add == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_and:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_and == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_or:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_or == (void*) value->slot.cpy_trampoline;
+                case HPy_nb_xor:
+                    return t->tp_as_number != NULL && (void*) t->tp_as_number->nb_xor == (void*) value->slot.cpy_trampoline;
+                default:
+                    snprintf(msg, 256, "Unsupported slot in HPyTypeSlot_Is: %d", value->slot.slot);
+                    Py_FatalError(msg);
+            }
 }
 

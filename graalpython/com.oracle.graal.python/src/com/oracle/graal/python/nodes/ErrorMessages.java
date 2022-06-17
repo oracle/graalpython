@@ -983,8 +983,6 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COLON_DELIMITER = tsLiteral("Expecting ':' delimiter");
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
-    public static final TruffleString GET_OF_S_IS_NOT_CALLABLE = tsLiteral("get of %s is not callable");
-    public static final TruffleString SET_OF_S_IS_NOT_CALLABLE = tsLiteral("set of %s is not callable");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1381,7 +1379,6 @@ public abstract class ErrorMessages {
     public static final TruffleString MODULE_HAS_MULTIPLE_CREATE_SLOTS = tsLiteral("module %s has multiple create slots");
     public static final TruffleString MODULE_USES_UNKNOW_SLOT_ID = tsLiteral("module %s uses unknown slot ID %i");
     public static final TruffleString ML_FLAGS_IS_NOT_INTEGER = tsLiteral("ml_flags of %s is not an integer");
-    public static final TruffleString ML_METH_IS_NOT_CALLABLE = tsLiteral("ml_meth of %s is not callable");
     public static final TruffleString INVALID_STRUCT_MEMBER = tsLiteral("Invalid struct member '%s'");
     public static final TruffleString CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH = tsLiteral("Cannot access struct member 'ml_flags' or 'ml_meth'.");
     public static final TruffleString FIELD_DID_NOT_RETURN_ARRAY = tsLiteral("field '%s' did not return an array");
@@ -1434,4 +1431,13 @@ public abstract class ErrorMessages {
 
     public static final TruffleString ATTEMPTING_GETTER_NO_NATIVE_SPACE = tsLiteral("Attempting to getter function but object has no associated native space.");
     public static final TruffleString ATTEMPTING_SETTER_NO_NATIVE_SPACE = tsLiteral("Attempting to setter function but object has no associated native space.");
+
+    public static final TruffleString INSTANCE_OF_CONTEXTVAR_EXPECTED = tsLiteral("an instance of ContextVar was expected");
+    public static final TruffleString CAPSULE_SETPOINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
+    public static final TruffleString CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetPointer called with invalid PyCapsule object");
+    public static final TruffleString CAPSULE_GETCONTEXT_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetContext called with invalid PyCapsule object");
+    public static final TruffleString CAPSULE_GETNAME_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetName called with invalid PyCapsule object");
+    public static final TruffleString CAPSULE_GETDESTRUCTOR_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetDestructor called with invalid PyCapsule object");
+    public static final TruffleString MSG_NOT_SET = tsLiteral("<message not set>");
+
 }

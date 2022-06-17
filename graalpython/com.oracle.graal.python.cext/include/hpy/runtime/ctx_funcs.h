@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,6 +37,9 @@ _HPy_HIDDEN HPy ctx_Bytes_FromStringAndSize(HPyContext *ctx, const char *v,
 // ctx_call.c
 _HPy_HIDDEN HPy ctx_CallTupleDict(HPyContext *ctx, HPy callable, HPy args, HPy kw);
 
+// ctx_dict.c
+_HPy_HIDDEN HPy ctx_Dict_GetItem(HPyContext *ctx, HPy op, HPy key);
+
 // ctx_err.c
 _HPy_HIDDEN int ctx_Err_Occurred(HPyContext *ctx);
 
@@ -54,11 +57,13 @@ _HPy_HIDDEN HPy ctx_Module_Create(HPyContext *ctx, HPyModuleDef *hpydef);
 // ctx_object.c
 _HPy_HIDDEN void ctx_Dump(HPyContext *ctx, HPy h);
 _HPy_HIDDEN int ctx_TypeCheck(HPyContext *ctx, HPy h_obj, HPy h_type);
+_HPy_HIDDEN int ctx_Type_IsSubtype(HPyContext *ctx, HPy h_sub, HPy h_type);
 _HPy_HIDDEN int ctx_Is(HPyContext *ctx, HPy h_obj, HPy h_other);
 _HPy_HIDDEN HPy ctx_GetItem_i(HPyContext *ctx, HPy obj, HPy_ssize_t idx);
 _HPy_HIDDEN HPy ctx_GetItem_s(HPyContext *ctx, HPy obj, const char *key);
 _HPy_HIDDEN int ctx_SetItem_i(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value);
 _HPy_HIDDEN int ctx_SetItem_s(HPyContext *ctx, HPy obj, const char *key, HPy value);
+_HPy_HIDDEN HPy ctx_MaybeGetAttr_s(HPyContext *ctx, HPy obj, const char *name);
 
 // ctx_tracker.c
 _HPy_HIDDEN HPyTracker ctx_Tracker_New(HPyContext *ctx, HPy_ssize_t size);
@@ -78,6 +83,27 @@ _HPy_HIDDEN void ctx_TupleBuilder_Cancel(HPyContext *ctx,
 // ctx_tuple.c
 _HPy_HIDDEN HPy ctx_Tuple_FromArray(HPyContext *ctx, HPy items[], HPy_ssize_t n);
 
+// ctx_capsule.c
+_HPy_HIDDEN HPy ctx_Capsule_New(HPyContext *ctx,
+                                void *pointer,
+                                const char *name,
+                                HPyCapsule_Destructor destructor);
+_HPy_HIDDEN HPyCapsule_Destructor ctx_Capsule_GetDestructor(HPyContext *ctx,
+                                                            HPy h_capsule);
+_HPy_HIDDEN int ctx_Capsule_SetDestructor(HPyContext *ctx,
+                                          HPy h_capsule,
+                                          HPyCapsule_Destructor destructor);
+#ifdef HPY_UNIVERSAL_ABI
+_HPy_HIDDEN void* ctx_Capsule_Get(HPyContext *ctx,
+                                  HPy capsule,
+                                  _HPyCapsule_key key,
+                                  const char *name);
+_HPy_HIDDEN int ctx_Capsule_Set(HPyContext *ctx,
+                                HPy capsule,
+                                _HPyCapsule_key key,
+                                void *value);
+#endif
+
 // ctx_type.c
 _HPy_HIDDEN void* ctx_AsStruct(HPyContext *ctx, HPy h);
 _HPy_HIDDEN void* ctx_AsStructLegacy(HPyContext *ctx, HPy h);
@@ -86,5 +112,9 @@ _HPy_HIDDEN HPy ctx_Type_FromSpec(HPyContext *ctx, HPyType_Spec *hpyspec,
 _HPy_HIDDEN HPy ctx_New(HPyContext *ctx, HPy h_type, void **data);
 _HPy_HIDDEN HPy ctx_Type_GenericNew(HPyContext *ctx, HPy h_type, HPy *args,
                                     HPy_ssize_t nargs, HPy kw);
+
+// ctx_contextvar.c
+_HPy_HIDDEN int ctx_ContextVar_Get(HPyContext *ctx, HPy context_var, HPy defaul_value,
+                                   HPy *result);
 
 #endif /* HPY_RUNTIME_CTX_FUNCS_H */

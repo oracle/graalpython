@@ -96,6 +96,13 @@ def skip_nfi(hpy_abi):
         pytest.skip()
 
 
+@pytest.fixture()
+def skip_cpython_abi(hpy_abi):
+    # skip all tests in this class for CPython ABI mode
+    if hpy_abi == 'cpython':
+        pytest.skip()
+
+
 @pytest.fixture(scope="session")
 def fatal_exit_code(request):
     import sys

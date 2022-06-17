@@ -289,6 +289,22 @@ class TestObject(object):
         assert tester.year == 1, "year was %s "% tester.year
         assert tester.is_binary_compatible()
 
+    def test_tp_name(self):
+        TestTpName = CPyExtType("TestTpName",
+                                '''
+                                static PyObject* testslots_tp_name(PyObject* self, PyObject *cls) {
+                                    return PyUnicode_FromString(((PyTypeObject*)cls)->tp_name);
+                                }
+                                ''',
+                                tp_methods='{"get_tp_name", (PyCFunction)testslots_tp_name, METH_O, ""}',
+                                )
+        tester = TestTpName()
+        class MyClass:
+            pass
+        assert tester.get_tp_name(MyClass) == 'MyClass'
+        assert tester.get_tp_name(int) == 'int'
+        assert tester.get_tp_name(type(tester)) == 'TestTpName.TestTpName'
+
     def test_slots_initialized(self):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
                               '''
