@@ -269,6 +269,10 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
+        if (rootNode instanceof PBytecodeRootNode) {
+            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            return code.stacksize + code.varnames.length + code.cellvars.length + code.freevars.length;
+        }
         return rootNode.getFrameDescriptor().getNumberOfSlots();
     }
 

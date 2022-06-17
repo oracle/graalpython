@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,8 +54,6 @@ import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 /**
  * A context-independent representation of code for bytecode interpreter. Contains the actual
@@ -111,7 +111,7 @@ public final class CodeUnit {
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
-        this.stacksize = stacksize + varnames.length + cellvars.length + freevars.length;
+        this.stacksize = stacksize;
         this.code = code;
         this.srcOffsetTable = linetable;
         this.flags = flags;
