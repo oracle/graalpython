@@ -95,6 +95,7 @@
 #include "pythonrun.h"
 #include "ceval.h"
 #include "pyerrors.h"
+#include "context.h"
 #include "modsupport.h"
 #include "tupleobject.h"
 #include "structseq.h"

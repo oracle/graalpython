@@ -68,6 +68,7 @@ class HPyDevel:
             self.src_dir.joinpath('argparse.c'),
             self.src_dir.joinpath('buildvalue.c'),
             self.src_dir.joinpath('helpers.c'),
+            self.src_dir.joinpath('structseq.c'),
         ]))
 
     def get_ctx_sources(self):

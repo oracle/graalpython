@@ -947,6 +947,9 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    // XXX: We have to hold on to this so that NFI doesn't unload the library again
+    static Object nativeLibpython;
+
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
         if (!context.hasCApiContext()) {
@@ -964,6 +967,12 @@ public final class CApiContext extends CExtContext {
                 // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
+
+                String libpython = System.getProperty("LibPythonNativeLibrary");
+                if (libpython != null) {
+                    SourceBuilder nfiSrcBuilder = Source.newBuilder("nfi", "load(RTLD_GLOBAL) \"" + libpython + "\"", "<libpython-native>");
+                    nativeLibpython = context.getEnv().parseInternal(nfiSrcBuilder.build()).call();
+                }
 
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);

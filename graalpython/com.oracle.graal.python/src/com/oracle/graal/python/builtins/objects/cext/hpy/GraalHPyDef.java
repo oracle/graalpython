@@ -57,6 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
@@ -81,6 +82,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
@@ -309,6 +311,7 @@ public abstract class GraalHPyDef {
     /* enum values of 'HPyType_SpecParam_Kind' */
     public static final int HPyType_SPEC_PARAM_BASE = 1;
     public static final int HPyType_SPEC_PARAM_BASES_TUPLE = 2;
+    public static final int HPyType_SPEC_PARAM_METACLASS = 3;
 
     /* type flags according to 'hpytype.h' */
     public static final long _Py_TPFLAGS_HEAPTYPE = (1L << 9);
@@ -364,7 +367,9 @@ public abstract class GraalHPyDef {
         HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
         HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
         HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
+        HPY_TP_CALL(50, HPySlotWrapper.NULL, T___CALL__),
         HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
+        HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, T___NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, T___REPR__),
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),

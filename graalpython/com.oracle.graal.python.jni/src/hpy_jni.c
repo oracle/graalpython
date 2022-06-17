@@ -90,6 +90,10 @@ static JNIEnv* jniEnv;
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
     UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
+    UPCALL(GlobalLoad, SIG_HPYGLOBAL, SIG_HPY) \
+    UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
+    UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
+    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T)
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -195,6 +199,22 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
+static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal h) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GlobalLoad, HPY_UP(h));
+}
+
+static void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *h, HPy v) {
+    h->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), GlobalStore, h->_i, HPY_UP(v));
+}
+
+static HPy ctx_Field_Load_jni(HPyContext *ctx, HPy owner, HPyField field) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), FieldLoad, HPY_UP(owner), HPY_UP(field));
+}
+
+static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy value) {
+    field->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), FieldStore, HPY_UP(owner), field->_i, HPY_UP(value));
+}
+
 //*************************
 // BOXING
 
@@ -214,6 +234,7 @@ static uint64_t boxDouble(double value) {
 
 static void *(*original_AsStruct)(HPyContext *ctx, HPy h);
 static HPy (*original_Dup)(HPyContext *ctx, HPy h);
+static HPy (*original_Long)(HPyContext *ctx, HPy h);
 static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
 static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
@@ -229,6 +250,10 @@ static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
 static void (*original_Close)(HPyContext *ctx, HPy h);
 static HPy (*original_Unicode_FromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 static HPy (*original_Tuple_FromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+static void (*original_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
+static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
+static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
+static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
@@ -251,6 +276,17 @@ static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     } else {
         return NULL;
     }
+}
+
+static HPy augment_Long(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return h;
+    } else if (isBoxedDouble(bits)) {
+        double v = unboxDouble(bits);
+        return toPtr(boxInt((int) v));
+    }
+    return original_Long(ctx, h);
 }
 
 static HPy augment_Float_FromDouble(HPyContext *ctx, double v) {
@@ -464,6 +500,42 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
 }
 
+HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
+    long bits = toBits(global);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Global_Load(ctx, global);
+    } else {
+        return toPtr(bits);
+    }
+}
+
+void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
+    long bits = toBits(h);
+    if (bits && isBoxedHandle(bits)) {
+        original_Global_Store(ctx, global, h);
+    } else {
+        global->_i = h._i;
+    }
+}
+
+HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
+    long bits = toBits(source_field);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Field_Load(ctx, source_object, source_field);
+    } else {
+        return toPtr(bits);
+    }
+}
+
+void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
+    long bits = toBits(h);
+    if (bits && isBoxedHandle(bits)) {
+        original_Field_Store(ctx, target_object, target_field, h);
+    } else {
+        target_field->_i = h._i;
+    }
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -471,6 +543,8 @@ void initDirectFastPaths(HPyContext *context) {
 #define AUGMENT(name) \
     original_ ## name = context->ctx_ ## name;  \
     context->ctx_ ## name = augment_ ## name;
+
+    AUGMENT(Long);
 
     AUGMENT(Float_FromDouble);
 
@@ -507,6 +581,14 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Unicode_FromWideChar);
 
     AUGMENT(Tuple_FromArray);
+
+    AUGMENT(Global_Load);
+
+    AUGMENT(Global_Store);
+
+    AUGMENT(Field_Load);
+
+    AUGMENT(Field_Store);
 
     AUGMENT(Is);
 
@@ -566,10 +648,17 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_TupleBuilder_Build = ctx_TupleBuilder_Build;
     context->ctx_TupleBuilder_Cancel = ctx_TupleBuilder_Cancel;
 
+    context->ctx_Global_Load = ctx_Global_Load_jni;
+    context->ctx_Global_Store = ctx_Global_Store_jni;
+    context->ctx_Field_Load = ctx_Field_Load_jni;
+    context->ctx_Field_Store = ctx_Field_Store_jni;
+
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
 #define SIG_HPY "J"
+#define SIG_HPYFIELD "J"
+#define SIG_HPYGLOBAL "J"
 #define SIG_SIZE_T "J"
 #define SIG_PTR "J"
 #define SIG_VOID "V"

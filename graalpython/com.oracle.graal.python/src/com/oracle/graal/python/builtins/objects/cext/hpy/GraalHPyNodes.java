@@ -57,20 +57,25 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
@@ -110,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -117,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -138,6 +145,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -153,6 +161,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -384,6 +393,7 @@ public class GraalHPyNodes {
      */
     @GenerateUncached
     public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyAddLegacyGetSetDefNode.class);
 
         public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDef);
 
@@ -419,22 +429,14 @@ public class GraalHPyNodes {
             boolean readOnly;
             try {
                 getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
-                // TODO eagerly resolve function ptr
-                // the pointer must either be NULL or a callable function pointer
                 if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.GET_OF_S_IS_NOT_CALLABLE, getSetDescrName);
+                    LOGGER.warning(() -> String.format("get of %s is not callable", getSetDescrName));
                 }
-
                 setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
-                // TODO eagerly resolve function ptr
-                // the pointer must either be NULL or a callable function pointer
                 if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.SET_OF_S_IS_NOT_CALLABLE, getSetDescrName);
+                    LOGGER.warning(() -> String.format("set of %s is not callable", getSetDescrName));
                 }
                 readOnly = resultLib.isNull(setterFunPtr);
-
                 closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -498,10 +500,26 @@ public class GraalHPyNodes {
             this(key, value, null);
         }
 
-        public void write(WriteAttributeToObjectNode writeAttributeToObjectNode, Object enclosingType) {
+        void write(WriteAttributeToObjectNode writeAttributeToObjectNode, ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType) {
             for (HPyProperty prop = this; prop != null; prop = prop.next) {
-                writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                /*
+                 * Do not overwrite existing attributes. Reason: Different slots may map to the same
+                 * magic method. For example: 'nb_add' and 'sq_concat' are both mapped to '__add__'.
+                 * For now, we will always use the first mapping. However, that is not fully
+                 * correct. CPython has a fixed order for slots defined by array 'static slotdef
+                 * slotdefs[]' in 'typeobject.c'. They iterate over this array and check if the new
+                 * type provides the slot. The first mapping will then be install. The problem is
+                 * that we cannot easily do the same since we have two separate sets of slots: HPy
+                 * slots and legacy slots. Right now, the HPy slots have precedence.
+                 */
+                if (!keyExists(readAttributeFromObjectNode, enclosingType, prop.key)) {
+                    writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+                }
             }
+        }
+
+        static boolean keyExists(ReadAttributeFromObjectNode readAttributeFromObjectNode, Object enclosingType, Object key) {
+            return readAttributeFromObjectNode.execute(enclosingType, key) != PNone.NO_VALUE;
         }
     }
 
@@ -875,6 +893,7 @@ public class GraalHPyNodes {
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeToObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
@@ -908,7 +927,7 @@ public class GraalHPyNodes {
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMemberDef = resultLib.readArrayElement(memberDefArrayPtr, i);
                             HPyProperty property = createLegacyMemberNode.execute(enclosingType, legacyMemberDef);
-                            property.write(writeAttributeToObjectNode, enclosingType);
+                            property.write(writeAttributeToObjectNode, readAttributeToObjectNode, enclosingType);
                         }
                     } catch (InteropException | OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -948,14 +967,16 @@ public class GraalHPyNodes {
                     // this is the generic slot case
                     TruffleString attributeKey = slot.getAttributeKey();
                     if (attributeKey != null) {
-                        Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
-                        /*
-                         * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
-                         * and thus if we need to do result and argument conversion.
-                         */
-                        PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
-                                        slot.getSignature(), PythonLanguage.get(raiseNode), factory, true);
-                        writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                        if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
+                            Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                            /*
+                             * TODO(fa): Properly determine if 'pfuncPtr' is a native function
+                             * pointer and thus if we need to do result and argument conversion.
+                             */
+                            PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
+                                            slot.getSignature(), PythonLanguage.get(raiseNode), factory, true);
+                            writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                        }
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1378,6 +1399,39 @@ public class GraalHPyNodes {
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyBoxing.unboxInt(bits);
+        }
+
+        @Specialization(replaces = { //
+                        "doHandle", "doValidHandle", //
+                        "doNullLong", "doLong", "doLongDouble", "doLongInt", //
+                        "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
+        })
+        Object doGeneric(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (value instanceof GraalHPyHandle) {
+                return doValidHandle(hpyContext, (GraalHPyHandle) value);
+            }
+            long bits;
+            if (value instanceof Long) {
+                bits = (Long) value;
+            } else {
+                lib.toNative(value);
+                try {
+                    bits = lib.asPointer(value);
+                } catch (UnsupportedMessageException ex) {
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
+            }
+            if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+                return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+            } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+                return GraalHPyBoxing.unboxInt(bits);
+            } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+                return GraalHPyBoxing.unboxDouble(bits);
+            } else {
+                assert GraalHPyBoxing.isBoxedHandle(bits);
+                return ensureContext(hpyContext).getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+            }
         }
     }
 
@@ -1931,8 +1985,10 @@ public class GraalHPyNodes {
 
         abstract Object execute(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray);
 
+        static final TruffleString T_PYTRUFFLE_CREATETYPE = tsLiteral("PyTruffle_CreateType");
+
         @Specialization
-        static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
+        Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
@@ -1942,9 +1998,11 @@ public class GraalHPyNodes {
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached PCallHPyFunction callMallocNode,
+                        @Cached GetTypeMemberNode getMetaSizeNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
-                        @Cached CallNode callTypeNewNode,
+                        @Cached PyObjectCallMethodObjArgs callCreateTypeNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
@@ -1987,8 +2045,31 @@ public class GraalHPyNodes {
                 }
 
                 // create the type object
-                Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.T_TYPE);
-                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, namespace);
+                Object metatype = getMetatype(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode);
+                PythonModule pythonCextModule = PythonContext.get(this).lookupBuiltinModule(PythonCextBuiltins.T_PYTHON_CEXT);
+                PythonClass newType = (PythonClass) callCreateTypeNode.execute(null, pythonCextModule, T_PYTRUFFLE_CREATETYPE,
+                                names[1], bases, namespace, metatype != null ? metatype : PythonBuiltinClassType.PythonClass);
+                // allocate additional memory for the metatype and set it
+                long metaBasicSize = 0;
+                Object destroyFunc = null;
+                if (metatype instanceof PythonClass) {
+                    // get basicsize of metatype and allocate it into
+                    // GraalHPyDef.OBJECT_HPY_NATIVE_SPACE
+                    PythonClass metaclass = (PythonClass) metatype;
+                    metaBasicSize = metaclass.basicSize;
+                    destroyFunc = metaclass.hpyDestroyFunc;
+                } else if (metatype instanceof PythonNativeClass) {
+                    // This path is implemented only for completeness,
+                    // but is not expected to happen often, hence the
+                    // uncached nodes, no profiling and potential leak
+                    Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
+                    metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
+                }
+                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                if (destroyFunc != null) {
+                    context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                }
 
                 // determine and set the correct module attribute
                 TruffleString value = names[0];
@@ -2008,12 +2089,9 @@ public class GraalHPyNodes {
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_IS_PURE, legacy == 0);
-                if (newType instanceof PythonClass) {
-                    PythonClass clazz = (PythonClass) newType;
-                    clazz.basicSize = basicSize;
-                    clazz.flags = flags;
-                    clazz.itemSize = itemSize;
-                }
+                newType.basicSize = basicSize;
+                newType.flags = flags;
+                newType.itemSize = itemSize;
 
                 boolean seenNew = false;
                 boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);
@@ -2063,7 +2141,7 @@ public class GraalHPyNodes {
                         }
 
                         if (property != null) {
-                            property.write(writeAttributeToObjectNode, newType);
+                            property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
                         }
                     }
                 }
@@ -2083,7 +2161,7 @@ public class GraalHPyNodes {
                         Object legacySlotDef = ptrLib.readArrayElement(legacySlots, i);
                         HPyProperty property = createLegacySlotNode.execute(context, newType, legacySlotDef);
                         if (property != null) {
-                            property.write(writeAttributeToObjectNode, newType);
+                            property.write(writeAttributeToObjectNode, readAttributeFromObjectNode, newType);
                         }
                     }
                 }
@@ -2173,11 +2251,44 @@ public class GraalHPyNodes {
                         // away any other single base classes or subsequent params.
                         assert PGuards.isPTuple(specParamObject) : "type spec param claims to be a tuple but isn't";
                         return (PTuple) specParamObject;
+                    case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
+                        // intentionally ignored
+                        break;
                     default:
                         assert false : "unknown type spec param kind";
                 }
             }
             return factory.createTuple(basesList.toArray());
+        }
+
+        /**
+         * Reference implementation can be found in {@code ctx_type.c:get_metatype}
+         */
+        @TruffleBoundary
+        private static Object getMetatype(GraalHPyContext context, Object typeSpecParamArray,
+                        InteropLibrary ptrLib,
+                        CastToJavaIntLossyNode castToJavaIntNode,
+                        PCallHPyFunction callHelperFunctionNode,
+                        HPyAsPythonObjectNode asPythonObjectNode) throws InteropException {
+            if (!ptrLib.isNull(typeSpecParamArray)) {
+                long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
+                ArrayList<Object> basesList = new ArrayList<>();
+                for (long i = 0; i < nSpecParam; i++) {
+                    Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
+                    // TODO(fa): directly read member as soon as this is supported by Sulong.
+                    // Currently, we cannot pass struct-by-value via interop.
+                    int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
+
+                    switch (specParamKind) {
+                        case GraalHPyDef.HPyType_SPEC_PARAM_METACLASS:
+                            return asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+                        default:
+                            // intentionally ignored
+                            break;
+                    }
+                }
+            }
+            return null;
         }
 
         /**

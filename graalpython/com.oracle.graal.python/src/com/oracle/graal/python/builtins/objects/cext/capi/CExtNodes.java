@@ -2423,42 +2423,42 @@ public abstract class CExtNodes {
         public abstract double execute(Object arg);
 
         @Specialization
-        double run(boolean value) {
+        static double run(boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        double run(int value) {
+        static double run(int value) {
             return value;
         }
 
         @Specialization
-        double run(long value) {
+        static double run(long value) {
             return value;
         }
 
         @Specialization
-        double run(double value) {
+        static double run(double value) {
             return value;
         }
 
         @Specialization
-        double run(PInt value) {
+        static double run(PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        double run(PFloat value) {
+        static double run(PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
@@ -3935,6 +3935,7 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     public abstract static class CreateMethodNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CreateMethodNode.class);
 
         public static final String J_ML_NAME = "ml_name";
         public static final String J_ML_DOC = "ml_doc";
@@ -3987,8 +3988,7 @@ public abstract class CExtNodes {
 
                 mlMethObj = interopLibrary.readMember(methodDef, J_ML_METH);
                 if (!resultLib.isExecutable(mlMethObj)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ML_METH_IS_NOT_CALLABLE, methodName);
+                    LOGGER.warning(() -> String.format("ml_meth of %s is not callable", methodName));
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

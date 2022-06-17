@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+#include "Python.h"
 
-/**
- * A thin wrapper around {@link GraalHPyHandle} for exposing handles to the user space.
- */
-public final class PDebugHandle extends PythonBuiltinObject {
-    private final GraalHPyHandle handle;
-
-    public PDebugHandle(Object cls, Shape instanceShape, GraalHPyHandle handle) {
-        super(cls, instanceShape);
-        this.handle = handle;
-    }
-
-    public boolean eq(PDebugHandle other) {
-        return handle == other.handle;
-    }
-
-    public Object getObj() {
-        return handle.getDelegate();
-    }
-
-    @TruffleBoundary
-    public long getId() {
-        return GraalHPyBoxing.boxHandle(handle.getDebugId());
-    }
-
-    @TruffleBoundary
-    public void close(GraalHPyDebugContext debugContext) {
-        handle.closeAndInvalidate(debugContext);
-    }
-
-    @TruffleBoundary
-    public boolean isClosed() {
-        return !handle.isPointer(ConditionProfile.getUncached());
-    }
+int
+PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value)
+{
+    PyErr_SetString(PyExc_SystemError, "PyContextVar_Get not implemented");
+    return -1;
 }
+
+PyObject *
+PyContextVar_Set(PyObject *var, PyObject *value)
+{
+    PyErr_SetString(PyExc_SystemError, "PyContextVar_Set not implemented");
+    return NULL;
+}
+

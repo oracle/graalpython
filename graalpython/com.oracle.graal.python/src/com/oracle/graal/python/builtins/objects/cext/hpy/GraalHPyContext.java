@@ -110,11 +110,19 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallTupleDict;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleGet;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleIsValid;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCapsuleSet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCast;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContains;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarGet;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextVarSet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictKeys;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDump;
@@ -143,6 +151,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIs;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallable;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsSequence;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLeavePythonExecution;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
@@ -150,13 +159,17 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongAsPrimitive;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyMaybeGetAttrS;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNewException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyReenterPythonExecution;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySeqIterNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySliceUnpack;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTernaryArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerCleanup;
@@ -165,17 +178,23 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTupleFromArray;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheck;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheckSlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGetName;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeIsSubtype;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnaryArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsCharsetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8AndSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharset;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharsetAndSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeDecodeCharsetAndSizeAndErrors;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromEncodedObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeInternFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeReadChar;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeSubstring;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -226,6 +245,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
@@ -542,9 +562,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         H_BOOLTYPE(tsLiteral("h_BoolType")),
         H_LONGTYPE(tsLiteral("h_LongType")),
         H_FLOATTYPE(tsLiteral("h_FloatType")),
+        H_COMPLEXTYPE(tsLiteral("h_ComplexType")),
         H_UNICODETYPE(tsLiteral("h_UnicodeType")),
+        H_BYTESTYPE(tsLiteral("h_BytesType")),
         H_TUPLETYPE(tsLiteral("h_TupleType")),
         H_LISTTYPE(tsLiteral("h_ListType")),
+        H_MEMORYVIEWTYPE(tsLiteral("h_MemoryViewType")),
+        H_CAPSULETYPE(tsLiteral("h_CapsuleType")),
+        H_SLICETYPE(tsLiteral("h_SliceType")),
 
         CTX_MODULE_CREATE(tsLiteral("ctx_Module_Create")),
         CTX_DUP(tsLiteral("ctx_Dup"), signature(HPy, HPy)),
@@ -571,6 +596,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_NEW(tsLiteral("ctx_New"), signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE(tsLiteral("ctx_Type")),
         CTX_TYPECHECK(tsLiteral("ctx_TypeCheck"), signature(Long, HPy, HPy)),
+        CTX_SETTYPE(tsLiteral("ctx_SetType")),
+        CTX_TYPE_ISSUBTYPE(tsLiteral("ctx_Type_IsSubtype")),
+        CTX_TYPE_GETNAME(tsLiteral("ctx_Type_GetName")),
+        CTX_TYPE_CHECKSLOT(tsLiteral("ctx_Type_CheckSlot")),
         CTX_IS(tsLiteral("ctx_Is")),
         CTX_TYPE_GENERIC_NEW(tsLiteral("ctx_Type_GenericNew"), signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE(tsLiteral("ctx_Float_FromDouble"), signature(HPy, Double)),
@@ -637,6 +666,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_TYPE_FROM_SPEC(tsLiteral("ctx_Type_FromSpec")),
         CTX_GETATTR(tsLiteral("ctx_GetAttr")),
         CTX_GETATTR_S(tsLiteral("ctx_GetAttr_s")),
+        CTX_MAYBEGETATTR_S(tsLiteral("ctx_MaybeGetAttr_s")),
         CTX_HASATTR(tsLiteral("ctx_HasAttr")),
         CTX_HASATTR_S(tsLiteral("ctx_HasAttr_s")),
         CTX_SETATTR(tsLiteral("ctx_SetAttr")),
@@ -664,6 +694,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_UNICODE_FROMWIDECHAR(tsLiteral("ctx_Unicode_FromWideChar")),
         CTX_UNICODE_DECODEASCII(tsLiteral("ctx_Unicode_DecodeASCII")),
         CTX_UNICODE_DECODELATIN1(tsLiteral("ctx_Unicode_DecodeLatin1")),
+        CTX_UNICODE_FROMENCODEDOBJECT(tsLiteral("ctx_Unicode_FromEncodedObject")),
+        CTX_UNICODE_INTERNFROMSTRING(tsLiteral("ctx_Unicode_InternFromString")),
+        CTX_UNICODE_SUBSTRING(tsLiteral("ctx_Unicode_Substring")),
         CTX_UNICODE_DECODEFSDEFAULT(tsLiteral("ctx_Unicode_DecodeFSDefault")),
         CTX_UNICODE_DECODEFSDEFAULTANDSIZE(tsLiteral("ctx_Unicode_DecodeFSDefaultAndSize")),
         CTX_UNICODE_ENCODEFSDEFAULT(tsLiteral("ctx_Unicode_EncodeFSDefault")),
@@ -672,6 +705,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_LIST_APPEND(tsLiteral("ctx_List_Append")),
         CTX_DICT_CHECK(tsLiteral("ctx_Dict_Check")),
         CTX_DICT_NEW(tsLiteral("ctx_Dict_New")),
+        CTX_DICT_KEYS(tsLiteral("ctx_Dict_Keys")),
         CTX_DICT_SETITEM(tsLiteral("ctx_Dict_SetItem")),
         CTX_DICT_GETITEM(tsLiteral("ctx_Dict_GetItem")),
         CTX_FROMPYOBJECT(tsLiteral("ctx_FromPyObject")),
@@ -708,7 +742,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_REENTERPYTHONEXECUTION(tsLiteral("ctx_ReenterPythonExecution"), signature(Void, HPyThreadState)),
         CTX_GLOBAL_STORE(tsLiteral("ctx_Global_Store"), signature(Void, _HPyGlobalPtr, HPy)),
         CTX_GLOBAL_LOAD(tsLiteral("ctx_Global_Load"), signature(Void, HPyGlobal, HPy)),
-        CTX_DUMP(tsLiteral("ctx_Dump"));
+        CTX_CONTEXTVAR_NEW(tsLiteral("ctx_ContextVar_New")),
+        CTX_CONTEXTVAR_GET(tsLiteral("ctx_ContextVar_Get")),
+        CTX_CONTEXTVAR_SET(tsLiteral("ctx_ContextVar_Set")),
+        CTX_CAPSULE_NEW(tsLiteral("ctx_Capsule_New")),
+        CTX_CAPSULE_GET(tsLiteral("ctx_Capsule_Get")),
+        CTX_CAPSULE_ISVALID(tsLiteral("ctx_Capsule_IsValid")),
+        CTX_CAPSULE_SET(tsLiteral("ctx_Capsule_Set")),
+        CTX_DUMP(tsLiteral("ctx_Dump")),
+        CTX_SEQUENCE_CHECK(tsLiteral("ctx_Sequence_Check")),
+        CTX_SLICE_UNPACK(tsLiteral("ctx_Slice_Unpack")),
+        CTX_SEQITER_NEW(tsLiteral("ctx_SeqIter_New"));
 
         final TruffleString name;
 
@@ -1390,7 +1434,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallUnicodeFromJCharArray,
         UpcallDictNew,
         UpcallListNew,
-        UpcallTupleFromArray;
+        UpcallTupleFromArray,
+        UpcallFieldLoad,
+        UpcallFieldStore,
+        UpcallGlobalLoad,
+        UpcallGlobalStore;
 
         @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
@@ -1416,9 +1464,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             return GraalHPyBoxing.unboxInt(handle);
         } else {
             Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
-            return PyFloatAsDoubleNodeGen.getUncached().execute(null, object);
+            try {
+                return PyFloatAsDoubleNodeGen.getUncached().execute(null, object);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+                return -1.0;
+            }
         }
-
     }
 
     public final long ctxLongAsLong(long handle) {
@@ -1894,6 +1946,52 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return createHandle(tuple).getId(this, ConditionProfile.getUncached());
     }
 
+    public final long ctxFieldLoad(long bits, long idx) {
+        increment(Counter.UpcallFieldLoad);
+        Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx - 1];
+        return createHandle(referent).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxFieldStore(long bits, long idx, long value) {
+        increment(Counter.UpcallFieldStore);
+        PythonObject owner = (PythonObject) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)).getDelegate();
+        Object referent = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value)).getDelegate();
+
+        Object[] hpyFields = owner.getHpyFields();
+        if (idx == 0) {
+            if (hpyFields == null) {
+                idx = 1;
+                hpyFields = new Object[]{referent};
+            } else {
+                idx = hpyFields.length + 1;
+                hpyFields = PythonUtils.arrayCopyOf(hpyFields, (int) idx);
+                hpyFields[(int) idx - 1] = referent;
+            }
+            owner.setHpyFields(hpyFields);
+        } else {
+            hpyFields[(int) idx - 1] = referent;
+        }
+        return idx;
+    }
+
+    public final long ctxGlobalLoad(long bits) {
+        increment(Counter.UpcallGlobalLoad);
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return createHandle(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate()).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxGlobalStore(long bits, long v) {
+        increment(Counter.UpcallGlobalStore);
+        Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)).getDelegate();
+        int idx = 0;
+        if (bits > 0) {
+            idx = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+        }
+        GraalHPyHandle newHandle = createGlobal(value, idx);
+        return newHandle.getGlobalId();
+    }
+
     @ExportMessage
     @SuppressWarnings("static-method")
     final boolean hasMembers() {
@@ -2083,6 +2181,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         createTypeConstant(members, HPyContextMember.H_TUPLETYPE, context, PythonBuiltinClassType.PTuple);
         createTypeConstant(members, HPyContextMember.H_LISTTYPE, context, PythonBuiltinClassType.PList);
 
+        createTypeConstant(members, HPyContextMember.H_COMPLEXTYPE, context, PythonBuiltinClassType.PComplex);
+        createTypeConstant(members, HPyContextMember.H_BYTESTYPE, context, PythonBuiltinClassType.PBytes);
+        createTypeConstant(members, HPyContextMember.H_MEMORYVIEWTYPE, context, PythonBuiltinClassType.PMemoryView);
+        createTypeConstant(members, HPyContextMember.H_CAPSULETYPE, context, PythonBuiltinClassType.Capsule);
+        createTypeConstant(members, HPyContextMember.H_SLICETYPE, context, PythonBuiltinClassType.PSlice);
+
         members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
@@ -2208,6 +2312,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
         members[HPyContextMember.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
         members[HPyContextMember.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
+        members[HPyContextMember.CTX_MAYBEGETATTR_S.ordinal()] = new GraalHPyMaybeGetAttrS();
         members[HPyContextMember.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
         members[HPyContextMember.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
         members[HPyContextMember.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);
@@ -2258,6 +2363,30 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_GLOBAL_STORE.ordinal()] = new GraalHPyGlobalStore();
         members[HPyContextMember.CTX_GLOBAL_LOAD.ordinal()] = new GraalHPyGlobalLoad();
         members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
+
+        members[HPyContextMember.CTX_TYPE_ISSUBTYPE.ordinal()] = new GraalHPyTypeIsSubtype();
+        members[HPyContextMember.CTX_TYPE_GETNAME.ordinal()] = new GraalHPyTypeGetName();
+        members[HPyContextMember.CTX_SETTYPE.ordinal()] = new GraalHPySetType();
+        members[HPyContextMember.CTX_TYPE_CHECKSLOT.ordinal()] = new GraalHPyTypeCheckSlot();
+
+        members[HPyContextMember.CTX_DICT_KEYS.ordinal()] = new GraalHPyDictKeys();
+
+        members[HPyContextMember.CTX_UNICODE_FROMENCODEDOBJECT.ordinal()] = new GraalHPyUnicodeFromEncodedObject();
+        members[HPyContextMember.CTX_UNICODE_INTERNFROMSTRING.ordinal()] = new GraalHPyUnicodeInternFromString();
+        members[HPyContextMember.CTX_UNICODE_SUBSTRING.ordinal()] = new GraalHPyUnicodeSubstring();
+
+        members[HPyContextMember.CTX_CONTEXTVAR_NEW.ordinal()] = new GraalHPyContextVarNew();
+        members[HPyContextMember.CTX_CONTEXTVAR_GET.ordinal()] = new GraalHPyContextVarGet();
+        members[HPyContextMember.CTX_CONTEXTVAR_SET.ordinal()] = new GraalHPyContextVarSet();
+        members[HPyContextMember.CTX_CAPSULE_NEW.ordinal()] = new GraalHPyCapsuleNew();
+        members[HPyContextMember.CTX_CAPSULE_GET.ordinal()] = new GraalHPyCapsuleGet();
+        members[HPyContextMember.CTX_CAPSULE_ISVALID.ordinal()] = new GraalHPyCapsuleIsValid();
+        members[HPyContextMember.CTX_CAPSULE_SET.ordinal()] = new GraalHPyCapsuleSet();
+
+        members[HPyContextMember.CTX_SEQUENCE_CHECK.ordinal()] = new GraalHPyIsSequence();
+        members[HPyContextMember.CTX_SLICE_UNPACK.ordinal()] = new GraalHPySliceUnpack();
+
+        members[HPyContextMember.CTX_SEQITER_NEW.ordinal()] = new GraalHPySeqIterNew();
 
         if (traceJNIUpcalls) {
             for (int i = 0; i < members.length; i++) {
@@ -2346,7 +2475,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return GraalHPyHandle.createField(delegate, idx);
     }
 
-    public synchronized GraalHPyHandle createGlobal(Object delegate, int idx) {
+    public GraalHPyHandle createGlobal(Object delegate, int idx) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when creating global";
         final int newIdx;
         if (idx <= 0) {
             newIdx = allocateHPyGlobal();
@@ -2361,7 +2491,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return h;
     }
 
-    private synchronized int allocateHPyGlobal() {
+    private int allocateHPyGlobal() {
         int handle = 0;
         for (int i = 1; i < hpyGlobalsTable.length; i++) {
             if (hpyGlobalsTable[i] == null) {
@@ -2427,11 +2557,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private void mirrorNativeSpacePointerToNative(GraalHPyHandle handleObject, int handleID) {
         assert isPointer();
         assert useNativeFastPaths;
-        Object nativeSpace = PNone.NO_VALUE;
         Object delegate = handleObject.getDelegate();
-        if (delegate instanceof PythonHPyObject) {
-            nativeSpace = ((PythonHPyObject) delegate).getHPyNativeSpace();
-        }
+        Object nativeSpace = HPyGetNativeSpacePointerNodeGen.getUncached().execute(delegate);
         try {
             long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
             unsafe.putLong(nativeSpacePointers + handleID * SIZEOF_LONG, l);
@@ -2484,17 +2611,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public GraalHPyHandle getObjectForHPyHandle(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from handle";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
     }
 
-    public synchronized GraalHPyHandle getObjectForHPyGlobal(int handle) {
+    public GraalHPyHandle getObjectForHPyGlobal(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from global";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyGlobalsTable[handle];
     }
 
-    synchronized boolean releaseHPyHandleForObject(int handle) {
+    boolean releaseHPyHandleForObject(int handle) {
+        assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when releasing handle";
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.formatJString("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
@@ -2585,7 +2715,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      *            {@code null}; in this case, bare {@code free} will be used).
      */
     @TruffleBoundary
-    final void createHandleReference(PythonObject pythonObject, Object dataPtr, Object destroyFunc) {
+    final void createHandleReference(Object pythonObject, Object dataPtr, Object destroyFunc) {
         GraalHPyHandleReference newHead = new GraalHPyHandleReference(pythonObject, ensureReferenceQueue(), dataPtr, destroyFunc);
         references.getAndAccumulate(newHead, (prev, x) -> {
             x.next = prev;
