@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -773,8 +774,18 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             return self;
         }
 
+        @Specialization(guards = {"isTypeNode.execute(cls)", "times >= 0"})
+        Object construct(VirtualFrame frame, Object cls, Object object, long times,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
+            PRepeat self = factory().createRepeat(cls);
+            self.setElement(object);
+            self.setCnt(asIntNode.execute(frame, times));
+            return self;
+        }
+
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(times)", "!isInt(times)"})
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(times)", "!isInt(times)", "!isLong(times)"})
         Object construct(Object cls, Object object, Object times,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, S_EXPECTED_GOT_P, "integer", times);
