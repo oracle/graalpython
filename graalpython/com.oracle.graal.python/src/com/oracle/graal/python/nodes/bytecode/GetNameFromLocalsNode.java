@@ -64,8 +64,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 /**
-  * Helper node to be used when it's known that a name must be read from a custom locals dict instead of the frame
-  */
+ * Helper node to be used when it's known that a name must be read from a custom locals dict instead
+ * of the frame
+ */
 public abstract class GetNameFromLocalsNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object locals, TruffleString name, boolean cellvar);
 
