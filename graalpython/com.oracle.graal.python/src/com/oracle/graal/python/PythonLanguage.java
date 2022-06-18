@@ -38,7 +38,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -64,21 +63,22 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -166,6 +166,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int RELEASE_LEVEL_FINAL = 0xF;
     public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
     public static final TruffleString RELEASE_LEVEL_STRING;
+    public static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
+
     static {
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
@@ -581,13 +583,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
         SourceSection section = location.getSourceSection();
-        TruffleString path = toTruffleStringUncached(source.getPath());
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = (path != null) ? path : source.getName() != null ? toTruffleStringUncached(source.getName()) : tsLiteral("<string>");
+        TruffleString filename = toTruffleStringUncached(source.getPath());
+        if (filename == null) {
+            filename = toTruffleStringUncached(source.getName());
+            if (filename == null) {
+                filename = DEFAULT_FILENAME;
+            }
+        }
+        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
-        final TruffleString text = section.isAvailable() ? toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString()) : null;
+        Object text = PNone.NONE;
+        if (section.isAvailable()) {
+            text = toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString());
+        }
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
         instance.setExceptionAttributes(excAttrs);
