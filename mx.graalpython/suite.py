@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "22.2.0",
+    "version": "22.3.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
