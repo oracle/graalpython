@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -224,6 +225,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         static Object setState(VirtualFrame frame, PProduct self, Object state,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached LoopConditionProfile loopProfile,
+                        @Cached PyLongAsIntNode pyLongAsIntNode,
                         @Cached BranchProfile stoppedProfile,
                         @Cached ConditionProfile indexProfile) {
             Object[][] gears = self.getGears();
@@ -231,7 +233,8 @@ public final class ProductBuiltins extends PythonBuiltins {
             int[] indices = self.getIndices();
             loopProfile.profileCounted(gears.length);
             for (int i = 0; loopProfile.inject(i < gears.length); i++) {
-                int index = (int) getItemNode.execute(frame, state, i);
+                Object o = getItemNode.execute(frame, state, i);
+                int index = pyLongAsIntNode.execute(frame, o);
                 int gearSize = gears[i].length;
                 if (indices == null || gearSize == 0) {
                     stoppedProfile.enter();
