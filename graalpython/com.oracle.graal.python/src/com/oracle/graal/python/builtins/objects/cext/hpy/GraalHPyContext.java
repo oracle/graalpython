@@ -996,7 +996,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     } while (reference != null);
 
                     if (isLoggable) {
-                        LOGGER.fine(() -> "Collected references: " + refs.size());
+                        LOGGER.fine(PythonUtils.formatJString("Collected references: %d", refs.size()));
                     }
 
                     /*
@@ -1136,9 +1136,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             if (loggable) {
                 final long countDuration = middleTime - startTime;
                 final long duration = System.currentTimeMillis() - middleTime;
-                LOGGER.fine(() -> "Cleaned references: " + n);
-                LOGGER.fine(() -> "Count duration: " + countDuration);
-                LOGGER.fine(() -> "Duration: " + duration);
+                LOGGER.fine(PythonUtils.formatJString( "Cleaned references: %d", n));
+                LOGGER.fine(PythonUtils.formatJString("Count duration: %d", countDuration));
+                LOGGER.fine(PythonUtils.formatJString("Duration: %d", duration));
             }
             return refList;
         }
@@ -2488,7 +2488,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         GraalHPyHandle h = GraalHPyHandle.createGlobal(delegate, newIdx);
         hpyGlobalsTable[newIdx] = h;
         if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.finer(() -> String.format("allocating HPy global %d (object: %s)", newIdx, delegate));
+            LOGGER.finer(PythonUtils.formatJString("allocating HPy global %d (object: %s)", newIdx, delegate));
         }
         return h;
     }
@@ -2550,8 +2550,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             mirrorNativeSpacePointerToNative(object, handle);
         }
         if (LOGGER.isLoggable(Level.FINER)) {
-            final int handleID = handle;
-            LOGGER.finer(() -> PythonUtils.formatJString("allocating HPy handle %d (object: %s)", handleID, object));
+            LOGGER.finer(PythonUtils.formatJString("allocating HPy handle %d (object: %s)", handle, object));
         }
         return handle;
     }
@@ -2630,7 +2629,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.formatJString("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.finer(() -> "releasing HPy handle " + handle);
+            LOGGER.finer(PythonUtils.formatJString("releasing HPy handle %d (object: %s)", handle, hpyHandleTable[handle]));
         }
         if (handle < IMMUTABLE_HANDLE_COUNT) {
             return false;
