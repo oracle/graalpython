@@ -461,7 +461,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         checkForbiddenName(name, ctx);
 
         String mangled = ScopeEnvironment.mangle(unit.privateName, name);
-        EnumSet<Scope.DefUse> uses = unit.scope.getUseOfName(name);
+        EnumSet<Scope.DefUse> uses = unit.scope.getUseOfName(mangled);
 
         if (uses != null) {
             if (uses.contains(Scope.DefUse.Free)) {
