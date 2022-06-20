@@ -257,7 +257,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         PTuple stat(VirtualFrame frame, PDirEntry self, boolean followSymlinks, boolean catchNoent,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached IsSymlinkNode isSymlinkNode,
-                        @Cached StatHelperNode recursiveNode,
+                        @Cached StatHelperNFNode recursiveNode,
                         @Cached CachedPosixPathNode cachedPosixPathNode,
                         @Cached ConditionProfile positiveLongProfile,
                         @Cached ConditionProfile noSymlinkProfile) {
@@ -272,7 +272,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
                 // in. (In fact, the call to isSymlinkNode in the condition may fill it.)
                 // So we call ourselves recursively to either use or fill that cache first, and
                 // the `follow_symlinks=True` cache will be filled below.
-                res = recursiveNode.execute(frame, self, false, catchNoent);
+                res = recursiveNode.execute(frame, self, catchNoent);
             } else {
                 int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
                 PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
@@ -351,6 +351,89 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class StatHelperNFNode extends PythonBuiltinBaseNode {
+
+        abstract PTuple execute(VirtualFrame frame, PDirEntry self, boolean catchNoent);
+
+        @Specialization(guards = {"self.lstatCache != null"})
+        @SuppressWarnings("unused")
+        static PTuple cachedLStat(PDirEntry self, boolean catchNoent) {
+            return self.lstatCache;
+        }
+
+        @Specialization(guards = "self.getStatCache(false) == null")
+        PTuple stat(VirtualFrame frame, PDirEntry self, boolean catchNoent,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached CachedPosixPathNode cachedPosixPathNode,
+                        @Cached ConditionProfile positiveLongProfile) {
+            PTuple res;
+            int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : AT_FDCWD.value;
+            PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
+            try {
+                long[] rawStat = posixLib.fstatat(getPosixSupport(), dirFd, posixPath.value, false);
+                res = PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, rawStat);
+            } catch (PosixException e) {
+                if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
+                    return null;
+                }
+                throw raiseOSErrorFromPosixException(frame, e, posixPath.originalObject);
+            }
+            self.setStatCache(false, res);
+            return res;
+        }
+    }
+
+    abstract static class TestModeNFNode extends PythonBuiltinBaseNode {
+
+        private final long expectedMode;
+        private final int expectedDirEntryType;
+        private StatHelperNFNode statHelperNode;
+
+        protected TestModeNFNode(long expectedMode, int expectedDirEntryType) {
+            this.expectedMode = expectedMode;
+            this.expectedDirEntryType = expectedDirEntryType;
+        }
+
+        abstract boolean execute(VirtualFrame frame, PDirEntry self);
+
+        boolean testModeUsingStat(VirtualFrame frame, PDirEntry self) {
+            PTuple statResult = getStatHelperNode().execute(frame, self, true);
+            if (statResult == null) {
+                // file not found
+                return false;
+            }
+            // TODO constants for stat_result indices
+            long mode = (long) statResult.getSequenceStorage().getItemNormalized(0) & S_IFMT.value;
+            return mode == expectedMode;
+        }
+
+        @Specialization
+        boolean useTypeIfKnown(VirtualFrame frame, PDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            int entryType = posixLib.dirEntryGetType(getPosixSupport(), self.dirEntryData);
+            if (entryType != DT_UNKNOWN.value) {
+                return entryType == expectedDirEntryType;
+            }
+            return testModeUsingStat(frame, self);
+        }
+
+        private StatHelperNFNode getStatHelperNode() {
+            if (statHelperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                statHelperNode = insert(DirEntryBuiltinsFactory.StatHelperNFNodeGen.create());
+            }
+            return statHelperNode;
+        }
+
+        static TestModeNFNode create(long expectedMode, int expectedDirEntryType) {
+            return DirEntryBuiltinsFactory.TestModeNFNodeGen.create(expectedMode, expectedDirEntryType);
+        }
+
+        static TestModeNFNode createLnk() {
+            return create(S_IFLNK.value, DT_LNK.value);
+        }
+    }
+
     @Builtin(name = "is_symlink", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsSymlinkNode extends PythonUnaryBuiltinNode {
@@ -359,8 +442,8 @@ public class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean isSymlink(VirtualFrame frame, PDirEntry self,
-                        @Cached("createLnk()") TestModeNode testModeNode) {
-            return testModeNode.execute(frame, self, false);
+                        @Cached("createLnk()") TestModeNFNode testModeNode) {
+            return testModeNode.execute(frame, self);
         }
     }
 
