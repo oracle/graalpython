@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -121,7 +121,7 @@ public abstract class KeywordArgumentsNode extends Node {
         PKeyword[] makeKeywords(PKeyword[] arguments, PKeyword[] starargs,
                         @Cached("arguments.length") int cachedLenArguments,
                         @Cached("starargs.length") int cachedLenStarArgs) {
-            PKeyword[] keywords = new PKeyword[cachedLenArguments + cachedLenStarArgs];
+            PKeyword[] keywords = PKeyword.create(cachedLenArguments + cachedLenStarArgs);
             for (int i = 0; i < cachedLenArguments; i++) {
                 keywords[i] = arguments[i];
             }
@@ -137,7 +137,7 @@ public abstract class KeywordArgumentsNode extends Node {
         PKeyword[] makeKeywordsUncached(PKeyword[] arguments, PKeyword[] starargs) {
             int lengthArguments = arguments.length;
             int lengthStarArgs = starargs.length;
-            PKeyword[] keywords = lengthArguments == 0 ? new PKeyword[lengthStarArgs] : new PKeyword[lengthArguments + lengthStarArgs];
+            PKeyword[] keywords = lengthArguments == 0 ? PKeyword.create(lengthStarArgs) : PKeyword.create(lengthArguments + lengthStarArgs);
             for (int i = 0; i < lengthArguments; i++) {
                 keywords[i] = arguments[i];
             }

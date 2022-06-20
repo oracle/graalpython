@@ -208,7 +208,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
-            PKeyword[] keywords = new PKeyword[keywordNames.length];
+            PKeyword[] keywords = PKeyword.create(keywordNames.length);
             for (int i = 0; i < keywordNames.length; i++) {
                 TruffleString keywordName = castToStringNode.execute(keywordNames[i]);
                 keywords[i] = new PKeyword(keywordName, keywordArguments[i]);

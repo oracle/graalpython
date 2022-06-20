@@ -159,7 +159,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     private PKeyword[] computeKwDefaultValues(VirtualFrame frame) {
         PKeyword[] kwDefaultValues = null;
         if (kwDefaults != null) {
-            kwDefaultValues = new PKeyword[kwDefaults.length];
+            kwDefaultValues = PKeyword.create(kwDefaults.length);
             for (int i = 0; i < kwDefaults.length; i++) {
                 kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
             }

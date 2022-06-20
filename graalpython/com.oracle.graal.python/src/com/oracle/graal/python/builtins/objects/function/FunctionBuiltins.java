@@ -203,7 +203,7 @@ public class FunctionBuiltins extends PythonBuiltins {
                 }
                 keywords.add(new PKeyword((TruffleString) key, e.getValue()));
             }
-            self.setKwDefaults(keywords.toArray(new PKeyword[keywords.size()]));
+            self.setKwDefaults(keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]));
             return PNone.NONE;
         }
     }

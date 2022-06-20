@@ -106,7 +106,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
                     @Cached("getAndCheckKwargLen(frame)") int cachedLen,
                     @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
-        PKeyword[] remArguments = new PKeyword[cachedLen];
+        PKeyword[] remArguments = PKeyword.create(cachedLen);
         CompilerAsserts.compilationConstant(keywordNames.length);
         int i = 0;
         for (int j = 0; j < cachedLen; j++) {
@@ -139,7 +139,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     Object extractVariableKwargs(VirtualFrame frame,
                     @Cached TruffleString.EqualNode equalNode) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
-        PKeyword[] remArguments = new PKeyword[keywordArguments.length];
+        PKeyword[] remArguments = PKeyword.create(keywordArguments.length);
         int i = 0;
         outer: for (PKeyword keyword : keywordArguments) {
             TruffleString kwName = keyword.getName();

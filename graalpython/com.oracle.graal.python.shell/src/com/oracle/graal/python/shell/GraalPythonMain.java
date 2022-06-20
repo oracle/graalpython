@@ -480,7 +480,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     // skip this one, it may cause warnings
                     continue;
                 } else if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
-                    // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during
+                    // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are added during
                     // JVM startup automatically. We do not want to repeat these
                     // for subprocesses, because they should also pick up those
                     // variables.

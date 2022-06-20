@@ -568,7 +568,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
-            PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
+            PKeyword[] unusedKeywords = takesVarKwds ? PKeyword.create(kwLen) : null;
             // same as below
             int k = 0;
             int additionalKwds = 0;
@@ -621,7 +621,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int positionalParamNum = parameters.length;
             TruffleString[] kwNames = calleeSignature.getKeywordNames();
             int kwLen = keywords.length;
-            PKeyword[] unusedKeywords = calleeSignature.takesVarKeywordArgs() ? new PKeyword[kwLen] : null;
+            PKeyword[] unusedKeywords = calleeSignature.takesVarKeywordArgs() ? PKeyword.create(kwLen) : null;
             // same as above
             int k = 0;
             int additionalKwds = 0;

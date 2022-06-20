@@ -45,6 +45,10 @@ public final class PKeyword {
         return name;
     }
 
+    public static PKeyword[] create(int size) {
+        return size == 0 ? EMPTY_KEYWORDS : new PKeyword[size];
+    }
+
     public Object getValue() {
         return value;
     }
