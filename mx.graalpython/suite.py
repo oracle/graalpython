@@ -342,7 +342,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
-                "GRAALPYTHON_PEGPARSER",
+                "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
