@@ -179,7 +179,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -2736,7 +2736,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
+                        @Cached ExecutePositionalStarargsNode expandArgsNode,
                         @Cached HashingCollectionNodes.LenNode lenNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached HPyAsHandleNode asHandleNode,
@@ -2764,14 +2764,14 @@ public abstract class GraalHPyContextFunctions {
         }
 
         private static Object[] castArgs(Object args,
-                        ExecutePositionalStarargsInteropNode expandArgsNode,
+                        ExecutePositionalStarargsNode expandArgsNode,
                         PRaiseNode raiseNode) {
             // this indicates that a NULL handle was passed (which is valid)
             if (args == PNone.NO_VALUE) {
                 return PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             if (PGuards.isPTuple(args)) {
-                return expandArgsNode.executeWithGlobalState(args);
+                return expandArgsNode.executeWith(null, args);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.HPY_CALLTUPLEDICT_REQUIRES_ARGS_TUPLE_OR_NULL);
         }
