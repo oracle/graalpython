@@ -299,7 +299,7 @@ import sun.misc.Unsafe;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-public class GraalHPyContext extends CExtContext implements TruffleObject {
+public final class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private final boolean traceJNIUpcalls;
 

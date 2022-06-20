@@ -68,8 +68,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
-import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1433,10 +1431,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PSimpleQueue createSimpleQueue(Object cls) {
         return trace(new PSimpleQueue(cls, getShape(cls)));
-    }
-
-    public final PDebugHandle createDebugHandle(GraalHPyHandle handle) {
-        return trace(new PDebugHandle(PythonBuiltinClassType.DebugHandle, getShape(PythonBuiltinClassType.DebugHandle), handle));
     }
 
     public final PContextVar createContextVar(TruffleString name, Object def) {

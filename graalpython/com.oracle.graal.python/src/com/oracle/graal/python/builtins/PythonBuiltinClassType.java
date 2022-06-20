@@ -59,7 +59,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -252,9 +251,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
-
-    // HPy
-    DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.J_HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
 
     // _ctype
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),

@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
@@ -215,7 +214,6 @@ import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
@@ -719,11 +717,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new CDataBuiltins(),
 
                         // _hpy_universal
-                        new GraalHPyUniversalModuleBuiltins(),
-
-                        // _hpy_debug
-                        new GraalHPyDebugModuleBuiltins(),
-                        new GraalHPyDebugHandleBuiltins()));
+                        new GraalHPyUniversalModuleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }

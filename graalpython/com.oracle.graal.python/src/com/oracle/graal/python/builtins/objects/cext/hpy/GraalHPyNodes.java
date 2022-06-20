@@ -1005,65 +1005,29 @@ public class GraalHPyNodes {
 
         public abstract GraalHPyContext execute(Object object);
 
-        public abstract GraalHPyContext executeInt(int l);
-
-        public abstract GraalHPyContext executeLong(long l);
-
         @Specialization
         static GraalHPyContext doHandle(GraalHPyContext hpyContext) {
             return hpyContext;
         }
 
-        // n.b. we could actually accept anything else but we have specializations to be more strict
+        // n.b. we could actually accept anything else, but we have specializations to be more
+        // strict
         // about what we expect
 
-        @Specialization(assumptions = "noDebugModeAssumption()")
+        @Specialization
         GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {
             return getContext().getHPyContext();
         }
 
-        @Specialization(assumptions = "noDebugModeAssumption()")
+        @Specialization
         GraalHPyContext doLong(@SuppressWarnings("unused") long handle) {
             return getContext().getHPyContext();
         }
 
-        @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2", assumptions = "noDebugModeAssumption()")
+        @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2")
         static GraalHPyContext doPointer(@SuppressWarnings("unused") Object handle,
-                        @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary) {
+                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
             return PythonContext.get(interopLibrary).getHPyContext();
-        }
-
-        @Specialization
-        static GraalHPyContext doLongWithDebug(long handle,
-                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            PythonContext context = PythonContext.get(interopLibrary);
-            GraalHPyContext hPyContext = context.getHPyContext();
-            try {
-                if (hPyContext.isPointer() && hPyContext.asPointer(interopLibrary) == handle) {
-                    return hPyContext;
-                }
-                GraalHPyContext hpyDebugContext = context.getHPyDebugContext();
-                if (hpyDebugContext.isPointer() && hpyDebugContext.asPointer(interopLibrary) == handle) {
-                    return hpyDebugContext;
-                }
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Specialization(guards = "interopLibrary.isPointer(handle)")
-        static GraalHPyContext doPointerWithDebug(Object handle,
-                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            try {
-                return doLongWithDebug(interopLibrary.asPointer(handle), interopLibrary);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        Assumption noDebugModeAssumption() {
-            return PythonLanguage.get(this).noHPyDebugModeAssumption;
         }
     }
 
@@ -1310,10 +1274,6 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
-        static Assumption noDebugModeAssumption() {
-            return PythonLanguage.get(null).noHPyDebugModeAssumption;
-        }
-
         protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
             if (hpyContext == null) {
                 return getContext().getHPyContext();
@@ -1324,16 +1284,8 @@ public class GraalHPyNodes {
 
         public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
-        @Specialization(assumptions = "noDebugModeAssumption()")
+        @Specialization
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
-            return handle.getDelegate();
-        }
-
-        @Specialization(replaces = "doHandle")
-        static Object doValidHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
-            if (!handle.isValid()) {
-                hpyContext.onInvalidHandle(handle.getDebugId());
-            }
             return handle.getDelegate();
         }
 
@@ -1396,15 +1348,14 @@ public class GraalHPyNodes {
             return GraalHPyBoxing.unboxInt(bits);
         }
 
-        @Specialization(replaces = { //
-                        "doHandle", "doValidHandle", //
+        @Specialization(replaces = {"doHandle", //
                         "doNullLong", "doLong", "doLongDouble", "doLongInt", //
                         "doNullOther", "doOther", "doOtherDouble", "doOtherInt" //
         })
         Object doGeneric(GraalHPyContext hpyContext, Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib) {
             if (value instanceof GraalHPyHandle) {
-                return doValidHandle(hpyContext, (GraalHPyHandle) value);
+                return ((GraalHPyHandle) value).getDelegate();
             }
             long bits;
             if (value instanceof Long) {
@@ -1464,41 +1415,19 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doObject(CExtContext hpyContext, Object object, int id, int type) {
-            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
-        }
-
         @Specialization(guards = {"!isNoValue(object)", "type == HANDLE"})
-        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object, int id, int type,
-                        @Cached("createClassProfile()") ValueProfile contextProfile) {
-            return contextProfile.profile(hpyContext).createHandle(object);
-        }
-
-        @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doGlobal(CExtContext hpyContext, Object object, int id, int type) {
-            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createGlobal(object, id);
+        static GraalHPyHandle doObject(GraalHPyContext hpyContext, Object object, @SuppressWarnings("unused") int id, @SuppressWarnings("unused") int type) {
+            return hpyContext.createHandle(object);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
-        static GraalHPyHandle doDebugGlobal(GraalHPyContext hpyContext, Object object, int id, int type,
-                        @Cached("createClassProfile()") ValueProfile contextProfile) {
-            return contextProfile.profile(hpyContext).createGlobal(object, id);
-        }
-
-        @Specialization(guards = {"!isNoValue(object)", "type == FIELD"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doField(CExtContext hpyContext, Object object, int id, int type) {
-            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createField(object, id);
+        static GraalHPyHandle doGlobal(GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
+            return hpyContext.createGlobal(object, id);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
-        static GraalHPyHandle doDebugField(GraalHPyContext hpyContext, Object object, int id, int type,
-                        @Cached("createClassProfile()") ValueProfile contextProfile) {
-            return contextProfile.profile(hpyContext).createField(object, id);
-        }
-
-        Assumption noDebugModeAssumption() {
-            return PythonLanguage.get(this).noHPyDebugModeAssumption;
+        static GraalHPyHandle doField(GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
+            return hpyContext.createField(object, id);
         }
     }
 
