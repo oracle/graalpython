@@ -505,6 +505,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                 doFlushStack();
             }
         }
+
+        public boolean isEmpty() {
+            return stackItems == 0 && !collectionOnStack;
+        }
     }
 
     private class KwargsMergingDictCollector extends Collector {
@@ -1836,7 +1840,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         // visit defaults outside the function scope
         int flags = collectDefaults(node.args);
 
-        // TODO: visit annotations
+        boolean hasAnnotations = visitAnnotations(node.args, node.returns);
+        if (hasAnnotations) {
+            flags |= CodeUnit.HAS_ANNOTATIONS;
+        }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
         enterScope(node.name, scopeType, node, node.args);
@@ -1862,6 +1869,50 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         addNameOp(node.name, ExprContext.Store);
         return null;
+    }
+
+    private boolean visitAnnotations(ArgumentsTy args, ExprTy returns) {
+        Collector collector = new Collector(CollectionBits.DICT);
+        if (args != null) {
+            visitArgAnnotations(collector, args.args);
+            visitArgAnnotations(collector, args.posOnlyArgs);
+            if (args.varArg != null) {
+                visitArgAnnotation(collector, args.varArg.arg, args.varArg.annotation);
+            }
+            visitArgAnnotations(collector, args.kwOnlyArgs);
+            if (args.kwArg != null) {
+                visitArgAnnotation(collector, args.kwArg.arg, args.kwArg.annotation);
+            }
+        }
+        visitArgAnnotation(collector, "return", returns);
+        if (collector.isEmpty()) {
+            return false;
+        }
+        collector.finishCollection();
+        return true;
+    }
+
+    private void visitArgAnnotations(Collector collector, ArgTy[] args) {
+        for (int i = 0; i < args.length; i++) {
+            visitArgAnnotation(collector, args[i].arg, args[i].annotation);
+        }
+    }
+
+    private void visitArgAnnotation(Collector collector, String name, ExprTy annotation) {
+        if (annotation != null) {
+            String mangled = ScopeEnvironment.mangle(unit.privateName, name);
+            addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
+            // TODO from __future__ import annotations
+            if (annotation instanceof ExprTy.Starred) {
+                // *args: *Ts (where Ts is a TypeVarTuple).
+                // Do [annotation_value] = [*Ts].
+                ((ExprTy.Starred) annotation).value.accept(this);
+                addOp(UNPACK_SEQUENCE, 1);
+            } else {
+                annotation.accept(this);
+            }
+            collector.appendItem();
+        }
     }
 
     private int collectDefaults(ArgumentsTy args) {

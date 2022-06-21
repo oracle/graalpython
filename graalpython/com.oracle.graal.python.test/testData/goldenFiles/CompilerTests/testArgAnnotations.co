@@ -1,0 +1,30 @@
+Disassembly of <module>:
+000000         0 COLLECTION_FROM_STACK             0    (PKeyword[])
+000000         2 LOAD_STRING                       0    ('b')
+000018         4 LOAD_BYTE                         2
+000000         6 LOAD_STRING                       1    ('a')
+000010         8 LOAD_BYTE                         1
+000000        10 LOAD_STRING                       2    ('c')
+000024        12 LOAD_BYTE                         3
+000000        14 LOAD_STRING                       3    ('d')
+000029        16 LOAD_BYTE                         4
+000000        18 LOAD_STRING                       4    ('e')
+000036        20 LOAD_BYTE                         5
+000000        22 COLLECTION_FROM_STACK             10   (dict)
+000000        24 MAKE_FUNCTION                     6    (foo)
+000000        27 STORE_NAME                        0    (foo)
+000000        29 LOAD_NONE
+000000        30 RETURN_VALUE
+
+Disassembly of foo:
+000042         0 LOAD_GLOBAL                       0    (print)
+000048         2 LOAD_FAST                         0    (a)
+000051         4 LOAD_FAST                         1    (b)
+000054         6 LOAD_FAST                         3    (c)
+000057         8 LOAD_FAST                         2    (d)
+000060        10 LOAD_FAST                         4    (e)
+000042        12 COLLECTION_FROM_STACK             5    (Object[])
+000042        14 CALL_FUNCTION_VARARGS
+000042        15 POP_TOP
+000042        16 LOAD_NONE
+000042        17 RETURN_VALUE
