@@ -122,6 +122,7 @@ public abstract class GetNextNode extends PNodeWithContext {
             return executeImpl(iterator);
         }
 
+        @SuppressWarnings("static-method")
         @TruffleBoundary
         private Object executeImpl(Object iterator) {
             Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.getUncached().execute(iterator), iterator);

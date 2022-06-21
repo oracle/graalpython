@@ -712,6 +712,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
 
+        @Override
         public abstract PTuple execute(VirtualFrame frame);
 
         public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {

@@ -2115,6 +2115,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return StringUtils.isPrintable(codePoint);
         }
 
+        @Override
         protected boolean resultForEmpty() {
             return true;
         }

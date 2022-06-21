@@ -345,10 +345,12 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
                         type == PythonBuiltinClassType.PTuple;
     }
 
+    @Override
     public TruffleString getName() {
         return slot.getName();
     }
 
+    @Override
     public TruffleString getRname() {
         return rslot.getName();
     }

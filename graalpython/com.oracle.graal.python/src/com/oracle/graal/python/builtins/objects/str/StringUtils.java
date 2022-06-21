@@ -62,6 +62,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendCodePointNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendLongNumberNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public final class StringUtils {
@@ -445,13 +448,12 @@ public final class StringUtils {
      * convenient way of using {@link TruffleStringBuilder}. The only supported directives are:
      * <ul>
      * <li>{@code %%} - replaced by a single {@code '%'}</li>
-     * <li>{@code %s} - {@linkplain TruffleStringBuilder.AppendStringNode replaced} by the next
-     * argument, which must be a {@link TruffleString} or {@link String}</li>
-     * <li>{@code %c} - {@linkplain TruffleStringBuilder.AppendCodePointNode replaced} by a single
-     * codepoint, the argument must be an {@code int} or {@code char}</li>
-     * <li>{@code %d} - {@linkplain TruffleStringBuilder.AppendLongNumberNode replaced} by the
-     * decimal representation of the next argument, which must be an {@link int} or
-     * {@link long}</li>
+     * <li>{@code %s} - {@linkplain AppendStringNode replaced} by the next argument, which must be a
+     * {@link TruffleString} or {@link String}</li>
+     * <li>{@code %c} - {@linkplain AppendCodePointNode replaced} by a single codepoint, the
+     * argument must be an {@code int} or {@code char}</li>
+     * <li>{@code %d} - {@linkplain AppendLongNumberNode replaced} by the decimal representation of
+     * the next argument, which must be an <code>int</code> or <code>long</code></li>
      * </ul>
      */
     @GenerateUncached

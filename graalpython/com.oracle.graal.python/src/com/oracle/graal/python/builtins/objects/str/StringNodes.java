@@ -118,9 +118,8 @@ public abstract class StringNodes {
         @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
         static TruffleString doNative(PString x,
                         @Cached PCallCapiFunction callCStringToStringNode,
-                        @Cached UnicodeFromWcharNode fromWcharNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            TruffleString materialized = materializeNativeCharSequence(x.getNativeCharSequence(), callCStringToStringNode, fromWcharNode, fromJavaStringNode);
+                        @Cached UnicodeFromWcharNode fromWcharNode) {
+            TruffleString materialized = materializeNativeCharSequence(x.getNativeCharSequence(), callCStringToStringNode, fromWcharNode);
             x.setMaterialized(materialized);
             return materialized;
         }
@@ -132,8 +131,7 @@ public abstract class StringNodes {
 
         public static TruffleString materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
                         PCallCapiFunction callCStringToStringNode,
-                        UnicodeFromWcharNode fromWcharNode,
-                        TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        UnicodeFromWcharNode fromWcharNode) {
             // cast guaranteed by the guard
             TruffleString materialized;
             if (nativeCharSequence.isAsciiOnly()) {
@@ -145,16 +143,14 @@ public abstract class StringNodes {
                         break;
                     case 2:
                     case 4:
-                    /*
-                     * TODO(fa): Attach LLVM type to pointer depending on the element size. In order
-                     * that UnicodeFromWcharNode works properly, the pointer must be typed since it
-                     * will try to read the elements via interop. We should do that here since we
-                     * want this to be done as late as possible.
-                     */
-                    {
+                        /*
+                         * TODO(fa): Attach LLVM type to pointer depending on the element size. In
+                         * order that UnicodeFromWcharNode works properly, the pointer must be typed
+                         * since it will try to read the elements via interop. We should do that
+                         * here since we want this to be done as late as possible.
+                         */
                         materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
                         break;
-                    }
                     default:
                         throw CompilerDirectives.shouldNotReachHere("illegal element size");
                 }

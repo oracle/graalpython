@@ -122,8 +122,7 @@ public final class NativeCharSequence implements CharSequence {
     TruffleString materialize() {
         if (!isMaterialized()) {
             LOGGER.warning("uncached materialization of NativeCharSequence");
-            materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached(),
-                            TruffleString.FromJavaStringNode.getUncached());
+            materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached());
         }
         return materialized;
     }
