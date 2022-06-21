@@ -72,6 +72,21 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
  * on the scope nestings which names are free, cells etc.
  */
 public class ScopeEnvironment {
+    // error strings used for warnings
+    private final static String GLOBAL_PARAM = "name '%s' is parameter and global";
+    private final static String NONLOCAL_PARAM = "name '%s' is parameter and nonlocal";
+    private final static String GLOBAL_AFTER_ASSIGN = "name '%s' is assigned to before global declaration";
+    private final static String NONLOCAL_AFTER_ASSIGN = "name '%s' is assigned to before nonlocal declaration";
+    private final static String GLOBAL_AFTER_USE = "name '%s' is used prior to global declaration";
+    private final static String NONLOCAL_AFTER_USE = "name '%s' is used prior to nonlocal declaration";
+    private final static String GLOBAL_ANNOT = "annotated name '%s' can't be global";
+    private final static String NONLOCAL_ANNOT = "annotated name '%s' can't be nonlocal";
+    private final static String IMPORT_STAR_WARNING = "import * only allowed at module level";
+    private final static String NAMED_EXPR_COMP_IN_CLASS = "assignment expression within a comprehension cannot be used in a class body";
+    private final static String NAMED_EXPR_COMP_CONFLICT = "assignment expression cannot rebind comprehension iteration variable '%s'";
+    private final static String NAMED_EXPR_COMP_INNER_LOOP_CONFLICT = "comprehension inner loop cannot rebind assignment expression target '%s'";
+    private final static String NAMED_EXPR_COMP_ITER_EXPR = "assignment expression cannot be used in a comprehension iterable expression";
+
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
     final ErrorCallback errorCallback;
@@ -912,22 +927,22 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.Global node) {
             for (String n : node.names) {
-                EnumSet<DefUse> f = currentScope.getUseOfName(mangle(n));
-                if (f.contains(DefUse.DefParam)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is parameter and global", n);
-                    continue;
-                }
-                if (f.contains(DefUse.Use)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is used prior to global declaration", n);
-                    continue;
-                }
-                if (f.contains(DefUse.DefAnnot)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "annotated name '%s' can't be global", n);
-                    continue;
-                }
-                if (f.contains(DefUse.DefLocal)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before global declaration", n);
-                    continue;
+                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(n));
+                if (cur != null) {
+                    String msg = null;
+                    if (cur.contains(DefUse.DefParam)) {
+                        msg = GLOBAL_PARAM;
+                    } else if (cur.contains(DefUse.Use)) {
+                        msg = GLOBAL_AFTER_USE;
+                    } else if (cur.contains(DefUse.DefAnnot)) {
+                        msg = GLOBAL_ANNOT;
+                    } else if (cur.contains(DefUse.DefLocal)) {
+                        msg = GLOBAL_AFTER_ASSIGN;
+                    }
+                    if (msg != null) {
+                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
+                        continue;
+                    }
                 }
                 addDef(n, DefUse.DefGlobal, node);
                 currentScope.recordDirective(n, node.getSourceRange());
