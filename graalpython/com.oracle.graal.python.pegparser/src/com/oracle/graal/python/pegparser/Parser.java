@@ -1675,9 +1675,11 @@ public final class Parser extends AbstractParser {
                 ((c = _tmp_24_rule()) != null || true)  // ['=' annotated_rhs]
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert CHECK_VERSION ( stmt_ty , 6 , 'Variable annotations syntax is' , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createAnnAssignment(a, b, (ExprTy) c, false, startToken.sourceRange.withEnd(endToken.sourceRange));;
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 return (StmtTy)_res;
             }

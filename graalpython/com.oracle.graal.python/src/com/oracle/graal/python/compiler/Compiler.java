@@ -1558,7 +1558,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                             (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class)) {
                 // TODO from __future__ import annotations
                 node.annotation.accept(this);
-                addNameOp("__anotations__", ExprContext.Load);
+                addNameOp("__annotations__", ExprContext.Load);
                 String mangled = ScopeEnvironment.mangle(unit.privateName, name);
                 addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
                 addOp(STORE_SUBSCR);
