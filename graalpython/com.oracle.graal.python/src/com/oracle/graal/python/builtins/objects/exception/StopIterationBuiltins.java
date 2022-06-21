@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -73,6 +74,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class StopIterationInitNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
@@ -80,7 +82,11 @@ public final class StopIterationBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new VarargsBuiltinDirectInvocationNotSupported();
             }
-            Object[] argsWithoutSelf = PythonVarargsBuiltinNode.getArgsWithoutSelf(arguments);
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            Object[] argsWithoutSelf = splitArgsNode.execute(arguments);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 

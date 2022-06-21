@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
@@ -70,16 +69,4 @@ public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
      * execute method won't hurt.
      */
     public abstract Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords);
-
-    /**
-     * Assumes that the first element of the array is {@code self} and returns an array
-     * {@code arguments[1:]}. This method tries to avoid an unnecessary array copy if
-     * {@code arguments.length == 1}.
-     */
-    protected static Object[] getArgsWithoutSelf(Object[] arguments) {
-        if (arguments.length == 1) {
-            return PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-        return PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length);
-    }
 }
