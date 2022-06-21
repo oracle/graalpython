@@ -534,6 +534,8 @@ class TypingVisitor(GrammarVisitor):
                     types.add(typ)
             if len(types) > 1:
                 types.discard("Token*") # heuristic. when tokens are in there, they are usually dropped
+            if len(types) == 1 and next(iter(types)) == "Token*" and len(node.items) > 1:
+                types = {'Object'}
             if len(types) == 2:
                 # might be a pair for gathering
                 typ1, typ2 = sorted(types, key=lambda x: x.count('*'))
