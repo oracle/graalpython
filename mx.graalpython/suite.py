@@ -601,6 +601,8 @@ suite = {
         },
 
         "GRAALPYTHON_PYTHON_LIB": {
+            "native": True, # makes this a tar archive
+            "relpath": True, # relpath for tar archives is False but probably should be True
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
