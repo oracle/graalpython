@@ -55,15 +55,9 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.NodeFactory;
-import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserTokenizer;
-import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
 
 public class CompilerTests extends PythonTests {
@@ -564,6 +558,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testStringSurrogates() {
+        doTest("'\\U00010400' != '\\uD801\\uDC00'");
+    }
+
+    @Test
     public void testNestedListComprehension() {
         String source = "[[x for x in range(5)] for y in range(3)]";
         doTest(source);
@@ -736,16 +735,7 @@ public class CompilerTests extends PythonTests {
         ErrorCallback errorCallback = (errorType, sourceRange, message) -> {
             throw new AssertionError("Unexpected syntax error: " + message);
         };
-        ParserTokenizer tokenizer = new ParserTokenizer(src);
-        NodeFactory factory = new NodeFactoryImp();
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange sourceRange) {
-                ParserTokenizer tok = new ParserTokenizer(code);
-                return new Parser(tok, factory, this, errorCallback).fstring_rule();
-            }
-        };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCallback);
+        Parser parser = Compiler.createParser(src, errorCallback);
         ModTy result = (ModTy) parser.parse(type);
         Compiler compiler = new Compiler(errorCallback);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);

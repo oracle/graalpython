@@ -586,6 +586,9 @@ public final class Parser extends AbstractParser {
     public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {
         super(tokenizer, factory, fexprParser, errorCb);
     }
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb) {
+        super(tokenizer, factory, fexprParser, stringFactory, errorCb);
+    }
 
     // file: statements? $
     public ModTy file_rule()
