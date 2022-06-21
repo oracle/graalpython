@@ -366,7 +366,7 @@ suite = {
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
             "javaCompliance": "11+",
-            "checkstyleVersion": "8.8",
+            "checkstyleVersion": "8.36.1",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
