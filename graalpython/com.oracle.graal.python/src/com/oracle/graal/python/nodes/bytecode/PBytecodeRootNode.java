@@ -304,6 +304,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
     private static final GetNameFromLocalsNode UNCACHED_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode.getUncached();
     private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
+    private static final SetupAnnotationsNode UNCACHED_SETUP_ANNOTATIONS = SetupAnnotationsNode.getUncached();
+    private static final NodeSupplier<SetupAnnotationsNode> NODE_SETUP_ANNOTATIONS = SetupAnnotationsNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -1321,6 +1323,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         CodeUnit codeUnit = (CodeUnit) localConsts[oparg];
                         MakeFunctionNode makeFunctionNode = insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(PythonLanguage.get(this), codeUnit, source));
                         stackTop = makeFunctionNode.execute(globals, stackTop, stackFrame, flags);
+                        break;
+                    }
+                    case OpCodesConstants.SETUP_ANNOTATIONS: {
+                        SetupAnnotationsNode setupAnnotationsNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_ANNOTATIONS, SetupAnnotationsNodeGen.class, NODE_SETUP_ANNOTATIONS,
+                                        useCachedNodes);
+                        setupAnnotationsNode.execute(virtualFrame);
                         break;
                     }
                     case OpCodesConstants.MATCH_EXC_OR_JUMP: {

@@ -112,6 +112,7 @@ import static com.oracle.graal.python.compiler.OpCodes.RETURN_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_THREE;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_TWO;
 import static com.oracle.graal.python.compiler.OpCodes.SEND;
+import static com.oracle.graal.python.compiler.OpCodes.SETUP_ANNOTATIONS;
 import static com.oracle.graal.python.compiler.OpCodes.SETUP_WITH;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_ATTR;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_DEREF;
@@ -157,7 +158,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 22;
+    public static final int BYTECODE_VERSION = 23;
 
     private final ErrorCallback errorCallback;
 
@@ -672,7 +673,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             setLocation(stmts[0]);
         }
         if (containsAnnotations(stmts)) {
-            // addOp(SETUP_ANNOTATIONS);
+            addOp(SETUP_ANNOTATIONS);
         }
         int i = 0;
         TruffleString docstring = getDocstring(stmts);
@@ -1526,6 +1527,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Interactive node) {
+        if (containsAnnotations(node.body)) {
+            addOp(SETUP_ANNOTATIONS);
+        }
         interactive = true;
         return visitSequence(node.body);
     }
