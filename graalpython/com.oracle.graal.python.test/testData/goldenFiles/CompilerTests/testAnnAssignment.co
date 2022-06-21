@@ -1,0 +1,9 @@
+Disassembly of <module>:
+000009         0 LOAD_BYTE                         12
+000000         2 STORE_NAME                        0    (a)
+000003         4 LOAD_NAME                         1    (int)
+000000         6 LOAD_NAME                         2    (__anotations__)
+000000         8 LOAD_STRING                       0    ('a')
+000000        10 STORE_SUBSCR
+000000        11 LOAD_NONE
+000000        12 RETURN_VALUE

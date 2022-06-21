@@ -47,8 +47,9 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Stack;
 
-import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
@@ -73,7 +74,7 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 public class ScopeEnvironment {
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
-    private final ErrorCallback errorCallback;
+    final ErrorCallback errorCallback;
 
     public ScopeEnvironment(ModTy moduleNode) {
         this(moduleNode, null);
@@ -439,7 +440,7 @@ public class ScopeEnvironment {
             }
             if ("*".equals(importedName)) {
                 if (!currentScope.isModule()) {
-                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), "import * only allowed at module level");
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "import * only allowed at module level");
                 }
             } else {
                 addDef(importedName, DefUse.DefImport);
@@ -764,10 +765,12 @@ public class ScopeEnvironment {
             if (node.target instanceof ExprTy.Name) {
                 ExprTy.Name name = (ExprTy.Name) node.target;
                 EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(name.id));
-                if (cur.contains(DefUse.DefGlobal) || cur.contains(DefUse.DefNonLocal) &&
+                if (cur != null && (cur.contains(DefUse.DefGlobal) || cur.contains(DefUse.DefNonLocal)) &&
                                 currentScope.symbols != globals &&
                                 node.isSimple) {
-                    // TODO: syntax error GLOBAL_ANNOT : NONLOCAL_ANNOT
+                    String msg = cur.contains(DefUse.DefGlobal) ? "annotated name '%s' can't be global" : "annotated name '%s' can't be nonlocal";
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), msg, name.id);
+                    return null;
                 }
                 if (node.isSimple) {
                     addDef(name.id, DefUse.DefAnnot);

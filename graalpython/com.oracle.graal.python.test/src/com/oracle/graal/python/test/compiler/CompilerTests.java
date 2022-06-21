@@ -93,6 +93,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testAnnAssignment() {
+        doTest("a: int = 12");
+    }
+
+    @Test
     public void testDel() {
         doTest("del a");
     }
