@@ -54,7 +54,7 @@ import com.oracle.truffle.api.object.Shape;
  * directly stores a reference to the {@link AllocationReporter} instead of doing a context lookup
  * and getting it from the context. This class is meant to be used on slow path where the context is
  * explicitly available.
- * 
+ *
  * Objects of this class should not be created directly, but retrieved from
  * {@link com.oracle.graal.python.builtins.Python3Core}. Note that
  * {@link PythonObjectSlowPathFactory} is context dependent object. It must not be stored in AST or
@@ -87,7 +87,7 @@ public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
     @TruffleBoundary
     @Override
     protected Shape executeGetShape(Object arg0Value, boolean arg1Value) {
-        return PythonObjectFactory.getShape(arg0Value, arg1Value, getInstanceShapeNode);
+        return getInstanceShapeNode.execute(arg0Value);
     }
 
     @Override

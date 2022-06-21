@@ -1596,37 +1596,37 @@ public abstract class TypeNodes {
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
         @SuppressWarnings("unused")
-        Shape doBuiltinClassTypeCached(PythonBuiltinClassType clazz,
+        protected Shape doBuiltinClassTypeCached(PythonBuiltinClassType clazz,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
             return cachedClazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
+        protected Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
             return clazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         @SuppressWarnings("unused")
-        static Shape doBuiltinClassCached(PythonBuiltinClass clazz,
+        protected static Shape doBuiltinClassCached(PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
         @SuppressWarnings("unused")
-        static Shape doClassCached(PythonClass clazz,
+        protected static Shape doClassCached(PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(replaces = {"doClassCached", "doBuiltinClassCached"})
-        static Shape doManagedClass(PythonManagedClass clazz) {
+        protected static Shape doManagedClass(PythonManagedClass clazz) {
             return clazz.getInstanceShape();
         }
 
         @Specialization
-        static Shape doNativeClass(PythonAbstractNativeObject clazz,
+        protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
                         @Cached GetTypeMemberNode getTpDictNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
             Object tpDictObj = getTpDictNode.execute(clazz, NativeMember.TP_DICT);
@@ -1645,7 +1645,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
-        static Shape doError(@SuppressWarnings("unused") Object clazz,
+        protected static Shape doError(@SuppressWarnings("unused") Object clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
