@@ -63,20 +63,21 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
     private final RootCallTarget callTarget;
     private final CodeUnit code;
     private final Signature signature;
     private final PCode cachedCode;
-    private final String doc;
+    private final TruffleString doc;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public abstract int execute(Object globals, int initialStackTop, Frame localFrame, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode, String doc) {
+    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode, TruffleString doc) {
         this.callTarget = callTarget;
         this.code = code;
         this.signature = signature;
@@ -153,9 +154,9 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         if (language.isSingleContext()) {
             cachedCode = PythonObjectFactory.getUncached().createCode(callTarget, bytecodeRootNode.getSignature(), code);
         }
-        String doc = null;
-        if (code.constants.length > 0 && code.constants[0] instanceof String) {
-            doc = (String) code.constants[0];
+        TruffleString doc = null;
+        if (code.constants.length > 0 && code.constants[0] instanceof TruffleString) {
+            doc = (TruffleString) code.constants[0];
         }
         return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode, doc);
     }
