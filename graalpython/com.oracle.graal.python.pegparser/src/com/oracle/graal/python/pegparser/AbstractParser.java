@@ -85,6 +85,7 @@ abstract class AbstractParser {
     private final ErrorCallback errorCb;
     private final FExprParser fexprParser;
     protected final NodeFactory factory;
+    private final PythonStringFactory<?> stringFactory;
 
     private final int flags;
 
@@ -116,22 +117,27 @@ abstract class AbstractParser {
     protected abstract SSTNode runParser(InputType inputType);
 
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
-        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), 0);
+        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), new DefaultParserErrorCallback(), 0);
     }
 
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, int flags) {
-        this(tokenizer, factory, fexprParser, new DefaultParserErrorCallback(), flags);
+        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), new DefaultParserErrorCallback(), flags);
     }
 
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {
-        this(tokenizer, factory, fexprParser, errorCb, 0);
+        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, 0);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, int flags) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb) {
+        this(tokenizer, factory, fexprParser, stringFactory, errorCb, 0);
+    }
+
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, int flags) {
         this.tokenizer = tokenizer;
         this.factory = factory;
         this.fexprParser = fexprParser;
         this.errorCb = errorCb;
+        this.stringFactory = stringFactory;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
         this.flags = flags;
@@ -477,7 +483,7 @@ abstract class AbstractParser {
             values[i] = getText(t);
             sourceRanges[i] = t.sourceRange;
         }
-        return factory.createString(values, sourceRanges, fexprParser, errorCb);
+        return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory);
     }
 
     /**

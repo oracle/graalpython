@@ -251,8 +251,8 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb) {
-        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb);
+    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory) {
+        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb, stringFactory);
     }
 
     @Override

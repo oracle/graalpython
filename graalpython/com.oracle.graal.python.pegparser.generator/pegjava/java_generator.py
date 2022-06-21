@@ -953,6 +953,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.print("super(tokenizer, factory, fexprParser, errorCb);")
         self.print("}" )
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb) {" % className)
+        with self.indent():
+            self.print("super(tokenizer, factory, fexprParser, stringFactory, errorCb);")
+        self.print("}" )
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         while self.todo:
             for rulename, rule in list(self.todo.items()):

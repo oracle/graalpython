@@ -51,6 +51,7 @@ import java.util.Map;
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.PythonStringFactory;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class StringLiteralUtils {
@@ -78,9 +79,9 @@ public abstract class StringLiteralUtils {
         }
     }
 
-    public static ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback) {
+    public static <T> ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback, PythonStringFactory<T> stringFactory) {
         assert values.length == sourceRanges.length && values.length > 0;
-        StringBuilder sb = null;
+        PythonStringFactory.PythonStringBuilder<T> sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
         ArrayList<ExprTy> formatStringParts = null;
@@ -129,7 +130,7 @@ public abstract class StringLiteralUtils {
                 if (sb != null || isFormatString) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
-                        return new ExprTy.Constant(sb.toString(), ExprTy.Constant.Kind.RAW, sourceRange);
+                        return new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sourceRange);
                     } else if (bb != null) {
                         return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
                     } else {
@@ -149,30 +150,27 @@ public abstract class StringLiteralUtils {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
                 }
-                if (!isRaw && !isFormat) {
-                    text = unescapeString(sourceRanges[index], errorCallback, text);
-                }
                 if (isFormat) {
                     isFormatString = true;
                     if (formatStringParts == null) {
                         formatStringParts = new ArrayList<>();
                     }
-                    if (sb != null && sb.length() > 0) {
-                        String part = sb.toString();
-                        if (!isRaw) {
-                            part = unescapeString(sbSourceRange, errorCallback, part);
-                        }
-                        formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, sbSourceRange));
+                    if (sb != null && !sb.isEmpty()) {
+                        formatStringParts.add(new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sbSourceRange));
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback);
+                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback, stringFactory);
                 } else {
                     if (sb == null) {
-                        sb = new StringBuilder();
+                        sb = stringFactory.createBuilder(text.length());
                         sbSourceRange = sourceRanges[index];
                     }
-                    sb.append(text);
+                    if (!isRaw) {
+                        sb.appendPythonString(unescapeString(sourceRanges[index], errorCallback, text, stringFactory));
+                    } else {
+                        sb.appendString(text);
+                    }
                     sbSourceRange = sbSourceRange.withEnd(sourceRanges[index]);
                 }
             }
@@ -182,14 +180,13 @@ public abstract class StringLiteralUtils {
             return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
         } else if (isFormatString) {
             assert formatStringParts != null; // guaranteed due to how isFormatString is set
-            if (sb != null && sb.length() > 0) {
-                String part = sb.toString();
-                formatStringParts.add(new ExprTy.Constant(part, ExprTy.Constant.Kind.RAW, sbSourceRange));
+            if (sb != null && !sb.isEmpty()) {
+                formatStringParts.add(new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sbSourceRange));
             }
             ExprTy[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
             return new ExprTy.JoinedStr(formatParts, sourceRange);
         }
-        return new ExprTy.Constant(sb == null ? "" : sb.toString(), ExprTy.Constant.Kind.RAW, sourceRange);
+        return new ExprTy.Constant(sb == null ? stringFactory.emptyString() : sb.build(), ExprTy.Constant.Kind.RAW, sourceRange);
     }
 
     private static final class FormatStringParser {
@@ -268,14 +265,17 @@ public abstract class StringLiteralUtils {
         }
 
         private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, SourceRange textSourceRange, boolean isRawString,
-                        ErrorCallback errorCallback, FExprParser exprParser) {
+                        ErrorCallback errorCallback, FExprParser exprParser, PythonStringFactory<?> stringFactory) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
+                Object o;
                 if (!isRawString) {
-                    code = unescapeString(token.getSourceRange(text, textSourceRange), errorCallback, code);
+                    o = unescapeString(token.getSourceRange(text, textSourceRange), errorCallback, code, stringFactory);
+                } else {
+                    o = stringFactory.fromJavaString(code);
                 }
-                return new ExprTy.Constant(code, ExprTy.Constant.Kind.RAW, token.getSourceRange(text, textSourceRange));
+                return new ExprTy.Constant(o, ExprTy.Constant.Kind.RAW, token.getSourceRange(text, textSourceRange));
             }
             int specTokensCount = token.formatTokensCount;
             // the expression has to be wrapped in ()
@@ -294,7 +294,8 @@ public abstract class StringLiteralUtils {
 
                 for (i = 0; i < specTokensCount; i++) {
                     specToken = tokens.get(specifierTokenStartIndex + i);
-                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, textSourceRange, isRawString, errorCallback, exprParser);
+                    specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, textSourceRange, isRawString, errorCallback, exprParser,
+                                    stringFactory);
                     i = i + specToken.formatTokensCount;
                 }
 
@@ -333,7 +334,8 @@ public abstract class StringLiteralUtils {
          * Parses f-string into an array of {@link ExprTy}. The nodes can end up being
          * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
-        public static void parse(ArrayList<ExprTy> formatStringParts, String text, SourceRange textSourceRange, boolean isRawString, FExprParser exprParser, ErrorCallback errorCallback) {
+        public static void parse(ArrayList<ExprTy> formatStringParts, String text, SourceRange textSourceRange, boolean isRawString, FExprParser exprParser, ErrorCallback errorCallback,
+                        PythonStringFactory<?> stringFactory) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -358,7 +360,7 @@ public abstract class StringLiteralUtils {
 
             while (tokenIndex < tokens.size()) {
                 token = tokens.get(tokenIndex);
-                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, textSourceRange, isRawString, errorCallback, exprParser);
+                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, textSourceRange, isRawString, errorCallback, exprParser, stringFactory);
                 formatStringParts.add(part);
                 tokenIndex = tokenIndex + 1 + token.formatTokensCount;
             }
@@ -940,11 +942,11 @@ public abstract class StringLiteralUtils {
         return charList;
     }
 
-    private static String unescapeString(SourceRange sourceRange, ErrorCallback errorCallback, String st) {
+    private static <T> T unescapeString(SourceRange sourceRange, ErrorCallback errorCallback, String st, PythonStringFactory<T> stringFactory) {
         if (!st.contains("\\")) {
-            return st;
+            return stringFactory.fromJavaString(st);
         }
-        StringBuilder sb = new StringBuilder(st.length());
+        PythonStringFactory.PythonStringBuilder<T> sb = stringFactory.createBuilder(st.length());
         boolean wasDeprecationWarning = false;
         for (int i = 0; i < st.length(); i++) {
             char ch = st.charAt(i);
@@ -962,7 +964,7 @@ public abstract class StringLiteralUtils {
                             i++;
                         }
                     }
-                    sb.append((char) Integer.parseInt(code, 8));
+                    sb.appendCodePoint(Integer.parseInt(code, 8));
                     continue;
                 }
                 switch (nextChar) {
@@ -1010,19 +1012,19 @@ public abstract class StringLiteralUtils {
                     case 'u':
                         int code = getHexValue(st, sourceRange, i + 2, 4, errorCallback);
                         if (code < 0) {
-                            return st;
+                            return stringFactory.fromJavaString(st);
                         }
-                        sb.append(Character.toChars(code));
+                        sb.appendCodePoint(code);
                         i += 5;
                         continue;
                     // Hex Unicode: U????????
                     case 'U':
                         code = getHexValue(st, sourceRange, i + 2, 8, errorCallback);
                         if (Character.isValidCodePoint(code)) {
-                            sb.append(Character.toChars(code));
+                            sb.appendCodePoint(code);
                         } else {
                             errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
-                            return st;
+                            return stringFactory.fromJavaString(st);
                         }
                         i += 9;
                         continue;
@@ -1030,16 +1032,16 @@ public abstract class StringLiteralUtils {
                     case 'x':
                         code = getHexValue(st, sourceRange, i + 2, 2, errorCallback);
                         if (code < 0) {
-                            return st;
+                            return stringFactory.fromJavaString(st);
                         }
-                        sb.append(Character.toChars(code));
+                        sb.appendCodePoint(code);
                         i += 3;
                         continue;
                     case 'N':
                         // a character from Unicode Data Database
                         i = doCharacterName(st, sourceRange, sb, i + 2, errorCallback);
                         if (i < 0) {
-                            return st;
+                            return stringFactory.fromJavaString(st);
                         }
                         continue;
                     default:
@@ -1047,16 +1049,16 @@ public abstract class StringLiteralUtils {
                             wasDeprecationWarning = true;
                             warnInvalidEscapeSequence(errorCallback, nextChar);
                         }
-                        sb.append(ch);
-                        sb.append(nextChar);
+                        sb.appendCodePoint(ch);
+                        sb.appendCodePoint(nextChar);
                         i++;
                         continue;
                 }
                 i++;
             }
-            sb.append(ch);
+            sb.appendCodePoint(ch);
         }
-        return sb.toString();
+        return sb.build();
     }
 
     private static int getHexValue(String text, SourceRange sourceRange, int start, int len, ErrorCallback errorCb) {
@@ -1103,7 +1105,7 @@ public abstract class StringLiteralUtils {
      * @param offset this is offset of the open brace
      * @return offset of the close brace or {@code -1} if an error was signaled
      */
-    private static int doCharacterName(String text, SourceRange sourceRange, StringBuilder sb, int offset, ErrorCallback errorCallback) {
+    private static int doCharacterName(String text, SourceRange sourceRange, PythonStringFactory.PythonStringBuilder<?> sb, int offset, ErrorCallback errorCallback) {
         if (offset >= text.length()) {
             errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
             return -1;
@@ -1121,7 +1123,7 @@ public abstract class StringLiteralUtils {
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         int cp = getCodePoint(charName);
         if (cp >= 0) {
-            sb.append(Character.toChars(cp));
+            sb.appendCodePoint(cp);
         } else {
             errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
             return -1;

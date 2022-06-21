@@ -136,6 +136,11 @@ import java.util.List;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.NodeFactory;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -1012,7 +1017,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BIGINTEGER:
                     return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
                 case RAW:
-                    return addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached((String) node.value)));
+                    assert node.value instanceof TruffleString;
+                    return addOp(LOAD_STRING, addObject(unit.constants, node.value));
                 case BYTES:
                     return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
                 default:
@@ -2358,5 +2364,18 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Pass aThis) {
         return null;
+    }
+
+    public static Parser createParser(String src, ErrorCallback errorCb) {
+        NodeFactory nodeFactory = new NodeFactoryImp();
+        PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public ExprTy parse(String code, SourceRange sourceRange) {
+                // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
+                return new Parser(new ParserTokenizer(code), nodeFactory, this, stringFactory, errorCb).fstring_rule();
+            }
+        };
+        return new Parser(new ParserTokenizer(src), nodeFactory, fexpParser, stringFactory, errorCb);
     }
 }

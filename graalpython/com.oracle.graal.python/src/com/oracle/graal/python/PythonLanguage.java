@@ -71,14 +71,9 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserTokenizer;
-import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -514,21 +509,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
-        ParserTokenizer tokenizer = new ParserTokenizer(source.getCharacters().toString());
-        com.oracle.graal.python.pegparser.NodeFactory factory = new NodeFactoryImp();
         ErrorCallback errorCb = (errorType, sourceRange, message) -> {
             throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, toTruffleStringUncached(message));
         };
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange sourceRange) {
-                // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
-                ParserTokenizer tok = new ParserTokenizer(code);
-                return new Parser(tok, factory, this, errorCb).fstring_rule();
-            }
-        };
         try {
-            Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb);
             Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse(type);
             // TODO this is needed until we get complete error handling in the parser

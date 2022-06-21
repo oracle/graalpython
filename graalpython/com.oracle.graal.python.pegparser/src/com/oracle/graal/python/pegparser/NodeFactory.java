@@ -104,7 +104,7 @@ public interface NodeFactory {
 
     public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, SourceRange sourceRange);
 
-    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb);
+    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory);
 
     public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, SourceRange sourceRange);
 
