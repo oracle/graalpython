@@ -79,7 +79,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    static abstract class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
+    abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Object locals);
 
         @Specialization(guards = "isBuiltinDict(locals)")
