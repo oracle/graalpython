@@ -214,6 +214,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     private List<Instruction> quickeningStack = new ArrayList<>();
 
     void pushOp(Instruction insn) {
+        if (insn.opcode == FOR_ITER) {
+            quickeningStack.add(insn);
+            return;
+        }
+        if (insn.target != null && insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, true) > 0) {
+            // TODO support control flow
+            quickeningStack.clear();
+            return;
+        }
         int consumed = insn.opcode.getNumberOfConsumedStackItems(insn.arg, insn.followingArgs, false);
         int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
         int canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
@@ -255,10 +264,6 @@ public class Compiler implements SSTreeVisitor<Void> {
             for (int i = 0; i < inputs.size(); i++) {
                 inputs.get(i).quickenOutput = canQuickenInputTypes;
             }
-        }
-        // TODO support control flow
-        if (insn.target != null) {
-            quickeningStack.clear();
         }
     }
 

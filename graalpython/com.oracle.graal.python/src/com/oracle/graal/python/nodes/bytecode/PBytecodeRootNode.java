@@ -94,8 +94,6 @@ import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
-import com.oracle.graal.python.lib.PyIterNextNode;
-import com.oracle.graal.python.lib.PyIterNextNodeGen;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -236,8 +234,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final CallUnaryMethodNode UNCACHED_CALL_UNARY_METHOD = CallUnaryMethodNode.getUncached();
     private static final NodeSupplier<PyObjectGetMethod> NODE_OBJECT_GET_METHOD = PyObjectGetMethodNodeGen::create;
     private static final PyObjectGetMethod UNCACHED_OBJECT_GET_METHOD = PyObjectGetMethodNodeGen.getUncached();
-    private static final NodeSupplier<PyIterNextNode> NODE_GET_NEXT = PyIterNextNode::create;
-    private static final PyIterNextNode UNCACHED_GET_NEXT = PyIterNextNode.getUncached();
+    private static final ForIterONode UNCACHED_FOR_ITER_O = ForIterONode.getUncached();
+    private static final NodeSupplier<ForIterONode> NODE_FOR_ITER_O = ForIterONode::create;
+    private static final ForIterINode UNCACHED_FOR_ITER_I = ForIterINode.getUncached();
+    private static final NodeSupplier<ForIterINode> NODE_FOR_ITER_I = ForIterINode::create;
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
@@ -625,7 +625,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return uncached;
         }
         Node node = nodes[nodeIndex];
-        if (node != null) {
+        if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument), cachedClass);
@@ -651,7 +651,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <T extends Node, U extends T> U insertChildNode(Node[] nodes, int nodeIndex, Class<U> cachedClass, NodeSupplier<T> nodeSupplier) {
         Node node = nodes[nodeIndex];
-        if (node != null) {
+        if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
@@ -680,7 +680,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return uncached;
         }
         Node node = nodes[nodeIndex];
-        if (node != null) {
+        if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
@@ -1499,10 +1499,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.FOR_ITER: {
-                        Object next = insertChildNode(localNodes, beginBci, UNCACHED_GET_NEXT, PyIterNextNodeGen.class, NODE_GET_NEXT, useCachedNodes).execute(virtualFrame,
-                                        stackFrame.getObject(stackTop));
-                        if (next != null) {
-                            stackFrame.setObject(++stackTop, next);
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                            bytecode[bci] = OpCodesConstants.FOR_ITER_I;
+                        } else {
+                            bytecode[bci] = OpCodesConstants.FOR_ITER_O;
+                        }
+                        continue;
+                    }
+                    case OpCodesConstants.FOR_ITER_O: {
+                        ForIterONode node = insertChildNode(localNodes, beginBci, UNCACHED_FOR_ITER_O, ForIterONodeGen.class, NODE_FOR_ITER_O, useCachedNodes);
+                        boolean cont = node.execute(virtualFrame, stackFrame.getObject(stackTop), stackTop + 1, stackFrame);
+                        if (cont) {
+                            stackTop++;
+                            bci++;
+                        } else {
+                            stackFrame.setObject(stackTop--, null);
+                            oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                            bci += oparg;
+                            oparg = 0;
+                            continue;
+                        }
+                        break;
+                    }
+                    case OpCodesConstants.FOR_ITER_I: {
+                        ForIterINode node = insertChildNode(localNodes, beginBci, UNCACHED_FOR_ITER_I, ForIterINodeGen.class, NODE_FOR_ITER_I, useCachedNodes);
+                        boolean cont = true;
+                        try {
+                            cont = node.execute(virtualFrame, stackFrame.getObject(stackTop), stackTop + 1, stackFrame);
+                        } catch (QuickeningGeneralizeException e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            if (e.type == QuickeningTypes.OBJECT) {
+                                bytecode[bci] = OpCodesConstants.FOR_ITER_O;
+                            } else {
+                                throw CompilerDirectives.shouldNotReachHere("invalid type");
+                            }
+                        }
+                        if (cont) {
+                            stackTop++;
                             bci++;
                         } else {
                             stackFrame.setObject(stackTop--, null);
