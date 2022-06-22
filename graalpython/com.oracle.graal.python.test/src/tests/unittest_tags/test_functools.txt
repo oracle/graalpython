@@ -89,6 +89,7 @@
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_positional
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_protection_of_callers_dict_argument
+*graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_repr
 *graalpython.lib-python.3.test.test_functools.TestPartialC.test_setstate
