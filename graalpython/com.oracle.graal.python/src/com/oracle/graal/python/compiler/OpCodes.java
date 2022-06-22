@@ -649,36 +649,33 @@ public enum OpCodes {
     /*
      * Quickened bytecodes
      */
-    LOAD_BYTE_O(LOAD_BYTE),
-    LOAD_BYTE_I(LOAD_BYTE, LOAD_BYTE_O),
-    LOAD_FAST_O(LOAD_FAST),
-    LOAD_FAST_I_BOX(LOAD_FAST),
-    LOAD_FAST_I(LOAD_FAST, LOAD_FAST_I_BOX),
-// LOAD_FAST_L_BOX(LOAD_FAST),
-// LOAD_FAST_L(LOAD_FAST, LOAD_FAST_L_BOX),
-// LOAD_FAST_B_BOX(LOAD_FAST),
-// LOAD_FAST_B(LOAD_FAST, LOAD_FAST_B_BOX),
-// LOAD_FAST_D_BOX(LOAD_FAST),
-// LOAD_FAST_D(LOAD_FAST, LOAD_FAST_D_BOX),
-    STORE_FAST_O(STORE_FAST),
-    STORE_FAST_UNBOX_I(STORE_FAST),
-    STORE_FAST_I(STORE_FAST),
-// STORE_FAST_UNBOX_L(STORE_FAST),
-// STORE_FAST_L(STORE_FAST),
-// STORE_FAST_UNBOX_B(STORE_FAST),
-// STORE_FAST_B(STORE_FAST),
-// STORE_FAST_UNBOX_D(STORE_FAST),
-// STORE_FAST_D(STORE_FAST),
-    UNARY_OP_O_O(UNARY_OP),
-    UNARY_OP_I_O(UNARY_OP),
-    UNARY_OP_I_I(UNARY_OP, UNARY_OP_I_O),
-    BINARY_OP_OO_O(BINARY_OP),
-    BINARY_OP_II_O(BINARY_OP),
-    BINARY_OP_II_I(BINARY_OP, BINARY_OP_II_O),
-    BINARY_OP_II_B(BINARY_OP, BINARY_OP_II_O),
-    FOR_ITER_O(FOR_ITER),
-    FOR_ITER_I(FOR_ITER, FOR_ITER_O),
-    POP_AND_JUMP_IF_FALSE_B(POP_AND_JUMP_IF_FALSE);
+    LOAD_BYTE_O(LOAD_BYTE, 0, QuickeningTypes.OBJECT),
+    LOAD_BYTE_I(LOAD_BYTE, 0, QuickeningTypes.INT, LOAD_BYTE_O),
+    LOAD_FAST_O(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_I_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_I(LOAD_FAST, 0, QuickeningTypes.INT, LOAD_FAST_I_BOX),
+    LOAD_FAST_B_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_B(LOAD_FAST, 0, QuickeningTypes.BOOLEAN, LOAD_FAST_B_BOX),
+    STORE_FAST_O(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_UNBOX_I(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_I(STORE_FAST, QuickeningTypes.INT, 0),
+    STORE_FAST_UNBOX_B(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_B(STORE_FAST, QuickeningTypes.BOOLEAN, 0),
+    UNARY_OP_O_O(UNARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
+    UNARY_OP_I_O(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
+    UNARY_OP_I_I(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, UNARY_OP_I_O),
+    UNARY_OP_B_O(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.OBJECT),
+    UNARY_OP_B_B(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.BOOLEAN, UNARY_OP_I_O),
+    BINARY_OP_OO_O(BINARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
+    BINARY_OP_II_O(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
+    BINARY_OP_II_I(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, BINARY_OP_II_O),
+    BINARY_OP_II_B(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.BOOLEAN, BINARY_OP_II_O),
+    FOR_ITER_O(FOR_ITER, 0, QuickeningTypes.OBJECT),
+    FOR_ITER_I(FOR_ITER, 0, QuickeningTypes.INT, FOR_ITER_O),
+    POP_AND_JUMP_IF_FALSE_O(POP_AND_JUMP_IF_FALSE, QuickeningTypes.OBJECT, 0),
+    POP_AND_JUMP_IF_FALSE_B(POP_AND_JUMP_IF_FALSE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_FALSE_O),
+    POP_AND_JUMP_IF_TRUE_O(POP_AND_JUMP_IF_TRUE, QuickeningTypes.OBJECT, 0),
+    POP_AND_JUMP_IF_TRUE_B(POP_AND_JUMP_IF_TRUE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_TRUE_O);
 
     public static final class CollectionBits {
         public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
@@ -714,7 +711,8 @@ public enum OpCodes {
     public final int argLength;
     public final OpCodes quickens;
     public final OpCodes generalizesTo;
-    private boolean canBeQuickened;
+    private int quickenInputTypes;
+    private int quickenOutputTypes;
 
     OpCodes(int argLength, int consumesStackItems, int producesStackItems) {
         this(argLength, (oparg, followingArgs, withJump) -> consumesStackItems, (oparg, followingArgs, withJump) -> producesStackItems);
@@ -736,21 +734,26 @@ public enum OpCodes {
         this.generalizesTo = null;
     }
 
-    OpCodes(OpCodes quickens) {
-        this(quickens, null);
+    OpCodes(OpCodes quickens, int inputType, int outputType) {
+        this(quickens, inputType, outputType, null);
     }
 
-    OpCodes(OpCodes quickens, OpCodes generalizesTo) {
+    OpCodes(OpCodes quickens, int inputType, int outputType, OpCodes generalizesTo) {
         this.argLength = quickens.argLength;
         this.consumesStackItems = quickens.consumesStackItems;
         this.producesStackItems = quickens.producesStackItems;
         this.generalizesTo = generalizesTo;
         this.quickens = quickens;
-        quickens.canBeQuickened = true;
+        quickens.quickenInputTypes |= inputType;
+        quickens.quickenOutputTypes |= outputType;
     }
 
-    public boolean canBeQuickened() {
-        return canBeQuickened;
+    public int canQuickenInputTypes() {
+        return quickenInputTypes;
+    }
+
+    public int canQuickenOutputTypes() {
+        return quickenOutputTypes;
     }
 
     @FunctionalInterface

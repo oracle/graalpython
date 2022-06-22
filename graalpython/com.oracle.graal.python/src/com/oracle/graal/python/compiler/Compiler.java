@@ -214,17 +214,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     private List<Instruction> quickeningStack = new ArrayList<>();
 
     void pushOp(Instruction insn) {
-        // TODO support control flow
-        if (insn.target != null) {
-            quickeningStack.clear();
-            return;
-        }
         int consumed = insn.opcode.getNumberOfConsumedStackItems(insn.arg, insn.followingArgs, false);
         int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
-        boolean canQuickenInputs = insn.opcode.canBeQuickened();
+        int canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
         List<Instruction> inputs = null;
         if (consumed > 0) {
-            if (canQuickenInputs) {
+            if (canQuickenInputTypes != 0) {
                 inputs = new ArrayList<>();
                 for (int i = 0; i < consumed; i++) {
                     Instruction input = popQuickeningStack();
@@ -233,10 +228,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                          * This happens when we cleared the stack after a jump or other
                          * not-yet-supported scenario
                          */
-                        canQuickenInputs = false;
+                        canQuickenInputTypes = 0;
                         break;
                     }
-                    canQuickenInputs = canQuickenInputs && input.opcode.canBeQuickened();
+                    canQuickenInputTypes &= input.opcode.canQuickenOutputTypes();
                     inputs.add(input);
                 }
             } else {
@@ -252,12 +247,18 @@ public class Compiler implements SSTreeVisitor<Void> {
                 return;
             }
             quickeningStack.add(insn);
-            insn.quickeningGeneralizeList = inputs;
-        }
-        if (canQuickenInputs && inputs != null) {
-            for (int i = 0; i < inputs.size(); i++) {
-                inputs.get(i).quickenOutput = 1;
+            if (canQuickenInputTypes != 0) {
+                insn.quickeningGeneralizeList = inputs;
             }
+        }
+        if (canQuickenInputTypes != 0 && inputs != null) {
+            for (int i = 0; i < inputs.size(); i++) {
+                inputs.get(i).quickenOutput = canQuickenInputTypes;
+            }
+        }
+        // TODO support control flow
+        if (insn.target != null) {
+            quickeningStack.clear();
         }
     }
 
