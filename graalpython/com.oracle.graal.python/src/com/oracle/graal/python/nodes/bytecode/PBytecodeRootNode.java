@@ -758,12 +758,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return executeCached(virtualFrame, localFrame, stackFrame, osrNode, initialBci, initialStackTop, loopEndBci);
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
+            usingCachedNodes = true;
             Object result = executeUncached(virtualFrame, localFrame, stackFrame, osrNode, initialBci, initialStackTop, loopEndBci);
             if (result instanceof OSRContinuation) {
                 OSRContinuation continuation = (OSRContinuation) result;
                 return executeCached(virtualFrame, localFrame, stackFrame, osrNode, continuation.bci, continuation.stackTop, loopEndBci);
             }
-            usingCachedNodes = true;
             return result;
         }
     }
