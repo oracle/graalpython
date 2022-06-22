@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -191,8 +190,7 @@ public final class PException extends AbstractTruffleException {
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
-     * to the program. Use
-     * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame, Node)
+     * to the program. Use {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)
      * reifyAndGetPythonException}.
      */
     public PBaseException getUnreifiedException() {

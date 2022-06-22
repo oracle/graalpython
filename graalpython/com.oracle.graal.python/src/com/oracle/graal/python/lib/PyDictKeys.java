@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.lib.PyDictKeys.EachKeyState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -91,6 +90,7 @@ public abstract class PyDictKeys extends Node {
     }
 
     @Specialization(limit = "3")
+    @SuppressWarnings("unused")
     static final Object getString(PDict dict,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @Cached ForEachKey consumerNode,

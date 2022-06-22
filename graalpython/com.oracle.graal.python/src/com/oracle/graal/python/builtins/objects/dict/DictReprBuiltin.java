@@ -99,6 +99,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
         private static final TruffleString T_LPAREN_BRACKET = tsLiteral("([");
         private static final TruffleString T_RPAREN_BRACKET = tsLiteral("])");
 
+        @Override
         public abstract TruffleString execute(VirtualFrame VirtualFrame, Object arg);
 
         @CompilerDirectives.ValueType

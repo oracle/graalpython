@@ -70,7 +70,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <p>
  * The output can be either a {@link TruffleString} or a {@link PString}.
  *
- * @see PyObjectReprAsJavaStringNode
+ * @see PyObjectReprAsTruffleStringNode
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)

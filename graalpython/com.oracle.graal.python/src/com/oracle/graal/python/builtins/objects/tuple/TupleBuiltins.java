@@ -199,6 +199,7 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Override
         public abstract TruffleString execute(VirtualFrame VirtualFrame, Object arg);
 
         private static final TruffleString NULL = tsLiteral("(null)");

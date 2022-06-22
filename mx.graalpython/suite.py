@@ -342,7 +342,7 @@ suite = {
             "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
-                "GRAALPYTHON_PEGPARSER",
+                "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
@@ -366,7 +366,7 @@ suite = {
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
             "javaCompliance": "11+",
-            "checkstyleVersion": "8.8",
+            "checkstyleVersion": "8.36.1",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -601,6 +601,8 @@ suite = {
         },
 
         "GRAALPYTHON_PYTHON_LIB": {
+            "native": True, # makes this a tar archive
+            "relpath": True, # relpath for tar archives is False but probably should be True
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,

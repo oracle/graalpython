@@ -52,7 +52,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -76,26 +75,31 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
     }
 
     @Specialization
+    @SuppressWarnings("unused")
     static boolean doDouble(Double object) {
         return true;
     }
 
     @Specialization
+    @SuppressWarnings("unused")
     static boolean doInt(Integer object) {
         return true;
     }
 
     @Specialization
+    @SuppressWarnings("unused")
     static boolean doLong(Long object) {
         return true;
     }
 
     @Specialization
+    @SuppressWarnings("unused")
     static boolean doBoolean(Boolean object) {
         return true;
     }
 
     @Specialization
+    @SuppressWarnings("unused")
     static boolean doNone(PNone object) {
         return false;
     }
@@ -112,7 +116,7 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "doPythonObject", guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isNone(object)", "!isString(object)"})
-    static boolean doObject(VirtualFrame frame, Object object,
+    static boolean doObject(Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,

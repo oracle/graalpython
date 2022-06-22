@@ -614,7 +614,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static Set<PythonAbstractClass> wrapDict(Object tpSubclasses) {
-            return new Set<PythonAbstractClass>() {
+            return new Set<>() {
                 private final PDict dict = (PDict) tpSubclasses;
 
                 @Override
@@ -636,7 +636,7 @@ public abstract class TypeNodes {
                 @SuppressWarnings("unchecked")
                 public Iterator<PythonAbstractClass> iterator() {
                     final HashingStorageIterator<Object> storageIt = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
-                    return new Iterator<PythonAbstractClass>() {
+                    return new Iterator<>() {
                         @Override
                         public boolean hasNext() {
                             return storageIt.hasNext();
@@ -1595,35 +1595,38 @@ public abstract class TypeNodes {
         public abstract Shape execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
-        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        @SuppressWarnings("unused")
+        protected Shape doBuiltinClassTypeCached(PythonBuiltinClassType clazz,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
             return cachedClazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
+        protected Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
             return clazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
-        static Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
+        @SuppressWarnings("unused")
+        protected static Shape doBuiltinClassCached(PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(guards = {"isSingleContext()", "clazz == cachedClazz"})
-        static Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
+        @SuppressWarnings("unused")
+        protected static Shape doClassCached(PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(replaces = {"doClassCached", "doBuiltinClassCached"})
-        static Shape doManagedClass(PythonManagedClass clazz) {
+        protected static Shape doManagedClass(PythonManagedClass clazz) {
             return clazz.getInstanceShape();
         }
 
         @Specialization
-        static Shape doNativeClass(PythonAbstractNativeObject clazz,
+        protected static Shape doNativeClass(PythonAbstractNativeObject clazz,
                         @Cached GetTypeMemberNode getTpDictNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
             Object tpDictObj = getTpDictNode.execute(clazz, NativeMember.TP_DICT);
@@ -1642,7 +1645,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
-        static Shape doError(@SuppressWarnings("unused") Object clazz,
+        protected static Shape doError(@SuppressWarnings("unused") Object clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
@@ -2015,7 +2018,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonObjectFactory factory) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
             // initialized yet
             if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
@@ -2028,7 +2031,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private void addWeakrefDescrAttribute(PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonObjectFactory factory) {
             Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
@@ -2041,7 +2044,7 @@ public abstract class TypeNodes {
             return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
         }
 
-        private void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
             PBuiltinFunction function = factory.createBuiltinFunction(name, pythonClass, 1, flags, callTarget);
             GetSetDescriptor desc = factory.createGetSetDescriptor(function, function, name, pythonClass, true);

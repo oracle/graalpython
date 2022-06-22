@@ -690,8 +690,8 @@ public final class CApiContext extends CExtContext {
     /**
      * Use this method to register memory that is known to be allocated (i.e. static variables like
      * types). This is basically the same as
-     * {@link #traceAlloc(Object, PFrame.Reference, String, long)} but does not consider it to be an
-     * error if the memory is already allocated.
+     * {@link #traceAlloc(Object, PFrame.Reference, TruffleString, long)} but does not consider it
+     * to be an error if the memory is already allocated.
      */
     @TruffleBoundary
     public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {

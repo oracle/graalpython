@@ -42,18 +42,18 @@ package com.oracle.graal.python.runtime.object;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.object.Shape;
 
-final class SlowPathGetInstanceShapeNode extends TypeNodes.GetInstanceShape {
+final class SlowPathGetInstanceShapeNode extends PNodeWithContext {
+
     private final PythonLanguage language;
 
     SlowPathGetInstanceShapeNode(PythonLanguage language) {
         this.language = language;
     }
 
-    @Override
     public Shape execute(Object clazz) {
         if (clazz instanceof PythonBuiltinClassType) {
             // fast-path for PBCT which avoids the language lookup
