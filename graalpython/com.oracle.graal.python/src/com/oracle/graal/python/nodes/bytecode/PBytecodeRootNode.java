@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -605,7 +606,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, Class<? extends T> cachedClass, NodeFunction<A, T> nodeSupplier, A argument) {
         Node node = nodes[nodeIndex];
-        if (node != null) {
+        if (node != null && node.getClass() == cachedClass) {
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier, argument), cachedClass);
@@ -632,9 +633,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T insertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
+    private <T extends Node, U> T insertChildNodeInt(Node[] nodes, int nodeIndex, Class<U> expectedClass, IntNodeFunction<T> nodeSupplier, int argument) {
         Node node = nodes[nodeIndex];
-        if (node != null) {
+        if (expectedClass.isInstance(node)) {
             return (T) node;
         }
         return doInsertChildNodeInt(nodes, nodeIndex, nodeSupplier, argument);
@@ -655,15 +656,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return CompilerDirectives.castExact(node, cachedClass);
         }
         return CompilerDirectives.castExact(doInsertChildNode(nodes, nodeIndex, nodeSupplier), cachedClass);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T extends Node> T insertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
-        Node node = nodes[nodeIndex];
-        if (node != null) {
-            return (T) node;
-        }
-        return doInsertChildNode(nodes, nodeIndex, nodeSupplier);
     }
 
     @SuppressWarnings("unchecked")
@@ -1926,42 +1918,42 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         switch (op) {
             case BinaryOpsConstants.ADD:
             case BinaryOpsConstants.INPLACE_ADD:
-                IntBuiltins.AddNode addNode = insertChildNode(localNodes, bci, NODE_INT_ADD);
+                IntBuiltins.AddNode addNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.AddNodeFactory.AddNodeGen.class, NODE_INT_ADD);
                 result = addNode.execute(left, right);
                 break;
             case BinaryOpsConstants.SUB:
             case BinaryOpsConstants.INPLACE_SUB:
-                IntBuiltins.SubNode subNode = insertChildNode(localNodes, bci, NODE_INT_SUB);
+                IntBuiltins.SubNode subNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.SubNodeFactory.SubNodeGen.class, NODE_INT_SUB);
                 result = subNode.execute(left, right);
                 break;
             case BinaryOpsConstants.MUL:
             case BinaryOpsConstants.INPLACE_MUL:
-                IntBuiltins.MulNode mulNode = insertChildNode(localNodes, bci, NODE_INT_MUL);
+                IntBuiltins.MulNode mulNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.MulNodeFactory.MulNodeGen.class, NODE_INT_MUL);
                 result = mulNode.execute(left, right);
                 break;
             case BinaryOpsConstants.FLOORDIV:
             case BinaryOpsConstants.INPLACE_FLOORDIV:
-                IntBuiltins.FloorDivNode floorDivNode = insertChildNode(localNodes, bci, NODE_INT_FLOORDIV);
+                IntBuiltins.FloorDivNode floorDivNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.FloorDivNodeFactory.FloorDivNodeGen.class, NODE_INT_FLOORDIV);
                 result = floorDivNode.execute(left, right);
                 break;
             case BinaryOpsConstants.TRUEDIV:
             case BinaryOpsConstants.INPLACE_TRUEDIV:
-                IntBuiltins.TrueDivNode trueDivNode = insertChildNode(localNodes, bci, NODE_INT_TRUEDIV);
+                IntBuiltins.TrueDivNode trueDivNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.TrueDivNodeFactory.TrueDivNodeGen.class, NODE_INT_TRUEDIV);
                 result = trueDivNode.execute(left, right);
                 break;
             case BinaryOpsConstants.MOD:
             case BinaryOpsConstants.INPLACE_MOD:
-                IntBuiltins.ModNode modNode = insertChildNode(localNodes, bci, NODE_INT_MOD);
+                IntBuiltins.ModNode modNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.ModNodeFactory.ModNodeGen.class, NODE_INT_MOD);
                 result = modNode.execute(left, right);
                 break;
             case BinaryOpsConstants.LSHIFT:
             case BinaryOpsConstants.INPLACE_LSHIFT:
-                IntBuiltins.LShiftNode lShiftNode = insertChildNode(localNodes, bci, NODE_INT_LSHIFT);
+                IntBuiltins.LShiftNode lShiftNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.LShiftNodeFactory.LShiftNodeGen.class, NODE_INT_LSHIFT);
                 result = lShiftNode.execute(left, right);
                 break;
             case BinaryOpsConstants.RSHIFT:
             case BinaryOpsConstants.INPLACE_RSHIFT:
-                IntBuiltins.RShiftNode rShiftNode = insertChildNode(localNodes, bci, NODE_INT_RSHIFT);
+                IntBuiltins.RShiftNode rShiftNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.RShiftNodeFactory.RShiftNodeGen.class, NODE_INT_RSHIFT);
                 result = rShiftNode.execute(left, right);
                 break;
             case BinaryOpsConstants.AND:
@@ -2067,17 +2059,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     break;
                 case BinaryOpsConstants.MOD:
                 case BinaryOpsConstants.INPLACE_MOD:
-                    IntBuiltins.ModNode modNode = insertChildNode(localNodes, bci, NODE_INT_MOD);
+                    IntBuiltins.ModNode modNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.ModNodeFactory.ModNodeGen.class, NODE_INT_MOD);
                     result = modNode.executeInt(left, right);
                     break;
                 case BinaryOpsConstants.LSHIFT:
                 case BinaryOpsConstants.INPLACE_LSHIFT:
-                    IntBuiltins.LShiftNode lShiftNode = insertChildNode(localNodes, bci, NODE_INT_LSHIFT);
+                    IntBuiltins.LShiftNode lShiftNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.LShiftNodeFactory.LShiftNodeGen.class, NODE_INT_LSHIFT);
                     result = lShiftNode.executeInt(left, right);
                     break;
                 case BinaryOpsConstants.RSHIFT:
                 case BinaryOpsConstants.INPLACE_RSHIFT:
-                    IntBuiltins.RShiftNode rShiftNode = insertChildNode(localNodes, bci, NODE_INT_RSHIFT);
+                    IntBuiltins.RShiftNode rShiftNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.RShiftNodeFactory.RShiftNodeGen.class, NODE_INT_RSHIFT);
                     result = rShiftNode.executeInt(left, right);
                     break;
                 case BinaryOpsConstants.AND:
@@ -2105,7 +2097,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeBinaryOpOOO(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, Node[] localNodes, int op) {
-        BinaryOp opNode = (BinaryOp) insertChildNodeInt(localNodes, bci, BINARY_OP_FACTORY, op);
+        BinaryOp opNode = (BinaryOp) insertChildNodeInt(localNodes, bci, BinaryOp.class, BINARY_OP_FACTORY, op);
         Object right, left;
         try {
             right = stackFrame.getObject(stackTop);
@@ -2269,7 +2261,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeUnaryOpOO(VirtualFrame virtualFrame, Frame stackFrame, int stackTop, int bci, Node[] localNodes, int op) {
-        UnaryOpNode opNode = insertChildNodeInt(localNodes, bci, UNARY_OP_FACTORY, op);
+        UnaryOpNode opNode = insertChildNodeInt(localNodes, bci, UnaryOpNode.class, UNARY_OP_FACTORY, op);
         Object value;
         try {
             value = stackFrame.getObject(stackTop);
