@@ -86,6 +86,7 @@ public class ScopeEnvironment {
     private final static String NAMED_EXPR_COMP_CONFLICT = "assignment expression cannot rebind comprehension iteration variable '%s'";
     private final static String NAMED_EXPR_COMP_INNER_LOOP_CONFLICT = "comprehension inner loop cannot rebind assignment expression target '%s'";
     private final static String NAMED_EXPR_COMP_ITER_EXPR = "assignment expression cannot be used in a comprehension iterable expression";
+    private final static String DUPLICATE_ARGUMENT = "duplicate argument '%s' in function definition";
 
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
@@ -1025,22 +1026,22 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.NonLocal node) {
             for (String n : node.names) {
-                EnumSet<DefUse> f = currentScope.getUseOfName(mangle(n));
-                if (f.contains(DefUse.DefParam)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is parameter and nonlocal", n);
-                    continue;
-                }
-                if (f.contains(DefUse.Use)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is used prior to nonlocal declaration", n);
-                    continue;
-                }
-                if (f.contains(DefUse.DefAnnot)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "annotated name '%s' can't be nonlocal", n);
-                    continue;
-                }
-                if (f.contains(DefUse.DefLocal)) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before nonlocal declaration", n);
-                    continue;
+                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(n));
+                if (cur != null) {
+                    String msg = null;
+                    if (cur.contains(DefUse.DefParam)) {
+                        msg = NONLOCAL_PARAM;
+                    } else if (cur.contains(DefUse.Use)) {
+                        msg = NONLOCAL_AFTER_USE;
+                    } else if (cur.contains(DefUse.DefAnnot)) {
+                        msg = NONLOCAL_ANNOT;
+                    } else if (cur.contains(DefUse.DefLocal)) {
+                        msg = NONLOCAL_AFTER_USE;
+                    }
+                    if (msg != null) {
+                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
+                        continue;
+                    }
                 }
                 addDef(n, DefUse.DefNonLocal, node);
                 currentScope.recordDirective(n, node.getSourceRange());
