@@ -949,7 +949,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case OpCodesConstants.LOAD_BYTE:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                        if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
                             bytecode[bci] = OpCodesConstants.LOAD_BYTE_I;
                         } else {
                             bytecode[bci] = OpCodesConstants.LOAD_BYTE_O;
@@ -1500,7 +1500,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.FOR_ITER: {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                        if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
                             bytecode[bci] = OpCodesConstants.FOR_ITER_I;
                         } else {
                             bytecode[bci] = OpCodesConstants.FOR_ITER_O;
@@ -1825,7 +1825,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_OR:
                 case BinaryOpsConstants.XOR:
                 case BinaryOpsConstants.INPLACE_XOR:
-                    if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                    if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_II_I;
                         bytecodeBinaryOpIII(virtualFrame, stackFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     } else {
@@ -1846,7 +1846,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.LE:
                 case BinaryOpsConstants.LT:
                 case BinaryOpsConstants.IS:
-                    if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+                    if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_II_B;
                         bytecodeBinaryOpIIB(virtualFrame, stackFrame, stackTop, bci, op);
                     } else {
@@ -2129,7 +2129,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             bytecodeUnaryOpOO(virtualFrame, localFrame, stackTop, bci, localNodes, op);
             return;
         } else if (stackFrame.isInt(stackTop)) {
-            if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+            if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
                 if (op == UnaryOpsConstants.NOT) {
                     // TODO UNARY_OP_I_B
                     localBC[bci] = OpCodesConstants.UNARY_OP_I_O;
@@ -2145,7 +2145,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return;
         } else if (stackFrame.isBoolean(stackTop)) {
             if (op == UnaryOpsConstants.NOT) {
-                if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+                if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
                     localBC[bci] = OpCodesConstants.UNARY_OP_B_B;
                     bytecodeUnaryOpBB(virtualFrame, localFrame, stackTop, bci, op);
                     return;
@@ -2295,26 +2295,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeVariableStores(index);
             variableTypes[index] = TYPE_OBJECT;
         }
-        if (quickeningMap != null) {
-            if (itemType == TYPE_INT) {
-                if (stackType == TYPE_INT) {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_I;
-                    bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
-                } else {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
-                    bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
-                }
-                return;
-            } else if (itemType == TYPE_BOOLEAN) {
-                if (stackType == TYPE_BOOLEAN) {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_B;
-                    bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
-                } else {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
-                    bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
-                }
-                return;
+        if (itemType == TYPE_INT) {
+            if (stackType == TYPE_INT) {
+                localBC[bci] = OpCodesConstants.STORE_FAST_I;
+                bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
+            } else {
+                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
+                bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
             }
+            return;
+        } else if (itemType == TYPE_BOOLEAN) {
+            if (stackType == TYPE_BOOLEAN) {
+                localBC[bci] = OpCodesConstants.STORE_FAST_B;
+                bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
+            } else {
+                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
+                bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
+            }
+            return;
         }
         // TODO other types
         localBC[bci] = OpCodesConstants.STORE_FAST_O;
@@ -2403,7 +2401,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localBC[bci] = OpCodesConstants.LOAD_FAST_O;
             bytecodeLoadFastO(localFrame, stackFrame, stackTop, bci, index);
         } else if (localFrame.isInt(index)) {
-            if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+            if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
                 localBC[bci] = OpCodesConstants.LOAD_FAST_I;
                 bytecodeLoadFastI(localFrame, stackFrame, stackTop, bci, index);
             } else {
@@ -2411,7 +2409,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 bytecodeLoadFastIBox(localFrame, stackFrame, stackTop, bci, index);
             }
         } else if (localFrame.isBoolean(index)) {
-            if (quickeningMap != null && (quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+            if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
                 localBC[bci] = OpCodesConstants.LOAD_FAST_B;
                 bytecodeLoadFastB(localFrame, stackFrame, stackTop, bci, index);
             } else {
