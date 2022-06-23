@@ -396,7 +396,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
         // select appropriate HPy context
-        GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
+        GraalHPyContext hpyContext = debug ? null : this;
 
         InteropLibrary initFunctionLib = InteropLibrary.getUncached(initFunction);
         if (!initFunctionLib.isExecutable(initFunction)) {

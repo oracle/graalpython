@@ -481,7 +481,6 @@ public final class PythonContext extends Python3Core {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
-    @CompilationFinal private Object hPyDebugContext;
 
     private TruffleString soABI; // cache for soAPI
 
@@ -2130,16 +2129,6 @@ public final class PythonContext extends Python3Core {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
-    }
-
-    /**
-     * Equivalent of {@code debug_ctx.c: hpy_debug_get_ctx}.
-     */
-    public Object getHPyDebugContext() {
-        if (hPyDebugContext == null) {
-            hPyDebugContext = initDebugMode();
-        }
-        return hPyDebugContext;
     }
 
     /**
