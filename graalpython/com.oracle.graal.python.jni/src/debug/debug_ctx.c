@@ -7,17 +7,7 @@
 # include <malloc.h>   /* for alloca() */
 #endif
 
-static struct _HPyContext_s g_debug_ctx = {
-    .name = "HPy Debug Mode ABI",
-    ._private = NULL,
-    .ctx_version = 1,
-};
-
-// NOTE: at the moment this function assumes that uctx is always the
-// same. If/when we migrate to a system in which we can have multiple
-// independent contexts, this function should ensure to create a different
-// debug wrapper for each of them.
-int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx)
+_HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx)
 {
     if (dctx->_private != NULL) {
         // already initialized
@@ -46,21 +36,9 @@ int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx)
     return 0;
 }
 
-HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
+_HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx)
 {
-    HPyContext *dctx = &g_debug_ctx;
-    if (uctx == dctx) {
-        HPy_FatalError(uctx, "hpy_debug_get_ctx: expected an universal ctx, "
-                             "got a debug ctx");
-    }
-    if (hpy_debug_ctx_init(dctx, uctx) < 0)
-        return NULL;
-    return dctx;
-}
-
-void hpy_debug_set_ctx(HPyContext *dctx)
-{
-    g_debug_ctx = *dctx;
+    free(dctx->_private);
 }
 
 HPy hpy_debug_open_handle(HPyContext *dctx, HPy uh)
