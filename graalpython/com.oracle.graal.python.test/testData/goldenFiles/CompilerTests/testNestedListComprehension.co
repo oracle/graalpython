@@ -10,8 +10,8 @@ Disassembly of <module>:
 Disassembly of <listcomp>:
 000000         0 COLLECTION_FROM_STACK             0    (list)
 000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          20   (to 24)
-000027         6 STORE_FAST                        1    (y)                               generalizes: 6
+000000   >>    4 FOR_ITER                          20   (to 24)                           can quicken
+000027         6 STORE_FAST                        1    (y)
 000001         8 MAKE_FUNCTION                     0    (<listcomp>.<listcomp>)
 000013        11 LOAD_GLOBAL                       0    (range)
 000019        13 LOAD_BYTE                         5
@@ -25,8 +25,8 @@ Disassembly of <listcomp>:
 Disassembly of <listcomp>.<listcomp>:
 000001         0 COLLECTION_FROM_STACK             0    (list)
 000001         2 LOAD_FAST                         0    (.0)
-000001   >>    4 FOR_ITER                          10   (to 14)
-000008         6 STORE_FAST                        1    (x)                               generalizes: 0
+000001   >>    4 FOR_ITER                          10   (to 14)                           can quicken
+000008         6 STORE_FAST                        1    (x)
 000002         8 LOAD_FAST                         1    (x)
 000001        10 ADD_TO_COLLECTION                 2    (list)
 000001        12 JUMP_BACKWARD                     8    (to 4)

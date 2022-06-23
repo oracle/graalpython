@@ -10,7 +10,7 @@ Disassembly of <module>:
 Disassembly of <dictcomp>:
 000000         0 COLLECTION_FROM_STACK             0    (dict)
 000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          16   (to 20)
+000000   >>    4 FOR_ITER                          16   (to 20)                           can quicken
 000015         6 STORE_FAST                        1    (x)
 000001         8 LOAD_FAST                         1    (x)
 000004        10 LOAD_GLOBAL                       0    (str)

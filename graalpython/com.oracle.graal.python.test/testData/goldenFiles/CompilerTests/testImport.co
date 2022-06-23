@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000003         0 LOAD_NAME                         0    (__name__)
 000015         2 LOAD_STRING                       0    ('__main__')
-000003         4 BINARY_OP                         12   (EQ)                              generalizes: 2, 0
+000003         4 BINARY_OP                         12   (EQ)                              can quicken
 000000         6 POP_AND_JUMP_IF_FALSE             117   (to 123)
 000031         8 LOAD_BYTE                         0
 000031        10 LOAD_CONST                        1    ([])
@@ -12,15 +12,15 @@ Disassembly of <module>:
 000058        20 LOAD_ATTR                         3    (argv)
 000054        22 CALL_FUNCTION                     1
 000071        24 LOAD_BYTE                         1
-000054        26 BINARY_OP                         12   (EQ)                              generalizes: 24, 22
+000054        26 BINARY_OP                         12   (EQ)
 000054        28 JUMP_IF_FALSE_OR_POP              13   (to 41)
 000077        30 LOAD_NAME                         1    (sys)
 000077        32 LOAD_ATTR                         3    (argv)
 000086        34 LOAD_BYTE                         0
 000077        36 BINARY_SUBSCR
 000092        37 LOAD_STRING                       2    ('java_embedding_bench')
-000077        39 BINARY_OP                         12   (EQ)                              can quicken, generalizes: 37, 36
-000049   >>   41 UNARY_OP                          0    (NOT)                             generalizes: 39
+000077        39 BINARY_OP                         12   (EQ)                              can quicken
+000049   >>   41 UNARY_OP                          0    (NOT)                             can quicken, generalizes: 39
 000046        43 POP_AND_JUMP_IF_FALSE             80   (to 123)
 000125        45 LOAD_BYTE                         0
 000125        47 LOAD_CONST                        1    ([])
@@ -34,7 +34,7 @@ Disassembly of <module>:
 000180        64 LOAD_ATTR                         3    (argv)
 000176        66 CALL_FUNCTION                     1
 000193        68 LOAD_BYTE                         2
-000176        70 BINARY_OP                         17   (GE)                              generalizes: 68, 66
+000176        70 BINARY_OP                         17   (GE)                              can quicken
 000173        72 POP_AND_JUMP_IF_FALSE             24   (to 96)
 000214        74 LOAD_NAME                         6    (int)
 000218        76 LOAD_NAME                         1    (sys)
@@ -57,9 +57,9 @@ Disassembly of <module>:
 000346       107 LOAD_NAME                         4    (time)
 000346       109 CALL_METHOD                       0    (time)
 000360       112 LOAD_NAME                         5    (start)
-000346       114 BINARY_OP                         2    (SUB)                             generalizes: 112, 109
+000346       114 BINARY_OP                         2    (SUB)
 000335       116 COLLECTION_FROM_STACK             2    (tuple)
-000318       118 BINARY_OP                         10   (MOD)                             generalizes: 116, 114
+000318       118 BINARY_OP                         10   (MOD)
 000312       120 CALL_FUNCTION                     1
 000312       122 POP_TOP
 000312   >>  123 LOAD_NONE
