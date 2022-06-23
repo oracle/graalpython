@@ -438,13 +438,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
 
-    public static final int TYPE_OBJECT = 1;
-    public static final int TYPE_INT = 2;
-    public static final int TYPE_LONG = 3;
-    public static final int TYPE_DOUBLE = 4;
-    public static final int TYPE_BOOLEAN = 5;
-
-    @CompilationFinal(dimensions = 1) private final int[] quickeningMap;
+    @CompilationFinal(dimensions = 1) private final int[] outputCanQuicken;
+    @CompilationFinal(dimensions = 1) private final int[] variableCanQuicken;
     @CompilationFinal(dimensions = 1) private final int[][] generalizeInputsMap;
     @CompilationFinal(dimensions = 1) private final int[][] generalizeVarsMap;
     @CompilationFinal(dimensions = 1) private int[] variableTypes;
@@ -516,10 +511,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.bcioffset = stackoffset + co.stacksize;
         this.source = source;
         this.signature = sign;
-        // TODO copy lazily?
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
-        this.quickeningMap = co.quickeningMap;
+        this.outputCanQuicken = co.outputCanQuicken;
+        this.variableCanQuicken = co.variableCanQuicken;
         this.generalizeInputsMap = co.generalizeInputsMap;
         this.generalizeVarsMap = co.generalizeVarsMap;
         this.consts = co.constants;
@@ -698,10 +693,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int argCount = co.getTotalArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
-            if (variableTypes[i] == TYPE_OBJECT) {
+            if (variableTypes[i] == QuickeningTypes.OBJECT) {
                 localFrame.setObject(i, arg);
                 continue;
-            } else if (variableTypes[i] == TYPE_INT) {
+            } else if (variableTypes[i] == QuickeningTypes.INT) {
                 if (arg instanceof Integer) {
                     localFrame.setInt(i, (int) arg);
                     continue;
@@ -724,7 +719,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeVariableStores(i);
-            variableTypes[i] = TYPE_OBJECT;
+            variableTypes[i] = QuickeningTypes.OBJECT;
             localFrame.setObject(i, arg);
         }
     }
@@ -735,8 +730,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int argCount = co.getTotalArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
-            if (arg instanceof Integer) {
-                variableTypes[i] = TYPE_INT;
+            if ((variableCanQuicken[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
+                variableTypes[i] = QuickeningTypes.INT;
                 localFrame.setInt(i, (int) arg);
 // } else if (arg instanceof Long) {
 // variableTypes[i] = TYPE_LONG;
@@ -748,7 +743,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 // variableTypes[i] = TYPE_DOUBLE;
 // localFrame.setDouble(i, (double) arg);
             } else {
-                variableTypes[i] = TYPE_OBJECT;
+                variableTypes[i] = QuickeningTypes.OBJECT;
                 localFrame.setObject(i, arg);
             }
         }
@@ -941,7 +936,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case OpCodesConstants.LOAD_BYTE:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                             bytecode[bci] = OpCodesConstants.LOAD_BYTE_I;
                         } else {
                             bytecode[bci] = OpCodesConstants.LOAD_BYTE_O;
@@ -1492,7 +1487,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.FOR_ITER: {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                             bytecode[bci] = OpCodesConstants.FOR_ITER_I;
                         } else {
                             bytecode[bci] = OpCodesConstants.FOR_ITER_O;
@@ -1817,7 +1812,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_OR:
                 case BinaryOpsConstants.XOR:
                 case BinaryOpsConstants.INPLACE_XOR:
-                    if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+                    if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_II_I;
                         bytecodeBinaryOpIII(virtualFrame, stackFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     } else {
@@ -1838,7 +1833,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.LE:
                 case BinaryOpsConstants.LT:
                 case BinaryOpsConstants.IS:
-                    if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+                    if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_II_B;
                         bytecodeBinaryOpIIB(virtualFrame, stackFrame, stackTop, bci, op);
                     } else {
@@ -2121,7 +2116,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             bytecodeUnaryOpOO(virtualFrame, localFrame, stackTop, bci, localNodes, op);
             return;
         } else if (stackFrame.isInt(stackTop)) {
-            if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+            if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                 if (op == UnaryOpsConstants.NOT) {
                     // TODO UNARY_OP_I_B
                     localBC[bci] = OpCodesConstants.UNARY_OP_I_O;
@@ -2137,7 +2132,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return;
         } else if (stackFrame.isBoolean(stackTop)) {
             if (op == UnaryOpsConstants.NOT) {
-                if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+                if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
                     localBC[bci] = OpCodesConstants.UNARY_OP_B_B;
                     bytecodeUnaryOpBB(virtualFrame, localFrame, stackTop, bci, op);
                     return;
@@ -2277,34 +2272,48 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void bytecodeStoreFastAdaptive(Frame localFrame, Frame stackFrame, int stackTop, int bci, byte[] localBC, int index) {
         int stackType = stackSlotTypeToTypeId(stackFrame, stackTop);
-        int itemType = stackType;
-        if (itemType == TYPE_OBJECT) {
-            itemType = objectTypeId(stackFrame.getObject(stackTop));
-        }
-        if (variableTypes[index] == 0) {
-            variableTypes[index] = itemType;
-        } else if (variableTypes[index] != itemType) {
-            generalizeVariableStores(index);
-            variableTypes[index] = TYPE_OBJECT;
-        }
-        if (itemType == TYPE_INT) {
-            if (stackType == TYPE_INT) {
-                localBC[bci] = OpCodesConstants.STORE_FAST_I;
-                bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
-            } else {
-                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
-                bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
+        if ((variableCanQuicken[index] & stackType) != 0) {
+            int itemType = stackType;
+            if (itemType == QuickeningTypes.OBJECT) {
+                itemType = objectTypeId(stackFrame.getObject(stackTop));
             }
-            return;
-        } else if (itemType == TYPE_BOOLEAN) {
-            if (stackType == TYPE_BOOLEAN) {
-                localBC[bci] = OpCodesConstants.STORE_FAST_B;
-                bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
-            } else {
-                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
-                bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
+            if (variableTypes[index] == 0) {
+                variableTypes[index] = itemType;
+            } else if (variableTypes[index] != itemType) {
+                if (variableTypes[index] != QuickeningTypes.OBJECT) {
+                    variableTypes[index] = QuickeningTypes.OBJECT;
+                    generalizeVariableStores(index);
+                }
+                if (itemType != QuickeningTypes.OBJECT) {
+                    generalizeInputs(bci);
+                    stackFrame.setObject(stackTop, stackFrame.getValue(stackTop));
+                }
+                localBC[bci] = OpCodesConstants.STORE_FAST_O;
+                bytecodeStoreFastO(localFrame, stackFrame, stackTop, index);
+                return;
             }
-            return;
+            assert variableTypes[index] == itemType;
+            if (itemType == QuickeningTypes.INT) {
+                if (stackType == QuickeningTypes.INT) {
+                    localBC[bci] = OpCodesConstants.STORE_FAST_I;
+                    bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
+                } else {
+                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
+                    bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
+                }
+                return;
+            } else if (itemType == QuickeningTypes.BOOLEAN) {
+                if (stackType == QuickeningTypes.BOOLEAN) {
+                    localBC[bci] = OpCodesConstants.STORE_FAST_B;
+                    bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
+                } else {
+                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
+                    bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
+                }
+                return;
+            }
+        } else if (stackType != QuickeningTypes.OBJECT) {
+            generalizeInputs(bci);
         }
         // TODO other types
         localBC[bci] = OpCodesConstants.STORE_FAST_O;
@@ -2393,7 +2402,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localBC[bci] = OpCodesConstants.LOAD_FAST_O;
             bytecodeLoadFastO(localFrame, stackFrame, stackTop, bci, index);
         } else if (localFrame.isInt(index)) {
-            if ((quickeningMap[bci] & QuickeningTypes.INT) != 0) {
+            if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                 localBC[bci] = OpCodesConstants.LOAD_FAST_I;
                 bytecodeLoadFastI(localFrame, stackFrame, stackTop, bci, index);
             } else {
@@ -2401,7 +2410,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 bytecodeLoadFastIBox(localFrame, stackFrame, stackTop, bci, index);
             }
         } else if (localFrame.isBoolean(index)) {
-            if ((quickeningMap[bci] & QuickeningTypes.BOOLEAN) != 0) {
+            if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
                 localBC[bci] = OpCodesConstants.LOAD_FAST_B;
                 bytecodeLoadFastB(localFrame, stackFrame, stackTop, bci, index);
             } else {
@@ -2475,15 +2484,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private int stackSlotTypeToTypeId(Frame stackFrame, int stackTop) {
         if (stackFrame.isObject(stackTop)) {
-            return TYPE_OBJECT;
+            return QuickeningTypes.OBJECT;
         } else if (stackFrame.isInt(stackTop)) {
-            return TYPE_INT;
+            return QuickeningTypes.INT;
         } else if (stackFrame.isLong(stackTop)) {
-            return TYPE_LONG;
+            return QuickeningTypes.LONG;
         } else if (stackFrame.isDouble(stackTop)) {
-            return TYPE_DOUBLE;
+            return QuickeningTypes.DOUBLE;
         } else if (stackFrame.isBoolean(stackTop)) {
-            return TYPE_BOOLEAN;
+            return QuickeningTypes.BOOLEAN;
         } else {
             throw CompilerDirectives.shouldNotReachHere("Unknown stack item type");
         }
@@ -2491,15 +2500,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private int objectTypeId(Object object) {
         if (object instanceof Integer) {
-            return TYPE_INT;
+            return QuickeningTypes.INT;
         } else if (object instanceof Long) {
-            return TYPE_LONG;
+            return QuickeningTypes.LONG;
         } else if (object instanceof Double) {
-            return TYPE_DOUBLE;
+            return QuickeningTypes.DOUBLE;
         } else if (object instanceof Boolean) {
-            return TYPE_BOOLEAN;
+            return QuickeningTypes.BOOLEAN;
         } else {
-            return TYPE_OBJECT;
+            return QuickeningTypes.OBJECT;
         }
     }
 
@@ -2520,7 +2529,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void generalizeVariableStores(int index) {
         CompilerAsserts.neverPartOfCompilation();
-        variableTypes[index] = TYPE_OBJECT;
+        variableTypes[index] = QuickeningTypes.OBJECT;
         if (generalizeVarsMap != null) {
             if (generalizeVarsMap[index] != null) {
                 for (int i = 0; i < generalizeVarsMap[index].length; i++) {

@@ -99,7 +99,8 @@ public final class CodeUnit {
     public final int startOffset;
     public final int startLine;
 
-    public final int[] quickeningMap;
+    public final int[] outputCanQuicken;
+    public final int[] variableCanQuicken;
     public final int[][] generalizeInputsMap;
     public final int[][] generalizeVarsMap;
 
@@ -111,7 +112,7 @@ public final class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     int[] exceptionHandlerRanges, int startOffset, int startLine,
-                    int[] quickeningMap, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+                    int[] outputCanQuicken, int[] variableCanQuicken, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -131,7 +132,8 @@ public final class CodeUnit {
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
         this.startLine = startLine;
-        this.quickeningMap = quickeningMap;
+        this.outputCanQuicken = outputCanQuicken;
+        this.variableCanQuicken = variableCanQuicken;
         this.generalizeInputsMap = generalizeInputsMap;
         this.generalizeVarsMap = generalizeVarsMap;
         this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
@@ -475,9 +477,9 @@ public final class CodeUnit {
                 line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
                 line[6] = line[6] == null ? "" : String.format("(%s)", line[6]);
                 line[7] = "";
-                if (quickeningMap != null && (quickeningMap[bci] != 0 || generalizeInputsMap[bci] != null)) {
+                if (outputCanQuicken != null && (outputCanQuicken[bci] != 0 || generalizeInputsMap[bci] != null)) {
                     StringBuilder quickenSb = new StringBuilder();
-                    if (quickeningMap[bci] != 0) {
+                    if (outputCanQuicken[bci] != 0) {
                         quickenSb.append("can quicken");
                     }
                     if (generalizeInputsMap[bci] != null) {

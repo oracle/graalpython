@@ -196,7 +196,7 @@ public final class CompilationUnit {
 
         computeStackLevels();
 
-        int varCount = varnames.size() + cellvars.size() + freevars.size();
+        int varCount = varnames.size();
         List<Instruction> quickenedInstructions = new ArrayList<>();
         List<List<Instruction>> variableStores = new ArrayList<>(varCount);
         for (int i = 0; i < varCount; i++) {
@@ -263,15 +263,24 @@ public final class CompilationUnit {
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
         }
-        int[] finishedQuickeningMap = new int[buf.size()];
+        int[] finishedCanQuickenOutput = new int[buf.size()];
+        int[] finishedCanQuickenVariable = new int[varCount];
         int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
         int[][] finishedGeneralizeVarsMap = new int[varCount][];
         for (Instruction insn : quickenedInstructions) {
-            finishedQuickeningMap[insn.bci] = insn.quickenOutput;
+            finishedCanQuickenOutput[insn.bci] = insn.quickenOutput;
             if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
                 finishedGeneralizeInputsMap[insn.bci] = new int[insn.quickeningGeneralizeList.size()];
                 for (int j = 0; j < finishedGeneralizeInputsMap[insn.bci].length; j++) {
                     finishedGeneralizeInputsMap[insn.bci][j] = insn.quickeningGeneralizeList.get(j).bci;
+                }
+            }
+        }
+        Arrays.fill(finishedCanQuickenVariable, QuickeningTypes.BOOLEAN | QuickeningTypes.INT);
+        if (cell2arg != null) {
+            for (int j = 0; j < cell2arg.length; j++) {
+                if (cell2arg[j] != -1 && cell2arg[j] < varCount) {
+                    finishedCanQuickenVariable[cell2arg[j]] = 0;
                 }
             }
         }
@@ -295,7 +304,7 @@ public final class CompilationUnit {
                         exceptionHandlerRanges,
                         startLocation.startOffset,
                         startLocation.startLine,
-                        finishedQuickeningMap, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
+                        finishedCanQuickenOutput, finishedCanQuickenVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
     private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
