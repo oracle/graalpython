@@ -438,10 +438,30 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
 
+    /**
+     * Whether instruction at given bci can put a primitive value on stack. The number is a bitwise
+     * or of possible types defined by {@link QuickeningTypes}.
+     */
     @CompilationFinal(dimensions = 1) private final int[] outputCanQuicken;
+    /**
+     * Whether a variable with given index can be primitive. The number has the same semantics as
+     * above.
+     */
     @CompilationFinal(dimensions = 1) private final int[] variableCanQuicken;
+    /**
+     * Which instruction bci's have to be generalized when generalizing inputs of instruction at
+     * given bci.
+     */
     @CompilationFinal(dimensions = 1) private final int[][] generalizeInputsMap;
+    /**
+     * Which store instruction bci's have to be generalized when generalizing variable with given
+     * index.
+     */
     @CompilationFinal(dimensions = 1) private final int[][] generalizeVarsMap;
+    /**
+     * Current primitive types of variables. The value is one of {@link QuickeningTypes}. Used by
+     * argument copying and store instructions.
+     */
     @CompilationFinal(dimensions = 1) private int[] variableTypes;
 
     @Children private final Node[] adoptedNodes;

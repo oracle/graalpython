@@ -99,6 +99,7 @@ public final class CodeUnit {
     public final int startOffset;
     public final int startLine;
 
+    /* Quickening data. See docs in PBytecodeRootNode */
     public final int[] outputCanQuicken;
     public final int[] variableCanQuicken;
     public final int[][] generalizeInputsMap;
