@@ -63,6 +63,7 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
@@ -337,8 +338,7 @@ public class ScopeEnvironment {
             EnumSet<DefUse> flags = scope.getUseOfName(mangled);
             if (flags != null) {
                 if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
-                    // TODO: raises SyntaxError:
-                    // "duplicate argument '%s' in function definition", name
+                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, DUPLICATE_ARGUMENT, mangled);
                 }
                 flags.add(flag);
             } else {
@@ -346,9 +346,7 @@ public class ScopeEnvironment {
             }
             if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
-                    // TODO: raises SyntaxError:
-                    // "comprehension inner loop cannot rebind assignment expression target '%s'",
-                    // name
+                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
                 }
                 flags.add(DefUse.DefCompIter);
             }
