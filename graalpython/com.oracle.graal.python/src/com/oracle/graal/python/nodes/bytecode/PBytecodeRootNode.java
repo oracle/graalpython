@@ -444,10 +444,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     @CompilationFinal(dimensions = 1) private final int[] outputCanQuicken;
     /**
-     * Whether a variable with given index can be primitive. The number has the same semantics as
-     * above.
+     * Whether store instructions to this variable should attempt to unbox primitives. The number
+     * determines the type like above.
      */
-    @CompilationFinal(dimensions = 1) private final int[] variableCanQuicken;
+    @CompilationFinal(dimensions = 1) private final int[] variableShouldUnbox;
     /**
      * Which instruction bci's have to be generalized when generalizing inputs of instruction at
      * given bci.
@@ -534,7 +534,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
         this.outputCanQuicken = co.outputCanQuicken;
-        this.variableCanQuicken = co.variableCanQuicken;
+        this.variableShouldUnbox = co.variableShouldUnbox;
         this.generalizeInputsMap = co.generalizeInputsMap;
         this.generalizeVarsMap = co.generalizeVarsMap;
         this.consts = co.constants;
@@ -750,7 +750,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int argCount = co.getTotalArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
-            if ((variableCanQuicken[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
+            if ((variableShouldUnbox[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
                 variableTypes[i] = QuickeningTypes.INT;
                 localFrame.setInt(i, (int) arg);
 // } else if (arg instanceof Long) {
@@ -2292,48 +2292,45 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void bytecodeStoreFastAdaptive(Frame localFrame, Frame stackFrame, int stackTop, int bci, byte[] localBC, int index) {
         int stackType = stackSlotTypeToTypeId(stackFrame, stackTop);
-        if ((variableCanQuicken[index] & stackType) != 0) {
-            int itemType = stackType;
-            if (itemType == QuickeningTypes.OBJECT) {
-                itemType = objectTypeId(stackFrame.getObject(stackTop));
+        int itemType = stackType;
+        if (itemType == QuickeningTypes.OBJECT && variableShouldUnbox[index] != 0) {
+            itemType = objectTypeId(stackFrame.getObject(stackTop));
+            itemType &= variableShouldUnbox[index] | QuickeningTypes.OBJECT;
+        }
+        if (variableTypes[index] == 0) {
+            variableTypes[index] = itemType;
+        } else if (variableTypes[index] != itemType) {
+            if (variableTypes[index] != QuickeningTypes.OBJECT) {
+                variableTypes[index] = QuickeningTypes.OBJECT;
+                generalizeVariableStores(index);
             }
-            if (variableTypes[index] == 0) {
-                variableTypes[index] = itemType;
-            } else if (variableTypes[index] != itemType) {
-                if (variableTypes[index] != QuickeningTypes.OBJECT) {
-                    variableTypes[index] = QuickeningTypes.OBJECT;
-                    generalizeVariableStores(index);
-                }
-                if (itemType != QuickeningTypes.OBJECT) {
-                    generalizeInputs(bci);
-                    stackFrame.setObject(stackTop, stackFrame.getValue(stackTop));
-                }
-                localBC[bci] = OpCodesConstants.STORE_FAST_O;
-                bytecodeStoreFastO(localFrame, stackFrame, stackTop, index);
-                return;
+            if (itemType != QuickeningTypes.OBJECT) {
+                generalizeInputs(bci);
+                stackFrame.setObject(stackTop, stackFrame.getValue(stackTop));
             }
-            assert variableTypes[index] == itemType;
-            if (itemType == QuickeningTypes.INT) {
-                if (stackType == QuickeningTypes.INT) {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_I;
-                    bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
-                } else {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
-                    bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
-                }
-                return;
-            } else if (itemType == QuickeningTypes.BOOLEAN) {
-                if (stackType == QuickeningTypes.BOOLEAN) {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_B;
-                    bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
-                } else {
-                    localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
-                    bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
-                }
-                return;
+            localBC[bci] = OpCodesConstants.STORE_FAST_O;
+            bytecodeStoreFastO(localFrame, stackFrame, stackTop, index);
+            return;
+        }
+        assert variableTypes[index] == itemType;
+        if (itemType == QuickeningTypes.INT) {
+            if (stackType == QuickeningTypes.INT) {
+                localBC[bci] = OpCodesConstants.STORE_FAST_I;
+                bytecodeStoreFastI(localFrame, stackFrame, stackTop, bci, index);
+            } else {
+                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
+                bytecodeStoreFastUnboxI(localFrame, stackFrame, stackTop, bci, index);
             }
-        } else if (stackType != QuickeningTypes.OBJECT) {
-            generalizeInputs(bci);
+            return;
+        } else if (itemType == QuickeningTypes.BOOLEAN) {
+            if (stackType == QuickeningTypes.BOOLEAN) {
+                localBC[bci] = OpCodesConstants.STORE_FAST_B;
+                bytecodeStoreFastB(localFrame, stackFrame, stackTop, bci, index);
+            } else {
+                localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
+                bytecodeStoreFastUnboxB(localFrame, stackFrame, stackTop, bci, index);
+            }
+            return;
         }
         // TODO other types
         localBC[bci] = OpCodesConstants.STORE_FAST_O;
@@ -2554,6 +2551,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (generalizeVarsMap[index] != null) {
                 for (int i = 0; i < generalizeVarsMap[index].length; i++) {
                     int generalizeBci = generalizeVarsMap[index][i];
+                    generalizeInputs(generalizeBci);
                     bytecode[generalizeBci] = OpCodesConstants.STORE_FAST_O;
                 }
             }

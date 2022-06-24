@@ -1209,12 +1209,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int startOffset = readInt();
             int startLine = readInt();
             int[] outputCanQuicken = readIntArray();
-            int[] variableCanQuicken = readIntArray();
+            int[] variableShouldUnbox = readIntArray();
             int[][] generalizeInputsMap = readSparseTable();
             int[][] generalizeVarsMap = readSparseTable();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
                             flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine,
-                            outputCanQuicken, variableCanQuicken, generalizeInputsMap, generalizeVarsMap);
+                            outputCanQuicken, variableShouldUnbox, generalizeInputsMap, generalizeVarsMap);
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
@@ -1243,7 +1243,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.startOffset);
             writeInt(code.startLine);
             writeIntArray(code.outputCanQuicken);
-            writeIntArray(code.variableCanQuicken);
+            writeIntArray(code.variableShouldUnbox);
             writeSparseTable(code.generalizeInputsMap);
             writeSparseTable(code.generalizeVarsMap);
         }

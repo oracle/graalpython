@@ -101,7 +101,7 @@ public final class CodeUnit {
 
     /* Quickening data. See docs in PBytecodeRootNode */
     public final int[] outputCanQuicken;
-    public final int[] variableCanQuicken;
+    public final int[] variableShouldUnbox;
     public final int[][] generalizeInputsMap;
     public final int[][] generalizeVarsMap;
 
@@ -113,7 +113,7 @@ public final class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     int[] exceptionHandlerRanges, int startOffset, int startLine,
-                    int[] outputCanQuicken, int[] variableCanQuicken, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+                    int[] outputCanQuicken, int[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -134,7 +134,7 @@ public final class CodeUnit {
         this.startOffset = startOffset;
         this.startLine = startLine;
         this.outputCanQuicken = outputCanQuicken;
-        this.variableCanQuicken = variableCanQuicken;
+        this.variableShouldUnbox = variableShouldUnbox;
         this.generalizeInputsMap = generalizeInputsMap;
         this.generalizeVarsMap = generalizeVarsMap;
         this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);

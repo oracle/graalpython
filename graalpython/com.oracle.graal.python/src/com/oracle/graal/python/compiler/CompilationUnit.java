@@ -202,6 +202,7 @@ public final class CompilationUnit {
         for (int i = 0; i < varCount; i++) {
             variableStores.add(new ArrayList<>());
         }
+        int[] shouldUnboxVariable = new int[varCount];
 
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
@@ -238,6 +239,8 @@ public final class CompilationUnit {
                 }
                 if (i.opcode == OpCodes.STORE_FAST) {
                     variableStores.get(i.arg).add(i);
+                } else if (i.opcode == OpCodes.LOAD_FAST) {
+                    shouldUnboxVariable[i.arg] |= i.quickenOutput;
                 }
                 i.bci = buf.size();
                 emitBytecode(i, buf);
@@ -257,14 +260,14 @@ public final class CompilationUnit {
 
         final int rangeElements = 4;
         int[] exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];
-        int i = 0;
+        int rangeIndex = 0;
         for (int[] range : finishedExceptionHandlerRanges) {
             assert range.length == rangeElements;
-            System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
-            i += rangeElements;
+            System.arraycopy(range, 0, exceptionHandlerRanges, rangeIndex, rangeElements);
+            rangeIndex += rangeElements;
         }
+
         int[] finishedCanQuickenOutput = new int[buf.size()];
-        int[] finishedCanQuickenVariable = new int[varCount];
         int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
         int[][] finishedGeneralizeVarsMap = new int[varCount][];
         for (Instruction insn : quickenedInstructions) {
@@ -276,19 +279,18 @@ public final class CompilationUnit {
                 }
             }
         }
-        Arrays.fill(finishedCanQuickenVariable, QuickeningTypes.BOOLEAN | QuickeningTypes.INT);
         if (cell2arg != null) {
-            for (int j = 0; j < cell2arg.length; j++) {
-                if (cell2arg[j] != -1 && cell2arg[j] < varCount) {
-                    finishedCanQuickenVariable[cell2arg[j]] = 0;
+            for (int i = 0; i < cell2arg.length; i++) {
+                if (cell2arg[i] != -1 && cell2arg[i] < varCount) {
+                    shouldUnboxVariable[cell2arg[i]] = 0;
                 }
             }
         }
-        for (int j = 0; j < variableStores.size(); j++) {
-            List<Instruction> stores = variableStores.get(j);
-            finishedGeneralizeVarsMap[j] = new int[stores.size()];
-            for (int k = 0; k < stores.size(); k++) {
-                finishedGeneralizeVarsMap[j][k] = stores.get(k).bci;
+        for (int i = 0; i < variableStores.size(); i++) {
+            List<Instruction> stores = variableStores.get(i);
+            finishedGeneralizeVarsMap[i] = new int[stores.size()];
+            for (int j = 0; j < stores.size(); j++) {
+                finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
             }
         }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
@@ -304,7 +306,7 @@ public final class CompilationUnit {
                         exceptionHandlerRanges,
                         startLocation.startOffset,
                         startLocation.startLine,
-                        finishedCanQuickenOutput, finishedCanQuickenVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
+                        finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
     private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
