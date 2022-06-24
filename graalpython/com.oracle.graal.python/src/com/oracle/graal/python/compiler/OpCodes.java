@@ -649,6 +649,10 @@ public enum OpCodes {
     /*
      * Quickened bytecodes
      */
+    LOAD_TRUE_O(LOAD_TRUE, 0, QuickeningTypes.OBJECT),
+    LOAD_TRUE_B(LOAD_TRUE, 0, QuickeningTypes.BOOLEAN, LOAD_TRUE_O),
+    LOAD_FALSE_O(LOAD_FALSE, 0, QuickeningTypes.OBJECT),
+    LOAD_FALSE_B(LOAD_FALSE, 0, QuickeningTypes.BOOLEAN, LOAD_FALSE_O),
     LOAD_BYTE_O(LOAD_BYTE, 0, QuickeningTypes.OBJECT),
     LOAD_BYTE_I(LOAD_BYTE, 0, QuickeningTypes.INT, LOAD_BYTE_O),
     LOAD_FAST_O(LOAD_FAST, 0, QuickeningTypes.OBJECT),

@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000006   >>    0 LOAD_FALSE
+000006   >>    0 LOAD_FALSE                                                               can quicken
 000000         1 POP_AND_JUMP_IF_FALSE             4    (to 5)
 000000         3 JUMP_BACKWARD                     3    (to 0)
 000000   >>    5 LOAD_NONE
