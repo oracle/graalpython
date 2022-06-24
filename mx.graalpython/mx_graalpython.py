@@ -2299,28 +2299,18 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
 
-    # debug sources go into 'lib-graalpython/module/hpy/debug'
+    # debug Python sources go into 'lib-graalpython/module/hpy/debug'
     debug_files_dest = join(_get_core_home(), "modules", "hpy", "debug")
     import_files(hpy_repo_debug_dir, debug_files_dest, exclude_subdir("src"))
     remove_inexistent_files(hpy_repo_debug_dir, debug_files_dest)
 
-    # debug mode headers go into 'com.oracle.graal.python.cext/hpy'
-    debugmod_headers = ("debug_internal.h", join("include", "hpy_debug.h"))
-    for h in debugmod_headers:
-        h_src = join(hpy_repo_debug_dir, "src", h)
-        h_dest = join(mx.project("com.oracle.graal.python.cext").dir, "hpy", os.path.basename(h))
-        import_file(h_src, h_dest)
-
-    # _debug module goes into 'com.oracle.graal.python.cext/modules'
-    debugmod_file_src = join(hpy_repo_debug_dir, "src", "_debugmod.c")
-    debugmod_file_dest = join(mx.project("com.oracle.graal.python.cext").dir, "modules", "_hpy_debug.c")
-    import_file(debugmod_file_src, debugmod_file_dest)
-
-    # debug context goes into 'com.oracle.graal.python.jni/src'
+    # debug mode goes into 'com.oracle.graal.python.jni/src/debug'
     debugctx_src = join(hpy_repo_debug_dir, "src")
     debugctx_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "debug")
+    debugctx_hdr = join(debugctx_src, "include", "hpy_debug.h")
     import_files(debugctx_src, debugctx_dest, exclude_files(
-        "_debugmod.c", "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", *debugmod_headers))
+        "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", debugctx_hdr))
+    import_file(debugctx_hdr, join(debugctx_dest, "hpy_debug.h"))
 
     # import 'version.py' by path and read '__version__'
     from importlib import util

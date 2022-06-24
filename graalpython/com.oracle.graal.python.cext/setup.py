@@ -449,11 +449,6 @@ builtin_exts = (
             'expat/xmltok_impl.h',
         ],
     ),
-    NativeBuiltinModule(
-        '_hpy_debug',
-        define_macros=[("HPY_UNIVERSAL_ABI", 1)],
-        include_dirs=[os.path.join(__dir__, 'hpy')],
-    ),
 )
 
 

@@ -387,8 +387,8 @@ static HPyModuleDef moduledef = {
 };
 
 
-HPy_MODINIT(_hpy_debug)
-static UHPy init__hpy_debug_impl(HPyContext *uctx)
+HPy_MODINIT(_debug)
+static UHPy init__debug_impl(HPyContext *uctx)
 {
     UHPy m = HPyModule_Create(uctx, &moduledef);
     if (HPy_IsNull(m))
