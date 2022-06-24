@@ -69,7 +69,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNodeGen;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNodeGen.ExecutePositionalStarargsInteropNodeGen;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -547,18 +547,16 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                         @Cached ToSulongNode toSulongNode,
                         @Cached CallVarargsMethodNode callNode,
                         @Cached AllToJavaNode allToJavaNode,
-                        @Cached PyObjectGetItem getItemNode,
-                        @Cached(allowUncached = true) PyMappingKeysNode keysNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CExtNodes.AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object[] convertedArgs = allToJavaNode.execute(args);
                 Object type = convertedArgs[0];
 
-                Object[] callArgs = ExecutePositionalStarargsInteropNodeGen.getUncached().executeWithGlobalState(convertedArgs[1]);
+                Object[] callArgs = ExecutePositionalStarargsNodeGen.getUncached().executeWith(null, convertedArgs[1]);
                 PKeyword[] kwds;
                 if (convertedArgs.length > 2) {
                     kwds = ExpandKeywordStarargsNodeGen.getUncached().execute(convertedArgs[2]);
