@@ -99,10 +99,13 @@ static JNIEnv* jniEnv;
 ALL_UPCALLS
 #undef UPCALL
 
+static jmethodID jniMethod_hpy_debug_get_context;
+
 #define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
 #define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
@@ -609,7 +612,7 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
 JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNI(JNIEnv *env, jclass clazz, jobject ctx, jlong ctxPointer) {
-    LOG("%s", "hpy_native.c:initJNI\n");
+    LOG("%s", "hpy_jni.c:initJNI\n");
     jniEnv = env;
     HPyContext *context = (HPyContext *) ctxPointer;
 
@@ -673,17 +676,57 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
     if (jniMethod_ ## name == NULL) { \
-    	LOGS("ERROR: jni method ctx" #name " not found found !\n"); \
-    	return 1; \
+        LOGS("ERROR: jni method ctx" #name " not found found !\n"); \
+        return 1; \
     }
 
 ALL_UPCALLS
 #undef UPCALL
 
+    jniMethod_hpy_debug_get_context = (*env)->GetMethodID(env, clazz, "getHPyDebugContext", "()" SIG_LONG);
+    if (jniMethod_hpy_debug_get_context == NULL) {
+        LOGS("ERROR: jni method getHPyDebugContext not found found !\n");
+        return 1;
+    }
+
     /* success */
     return 0;
 }
 
+JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNIDebugContext(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNIDebugContext\n");
+    HPyContext *uctx = (HPyContext *) uctxPointer;
+
+    HPyContext *dctx = (HPyContext *) malloc(sizeof(HPyContext));
+    dctx->name = "HPy Debug Mode ABI";
+    dctx->_private = NULL;
+    dctx->ctx_version = 1;
+
+    hpy_debug_ctx_init(dctx, uctx);
+    return (PTR_UP) dctx;
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_finalizeJNIDebugContext(JNIEnv *env, jclass clazz, jlong dctxPointer) {
+    LOG("%s", "hpy_jni.c:finalizeJNIDebugContext\n");
+    HPyContext *dctx = (HPyContext *) dctxPointer;
+    hpy_debug_ctx_free(dctx);
+    free(dctx);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNIDebugModule(JNIEnv *env, jclass clazz, jlong uctxPointer) {
+    LOG("%s", "hpy_jni.c:initJNIDebugModule\n");
+    return HPY_UP(HPyInit__debug((HPyContext *) uctxPointer));
+}
+
+HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
+{
+    HPyContext *dctx = (HPyContext *) DO_UPCALL_PTR_NOARGS(CONTEXT_INSTANCE(uctx), hpy_debug_get_context);
+    if (uctx == dctx) {
+        HPy_FatalError(uctx, "hpy_debug_get_ctx: expected an universal ctx, got a debug ctx");
+    }
+    return dctx;
+}
 // helper functions for fast HPy downcalls:
 
 JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executePrimitive1(JNIEnv *env, jclass clazz, jlong target, jlong arg1) {

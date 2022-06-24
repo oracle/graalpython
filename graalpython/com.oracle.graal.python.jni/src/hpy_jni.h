@@ -49,6 +49,8 @@
 #include <jni.h>
 #include <stdint.h>
 
+#include "hpy_debug.h"
+
 //*************************
 // BOXING
 
@@ -77,3 +79,7 @@
 _HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+
+_HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
+
+_HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);

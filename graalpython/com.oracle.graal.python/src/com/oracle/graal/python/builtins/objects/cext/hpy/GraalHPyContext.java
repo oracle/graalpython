@@ -214,6 +214,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -853,6 +854,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private final HandleStack freeStack = new HandleStack(16);
+    private long hPyDebugContext;
     Object nativePointer;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
@@ -1201,6 +1203,40 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return wcharSize;
     }
 
+    /**
+     * Equivalent of {@code hpy_debug_get_ctx}. In fact, this method is called from the native
+     * {@code hpy_jni.c: hpy_debug_get_ctx} function to get the debug context's pointer via JNI. So,
+     * if you change the name of this function, also modify {@code hpy_jni.c} appropriately.
+     */
+    public long getHPyDebugContext() {
+        if (hPyDebugContext == 0) {
+            CompilerDirectives.transferToInterpreter();
+            toNative();
+            long debugCtxPtr = initJNIDebugContext(castLong(nativePointer));
+            if (debugCtxPtr == 0) {
+                throw new RuntimeException("Could not initialize HPy debug context");
+            }
+            hPyDebugContext = debugCtxPtr;
+        }
+        return hPyDebugContext;
+    }
+
+    @TruffleBoundary
+    public PythonModule getHPyDebugModule() {
+        toNative();
+        long debugCtxPtr = initJNIDebugModule(castLong(nativePointer));
+        if (debugCtxPtr == 0) {
+            throw new RuntimeException("Could not initialize HPy debug module");
+        }
+        int handle = GraalHPyBoxing.unboxHandle(debugCtxPtr);
+        Object nativeDebugModule = getObjectForHPyHandle(handle);
+        releaseHPyHandleForObject(handle);
+        if (!(nativeDebugModule instanceof PythonModule)) {
+            throw new RuntimeException("Debug module is expected to be a Python module object");
+        }
+        return (PythonModule) nativeDebugModule;
+    }
+
     @ExportMessage
     boolean isPointer() {
         return nativePointer != null;
@@ -1401,6 +1437,15 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     private static native int initJNI(GraalHPyContext context, long nativePointer);
+
+    @TruffleBoundary
+    private static native long initJNIDebugContext(long uctxPointer);
+
+    @TruffleBoundary
+    private static native int finalizeJNIDebugContext(long dctxPointer);
+
+    @TruffleBoundary
+    private static native long initJNIDebugModule(long uctxPointer);
 
     public enum Counter {
         UpcallCast,
@@ -2795,6 +2840,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             } catch (InterruptedException e) {
                 // ignore
             }
+        }
+        if (hPyDebugContext != 0) {
+            finalizeJNIDebugContext(hPyDebugContext);
+        }
+        if (nativeArgumentsStack != 0) {
+            unsafe.freeMemory(nativeArgumentsStack);
         }
     }
 
