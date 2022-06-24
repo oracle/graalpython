@@ -208,10 +208,12 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
-                Object[] arguments = getArgsNode.executeWith(null, args);
-                PKeyword[] keywords = getKwArgsNode.execute(kwargs);
-
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+                    // if args is an arbitrary iterable, converting it to an Object[] may run
+                    // Python code
+                    Object[] arguments = getArgsNode.executeWith(null, args);
+                    PKeyword[] keywords = getKwArgsNode.execute(kwargs);
+
                     // the increment is protected by the gil
                     DynamicObjectLibrary lib = DynamicObjectLibrary.getUncached();
                     int curCount = 0;
