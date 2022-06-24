@@ -458,7 +458,7 @@ public class ScopeEnvironment {
             }
             if ("*".equals(importedName)) {
                 if (!currentScope.isModule()) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "import * only allowed at module level");
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), IMPORT_STAR_WARNING);
                 }
             } else {
                 addDef(importedName, DefUse.DefImport, node);
