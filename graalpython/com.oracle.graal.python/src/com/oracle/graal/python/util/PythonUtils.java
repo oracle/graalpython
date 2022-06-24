@@ -126,6 +126,9 @@ public final class PythonUtils {
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final char[] EMPTY_CHAR_ARRAY = new char[0];
 
+    public static final String EMPTY_STRING = "";
+    public static final TruffleString EMPTY_TRUFFLE_STRING = tsLiteral(EMPTY_STRING);
+
     /**
      * Returns an estimate for the initial capacity of a
      * {@link com.oracle.truffle.api.strings.TruffleStringBuilder}.

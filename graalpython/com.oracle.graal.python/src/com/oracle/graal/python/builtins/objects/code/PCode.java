@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -673,6 +674,16 @@ public final class PCode extends PythonBuiltinObject {
         String codeFilename = this.getFilename() == null ? "None" : this.getFilename().toJavaStringUncached();
         int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
+    }
+
+    @TruffleBoundary
+    public String toDisassembledString() {
+        final RootNode rootNode = getRootCallTarget().getRootNode();
+        if (rootNode instanceof PBytecodeRootNode) {
+            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            return code.toString();
+        }
+        return EMPTY_STRING;
     }
 
     private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {

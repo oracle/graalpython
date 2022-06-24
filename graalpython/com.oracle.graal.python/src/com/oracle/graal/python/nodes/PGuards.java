@@ -174,6 +174,10 @@ public abstract class PGuards {
         return object instanceof PDict;
     }
 
+    public static boolean isCode(Object object) {
+        return object instanceof PCode;
+    }
+
     public static boolean isStgDict(Object dict) {
         return dict instanceof StgDictObject;
     }
