@@ -717,8 +717,8 @@ public enum OpCodes {
     public final int argLength;
     public final OpCodes quickens;
     public final OpCodes generalizesTo;
-    private int quickenInputTypes;
-    private int quickenOutputTypes;
+    private byte quickenInputTypes;
+    private byte quickenOutputTypes;
 
     OpCodes(int argLength, int consumesStackItems, int producesStackItems) {
         this(argLength, (oparg, followingArgs, withJump) -> consumesStackItems, (oparg, followingArgs, withJump) -> producesStackItems);
@@ -754,11 +754,11 @@ public enum OpCodes {
         quickens.quickenOutputTypes |= outputType;
     }
 
-    public int canQuickenInputTypes() {
+    public byte canQuickenInputTypes() {
         return quickenInputTypes;
     }
 
-    public int canQuickenOutputTypes() {
+    public byte canQuickenOutputTypes() {
         return quickenOutputTypes;
     }
 

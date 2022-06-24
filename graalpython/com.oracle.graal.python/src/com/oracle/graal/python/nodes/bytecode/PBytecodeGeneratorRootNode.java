@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.compiler.QuickeningTypes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -64,15 +65,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
 
     @CompilationFinal private Object osrMetadata;
-    @CompilationFinal(dimensions = 1) private FrameSlotType[] frameSlotTypes;
-
-    private enum FrameSlotType {
-        Object,
-        Int,
-        Long,
-        Double,
-        Boolean
-    }
+    @CompilationFinal(dimensions = 1) private byte[] frameSlotTypes;
 
     @TruffleBoundary
     public PBytecodeGeneratorRootNode(PythonLanguage language, PBytecodeRootNode rootNode, int resumeBci, int resumeStackTop) {
@@ -80,7 +73,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         this.rootNode = rootNode;
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
-        frameSlotTypes = new FrameSlotType[resumeStackTop - rootNode.stackoffset + 1];
+        frameSlotTypes = new byte[resumeStackTop - rootNode.stackoffset + 1];
     }
 
     @ExplodeLoop
@@ -89,31 +82,31 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         for (int i = 0; i < frameSlotTypes.length; i++) {
             int frameIndex = i + offset;
             switch (frameSlotTypes[i]) {
-                case Object:
+                case QuickeningTypes.OBJECT:
                     if (generatorFrame.isObject(frameIndex)) {
                         virtualFrame.setObject(frameIndex, generatorFrame.getObject(frameIndex));
                         continue;
                     }
                     break;
-                case Int:
+                case QuickeningTypes.INT:
                     if (generatorFrame.isInt(frameIndex)) {
                         virtualFrame.setInt(frameIndex, generatorFrame.getInt(frameIndex));
                         continue;
                     }
                     break;
-                case Long:
+                case QuickeningTypes.LONG:
                     if (generatorFrame.isLong(frameIndex)) {
                         virtualFrame.setLong(frameIndex, generatorFrame.getLong(frameIndex));
                         continue;
                     }
                     break;
-                case Double:
+                case QuickeningTypes.DOUBLE:
                     if (generatorFrame.isDouble(frameIndex)) {
                         virtualFrame.setDouble(frameIndex, generatorFrame.getDouble(frameIndex));
                         continue;
                     }
                     break;
-                case Boolean:
+                case QuickeningTypes.BOOLEAN:
                     if (generatorFrame.isBoolean(frameIndex)) {
                         virtualFrame.setBoolean(frameIndex, generatorFrame.getBoolean(frameIndex));
                         continue;
@@ -123,19 +116,19 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (generatorFrame.isObject(frameIndex)) {
                 virtualFrame.setObject(frameIndex, generatorFrame.getObject(frameIndex));
-                frameSlotTypes[i] = FrameSlotType.Object;
+                frameSlotTypes[i] = QuickeningTypes.OBJECT;
             } else if (generatorFrame.isInt(frameIndex)) {
                 virtualFrame.setInt(frameIndex, generatorFrame.getInt(frameIndex));
-                frameSlotTypes[i] = FrameSlotType.Int;
+                frameSlotTypes[i] = QuickeningTypes.INT;
             } else if (generatorFrame.isLong(frameIndex)) {
                 virtualFrame.setLong(frameIndex, generatorFrame.getLong(frameIndex));
-                frameSlotTypes[i] = FrameSlotType.Long;
+                frameSlotTypes[i] = QuickeningTypes.LONG;
             } else if (generatorFrame.isDouble(frameIndex)) {
                 virtualFrame.setDouble(frameIndex, generatorFrame.getDouble(frameIndex));
-                frameSlotTypes[i] = FrameSlotType.Double;
+                frameSlotTypes[i] = QuickeningTypes.DOUBLE;
             } else if (generatorFrame.isBoolean(frameIndex)) {
                 virtualFrame.setBoolean(frameIndex, generatorFrame.getBoolean(frameIndex));
-                frameSlotTypes[i] = FrameSlotType.Boolean;
+                frameSlotTypes[i] = QuickeningTypes.BOOLEAN;
             } else {
                 throw new IllegalStateException("unexpected frame slot type");
             }
@@ -147,15 +140,15 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         int offset = rootNode.stackoffset;
         for (int i = 0; i < frameSlotTypes.length; i++) {
             if (generatorFrame.isObject(offset + i)) {
-                frameSlotTypes[i] = FrameSlotType.Object;
+                frameSlotTypes[i] = QuickeningTypes.OBJECT;
             } else if (generatorFrame.isInt(offset + i)) {
-                frameSlotTypes[i] = FrameSlotType.Int;
+                frameSlotTypes[i] = QuickeningTypes.INT;
             } else if (generatorFrame.isLong(offset + i)) {
-                frameSlotTypes[i] = FrameSlotType.Long;
+                frameSlotTypes[i] = QuickeningTypes.LONG;
             } else if (generatorFrame.isDouble(offset + i)) {
-                frameSlotTypes[i] = FrameSlotType.Double;
+                frameSlotTypes[i] = QuickeningTypes.DOUBLE;
             } else if (generatorFrame.isBoolean(offset + i)) {
-                frameSlotTypes[i] = FrameSlotType.Boolean;
+                frameSlotTypes[i] = QuickeningTypes.BOOLEAN;
             } else {
                 throw new IllegalStateException("unexpected frame slot type");
             }

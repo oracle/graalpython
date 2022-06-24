@@ -442,12 +442,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * Whether instruction at given bci can put a primitive value on stack. The number is a bitwise
      * or of possible types defined by {@link QuickeningTypes}.
      */
-    @CompilationFinal(dimensions = 1) private final int[] outputCanQuicken;
+    @CompilationFinal(dimensions = 1) private final byte[] outputCanQuicken;
     /**
      * Whether store instructions to this variable should attempt to unbox primitives. The number
      * determines the type like above.
      */
-    @CompilationFinal(dimensions = 1) private final int[] variableShouldUnbox;
+    @CompilationFinal(dimensions = 1) private final byte[] variableShouldUnbox;
     /**
      * Which instruction bci's have to be generalized when generalizing inputs of instruction at
      * given bci.
@@ -462,7 +462,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * Current primitive types of variables. The value is one of {@link QuickeningTypes}. Used by
      * argument copying and store instructions.
      */
-    @CompilationFinal(dimensions = 1) private int[] variableTypes;
+    @CompilationFinal(dimensions = 1) private byte[] variableTypes;
 
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -746,22 +746,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void copyArgsFirstTime(Object[] args, Frame localFrame) {
         CompilerAsserts.neverPartOfCompilation();
-        variableTypes = new int[co.varnames.length];
+        variableTypes = new byte[co.varnames.length];
         int argCount = co.getTotalArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
             if ((variableShouldUnbox[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
                 variableTypes[i] = QuickeningTypes.INT;
                 localFrame.setInt(i, (int) arg);
-// } else if (arg instanceof Long) {
-// variableTypes[i] = TYPE_LONG;
-// localFrame.setLong(i, (long) arg);
-// } else if (arg instanceof Boolean) {
-// variableTypes[i] = TYPE_BOOLEAN;
-// localFrame.setBoolean(i, (boolean) arg);
-// } else if (arg instanceof Double) {
-// variableTypes[i] = TYPE_DOUBLE;
-// localFrame.setDouble(i, (double) arg);
+            } else if ((variableShouldUnbox[i] & QuickeningTypes.BOOLEAN) != 0 && arg instanceof Boolean) {
+                variableTypes[i] = QuickeningTypes.BOOLEAN;
+                localFrame.setBoolean(i, (boolean) arg);
             } else {
                 variableTypes[i] = QuickeningTypes.OBJECT;
                 localFrame.setObject(i, arg);
@@ -2350,8 +2344,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeStoreFastAdaptive(Frame localFrame, Frame stackFrame, int stackTop, int bci, byte[] localBC, int index) {
-        int stackType = stackSlotTypeToTypeId(stackFrame, stackTop);
-        int itemType = stackType;
+        byte stackType = stackSlotTypeToTypeId(stackFrame, stackTop);
+        byte itemType = stackType;
         if (itemType == QuickeningTypes.OBJECT && variableShouldUnbox[index] != 0) {
             itemType = objectTypeId(stackFrame.getObject(stackTop));
             itemType &= variableShouldUnbox[index] | QuickeningTypes.OBJECT;
@@ -2558,7 +2552,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         stackFrame.setObject(stackTop, value);
     }
 
-    private int stackSlotTypeToTypeId(Frame stackFrame, int stackTop) {
+    private byte stackSlotTypeToTypeId(Frame stackFrame, int stackTop) {
         if (stackFrame.isObject(stackTop)) {
             return QuickeningTypes.OBJECT;
         } else if (stackFrame.isInt(stackTop)) {
@@ -2574,7 +2568,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int objectTypeId(Object object) {
+    private byte objectTypeId(Object object) {
         if (object instanceof Integer) {
             return QuickeningTypes.INT;
         } else if (object instanceof Long) {

@@ -202,7 +202,7 @@ public final class CompilationUnit {
         for (int i = 0; i < varCount; i++) {
             variableStores.add(new ArrayList<>());
         }
-        int[] shouldUnboxVariable = new int[varCount];
+        byte[] shouldUnboxVariable = new byte[varCount];
 
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
@@ -267,7 +267,7 @@ public final class CompilationUnit {
             rangeIndex += rangeElements;
         }
 
-        int[] finishedCanQuickenOutput = new int[buf.size()];
+        byte[] finishedCanQuickenOutput = new byte[buf.size()];
         int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
         int[][] finishedGeneralizeVarsMap = new int[varCount][];
         for (Instruction insn : quickenedInstructions) {

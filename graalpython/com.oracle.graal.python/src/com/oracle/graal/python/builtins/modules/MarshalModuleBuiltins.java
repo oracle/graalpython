@@ -1208,8 +1208,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int[] exceptionHandlerRanges = readIntArray();
             int startOffset = readInt();
             int startLine = readInt();
-            int[] outputCanQuicken = readIntArray();
-            int[] variableShouldUnbox = readIntArray();
+            byte[] outputCanQuicken = readBytes();
+            byte[] variableShouldUnbox = readBytes();
             int[][] generalizeInputsMap = readSparseTable();
             int[][] generalizeVarsMap = readSparseTable();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
@@ -1242,8 +1242,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeIntArray(code.exceptionHandlerRanges);
             writeInt(code.startOffset);
             writeInt(code.startLine);
-            writeIntArray(code.outputCanQuicken);
-            writeIntArray(code.variableShouldUnbox);
+            writeBytes(code.outputCanQuicken);
+            writeBytes(code.variableShouldUnbox);
             writeSparseTable(code.generalizeInputsMap);
             writeSparseTable(code.generalizeVarsMap);
         }

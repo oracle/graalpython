@@ -225,7 +225,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         int consumed = insn.opcode.getNumberOfConsumedStackItems(insn.arg, insn.followingArgs, false);
         int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
-        int canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
+        byte canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
         List<Instruction> inputs = null;
         if (consumed > 0) {
             if (canQuickenInputTypes != 0) {

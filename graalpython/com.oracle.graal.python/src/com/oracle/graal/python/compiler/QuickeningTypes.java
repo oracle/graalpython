@@ -41,9 +41,9 @@
 package com.oracle.graal.python.compiler;
 
 public class QuickeningTypes {
-    public static final int OBJECT = 0;
-    public static final int INT = 1;
-    public static final int LONG = 2;
-    public static final int DOUBLE = 4;
-    public static final int BOOLEAN = 8;
+    public static final byte OBJECT = 1;
+    public static final byte INT = 2;
+    public static final byte LONG = 4;
+    public static final byte DOUBLE = 8;
+    public static final byte BOOLEAN = 16;
 }

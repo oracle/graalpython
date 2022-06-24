@@ -53,7 +53,7 @@ final class Instruction {
     final SourceRange location;
 
     public int bci;
-    public int quickenOutput;
+    public byte quickenOutput;
     public List<Instruction> quickeningGeneralizeList;
 
     Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {

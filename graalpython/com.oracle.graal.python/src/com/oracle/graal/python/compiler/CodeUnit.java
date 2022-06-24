@@ -100,8 +100,8 @@ public final class CodeUnit {
     public final int startLine;
 
     /* Quickening data. See docs in PBytecodeRootNode */
-    public final int[] outputCanQuicken;
-    public final int[] variableShouldUnbox;
+    public final byte[] outputCanQuicken;
+    public final byte[] variableShouldUnbox;
     public final int[][] generalizeInputsMap;
     public final int[][] generalizeVarsMap;
 
@@ -113,7 +113,7 @@ public final class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     int[] exceptionHandlerRanges, int startOffset, int startLine,
-                    int[] outputCanQuicken, int[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+                    byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
