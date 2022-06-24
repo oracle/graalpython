@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextAbstractBuiltins.PyMappingKeysNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
