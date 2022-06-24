@@ -949,22 +949,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackFrame.setObject(++stackTop, PEllipsis.INSTANCE);
                         break;
                     case OpCodesConstants.LOAD_TRUE:
-                        if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                            bytecode[bci] = OpCodesConstants.LOAD_TRUE_B;
-                            stackFrame.setBoolean(++stackTop, true);
-                        } else {
-                            bytecode[bci] = OpCodesConstants.LOAD_TRUE_O;
-                            stackFrame.setObject(++stackTop, true);
-                        }
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        bytecodeLoadTrueAdaptive(stackFrame, ++stackTop, bci);
                         break;
                     case OpCodesConstants.LOAD_FALSE:
-                        if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                            bytecode[bci] = OpCodesConstants.LOAD_FALSE_B;
-                            stackFrame.setBoolean(++stackTop, false);
-                        } else {
-                            bytecode[bci] = OpCodesConstants.LOAD_FALSE_O;
-                            stackFrame.setObject(++stackTop, false);
-                        }
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        bytecodeLoadFalseAdaptive(stackFrame, ++stackTop, bci);
                         break;
                     case OpCodesConstants.LOAD_TRUE_O:
                         stackFrame.setObject(++stackTop, true);
@@ -995,6 +985,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackFrame.setInt(++stackTop, localBC[++bci]); // signed!
                         break;
                     case OpCodesConstants.LOAD_LONG: {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadLongAdaptive(stackFrame, ++stackTop, bci++, localLongConsts[oparg]);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_LONG_I: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        long longConst = localLongConsts[oparg];
+                        assert longConst == (int) longConst;
+                        stackFrame.setInt(++stackTop, (int) longConst);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_LONG_O: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackFrame.setObject(++stackTop, localLongConsts[oparg]);
                         break;
@@ -1813,6 +1816,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     oparg = 0;
                 }
             }
+        }
+    }
+
+    private void bytecodeLoadLongAdaptive(Frame stackFrame, int stackTop, int bci, long longConst) {
+        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0 && longConst == (int) longConst) {
+            bytecode[bci] = OpCodesConstants.LOAD_LONG_I;
+            stackFrame.setInt(stackTop, (int) longConst);
+        } else {
+            bytecode[bci] = OpCodesConstants.LOAD_LONG_O;
+            stackFrame.setObject(stackTop, longConst);
+        }
+    }
+
+    private void bytecodeLoadFalseAdaptive(Frame stackFrame, int stackTop, int bci) {
+        if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
+            bytecode[bci] = OpCodesConstants.LOAD_FALSE_B;
+            stackFrame.setBoolean(stackTop, false);
+        } else {
+            bytecode[bci] = OpCodesConstants.LOAD_FALSE_O;
+            stackFrame.setObject(stackTop, false);
+        }
+    }
+
+    private void bytecodeLoadTrueAdaptive(Frame stackFrame, int stackTop, int bci) {
+        if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
+            bytecode[bci] = OpCodesConstants.LOAD_TRUE_B;
+            stackFrame.setBoolean(stackTop, true);
+        } else {
+            bytecode[bci] = OpCodesConstants.LOAD_TRUE_O;
+            stackFrame.setObject(stackTop, true);
         }
     }
 
