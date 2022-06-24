@@ -282,6 +282,11 @@ public abstract class StringLiteralUtils {
             code = "(" + code + ")";
             // TODO: pass isInteractive flag
             ExprTy expression = exprParser.parse(code, token.getSourceRange(text, textSourceRange));
+            if (expression == null) {
+                // TODO handle and raise appropriate error msg
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, textSourceRange, "invalid syntax");
+                return null;
+            }
             ExprTy specifier = null;
             SourceRange specifierSourceRange = null;
             if (specTokensCount > 0) {
