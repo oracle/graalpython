@@ -352,13 +352,7 @@ abstract class AbstractParser {
      * safe, so we create a container.
      */
     public Token string_token() {
-        int pos = mark();
-        Token t = expect(Token.Kind.STRING);
-        if (t == null) {
-            return null;
-        }
-        assert tokenizer.peekToken(pos) == t : ("token at " + pos + " is not equal to " + t);
-        return t;
+        return expect(Token.Kind.STRING);
     }
 
     /**

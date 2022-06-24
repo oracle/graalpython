@@ -87,6 +87,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testAnnAssignment() {
+        doTest("a: int = 12");
+    }
+
+    @Test
     public void testDel() {
         doTest("del a");
     }
@@ -165,6 +170,13 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testArgsCombination() {
         String source = "def foo(a, /, b, *c, d, **e):\n" +
+                        "  print(a, b, c, d, e)\n";
+        doTest(source);
+    }
+
+    @Test
+    public void testArgAnnotations() {
+        String source = "def foo(a:1, /, b:2, *c:3, d:4, **e:5):\n" +
                         "  print(a, b, c, d, e)\n";
         doTest(source);
     }

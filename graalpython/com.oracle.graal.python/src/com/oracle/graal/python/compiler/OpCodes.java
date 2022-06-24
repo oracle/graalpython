@@ -310,6 +310,10 @@ public enum OpCodes {
      * Pops: the value to print
      */
     PRINT_EXPR(0, 1, 0),
+    /**
+     * Creates annotations dict in locals
+     */
+    SETUP_ANNOTATIONS(0, 0, 0),
 
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),

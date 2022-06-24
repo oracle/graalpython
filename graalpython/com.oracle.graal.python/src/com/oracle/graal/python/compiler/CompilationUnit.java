@@ -196,7 +196,7 @@ public final class CompilationUnit {
 
         computeStackLevels();
 
-        SortedSet<short[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
+        SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
         Block b = startBlock;
         HashMap<Block, List<Block>> handlerBlocks = new HashMap<>();
@@ -242,9 +242,9 @@ public final class CompilationUnit {
         flags |= scope.isCoroutine() ? CodeUnit.IS_COROUTINE : 0;
 
         final int rangeElements = 4;
-        short[] exceptionHandlerRanges = new short[finishedExceptionHandlerRanges.size() * rangeElements];
+        int[] exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];
         int i = 0;
-        for (short[] range : finishedExceptionHandlerRanges) {
+        for (int[] range : finishedExceptionHandlerRanges) {
             assert range.length == rangeElements;
             System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
             i += rangeElements;
@@ -264,15 +264,12 @@ public final class CompilationUnit {
                         startLocation.startLine);
     }
 
-    private void addExceptionRange(Collection<short[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
+    private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
         if (start == end) {
             // Don't emit empty ranges. TODO don't emit the block at all if not necessary
             return;
         }
-        short[] range = {(short) start, (short) end, (short) handler, (short) stackLevel};
-        if (range[0] != start || range[1] != end || range[2] != handler || range[3] != stackLevel) {
-            throw new IllegalStateException("Exception handler range doesn't fit into 16 bit int");
-        }
+        int[] range = {start, end, handler, stackLevel};
         finishedExceptionHandlerRanges.add(range);
     }
 

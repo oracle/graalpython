@@ -304,6 +304,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
     private static final GetNameFromLocalsNode UNCACHED_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode.getUncached();
     private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
+    private static final SetupAnnotationsNode UNCACHED_SETUP_ANNOTATIONS = SetupAnnotationsNode.getUncached();
+    private static final NodeSupplier<SetupAnnotationsNode> NODE_SETUP_ANNOTATIONS = SetupAnnotationsNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -425,7 +427,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final TruffleString[] cellvars;
     @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
 
-    @CompilationFinal(dimensions = 1) private final short[] exceptionHandlerRanges;
+    @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
     @CompilationFinal(dimensions = 1) private final int[] extraArgs;
 
     @Children private final Node[] adoptedNodes;
@@ -508,7 +510,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
-        assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
         cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
@@ -665,22 +666,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.osrMetadata = osrMetadata;
     }
 
-    private static int decodeBCI(int target) {
-        return (target >>> 16) & 0xffff; // unsigned
-    }
-
-    private static int decodeStackTop(int target) {
-        return (target & 0xffff) - 1;
-    }
-
-    private static int encodeBCI(int bci) {
-        return bci << 16;
-    }
-
-    private static int encodeStackTop(int stackTop) {
-        return stackTop + 1;
-    }
-
     @ExplodeLoop
     private void copyArgs(Object[] args, Frame localFrame) {
         int argCount = co.argCount + co.positionalOnlyArgCount + co.kwOnlyArgCount;
@@ -773,12 +758,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return executeCached(virtualFrame, localFrame, stackFrame, osrNode, initialBci, initialStackTop, loopEndBci);
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
+            usingCachedNodes = true;
             Object result = executeUncached(virtualFrame, localFrame, stackFrame, osrNode, initialBci, initialStackTop, loopEndBci);
             if (result instanceof OSRContinuation) {
                 OSRContinuation continuation = (OSRContinuation) result;
                 return executeCached(virtualFrame, localFrame, stackFrame, osrNode, continuation.bci, continuation.stackTop, loopEndBci);
             }
-            usingCachedNodes = true;
             return result;
         }
     }
@@ -1340,6 +1325,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = makeFunctionNode.execute(globals, stackTop, stackFrame, flags);
                         break;
                     }
+                    case OpCodesConstants.SETUP_ANNOTATIONS: {
+                        SetupAnnotationsNode setupAnnotationsNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_ANNOTATIONS, SetupAnnotationsNodeGen.class, NODE_SETUP_ANNOTATIONS,
+                                        useCachedNodes);
+                        setupAnnotationsNode.execute(virtualFrame);
+                        break;
+                    }
                     case OpCodesConstants.MATCH_EXC_OR_JUMP: {
                         Object exception = stackFrame.getObject(stackTop - 1);
                         Object matchType = stackFrame.getObject(stackTop);
@@ -1492,8 +1483,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw e;
                     }
                 }
-                long newTarget = findHandler(bci);
-                CompilerAsserts.partialEvaluationConstant(newTarget);
+                int targetIndex = findHandler(bci);
+                CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (localException != null) {
                     ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
                 } else {
@@ -1506,7 +1497,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                     }
                 }
-                if (newTarget == -1) {
+                if (targetIndex == -1) {
                     // For tracebacks
                     virtualFrame.setIntStatic(bciSlot, beginBci);
                     if (isGeneratorOrCoroutine) {
@@ -1525,12 +1516,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 } else {
                     pe.setCatchingFrameReference(virtualFrame, this, bci);
-                    int stackSizeOnEntry = decodeStackTop((int) newTarget);
+                    int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(stackFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stacksize, not the top of stack. so the stackTop is
                     // to be replaced with the exception
                     stackFrame.setObject(stackTop, pe);
-                    bci = decodeBCI((int) newTarget);
+                    bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
                 }
             }
@@ -2452,27 +2443,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private long findHandler(int bci) {
+    private int findHandler(int bci) {
         CompilerAsserts.partialEvaluationConstant(bci);
 
-        int targetBCI = -1;
-        int targetStackTop = -1;
         for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
             // The ranges are ordered by their start and non-overlapping
             if (bci < exceptionHandlerRanges[i]) {
                 break;
             } else if (bci < exceptionHandlerRanges[i + 1]) {
                 // bci is inside this try-block range. get the target stack size
-                targetBCI = exceptionHandlerRanges[i + 2] & 0xffff;
-                targetStackTop = exceptionHandlerRanges[i + 3] & 0xffff;
-                break;
+                return i + 2;
             }
         }
-        if (targetBCI == -1) {
-            return -1;
-        } else {
-            return encodeBCI(targetBCI) | encodeStackTop(targetStackTop);
-        }
+        return -1;
     }
 
     @ExplodeLoop
@@ -2547,15 +2530,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
              * TODO We could still expose the disassembled bytecode for a debugger to have something
              * to step through.
              */
-            return source.createUnavailableSection();
+            sourceSection = source.createUnavailableSection();
+            return sourceSection;
         } else {
-            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
-            for (int bci = 0; bci < co.code.length; bci++) {
-                int offset = co.bciToSrcOffset(bci);
-                min = Math.min(min, offset);
-                max = Math.max(max, offset);
-            }
-            sourceSection = source.createSection(min, max - min);
+            sourceSection = source.createSection(co.startOffset, co.findMaxOffset() - co.startOffset);
             return sourceSection;
         }
     }

@@ -94,7 +94,7 @@ public final class CodeUnit {
     public final Object[] constants;
     public final long[] primitiveConstants;
 
-    public final short[] exceptionHandlerRanges;
+    public final int[] exceptionHandlerRanges;
 
     public final int startOffset;
     public final int startLine;
@@ -106,7 +106,7 @@ public final class CodeUnit {
                     byte[] code, byte[] linetable, int flags,
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
-                    short[] exceptionHandlerRanges, int startOffset, int startLine) {
+                    int[] exceptionHandlerRanges, int startOffset, int startLine) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -165,6 +165,26 @@ public final class CodeUnit {
             diffIdx++;
         }
         return currentOffset;
+    }
+
+    public int findMaxOffset() {
+        int currentOffset = startOffset;
+        int maxOffset = startOffset;
+
+        for (int i = 0; i < srcOffsetTable.length; i++) {
+            byte diff = srcOffsetTable[i];
+            int overflow = 0;
+            while (diff == (byte) 128) {
+                overflow += 127;
+                diff = srcOffsetTable[++i];
+            }
+            if (diff < 0) {
+                overflow = -overflow;
+            }
+            currentOffset += overflow + diff;
+            maxOffset = Math.max(maxOffset, currentOffset);
+        }
+        return maxOffset;
     }
 
     public boolean takesVarKeywordArgs() {
@@ -410,10 +430,10 @@ public final class CodeUnit {
         }
 
         for (int i = 0; i < exceptionHandlerRanges.length; i += 4) {
-            int start = exceptionHandlerRanges[i] & 0xffff;
-            int stop = exceptionHandlerRanges[i + 1] & 0xffff;
-            int handler = exceptionHandlerRanges[i + 2] & 0xffff;
-            int stackAtHandler = exceptionHandlerRanges[i + 3] & 0xffff;
+            int start = exceptionHandlerRanges[i];
+            int stop = exceptionHandlerRanges[i + 1];
+            int handler = exceptionHandlerRanges[i + 2];
+            int stackAtHandler = exceptionHandlerRanges[i + 3];
             String[] line = lines.get(handler);
             assert line != null;
             String handlerStr = String.format("exc handler %d - %d; stack: %d", start, stop, stackAtHandler);
