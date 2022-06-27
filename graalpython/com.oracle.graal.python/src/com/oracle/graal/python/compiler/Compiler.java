@@ -184,7 +184,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
-        this.env = new ScopeEnvironment(mod, errorCallback);
+        this.env = ScopeEnvironment.analyze(mod, errorCallback);
         this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);

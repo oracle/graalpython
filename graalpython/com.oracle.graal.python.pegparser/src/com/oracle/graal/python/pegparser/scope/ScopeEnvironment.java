@@ -76,11 +76,11 @@ public class ScopeEnvironment {
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
     final ErrorCallback errorCallback;
 
-    public ScopeEnvironment(ModTy moduleNode) {
-        this(moduleNode, null);
+    public static ScopeEnvironment analyze(ModTy moduleNode, ErrorCallback errorCallback) {
+        return new ScopeEnvironment(moduleNode, errorCallback);
     }
 
-    public ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
+    private ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
         // First pass, similar to the entry point `symtable_enter_block' on CPython
         this.errorCallback = errorCallback;
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode, this);

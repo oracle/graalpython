@@ -124,7 +124,7 @@ public class ParserTestBase {
     public void checkSyntaxError(String source) {
         ModTy node = parse(source, getFileName(), 1);
         if (node != null) {
-            new ScopeEnvironment(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -134,7 +134,7 @@ public class ParserTestBase {
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), 1);
         if (node != null) {
-            new ScopeEnvironment(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -146,7 +146,7 @@ public class ParserTestBase {
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), 1);
         if (node != null) {
-            new ScopeEnvironment(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -236,7 +236,7 @@ public class ParserTestBase {
     public void checkScopeResult(String source, int mode) throws Exception {
         ModTy mod = parse(source, "<module>", mode);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-        ScopeEnvironment env = new ScopeEnvironment(mod);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
         if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(env.toString());
