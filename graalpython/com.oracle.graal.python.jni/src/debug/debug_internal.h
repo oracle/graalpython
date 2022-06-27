@@ -163,16 +163,6 @@ void DHPy_close_and_check(HPyContext *dctx, DHPy dh);
 void DHPy_free(HPyContext *dctx, DHPy dh);
 void DHPy_invalid_handle(HPyContext *dctx, DHPy dh);
 
-static inline UHPy DHPy_unwrap(HPyContext *dctx, DHPy dh)
-{
-    if (HPy_IsNull(dh))
-        return HPy_NULL;
-    DebugHandle *handle = as_DebugHandle(dh);
-    if (handle->is_closed)
-        DHPy_invalid_handle(dctx, dh);
-    return handle->uh;
-}
-
 /* === DHQueue === */
 
 typedef struct {
@@ -220,6 +210,27 @@ static inline HPyDebugInfo *get_info(HPyContext *dctx)
     HPyDebugInfo *info = (HPyDebugInfo*)dctx->_private;
     assert(info->magic_number == HPY_DEBUG_MAGIC); // sanity check
     return info;
+}
+
+static inline UHPy DHPy_unwrap(HPyContext *dctx, DHPy dh)
+{
+    if (HPy_IsNull(dh))
+        return HPy_NULL;
+    DebugHandle *handle = as_DebugHandle(dh);
+    if (handle->is_closed)
+    {
+        DHPy_invalid_handle(dctx, dh);
+        /*
+         * In contrast to the vanilla HPy sources, we return a valid handle here
+         * because the handle referent will flow into the user value space.
+         * The original implementation still just returns the invalid handle
+         * and if that is already free'd, any access to it may cause a
+         * segmentation fault.
+         */
+        HPyContext *uctx = get_info(dctx)->uctx;
+        return HPy_Dup(uctx, uctx->h_None);
+    }
+    return handle->uh;
 }
 
 
