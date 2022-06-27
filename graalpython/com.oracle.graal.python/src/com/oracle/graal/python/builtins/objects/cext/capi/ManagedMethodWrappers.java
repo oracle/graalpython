@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -128,7 +128,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
-                        @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
+                        @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -143,7 +143,7 @@ public abstract class ManagedMethodWrappers {
                 Object starArgs = toJavaNode.execute(arguments[1]);
                 Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                 Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
                 PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 

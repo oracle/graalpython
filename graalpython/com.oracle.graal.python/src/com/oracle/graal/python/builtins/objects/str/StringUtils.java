@@ -251,6 +251,7 @@ public final class StringUtils {
         return values;
     }
 
+    @TruffleBoundary
     public static boolean isPrintable(int codepoint) {
         if (ImageInfo.inImageBuildtimeCode()) {
             // Executing ICU4J at image build time causes issues with runtime/build time

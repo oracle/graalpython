@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -164,67 +163,5 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     public static ExecutePositionalStarargsNode getUncached() {
         return ExecutePositionalStarargsNodeGen.getUncached();
-    }
-
-    @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
-        public abstract Object[] executeWithGlobalState(Object starargs);
-
-        @Specialization
-        static Object[] starargs(Object[] starargs) {
-            return ExecutePositionalStarargsNode.doObjectArray(starargs);
-        }
-
-        @Specialization
-        static Object[] doTuple(PTuple starargs,
-                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
-            return ExecutePositionalStarargsNode.doTuple(starargs, toArray);
-        }
-
-        @Specialization
-        static Object[] doList(PList starargs,
-                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
-            return ExecutePositionalStarargsNode.doList(starargs, toArray);
-        }
-
-        @Specialization
-        static Object[] doDict(PDict starargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return ExecutePositionalStarargsNode.doDict(starargs, lib);
-        }
-
-        @Specialization
-        static Object[] doSet(PSet starargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return ExecutePositionalStarargsNode.doSet(starargs, lib);
-        }
-
-        @Specialization
-        static Object[] starargs(PNone none,
-                        @Cached PRaiseNode raise) {
-            return ExecutePositionalStarargsNode.doNone(none, raise);
-        }
-
-        @Specialization
-        static Object[] starargs(Object object,
-                        @Cached PRaiseNode raise,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = getIter.execute(null, object);
-            if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
-                ArrayList<Object> internalStorage = new ArrayList<>();
-                while (true) {
-                    try {
-                        addToList(internalStorage, nextNode.execute(null, iterator));
-                    } catch (PException e) {
-                        e.expectStopIteration(errorProfile);
-                        return toArray(internalStorage);
-                    }
-                }
-            }
-            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
-        }
     }
 }
