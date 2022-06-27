@@ -442,6 +442,11 @@ def update_unittest_tags(args):
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
+        ('test_list.txt', '*graalpython.lib-python.3.test.test_list.ListTest.test_repr_deep'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
