@@ -272,8 +272,12 @@ public final class GraalHPyHandle implements TruffleObject {
         return id == 0;
     }
 
-    boolean isAllocated() {
+    static boolean isAllocated(int id) {
         return id != UNINITIALIZED && id != 0;
+    }
+
+    boolean isAllocated() {
+        return GraalHPyHandle.isAllocated(id);
     }
 
     boolean isValid() {
