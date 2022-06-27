@@ -75,7 +75,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = GraalHPyUniversalModuleBuiltins.J_HPY_UNIVERSAL)
 @GenerateNodeFactory
-public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
+public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
     public static final String J_HPY_UNIVERSAL = "_hpy_universal";
 

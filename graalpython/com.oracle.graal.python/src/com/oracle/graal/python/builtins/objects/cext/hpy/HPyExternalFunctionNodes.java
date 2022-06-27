@@ -1109,7 +1109,7 @@ public abstract class HPyExternalFunctionNodes {
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization
-        Object doLongNull(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, TruffleString name, Object value,
+        Object doLongNull(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, TruffleString name, Object value,
                         @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
                         @Cached ConditionProfile isNullProfile,
                         @Cached PythonObjectFactory factory,

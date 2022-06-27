@@ -60,6 +60,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -716,8 +717,9 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PyCPointerBuiltins(),
                         new CDataBuiltins(),
 
-                        // _hpy_universal
-                        new GraalHPyUniversalModuleBuiltins()));
+                        // _hpy_universal and _hpy_debug
+                        new GraalHPyUniversalModuleBuiltins(),
+                        new GraalHPyDebugModuleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }
