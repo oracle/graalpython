@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -141,10 +142,11 @@ public class PDict extends PHashingCollection {
     @ExportMessage(name = "isHashEntryRemovable", limit = "2")
     static boolean isHashEntryReadable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lib.hasKey(self.getDictStorage(), key);
+            return lib.hasKey(self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -153,11 +155,12 @@ public class PDict extends PHashingCollection {
     @ExportMessage(limit = "2")
     static Object readHashValue(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnknownKeyException {
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
         try {
-            value = lib.getItem(self.getDictStorage(), key);
+            value = lib.getItem(self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -172,15 +175,17 @@ public class PDict extends PHashingCollection {
     static boolean isHashEntryInsertable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
                     @Cached PyObjectHashNode hashNode,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
-            if (lib.hasKey(self.getDictStorage(), key)) {
+            Object pKey = convertNode.executeConvert(key);
+            if (lib.hasKey(self.getDictStorage(), pKey)) {
                 return false;
             } else {
                 // we can only insert hashable types
                 try {
-                    hashNode.execute(null, key);
+                    hashNode.execute(null, pKey);
                 } catch (AbstractTruffleException e) {
                     return false;
                 }
@@ -195,13 +200,16 @@ public class PDict extends PHashingCollection {
     static void writeHashEntry(PDict self, Object key, Object value,
                     @Exclusive @Cached GilNode gil,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnsupportedTypeException {
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Exclusive @Cached PForeignToPTypeNode convertNodeKey,
+                    @Exclusive @Cached PForeignToPTypeNode convertNodeValue) throws UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
+        Object pKey = convertNodeKey.executeConvert(key);
         try {
-            lib.setItem(self.getDictStorage(), key, value);
+            lib.setItem(self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
-            throw UnsupportedTypeException.create(new Object[]{key}, "keys for Python arrays must be hashable");
+            throw UnsupportedTypeException.create(new Object[]{pKey}, "keys for Python arrays must be hashable");
         } finally {
             gil.release(mustRelease);
         }
@@ -210,13 +218,15 @@ public class PDict extends PHashingCollection {
     @ExportMessage(limit = "2")
     static void removeHashEntry(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnknownKeyException {
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         boolean mustRelease = gil.acquire();
         try {
-            if (!isHashEntryReadable(self, key, gil, lib)) {
+            Object pKey = convertNode.executeConvert(key);
+            if (!lib.hasKey(self.getDictStorage(), pKey)) {
                 throw UnknownKeyException.create(key);
             }
-            lib.delItem(self.getDictStorage(), key);
+            lib.delItem(self.getDictStorage(), pKey);
         } finally {
             gil.release(mustRelease);
         }
