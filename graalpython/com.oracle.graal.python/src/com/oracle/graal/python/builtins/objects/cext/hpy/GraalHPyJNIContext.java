@@ -133,10 +133,6 @@ final class GraalHPyJNIContext implements TruffleObject {
         final LLVMType signature;
         final boolean debug;
 
-        GraalHPyJNIFunctionPointer(long pointer, LLVMType signature) {
-            this(pointer, signature, false);
-        }
-
         GraalHPyJNIFunctionPointer(long pointer, LLVMType signature, boolean debug) {
             this.pointer = pointer;
             this.signature = signature;

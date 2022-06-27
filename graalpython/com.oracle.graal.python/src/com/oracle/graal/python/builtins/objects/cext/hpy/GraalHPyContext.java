@@ -369,16 +369,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         /*
          * Unfortunately, we need eagerly initialize the HPy context because the ctors of the
-         * extension may already require some of the symbols defined in the HPy API or C API.
+         * extension may already require some symbols defined in the HPy API or C API.
          */
-        GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
+        GraalHPyContext hpyUniversalContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
         Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
         InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
         TruffleString basename = getBaseName(name);
         TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
-                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
+                Object nativeResult = initHPyModule(context, hpyUniversalContext, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib);
+                return checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyUniversalContext, name, nativeResult);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, basename, path, hpyInitFuncName);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -386,28 +387,68 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
+    /**
+     * Bascially the same as
+     * {@link #initHPyModule(PythonContext, GraalHPyContext, Object, TruffleString, TruffleString, TruffleString, boolean, InteropLibrary)}
+     * but always loads the module with the universal context and also verifies the result of the
+     * init function using the provided {@code checkResultNode}.
+     *
+     * @param context The {@link PythonContext}.
+     * @param llvmLibrary The HPy extension's shared library object.
+     * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
+     * @param name The HPy extension's name as requested by the user.
+     * @param path The HPy extension's shared library path.
+     * @param llvmInteropLib An interop library instance.
+     * @param checkResultNode An interop library instance.
+     * @return The verified result of the HPy extension's init function (a Python object; most like
+     *         a Python module).
+     */
     @TruffleBoundary
-    public final Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug,
-                    InteropLibrary llvmInteropLib,
-                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+    public Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
+                    InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+        Object nativeResult = initHPyModule(context, this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
+        return checkResultNode.execute(context.getThreadState(context.getLanguage()), this, name, nativeResult);
+    }
+
+    /**
+     * Execute an HPy extension's init function and return the raw result value.
+     *
+     * @param context The {@link PythonContext}.
+     * @param hpyUniversalContext The {@code HPyContext} pointer. This an either be an instance of
+     *            our (managed) {@link GraalHPyContext} or a native pointer to some other HPy
+     *            context (most common the debug context).
+     * @param llvmLibrary The HPy extension's shared library object.
+     * @param initFuncName The HPy extension's init function name (e.g. {@code HPyInit_poc}).
+     * @param name The HPy extension's name as requested by the user.
+     * @param path The HPy extension's shared library path.
+     * @param llvmInteropLib An interop library instance.
+     * @return The bare (unconverted) result of the HPy extension's init function. This will be a
+     *         handle that was created with the given {@code hpyContext}.
+     */
+    @TruffleBoundary
+    private static Object initHPyModule(PythonContext context, GraalHPyContext hpyUniversalContext, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
+                    boolean debug,
+                    InteropLibrary llvmInteropLib) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         Object initFunction;
         try {
             initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
-        // select appropriate HPy context
-        GraalHPyContext hpyContext = debug ? null : this;
 
-        InteropLibrary initFunctionLib = InteropLibrary.getUncached(initFunction);
-        if (!initFunctionLib.isExecutable(initFunction)) {
-            initFunction = HPyAttachFunctionTypeNode.getUncached().execute(hpyContext, initFunction, LLVMType.HPyModule_init);
-            // attaching the type could change the type of 'initFunction'; so get a new interop lib
-            initFunctionLib = InteropLibrary.getUncached(initFunction);
+        if (debug || !InteropLibrary.getUncached().isExecutable(initFunction)) {
+            initFunction = HPyAttachFunctionTypeNode.getUncached().execute(hpyUniversalContext, initFunction, LLVMType.HPyModule_init);
         }
-        Object nativeResult = initFunctionLib.execute(initFunction, hpyContext);
-        PythonLanguage language = context.getLanguage();
-        return checkResultNode.execute(context.getThreadState(language), hpyContext, name, nativeResult);
+
+        // select appropriate HPy context
+        boolean saved = hpyUniversalContext.debugMode;
+        try {
+            hpyUniversalContext.debugMode = debug;
+            Object hpyContext = debug ? hpyUniversalContext.getHPyDebugContext() : hpyUniversalContext;
+            return InteropLibrary.getUncached().execute(initFunction, hpyContext);
+        } finally {
+            hpyUniversalContext.debugMode = saved;
+        }
     }
 
     /**
@@ -857,6 +898,27 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private long hPyDebugContext;
     Object nativePointer;
 
+    /**
+     * This is set to {@code true} if an HPy extension is initialized (i.e. {@code HPyInit_*} is
+     * called) in debug mode. The value is then used to create the right closures for down calls
+     * during module ({@code HPyModule_Create}) and type creation ({@code HPyType_FromSpec}). We
+     * need this because the debug context is just a wrapper around the universal context, so the
+     * module and type creation will look as normal. For reference on how other implementations do
+     * it:
+     * <p>
+     * CPython stores the HPy context into global C variable {@code _ctx_for_trampolines} defined by
+     * {@code HPy_MODINIT}. This variable belongs to the HPy extension and the context is loaded
+     * from it when calling HPy extension functions.
+     * </p>
+     * <p>
+     * PyPy has a different structure but basically also uses a global state (see file
+     * {@code interp_hpy.py}). When initializing the module, the appropriate <em>handle manager</em>
+     * is used. The manager then decides which trampolines are used to call HPy extensions and the
+     * trampolines pick the appropriate context.
+     * </p>
+     */
+    private boolean debugMode;
+
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
 
     /** the native type ID of C struct 'HPyContext' */
@@ -1235,6 +1297,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             throw new RuntimeException("Debug module is expected to be a Python module object");
         }
         return (PythonModule) nativeDebugModule;
+    }
+
+    boolean isDebugMode() {
+        return debugMode;
     }
 
     @ExportMessage

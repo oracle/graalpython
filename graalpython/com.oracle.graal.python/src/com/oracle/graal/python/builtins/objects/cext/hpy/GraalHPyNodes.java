@@ -2424,13 +2424,13 @@ public class GraalHPyNodes {
     public abstract static class HPyAttachJNIFunctionTypeNode extends HPyAttachFunctionTypeNode {
 
         @Specialization
-        static GraalHPyJNIFunctionPointer doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
+        static GraalHPyJNIFunctionPointer doGeneric(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             if (!interopLibrary.isPointer(pointerObject)) {
                 interopLibrary.toNative(pointerObject);
             }
             try {
-                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), llvmFunctionType);
+                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), llvmFunctionType, hpyContext.isDebugMode());
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
