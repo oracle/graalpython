@@ -94,6 +94,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii_bytes
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_findall
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_fullmatch
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_overflow

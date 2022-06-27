@@ -64,6 +64,7 @@
 *ctypes.test.test_cast.Test.test_array2pointer
 *ctypes.test.test_cast.Test.test_bad_type_arg
 *ctypes.test.test_cast.Test.test_other
+*ctypes.test.test_cast.Test.test_p2a_objects
 *ctypes.test.test_cast.Test.test_wchar_p
 *ctypes.test.test_cfuncs.stdcallCFunctions.test_byte
 *ctypes.test.test_cfuncs.stdcallCFunctions.test_byte_plus
