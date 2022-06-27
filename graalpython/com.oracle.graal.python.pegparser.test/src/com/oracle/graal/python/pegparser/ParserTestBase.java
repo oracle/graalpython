@@ -122,14 +122,20 @@ public class ParserTestBase {
 // }
 
     public void checkSyntaxError(String source) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            new ScopeEnvironment(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            new ScopeEnvironment(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
@@ -138,7 +144,10 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            new ScopeEnvironment(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);

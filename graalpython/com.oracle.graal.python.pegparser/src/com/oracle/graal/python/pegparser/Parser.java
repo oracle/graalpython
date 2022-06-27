@@ -12194,7 +12194,7 @@ public final class Parser extends AbstractParser {
                 ((_opt_var = (Object)_tmp_200_rule()) != null || true)  // [args | expression for_if_clauses]
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"Generator expression must be parenthesized");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "Generator expression must be parenthesized");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }
@@ -12238,7 +12238,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"Generator expression must be parenthesized");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "Generator expression must be parenthesized");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }
@@ -12296,7 +12296,7 @@ public final class Parser extends AbstractParser {
                 (a = (Token)expect(22)) != null  // token='='
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"expression cannot contain assignment,perhaps you meant \"==\"?");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "expression cannot contain assignment, perhaps you meant \"==\"?");
                 cache.putResult(_mark, INVALID_KWARG_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12333,7 +12333,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"invalid syntax.Perhaps you forgot a comma?");
+                _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "invalid syntax. Perhaps you forgot a comma?");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12374,7 +12374,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use assignment expressions with %s",getExprName(a));
+                _res = this.raiseSyntaxErrorKnownLocation(a, "cannot use assignment expressions with %s", getExprName(a));
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12397,7 +12397,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_202_rule(false)
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(b,"invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
+                _res = this.raiseSyntaxErrorKnownLocation(b, "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12422,7 +12422,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_204_rule(false)
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(b,"cannot assign to %s here.Maybe you meant '==' instead of '='?",getExprName(a));
+                _res = this.raiseSyntaxErrorKnownLocation(b, "cannot assign to %s here. Maybe you meant '==' instead of '='?", getExprName(a));
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 return (Object)_res;
             }
@@ -12466,7 +12466,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"only single target(not %s)can be annotated",getExprName(a));
+                _res = this.raiseSyntaxErrorKnownLocation(a, "only single target (not %s) can be annotated", getExprName(a));
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12493,7 +12493,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"only single target(not tuple)can be annotated");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "only single target (not tuple) can be annotated");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12514,7 +12514,7 @@ public final class Parser extends AbstractParser {
                 (expression_var = (ExprTy)expression_rule()) != null  // expression
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"illegal target for annotation");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "illegal target for annotation");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12556,7 +12556,7 @@ public final class Parser extends AbstractParser {
                 (_literal = (Token)expect(22)) != null  // token='='
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"assignment to yield expression not possible");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "assignment to yield expression not possible");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12577,7 +12577,7 @@ public final class Parser extends AbstractParser {
                 (_tmp_208_var = (ExprTy)_tmp_208_rule()) != null  // yield_expr | star_expressions
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"'%s' is an illegal expression for augmented assignment",getExprName(a));
+                _res = this.raiseSyntaxErrorKnownLocation(a, "'%s' is an illegal expression for augmented assignment", getExprName(a));
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 return (Object)_res;
             }
@@ -12786,7 +12786,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"iterable unpacking cannot be used in comprehension");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "iterable unpacking cannot be used in comprehension");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -12813,7 +12813,7 @@ public final class Parser extends AbstractParser {
                 (for_if_clauses_var = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"did you forget parentheses around the comprehension target?");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "did you forget parentheses around the comprehension target?");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -12857,7 +12857,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(26)) != null  // token='}'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"dict unpacking cannot be used in dict comprehension");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "dict unpacking cannot be used in dict comprehension");
                 cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
                 return (Object)_res;
             }
@@ -13281,7 +13281,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use starred expression here");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "cannot use starred expression here");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13305,7 +13305,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(8)) != null  // token=')'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use double starred expression here");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "cannot use double starred expression here");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13466,7 +13466,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = (Token)expect(11)) != null  // token=':'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"exception group must be parenthesized");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "exception group must be parenthesized");
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
                 return (Object)_res;
             }
@@ -13766,7 +13766,7 @@ public final class Parser extends AbstractParser {
                 (bitwise_or_var = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use a starred expression in a dictionary value");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 return (Object)_res;
             }
@@ -13786,7 +13786,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_229_rule(true)
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"expression expected after dictionary key and ':'");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 return (Object)_res;
             }
@@ -13844,7 +13844,7 @@ public final class Parser extends AbstractParser {
                 (bitwise_or_var = (ExprTy)bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"cannot use a starred expression in a dictionary value");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -13862,7 +13862,7 @@ public final class Parser extends AbstractParser {
                 (a = (Token)expect(11)) != null  // token=':'
             )
             {
-                _res = this.raiseSyntaxErrorKnownLocation(a,"expression expected after dictionary key and ':'");
+                _res = this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and ':'");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 return (ExprTy)_res;
             }

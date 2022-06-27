@@ -600,7 +600,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         level++;
         sb.append(indent()).append("Annotation: ").append(node.annotation.accept(this)).append('\n');
         sb.append(indent()).append("LHS: ").append(node.target.accept(this)).append('\n');
-        sb.append(indent()).append("RHS: ").append(node.value.accept(this));
+        sb.append(indent()).append("RHS: ").append(node.value == null ? "<null>" : node.value.accept(this));
         level--;
         return sb.toString();
     }

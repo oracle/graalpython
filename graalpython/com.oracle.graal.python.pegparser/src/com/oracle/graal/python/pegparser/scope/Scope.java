@@ -234,7 +234,7 @@ public class Scope {
     }
 
     public EnumSet<DefUse> getUseOfName(String usedName) {
-        return symbols.get(usedName);
+        return symbols.getOrDefault(usedName, EnumSet.noneOf(DefUse.class));
     }
 
     public ArrayList<Scope> getChildren() {

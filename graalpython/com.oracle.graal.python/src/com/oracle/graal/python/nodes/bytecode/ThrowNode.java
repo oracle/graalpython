@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
@@ -58,8 +59,13 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ThrowNode extends PNodeWithContext {
+
+    private static final TruffleString T_CLOSE = tsLiteral("close");
+    private static final TruffleString T_THROW = tsLiteral("throw");
+
     // Returns true when the generator finished
     public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object iter, PException exception);
 
@@ -98,7 +104,7 @@ public abstract class ThrowNode extends PNodeWithContext {
         if (profileExit.profileException(exception, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {
-                close = lookupClose.execute(virtualFrame, obj, "close");
+                close = lookupClose.execute(virtualFrame, obj, T_CLOSE);
             } catch (PException e) {
                 writeUnraisableNode.execute(virtualFrame, e.getEscapedException(), null, obj);
             }
@@ -107,7 +113,7 @@ public abstract class ThrowNode extends PNodeWithContext {
             }
             throw exception;
         } else {
-            Object throwMethod = lookupThrow.execute(virtualFrame, obj, "throw");
+            Object throwMethod = lookupThrow.execute(virtualFrame, obj, T_THROW);
             if (throwMethod == PNone.NO_VALUE) {
                 throw exception;
             }

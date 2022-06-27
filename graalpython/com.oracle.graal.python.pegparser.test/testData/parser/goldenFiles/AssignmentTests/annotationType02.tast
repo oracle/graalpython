@@ -1,0 +1,9 @@
+Module[0, 26]
+    FunctionDef[0, 26]
+        Name:fn
+        ---- Function body of fn ----
+        AnnAssign[11, 26]simple
+            Annotation: Name[19, 22] Value: "int"
+            LHS: Name[11, 16] Value: "index" Store
+            RHS: LONG[25, 26] Value: 0
+        ---- End of fn function ----
