@@ -444,8 +444,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         boolean saved = hpyUniversalContext.debugMode;
         try {
             hpyUniversalContext.debugMode = debug;
-            Object hpyContext = debug ? hpyUniversalContext.getHPyDebugContext() : hpyUniversalContext;
-            return InteropLibrary.getUncached().execute(initFunction, hpyContext);
+            return InteropLibrary.getUncached().execute(initFunction, hpyUniversalContext);
         } finally {
             hpyUniversalContext.debugMode = saved;
         }
