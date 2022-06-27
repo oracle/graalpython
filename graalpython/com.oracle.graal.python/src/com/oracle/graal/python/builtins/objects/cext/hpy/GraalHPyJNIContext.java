@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextNativePointer;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -106,11 +107,6 @@ final class GraalHPyJNIContext implements TruffleObject {
         PRIMITIVE3(3),
         PRIMITIVE4(4),
         PRIMITIVE5(5),
-        PRIMITIVE6(6),
-        PRIMITIVE7(7),
-        PRIMITIVE8(8),
-        PRIMITIVE9(9),
-        PRIMITIVE10(10),
         INQUIRY(2),
         SSIZEOBJARGPROC(4),
         SSIZESSIZEOBJARGPROC(5),
@@ -134,11 +130,17 @@ final class GraalHPyJNIContext implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class GraalHPyJNIFunctionPointer implements TruffleObject {
         final long pointer;
-        final JNIFunctionSignature signature;
+        final LLVMType signature;
+        final boolean debug;
 
-        GraalHPyJNIFunctionPointer(long pointer, JNIFunctionSignature signature) {
+        GraalHPyJNIFunctionPointer(long pointer, LLVMType signature) {
+            this(pointer, signature, false);
+        }
+
+        GraalHPyJNIFunctionPointer(long pointer, LLVMType signature, boolean debug) {
             this.pointer = pointer;
             this.signature = signature;
+            this.debug = debug;
         }
 
         @ExportMessage
@@ -148,109 +150,198 @@ final class GraalHPyJNIContext implements TruffleObject {
         }
 
         @ExportMessage
-        static class Execute {
+        static final class Execute {
 
             @Specialization(guards = "receiver.signature == cachedSignature")
             static Object doCached(GraalHPyJNIFunctionPointer receiver, Object[] arguments,
                             @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                            @Cached("receiver.signature") JNIFunctionSignature cachedSignature,
+                            @Cached("receiver.signature") LLVMType cachedSignature,
                             @Cached(parameters = "receiver.signature") GraalHPyJNIConvertArgNode convertArgNode) {
-                long result;
-                switch (cachedSignature) {
-                    case PRIMITIVE1:
-                        result = GraalHPyContext.executePrimitive1(receiver.pointer, convertHPyContext(arguments, interopLibrary));
-                        break;
-                    case PRIMITIVE2:
-                        result = GraalHPyContext.executePrimitive2(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
-                        break;
-                    case PRIMITIVE3:
-                        result = GraalHPyContext.executePrimitive3(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                if (receiver.debug) {
+                    return callDebug(receiver, cachedSignature, arguments, interopLibrary, convertArgNode);
+                }
+                return callUniversal(receiver, cachedSignature, arguments, interopLibrary, convertArgNode);
+            }
+
+            private static long callUniversal(GraalHPyJNIFunctionPointer receiver, LLVMType signature, Object[] arguments,
+                            InteropLibrary interopLibrary, GraalHPyJNIConvertArgNode convertArgNode) {
+                switch (signature) {
+                    case HPyModule_init:
+                        return GraalHPyContext.executePrimitive1(receiver.pointer, convertHPyContext(arguments, interopLibrary));
+                    case HPyFunc_noargs:
+                    case HPyFunc_unaryfunc:
+                    case HPyFunc_getiterfunc:
+                    case HPyFunc_iternextfunc:
+                    case HPyFunc_reprfunc:
+                    case HPyFunc_lenfunc:
+                    case HPyFunc_hashfunc:
+                        return GraalHPyContext.executePrimitive2(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                    case HPyFunc_binaryfunc:
+                    case HPyFunc_o:
+                    case HPyFunc_getter:
+                    case HPyFunc_getattrfunc:
+                    case HPyFunc_getattrofunc:
+                    case HPyFunc_ssizeargfunc:
+                    case HPyFunc_traverseproc:
+                        return GraalHPyContext.executePrimitive3(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2));
-                        break;
-                    case PRIMITIVE4:
-                        result = GraalHPyContext.executePrimitive4(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                    case HPyFunc_varargs:
+                    case HPyFunc_ternaryfunc:
+                    case HPyFunc_descrgetfunc:
+                    case HPyFunc_ssizessizeargfunc:
+                        return GraalHPyContext.executePrimitive4(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
-                        break;
-                    case PRIMITIVE5:
-                        result = GraalHPyContext.executePrimitive5(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                    case HPyFunc_keywords:
+                        return GraalHPyContext.executePrimitive5(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4));
-                        break;
-                    case PRIMITIVE6:
-                        result = GraalHPyContext.executePrimitive6(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5));
-                        break;
-                    case PRIMITIVE7:
-                        result = GraalHPyContext.executePrimitive7(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5),
-                                        convertArgNode.execute(arguments, 6));
-                        break;
-                    case PRIMITIVE8:
-                        result = GraalHPyContext.executePrimitive8(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5),
-                                        convertArgNode.execute(arguments, 6), convertArgNode.execute(arguments, 7));
-                        break;
-                    case PRIMITIVE9:
-                        result = GraalHPyContext.executePrimitive9(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5),
-                                        convertArgNode.execute(arguments, 6), convertArgNode.execute(arguments, 7), convertArgNode.execute(arguments, 8));
-                        break;
-                    case PRIMITIVE10:
-                        result = GraalHPyContext.executePrimitive10(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5),
-                                        convertArgNode.execute(arguments, 6), convertArgNode.execute(arguments, 7), convertArgNode.execute(arguments, 8), convertArgNode.execute(arguments, 9));
-                        break;
-                    case INQUIRY:
-                        result = GraalHPyContext.executeInquiry(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
-                        break;
-                    case SSIZEOBJARGPROC:
-                        result = GraalHPyContext.executeSsizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1), (long) arguments[2],
+                    case HPyFunc_inquiry:
+                        return GraalHPyContext.executeInquiry(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                    case HPyFunc_ssizeobjargproc:
+                        return GraalHPyContext.executeSsizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1), (long) arguments[2],
                                         convertArgNode.execute(arguments, 3));
-                        break;
-                    case SSIZESSIZEOBJARGPROC:
-                        result = GraalHPyContext.executeSsizesizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1), (long) arguments[2],
-                                        (long) arguments[3], convertArgNode.execute(arguments, 4));
-                        break;
-                    case OBJOBJPROC:
-                        result = GraalHPyContext.executeObjobjproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2));
-                        break;
-                    case OBJOBJARGPROC:
-                        result = GraalHPyContext.executeObjobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
-                        break;
-                    case INITPROC:
-                        result = GraalHPyContext.executeInitproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                    case HPyFunc_initproc:
+                        return GraalHPyContext.executeInitproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2), (long) arguments[3], convertArgNode.execute(arguments, 4));
-                        break;
-                    case DESTROYFUNC:
-                        GraalHPyContext.hpyCallDestroyFunc(convertPointer(arguments[0], interopLibrary), receiver.pointer);
-                        result = 0;
-                        break;
-                    case FREEFUNC:
+                    case HPyFunc_ssizessizeobjargproc:
+                        return GraalHPyContext.executeSsizesizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1), (long) arguments[2],
+                                        (long) arguments[3], convertArgNode.execute(arguments, 4));
+                    case HPyFunc_setter:
+                    case HPyFunc_setattrfunc:
+                    case HPyFunc_objobjargproc:
+                    case HPyFunc_descrsetfunc:
+                    case HPyFunc_setattrofunc:
+                        return GraalHPyContext.executeObjobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_freefunc:
                         GraalHPyContext.executeFreefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
-                        result = 0;
-                        break;
-                    case GETBUFFERPROC:
-                        result = GraalHPyContext.executeGetbufferproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                        return 0;
+                    case HPyFunc_richcmpfunc:
+                        return GraalHPyContext.executeRichcomparefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2), (int) arguments[3]);
-                        break;
-                    case RELEASEBUFFERPROC:
+                    case HPyFunc_objobjproc:
+                        return GraalHPyContext.executeObjobjproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                    case HPyFunc_getbufferproc:
+                        return GraalHPyContext.executeGetbufferproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                    case HPyFunc_releasebufferproc:
                         GraalHPyContext.executeReleasebufferproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
                                         convertArgNode.execute(arguments, 2));
-                        result = 0;
-                        break;
-                    case RICHCOMPAREFUNC:
-                        result = GraalHPyContext.executeRichcomparefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
-                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
-                        break;
-                    case DESTRUCTOR:
+                        return 0;
+                    case HPyFunc_destroyfunc:
+                        GraalHPyContext.hpyCallDestroyFunc(convertPointer(arguments[0], interopLibrary), receiver.pointer);
+                        return 0;
+                    case HPyFunc_destructor:
                         GraalHPyContext.executeDestructor(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
-                        result = 0;
-                        break;
-                    default:
-                        throw CompilerDirectives.shouldNotReachHere();
+                        return 0;
                 }
-                return result;
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            private static long callDebug(GraalHPyJNIFunctionPointer receiver, LLVMType signature, Object[] arguments,
+                            InteropLibrary interopLibrary, GraalHPyJNIConvertArgNode convertArgNode) {
+                switch (signature) {
+                    case HPyModule_init:
+                        return GraalHPyContext.executeDebugModuleInit(receiver.pointer, convertHPyContext(arguments, interopLibrary));
+                    case HPyFunc_noargs:
+                    case HPyFunc_unaryfunc:
+                    case HPyFunc_getiterfunc:
+                    case HPyFunc_iternextfunc:
+                    case HPyFunc_reprfunc:
+                        return GraalHPyContext.executeDebugUnaryFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                    case HPyFunc_lenfunc:
+                    case HPyFunc_hashfunc:
+                        // HPy_ssize_t (*HPyFunc_lenfunc)(HPyContext *ctx, HPy);
+                        // HPy_hash_t (*HPyFunc_hashfunc)(HPyContext *ctx, HPy);
+                        return GraalHPyContext.executeDebugLenFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                    case HPyFunc_binaryfunc:
+                    case HPyFunc_o:
+                    case HPyFunc_getattrofunc:
+                        return GraalHPyContext.executeDebugBinaryFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                    case HPyFunc_getattrfunc:
+                    case HPyFunc_ssizeargfunc:
+                    case HPyFunc_getter:
+                        // HPy (*HPyFunc_getattrfunc) (HPyContext *ctx, HPy, char *);
+                        // HPy (*HPyFunc_ssizeargfunc)(HPyContext *ctx, HPy, HPy_ssize_t);
+                        // HPy (*HPyFunc_getter) (HPyContext *ctx, HPy, void *);
+                        return GraalHPyContext.executeDebugGetattrFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                    case HPyFunc_traverseproc:
+                        // int (*HPyFunc_traverseproc)(void *, HPyFunc_visitproc, void *);
+                        return GraalHPyContext.executePrimitive3(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                    case HPyFunc_varargs:
+                        // HPy (*HPyFunc_varargs)(HPyContext *, HPy, HPy *, HPy_ssize_t);
+                        return GraalHPyContext.executeDebugVarargs(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_ternaryfunc:
+                    case HPyFunc_descrgetfunc:
+                        // HPy (*HPyFunc_ternaryfunc)(HPyContext *, HPy, HPy, HPy)
+                        // HPy (*HPyFunc_descrgetfunc)(HPyContext *, HPy, HPy, HPy)
+                        return GraalHPyContext.executeDebugTernaryFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_ssizessizeargfunc:
+                        // HPy (*HPyFunc_ssizessizeargfunc)(HPyContext *, HPy, HPy_ssize_t,
+                        // HPy_ssize_t);
+                        return GraalHPyContext.executeDebugSsizeSsizeArgFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_keywords:
+                        // HPy (*HPyFunc_keywords)(HPyContext *, HPy, HPy *, HPy_ssize_t , HPy)
+                        return GraalHPyContext.executeDebugKeywords(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4));
+                    case HPyFunc_inquiry:
+                        return GraalHPyContext.executeDebugInquiry(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                    case HPyFunc_ssizeobjargproc:
+                        return GraalHPyContext.executeDebugSsizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1), (long) arguments[2],
+                                        convertArgNode.execute(arguments, 3));
+                    case HPyFunc_initproc:
+                        return GraalHPyContext.executeDebugInitproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (long) arguments[3], convertArgNode.execute(arguments, 4));
+                    case HPyFunc_ssizessizeobjargproc:
+                        return GraalHPyContext.executeDebugSsizesizeobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        (long) arguments[2],
+                                        (long) arguments[3], convertArgNode.execute(arguments, 4));
+                    case HPyFunc_setter:
+                        // int (*HPyFunc_setter)(HPyContext *ctx, HPy, HPy, void *);
+                        return GraalHPyContext.executeDebugSetter(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_setattrfunc:
+                        // int (*HPyFunc_setattrfunc)(HPyContext *ctx, HPy, char *, HPy);
+                        return GraalHPyContext.executeDebugSetattrFunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_objobjargproc:
+                    case HPyFunc_descrsetfunc:
+                    case HPyFunc_setattrofunc:
+                        return GraalHPyContext.executeDebugObjobjargproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                    case HPyFunc_freefunc:
+                        // no handles involved in freefunc; we can use the universal trampoline
+                        GraalHPyContext.executeFreefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                        return 0;
+                    case HPyFunc_richcmpfunc:
+                        // HPy (*HPyFunc_richcmpfunc)(HPyContext *ctx, HPy, HPy, HPy_RichCmpOp)
+                        return GraalHPyContext.executeDebugRichcomparefunc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                    case HPyFunc_objobjproc:
+                        return GraalHPyContext.executeDebugObjobjproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                    case HPyFunc_getbufferproc:
+                        return GraalHPyContext.executeDebugGetbufferproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                    case HPyFunc_releasebufferproc:
+                        GraalHPyContext.executeDebugReleasebufferproc(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2));
+                        return 0;
+                    case HPyFunc_destroyfunc:
+                        // no handles involved in destroyfunc; we can use the universal trampoline
+                        GraalHPyContext.hpyCallDestroyFunc(convertPointer(arguments[0], interopLibrary), receiver.pointer);
+                        return 0;
+                    case HPyFunc_destructor:
+                        GraalHPyContext.executeDebugDestructor(receiver.pointer, convertHPyContext(arguments, interopLibrary), convertArgNode.execute(arguments, 1));
+                        return 0;
+                }
+                throw CompilerDirectives.shouldNotReachHere();
             }
 
             private static long convertHPyContext(Object[] arguments, InteropLibrary interopLibrary) {
@@ -292,11 +383,11 @@ final class GraalHPyJNIContext implements TruffleObject {
 
         private static final GraalHPyJNIConvertArgUncachedNode UNCACHED = new GraalHPyJNIConvertArgUncachedNode();
 
-        public static GraalHPyJNIConvertArgNode create(@SuppressWarnings("unused") JNIFunctionSignature signature) {
+        public static GraalHPyJNIConvertArgNode create(@SuppressWarnings("unused") LLVMType signature) {
             return new GraalHPyJNIConvertArgCachedNode();
         }
 
-        public static GraalHPyJNIConvertArgNode getUncached(@SuppressWarnings("unused") JNIFunctionSignature signature) {
+        public static GraalHPyJNIConvertArgNode getUncached(@SuppressWarnings("unused") LLVMType signature) {
             return UNCACHED;
         }
 

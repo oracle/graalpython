@@ -49,7 +49,7 @@
 #include <jni.h>
 #include <stdint.h>
 
-#include "hpy_debug.h"
+#include "debug_internal.h"
 
 //*************************
 // BOXING

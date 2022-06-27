@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSign
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.GraalHPyJNIFunctionPointer;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.JNIFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
@@ -155,7 +154,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -185,7 +183,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -2433,69 +2430,10 @@ public class GraalHPyNodes {
                 interopLibrary.toNative(pointerObject);
             }
             try {
-                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), getJNISignature(llvmFunctionType));
+                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), llvmFunctionType);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        private static JNIFunctionSignature getJNISignature(LLVMType llvmFunctionType) {
-            switch (llvmFunctionType) {
-                case HPyModule_init:
-                    return JNIFunctionSignature.PRIMITIVE1;
-                case HPyFunc_noargs:
-                case HPyFunc_unaryfunc:
-                case HPyFunc_getiterfunc:
-                case HPyFunc_iternextfunc:
-                case HPyFunc_reprfunc:
-                case HPyFunc_lenfunc:
-                case HPyFunc_hashfunc:
-                    return JNIFunctionSignature.PRIMITIVE2;
-                case HPyFunc_binaryfunc:
-                case HPyFunc_o:
-                case HPyFunc_getter:
-                case HPyFunc_getattrfunc:
-                case HPyFunc_getattrofunc:
-                case HPyFunc_ssizeargfunc:
-                case HPyFunc_traverseproc:
-                    return JNIFunctionSignature.PRIMITIVE3;
-                case HPyFunc_varargs:
-                case HPyFunc_ternaryfunc:
-                case HPyFunc_descrgetfunc:
-                case HPyFunc_ssizessizeargfunc:
-                    return JNIFunctionSignature.PRIMITIVE4;
-                case HPyFunc_keywords:
-                    return JNIFunctionSignature.PRIMITIVE5;
-                case HPyFunc_inquiry:
-                    return JNIFunctionSignature.INQUIRY;
-                case HPyFunc_ssizeobjargproc:
-                    return JNIFunctionSignature.SSIZEOBJARGPROC;
-                case HPyFunc_initproc:
-                    return JNIFunctionSignature.INITPROC;
-                case HPyFunc_ssizessizeobjargproc:
-                    return JNIFunctionSignature.SSIZESSIZEOBJARGPROC;
-                case HPyFunc_objobjargproc:
-                case HPyFunc_setter:
-                case HPyFunc_descrsetfunc:
-                case HPyFunc_setattrfunc:
-                case HPyFunc_setattrofunc:
-                    return JNIFunctionSignature.OBJOBJARGPROC;
-                case HPyFunc_freefunc:
-                    return JNIFunctionSignature.FREEFUNC;
-                case HPyFunc_richcmpfunc:
-                    return JNIFunctionSignature.RICHCOMPAREFUNC;
-                case HPyFunc_objobjproc:
-                    return JNIFunctionSignature.OBJOBJPROC;
-                case HPyFunc_getbufferproc:
-                    return JNIFunctionSignature.GETBUFFERPROC;
-                case HPyFunc_releasebufferproc:
-                    return JNIFunctionSignature.RELEASEBUFFERPROC;
-                case HPyFunc_destroyfunc:
-                    return JNIFunctionSignature.DESTROYFUNC;
-                case HPyFunc_destructor:
-                    return JNIFunctionSignature.DESTRUCTOR;
-            }
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
