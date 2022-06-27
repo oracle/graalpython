@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -97,7 +97,8 @@ public abstract class CallDispatchNode extends PNodeWithContext {
         return getFunctionCodeNode.execute(function);
     }
 
-    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, //
+                    replaces = "callFunctionCached", limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached GetFunctionCodeNode getFunctionCodeNode,
