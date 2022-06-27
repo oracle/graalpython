@@ -319,6 +319,7 @@ public class HashMapStorage extends HashingStorage {
         return new HashingStorageIterable<>(getKeysIterator(values));
     }
 
+    @TruffleBoundary
     private static Iterator<Object> getKeysIterator(LinkedHashMap<Object, Object> map) {
         return fixStrings(map.keySet().iterator());
     }
