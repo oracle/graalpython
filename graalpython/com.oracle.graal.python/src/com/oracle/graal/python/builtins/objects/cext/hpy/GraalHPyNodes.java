@@ -343,7 +343,7 @@ public class GraalHPyNodes {
                 }
 
                 methodFunctionPointer = interopLibrary.readMember(methodDef, "impl");
-                if (!resultLib.isExecutable(methodFunctionPointer)) {
+                if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
                     methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, signature.getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
@@ -722,14 +722,14 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = memberDefLib.readMember(memberDef, "getter_impl");
-                if (!valueLib.isExecutable(getterFunctionPtr)) {
+                if (context.isDebugMode() || !valueLib.isExecutable(getterFunctionPtr)) {
                     getterFunctionPtr = attachFunctionTypeNode.execute(context, getterFunctionPtr, LLVMType.HPyFunc_getter);
                 }
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = memberDefLib.readMember(memberDef, "setter_impl");
                 boolean readOnly = valueLib.isNull(setterFunctionPtr);
-                if (!readOnly && !valueLib.isExecutable(setterFunctionPtr)) {
+                if (!readOnly && (context.isDebugMode() || !valueLib.isExecutable(setterFunctionPtr))) {
                     setterFunctionPtr = attachFunctionTypeNode.execute(context, setterFunctionPtr, LLVMType.HPyFunc_setter);
                 }
 
@@ -806,7 +806,7 @@ public class GraalHPyNodes {
             Object methodFunctionPointer;
             try {
                 methodFunctionPointer = interopLibrary.readMember(slotDef, "impl");
-                if (!resultLib.isExecutable(methodFunctionPointer)) {
+                if (context.isDebugMode() || !resultLib.isExecutable(methodFunctionPointer)) {
                     methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, slot.getSignatures()[0].getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
