@@ -1,15 +1,15 @@
 Disassembly of <module>:
 000000         0 COLLECTION_FROM_STACK             0    (PKeyword[])
 000000         2 LOAD_STRING                       0    ('b')
-000018         4 LOAD_BYTE                         2
+000018         4 LOAD_BYTE_O                       2
 000000         6 LOAD_STRING                       1    ('a')
-000010         8 LOAD_BYTE                         1
+000010         8 LOAD_BYTE_O                       1
 000000        10 LOAD_STRING                       2    ('c')
-000024        12 LOAD_BYTE                         3
+000024        12 LOAD_BYTE_O                       3
 000000        14 LOAD_STRING                       3    ('d')
-000029        16 LOAD_BYTE                         4
+000029        16 LOAD_BYTE_O                       4
 000000        18 LOAD_STRING                       4    ('e')
-000036        20 LOAD_BYTE                         5
+000036        20 LOAD_BYTE_O                       5
 000000        22 COLLECTION_FROM_STACK             10   (dict)
 000000        24 MAKE_FUNCTION                     6    (foo)
 000000        27 STORE_NAME                        0    (foo)

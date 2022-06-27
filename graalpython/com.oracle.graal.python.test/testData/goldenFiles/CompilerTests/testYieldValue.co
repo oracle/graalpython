@@ -7,7 +7,7 @@ Disassembly of <module>:
 Disassembly of gen:
 Flags: CO_GENERATOR
 000022         0 LOAD_FAST                         0    (a)                               can quicken
-000026         2 LOAD_BYTE                         1                                      can quicken
+000026         2 LOAD_BYTE_I                       1                                      can quicken
 000022         4 BINARY_OP                         0    (ADD)                             generalizes: 2, 0
 000016         6 YIELD_VALUE
 000016         7 RESUME_YIELD

@@ -1,6 +1,6 @@
 Disassembly of <module>:
-000007         0 LOAD_BYTE                         1
-000010         2 LOAD_BYTE                         2
+000007         0 LOAD_BYTE_O                       1
+000010         2 LOAD_BYTE_O                       2
 000007         4 COLLECTION_FROM_STACK             2    (tuple)
 000000         6 UNPACK_SEQUENCE                   2
 000000         8 STORE_NAME                        0    (a)

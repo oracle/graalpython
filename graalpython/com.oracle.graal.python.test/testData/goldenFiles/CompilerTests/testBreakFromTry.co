@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000009         0 LOAD_NAME                         0    (range)
-000015         2 LOAD_BYTE                         10
+000015         2 LOAD_BYTE_O                       10
 000009         4 CALL_FUNCTION                     1
 000000         6 GET_ITER
 000000   >>    7 FOR_ITER                          34   (to 41)

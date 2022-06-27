@@ -1,9 +1,9 @@
 Disassembly of <module>:
-000011         0 LOAD_BYTE                         1
-000014         2 LOAD_BYTE                         2
-000017         4 LOAD_BYTE                         3
-000020         6 LOAD_BYTE                         4
-000023         8 LOAD_BYTE                         5
+000011         0 LOAD_BYTE_O                       1
+000014         2 LOAD_BYTE_O                       2
+000017         4 LOAD_BYTE_O                       3
+000020         6 LOAD_BYTE_O                       4
+000023         8 LOAD_BYTE_O                       5
 000011        10 COLLECTION_FROM_STACK             5    (tuple)
 000000        12 UNPACK_EX                         1    (1, 1)
 000000        15 STORE_NAME                        0    (a)

@@ -2,7 +2,7 @@ Disassembly of <module>:
 000000         0 MAKE_FUNCTION                     0    (f)
 000000         3 STORE_NAME                        0    (f)
 000030         5 LOAD_NAME                         0    (f)
-000032         7 LOAD_BYTE                         1
+000032         7 LOAD_BYTE_O                       1
 000030         9 CALL_FUNCTION                     1
 000030        11 RETURN_VALUE
 

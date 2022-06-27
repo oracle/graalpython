@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000000         0 MAKE_FUNCTION                     0    (<listcomp>)
 000032         3 LOAD_NAME                         0    (range)
-000038         5 LOAD_BYTE                         3
+000038         5 LOAD_BYTE_O                       3
 000032         7 CALL_FUNCTION                     1
 000000         9 GET_ITER
 000000        10 CALL_FUNCTION                     1
@@ -14,7 +14,7 @@ Disassembly of <listcomp>:
 000027         6 STORE_FAST                        1    (y)
 000001         8 MAKE_FUNCTION                     0    (<listcomp>.<listcomp>)
 000013        11 LOAD_GLOBAL                       0    (range)
-000019        13 LOAD_BYTE                         5
+000019        13 LOAD_BYTE_O                       5
 000013        15 CALL_FUNCTION                     1
 000001        17 GET_ITER
 000001        18 CALL_FUNCTION                     1

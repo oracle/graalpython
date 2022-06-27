@@ -12,7 +12,7 @@ Disassembly of Foo:
 000000         2 STORE_NAME                        1    (__module__)
 000000         4 LOAD_STRING                       0    ('Foo')
 000000         6 STORE_NAME                        2    (__qualname__)
-000019         8 LOAD_BYTE                         64
+000019         8 LOAD_BYTE_O                       64
 000015        10 STORE_NAME                        3    (c)
 000026        12 MAKE_FUNCTION                     0    (Foo.__init__)
 000026        15 STORE_NAME                        4    (__init__)
