@@ -217,7 +217,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             @Specialization(guards = "arguments.length == 3")
             static int init(InitWrapper self, Object[] arguments,
                             @CachedLibrary("self") PythonNativeWrapperLibrary lib,
-                            @Cached ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode posStarargsNode,
+                            @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
                             @Cached ToJavaNode toJavaNode,
@@ -231,7 +231,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object starArgs = toJavaNode.execute(arguments[1]);
                         Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                        Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
@@ -266,7 +266,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             @Specialization(guards = "arguments.length == 3")
             static Object call(TernaryFunctionWrapper self, Object[] arguments,
                             @CachedLibrary("self") PythonNativeWrapperLibrary lib,
-                            @Cached ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode posStarargsNode,
+                            @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
                             @Cached ToJavaNode toJavaNode,
@@ -281,7 +281,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object starArgs = toJavaNode.execute(arguments[1]);
                         Object kwArgs = toJavaNode.execute(arguments[2]);
 
-                        Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                         Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         Object result = callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
