@@ -47,16 +47,14 @@ import org.junit.Test;
  * different alts in the rule.
  */
 public class ErrorTests extends ParserTestBase {
-    // TODO due to the bad conversion of strings in java generator, there are not spaces after , and
-    // . in some messages
 
     @Test
     public void invalidArguments01() throws Exception {
-        checkSyntaxErrorMessage("f(lambda x: x[0] = 3)", "expression cannot contain assignment,perhaps you meant \"==\"?");
-        checkSyntaxErrorMessage("f(x()=2)", "expression cannot contain assignment,perhaps you meant \"==\"?");
-        checkSyntaxErrorMessage("f(a or b=1)", "expression cannot contain assignment,perhaps you meant \"==\"?");
-        checkSyntaxErrorMessage("f(x.y=1)", "expression cannot contain assignment,perhaps you meant \"==\"?");
-        checkSyntaxErrorMessage("f(True=2)", "expression cannot contain assignment,perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(lambda x: x[0] = 3)", "expression cannot contain assignment, perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(x()=2)", "expression cannot contain assignment, perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(a or b=1)", "expression cannot contain assignment, perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(x.y=1)", "expression cannot contain assignment, perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(True=2)", "expression cannot contain assignment, perhaps you meant \"==\"?");
     }
 
     @Test
@@ -77,10 +75,10 @@ public class ErrorTests extends ParserTestBase {
 
     @Test
     public void invalidAssignment01() throws Exception {
-        checkSyntaxErrorMessage("[]: int", "only single target(not list)can be annotated");
-        checkSyntaxErrorMessage("([]): int", "only single target(not list)can be annotated");
-        checkSyntaxErrorMessage("(): int", "only single target(not tuple)can be annotated");
-        checkSyntaxErrorMessage("(()): int", "only single target(not tuple)can be annotated");
+        checkSyntaxErrorMessage("[]: int", "only single target (not list) can be annotated");
+        checkSyntaxErrorMessage("([]): int", "only single target (not list) can be annotated");
+        checkSyntaxErrorMessage("(): int", "only single target (not tuple) can be annotated");
+        checkSyntaxErrorMessage("(()): int", "only single target (not tuple) can be annotated");
     }
 
     @Test
@@ -172,17 +170,17 @@ public class ErrorTests extends ParserTestBase {
     @Test
     public void invalidNameExpression01() throws Exception {
         checkSyntaxErrorMessage("if x = 3:\n" +
-                        "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
+                        "   pass", "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
         checkSyntaxErrorMessage("while x = 3:\n" +
-                        "   pass", "invalid syntax.Maybe you meant '==' or ':=' instead of '='?");
+                        "   pass", "invalid syntax. Maybe you meant '==' or ':=' instead of '='?");
     }
 
     @Test
     public void invalidNameExpression02() throws Exception {
         checkSyntaxErrorMessage("if x.a = 3:\n" +
-                        "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");
+                        "   pass", "cannot assign to attribute here. Maybe you meant '==' instead of '='?");
         checkSyntaxErrorMessage("while x.a = 3:\n" +
-                        "   pass", "cannot assign to attribute here.Maybe you meant '==' instead of '='?");
+                        "   pass", "cannot assign to attribute here. Maybe you meant '==' instead of '='?");
     }
 
     @Test
@@ -292,12 +290,10 @@ public class ErrorTests extends ParserTestBase {
 
     @Test
     public void invalidExpression01() throws Exception {
-        // TODO the java generator remove spaces after '.'. After fixing this issue, it should be
-        // added the space here.
-        checkSyntaxErrorMessage("[1, 2 3]", "invalid syntax.Perhaps you forgot a comma?");
-        checkSyntaxErrorMessage("{1, 2 3}", "invalid syntax.Perhaps you forgot a comma?");
-        checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax.Perhaps you forgot a comma?");
-        checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax.Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("[1, 2 3]", "invalid syntax. Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("{1, 2 3}", "invalid syntax. Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax. Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax. Perhaps you forgot a comma?");
     }
 
     @Test

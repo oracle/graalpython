@@ -76,11 +76,11 @@ public class ScopeEnvironment {
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
     final ErrorCallback errorCallback;
 
-    public ScopeEnvironment(ModTy moduleNode) {
-        this(moduleNode, null);
+    public static ScopeEnvironment analyze(ModTy moduleNode, ErrorCallback errorCallback) {
+        return new ScopeEnvironment(moduleNode, errorCallback);
     }
 
-    public ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
+    private ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
         // First pass, similar to the entry point `symtable_enter_block' on CPython
         this.errorCallback = errorCallback;
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode, this);
@@ -908,8 +908,23 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.Global node) {
             for (String n : node.names) {
-                // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
-                // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
+                EnumSet<DefUse> f = currentScope.getUseOfName(mangle(n));
+                if (f.contains(DefUse.DefParam)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is parameter and global", n);
+                    continue;
+                }
+                if (f.contains(DefUse.Use)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is used prior to global declaration", n);
+                    continue;
+                }
+                if (f.contains(DefUse.DefAnnot)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "annotated name '%s' can't be global", n);
+                    continue;
+                }
+                if (f.contains(DefUse.DefLocal)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before global declaration", n);
+                    continue;
+                }
                 addDef(n, DefUse.DefGlobal);
                 currentScope.recordDirective(n, node.getSourceRange());
             }
@@ -991,8 +1006,23 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.NonLocal node) {
             for (String n : node.names) {
-                // EnumSet<DefUse> f = currentScope.symbols.get(mangle(n));
-                // TODO: error if DEF_PARAM | DEF_LOCAL | USE | DEF_ANNOT
+                EnumSet<DefUse> f = currentScope.getUseOfName(mangle(n));
+                if (f.contains(DefUse.DefParam)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is parameter and nonlocal", n);
+                    continue;
+                }
+                if (f.contains(DefUse.Use)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is used prior to nonlocal declaration", n);
+                    continue;
+                }
+                if (f.contains(DefUse.DefAnnot)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "annotated name '%s' can't be nonlocal", n);
+                    continue;
+                }
+                if (f.contains(DefUse.DefLocal)) {
+                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before nonlocal declaration", n);
+                    continue;
+                }
                 addDef(n, DefUse.DefNonLocal);
                 currentScope.recordDirective(n, node.getSourceRange());
             }

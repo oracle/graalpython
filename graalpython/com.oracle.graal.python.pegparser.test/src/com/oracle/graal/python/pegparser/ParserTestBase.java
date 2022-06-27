@@ -122,14 +122,20 @@ public class ParserTestBase {
 // }
 
     public void checkSyntaxError(String source) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
@@ -138,7 +144,10 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
-        parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), 1);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+        }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
         DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
@@ -227,7 +236,7 @@ public class ParserTestBase {
     public void checkScopeResult(String source, int mode) throws Exception {
         ModTy mod = parse(source, "<module>", mode);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-        ScopeEnvironment env = new ScopeEnvironment(mod);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
         if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(env.toString());
