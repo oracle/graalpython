@@ -92,6 +92,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_ELLIPSIS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FAST;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_GLOBAL;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_INT;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_LONG;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
@@ -1082,7 +1083,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BOOLEAN:
                     return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    return addLoadLong((Long) node.value);
+                    return addLoadNumber((Long) node.value);
                 case DOUBLE:
                     return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
                 case COMPLEX:
@@ -1102,9 +1103,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private Void addLoadLong(long value) {
+    private Void addLoadNumber(long value) {
         if (value == (byte) value) {
             return addOp(LOAD_BYTE, (byte) value);
+        } else if (value == (int) value) {
+            return addOp(LOAD_INT, addObject(unit.primitiveConstants, value));
         } else {
             return addOp(LOAD_LONG, addObject(unit.primitiveConstants, value));
         }
@@ -2082,7 +2085,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.ImportFrom node) {
         setLocation(node);
-        addLoadLong(node.level);
+        addLoadNumber(node.level);
         TruffleString[] names = new TruffleString[node.names.length];
         for (int i = 0; i < node.names.length; i++) {
             names[i] = toTruffleStringUncached(node.names[i].name);

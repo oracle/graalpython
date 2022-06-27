@@ -321,6 +321,7 @@ public final class CodeUnit {
                         line[5] = line[5] = code.qualname.toJavaStringUncached();
                         break;
                     }
+                    case LOAD_INT:
                     case LOAD_LONG:
                         line[5] = Objects.toString(primitiveConstants[oparg]);
                         break;

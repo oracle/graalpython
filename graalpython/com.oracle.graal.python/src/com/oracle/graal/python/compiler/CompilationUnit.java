@@ -195,7 +195,6 @@ public final class CompilationUnit {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         computeStackLevels();
-        long[] finishedPrimitiveConstants = orderedLong(primitiveConstants);
 
         int varCount = varnames.size();
         List<Instruction> quickenedInstructions = new ArrayList<>();
@@ -244,7 +243,7 @@ public final class CompilationUnit {
                     shouldUnboxVariable[i.arg] |= i.quickenOutput;
                 }
                 i.bci = buf.size();
-                emitBytecode(i, buf, finishedPrimitiveConstants);
+                emitBytecode(i, buf);
                 insertSrcOffsetTable(i.location.startOffset, lastSrcOffset, srcOffsets);
                 lastSrcOffset = i.location.startOffset;
             }
@@ -303,7 +302,7 @@ public final class CompilationUnit {
                         orderedKeys(freevars, new TruffleString[0], cellvars.size(), PythonUtils::toTruffleStringUncached),
                         cell2arg,
                         orderedKeys(constants, new Object[0]),
-                        finishedPrimitiveConstants,
+                        orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
                         startLocation.startOffset,
                         startLocation.startLine,
@@ -418,18 +417,17 @@ public final class CompilationUnit {
         srcOffsets.write((byte) srcDelta);
     }
 
-    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf, long[] finishedPrimitiveConstants) throws IllegalStateException {
+    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf) throws IllegalStateException {
         OpCodes opcode = instr.opcode;
         // Pre-quicken constant loads
         if (opcode == OpCodes.LOAD_BYTE) {
             opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_BYTE_I : OpCodes.LOAD_BYTE_O;
+        } else if (opcode == OpCodes.LOAD_INT) {
+            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_INT_I : OpCodes.LOAD_INT_O;
         } else if (opcode == OpCodes.LOAD_TRUE) {
             opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_TRUE_B : OpCodes.LOAD_TRUE_O;
         } else if (opcode == OpCodes.LOAD_FALSE) {
             opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_FALSE_B : OpCodes.LOAD_FALSE_O;
-        } else if (opcode == OpCodes.LOAD_LONG) {
-            long value = finishedPrimitiveConstants[instr.arg];
-            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 && (int) value == value ? OpCodes.LOAD_LONG_I : OpCodes.LOAD_LONG_O;
         }
         assert opcode.ordinal() < 256;
         if (!opcode.hasArg()) {

@@ -960,14 +960,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_BYTE_O:
                         stackFrame.setObject(++stackTop, (int) localBC[++bci]); // signed!
                         break;
-                    case OpCodesConstants.LOAD_LONG_I: {
+                    case OpCodesConstants.LOAD_INT_I: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        long longConst = localLongConsts[oparg];
-                        assert longConst == (int) longConst;
-                        stackFrame.setInt(++stackTop, (int) longConst);
+                        stackFrame.setInt(++stackTop, (int) localLongConsts[oparg]);
                         break;
                     }
-                    case OpCodesConstants.LOAD_LONG_O: {
+                    case OpCodesConstants.LOAD_INT_O: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackFrame.setObject(++stackTop, (int) localLongConsts[oparg]);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_LONG: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackFrame.setObject(++stackTop, localLongConsts[oparg]);
                         break;

@@ -325,6 +325,10 @@ public enum OpCodes {
      */
     LOAD_BYTE(1, 0, 1),
     /**
+     * Loads {@code int} from primitiveConstants array indexed by the immediate operand.
+     */
+    LOAD_INT(1, 0, 1),
+    /**
      * Loads {@code long} from primitiveConstants array indexed by the immediate operand.
      */
     LOAD_LONG(1, 0, 1),
@@ -655,8 +659,8 @@ public enum OpCodes {
     LOAD_FALSE_B(LOAD_FALSE, 0, QuickeningTypes.BOOLEAN, LOAD_FALSE_O),
     LOAD_BYTE_O(LOAD_BYTE, 0, QuickeningTypes.OBJECT),
     LOAD_BYTE_I(LOAD_BYTE, 0, QuickeningTypes.INT, LOAD_BYTE_O),
-    LOAD_LONG_O(LOAD_LONG, 0, QuickeningTypes.OBJECT),
-    LOAD_LONG_I(LOAD_LONG, 0, QuickeningTypes.INT, LOAD_LONG_O),
+    LOAD_INT_O(LOAD_INT, 0, QuickeningTypes.OBJECT),
+    LOAD_INT_I(LOAD_INT, 0, QuickeningTypes.INT, LOAD_INT_O),
     LOAD_FAST_O(LOAD_FAST, 0, QuickeningTypes.OBJECT),
     LOAD_FAST_I_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
     LOAD_FAST_I(LOAD_FAST, 0, QuickeningTypes.INT, LOAD_FAST_I_BOX),
