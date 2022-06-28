@@ -159,64 +159,9 @@ DHPy debug_ctx_Type_FromSpec(HPyContext *dctx, HPyType_Spec *spec, HPyType_SpecP
     return DHPy_open(dctx, HPyType_FromSpec(get_info(dctx)->uctx, spec, NULL));
 }
 
-/* ~~~ debug mode implementation of HPyTracker ~~~
+/* ~~~ debug mode implementation of HPyTracker ~~~ */
+/* MOVED TO file 'debug_ctx_tracker.c' */
 
-   This is a bit special and it's worth explaining what is going on.
-
-   The HPyTracker functions need their own debug mode implementation because
-   the debug mode needs to be aware of when a DHPy is closed, for the same
-   reason for why we need debug_ctx_Close.
-
-   So, in theory here we should have our own implementation of a
-   DebugHPyTracker which manages a growable list of handles, and which calls
-   debug_ctx_Close at the end. But, we ALREADY have the logic available, it's
-   implemented in ctx_tracker.c.
-
-   So, here we simply implement debug_ctx_Tracker_* in terms of ctx_Tracker_*:
-   but note that it's VERY different than what the autogen wrappers do:
-
-     - the autogen wrappers DHPy_unwrap() all the handles before calling the
-       "super" implementation. Here we don't, we pass the DHPys directly.
-
-     - the autogen wrappers pass the uctx to the "super" implementation, here
-       we pass the dctx.
-
-   Conceptually, it is equivalent to just have our own implementation of a
-   growable array, but by using this trick we can easily reuse the existing
-   code.
-
-   It is better understood if you think of what happens on PyPy (or any other
-   universal implementation): normally, on PyPy HPyTracker_Add calls PyPy's
-   own implementation (see interp_tracker.py). But when in debug mode,
-   HPyTracker_Add will call the ctx_Tracker_Add defined in ctx_tracker.c,
-   completely bypassing PyPy's own tracker (which is fine). Incidentally, this
-   also means that if PyPy wants to bundle the debug mode, it also needs to
-   compile ctx_tracker.c
-*/
-
-HPyTracker debug_ctx_Tracker_New(HPyContext *dctx, HPy_ssize_t size)
-{
-    return ctx_Tracker_New(dctx, size);
-}
-
-int debug_ctx_Tracker_Add(HPyContext *dctx, HPyTracker ht, DHPy dh)
-{
-    return ctx_Tracker_Add(dctx, ht, dh);
-}
-
-void debug_ctx_Tracker_ForgetAll(HPyContext *dctx, HPyTracker ht)
-{
-    ctx_Tracker_ForgetAll(dctx, ht);
-}
-
-void debug_ctx_Tracker_Close(HPyContext *dctx, HPyTracker ht)
-{
-    // note: ctx_Tracker_Close internally calls HPy_Close() to close each
-    // handle: since we are calling it with the dctx, it will end up calling
-    // debug_ctx_Close, which is exactly what we need to properly record that
-    // the handles were closed.
-    ctx_Tracker_Close(dctx, ht);
-}
 
 int debug_ctx_ContextVar_Get(HPyContext *dctx, DHPy context_var, DHPy defaul_value, DHPy *result) {
     HPy uresult;

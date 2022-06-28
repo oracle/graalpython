@@ -641,10 +641,10 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Dict_New = ctx_DictNew_jni;
     context->ctx_List_New = ctx_ListNew_jni;
 
-    context->ctx_Tracker_New = ctx_Tracker_New;
-    context->ctx_Tracker_Add = ctx_Tracker_Add;
-    context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll;
-    context->ctx_Tracker_Close = ctx_Tracker_Close;
+    context->ctx_Tracker_New = ctx_Tracker_New_jni;
+    context->ctx_Tracker_Add = ctx_Tracker_Add_jni;
+    context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll_jni;
+    context->ctx_Tracker_Close = ctx_Tracker_Close_jni;
 
     context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
     context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;

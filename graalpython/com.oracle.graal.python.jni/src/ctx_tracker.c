@@ -82,26 +82,12 @@
  */
 
 #include "hpy_jni.h"
+#include "ctx_tracker.h"
 
 static const HPy_ssize_t HPYTRACKER_INITIAL_CAPACITY = 5;
 
-typedef struct {
-    HPy_ssize_t capacity;  // allocated handles
-    HPy_ssize_t length;    // used handles
-    HPy *handles;
-} _HPyTracker_s;
-
-
-static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
-    return (_HPyTracker_s *) (ht)._i;
-}
-static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
-    return (HPyTracker) {(HPy_ssize_t) (hp)};
-}
-
-
 _HPy_HIDDEN HPyTracker
-ctx_Tracker_New(HPyContext *ctx, HPy_ssize_t capacity)
+ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity)
 {
     _HPyTracker_s *hp;
     if (capacity == 0) {
@@ -153,33 +139,36 @@ tracker_resize(HPyContext *ctx, _HPyTracker_s *hp, HPy_ssize_t capacity)
 }
 
 _HPy_HIDDEN int
-ctx_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
+raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
+{
+    _HPyTracker_s *hp =  _ht2hp(ht);
+    hp->handles[hp->length++] = h;
+    if (hp->capacity <= hp->length) {
+        if (tracker_resize(ctx, hp, hp->capacity * 2 - 1) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+_HPy_HIDDEN int
+ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     uint64_t bits = toBits(h);
-    if (!isBoxedHandle(bits)) {
-        return 0;
-    } else if (bits < IMMUTABLE_HANDLES) {
-        return 0;
-    } else {
-        _HPyTracker_s *hp =  _ht2hp(ht);
-        hp->handles[hp->length++] = h;
-        if (hp->capacity <= hp->length) {
-            if (tracker_resize(ctx, hp, hp->capacity * 2 - 1) < 0)
-                return -1;
-        }
+    if (!isBoxedHandle(bits) || bits < IMMUTABLE_HANDLES) {
         return 0;
     }
+    return raw_Tracker_Add_jni(ctx, ht, h);
 }
 
 _HPy_HIDDEN void
-ctx_Tracker_ForgetAll(HPyContext *ctx, HPyTracker ht)
+ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     hp->length = 0;
 }
 
 _HPy_HIDDEN void
-ctx_Tracker_Close(HPyContext *ctx, HPyTracker ht)
+ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     HPy_ssize_t i;

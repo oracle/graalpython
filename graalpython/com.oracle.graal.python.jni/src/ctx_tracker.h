@@ -39,48 +39,36 @@
  * SOFTWARE.
  */
 
-/*
- * Native implementation of HPyTupleBuilder.
- * This is written in a way that we could also use the internal functions
- * 'builder_*' to implement HPyListBuilder.
- */
 
-#include <hpy.h>
-#include <jni.h>
-#include <stdint.h>
+#ifndef CTX_TRACKER_H_
+#define CTX_TRACKER_H_
 
-#include "debug_internal.h"
-#include "ctx_tracker.h"
+typedef struct {
+    HPy_ssize_t capacity;  // allocated handles
+    HPy_ssize_t length;    // used handles
+    HPy *handles;
+} _HPyTracker_s;
 
-//*************************
-// BOXING
+static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
+    return (_HPyTracker_s *) (ht)._i;
+}
+static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
+    return (HPyTracker) {(HPy_ssize_t) (hp)};
+}
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+_HPy_HIDDEN HPyTracker
+ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
 
-#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
-#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
-#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+_HPy_HIDDEN int
+raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
 
-#define unboxHandle(value) (value)
-#define boxHandle(handle) (handle)
+_HPy_HIDDEN int
+ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
 
-#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
-#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
-#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
-#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+_HPy_HIDDEN void
+ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
 
-#define toBits(ptr) ((uint64_t) ((ptr)._i))
-#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+_HPy_HIDDEN void
+ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
-
-_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
-
-_HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
-
-_HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);
+#endif /* CTX_TRACKER_H_ */

@@ -39,48 +39,54 @@
  * SOFTWARE.
  */
 
-/*
- * Native implementation of HPyTupleBuilder.
- * This is written in a way that we could also use the internal functions
- * 'builder_*' to implement HPyListBuilder.
- */
-
-#include <hpy.h>
-#include <jni.h>
-#include <stdint.h>
-
 #include "debug_internal.h"
-#include "ctx_tracker.h"
+#include "../ctx_tracker.h"
 
-//*************************
-// BOXING
+/* ~~~ debug mode implementation of HPyTracker ~~~
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+   This is a bit special and it's worth explaining what is going on.
 
-#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
-#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
-#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+   The HPyTracker functions need their own debug mode implementation because
+   the debug mode needs to be aware of when a DHPy is closed, for the same
+   reason for why we need debug_ctx_Close.
 
-#define unboxHandle(value) (value)
-#define boxHandle(handle) (handle)
+   So, in theory here we should have our own implementation of a
+   DebugHPyTracker which manages a growable list of handles, and which calls
+   debug_ctx_Close at the end. But, we ALREADY have the logic available, it's
+   implemented in ctx_tracker.c.
 
-#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
-#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
-#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
-#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+   So, we can share some functions but note that the tracker will not store
+   universal handles but debug handles.
 
-#define toBits(ptr) ((uint64_t) ((ptr)._i))
-#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+   Since we already have some special (and faster) implementation for
+   'ctx_Tracker_Add' and 'ctx_Tracker_Close', we need to have a separate debug
+   mode implementation for them.
+*/
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
+HPyTracker debug_ctx_Tracker_New(HPyContext *dctx, HPy_ssize_t size)
+{
+    return ctx_Tracker_New_jni(dctx, size);
+}
 
-_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
+_HPy_HIDDEN int
+debug_ctx_Tracker_Add(HPyContext *dctx, HPyTracker ht, DHPy h)
+{
+    return raw_Tracker_Add_jni(dctx, ht, h);
+}
 
-_HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
+void debug_ctx_Tracker_ForgetAll(HPyContext *dctx, HPyTracker ht)
+{
+    ctx_Tracker_ForgetAll_jni(dctx, ht);
+}
 
-_HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);
+_HPy_HIDDEN void
+debug_ctx_Tracker_Close(HPyContext *ctx, HPyTracker ht)
+{
+    _HPyTracker_s *hp = _ht2hp(ht);
+    HPy_ssize_t i;
+    for (i=0; i<hp->length; i++) {
+        HPy_Close(ctx, hp->handles[i]);
+    }
+    free(hp->handles);
+    free(hp);
+}
