@@ -571,7 +571,7 @@ def _join_bin(home, name):
 
 def python_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-bash-launcher")
-    launcher = _join_bin(home, "graalpython")
+    launcher = _join_bin(home, "graalpy")
     mx.log(launcher)
     return launcher
 
@@ -584,7 +584,7 @@ def python_managed_gvm(_=None):
 
 def python_enterprise_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
-    launcher = _join_bin(home, "graalpython")
+    launcher = _join_bin(home, "graalpy")
     mx.log(launcher)
     return launcher
 
@@ -602,7 +602,7 @@ def python_managed_gvm_with_assertions():
 
 def python_svm(_=None):
     home = _graalvm_home(envfile="graalpython-launcher")
-    launcher = _join_bin(home, "graalpython")
+    launcher = _join_bin(home, "graalpy")
     mx.log(launcher)
     return launcher
 
@@ -1571,12 +1571,12 @@ def verify_ci(dest_suite, common_ci_dir="ci_common", args=None, ext=('.jsonnet',
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
-    name='Graal.Python license files',
+    name='GraalVM Python license files',
     short_name='pynl',
     dir_name='python',
     dependencies=[],
-    license_files=['LICENSE_GRAALPYTHON.txt'],
-    third_party_license_files=['THIRD_PARTY_LICENSE_GRAALPYTHON.txt'],
+    license_files=['LICENSE_GRAALPY.txt'],
+    third_party_license_files=['THIRD_PARTY_LICENSE_GRAALPY.txt'],
     truffle_jars=[],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
@@ -1588,11 +1588,11 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
-    name='Graal.Python',
+    name='GraalVM Python',
     short_name='pyn',
     installable_id='python',
     dir_name='python',
-    standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
+    standalone_dir_name='graalpy-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
     dependencies=[
@@ -1607,22 +1607,23 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'LLVM Runtime Core': ('lib/sulong', []),
         'LLVM Runtime Native': ('lib/sulong', []),
         'LLVM.org toolchain': ('lib/llvm-toolchain', []),
-        'Graal.Python license files': ('', []),
+        'GraalVM Python license files': ('', []),
     },
     truffle_jars=[
-        'graalpython:GRAALPYTHON',
+        'graalpython:GRAALPY',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:XZ-1.8',
     ],
     support_distributions=[
-        'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
-        'graalpython:GRAALPYTHON_GRAALVM_DOCS',
+        'graalpython:GRAALPY_GRAALVM_SUPPORT',
+        'graalpython:GRAALPY_GRAALVM_DOCS',
     ],
     launcher_configs=[
         mx_sdk.LanguageLauncherConfig(
-            destination='bin/<exe:graalpython>',
-            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
+            destination='bin/<exe:graalpy>',
+            links=['bin/python', 'bin/python3'],
+            jar_distributions=['graalpython:GRAALPY-LAUNCHER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
