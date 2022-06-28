@@ -264,7 +264,7 @@ class SelectorEventLoopSignalTests(test_utils.TestCase):
         self.assertFalse(m_signal.signal.called)
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'),
                      'UNIX Sockets are not supported')
 class SelectorEventLoopUnixSocketTests(test_utils.TestCase):

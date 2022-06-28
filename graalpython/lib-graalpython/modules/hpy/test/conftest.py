@@ -31,7 +31,7 @@ SELECTED_ABI_MODE = os.environ.get("TEST_HPY_ABI", None)
 if SELECTED_ABI_MODE:
     SELECTED_ABI_MODE = [SELECTED_ABI_MODE]
 IS_VALGRIND_RUN = False
-GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpython' and __graalpython__.platform_id == 'native'
+GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.platform_id == 'native'
 def pytest_addoption(parser):
     parser.addoption(
         "--compiler-v", action="store_true",

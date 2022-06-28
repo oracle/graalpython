@@ -2719,7 +2719,7 @@ _bind_nix_socket_error = None
 def skip_unless_bind_unix_socket(test):
     """Decorator for tests requiring a functional bind() for unix sockets."""
     # GR-28433
-    if (not hasattr(socket, 'AF_UNIX')) or sys.implementation.name == 'graalpython':
+    if (not hasattr(socket, 'AF_UNIX')) or sys.implementation.name == 'graalpy':
         return unittest.skip('No UNIX Sockets')(test)
     global _bind_nix_socket_error
     if _bind_nix_socket_error is None:

@@ -38,7 +38,7 @@ IS_OPENSSL_1_1_0 = not IS_LIBRESSL and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0)
 IS_OPENSSL_1_1_1 = not IS_LIBRESSL and ssl.OPENSSL_VERSION_INFO >= (1, 1, 1)
 PY_SSL_DEFAULT_CIPHERS = sysconfig.get_config_var('PY_SSL_DEFAULT_CIPHERS')
 
-IS_GRAALVM_SSL = sys.implementation.name == 'graalpython'
+IS_GRAALVM_SSL = sys.implementation.name == 'graalpy'
 
 PROTOCOL_TO_TLS_VERSION = {}
 for proto, ver in (

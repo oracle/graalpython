@@ -229,7 +229,7 @@ class TestSysConfig(unittest.TestCase):
 
     def test_get_scheme_names(self):
         # XXX Graalpython change: add our scheme
-        wanted = ('graalpython', 'nt', 'nt_user', 'osx_framework_user',
+        wanted = ('graalpy', 'nt', 'nt_user', 'osx_framework_user',
                   'posix_home', 'posix_prefix', 'posix_user')
         self.assertEqual(get_scheme_names(), wanted)
 
