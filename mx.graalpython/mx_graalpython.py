@@ -37,6 +37,7 @@ import re
 import shlex
 import shutil
 import sys
+from functools import wraps
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
@@ -2373,6 +2374,13 @@ def run_leak_launcher(input_args, out=None):
         return False
 
 
+def no_return(fn):
+    @wraps(fn)
+    def inner(*args, **kwargs):
+        fn(*args, **kwargs)
+    return inner
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2386,8 +2394,8 @@ mx.update_commands(SUITE, {
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
-    'python-svm': [python_svm, ''],
-    'python-gvm': [python_gvm, ''],
+    'python-svm': [no_return(python_svm), ''],
+    'python-gvm': [no_return(python_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
