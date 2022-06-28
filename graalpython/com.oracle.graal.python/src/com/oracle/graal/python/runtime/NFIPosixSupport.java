@@ -320,24 +320,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // Temporary - will be replaced with something else when we move this to Truffle
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
-
-            PythonOS os = getPythonOS();
-            String multiArch = PythonUtils.getPythonArch().toJavaStringUncached() + "-" + os.getName().toJavaStringUncached();
-            String cacheTag = "graalpython-38";
-            Env env = context.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainId = toolchain.getIdentifier();
-
-            // only use '.dylib' if we are on 'Darwin-native'
-            String soExt;
-            if (os == PLATFORM_DARWIN && "native".equals(toolchainId)) {
-                soExt = ".dylib";
-            } else {
-                soExt = ".so";
-            }
-
-            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached();
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();
