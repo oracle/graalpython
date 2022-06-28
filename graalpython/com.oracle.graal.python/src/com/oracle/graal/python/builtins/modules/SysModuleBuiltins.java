@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
@@ -411,7 +412,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     protected static PSimpleNamespace makeImplementation(PythonObjectFactory factory, PTuple versionInfo, TruffleString gmultiarch) {
         final PSimpleNamespace ns = factory.createSimpleNamespace();
         ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
-        ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached("graalpython-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
+        ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID + "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
         ns.setAttribute(T_VERSION, versionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);
         ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.VERSION_HEX);
