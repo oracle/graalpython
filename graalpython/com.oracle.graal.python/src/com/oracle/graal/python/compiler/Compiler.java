@@ -2306,12 +2306,16 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (bindingName != null) {
                     unit.popBlock();
                     unit.useNextBlock(new Block());
+                    addOp(LOAD_NONE);
+                    addNameOp(bindingName, ExprContext.Store);
                     addNameOp(bindingName, ExprContext.Delete);
                 }
                 addOp(POP_EXCEPT);
                 jumpToFinally(finallyBlockNormal, end);
                 if (bindingName != null) {
                     unit.useNextBlock(bindingCleanerExcept);
+                    addOp(LOAD_NONE);
+                    addNameOp(bindingName, ExprContext.Store);
                     addNameOp(bindingName, ExprContext.Delete);
                     cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
                 }
@@ -2507,6 +2511,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 } else if (info instanceof BlockInfo.HandlerBindingCleanup) {
                     String bindingName = ((BlockInfo.HandlerBindingCleanup) info).bindingName;
                     if (bindingName != null) {
+                        addOp(LOAD_NONE);
+                        addNameOp(bindingName, ExprContext.Store);
                         addNameOp(bindingName, ExprContext.Delete);
                     }
                 } else if (info instanceof BlockInfo.FinallyHandler) {
