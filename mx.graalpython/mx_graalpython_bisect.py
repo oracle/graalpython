@@ -190,7 +190,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
         args.enterprise = sec.getboolean('enterprise', False)
         args.no_clean = sec.getboolean('no_clean', False)
-        args.rerun_with_commands = sec['rerun_with_commands']
+        args.rerun_with_commands = sec.get('rerun_with_commands')
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('bad', help="Bad commit for bisection")
