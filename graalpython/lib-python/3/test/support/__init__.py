@@ -2992,7 +2992,7 @@ def run_in_subinterp(code):
             raise unittest.SkipTest("run_in_subinterp() cannot be used "
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
-    assert sys.implementation.name != "graalpython", "Truffle change - we do not support subinterp yet"
+    assert sys.implementation.name != "graalpy", "Truffle change - we do not support subinterp yet"
     import _testcapi
     return _testcapi.run_in_subinterp(code)
 

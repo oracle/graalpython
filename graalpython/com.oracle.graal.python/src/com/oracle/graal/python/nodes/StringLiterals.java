@@ -190,7 +190,7 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_SITE = tsLiteral("site");
 
-    public static final TruffleString T_GRAALPYTHON = tsLiteral("graalpython");
+    public static final TruffleString T_GRAALPYTHON = tsLiteral("graalpy");
 
     public static final TruffleString T_WARNINGS = tsLiteral("warnings");
 

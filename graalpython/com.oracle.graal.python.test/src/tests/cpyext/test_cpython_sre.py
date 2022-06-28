@@ -39,7 +39,7 @@
 
 import sys
 
-GRAALPYTHON = sys.implementation.name == "graalpython"
+GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
 class TestSRE:

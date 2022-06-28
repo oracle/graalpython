@@ -41,7 +41,7 @@ import sys
 
 
 def test_pow():
-    if sys.implementation.name == "graalpython":
+    if sys.implementation.name == "graalpy":
         try:
             2 ** (2**128)
         except ArithmeticError:

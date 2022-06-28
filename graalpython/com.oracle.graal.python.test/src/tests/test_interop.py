@@ -42,7 +42,7 @@ from unittest import skipIf
 
 import sys
 
-if sys.implementation.name == "graalpython":
+if sys.implementation.name == "graalpy":
     import polyglot
     from __graalpython__ import is_native
 

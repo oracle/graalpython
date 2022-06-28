@@ -338,8 +338,8 @@ def known_packages():
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 scipy_build_env[key] = os.environ[key]
-        
-        if sys.implementation.name == "graalpython":
+
+        if sys.implementation.name == "graalpy":
             if not os.environ.get("VIRTUAL_ENV", None):
                 xit("SciPy can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
@@ -368,7 +368,7 @@ def known_packages():
         setuptools(**kwargs)
         build_env = {"MAX_CONCURRENCY": "0"}
         install_from_pypi("Pillow==6.2.0", build_cmd=["build_ext", "--disable-jpeg"], env=build_env, **kwargs)
-        
+
     @pip_package()
     def matplotlib(**kwargs):
         setuptools(**kwargs)
@@ -622,7 +622,7 @@ def main(argv):
     )
 
     args = parser.parse_args(argv)
-    
+
     quiet_flag = ["-q"] if args.quiet else []
 
     if args.command == "list":

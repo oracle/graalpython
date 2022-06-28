@@ -45,7 +45,7 @@ from importlib import invalidate_caches
 from string import Formatter
 __dir__ = __file__.rpartition("/")[0]
 
-GRAALPYTHON = sys.implementation.name == "graalpython"
+GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
 def unhandled_error_compare(x, y):
@@ -91,7 +91,7 @@ def ccompile(self, name):
         for block in iter(lambda: f.read(4096),b""):
             m.update(block)
     cur_checksum = m.hexdigest()
-    
+
     # see if there is already a checksum file
     checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
     available_checksum = ""
@@ -99,12 +99,12 @@ def ccompile(self, name):
         # read checksum file
         with open(checksum_file, "r") as f:
             available_checksum = f.readline()
-            
+
     # note, the suffix is already a string like '.so'
     binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
-    
+
     # Compare checksums and only re-compile if different.
-    # Note: It could be that the C source file's checksum didn't change but someone 
+    # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
         module = Extension(name, sources=[source_file])
@@ -118,7 +118,7 @@ def ccompile(self, name):
             description='',
             ext_modules=[module]
         )
-        
+
         # write new checksum
         with open(checksum_file, "w") as f:
             f.write(cur_checksum)
@@ -160,7 +160,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
 
 #ifdef SINGLEARG
     {singleargumentname} = ___arg;
-#else 
+#else
 #ifndef NOARGS
     if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
         return NULL;
@@ -522,7 +522,7 @@ def CPyExtType(name, code, **kwargs):
         0,                  /* sq_repeat */
         {sq_item},          /* sq_item */
     }};
-    
+
     static PyMappingMethods {name}_mapping_methods = {{
         {mp_length},        /* mp_length */
         {mp_subscript},     /* mp_subscript */

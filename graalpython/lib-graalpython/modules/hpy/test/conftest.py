@@ -1,18 +1,18 @@
 # MIT License
-# 
+#
 # Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -55,10 +55,10 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
-    if (sys.implementation.name in ["graalpython", "pypy"] and
+    if (sys.implementation.name in ["graalpy", "pypy"] and
         "syncgc" in [mark.name for mark in item.iter_markers()]):
         pytest.skip(f"cannot run syncgc test on {sys.implementation.name}")
-    if (sys.implementation.name in ["graalpython"] and
+    if (sys.implementation.name in ["graalpy"] and
         "tp_traverse" in [mark.name for mark in item.iter_markers()]):
         pytest.skip(f"{sys.implementation.name} does not call tp_traverse")
 

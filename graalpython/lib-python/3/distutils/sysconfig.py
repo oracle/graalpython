@@ -549,7 +549,7 @@ def get_config_var(name):
     return get_config_vars().get(name)
 
 
-if sys.implementation.name == "graalpython":
+if sys.implementation.name == "graalpy":
     # Truffle: import our overrides
     from distutils.sysconfig_graalpython import *
     from distutils.sysconfig_graalpython import _config_vars # needed by setuptools

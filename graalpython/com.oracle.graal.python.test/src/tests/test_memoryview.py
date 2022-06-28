@@ -166,7 +166,7 @@ def test_pack():
     assert b == b'\x00'
 
 def test_read_after_resize():
-    if sys.implementation.name != "graalpython":
+    if sys.implementation.name != "graalpy":
         return
     # CPython prevents resizing of acquired buffers at all to avoid a segfault
     # We don't want to impose locking on managed objects because we cannot automatically
