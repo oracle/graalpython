@@ -77,9 +77,9 @@ if not md:
 print("Here is what we found: '%s'" % md[1])
 ```
 
-To run it, pass the `--jvm --polyglot` option to the `graalpython` launcher:
+To run it, pass the `--jvm --polyglot` option to the `graalpy` launcher:
 ```shell
-graalpython --jvm --polyglot polyglot_example.py
+graalpy --jvm --polyglot polyglot_example.py
 ```
 
 This program matches Python strings using the JavaScript regular expression object.

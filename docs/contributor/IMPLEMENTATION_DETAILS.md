@@ -147,10 +147,10 @@ and holding on to the last (if any) in a local variable.
 
 ## Patching of Packages
 
-Some PyPI packages contain code that is not compatible with GraalPython.
-To overcome this limitation and support such packages, GraalPython contains
+Some PyPI packages contain code that is not compatible with GraalPy.
+To overcome this limitation and support such packages, GraalPy contains
 patches for some popular packages. The patches are applied to packages
-installed via GraalPython specific utility `ginstall` and also to packages
+installed via GraalPy specific utility `ginstall` and also to packages
 installed via `pip`. This is achieved by patching `pip` code during the loading
 of the `pip` module in `pip_hook.py`.
 

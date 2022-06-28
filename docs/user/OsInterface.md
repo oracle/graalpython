@@ -24,8 +24,8 @@ This approach is the most compatible with CPython and provides bare access to th
 
 By default, this implementation bypasses the Truffle abstraction layer, therefore it is not sandboxed and does not support custom implementations of [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html) and other Polyglot API providers related to system interfaces.
 
-The native backend is chosen by default when GraalVM Python is started via the `graalpython` or any other Python related launcher inside GraalVM.
-The exception are Python related launchers with `-managed` suffix available only in GraalVM Enterprise (e.g., `graalpython-managed`), which by default use the `java` POSIX backend.
+The native backend is chosen by default when GraalVM Python is started via the `graalpy` or any other Python related launcher inside GraalVM.
+The exception are Python related launchers with `-managed` suffix available only in GraalVM Enterprise (e.g., `graalpy-managed`), which by default use the `java` POSIX backend.
 
 ### Limitations of the native backend
 
@@ -67,4 +67,4 @@ Apart from operating system interfaces exposed as builtin Python level modules, 
 How such accesses are handled depends on the GraalVM LLVM runtime configuration.
 
 At this point, the only combination where OS handles, such as file descriptors, can be shared between Python and the C code of Python extensions is with `native` PosixModuleBackend and `native` mode of GraalVM LLVM runtime.
-This combination is the default for the `graalpython` launcher.
+This combination is the default for the `graalpy` launcher.

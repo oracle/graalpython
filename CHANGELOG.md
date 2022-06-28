@@ -25,11 +25,11 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 * Remove `PYPY_VERSION` from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
 * Intrinsify and optimize more of the core language for better startup and reduced footprint.
-* Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPython
+* Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPy
 * Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API
 * Add support for the `ctypes` module, enabling more native extensions to run that use the ctypes API
 * Fix multiple REPL issues reported on Github, you can now paste blocks of code and use the numpad in the REPL.
-* Make our marshal format compatible with CPython, so binary data can now be exchanged between CPython and GraalPython processes.
+* Make our marshal format compatible with CPython, so binary data can now be exchanged between CPython and GraalPy processes.
 * Make most `socket` module tests pass in native mode by using a native extension, allowing usage of all POSIX socket APIs where before only those supported on Java could be used.
 * Various compatibility fixes to make the `psutil` package work.
 
@@ -43,7 +43,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Update the supported HPy version to 0.0.2
 * Use the new Truffle safepoint mechanism for more efficient GIL releases, signal handlers, and weakref callbacks
 * Initial support for the `psutil` and `PyGame` packages
-* GraalPython not longer unconditionally creates `__pycache__` if the file name "sitecustomize.py" exists in the current working directory
+* GraalPy not longer unconditionally creates `__pycache__` if the file name "sitecustomize.py" exists in the current working directory
 
 ## Version 21.1.0
 
@@ -53,7 +53,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
 * Support catching exceptions from other languages or Java with catch-all except blocks
 * Support isinstance and issubclass with instances and classes of other languages
-* Use native posix functions in the GraalPython Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
+* Use native posix functions in the GraalPy Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
 
 ## Version 21.0.0
 
@@ -127,7 +127,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Jython mode: treat Java `null` as identical to Python `None` when comparing with the `is` operator
 * Jython mode: `isinstance` now works with Java classes and objects
 * Improve errno handling in `posix` module
-* Move all GraalPython specific functions on `sys` or `builtins` to the `__graalpython__` module
+* Move all GraalPy specific functions on `sys` or `builtins` to the `__graalpython__` module
 
 ## Version 20.0.0
 
@@ -143,7 +143,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Implement `charmap_build` function
 * Implement `hexversion` in sys module
 * Implement `_lzma` module
-* Implement enough of `socket.socket` to run `graalpython -m http.server` and download non-encrypted http resources
+* Implement enough of `socket.socket` to run `graalpy -m http.server` and download non-encrypted http resources
 * Fix printing of Pandas data frames
 * Fix a bug in `bytes.startswith` for tuple arguments
 * Fix destructuring assignments of arbitrary iterators
