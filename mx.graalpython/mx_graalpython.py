@@ -1610,20 +1610,20 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'GraalVM Python license files': ('', []),
     },
     truffle_jars=[
-        'graalpython:GRAALPY',
+        'graalpython:GRAALPYTHON',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:XZ-1.8',
     ],
     support_distributions=[
-        'graalpython:GRAALPY_GRAALVM_SUPPORT',
-        'graalpython:GRAALPY_GRAALVM_DOCS',
+        'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
+        'graalpython:GRAALPYTHON_GRAALVM_DOCS',
     ],
     launcher_configs=[
         mx_sdk.LanguageLauncherConfig(
             destination='bin/<exe:graalpy>',
             links=['bin/python', 'bin/python3'],
-            jar_distributions=['graalpython:GRAALPY-LAUNCHER'],
+            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
