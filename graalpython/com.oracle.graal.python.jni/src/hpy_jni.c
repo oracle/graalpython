@@ -832,6 +832,45 @@ static inline jlong from_dh(HPyContext *dctx, DHPy dh_result)
     return result;
 }
 
+/* just for better readability */
+typedef HPy_buffer DHPy_buffer;
+typedef HPy_buffer UHPy_buffer;
+
+/* Copies everything from 'src' to 'dest' and unwraps the 'obj' debug handle. */
+static inline void
+_buffer_d2u(HPyContext *dctx, const DHPy_buffer *src, UHPy_buffer *dest)
+{
+    dest->buf = src->buf;
+    dest->obj = DHPy_unwrap(dctx, src->obj);
+    dest->len = src->len;
+    dest->itemsize = src->itemsize;
+    dest->readonly = src->readonly;
+    dest->ndim = src->ndim;
+    dest->format = src->format;
+    dest->shape = src->shape;
+    dest->strides = src->strides;
+    dest->suboffsets = src->suboffsets;
+    dest->internal = src->internal;
+}
+
+/* Copies everything from 'src' to 'dest' and opens a debug handle for 'obj'. */
+static inline void
+_buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
+{
+    dest->buf = src->buf;
+    dest->obj = DHPy_open(dctx, src->obj);
+    dest->len = src->len;
+    dest->itemsize = src->itemsize;
+    dest->readonly = src->readonly;
+    dest->ndim = src->ndim;
+    dest->format = src->format;
+    dest->shape = src->shape;
+    dest->strides = src->strides;
+    dest->suboffsets = src->suboffsets;
+    dest->internal = src->internal;
+}
+
+
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx) {
     HPyContext *dctx = (HPyContext *) ctx;
     return from_dh(dctx, ((DHPy (*)(HPyContext *)) target)(dctx));
@@ -1032,18 +1071,25 @@ JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInitproc)(JNIEnv *env, jclass claz
 JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;
+    DHPy_buffer dbuffer;
     DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    jint result = f(dctx, dh_arg1, (HPy_buffer *) arg2, (int) arg3);
+    jint result = f(dctx, dh_arg1, &dbuffer, (int) arg3);
     DHPy_close_and_check(dctx, dh_arg1);
+    _buffer_d2u(dctx, &dbuffer, (UHPy_buffer *) arg2);
+    DHPy_close(dctx, dbuffer.obj);
     return result;
 }
 
 JNIEXPORT void JNICALL TRAMPOLINE(executeDebugReleasebufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_releasebufferproc f = (HPyFunc_releasebufferproc) target;
+    DHPy_buffer dbuf;
+    _buffer_u2d(dctx, (UHPy_buffer *) arg2, &dbuf);
     DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    f(dctx, dh_arg1, (HPy_buffer *) arg2);
+    f(dctx, dh_arg1, &dbuf);
     DHPy_close_and_check(dctx, dh_arg1);
+    // TODO(fa): should we use DHPy_close_and_check ?
+    DHPy_close(dctx, dbuf.obj);
 }
 
 JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugRichcomparefunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
