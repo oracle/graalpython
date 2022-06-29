@@ -1367,6 +1367,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     void toNative() {
         if (!isPointer()) {
             CompilerDirectives.transferToInterpreter();
+            if (!getContext().getEnv().isNativeAccessAllowed()) {
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
+            }
             nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this));
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
