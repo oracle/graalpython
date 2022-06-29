@@ -956,7 +956,6 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -989,16 +988,8 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
+            wrapper.free(ensureReleaseNativeWrapperNode());
             releaseNativeWrapperNode.execute(cArguments[3]);
-        }
-
-        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
-            if (wrapperLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
-            }
-            return wrapperLib;
         }
 
         @Override
@@ -1070,7 +1061,6 @@ public abstract class ExternalFunctionNodes {
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadVarArgsNode readVarargsNode;
-        @Child private PythonNativeWrapperLibrary wrapperLib;
 
         public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1093,15 +1083,7 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
-        }
-
-        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
-            if (wrapperLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
-            }
-            return wrapperLib;
+            wrapper.free(ensureReleaseNativeWrapperNode());
         }
 
         @Override
@@ -1840,11 +1822,10 @@ public abstract class ExternalFunctionNodes {
     @GenerateUncached
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object doNativeWrapper(PythonContext context, TruffleString name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
                         @Cached DefaultCheckFunctionResultNode recursive) {
-            return recursive.execute(context, name, lib.getDelegate(result));
+            return recursive.execute(context, name, result.getDelegate());
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")

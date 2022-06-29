@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -57,7 +55,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -79,15 +76,13 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(
-                        @Exclusive @Cached IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
+        public boolean isPointer() {
+            return isNative();
         }
 
         @ExportMessage
-        public long asPointer(
-                        @Exclusive @Cached PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(this);
+        public long asPointer() {
+            return getPrimitiveNativePointer();
         }
 
         @ExportMessage
@@ -95,7 +90,9 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ToPyObjectNode toPyObjectNode,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            setNativePointer(toPyObjectNode.execute(this));
+            if (!isNative()) {
+                setNativePointer(toPyObjectNode.execute(this));
+            }
         }
 
         @ExportMessage
@@ -125,7 +122,6 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
@@ -149,7 +145,7 @@ public abstract class ManagedMethodWrappers {
                 PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 
                 // execute
-                return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
+                return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
             } finally {
                 gil.release(mustRelease);
             }
@@ -170,7 +166,6 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
@@ -184,7 +179,7 @@ public abstract class ManagedMethodWrappers {
 
                 // convert args
                 Object varArgs = toJavaNode.execute(arguments[0]);
-                return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
+                return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
             } finally {
                 gil.release(mustRelease);
             }

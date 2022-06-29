@@ -578,7 +578,8 @@ PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
 }
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
-PyAPI_FUNC(void) PyTruffle_Free(void *obj) {
+PyAPI_FUNC(void) PyTruffle_Free(unsigned long val) {
+	void *obj = (void*) val;
     if (points_to_handle_space(obj) && is_handle(obj)) {
         release_handle(obj);
     } else {

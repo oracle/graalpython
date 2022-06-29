@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
@@ -486,29 +485,21 @@ public class PThreadState extends PythonNativeWrapper {
 
     // TO POINTER / AS POINTER / TO NATIVE
     @ExportMessage
-    protected boolean isPointer(
-                    @Exclusive @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    protected boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    public long asPointer(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
-        }
-        return interopLibrary.asPointer(nativePointer);
+    public long asPointer() {
+        return getPrimitiveNativePointer();
     }
 
     @ExportMessage
     protected void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ToPyObjectNode toPyObjectNode,
                     @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
-        if (!lib.isNative(this)) {
+        if (!isNative()) {
             setNativePointer(toPyObjectNode.execute(this));
         }
     }

@@ -26,9 +26,10 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.floats;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -40,8 +41,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
@@ -76,7 +75,7 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     public boolean isNative() {
-        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
+        return getNativeWrapper() != null && getNativeWrapper().isNative();
     }
 
     public static PFloat create(PythonLanguage lang, double value) {

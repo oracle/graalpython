@@ -47,12 +47,10 @@ import java.lang.reflect.Field;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.GilNode;
@@ -66,8 +64,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -169,27 +165,18 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        boolean isPointer(
-                        @Exclusive @Cached IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
+        boolean isPointer() {
+            return isNative();
         }
 
         @ExportMessage
-        long asPointer(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-            Object nativePointer = lib.getNativePointer(this);
-            if (nativePointer instanceof Long) {
-                return (long) nativePointer;
-            }
-            return interopLibrary.asPointer(nativePointer);
+        long asPointer() {
+            return getPrimitiveNativePointer();
         }
 
-        public void free(PythonNativeWrapperLibrary lib) {
-            if (lib.isNative(this)) {
-                Object nativePointer = lib.getNativePointer(this);
-                assert nativePointer instanceof Long;
-                freeBoundary((long) nativePointer);
+        public void free() {
+            if (isNative()) {
+                freeBoundary(getPrimitiveNativePointer());
             }
         }
     }
@@ -206,15 +193,14 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public TruffleString getString(PythonNativeWrapperLibrary lib) {
-            return ((TruffleString) lib.getDelegate(this));
+        public TruffleString getString() {
+            return ((TruffleString) getDelegate());
         }
 
         @ExportMessage
         long getArraySize(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return codePointLengthNode.execute(getString(lib), TS_ENCODING) + 1;
+            return codePointLengthNode.execute(getString(), TS_ENCODING) + 1;
         }
 
         @ExportMessage
@@ -225,12 +211,11 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         final byte readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
-                TruffleString s = getString(lib);
+                TruffleString s = getString();
                 // TODO GR-37217: use sys.getdefaultencoding if the string contains non-latin1
                 // codepoints
                 assert s.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
@@ -249,9 +234,8 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         final boolean isArrayElementReadable(long identifier,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return 0 <= identifier && identifier < getArraySize(lib, codePointLengthNode);
+            return 0 <= identifier && identifier < getArraySize(codePointLengthNode);
         }
 
         @ExportMessage
@@ -262,25 +246,23 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         Object getNativeType(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getArraySize(lib, codePointLengthNode));
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getArraySize(codePointLengthNode));
         }
 
         @ExportMessage
         void toNative(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+            if (!PythonContext.get(switchEncodingNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(stringToNativeUtf8Bytes(getString(lib), switchEncodingNode, copyToByteArrayNode));
+            if (!isNative()) {
+                setNativePointer(stringToNativeUtf8Bytes(getString(), switchEncodingNode, copyToByteArrayNode));
             }
         }
     }
@@ -297,13 +279,13 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public byte[] getByteArray(PythonNativeWrapperLibrary lib) {
-            return ((byte[]) lib.getDelegate(this));
+        public byte[] getByteArray() {
+            return ((byte[]) getDelegate());
         }
 
         @ExportMessage
-        long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return getByteArray(lib).length;
+        long getArraySize() {
+            return getByteArray().length;
         }
 
         @ExportMessage
@@ -314,13 +296,12 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
             boolean mustRelease = gil.acquire();
             try {
                 try {
                     int idx = PInt.intValueExact(index);
-                    byte[] arr = getByteArray(lib);
+                    byte[] arr = getByteArray();
                     if (idx >= 0 && idx < arr.length) {
                         return arr[idx];
                     } else if (idx == arr.length) {
@@ -337,9 +318,8 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long identifier,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return 0 <= identifier && identifier < getArraySize(lib);
+        boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
         }
 
         @ExportMessage
@@ -357,15 +337,14 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         void toNative(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+            if (!PythonContext.get(invalidateNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(byteArrayToNativeInt8(getByteArray(lib), true));
+            if (!isNative()) {
+                setNativePointer(byteArrayToNativeInt8(getByteArray(), true));
             }
         }
     }
@@ -381,13 +360,13 @@ public abstract class CArrayWrappers {
             super(delegate);
         }
 
-        public int[] getIntArray(PythonNativeWrapperLibrary lib) {
-            return ((int[]) lib.getDelegate(this));
+        public int[] getIntArray() {
+            return ((int[]) getDelegate());
         }
 
         @ExportMessage
-        long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return getIntArray(lib).length;
+        long getArraySize() {
+            return getIntArray().length;
         }
 
         @ExportMessage
@@ -397,12 +376,11 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
             boolean mustRelease = gil.acquire();
             try {
                 int idx = PInt.intValueExact(index);
-                int[] arr = getIntArray(lib);
+                int[] arr = getIntArray();
                 if (idx >= 0 && idx < arr.length) {
                     return arr[idx];
                 }
@@ -416,23 +394,20 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long identifier,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return 0 <= identifier && identifier < getArraySize(lib);
+        boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
         }
 
         @ExportMessage
         void toNative(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            if (!PythonContext.get(lib).isNativeAccessAllowed()) {
+            if (!PythonContext.get(invalidateNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
             invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                int[] data = getIntArray(lib);
-                setNativePointer(intArrayToNativeInt32(data));
+            if (!isNative()) {
+                setNativePointer(intArrayToNativeInt32(getIntArray()));
             }
         }
     }

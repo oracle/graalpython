@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
@@ -61,7 +59,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -131,12 +128,11 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object execute(TruffleObjectNativeWrapper object, String key,
-                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
                         @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
-                Object delegate = lib.getDelegate(object);
+                Object delegate = object.getDelegate();
 
                 // special key for the debugger
                 if (J_GP_OBJECT.equals(key)) {
@@ -155,13 +151,12 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     void writeMember(String member, Object value,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteNativeMemberNode writeNativeMemberNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         try {
             if (OB_REFCNT.getMemberNameJavaString().equals(member)) {
-                Object delegate = lib.getDelegate(this);
+                Object delegate = getDelegate();
                 writeNativeMemberNode.execute(delegate, this, member, value);
             } else {
                 CompilerDirectives.transferToInterpreter();
@@ -176,15 +171,13 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    long asPointer(
-                    @Cached PAsPointerNode pAsPointerNode) {
-        return pAsPointerNode.execute(this);
+    long asPointer() {
+        return getPrimitiveNativePointer();
     }
 
     @ExportMessage

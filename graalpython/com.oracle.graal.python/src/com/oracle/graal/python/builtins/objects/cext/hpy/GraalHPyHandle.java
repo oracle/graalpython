@@ -48,7 +48,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GetHPyHandleForSingleton;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -71,7 +70,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
-@ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
     private static final int UNINITIALIZED = Integer.MIN_VALUE;
 
@@ -224,21 +222,8 @@ public final class GraalHPyHandle implements TruffleObject {
         }
     }
 
-    @ExportMessage
     Object getDelegate() {
         return delegate;
-    }
-
-    @ExportMessage
-    Object getNativePointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxHandle(id) : null;
-    }
-
-    @ExportMessage
-    boolean isNative(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile);
     }
 
     @ExportMessage

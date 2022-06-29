@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -93,9 +92,8 @@ public class PyTruffleObjectFree implements TruffleObject {
 
         public abstract int execute(Object pointerObject);
 
-        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)", limit = "3")
+        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
             if (nativeWrapper.getRefCount() > 0) {
@@ -104,10 +102,10 @@ public class PyTruffleObjectFree implements TruffleObject {
             }
 
             // clear native wrapper
-            Object delegate = lib.getDelegate(nativeWrapper);
+            Object delegate = nativeWrapper.getDelegate();
             clearNativeWrapperNode.execute(delegate, nativeWrapper);
 
-            ReleaseHandleNode.doNativeWrapper(nativeWrapper, lib, callReleaseHandleNode);
+            ReleaseHandleNode.doNativeWrapper(nativeWrapper, callReleaseHandleNode);
             return 1;
         }
 
@@ -134,17 +132,16 @@ public class PyTruffleObjectFree implements TruffleObject {
 
         public abstract void execute(PythonNativeWrapper nativeWrapper);
 
-        @Specialization(limit = "3")
+        @Specialization
         static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
 
             // If wrapper already received toNative, release the handle or free the native memory.
-            if (lib.isNative(nativeWrapper)) {
+            if (nativeWrapper.isNative()) {
                 // We do not call 'truffle_release_handle' directly because we still want to support
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
                 // necessary distinction.
-                Object nativePointer = lib.getNativePointer(nativeWrapper);
+                long nativePointer = nativeWrapper.getPrimitiveNativePointer();
                 if (LOGGER.isLoggable(Level.FINER)) {
                     LOGGER.finer(() -> PythonUtils.formatJString("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
                 }

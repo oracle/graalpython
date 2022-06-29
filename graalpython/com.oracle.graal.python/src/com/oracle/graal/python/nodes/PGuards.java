@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -642,7 +642,7 @@ public abstract class PGuards {
 
     @InliningCutoff
     public static boolean isNativeWrapper(PythonAbstractObject object) {
-        Object wrapper = object.getNativeWrapper();
-        return wrapper != null && PythonNativeWrapperLibrary.getUncached().isNative(wrapper);
+        DynamicObjectNativeWrapper wrapper = object.getNativeWrapper();
+        return wrapper != null && wrapper.isNative();
     }
 }

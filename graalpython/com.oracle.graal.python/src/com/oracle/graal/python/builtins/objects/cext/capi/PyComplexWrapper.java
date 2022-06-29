@@ -43,15 +43,12 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -70,8 +67,8 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PComplex getPComplex(PythonNativeWrapperLibrary lib) {
-        return (PComplex) lib.getDelegate(this);
+    public PComplex getPComplex() {
+        return (PComplex) getDelegate();
     }
 
     @ExportMessage
@@ -93,13 +90,12 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    Object readMember(String key,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnknownIdentifierException {
+    Object readMember(String key) throws UnknownIdentifierException {
         switch (key) {
             case J_REAL:
-                return getPComplex(lib).getReal();
+                return getPComplex().getReal();
             case J_IMAG:
-                return getPComplex(lib).getImag();
+                return getPComplex().getImag();
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw UnknownIdentifierException.create(key);
@@ -112,20 +108,13 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    long asPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
-        }
-        return interopLib.asPointer(nativePointer);
+    long asPointer() {
+        return getPrimitiveNativePointer();
     }
 
     @ExportMessage

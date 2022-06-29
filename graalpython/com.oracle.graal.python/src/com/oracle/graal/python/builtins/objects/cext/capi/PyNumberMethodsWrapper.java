@@ -136,7 +136,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
-public class PyNumberMethodsWrapper extends PythonNativeWrapper {
+public final class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @CompilationFinal(dimensions = 1) private static final NativeMember[] NUMBER_METHODS = new NativeMember[]{
                     NB_ABSOLUTE,
@@ -214,8 +214,8 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonManagedClass getPythonClass(PythonNativeWrapperLibrary lib) {
-        return (PythonManagedClass) lib.getDelegate(this);
+    public PythonManagedClass getPythonClass() {
+        return (PythonManagedClass) getDelegate();
     }
 
     @ExportMessage
@@ -235,14 +235,13 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadMethodNode readMethodNode,
                     @Exclusive @Cached ToSulongNode toSulongNode,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             // translate key to attribute name
-            return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
+            return toSulongNode.execute(readMethodNode.execute(getPythonClass(), member));
         } finally {
             gil.release(mustRelease);
         }

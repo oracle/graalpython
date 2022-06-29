@@ -133,7 +133,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -435,12 +434,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") Object flags,
                         @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
-            return nativeWrapperLibrary.getDelegate(callable);
+            return callable.getDelegate();
         }
 
         @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
@@ -450,37 +448,33 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
-            Object managedCallable = callable.getDelegateSlowPath();
+            Object managedCallable = callable.getDelegate();
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, getLanguage(), factory, false);
             return function != null ? function : managedCallable;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"}, limit = "1")
         @SuppressWarnings("unused")
+        @Specialization(guards = {"isTypeNode.execute(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"}, limit = "1")
         static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") TruffleString name, PyCFunctionDecorator callable, PNone wrapper, Object type, Object flags,
-                        PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary,
-                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+                        PythonObjectFactory factory, @Cached TypeNodes.IsTypeNode isTypeNode) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            return nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
+            return ((PythonNativeWrapper) callable.getNativeFunction()).getDelegate();
         }
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
         @TruffleBoundary
-        static Object doDecoratedManaged(TruffleString name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+        Object doDecoratedManaged(TruffleString name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags,
-                            signature, PythonLanguage.get(nativeWrapperLibrary), factory, false);
+            Object managedCallable = ((PythonNativeWrapper) callable.getNativeFunction()).getDelegate();
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, PythonLanguage.get(this), factory, false);
             if (function != null) {
                 return function;
             }
@@ -495,8 +489,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction doNativeCallableWithType(TruffleString name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
-            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags,
-                            signature, getLanguage(), factory, true);
+            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags, signature, getLanguage(), factory, true);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -511,8 +504,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
-            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0,
-                            PExternalFunctionWrapper.DIRECT, getLanguage(), factory, true);
+            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0, PExternalFunctionWrapper.DIRECT, getLanguage(), factory, true);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -916,10 +908,9 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleSetSulongTypeNode extends NativeBuiltin {
 
-        @Specialization(limit = "1")
-        static Object doPythonObject(PythonClassNativeWrapper klass, Object ptr,
-                        @CachedLibrary("klass") PythonNativeWrapperLibrary lib) {
-            ((PythonManagedClass) lib.getDelegate(klass)).setSulongType(ptr);
+        @Specialization
+        static Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
+            ((PythonManagedClass) klass.getDelegate()).setSulongType(ptr);
             return ptr;
         }
     }

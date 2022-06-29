@@ -63,7 +63,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -81,8 +80,8 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonManagedClass getPythonClass(PythonNativeWrapperLibrary lib) {
-        return (PythonManagedClass) lib.getDelegate(this);
+    public PythonManagedClass getPythonClass() {
+        return (PythonManagedClass) getDelegate();
     }
 
     @ExportMessage
@@ -103,7 +102,6 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached LookupAttributeInMRONode.Dynamic lookup,
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
@@ -114,13 +112,13 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
             Object result;
             try {
                 if (SQ_REPEAT.getMemberNameJavaString().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___MUL__));
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(), T___MUL__));
                 } else if (SQ_ITEM.getMemberNameJavaString().equals(member)) {
-                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(lib), T___GETITEM__), true);
+                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(), T___GETITEM__), true);
                 } else if (SQ_CONCAT.getMemberNameJavaString().equals(member)) {
-                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___ADD__));
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(), T___ADD__));
                 } else if (SQ_LENGTH.getMemberNameJavaString().equals(member)) {
-                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(lib), T___LEN__));
+                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(), T___LEN__));
                 } else {
                     // TODO extend list
                     throw UnknownIdentifierException.create(member);

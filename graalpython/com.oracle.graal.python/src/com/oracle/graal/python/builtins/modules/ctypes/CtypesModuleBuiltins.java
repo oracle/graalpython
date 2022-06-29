@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -935,8 +934,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object doBytes(PythonModule self, PBytes path,
                         @Cached ToBytesNode toBytesNode,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @CachedLibrary(limit = "1") PythonNativeWrapperLibrary wrapperLib) {
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib) {
             if (!hasDynamicLoaderCache()) {
                 throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, DYLD_SHARED_CACHE_CONTAINS_PATH);
             }
@@ -955,7 +953,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         Object result = ilib.execute(cachedFunction, byteArrayWrapper);
                         return resultLib.asInt(result) != 0;
                     } finally {
-                        byteArrayWrapper.free(wrapperLib);
+                        byteArrayWrapper.free();
                     }
                 } catch (InteropException e) {
                     // fall through

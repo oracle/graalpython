@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -134,15 +132,13 @@ public final class PyErrStackItem extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean isPointer(
-                    @Cached IsPointerNode isPointerNode) {
-        return isPointerNode.execute(this);
+    boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    long asPointer(
-                    @Exclusive @Cached PAsPointerNode pAsPointerNode) {
-        return pAsPointerNode.execute(this);
+    long asPointer() {
+        return getPrimitiveNativePointer();
     }
 
     @ExportMessage

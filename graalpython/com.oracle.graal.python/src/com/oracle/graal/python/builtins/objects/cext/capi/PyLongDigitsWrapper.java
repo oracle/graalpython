@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_UINT32_ARRAY_TYPE_ID;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -87,7 +85,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         CompilerAsserts.neverPartOfCompilation();
         final int prime = 31;
         int result = 1;
-        result = prime * result + PythonNativeWrapperLibrary.getUncached().getDelegate(this).hashCode();
+        result = prime * result + getDelegate().hashCode();
         return result;
     }
 
@@ -105,18 +103,16 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         // n.b.: (tfel) This is hopefully fine here, since if we get to this
         // code path, we don't speculate that either of those objects is
         // constant anymore, so any caching on them won't happen anyway
-        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return lib.getDelegate(this) == lib.getDelegate(obj);
+        return getDelegate() == ((PyLongDigitsWrapper) obj).getDelegate();
     }
 
     @ExportMessage
     final long getArraySize(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return obSizeNode.execute(lib.getDelegate(this));
+            return obSizeNode.execute(getDelegate());
         } finally {
             gil.release(mustRelease);
         }
@@ -130,15 +126,14 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final Object readArrayElement(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
-            Object delegate = lib.getDelegate(this);
+            Object delegate = getDelegate();
             long size = PInt.abs(obSizeNode.execute(delegate));
             if (index >= 0 && index < size) {
-                int longShift = PythonContext.get(lib).getCApiContext().getPyLongBitsInDigit();
+                int longShift = PythonContext.get(obSizeNode).getCApiContext().getPyLongBitsInDigit();
                 int longMask = (1 << longShift) - 1;
                 if (delegate instanceof Integer || delegate instanceof Long) {
                     long val;
@@ -193,13 +188,12 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // also include the implicit null-terminator
-            return 0 <= identifier && identifier <= getArraySize(lib, obSizeNode, gil);
+            return 0 <= identifier && identifier <= getArraySize(obSizeNode, gil);
         } finally {
             gil.release(mustRelease);
         }
@@ -207,17 +201,17 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Cached PCallCapiFunction callToNativeNode,
+                    @CachedLibrary(limit = "2") InteropLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(lib, obSizeNode, gil));
-                setNativePointer(ptr);
+            if (!isNative()) {
+                Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(obSizeNode, gil));
+                setNativePointer(coerceToLong(ptr, lib));
             }
         } finally {
             gil.release(mustRelease);
@@ -225,20 +219,13 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+    public boolean isPointer() {
+        return isNative();
     }
 
     @ExportMessage
-    public long asPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
-        }
-        return interopLibrary.asPointer(nativePointer);
+    public long asPointer() {
+        return getPrimitiveNativePointer();
     }
 
     @ExportMessage

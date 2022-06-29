@@ -76,7 +76,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -138,12 +137,11 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached ReadFieldNode readFieldNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return readFieldNode.execute(lib.getDelegate(this), member);
+            return readFieldNode.execute(getDelegate(), member);
         } finally {
             gil.release(mustRelease);
         }
@@ -265,12 +263,11 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached WriteFieldNode writeFieldNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            writeFieldNode.execute(lib.getDelegate(this), member, value);
+            writeFieldNode.execute(getDelegate(), member, value);
         } finally {
             gil.release(mustRelease);
         }

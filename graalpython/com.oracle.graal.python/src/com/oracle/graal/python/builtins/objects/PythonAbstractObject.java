@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -203,12 +202,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         this.nativeWrapper = nativeWrapper;
     }
 
-    public final void clearNativeWrapper(ConditionProfile hasHandleValidAssumptionProfile) {
-        // The null check is important because it might be that we actually never got a to-native
-        // message but still modified the reference count.
-        if (hasHandleValidAssumptionProfile.profile(nativeWrapper != null && nativeWrapper.getHandleValidAssumption() != null)) {
-            PythonNativeWrapper.invalidateAssumption(nativeWrapper.getHandleValidAssumption());
-        }
+    public final void clearNativeWrapper() {
         nativeWrapper = null;
     }
 

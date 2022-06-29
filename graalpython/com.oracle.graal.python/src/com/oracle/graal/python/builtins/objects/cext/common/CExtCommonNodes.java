@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -389,41 +388,37 @@ public abstract class CExtCommonNodes {
             }
         }
 
-        @Specialization(limit = "1")
-        static TruffleString doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            return obj.getString(lib);
+        @Specialization
+        static TruffleString doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar) {
+            return obj.getString();
         }
 
-        @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
+        @Specialization(rewriteOn = UnexpectedCodepointException.class)
         static TruffleString doCByteArrayWrapperBMP(CByteArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            byte[] bytes = obj.getByteArray(lib);
+            byte[] bytes = obj.getByteArray();
             char[] chars = decodeBytesBMP(bytes, elementSize);
             return switchEncodingNode.execute(fromCharArray.execute(chars), TS_ENCODING);
         }
 
-        @Specialization(limit = "1", replaces = "doCByteArrayWrapperBMP")
+        @Specialization(replaces = "doCByteArrayWrapperBMP")
         static TruffleString doCByteArrayWrapper(CByteArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            byte[] bytes = obj.getByteArray(lib);
+            byte[] bytes = obj.getByteArray();
             int[] i = decodeBytesUnicode(bytes, elementSize);
             // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
             // but might change in the future
             return switchEncodingNode.execute(fromIntArrayNode.execute(i, 0, i.length), TS_ENCODING);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static TruffleString doCIntArrayWrapper(CIntArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (elementSize == Integer.BYTES) {
-                int[] codePoints = obj.getIntArray(lib);
+                int[] codePoints = obj.getIntArray();
                 // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
                 // but might change in the future
                 return switchEncodingNode.execute(fromIntArrayNode.execute(codePoints, 0, codePoints.length), TS_ENCODING);
@@ -431,13 +426,12 @@ public abstract class CExtCommonNodes {
             throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
-        @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
+        @Specialization(rewriteOn = UnexpectedCodepointException.class)
         static TruffleString doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArray,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) throws UnexpectedCodepointException {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 char[] chars = decodeBytesBMP(bytes, elementSize);
@@ -446,13 +440,12 @@ public abstract class CExtCommonNodes {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        @Specialization(limit = "1", replaces = "doSequenceArrayWrapperBMP")
+        @Specialization(replaces = "doSequenceArrayWrapperBMP")
         static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj, int elementSize,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Shared("int32toTS") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
                         @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 int[] i = decodeBytesUnicode(bytes, elementSize);
@@ -749,17 +742,15 @@ public abstract class CExtCommonNodes {
 
         public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
 
-        @Specialization(limit = "1")
-        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            return subRangeIfNeeded(obj.getByteArray(lib), n);
+        @Specialization
+        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
+            return subRangeIfNeeded(obj.getByteArray(), n);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            Object delegate = lib.getDelegate(obj);
+            Object delegate = obj.getDelegate();
             if (delegate instanceof PBytesLike) {
                 byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
                 return subRangeIfNeeded(bytes, n);
