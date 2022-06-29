@@ -889,7 +889,7 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugLenFunc)(JNIEnv *env, jclass claz
     HPyContext *dctx = (HPyContext *) ctx;
     HPyFunc_lenfunc f = (HPyFunc_lenfunc) target;
     DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    jlong result = (jlong) f(dctx, _jlong2dh(dctx, arg1));
+    jlong result = (jlong) f(dctx, dh_arg1);
     DHPy_close_and_check(dctx, dh_arg1);
     return result;
 }
