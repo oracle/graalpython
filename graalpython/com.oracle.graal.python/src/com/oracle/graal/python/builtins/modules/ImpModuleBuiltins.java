@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -406,6 +407,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class IsBuiltin extends PythonBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         public int run(TruffleString name) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 // TODO: missing "1" case when the builtin module can be re-initialized
@@ -416,6 +418,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
+        public int run(PString name,
+                        @Cached CastToTruffleStringNode toString) {
+            try {
+                return run(toString.execute(name));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Fallback
         public int run(@SuppressWarnings("unused") Object noName) {
             return 0;
         }
