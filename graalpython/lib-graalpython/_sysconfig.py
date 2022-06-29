@@ -42,7 +42,7 @@ def get_config_var(name):
     return get_config_vars().get(name)
 
 
-# Following code is shared between GraalPython patches in the sysconfig and distutils modules:
+# Following code is shared between GraalPy patches in the sysconfig and distutils modules:
 
 def get_python_inc(plat_specific=0, prefix=None):
     import sys

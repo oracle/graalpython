@@ -71,7 +71,7 @@ class PipLoader:
             name_ver_match = re.search("^{0}.*\\.(tar\\.gz|whl|zip)$".format(name_ver_pattern), archive_name)
             if not name_ver_match:
                 print("Warning: could not parse package name, version, or format from '{}'.\n"
-                      "Could not determine if any GraalPython specific patches need to be applied.".format(archive_name))
+                      "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
                 return result
 
             package_name = name_ver_match.group(1)
@@ -113,14 +113,14 @@ class PipLoader:
                     print("Patching package " + package_name + " using " + filename)
                     patch_res = subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", filename], cwd=wd)
                     if patch_res.returncode != 0:
-                        print("Applying Graal Python patch failed for %s. The package may still work." % package_name)
+                        print("Applying GraalPy patch failed for %s. The package may still work." % package_name)
                 elif os.path.isdir(dir):
                     patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(name_ver_pattern, suffix), f)]
                     if patchfiles:
                         print("We have patches to make this package work on GraalVM for some version(s).")
                         print("If installing or running fails, consider using one of the versions that we have patches for:\n\t", "\n\t".join(patchfiles), sep="")
 
-            print("Looking for Graal Python patches for " + package_name)
+            print("Looking for GraalPy patches for " + package_name)
 
             for pbd in self._patches_base_dirs:
                 # patches intended for binary distribution:
