@@ -1172,7 +1172,7 @@ public class Python3Parser extends Parser {
 			setState(277);
 			_localctx.s = suite();
 			 
-			        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, optimize(_localctx.s.result), resultType, getStartIndex(_localctx), getStopIndex(_localctx.s));
+			        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, optimize(_localctx.s.result), factory.createAnnotationType(resultType), getStartIndex(_localctx), getStopIndex(_localctx.s));
 			        scopeEnvironment.popScope();
 			        loopState = savedLoopState;
 			        push(funcDef);
@@ -1764,7 +1764,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); 
+			 args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, factory.createAnnotationType(type)); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1829,7 +1829,7 @@ public class Python3Parser extends Parser {
 			            if (name != null) {
 			                name = factory.mangleNameInCurrentScope(name);
 			            }
-			            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			            if (args.addKwargs(name, factory.createAnnotationType(type)) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            }
 			        

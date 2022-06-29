@@ -580,7 +580,7 @@ funcdef
         }
 	s = suite
 	{ 
-        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), resultType, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), factory.createAnnotationType(resultType), getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
         scopeEnvironment.popScope();
         loopState = savedLoopState;
         push(funcDef);
@@ -658,7 +658,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); }
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, factory.createAnnotationType(type)); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -674,7 +674,7 @@ kwargsparameter [ArgDefListBuilder args]
             if (name != null) {
                 name = factory.mangleNameInCurrentScope(name);
             }
-            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            if (args.addKwargs(name, factory.createAnnotationType(type)) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
