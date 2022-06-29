@@ -160,15 +160,16 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
             flags |= CExtContext.METH_STATIC;
         }
         int params = signature.getParameterIds().length;
-        if (params == 1) {
+        if (signature.takesKeywordArgs() || signature.takesVarArgs()) {
+            flags |= CExtContext.METH_VARARGS;
+            if (signature.takesKeywordArgs()) {
+                flags |= CExtContext.METH_KEYWORDS;
+            }
+        } else if (params == 1) {
             // only 'self'
             flags |= CExtContext.METH_NOARGS;
         } else if (params == 2) {
             flags |= CExtContext.METH_O;
-        } else if (signature.takesKeywordArgs()) {
-            flags |= CExtContext.METH_VARARGS;
-        } else if (signature.takesVarArgs()) {
-            flags |= CExtContext.METH_VARARGS;
         }
         return flags;
     }
