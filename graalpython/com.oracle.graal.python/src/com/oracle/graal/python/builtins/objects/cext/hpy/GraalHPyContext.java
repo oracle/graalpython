@@ -378,7 +378,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         TruffleString hpyInitFuncName = StringUtils.cat(T_HPY_INIT, basename);
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
-                Object nativeResult = initHPyModule(context, hpyUniversalContext, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib);
+                Object nativeResult = initHPyModule(hpyUniversalContext, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib);
                 return checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyUniversalContext, name, nativeResult);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_EXT_NO_ENTRY, basename, path, hpyInitFuncName);
@@ -389,7 +389,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     /**
      * Bascially the same as
-     * {@link #initHPyModule(PythonContext, GraalHPyContext, Object, TruffleString, TruffleString, TruffleString, boolean, InteropLibrary)}
+     * {@link #initHPyModule(GraalHPyContext, Object, TruffleString, TruffleString, TruffleString, boolean, InteropLibrary)}
      * but always loads the module with the universal context and also verifies the result of the
      * init function using the provided {@code checkResultNode}.
      *
@@ -406,14 +406,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @TruffleBoundary
     public Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
                     InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
-        Object nativeResult = initHPyModule(context, this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
+        Object nativeResult = initHPyModule(this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
         return checkResultNode.execute(context.getThreadState(context.getLanguage()), this, name, nativeResult);
     }
 
     /**
      * Execute an HPy extension's init function and return the raw result value.
      *
-     * @param context The {@link PythonContext}.
      * @param hpyUniversalContext The {@code HPyContext} pointer. This an either be an instance of
      *            our (managed) {@link GraalHPyContext} or a native pointer to some other HPy
      *            context (most common the debug context).
@@ -426,8 +425,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      *         handle that was created with the given {@code hpyContext}.
      */
     @TruffleBoundary
-    private static Object initHPyModule(PythonContext context, GraalHPyContext hpyUniversalContext, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
-                    boolean debug,
+    private static Object initHPyModule(GraalHPyContext hpyUniversalContext, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug,
                     InteropLibrary llvmInteropLib) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         Object initFunction;
         try {
@@ -2683,7 +2681,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return nextHandle++;
     }
 
-    public final int getHPyHandleForObject(Object object) {
+    public int getHPyHandleForObject(Object object) {
         assert !(object instanceof GraalHPyHandle);
         // find free association
 
@@ -2871,7 +2869,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      *            {@code null}; in this case, bare {@code free} will be used).
      */
     @TruffleBoundary
-    final void createHandleReference(Object pythonObject, Object dataPtr, Object destroyFunc) {
+    void createHandleReference(Object pythonObject, Object dataPtr, Object destroyFunc) {
         GraalHPyHandleReference newHead = new GraalHPyHandleReference(pythonObject, ensureReferenceQueue(), dataPtr, destroyFunc);
         references.getAndAccumulate(newHead, (prev, x) -> {
             x.next = prev;
