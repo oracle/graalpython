@@ -98,6 +98,8 @@ TYPE_MAPPINGS = {
     "AugOperator*": "ExprTy.BinOp.Operator",
     "CmpopExprPair*": "CmpopExprPair",
     "CmpopExprPair**": "CmpopExprPair[]",
+    "KeyPatternPair*": "Object",
+    "KeyPatternPair**": "Object[]",
     "KeyValuePair*": "KeyValuePair",
     "KeyValuePair**": "KeyValuePair[]",
     "KeywordOrStarred*": "KeywordOrStarred",
@@ -138,6 +140,8 @@ TYPE_MAPPINGS = {
     "match_case_ty": "StmtTy.Match.Case",
     "match_case_ty*": "StmtTy.Match.Case[]",
     "mod_ty": "ModTy",
+    "pattern_ty": "Object",
+    "pattern_ty*": "Object[]",
     "stmt_ty": "StmtTy",
     "stmt_ty*": "StmtTy[]",
     "stmt_ty**": "StmtTy[]",
@@ -164,6 +168,7 @@ SHORTCUTS = {
 #     existing mappings used in new places
 #   - java_action is a template for the Java action in which the shortcuts described above are expanded before
 #     the action is written to Parser.java
+# If no (exact) match is found in ACTION_MAPPINGS, we try regular expressions in ACTION_MAPPINGS_RE below.
 ACTION_MAPPINGS = {
     '( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )': (1, 'new AliasTy [] {factory.createAlias("*", null, $RANGE)}'),
     '( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_seq_append_to_end ( p , a , b ) ) , c )': (1, 'this.appendToEnd(this.appendToEnd(a,b),c)'),
@@ -180,42 +185,18 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params, b, a, newTypeComment((Token) tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'factory.createAnnAssignment(setExprContext(a, ExprContext.Store), b, (ExprTy) c, true, $RANGE);'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'factory.createAnnAssignment(a, b, (ExprTy) c, false, $RANGE);'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "\':\' expected after dictionary key" )': (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,a,"\':\' expected after dictionary key")'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "invalid syntax. Perhaps you forgot a comma?")'),
-    'RAISE_SYNTAX_ERROR ( "Cannot have two type comments on def" )': (1, 'this.raiseSyntaxError("Cannot have two type comments on def")'),
-    'RAISE_SYNTAX_ERROR ( "bare * has associated type comment" )': (1, 'this.raiseSyntaxError("bare * has associated type comment")'),
-    'RAISE_SYNTAX_ERROR ( "expected \':\'" )': (4, 'this.raiseSyntaxError("expected \':\'")'),
-    'RAISE_SYNTAX_ERROR ( "iterable argument unpacking follows keyword argument unpacking" )': (1, 'this.raiseSyntaxError("iterable argument unpacking follows keyword argument unpacking")'),
-    'RAISE_SYNTAX_ERROR ( "named arguments must follow bare *" )': (2, 'this.raiseSyntaxError("named arguments must follow bare *")'),
-    'RAISE_SYNTAX_ERROR ( "non-default argument follows default argument" )': (2, 'this.raiseSyntaxError("non-default argument follows default argument")'),
-    'RAISE_SYNTAX_ERROR ( "trailing comma not allowed without surrounding parentheses" )': (1, 'this.raiseSyntaxError("trailing comma not allowed without surrounding parentheses")'),
+    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )': (2, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a)'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "\'%s\' is an illegal expression for augmented assignment" , _PyPegen_get_expr_name ( a ) )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "\'%s\' is an illegal expression for augmented assignment", getExprName(a))'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )': (2, 'this.raiseSyntaxErrorKnownLocation(a, "Generator expression must be parenthesized")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "assignment to yield expression not possible" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "assignment to yield expression not possible")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )': (2, 'this.raiseSyntaxErrorKnownLocation(a, "cannot use a starred expression in a dictionary value")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use assignment expressions with %s" , _PyPegen_get_expr_name ( a ) )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "cannot use assignment expressions with %s", getExprName(a))'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use double starred expression here" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "cannot use double starred expression here")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use starred expression here" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "cannot use starred expression here")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "dict unpacking cannot be used in dict comprehension" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "dict unpacking cannot be used in dict comprehension")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "did you forget parentheses around the comprehension target?" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "did you forget parentheses around the comprehension target?")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "exception group must be parenthesized" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "exception group must be parenthesized")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression cannot contain assignment, perhaps you meant \\"==\\"?" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "expression cannot contain assignment, perhaps you meant \\"==\\"?")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and \':\'" )': (2, 'this.raiseSyntaxErrorKnownLocation(a, "expression expected after dictionary key and \':\'")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "illegal target for annotation" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "illegal target for annotation")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "invalid syntax" )': (1, 'this.raiseSyntaxErrorKnownLocation(a,"invalid syntax")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "iterable unpacking cannot be used in comprehension" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "iterable unpacking cannot be used in comprehension")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not %s) can be annotated" , _PyPegen_get_expr_name ( a ) )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "only single target (not %s) can be annotated", getExprName(a))'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not tuple) can be annotated" )': (1, 'this.raiseSyntaxErrorKnownLocation(a, "only single target (not tuple) can be annotated")'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "cannot assign to %s here. Maybe you meant \'==\' instead of \'=\'?" , _PyPegen_get_expr_name ( a ) )': (1, 'this.raiseSyntaxErrorKnownLocation(b, "cannot assign to %s here. Maybe you meant \'==\' instead of \'=\'?", getExprName(a))'),
-    'RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "invalid syntax. Maybe you meant \'==\' or \':=\' instead of \'=\'?" )': (1, 'this.raiseSyntaxErrorKnownLocation(b, "invalid syntax. Maybe you meant \'==\' or \':=\' instead of \'=\'?")'),
+    'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "cannot assign to %s" , PyBytes_AS_STRING ( a -> bytes ) )': (1, 'this.raiseSyntaxErrorKnownRange(a, b, "cannot assign to %s", getText(a))'),
+    'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , _PyPegen_get_last_comprehension_item ( PyPegen_last_item ( b , comprehension_ty ) ) , "Generator expression must be parenthesized" )': (2, 'this.raiseSyntaxErrorKnownRange(a, getLastComprehensionItem(lastItem(b)), "Generator expression must be parenthesized")'),
+    'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , PyPegen_last_item ( b , expr_ty ) , "did you forget parentheses around the comprehension target?" )': (1, 'this.raiseSyntaxErrorKnownRange(a, lastItem(b), "did you forget parentheses around the comprehension target?")'),
     '_PyAST_Assert ( a , b , EXTRA )': (1, 'factory.createAssert(a, b, $RANGE)'),
     '_PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createAssignment(a, (ExprTy) b, newTypeComment((Token) tc), $RANGE)'),
     '_PyAST_Attribute ( a , b -> v . Name . id , Del , EXTRA )': (1, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Delete, $LOC)'),
     '_PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )': (2, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Load, $LOC)'),
-    '_PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )': (3, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Store, $LOC)'),
+    '_PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )': (2, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Store, $LOC)'),
     '_PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )': (1, 'factory.createGetAttribute(value, ((ExprTy.Name) attr).id, $LOC)'),
     '_PyAST_AugAssign ( a , b -> kind , c , EXTRA )': (1, 'factory.createAugAssignment(a, b, (ExprTy) c, $RANGE)'),
     '_PyAST_BinOp ( a , Add , b , EXTRA )': (1, 'factory.createBinaryOp(ExprTy.BinOp.Operator.ADD, a, b, $RANGE)'),
@@ -259,7 +240,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
     '_PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )': (2, 'factory.createIf(a, b, new StmtTy[] {c}, $RANGE)'),
     '_PyAST_If ( a , b , c , EXTRA )': (2, 'factory.createIf(a, b, c, $RANGE)'),
-    '_PyAST_IfExp ( b , a , c , EXTRA )': (1, 'factory.createIfExpression(b, a, c, $RANGE)'),
+    '_PyAST_IfExp ( b , a , c , EXTRA )': (2, 'factory.createIfExpression(b, a, c, $RANGE)'),
     '_PyAST_Import ( a , EXTRA )': (1, 'factory.createImport(a, $RANGE)'),
     '_PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )': (1, 'factory.createImportFrom(null, b, countDots(a), $RANGE)'),
     '_PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )': (1, 'factory.createImportFrom(((ExprTy.Name) b).id, c, countDots(a), $RANGE)'),
@@ -269,7 +250,7 @@ ACTION_MAPPINGS = {
     '_PyAST_List ( a , Load , EXTRA )': (1, 'factory.createList(a, ExprContext.Load, $RANGE)'),
     '_PyAST_List ( a , Store , EXTRA )': (1, 'factory.createList(a, ExprContext.Store, $RANGE)'),
     '_PyAST_ListComp ( a , b , EXTRA )': (1, 'factory.createListComprehension(a, b, $RANGE)'),
-    '_PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )': (2, 'factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, $RANGE)'),
+    '_PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )': (1, 'factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, $RANGE)'),
     '_PyAST_Nonlocal ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createNonLocal(extractNames(a), $RANGE)'),
     '_PyAST_Pass ( EXTRA )': (1, 'factory.createPass($RANGE)'),
     '_PyAST_Raise ( NULL , NULL , EXTRA )': (1, 'factory.createRaise(null, null, $RANGE)'),
@@ -280,10 +261,9 @@ ACTION_MAPPINGS = {
     '_PyAST_Slice ( a , b , c , EXTRA )': (1, 'factory.createSlice(a, b, c, $RANGE)'),
     '_PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )': (1, 'factory.createStarred(this.setExprContext(a, ExprContext.Store), ExprContext.Store, $RANGE)'),
     '_PyAST_Starred ( a , Load , EXTRA )': (3, 'factory.createStarred(a, ExprContext.Load, $RANGE)'),
-    '_PyAST_Starred ( value , Store , EXTRA )': (1, 'factory.createStarred(value, ExprContext.Store, $RANGE)'),
     '_PyAST_Subscript ( a , b , Del , EXTRA )': (1, 'factory.createSubscript(a, b, ExprContext.Delete, $LOC)'),
     '_PyAST_Subscript ( a , b , Load , EXTRA )': (2, 'factory.createSubscript(a, b, ExprContext.Load, $LOC)'),
-    '_PyAST_Subscript ( a , b , Store , EXTRA )': (3, 'factory.createSubscript(a, b, ExprContext.Store, $LOC)'),
+    '_PyAST_Subscript ( a , b , Store , EXTRA )': (2, 'factory.createSubscript(a, b, ExprContext.Store, $LOC)'),
     '_PyAST_Try ( b , NULL , NULL , f , EXTRA )': (1, 'factory.createTry(b, null, null, f, $LOC)'),
     '_PyAST_Try ( b , ex , el , f , EXTRA )': (1, 'factory.createTry(b, ex, el, f, $LOC)'),
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )': (2, 'factory.createTuple(this.insertInFront(a, b), ExprContext.Load, $RANGE)'),
@@ -309,6 +289,7 @@ ACTION_MAPPINGS = {
     '_PyAST_withitem ( e , NULL , p -> arena )': (1, 'factory.createWithItem(e, null, $RANGE)'),
     '_PyAST_withitem ( e , t , p -> arena )': (1, 'factory.createWithItem(e, t, $RANGE)'),
     '_PyPegen_add_type_comment_to_arg ( p , a , tc )': (2, 'factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange())'),
+    '_PyPegen_arguments_parsing_error ( p , a )': (1, 'raiseArgumentsParsingError(a)'),
     '_PyPegen_augoperator ( p , Add )': (1, 'ExprTy.BinOp.Operator.ADD'),
     '_PyPegen_augoperator ( p , BitAnd )': (1, 'ExprTy.BinOp.Operator.BITAND'),
     '_PyPegen_augoperator ( p , BitOr )': (1, 'ExprTy.BinOp.Operator.BITOR'),
@@ -322,6 +303,8 @@ ACTION_MAPPINGS = {
     '_PyPegen_augoperator ( p , RShift )': (1, 'ExprTy.BinOp.Operator.RSHIFT'),
     '_PyPegen_augoperator ( p , Sub )': (1, 'ExprTy.BinOp.Operator.SUB'),
     '_PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok': (1, 'this.checkBarryAsFlufl(tok)? null : tok'),
+    '_PyPegen_check_legacy_stmt ( p , a ) ? RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "Missing parentheses in call to \'%U\'. Did you mean %U(...)?" , a -> v . Name . id , a -> v . Name . id ) : NULL': (1, 'checkLegacyStmt(a) ? this.raiseSyntaxErrorKnownRange(a, b, "Missing parentheses in call to \'%s\'. Did you mean %s(...)?", ((ExprTy.Name) a).id, ((ExprTy.Name) a).id) : null'),
+    '_PyPegen_check_legacy_stmt ( p , a ) ? NULL : p -> tokens [ p -> mark - 1 ] -> level == 0 ? NULL : RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'checkLegacyStmt(a) ? null : peekToken(mark() - 1).level == 0 ? null : this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax. Perhaps you forgot a comma?")'),
     '_PyPegen_class_def_decorators ( p , a , b )': (1, 'factory.createClassDef(b, a, $RANGE)'),
     '_PyPegen_cmpop_expr_pair ( p , Eq , a )': (1, 'new CmpopExprPair(ExprTy.Compare.Operator.EQ,a);'),
     '_PyPegen_cmpop_expr_pair ( p , Gt , a )': (1, 'new CmpopExprPair(ExprTy.Compare.Operator.GT,a)'),
@@ -339,9 +322,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_join_names_with_dot ( p , a , b )': (1, 'this.joinNamesWithDot(a,b)'),
     '_PyPegen_join_sequences ( p , a , b )': (1, 'this.join(a,b)'),
     '_PyPegen_key_value_pair ( p , NULL , a )': (1, 'new KeyValuePair(null,a)'),
-    '_PyPegen_key_value_pair ( p , NULL , value )': (1, 'new KeyValuePair(null,value)'),
     '_PyPegen_key_value_pair ( p , a , b )': (1, 'new KeyValuePair(a,b)'),
-    '_PyPegen_key_value_pair ( p , key , value )': (1, 'new KeyValuePair(key,value)'),
     '_PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , a , EXTRA ) ) , 1 )': (1, 'new KeywordOrStarred(factory.createKeyword(null, a, $RANGE), true)'),
     '_PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )': (2, 'new KeywordOrStarred(factory.createKeyword(((ExprTy.Name) a).id, b, $RANGE), true)'),
     '_PyPegen_keyword_or_starred ( p , a , 0 )': (1, 'new KeywordOrStarred(a,false)'),
@@ -353,10 +334,9 @@ ACTION_MAPPINGS = {
     '_PyPegen_make_module ( p , a )': (1, 'factory.createModule(a, $RANGE)'),
     '_PyPegen_name_default_pair ( p , a , c , NULL )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getSourceRange()), c)'),
     '_PyPegen_name_default_pair ( p , a , c , tc )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange()), c)'),
-    '_PyPegen_seq_insert_in_front ( p , value , values )': (1, 'this.insertInFront(value,values)'),
     '_PyPegen_seq_insert_in_front ( p , y , z )': (1, 'this.insertInFront(y,z)'),
     '_PyPegen_set_expr_context ( p , a , Del )': (2, 'this.setExprContext(a,ExprContext.Delete)'),
-    '_PyPegen_set_expr_context ( p , a , Store )': (5, 'this.setExprContext(a,ExprContext.Store)'),
+    '_PyPegen_set_expr_context ( p , a , Store )': (3, 'this.setExprContext(a,ExprContext.Store)'),
     '_PyPegen_singleton_seq ( p , a )': (2, 'new SlashWithDefault[] {a}'),
     '_PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )': (4, 'new SlashWithDefault(a,b)'),
     '_PyPegen_star_etc ( p , NULL , NULL , a )': (2, 'new StarEtc(null,null,a)'),
@@ -364,49 +344,86 @@ ACTION_MAPPINGS = {
     '_PyPegen_star_etc ( p , a , b , c )': (2, 'new StarEtc(a,b,c)'),
     'a': (33, 'a'),
     'args': (1, 'args'),
-    'attr': (1, 'attr'),
     'b': (2, 'b'),
     'c': (6, 'c'),
     'd': (3, 'd'),
     'f': (1, 'f'),
     'guard': (1, 'guard'),
-    'items': (1, 'items'),
     'k': (1, 'k'),
-    'keywords': (1, 'keywords'),
     'pattern': (1, 'pattern'),
     't': (1, 't'),
-    'values': (1, 'values'),
     'z': (11, 'z'),
 
     # TODO
-    # 'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'CHECK_VERSION(comprehension_ty,6,"Async comprehensions are",_PyAST_comprehension(a,b,c,1,p -> arena))'),
-    # 'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )': (1, 'CHECK_VERSION(stmt_ty,10,"Pattern matching is",_PyAST_Match(subject,cases,EXTRA))'),
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'CHECK_VERSION(stmt_ty,5,"Async for loops are",_PyAST_AsyncFor(t,ex,b,el,NEW_TYPE_COMMENT(p,tc),EXTRA))'),
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'CHECK_VERSION(stmt_ty,5,"Async with statements are",_PyAST_AsyncWith(a,b,NEW_TYPE_COMMENT(p,tc),EXTRA))'),
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )': (1, 'CHECK_VERSION(stmt_ty,5,"Async with statements are",_PyAST_AsyncWith(a,b,NULL,EXTRA))'),
-    # 'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'CHECK_VERSION(stmt_ty,6,"Variable annotations syntax is",_PyAST_AnnAssign(a,b,c,0,EXTRA))'),
-    # 'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected \':\'" ) )': (1, 'CHECK_VERSION(void *,10,"Pattern matching is",this.raiseSyntaxError("expected \':\'"))'),
-    # 'RAISE_INDENTATION_ERROR ( "expected an indented block" )': (1, 'RAISE_INDENTATION_ERROR("expected an indented block")'),
-    # '_PyAST_Call ( func , NULL , NULL , EXTRA )': (1, '_PyAST_Call(func,NULL,NULL,EXTRA)'),
-    # '_PyAST_Call ( func , NULL , keywords , EXTRA )': (1, '_PyAST_Call(func,NULL,keywords,EXTRA)'),
-    # '_PyAST_Call ( func , args , NULL , EXTRA )': (1, '_PyAST_Call(func,args,NULL,EXTRA)'),
-    # '_PyAST_Call ( func , args , keywords , EXTRA )': (1, '_PyAST_Call(func,args,keywords,EXTRA)'),
-    # '_PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , items ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , items ) ) , EXTRA )': (1, '_PyAST_Dict(CHECK(asdl_expr_seq *,_PyPegen_get_keys(p,items)),CHECK(asdl_expr_seq *,_PyPegen_get_values(p,items)),EXTRA)'),
-    # '_PyAST_FunctionType ( a , b , p -> arena )': (1, '_PyAST_FunctionType(a,b,p -> arena)'),
-    # '_PyAST_List ( b , Store , EXTRA )': (1, '_PyAST_List(b,Store,EXTRA)'),
-    # '_PyAST_List ( values , Load , EXTRA )': (1, '_PyAST_List(values,Load,EXTRA)'),
-    # '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )': (1, '_PyAST_MatchAs(pattern,target -> v.Name.id,EXTRA)'),
-    # '_PyAST_Name ( CHECK ( PyObject * , _PyPegen_new_identifier ( p , "_" ) ) , Store , EXTRA )': (1, '_PyAST_Name(CHECK(PyObject *,_PyPegen_new_identifier(p,"_")),Store,EXTRA)'),
-    # '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )': (1, '_PyAST_Tuple(CHECK(asdl_expr_seq *,_PyPegen_seq_insert_in_front(p,value,values)),Load,EXTRA)'),
-    # '_PyAST_Tuple ( b , Store , EXTRA )': (1, '_PyAST_Tuple(b,Store,EXTRA)'),
-    # '_PyAST_Tuple ( values , Load , EXTRA )': (2, '_PyAST_Tuple(values,Load,EXTRA)'),
-    # '_PyAST_keyword ( arg -> v . Name . id , value , EXTRA )': (1, '_PyAST_keyword(arg -> v.Name.id,value,EXTRA)'),
-    # '_PyAST_match_case ( pattern , guard , body , p -> arena )': (1, '_PyAST_match_case(pattern,guard,body,p -> arena)'),
-    # '_PyPegen_arguments_parsing_error ( p , a )': (1, '_PyPegen_arguments_parsing_error(p,a)'),
-    # '_PyPegen_interactive_exit ( p )': (1, '_PyPegen_interactive_exit(p)'),
-    # '_PyPegen_nonparen_genexp_in_call ( p , a )': (1, '_PyPegen_nonparen_genexp_in_call(p,a)'),
-    # '_PyPegen_set_expr_context ( p , name , Store )': (1, '_PyPegen_set_expr_context(p,name,Store)'),
-    # 'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )': (1, 'asdl_seq_LEN(patterns)== 1 ? asdl_seq_GET(patterns,0): _PyAST_MatchOr(patterns,EXTRA)'),
+    # 'CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )' in rule "for_stmt: with rhs ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?"
+    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )' in rule "with_stmt: with rhs ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block"
+    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )' in rule "with_stmt: with rhs ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block"
+    # 'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )' in rule "for_if_clause: with rhs ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*"
+    # '_PyPegen_nonparen_genexp_in_call ( p , a , b )' in rule "invalid_arguments: with rhs args for_if_clauses"
+    #
+    # Interactive mode:
+    # '_PyPegen_interactive_exit ( p )' in rule "statement_newline: with rhs $"
+    #
+    # compile(..., mode='func_type') - used by ast module only
+    # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
+    #
+    # Pattern matching:
+    # 'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )' in rule "match_stmt: with rhs "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT"
+    # '_PyAST_match_case ( pattern , guard , body , p -> arena )' in rule "case_block: with rhs "case" patterns guard? ':' block"
+    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "patterns: with rhs open_sequence_pattern"
+    # '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )' in rule "as_pattern: with rhs or_pattern 'as' pattern_capture_target"
+    # 'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )' in rule "or_pattern: with rhs '|'.closed_pattern+"
+    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs signed_number !('+' | '-')"
+    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs complex_number"
+    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs strings"
+    # '_PyAST_MatchSingleton ( Py_None , EXTRA )' in rule "literal_pattern: with rhs 'None'"
+    # '_PyAST_MatchSingleton ( Py_True , EXTRA )' in rule "literal_pattern: with rhs 'True'"
+    # '_PyAST_MatchSingleton ( Py_False , EXTRA )' in rule "literal_pattern: with rhs 'False'"
+    # '_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )' in rule "capture_pattern: with rhs pattern_capture_target"
+    # '_PyPegen_set_expr_context ( p , name , Store )' in rule "pattern_capture_target: with rhs !"_" NAME !('.' | '(' | '=')"
+    # '_PyAST_MatchAs ( NULL , NULL , EXTRA )' in rule "wildcard_pattern: with rhs "_""
+    # '_PyAST_MatchValue ( attr , EXTRA )' in rule "value_pattern: with rhs attr !('.' | '(' | '=')"
+    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '[' maybe_sequence_pattern? ']'"
+    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '(' open_sequence_pattern? ')'"
+    # '_PyPegen_seq_insert_in_front ( p , pattern , patterns )' in rule "open_sequence_pattern: with rhs maybe_star_pattern ',' maybe_sequence_pattern?"
+    # 'patterns' in rule "maybe_sequence_pattern: with rhs ','.maybe_star_pattern+ ','?"
+    # '_PyAST_MatchStar ( target -> v . Name . id , EXTRA )' in rule "star_pattern: with rhs '*' pattern_capture_target"
+    # '_PyAST_MatchStar ( NULL , EXTRA )' in rule "star_pattern: with rhs '*' wildcard_pattern"
+    # '_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )' in rule "mapping_pattern: with rhs '{' '}'"
+    # '_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' double_star_pattern ','? '}'"
+    # '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' items_pattern ',' double_star_pattern ','? '}'"
+    # '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )' in rule "mapping_pattern: with rhs '{' items_pattern ','? '}'"
+    # '_PyPegen_key_pattern_pair ( p , key , pattern )' in rule "key_value_pattern: with rhs (literal_expr | attr) ':' pattern"
+    # 'target' in rule "double_star_pattern: with rhs '**' pattern_capture_target"
+    # '_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' ')'"
+    # '_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ','? ')'"
+    # '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' keyword_patterns ','? ')'"
+    # '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'"
+    # '_PyPegen_key_pattern_pair ( p , arg , value )' in rule "keyword_pattern: with rhs NAME '=' pattern"
+    # 'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )' in rule "invalid_match_stmt: with rhs "match" subject_expr !':'"
+    # 'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )' in rule "invalid_class_pattern: with rhs name_or_attr '(' invalid_class_argument_pattern"
+    # '_PyAST_UnaryOp ( USub , real , EXTRA )' in rule "signed_real_number: with rhs '-' real_number"
+    # '_PyPegen_ensure_real ( p , real )' in rule "real_number: with rhs NUMBER"
+    # '_PyPegen_ensure_imaginary ( p , imag )' in rule "imaginary_number: with rhs NUMBER"
+    # '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )' in rule "subject_expr: with rhs star_named_expression ',' star_named_expressions?"
+}
+
+# Maps pattern to (n, replacement), where:
+#   - pattern is a regular expression applied to the space-separated list of tokens from original python.gram, as
+#     returned by Alt.action. The pattern must match the full C action.
+#   - n is the expected number of occurrences in the grammar, which is used to detect obsolete mappings or
+#     existing mappings used in new places
+#   - replacement is a template for the Java action in which the backreferences such as `\1` are replaced with
+#     the given matched group and then shortcuts described above are expanded before the action is written
+#     to Parser.java
+ACTION_MAPPINGS_RE = {
+    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (11, 'this.raiseSyntaxError("\\1")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (15, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (6, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" , _PyPegen_get_expr_name \( \1 \) \)': (4, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2", getExprName(\\1))'),
+    r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (3, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
+    r'RAISE_INDENTATION_ERROR \( "(.+)" \)': (1, 'this.raiseIndentationError("\\1")'),
+    r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (15, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
 }
 
 LICENSE = '''/*
@@ -851,15 +868,21 @@ class ActionMapperVisitor(GrammarVisitor):
     def visit_Alt(self, node: Alt):
         if node.action:
             c_action = str(node.action)
-            if c_action not in ACTION_MAPPINGS:
-                #  TODO raise an exception
-                # raise ValueError(f"Missing mapping for action '{c_action}' in rule \"{self.current_rule.name}: with rhs {node}\"")
-                java_action = f"@{c_action}"
-            else:
+            if c_action in ACTION_MAPPINGS:
                 java_action = ACTION_MAPPINGS[c_action][1]
-                for k, v in SHORTCUTS.items():
-                    java_action = java_action.replace(k, v)
                 self.action_counter.update([c_action])
+            else:
+                for pattern, (_, repl) in ACTION_MAPPINGS_RE.items():
+                    java_action, m = re.subn(f"^{pattern}$", repl, c_action)
+                    if m:
+                        self.action_counter.update([pattern])
+                        break
+                else:
+                    #  TODO raise an exception
+                    # raise ValueError(f"Missing mapping for action '{c_action}' in rule \"{self.current_rule.name}: with rhs {node}\"")
+                    java_action = f"@{c_action}"
+            for k, v in SHORTCUTS.items():
+                java_action = java_action.replace(k, v)
             node.action = java_action
         self.generic_visit(node)
 
@@ -868,6 +891,9 @@ class ActionMapperVisitor(GrammarVisitor):
         for c_action, (expected_count, _) in ACTION_MAPPINGS.items():
             if expected_count != self.action_counter[c_action]:
                 raise ValueError(f"Expected to find {expected_count} occurrences of action '{c_action}', but {self.action_counter[c_action]} were found")
+        for pattern, (expected_count, _) in ACTION_MAPPINGS_RE.items():
+            if expected_count != self.action_counter[pattern]:
+                raise ValueError(f"Expected to find {expected_count} occurrences of regex '{pattern}', but {self.action_counter[pattern]} were found")
 
 
 class JavaParserGenerator(ParserGenerator, GrammarVisitor):
@@ -1202,9 +1228,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if action[0] == '@':
             # TODO remove once all actions are translated to Java
             self.print(f"// TODO: node.action: {action[1:]}")
-            self.print(
-                f'''debugMessageln("\033[33;5;7m!!! TODO: Convert {action[1:].replace('"', "'")} to Java !!!\033[0m");'''
-            )
+            x = action[1:].replace('"', '\\"')
+            self.print(f'ruleNotImplemented("{x}");')
             self.print(f"_res = null;")
         else:
             self.print(f"_res = {action};")

@@ -43,6 +43,7 @@ package com.oracle.graal.python.pegparser;
 import java.util.ArrayList;
 import java.util.EnumSet;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
@@ -92,5 +93,9 @@ public class ParserTokenizer {
 
     public String getText(Token token) {
         return tokenizer.getTokenString(token);
+    }
+
+    SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
+        return tokenizer.extendRangeToCurrentPosition(rangeStart);
     }
 }

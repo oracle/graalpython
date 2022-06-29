@@ -181,11 +181,13 @@ public class Token {
     }
 
     public int type;
+    public int level;
     public final SourceRange sourceRange;
     public final Object extraData;
 
-    public Token(int type, SourceRange sourceRange, Object extraData) {
+    public Token(int type, int level, SourceRange sourceRange, Object extraData) {
         this.type = type;
+        this.level = level;
         this.sourceRange = sourceRange;
         this.extraData = extraData;
     }
@@ -419,5 +421,9 @@ public class Token {
         } else {
             return Integer.toString(type);
         }
+    }
+
+    public SourceRange getSourceRange() {
+        return sourceRange;
     }
 }

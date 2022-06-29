@@ -54,7 +54,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("f(x()=2)", "expression cannot contain assignment, perhaps you meant \"==\"?");
         checkSyntaxErrorMessage("f(a or b=1)", "expression cannot contain assignment, perhaps you meant \"==\"?");
         checkSyntaxErrorMessage("f(x.y=1)", "expression cannot contain assignment, perhaps you meant \"==\"?");
-        checkSyntaxErrorMessage("f(True=2)", "expression cannot contain assignment, perhaps you meant \"==\"?");
+        checkSyntaxErrorMessage("f(True=2)", "cannot assign to True");
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("try:\n" +
                         "  pass\n" +
                         "except A, B:\n" +
-                        "   pass", "exception group must be parenthesized");
+                        "   pass", "multiple exception types must be parenthesized");
         // TODO uncomment, when it will be possible.
 // checkSyntaxErrorMessage("try:\n" +
 // " pass\n" +
@@ -294,6 +294,14 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("{1, 2 3}", "invalid syntax. Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("{1:2, 2:5 3:12}", "invalid syntax. Perhaps you forgot a comma?");
         checkSyntaxErrorMessage("(1, 2 3)", "invalid syntax. Perhaps you forgot a comma?");
+        checkSyntaxErrorMessage("1, 2 3", "invalid syntax");
+    }
+
+    @Test
+    public void legacyExpression01() throws Exception {
+        checkSyntaxErrorMessage("print 1", "Missing parentheses in call to 'print'. Did you mean print(...)?");
+        checkSyntaxErrorMessage("exec 'b'", "Missing parentheses in call to 'exec'. Did you mean exec(...)?");
+        checkSyntaxErrorMessage("call 'b'", "invalid syntax");
     }
 
     @Test
