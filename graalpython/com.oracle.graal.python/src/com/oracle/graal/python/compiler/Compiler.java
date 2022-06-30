@@ -667,7 +667,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 checkForbiddenName(keywords[i].arg, ExprContext.Store);
                 for (int j = i + 1; j < keywords.length; j++) {
                     if (keywords[i].arg.equals(keywords[j].arg)) {
-                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keyword argument repeated: " + keywords[i].arg);
+                        // TODO: cbasca 3.10 error message "keyword argument repeated: " + keywords[i].arg
+                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keyword argument repeated");
                     }
                 }
             }
@@ -936,15 +937,15 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private boolean isAttributeLoad(ExprTy node) {
+    private static boolean isAttributeLoad(ExprTy node) {
         return node instanceof ExprTy.Attribute && ((ExprTy.Attribute) node).context == ExprContext.Load;
     }
 
-    private boolean hasOnlyPlainArgs(ExprTy.Call node) {
-        if (node.keywords.length > 0) {
+    private static boolean hasOnlyPlainArgs(ExprTy[] args, KeywordTy[] keywords) {
+        if (keywords.length > 0) {
             return false;
         }
-        for (ExprTy arg : node.args) {
+        for (ExprTy arg : args) {
             if (arg instanceof ExprTy.Starred) {
                 return false;
             }
@@ -957,45 +958,52 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             // n.b.: we do things completely different from python for calls
-            ExprTy func = node.func;
             OpCodes op = CALL_FUNCTION_VARARGS;
-            int oparg = 0;
-            byte[] followingArgs = null;
+            int opArg = 0;
             boolean shortCall;
-            int argcount = node.args.length;
-            if (isAttributeLoad(func) && node.keywords.length == 0) {
+            final ExprTy func = node.func;
+            final ExprTy[] args = node.args;
+            final KeywordTy[] keywords = node.keywords;
+
+            if (isAttributeLoad(func) && keywords.length == 0) {
                 ((ExprTy.Attribute) func).value.accept(this);
                 op = CALL_METHOD_VARARGS;
                 String mangled = ScopeEnvironment.mangle(unit.privateName, ((ExprTy.Attribute) func).attr);
-                oparg = addObject(unit.names, mangled);
-                shortCall = argcount <= 3;
+                opArg = addObject(unit.names, mangled);
+                shortCall = args.length <= 3;
             } else {
                 func.accept(this);
-                shortCall = argcount <= 4;
+                shortCall = args.length <= 4;
             }
-            if (hasOnlyPlainArgs(node) && shortCall) {
+
+            if (hasOnlyPlainArgs(args, keywords) && shortCall) {
+                byte[] followingArgs = null;
                 if (op == CALL_METHOD_VARARGS) {
-                    followingArgs = new byte[]{(byte) argcount};
+                    followingArgs = new byte[]{(byte) args.length};
                     op = CALL_METHOD;
                 } else {
-                    oparg = argcount;
+                    opArg = args.length;
                     op = CALL_FUNCTION;
                 }
                 // fast calls without extra arguments array
-                visitSequence(node.args);
-                return addOp(op, oparg, followingArgs);
+                visitSequence(args);
+                return addOp(op, opArg, followingArgs);
             } else {
-                collectIntoArray(node.args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 : 0);
-                if (node.keywords.length > 0) {
-                    assert op == CALL_FUNCTION_VARARGS;
-                    collectKeywords(node.keywords, CALL_FUNCTION_KW);
-                    return addOp(CALL_FUNCTION_KW);
-                } else {
-                    return addOp(op, oparg);
-                }
+                return callHelper(op, opArg, 0, args, keywords);
             }
         } finally {
             setLocation(savedLocation);
+        }
+    }
+
+    private Void callHelper(OpCodes op, int opArg, int alreadyOnStack, ExprTy[] args, KeywordTy[] keywords) {
+        collectIntoArray(args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 + alreadyOnStack : alreadyOnStack);
+        if (keywords.length > 0) {
+            assert op == CALL_FUNCTION_VARARGS;
+            collectKeywords(keywords, CALL_FUNCTION_KW);
+            return addOp(CALL_FUNCTION_KW);
+        } else {
+            return addOp(op, opArg);
         }
     }
 
@@ -1825,17 +1833,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         makeClosure(co);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
 
-        if ((node.bases.length < 3) && node.keywords.length == 0) {
-            visitSequence(node.bases);
-            addOp(CALL_FUNCTION, 2 + node.bases.length);
-        } else if (node.keywords.length == 0) {
-            collectIntoArray(node.bases, CollectionBits.OBJECT, 2);
-            addOp(CALL_FUNCTION_VARARGS);
-        } else {
-            collectIntoArray(node.bases, CollectionBits.OBJECT, 2);
-            collectKeywords(node.keywords, CALL_FUNCTION_KW);
-            addOp(CALL_FUNCTION_KW);
-        }
+        callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
 
         if (node.decoratorList != null) {
             for (ExprTy decorator : node.decoratorList) {
