@@ -243,6 +243,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
@@ -405,7 +406,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      */
     @TruffleBoundary
     public Object initHPyModule(PythonContext context, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path,
-                    InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+                    InteropLibrary llvmInteropLib, HPyCheckFunctionResultNode checkResultNode)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
         Object nativeResult = initHPyModule(this, llvmLibrary, initFuncName, name, path, false, llvmInteropLib);
         return checkResultNode.execute(context.getThreadState(context.getLanguage()), this, name, nativeResult);
     }
@@ -426,13 +428,19 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      */
     @TruffleBoundary
     private static Object initHPyModule(GraalHPyContext hpyUniversalContext, Object llvmLibrary, TruffleString initFuncName, TruffleString name, TruffleString path, boolean debug,
-                    InteropLibrary llvmInteropLib) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+                    InteropLibrary llvmInteropLib) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException {
         Object initFunction;
         try {
             initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName.toJavaStringUncached());
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
+
+        /*
+         * We eagerly initialize the debug mode here to be able to produce an error message now if
+         * we cannot use it.
+         */
+        hpyUniversalContext.getHPyDebugContext();
 
         // select appropriate HPy context
         boolean saved = hpyUniversalContext.debugMode;
@@ -1266,33 +1274,57 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * {@code hpy_jni.c: hpy_debug_get_ctx} function to get the debug context's pointer via JNI. So,
      * if you change the name of this function, also modify {@code hpy_jni.c} appropriately.
      */
-    public long getHPyDebugContext() {
+    public long getHPyDebugContext() throws ApiInitException {
         if (hPyDebugContext == 0) {
             CompilerDirectives.transferToInterpreter();
-            toNative();
-            long debugCtxPtr = initJNIDebugContext(castLong(nativePointer));
-            if (debugCtxPtr == 0) {
-                throw new RuntimeException("Could not initialize HPy debug context");
+            if (!getContext().getEnv().isNativeAccessAllowed()) {
+                throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
             }
-            hPyDebugContext = debugCtxPtr;
+            try {
+                toNativeInternal();
+                long debugCtxPtr = initJNIDebugContext(castLong(nativePointer));
+                if (debugCtxPtr == 0) {
+                    throw new RuntimeException("Could not initialize HPy debug context");
+                }
+                hPyDebugContext = debugCtxPtr;
+            } catch (CannotCastException e) {
+                // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
+                throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+            }
         }
         return hPyDebugContext;
     }
 
     @TruffleBoundary
-    public PythonModule getHPyDebugModule() {
-        toNative();
-        long debugCtxPtr = initJNIDebugModule(castLong(nativePointer));
-        if (debugCtxPtr == 0) {
-            throw new RuntimeException("Could not initialize HPy debug module");
+    public PythonModule getHPyDebugModule() throws ImportException {
+        if (!getContext().getEnv().isNativeAccessAllowed()) {
+            throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
-        int handle = GraalHPyBoxing.unboxHandle(debugCtxPtr);
-        Object nativeDebugModule = getObjectForHPyHandle(handle);
-        releaseHPyHandleForObject(handle);
-        if (!(nativeDebugModule instanceof PythonModule)) {
-            throw new RuntimeException("Debug module is expected to be a Python module object");
+
+        // force the universal context to native; we need a real pointer for JNI
+        try {
+            toNativeInternal();
+
+            // initialize the debug module via JNI
+            long debugCtxPtr = initJNIDebugModule(castLong(nativePointer));
+            if (debugCtxPtr == 0) {
+                throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+            }
+            int handle = GraalHPyBoxing.unboxHandle(debugCtxPtr);
+            Object nativeDebugModule = getObjectForHPyHandle(handle);
+            releaseHPyHandleForObject(handle);
+            if (!(nativeDebugModule instanceof PythonModule)) {
+                /*
+                 * Since we have the debug module fully under control, this is clearly an internal
+                 * error.
+                 */
+                throw CompilerDirectives.shouldNotReachHere("Debug module is expected to be a Python module object");
+            }
+            return (PythonModule) nativeDebugModule;
+        } catch (CannotCastException e) {
+            // TODO(fa): this can go away once 'isNativeAccessAllowed' is always correctly set
+            throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
-        return (PythonModule) nativeDebugModule;
     }
 
     boolean isDebugMode() {
@@ -1349,12 +1381,19 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private static long castLong(Object value) {
-        try {
-            return value instanceof Long ? (long) value : InteropLibrary.getUncached().asPointer(value);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere("cannot cast " + value);
+    private static long castLong(Object value) throws CannotCastException {
+        if (value instanceof Long) {
+            return (long) value;
         }
+        InteropLibrary interopLibrary = InteropLibrary.getUncached(value);
+        if (interopLibrary.isPointer(value)) {
+            try {
+                return interopLibrary.asPointer(value);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("cannot cast " + value);
+            }
+        }
+        throw CannotCastException.INSTANCE;
     }
 
     private static Object evalNFI(PythonContext context, String source, String name) {
@@ -1363,8 +1402,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return ct.call();
     }
 
-    @ExportMessage
-    void toNative() {
+    /**
+     * Internal method for transforming the HPy universal context to native. This is mostly like the
+     * interop message {@code toNative} but may of course fail if native access is not allowed. This
+     * method can be used to force the context to native if a native pointer is needed that will be
+     * handed to a native (e.g. JNI or NFI) function.
+     *
+     * @throws CannotCastException Thrown if the native pointer object cannot be casted to a
+     *             {@code long}.
+     */
+    private void toNativeInternal() throws CannotCastException {
         if (!isPointer()) {
             CompilerDirectives.transferToInterpreter();
             if (!getContext().getEnv().isNativeAccessAllowed()) {
@@ -1408,6 +1455,19 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                     }
                 }
             }
+        }
+    }
+
+    @ExportMessage
+    void toNative() {
+        try {
+            toNativeInternal();
+        } catch (CannotCastException e) {
+            /*
+             * We should only receive 'toNative' if native access is allowed. Hence, the exception
+             * should never happen.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

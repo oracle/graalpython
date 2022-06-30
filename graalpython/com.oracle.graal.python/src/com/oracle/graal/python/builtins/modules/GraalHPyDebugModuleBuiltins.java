@@ -40,28 +40,36 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = GraalHPyDebugModuleBuiltins.J_HPY_DEBUG)
@@ -69,6 +77,18 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
 
     public static final String J_HPY_DEBUG = "_hpy_debug";
+
+    static final String J_NOT_AVAILABLE = "_not_available";
+
+    private static final TruffleString T_NEW_GENERATION = tsLiteral("new_generation");
+    private static final TruffleString T_GET_OPEN_HANDLES = tsLiteral("get_open_handles");
+    private static final TruffleString T_GET_CLOSED_HANDLES = tsLiteral("get_closed_handles");
+    private static final TruffleString T_GET_QUEUE_MAX_SIZE = tsLiteral("get_closed_handles_queue_max_size");
+    private static final TruffleString T_SET_QUEUE_MAX_SIZE = tsLiteral("set_closed_handles_queue_max_size");
+    private static final TruffleString T_GET_DATA_MAX_SIZE = tsLiteral("get_protected_raw_data_max_size");
+    private static final TruffleString T_SET_DATA_MAX_SIZE = tsLiteral("set_protected_raw_data_max_size");
+    private static final TruffleString T_SET_ON_INVALID_HANDLE = tsLiteral("set_on_invalid_handle");
+    private static final TruffleString T_STACK_TRACE_LIMIT = tsLiteral("set_handle_stack_trace_limit");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -78,22 +98,51 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule hpyDebugModule = core.lookupBuiltinModule(PythonUtils.tsLiteral(J_HPY_DEBUG));
+        TruffleString[] keys = new TruffleString[]{T_NEW_GENERATION, T_GET_OPEN_HANDLES, T_GET_CLOSED_HANDLES, T_GET_QUEUE_MAX_SIZE, T_SET_QUEUE_MAX_SIZE, T_GET_DATA_MAX_SIZE, T_SET_DATA_MAX_SIZE,
+                        T_SET_ON_INVALID_HANDLE, T_STACK_TRACE_LIMIT};
         try {
             GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(null, core.getContext(), null, null);
             PythonModule nativeDebugModule = hpyContext.getHPyDebugModule();
             PDict nativeDebugDict = GetDictIfExistsNode.getUncached().execute(nativeDebugModule);
-            for (DictEntry entry : nativeDebugDict.entries()) {
-                TruffleString tkey = CastToTruffleStringNode.getUncached().execute(entry.key);
-                if (!isDunder(tkey)) {
-                    hpyDebugModule.setAttribute(tkey, entry.value);
-                }
+            for (TruffleString tkey : keys) {
+                hpyDebugModule.setAttribute(tkey, nativeDebugDict.getItem(tkey));
             }
         } catch (IOException | ApiInitException | ImportException e) {
-            throw CompilerDirectives.shouldNotReachHere();
+            /*
+             * Error case: install "not_available" for everything. So, loading still works, but you
+             * cannot use it.
+             */
+            PBuiltinFunction notAvailableObj = createFunction(core);
+            for (TruffleString tkey : keys) {
+                hpyDebugModule.setAttribute(tkey, notAvailableObj);
+            }
         }
     }
 
-    private static boolean isDunder(TruffleString s) {
-        return s.codePointLengthUncached(TS_ENCODING) >= 2 && s.codePointAtIndexUncached(0, TS_ENCODING) == '_' && s.codePointAtIndexUncached(1, TS_ENCODING) == '_';
+    @Builtin(name = J_NOT_AVAILABLE, takesVarArgs = true, takesVarKeywordArgs = true)
+    static final class NotAvailable extends PythonBuiltinNode {
+        private static final ReadArgumentNode[] EMPTY_ARGS = new ReadArgumentNode[0];
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
+        }
+
+        @Override
+        protected ReadArgumentNode[] getArguments() {
+            return EMPTY_ARGS;
+        }
+    }
+
+    @TruffleBoundary
+    private static PBuiltinFunction createFunction(Python3Core core) {
+        Builtin builtin = NotAvailable.class.getAnnotation(Builtin.class);
+        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
+            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(new NotAvailable());
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, false);
+        }, NotAvailable.class, builtin.name());
+        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+        TruffleString name = PythonUtils.toTruffleStringUncached(builtin.name());
+        return core.factory().createBuiltinFunction(name, null, 0, flags, callTarget);
     }
 }

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
@@ -354,7 +355,15 @@ final class GraalHPyJNIContext implements TruffleObject {
 
             private static long convertHPyDebugContext(Object[] arguments) {
                 GraalHPyContext hPyContext = GraalHPyJNIConvertArgNode.getHPyContext(arguments);
-                return hPyContext.getHPyDebugContext();
+                try {
+                    return hPyContext.getHPyDebugContext();
+                } catch (ApiInitException e) {
+                    /*
+                     * That's clearly an internal error because that should already be handled when
+                     * loading a module in debug mode.
+                     */
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
             }
 
             private static long convertPointer(Object argument, InteropLibrary interopLibrary) {

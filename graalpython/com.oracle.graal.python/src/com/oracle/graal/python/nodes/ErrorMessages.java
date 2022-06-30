@@ -1440,4 +1440,5 @@ public abstract class ErrorMessages {
     public static final TruffleString CAPSULE_GETDESTRUCTOR_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetDestructor called with invalid PyCapsule object");
     public static final TruffleString MSG_NOT_SET = tsLiteral("<message not set>");
 
+    public static final TruffleString HPY_DEBUG_MODE_NOT_AVAILABLE = tsLiteral("HPy debug mode is not available");
 }

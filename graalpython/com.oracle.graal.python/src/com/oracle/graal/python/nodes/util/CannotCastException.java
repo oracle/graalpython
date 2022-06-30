@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
-public class CannotCastException extends ControlFlowException {
+public final class CannotCastException extends ControlFlowException {
     private static final long serialVersionUID = 1L;
-    static final CannotCastException INSTANCE = new CannotCastException();
+    public static final CannotCastException INSTANCE = new CannotCastException();
 }
