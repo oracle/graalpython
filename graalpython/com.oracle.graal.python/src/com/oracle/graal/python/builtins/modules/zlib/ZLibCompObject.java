@@ -161,7 +161,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             if (readHeader) {
                 readHeader = false;
                 int h = gzipHeader(data, node);
-                bytes = PythonUtils.arrayCopyOfRange(bytes, h, data.length - h);
+                bytes = PythonUtils.arrayCopyOfRange(bytes, h, data.length);
             }
             canCopy = inputData == null;
             inputData = bytes;

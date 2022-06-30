@@ -244,3 +244,10 @@ def test_gzip_decompress():
     with contextlib.closing(gzip.open(GZ_PATH, 'rb')) as g:
         data = g.read()
     assert data == GZ_DATA
+
+
+def test_zlib_decompress_gzip():
+    d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    with open(GZ_PATH, 'rb') as f:
+        data = d.decompress(f.read()) + d.flush()
+    assert data == GZ_DATA
