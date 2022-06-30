@@ -68,7 +68,7 @@ def hpy_devel(request):
     from hpy.devel import HPyDevel
     return HPyDevel()
 
-@pytest.fixture(params=SELECTED_ABI_MODE or (['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal', 'debug']))
+@pytest.fixture(params=SELECTED_ABI_MODE or (['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal']))
 def hpy_abi(request):
     abi = request.param
     if abi == 'debug':
