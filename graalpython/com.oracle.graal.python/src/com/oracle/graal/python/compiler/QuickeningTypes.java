@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.compiler;
 
-public class QuickeningTypes {
+public abstract class QuickeningTypes {
     public static final byte OBJECT = 1;
     public static final byte INT = 2;
     public static final byte LONG = 4;
