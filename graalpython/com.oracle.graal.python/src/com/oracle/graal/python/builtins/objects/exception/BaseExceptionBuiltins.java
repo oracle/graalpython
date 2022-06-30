@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -113,6 +114,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionInitNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
 
         public final Object execute(PBaseException self, Object[] args) {
             return execute(null, self, args, PKeyword.EMPTY_KEYWORDS);
@@ -124,7 +126,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new VarargsBuiltinDirectInvocationNotSupported();
             }
-            Object[] argsWithoutSelf = PythonVarargsBuiltinNode.getArgsWithoutSelf(arguments);
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            Object[] argsWithoutSelf = splitArgsNode.execute(arguments);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
 
