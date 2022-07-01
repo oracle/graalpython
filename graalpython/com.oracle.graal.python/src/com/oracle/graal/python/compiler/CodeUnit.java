@@ -70,7 +70,7 @@ public final class CodeUnit {
     public static final int IS_GENERATOR = 0x40;
     public static final int IS_COROUTINE = 0x80;
 
-    public static final int DISASSEMBLY_NUM_COLUMNS = 7;
+    public static final int DISASSEMBLY_NUM_COLUMNS = 8;
 
     public final TruffleString name;
     public final TruffleString qualname;
@@ -99,6 +99,12 @@ public final class CodeUnit {
     public final int startOffset;
     public final int startLine;
 
+    /* Quickening data. See docs in PBytecodeRootNode */
+    public final byte[] outputCanQuicken;
+    public final byte[] variableShouldUnbox;
+    public final int[][] generalizeInputsMap;
+    public final int[][] generalizeVarsMap;
+
     public final boolean lambda;
 
     public CodeUnit(TruffleString name, TruffleString qualname,
@@ -106,7 +112,8 @@ public final class CodeUnit {
                     byte[] code, byte[] linetable, int flags,
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
-                    int[] exceptionHandlerRanges, int startOffset, int startLine) {
+                    int[] exceptionHandlerRanges, int startOffset, int startLine,
+                    byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -126,6 +133,10 @@ public final class CodeUnit {
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.startOffset = startOffset;
         this.startLine = startLine;
+        this.outputCanQuicken = outputCanQuicken;
+        this.variableShouldUnbox = variableShouldUnbox;
+        this.generalizeInputsMap = generalizeInputsMap;
+        this.generalizeVarsMap = generalizeVarsMap;
         this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
     }
 
@@ -219,9 +230,17 @@ public final class CodeUnit {
         return lambda;
     }
 
+    public int getTotalArgCount() {
+        return argCount + positionalOnlyArgCount + kwOnlyArgCount;
+    }
+
     @SuppressWarnings("fallthrough")
     @Override
     public String toString() {
+        return toString(code);
+    }
+
+    public String toString(byte[] bytecode) {
         StringBuilder sb = new StringBuilder();
 
         HashMap<Integer, String[]> lines = new HashMap<>();
@@ -241,9 +260,9 @@ public final class CodeUnit {
 
         int bci = 0;
         int oparg = 0;
-        while (bci < code.length) {
+        while (bci < bytecode.length) {
             int bcBCI = bci;
-            int bc = Byte.toUnsignedInt(code[bci++]);
+            int bc = Byte.toUnsignedInt(bytecode[bci++]);
             OpCodes opcode = codeForBC(bc);
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
@@ -259,173 +278,183 @@ public final class CodeUnit {
             if (!opcode.hasArg()) {
                 line[4] = "";
             } else {
-                oparg |= Byte.toUnsignedInt(code[bci++]);
+                oparg |= Byte.toUnsignedInt(bytecode[bci++]);
                 if (opcode.argLength > 1) {
                     followingArgs = new byte[opcode.argLength - 1];
                     for (int i = 0; i < opcode.argLength - 1; i++) {
-                        followingArgs[i] = code[bci++];
+                        followingArgs[i] = bytecode[bci++];
                     }
                 }
                 line[4] = String.format("% 2d", oparg);
             }
 
-            switch (opcode) {
-                case EXTENDED_ARG:
-                    line[4] = "";
-                    break;
-                case LOAD_CONST:
-                case LOAD_BIGINT:
-                case LOAD_STRING:
-                case LOAD_BYTES:
-                case MAKE_KEYWORD: {
-                    Object constant = constants[oparg];
-                    if (constant instanceof CodeUnit) {
-                        line[5] = ((CodeUnit) constant).qualname.toJavaStringUncached();
-                    } else {
-                        if (constant instanceof TruffleString) {
-                            line[5] = StringNodes.StringReprNode.getUncached().execute((TruffleString) constant).toJavaStringUncached();
-                        } else if (constant instanceof byte[]) {
-                            byte[] bytes = (byte[]) constant;
-                            line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
-                        } else if (constant instanceof Object[]) {
-                            line[5] = Arrays.toString((Object[]) constant);
+            while (true) {
+                switch (opcode) {
+                    case EXTENDED_ARG:
+                        line[4] = "";
+                        break;
+                    case LOAD_CONST:
+                    case LOAD_BIGINT:
+                    case LOAD_STRING:
+                    case LOAD_BYTES:
+                    case MAKE_KEYWORD: {
+                        Object constant = constants[oparg];
+                        if (constant instanceof CodeUnit) {
+                            line[5] = ((CodeUnit) constant).qualname.toJavaStringUncached();
                         } else {
-                            line[5] = Objects.toString(constant);
+                            if (constant instanceof TruffleString) {
+                                line[5] = StringNodes.StringReprNode.getUncached().execute((TruffleString) constant).toJavaStringUncached();
+                            } else if (constant instanceof byte[]) {
+                                byte[] bytes = (byte[]) constant;
+                                line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
+                            } else if (constant instanceof Object[]) {
+                                line[5] = Arrays.toString((Object[]) constant);
+                            } else {
+                                line[5] = Objects.toString(constant);
+                            }
                         }
+                        break;
                     }
-                    break;
+                    case MAKE_FUNCTION: {
+                        line[4] = String.format("% 2d", followingArgs[0]);
+                        CodeUnit code = (CodeUnit) constants[oparg];
+                        line[5] = line[5] = code.qualname.toJavaStringUncached();
+                        break;
+                    }
+                    case LOAD_INT:
+                    case LOAD_LONG:
+                        line[5] = Objects.toString(primitiveConstants[oparg]);
+                        break;
+                    case LOAD_DOUBLE:
+                        line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[oparg]));
+                        break;
+                    case LOAD_COMPLEX: {
+                        double[] num = (double[]) constants[oparg];
+                        if (num[0] == 0.0) {
+                            line[5] = String.format("%gj", num[1]);
+                        } else {
+                            line[5] = String.format("%g%+gj", num[0], num[1]);
+                        }
+                        break;
+                    }
+                    case LOAD_CLOSURE:
+                    case LOAD_DEREF:
+                    case STORE_DEREF:
+                    case DELETE_DEREF:
+                        if (oparg >= cellvars.length) {
+                            line[5] = freevars[oparg - cellvars.length].toJavaStringUncached();
+                        } else {
+                            line[5] = cellvars[oparg].toJavaStringUncached();
+                        }
+                        break;
+                    case LOAD_FAST:
+                    case STORE_FAST:
+                    case DELETE_FAST:
+                        line[5] = varnames[oparg].toJavaStringUncached();
+                        break;
+                    case LOAD_NAME:
+                    case STORE_NAME:
+                    case DELETE_NAME:
+                    case IMPORT_NAME:
+                    case IMPORT_FROM:
+                    case LOAD_GLOBAL:
+                    case STORE_GLOBAL:
+                    case DELETE_GLOBAL:
+                    case LOAD_ATTR:
+                    case STORE_ATTR:
+                    case DELETE_ATTR:
+                    case CALL_METHOD_VARARGS:
+                        line[5] = names[oparg].toJavaStringUncached();
+                        break;
+                    case FORMAT_VALUE: {
+                        int type = oparg & FormatOptions.FVC_MASK;
+                        switch (type) {
+                            case FormatOptions.FVC_STR:
+                                line[5] = "STR";
+                                break;
+                            case FormatOptions.FVC_REPR:
+                                line[5] = "REPR";
+                                break;
+                            case FormatOptions.FVC_ASCII:
+                                line[5] = "ASCII";
+                                break;
+                            case FormatOptions.FVC_NONE:
+                                line[5] = "NONE";
+                                break;
+                        }
+                        if ((oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
+                            line[5] += " + SPEC";
+                        }
+                        break;
+                    }
+                    case CALL_METHOD: {
+                        line[4] = String.format("% 2d", followingArgs[0]);
+                        line[5] = names[oparg].toJavaStringUncached();
+                        break;
+                    }
+                    case UNARY_OP:
+                        line[5] = UnaryOps.values()[oparg].toString();
+                        break;
+                    case BINARY_OP:
+                        line[5] = BinaryOps.values()[oparg].toString();
+                        break;
+                    case COLLECTION_FROM_STACK:
+                    case COLLECTION_ADD_STACK:
+                    case COLLECTION_FROM_COLLECTION:
+                    case COLLECTION_ADD_COLLECTION:
+                    case ADD_TO_COLLECTION:
+                        line[4] = String.format("% 2d", CollectionBits.elementCount(oparg));
+                        switch (CollectionBits.elementType(oparg)) {
+                            case CollectionBits.LIST:
+                                line[5] = "list";
+                                break;
+                            case CollectionBits.TUPLE:
+                                line[5] = "tuple";
+                                break;
+                            case CollectionBits.SET:
+                                line[5] = "set";
+                                break;
+                            case CollectionBits.DICT:
+                                line[5] = "dict";
+                                break;
+                            case CollectionBits.KWORDS:
+                                line[5] = "PKeyword[]";
+                                break;
+                            case CollectionBits.OBJECT:
+                                line[5] = "Object[]";
+                                break;
+                        }
+                        break;
+                    case UNPACK_EX:
+                        line[5] = String.format("%d, %d", oparg, Byte.toUnsignedInt(followingArgs[0]));
+                        break;
+                    case JUMP_BACKWARD:
+                        lines.computeIfAbsent(bcBCI - oparg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
+                        line[5] = String.format("to %d", bcBCI - oparg);
+                        break;
+                    case FOR_ITER:
+                    case JUMP_FORWARD:
+                    case POP_AND_JUMP_IF_FALSE:
+                    case POP_AND_JUMP_IF_TRUE:
+                    case JUMP_IF_FALSE_OR_POP:
+                    case JUMP_IF_TRUE_OR_POP:
+                    case MATCH_EXC_OR_JUMP:
+                    case SEND:
+                        lines.computeIfAbsent(bcBCI + oparg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
+                        line[5] = String.format("to %d", bcBCI + oparg);
+                        break;
+                    default:
+                        if (opcode.quickens != null) {
+                            opcode = opcode.quickens;
+                            continue;
+                        }
                 }
-                case MAKE_FUNCTION: {
-                    line[4] = String.format("% 2d", followingArgs[0]);
-                    CodeUnit code = (CodeUnit) constants[oparg];
-                    line[5] = line[5] = code.qualname.toJavaStringUncached();
-                    break;
+                if (opcode == OpCodes.EXTENDED_ARG) {
+                    oparg <<= 8;
+                } else {
+                    oparg = 0;
                 }
-                case LOAD_LONG:
-                    line[5] = Objects.toString(primitiveConstants[oparg]);
-                    break;
-                case LOAD_DOUBLE:
-                    line[5] = Objects.toString(Double.longBitsToDouble(primitiveConstants[oparg]));
-                    break;
-                case LOAD_COMPLEX: {
-                    double[] num = (double[]) constants[oparg];
-                    if (num[0] == 0.0) {
-                        line[5] = String.format("%gj", num[1]);
-                    } else {
-                        line[5] = String.format("%g%+gj", num[0], num[1]);
-                    }
-                    break;
-                }
-                case LOAD_CLOSURE:
-                case LOAD_DEREF:
-                case STORE_DEREF:
-                case DELETE_DEREF:
-                    if (oparg >= cellvars.length) {
-                        line[5] = freevars[oparg - cellvars.length].toJavaStringUncached();
-                    } else {
-                        line[5] = cellvars[oparg].toJavaStringUncached();
-                    }
-                    break;
-                case LOAD_FAST:
-                case STORE_FAST:
-                case DELETE_FAST:
-                    line[5] = varnames[oparg].toJavaStringUncached();
-                    break;
-                case LOAD_NAME:
-                case STORE_NAME:
-                case DELETE_NAME:
-                case IMPORT_NAME:
-                case IMPORT_FROM:
-                case LOAD_GLOBAL:
-                case STORE_GLOBAL:
-                case DELETE_GLOBAL:
-                case LOAD_ATTR:
-                case STORE_ATTR:
-                case DELETE_ATTR:
-                case CALL_METHOD_VARARGS:
-                    line[5] = names[oparg].toJavaStringUncached();
-                    break;
-                case FORMAT_VALUE: {
-                    int type = oparg & FormatOptions.FVC_MASK;
-                    switch (type) {
-                        case FormatOptions.FVC_STR:
-                            line[5] = "STR";
-                            break;
-                        case FormatOptions.FVC_REPR:
-                            line[5] = "REPR";
-                            break;
-                        case FormatOptions.FVC_ASCII:
-                            line[5] = "ASCII";
-                            break;
-                        case FormatOptions.FVC_NONE:
-                            line[5] = "NONE";
-                            break;
-                    }
-                    if ((oparg & FormatOptions.FVS_MASK) == FormatOptions.FVS_HAVE_SPEC) {
-                        line[5] += " + SPEC";
-                    }
-                    break;
-                }
-                case CALL_METHOD: {
-                    line[4] = String.format("% 2d", followingArgs[0]);
-                    line[5] = names[oparg].toJavaStringUncached();
-                    break;
-                }
-                case UNARY_OP:
-                    line[5] = UnaryOps.values()[oparg].toString();
-                    break;
-                case BINARY_OP:
-                    line[5] = BinaryOps.values()[oparg].toString();
-                    break;
-                case COLLECTION_FROM_STACK:
-                case COLLECTION_ADD_STACK:
-                case COLLECTION_FROM_COLLECTION:
-                case COLLECTION_ADD_COLLECTION:
-                case ADD_TO_COLLECTION:
-                    line[4] = String.format("% 2d", CollectionBits.elementCount(oparg));
-                    switch (CollectionBits.elementType(oparg)) {
-                        case CollectionBits.LIST:
-                            line[5] = "list";
-                            break;
-                        case CollectionBits.TUPLE:
-                            line[5] = "tuple";
-                            break;
-                        case CollectionBits.SET:
-                            line[5] = "set";
-                            break;
-                        case CollectionBits.DICT:
-                            line[5] = "dict";
-                            break;
-                        case CollectionBits.KWORDS:
-                            line[5] = "PKeyword[]";
-                            break;
-                        case CollectionBits.OBJECT:
-                            line[5] = "Object[]";
-                            break;
-                    }
-                    break;
-                case UNPACK_EX:
-                    line[5] = String.format("%d, %d", oparg, Byte.toUnsignedInt(followingArgs[0]));
-                    break;
-                case JUMP_BACKWARD:
-                    oparg = -oparg;
-                    // fall through
-                case FOR_ITER:
-                case JUMP_FORWARD:
-                case POP_AND_JUMP_IF_FALSE:
-                case POP_AND_JUMP_IF_TRUE:
-                case JUMP_IF_FALSE_OR_POP:
-                case JUMP_IF_TRUE_OR_POP:
-                case MATCH_EXC_OR_JUMP:
-                case SEND:
-                    lines.computeIfAbsent(bcBCI + oparg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
-                    line[5] = String.format("to %d", bcBCI + oparg);
-                    break;
-            }
-            if (opcode == OpCodes.EXTENDED_ARG) {
-                oparg <<= 8;
-            } else {
-                oparg = 0;
+                break;
             }
         }
 
@@ -444,12 +473,32 @@ public final class CodeUnit {
             }
         }
 
-        for (bci = 0; bci < code.length; bci++) {
+        for (bci = 0; bci < bytecode.length; bci++) {
             String[] line = lines.get(bci);
             if (line != null) {
                 line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
                 line[6] = line[6] == null ? "" : String.format("(%s)", line[6]);
-                String formatted = String.format("%-8s %2s %4s %-32s %-3s   %-32s %s", (Object[]) line);
+                line[7] = "";
+                if (outputCanQuicken != null && (outputCanQuicken[bci] != 0 || generalizeInputsMap[bci] != null)) {
+                    StringBuilder quickenSb = new StringBuilder();
+                    if (outputCanQuicken[bci] != 0) {
+                        quickenSb.append("can quicken");
+                    }
+                    if (generalizeInputsMap[bci] != null) {
+                        if (quickenSb.length() > 0) {
+                            quickenSb.append(", ");
+                        }
+                        quickenSb.append("generalizes: ");
+                        for (int i = 0; i < generalizeInputsMap[bci].length; i++) {
+                            if (i > 0) {
+                                quickenSb.append(", ");
+                            }
+                            quickenSb.append(generalizeInputsMap[bci][i]);
+                        }
+                    }
+                    line[7] = quickenSb.toString();
+                }
+                String formatted = String.format("%-8s %2s %4s %-32s %-3s   %-32s %s %s", (Object[]) line);
                 sb.append(formatted.stripTrailing());
                 sb.append('\n');
             }

@@ -1,7 +1,7 @@
 Disassembly of <module>:
 000000         0 MAKE_FUNCTION                     0    (<dictcomp>)
 000020         3 LOAD_NAME                         0    (range)
-000026         5 LOAD_BYTE                         10
+000026         5 LOAD_BYTE_O                       10
 000020         7 CALL_FUNCTION                     1
 000000         9 GET_ITER
 000000        10 CALL_FUNCTION                     1
@@ -10,7 +10,7 @@ Disassembly of <module>:
 Disassembly of <dictcomp>:
 000000         0 COLLECTION_FROM_STACK             0    (dict)
 000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          16   (to 20)
+000000   >>    4 FOR_ITER                          16   (to 20)                           can quicken
 000015         6 STORE_FAST                        1    (x)
 000001         8 LOAD_FAST                         1    (x)
 000004        10 LOAD_GLOBAL                       0    (str)

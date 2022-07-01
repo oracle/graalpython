@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,58 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.compiler;
+package com.oracle.graal.python.nodes.bytecode;
 
-import java.util.List;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+public class QuickeningGeneralizeException extends ControlFlowException {
+    private static final long serialVersionUID = -5530902591292387434L;
 
-final class Instruction {
+    public final int type;
 
-    final OpCodes opcode;
-    final int arg;
-    final byte[] followingArgs;
-    final Block target;
-    final SourceRange location;
-
-    public int bci;
-    public byte quickenOutput;
-    public List<Instruction> quickeningGeneralizeList;
-
-    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {
-        this.opcode = opcode;
-        this.arg = arg;
-        this.followingArgs = followingArgs;
-        this.target = target;
-        this.location = location;
-        assert arg >= 0;
-        assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
-    }
-
-    @Override
-    public String toString() {
-        if (target != null) {
-            return String.format("%s %s", opcode, target);
-        }
-        if (opcode.hasArg()) {
-            return String.format("%s %s", opcode, arg);
-        }
-        return opcode.toString();
-    }
-
-    public int extensions() {
-        if (arg <= 0xFF) {
-            return 0;
-        } else if (arg <= 0xFFFF) {
-            return 1;
-        } else if (arg <= 0xFFFFFF) {
-            return 2;
-        } else {
-            return 3;
-        }
-    }
-
-    public int extendedLength() {
-        return opcode.length() + extensions() * 2;
+    public QuickeningGeneralizeException(int type) {
+        this.type = type;
     }
 }

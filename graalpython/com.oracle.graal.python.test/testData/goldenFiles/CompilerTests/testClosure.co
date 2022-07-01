@@ -5,7 +5,7 @@ Disassembly of <module>:
 000000         6 RETURN_VALUE
 
 Disassembly of foo:
-000019         0 LOAD_BYTE                         1
+000019         0 LOAD_BYTE_O                       1
 000015         2 STORE_DEREF                       0    (x)
 000025         4 LOAD_CLOSURE                      0    (x)
 000025         6 CLOSURE_FROM_STACK                1
@@ -18,7 +18,7 @@ Disassembly of foo:
 000106        20 LOAD_DEREF                        0    (x)
 000100        22 CALL_FUNCTION                     1
 000100        24 POP_TOP
-000117        25 LOAD_BYTE                         3
+000117        25 LOAD_BYTE_O                       3
 000113        27 STORE_DEREF                       0    (x)
 000113        29 LOAD_NONE
 000113        30 RETURN_VALUE
@@ -28,7 +28,7 @@ Disassembly of foo.<locals>.bar:
 000069         2 LOAD_DEREF                        0    (x)
 000063         4 CALL_FUNCTION                     1
 000063         6 POP_TOP
-000084         7 LOAD_BYTE                         2
+000084         7 LOAD_BYTE_O                       2
 000080         9 STORE_DEREF                       0    (x)
 000080        11 LOAD_NONE
 000080        12 RETURN_VALUE

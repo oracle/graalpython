@@ -6,10 +6,10 @@ Disassembly of <module>:
 
 Disassembly of foo:
 000022         0 LOAD_GLOBAL                       0    (range)
-000028         2 LOAD_BYTE                         10
+000028         2 LOAD_BYTE_O                       10
 000022         4 CALL_FUNCTION                     1
 000013         6 GET_ITER
-000013   >>    7 FOR_ITER                          36   (to 43)
+000013   >>    7 FOR_ITER                          36   (to 43)                           can quicken
 000017         9 STORE_FAST                        0    (i)
 000055        11 LOAD_GLOBAL                       1    (a)
 000075        13 LOAD_GLOBAL                       2    (print)

@@ -92,6 +92,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_ELLIPSIS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FAST;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_GLOBAL;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_INT;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_LONG;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
@@ -211,6 +212,69 @@ public class Compiler implements SSTreeVisitor<Void> {
         // return (!(mod instanceof ModTy.Expression));
     }
 
+    private List<Instruction> quickeningStack = new ArrayList<>();
+
+    void pushOp(Instruction insn) {
+        if (insn.opcode == FOR_ITER) {
+            quickeningStack.add(insn);
+            return;
+        }
+        if (insn.target != null && insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, true) > 0) {
+            // TODO support control flow
+            quickeningStack.clear();
+            return;
+        }
+        int consumed = insn.opcode.getNumberOfConsumedStackItems(insn.arg, insn.followingArgs, false);
+        int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
+        byte canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
+        List<Instruction> inputs = null;
+        if (consumed > 0) {
+            if (canQuickenInputTypes != 0) {
+                inputs = new ArrayList<>();
+                for (int i = 0; i < consumed; i++) {
+                    Instruction input = popQuickeningStack();
+                    if (input == null) {
+                        /*
+                         * This happens when we cleared the stack after a jump or other
+                         * not-yet-supported scenario
+                         */
+                        canQuickenInputTypes = 0;
+                        break;
+                    }
+                    canQuickenInputTypes &= input.opcode.canQuickenOutputTypes();
+                    inputs.add(input);
+                }
+            } else {
+                for (int i = 0; i < consumed; i++) {
+                    popQuickeningStack();
+                }
+            }
+        }
+        if (produced > 0) {
+            if (produced > 1) {
+                // TODO instructions that produce multiple values?
+                quickeningStack.clear();
+                return;
+            }
+            quickeningStack.add(insn);
+            if (canQuickenInputTypes != 0) {
+                insn.quickeningGeneralizeList = inputs;
+            }
+        }
+        if (canQuickenInputTypes != 0 && inputs != null) {
+            for (int i = 0; i < inputs.size(); i++) {
+                inputs.get(i).quickenOutput = canQuickenInputTypes;
+            }
+        }
+    }
+
+    Instruction popQuickeningStack() {
+        if (quickeningStack.size() == 0) {
+            return null;
+        }
+        return quickeningStack.remove(quickeningStack.size() - 1);
+    }
+
     // helpers
 
     private void enterScope(String name, CompilationScope scopeType, SSTNode node) {
@@ -304,7 +368,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addOp(OpCodes code, Block target) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, 0, null, target, unit.currentLocation));
+        Instruction insn = new Instruction(code, 0, null, target, unit.currentLocation);
+        b.instr.add(insn);
+        pushOp(insn);
     }
 
     private Void addOp(OpCodes code, int arg) {
@@ -319,7 +385,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void addOp(OpCodes code, int arg, byte[] followingArgs, SourceRange location) {
         Block b = unit.currentBlock;
-        b.instr.add(new Instruction(code, arg, followingArgs, null, location));
+        Instruction insn = new Instruction(code, arg, followingArgs, null, location);
+        b.instr.add(insn);
+        pushOp(insn);
     }
 
     private Void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
@@ -1015,7 +1083,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BOOLEAN:
                     return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    return addLoadLong((Long) node.value);
+                    return addLoadNumber((Long) node.value);
                 case DOUBLE:
                     return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
                 case COMPLEX:
@@ -1035,9 +1103,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private Void addLoadLong(long value) {
+    private Void addLoadNumber(long value) {
         if (value == (byte) value) {
             return addOp(LOAD_BYTE, (byte) value);
+        } else if (value == (int) value) {
+            return addOp(LOAD_INT, addObject(unit.primitiveConstants, value));
         } else {
             return addOp(LOAD_LONG, addObject(unit.primitiveConstants, value));
         }
@@ -2015,7 +2085,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.ImportFrom node) {
         setLocation(node);
-        addLoadLong(node.level);
+        addLoadNumber(node.level);
         TruffleString[] names = new TruffleString[node.names.length];
         for (int i = 0; i < node.names.length; i++) {
             names[i] = toTruffleStringUncached(node.names[i].name);

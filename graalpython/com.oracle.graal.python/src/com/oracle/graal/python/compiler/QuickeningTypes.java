@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,56 +40,10 @@
  */
 package com.oracle.graal.python.compiler;
 
-import java.util.List;
-
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-
-final class Instruction {
-
-    final OpCodes opcode;
-    final int arg;
-    final byte[] followingArgs;
-    final Block target;
-    final SourceRange location;
-
-    public int bci;
-    public byte quickenOutput;
-    public List<Instruction> quickeningGeneralizeList;
-
-    Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {
-        this.opcode = opcode;
-        this.arg = arg;
-        this.followingArgs = followingArgs;
-        this.target = target;
-        this.location = location;
-        assert arg >= 0;
-        assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
-    }
-
-    @Override
-    public String toString() {
-        if (target != null) {
-            return String.format("%s %s", opcode, target);
-        }
-        if (opcode.hasArg()) {
-            return String.format("%s %s", opcode, arg);
-        }
-        return opcode.toString();
-    }
-
-    public int extensions() {
-        if (arg <= 0xFF) {
-            return 0;
-        } else if (arg <= 0xFFFF) {
-            return 1;
-        } else if (arg <= 0xFFFFFF) {
-            return 2;
-        } else {
-            return 3;
-        }
-    }
-
-    public int extendedLength() {
-        return opcode.length() + extensions() * 2;
-    }
+public abstract class QuickeningTypes {
+    public static final byte OBJECT = 1;
+    public static final byte INT = 2;
+    public static final byte LONG = 4;
+    public static final byte DOUBLE = 8;
+    public static final byte BOOLEAN = 16;
 }

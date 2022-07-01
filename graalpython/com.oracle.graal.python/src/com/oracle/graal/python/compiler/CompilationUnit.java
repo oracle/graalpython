@@ -196,6 +196,15 @@ public final class CompilationUnit {
 
         computeStackLevels();
 
+        int varCount = varnames.size();
+        List<Instruction> quickenedInstructions = new ArrayList<>();
+        List<List<Instruction>> variableStores = new ArrayList<>(varCount);
+        for (int i = 0; i < varCount; i++) {
+            variableStores.add(new ArrayList<>());
+        }
+        int[] boxingMetric = new int[varCount];
+        byte[] shouldUnboxVariable = new byte[varCount];
+
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
         Block b = startBlock;
@@ -226,6 +235,16 @@ public final class CompilationUnit {
                 addExceptionRange(finishedExceptionHandlerRanges, start, end, handlerBci, stackLevel);
             }
             for (Instruction i : b.instr) {
+                if (i.quickenOutput != 0 || i.quickeningGeneralizeList != null) {
+                    quickenedInstructions.add(i);
+                }
+                if (i.opcode == OpCodes.STORE_FAST) {
+                    variableStores.get(i.arg).add(i);
+                } else if (i.opcode == OpCodes.LOAD_FAST) {
+                    shouldUnboxVariable[i.arg] |= i.quickenOutput;
+                    boxingMetric[i.arg] += i.quickenOutput != 0 ? 1 : -1;
+                }
+                i.bci = buf.size();
                 emitBytecode(i, buf);
                 insertSrcOffsetTable(i.location.startOffset, lastSrcOffset, srcOffsets);
                 lastSrcOffset = i.location.startOffset;
@@ -243,11 +262,41 @@ public final class CompilationUnit {
 
         final int rangeElements = 4;
         int[] exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];
-        int i = 0;
+        int rangeIndex = 0;
         for (int[] range : finishedExceptionHandlerRanges) {
             assert range.length == rangeElements;
-            System.arraycopy(range, 0, exceptionHandlerRanges, i, rangeElements);
-            i += rangeElements;
+            System.arraycopy(range, 0, exceptionHandlerRanges, rangeIndex, rangeElements);
+            rangeIndex += rangeElements;
+        }
+
+        byte[] finishedCanQuickenOutput = new byte[buf.size()];
+        int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
+        int[][] finishedGeneralizeVarsMap = new int[varCount][];
+        for (Instruction insn : quickenedInstructions) {
+            finishedCanQuickenOutput[insn.bci] = insn.quickenOutput;
+            if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
+                finishedGeneralizeInputsMap[insn.bci] = new int[insn.quickeningGeneralizeList.size()];
+                for (int j = 0; j < finishedGeneralizeInputsMap[insn.bci].length; j++) {
+                    finishedGeneralizeInputsMap[insn.bci][j] = insn.quickeningGeneralizeList.get(j).bci;
+                }
+            }
+        }
+        if (cell2arg != null) {
+            for (int i = 0; i < cell2arg.length; i++) {
+                if (cell2arg[i] != -1 && cell2arg[i] < varCount) {
+                    shouldUnboxVariable[cell2arg[i]] = 0;
+                }
+            }
+        }
+        for (int i = 0; i < varCount; i++) {
+            List<Instruction> stores = variableStores.get(i);
+            finishedGeneralizeVarsMap[i] = new int[stores.size()];
+            for (int j = 0; j < stores.size(); j++) {
+                finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
+            }
+            if (boxingMetric[i] <= 0) {
+                shouldUnboxVariable[i] = 0;
+            }
         }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
@@ -261,7 +310,8 @@ public final class CompilationUnit {
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
                         startLocation.startOffset,
-                        startLocation.startLine);
+                        startLocation.startLine,
+                        finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
     private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
@@ -346,6 +396,7 @@ public final class CompilationUnit {
                         int targetPos = blockLocationMap.get(target);
                         int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
                         Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.location);
+                        newInstr.quickenOutput = instr.quickenOutput;
                         if (newInstr.extendedLength() != instr.extendedLength()) {
                             repeat = true;
                         }
@@ -372,19 +423,30 @@ public final class CompilationUnit {
     }
 
     private void emitBytecode(Instruction instr, ByteArrayOutputStream buf) throws IllegalStateException {
-        assert instr.opcode.ordinal() < 256;
-        if (!instr.opcode.hasArg()) {
-            buf.write(instr.opcode.ordinal());
+        OpCodes opcode = instr.opcode;
+        // Pre-quicken constant loads
+        if (opcode == OpCodes.LOAD_BYTE) {
+            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_BYTE_I : OpCodes.LOAD_BYTE_O;
+        } else if (opcode == OpCodes.LOAD_INT) {
+            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_INT_I : OpCodes.LOAD_INT_O;
+        } else if (opcode == OpCodes.LOAD_TRUE) {
+            opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_TRUE_B : OpCodes.LOAD_TRUE_O;
+        } else if (opcode == OpCodes.LOAD_FALSE) {
+            opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_FALSE_B : OpCodes.LOAD_FALSE_O;
+        }
+        assert opcode.ordinal() < 256;
+        if (!opcode.hasArg()) {
+            buf.write(opcode.ordinal());
         } else {
             int oparg = instr.arg;
             for (int i = instr.extensions(); i >= 1; i--) {
                 buf.write(OpCodes.EXTENDED_ARG.ordinal());
                 buf.write((oparg >> (i * 8)) & 0xFF);
             }
-            buf.write(instr.opcode.ordinal());
+            buf.write(opcode.ordinal());
             buf.write(oparg & 0xFF);
-            if (instr.opcode.argLength > 1) {
-                assert instr.followingArgs.length == instr.opcode.argLength - 1;
+            if (opcode.argLength > 1) {
+                assert instr.followingArgs.length == opcode.argLength - 1;
                 for (int i = 0; i < instr.followingArgs.length; i++) {
                     buf.write(instr.followingArgs[i]);
                 }

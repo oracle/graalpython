@@ -1158,6 +1158,29 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return a;
         }
 
+        private void writeSparseTable(int[][] table) {
+            writeInt(table.length);
+            for (int i = 0; i < table.length; i++) {
+                if (table[i] != null && table[i].length > 0) {
+                    writeInt(i);
+                    writeIntArray(table[i]);
+                }
+            }
+            writeInt(-1);
+        }
+
+        private int[][] readSparseTable() {
+            int length = readInt();
+            int[][] table = new int[length][];
+            while (true) {
+                int i = readInt();
+                if (i == -1) {
+                    return table;
+                }
+                table[i] = readIntArray();
+            }
+        }
+
         private CodeUnit readCodeUnit() {
             int version = readByte();
             if (version != Compiler.BYTECODE_VERSION) {
@@ -1185,8 +1208,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int[] exceptionHandlerRanges = readIntArray();
             int startOffset = readInt();
             int startLine = readInt();
+            byte[] outputCanQuicken = readBytes();
+            byte[] variableShouldUnbox = readBytes();
+            int[][] generalizeInputsMap = readSparseTable();
+            int[][] generalizeVarsMap = readSparseTable();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
-                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine);
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine,
+                            outputCanQuicken, variableShouldUnbox, generalizeInputsMap, generalizeVarsMap);
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
@@ -1214,6 +1242,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeIntArray(code.exceptionHandlerRanges);
             writeInt(code.startOffset);
             writeInt(code.startLine);
+            writeBytes(code.outputCanQuicken);
+            writeBytes(code.variableShouldUnbox);
+            writeSparseTable(code.generalizeInputsMap);
+            writeSparseTable(code.generalizeVarsMap);
         }
 
         private PCode readCode() {

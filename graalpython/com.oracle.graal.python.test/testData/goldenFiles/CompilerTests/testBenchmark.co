@@ -3,7 +3,7 @@ Disassembly of <module>:
 000000         3 STORE_NAME                        0    (docompute)
 000204         5 MAKE_FUNCTION                     0    (measure)
 000204         8 STORE_NAME                        1    (measure)
-000337        10 LOAD_BYTE                         5
+000337        10 LOAD_BYTE_O                       5
 000315        12 COLLECTION_FROM_STACK             1    (Object[])
 000315        14 MAKE_FUNCTION                     1    (__benchmark__)
 000315        17 STORE_NAME                        2    (__benchmark__)
@@ -15,39 +15,39 @@ Disassembly of docompute:
 000039         2 LOAD_FAST                         0    (num)
 000033         4 CALL_FUNCTION                     1
 000024         6 GET_ITER
-000024   >>    7 FOR_ITER                          72   (to 79)
+000024   >>    7 FOR_ITER                          72   (to 79)                           can quicken
 000028         9 STORE_FAST                        1    (i)
 000060        11 LOAD_DOUBLE                       0    (0.0)
 000053        13 STORE_FAST                        2    (sum_)
-000076        15 LOAD_BYTE                         0
+000076        15 LOAD_BYTE_I                       0                                      can quicken
 000072        17 STORE_FAST                        3    (j)
-000092   >>   19 LOAD_FAST                         3    (j)
-000096        21 LOAD_FAST                         0    (num)
-000092        23 BINARY_OP                         14   (LT)
+000092   >>   19 LOAD_FAST                         3    (j)                               can quicken
+000096        21 LOAD_FAST                         0    (num)                             can quicken
+000092        23 BINARY_OP                         14   (LT)                              can quicken, generalizes: 21, 19
 000086        25 POP_AND_JUMP_IF_FALSE             52   (to 77)
-000113        27 LOAD_FAST                         2    (sum_)
+000113        27 LOAD_FAST                         2    (sum_)                            can quicken
 000121        29 LOAD_DOUBLE                       1    (1.0)
-000130        31 LOAD_FAST                         1    (i)
-000134        33 LOAD_FAST                         3    (j)
-000130        35 BINARY_OP                         0    (ADD)
-000140        37 LOAD_FAST                         1    (i)
-000144        39 LOAD_FAST                         3    (j)
-000140        41 BINARY_OP                         0    (ADD)
-000148        43 LOAD_BYTE                         1
-000140        45 BINARY_OP                         0    (ADD)
-000129        47 BINARY_OP                         4    (MUL)
-000154        49 LOAD_BYTE                         1
-000129        51 BINARY_OP                         20   (RSHIFT)
-000159        53 LOAD_FAST                         1    (i)
-000128        55 BINARY_OP                         0    (ADD)
-000163        57 LOAD_BYTE                         1
-000128        59 BINARY_OP                         0    (ADD)
-000121        61 BINARY_OP                         8    (TRUEDIV)
-000113        63 BINARY_OP                         1    (INPLACE_ADD)
+000130        31 LOAD_FAST                         1    (i)                               can quicken
+000134        33 LOAD_FAST                         3    (j)                               can quicken
+000130        35 BINARY_OP                         0    (ADD)                             can quicken, generalizes: 33, 31
+000140        37 LOAD_FAST                         1    (i)                               can quicken
+000144        39 LOAD_FAST                         3    (j)                               can quicken
+000140        41 BINARY_OP                         0    (ADD)                             can quicken, generalizes: 39, 37
+000148        43 LOAD_BYTE_I                       1                                      can quicken
+000140        45 BINARY_OP                         0    (ADD)                             can quicken, generalizes: 43, 41
+000129        47 BINARY_OP                         4    (MUL)                             can quicken, generalizes: 45, 35
+000154        49 LOAD_BYTE_I                       1                                      can quicken
+000129        51 BINARY_OP                         20   (RSHIFT)                          can quicken, generalizes: 49, 47
+000159        53 LOAD_FAST                         1    (i)                               can quicken
+000128        55 BINARY_OP                         0    (ADD)                             can quicken, generalizes: 53, 51
+000163        57 LOAD_BYTE_I                       1                                      can quicken
+000128        59 BINARY_OP                         0    (ADD)                             generalizes: 57, 55
+000121        61 BINARY_OP                         8    (TRUEDIV)                         can quicken
+000113        63 BINARY_OP                         1    (INPLACE_ADD)                     can quicken, generalizes: 61, 27
 000113        65 STORE_FAST                        2    (sum_)
-000178        67 LOAD_FAST                         3    (j)
-000183        69 LOAD_BYTE                         1
-000178        71 BINARY_OP                         1    (INPLACE_ADD)
+000178        67 LOAD_FAST                         3    (j)                               can quicken
+000183        69 LOAD_BYTE_I                       1                                      can quicken
+000178        71 BINARY_OP                         1    (INPLACE_ADD)                     can quicken, generalizes: 69, 67
 000178        73 STORE_FAST                        3    (j)
 000178        75 JUMP_BACKWARD                     56   (to 19)
 000178   >>   77 JUMP_BACKWARD                     70   (to 7)
@@ -59,10 +59,10 @@ Disassembly of measure:
 000243         2 LOAD_FAST                         0    (num)
 000237         4 CALL_FUNCTION                     1
 000226         6 GET_ITER
-000226   >>    7 FOR_ITER                          14   (to 21)
+000226   >>    7 FOR_ITER                          14   (to 21)                           can quicken
 000230         9 STORE_FAST                        1    (run)
 000264        11 LOAD_GLOBAL                       1    (docompute)
-000274        13 LOAD_LONG                         0    (10000)
+000274        13 LOAD_INT_O                        0    (10000)
 000264        15 CALL_FUNCTION                     1
 000257        17 STORE_FAST                        2    (sum_)
 000257        19 JUMP_BACKWARD                     12   (to 7)

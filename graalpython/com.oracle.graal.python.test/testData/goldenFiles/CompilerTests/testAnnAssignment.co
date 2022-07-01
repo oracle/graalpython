@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000000         0 SETUP_ANNOTATIONS
-000009         1 LOAD_BYTE                         12
+000009         1 LOAD_BYTE_O                       12
 000000         3 STORE_NAME                        0    (a)
 000003         5 LOAD_NAME                         1    (int)
 000000         7 LOAD_NAME                         2    (__annotations__)

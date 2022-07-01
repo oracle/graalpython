@@ -325,6 +325,10 @@ public enum OpCodes {
      */
     LOAD_BYTE(1, 0, 1),
     /**
+     * Loads {@code int} from primitiveConstants array indexed by the immediate operand.
+     */
+    LOAD_INT(1, 0, 1),
+    /**
      * Loads {@code long} from primitiveConstants array indexed by the immediate operand.
      */
     LOAD_LONG(1, 0, 1),
@@ -644,7 +648,44 @@ public enum OpCodes {
      * 
      * Pops: exception or {@code None}, then maybe-bound {@code __exit__}, then the context manager
      */
-    EXIT_WITH(0, 3, 0);
+    EXIT_WITH(0, 3, 0),
+
+    /*
+     * Quickened bytecodes
+     */
+    LOAD_TRUE_O(LOAD_TRUE, 0, QuickeningTypes.OBJECT),
+    LOAD_TRUE_B(LOAD_TRUE, 0, QuickeningTypes.BOOLEAN, LOAD_TRUE_O),
+    LOAD_FALSE_O(LOAD_FALSE, 0, QuickeningTypes.OBJECT),
+    LOAD_FALSE_B(LOAD_FALSE, 0, QuickeningTypes.BOOLEAN, LOAD_FALSE_O),
+    LOAD_BYTE_O(LOAD_BYTE, 0, QuickeningTypes.OBJECT),
+    LOAD_BYTE_I(LOAD_BYTE, 0, QuickeningTypes.INT, LOAD_BYTE_O),
+    LOAD_INT_O(LOAD_INT, 0, QuickeningTypes.OBJECT),
+    LOAD_INT_I(LOAD_INT, 0, QuickeningTypes.INT, LOAD_INT_O),
+    LOAD_FAST_O(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_I_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_I(LOAD_FAST, 0, QuickeningTypes.INT, LOAD_FAST_I_BOX),
+    LOAD_FAST_B_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_B(LOAD_FAST, 0, QuickeningTypes.BOOLEAN, LOAD_FAST_B_BOX),
+    STORE_FAST_O(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_UNBOX_I(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_I(STORE_FAST, QuickeningTypes.INT, 0),
+    STORE_FAST_UNBOX_B(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_B(STORE_FAST, QuickeningTypes.BOOLEAN, 0),
+    UNARY_OP_O_O(UNARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
+    UNARY_OP_I_O(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
+    UNARY_OP_I_I(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, UNARY_OP_I_O),
+    UNARY_OP_B_O(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.OBJECT),
+    UNARY_OP_B_B(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.BOOLEAN, UNARY_OP_I_O),
+    BINARY_OP_OO_O(BINARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
+    BINARY_OP_II_O(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
+    BINARY_OP_II_I(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, BINARY_OP_II_O),
+    BINARY_OP_II_B(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.BOOLEAN, BINARY_OP_II_O),
+    FOR_ITER_O(FOR_ITER, 0, QuickeningTypes.OBJECT),
+    FOR_ITER_I(FOR_ITER, 0, QuickeningTypes.INT, FOR_ITER_O),
+    POP_AND_JUMP_IF_FALSE_O(POP_AND_JUMP_IF_FALSE, QuickeningTypes.OBJECT, 0),
+    POP_AND_JUMP_IF_FALSE_B(POP_AND_JUMP_IF_FALSE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_FALSE_O),
+    POP_AND_JUMP_IF_TRUE_O(POP_AND_JUMP_IF_TRUE, QuickeningTypes.OBJECT, 0),
+    POP_AND_JUMP_IF_TRUE_B(POP_AND_JUMP_IF_TRUE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_TRUE_O);
 
     public static final class CollectionBits {
         public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
@@ -678,6 +719,10 @@ public enum OpCodes {
      * Instruction argument length in bytes
      */
     public final int argLength;
+    public final OpCodes quickens;
+    public final OpCodes generalizesTo;
+    private byte quickenInputTypes;
+    private byte quickenOutputTypes;
 
     OpCodes(int argLength, int consumesStackItems, int producesStackItems) {
         this(argLength, (oparg, followingArgs, withJump) -> consumesStackItems, (oparg, followingArgs, withJump) -> producesStackItems);
@@ -695,6 +740,30 @@ public enum OpCodes {
         this.argLength = argLength;
         this.consumesStackItems = consumesStackItems;
         this.producesStackItems = producesStackItems;
+        this.quickens = null;
+        this.generalizesTo = null;
+    }
+
+    OpCodes(OpCodes quickens, int inputType, int outputType) {
+        this(quickens, inputType, outputType, null);
+    }
+
+    OpCodes(OpCodes quickens, int inputType, int outputType, OpCodes generalizesTo) {
+        this.argLength = quickens.argLength;
+        this.consumesStackItems = quickens.consumesStackItems;
+        this.producesStackItems = quickens.producesStackItems;
+        this.generalizesTo = generalizesTo;
+        this.quickens = quickens;
+        quickens.quickenInputTypes |= inputType;
+        quickens.quickenOutputTypes |= outputType;
+    }
+
+    public byte canQuickenInputTypes() {
+        return quickenInputTypes;
+    }
+
+    public byte canQuickenOutputTypes() {
+        return quickenOutputTypes;
     }
 
     @FunctionalInterface
