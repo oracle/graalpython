@@ -826,6 +826,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    private static final class LoopCounter {
+        int count;
+    }
+
     Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, Frame stackFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
         /*
          * A lot of python code is executed just a single time, such as top level module code. We
@@ -865,10 +869,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object locals = PArguments.getSpecialArgument(virtualFrame);
 
         /*
-         * We use an array as a workaround for not being able to specify which local variables are
+         * We use an object as a workaround for not being able to specify which local variables are
          * loop constants (GR-35338).
          */
-        int[] loopCount = new int[]{0};
+        LoopCounter loopCount = new LoopCounter();
         int stackTop = initialStackTop;
         int bci = initialBci;
 
@@ -1255,8 +1259,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RETURN_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
-                            LoopNode.reportLoopCount(this, loopCount[0]);
+                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
+                            LoopNode.reportLoopCount(this, loopCount.count);
                         }
                         Object value = stackFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
@@ -1452,7 +1456,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
                         if (CompilerDirectives.hasNextTier()) {
-                            loopCount[0]++;
+                            loopCount.count++;
                         }
                         if (CompilerDirectives.inInterpreter()) {
                             if (!useCachedNodes) {
@@ -1481,8 +1485,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                         continue;
                                     } else {
                                         // We reached a return/yield
-                                        if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
-                                            LoopNode.reportLoopCount(this, loopCount[0]);
+                                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
+                                            LoopNode.reportLoopCount(this, loopCount.count);
                                         }
                                         return osrResult;
                                     }
@@ -1651,8 +1655,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(stackFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
-                            LoopNode.reportLoopCount(this, loopCount[0]);
+                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
+                            LoopNode.reportLoopCount(this, loopCount.count);
                         }
                         Object value = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop--, null);
@@ -1777,8 +1781,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             clearFrameSlots(localFrame, stackoffset, initialStackTop);
                         }
                     }
-                    if (CompilerDirectives.hasNextTier() && loopCount[0] > 0) {
-                        LoopNode.reportLoopCount(this, loopCount[0]);
+                    if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
+                        LoopNode.reportLoopCount(this, loopCount.count);
                     }
                     if (e == pe) {
                         throw pe;
