@@ -130,6 +130,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -1516,9 +1517,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "center", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "center", minNumOfPositionalArgs = 2, parameterNames = {"$self", "width", "fill"})
+    @ArgumentClinic(name = "width", conversionClass = IndexConversionNode.class)
     @GenerateNodeFactory
-    abstract static class CenterNode extends PythonBuiltinNode {
+    abstract static class CenterNode extends PythonTernaryClinicBuiltinNode {
+
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesBuiltinsClinicProviders.CenterNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization(guards = "isNoValue(fill)")
         PBytesLike none(PBytesLike self, int width, @SuppressWarnings("unused") PNone fill,
