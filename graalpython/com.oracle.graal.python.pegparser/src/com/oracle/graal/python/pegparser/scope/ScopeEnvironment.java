@@ -625,7 +625,7 @@ public class ScopeEnvironment {
                 // TODO: raise syntax error
             }
             if (currentScope.comprehensionIterExpression > 0) {
-                // TODO: raise syntax error NAMED_EXPR_COMP_ITER_EXPR
+                env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_ITER_EXPR);
             }
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
                 // symtable_extend_namedexpr_scope
@@ -635,7 +635,7 @@ public class ScopeEnvironment {
                     // If we find a comprehension scope, check for conflict
                     if (s.flags.contains(ScopeFlags.IsComprehension)) {
                         if (s.getUseOfName(targetName).contains(DefUse.DefCompIter)) {
-                            // TODO: raise NAMED_EXPR_COMP_CONFLICT
+                            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_CONFLICT);
                         }
                         continue;
                     }
@@ -660,7 +660,7 @@ public class ScopeEnvironment {
                     }
                     // Disallow usage in ClassBlock
                     if (s.type == ScopeType.Class) {
-                        // TODO: Syntax error NAMED_EXPR_COMP_IN_CLASS
+                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_CLASS);
                     }
                 }
             }
@@ -1034,7 +1034,7 @@ public class ScopeEnvironment {
                     } else if (cur.contains(DefUse.DefAnnot)) {
                         msg = NONLOCAL_ANNOT;
                     } else if (cur.contains(DefUse.DefLocal)) {
-                        msg = NONLOCAL_AFTER_USE;
+                        msg = NONLOCAL_AFTER_ASSIGN;
                     }
                     if (msg != null) {
                         env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
