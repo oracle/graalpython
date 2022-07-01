@@ -440,7 +440,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
          * We eagerly initialize the debug mode here to be able to produce an error message now if
          * we cannot use it.
          */
-        hpyUniversalContext.getHPyDebugContext();
+        if (debug) {
+            hpyUniversalContext.getHPyDebugContext();
+        }
 
         // select appropriate HPy context
         boolean saved = hpyUniversalContext.debugMode;
