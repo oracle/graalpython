@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -683,7 +683,7 @@ public final class PCode extends PythonBuiltinObject {
             CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
             return code.toString();
         }
-        return EMPTY_STRING;
+        return J_EMPTY_STRING;
     }
 
     private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
