@@ -902,7 +902,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private final HandleStack freeStack = new HandleStack(16);
     private long hPyDebugContext;
-    Object nativePointer;
+    private long nativePointer;
 
     /**
      * This is set to {@code true} if an HPy extension is initialized (i.e. {@code HPyInit_*} is
@@ -1284,7 +1284,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
             try {
                 toNativeInternal();
-                long debugCtxPtr = initJNIDebugContext(castLong(nativePointer));
+                long debugCtxPtr = initJNIDebugContext(nativePointer);
                 if (debugCtxPtr == 0) {
                     throw new RuntimeException("Could not initialize HPy debug context");
                 }
@@ -1308,7 +1308,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             toNativeInternal();
 
             // initialize the debug module via JNI
-            long debugCtxPtr = initJNIDebugModule(castLong(nativePointer));
+            long debugCtxPtr = initJNIDebugModule(nativePointer);
             if (debugCtxPtr == 0) {
                 throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
             }
@@ -1335,15 +1335,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage
     boolean isPointer() {
-        return nativePointer != null;
+        return nativePointer != 0;
     }
 
-    @ExportMessage(limit = "1")
-    @SuppressWarnings("static-method")
-    long asPointer(
-                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+    @ExportMessage
+    long asPointer() throws UnsupportedMessageException {
         if (isPointer()) {
-            return interopLibrary.asPointer(nativePointer);
+            return nativePointer;
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw UnsupportedMessageException.create();
@@ -1371,7 +1369,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
 
         @ExportMessage
-        @SuppressWarnings("static-method")
         long asPointer() {
             return pointer;
         }
@@ -1419,11 +1416,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             if (!getContext().getEnv().isNativeAccessAllowed()) {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this));
+            nativePointer = castLong(PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this)));
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
-                if (initJNI(this, castLong(nativePointer)) != 0) {
+                if (initJNI(this, nativePointer) != 0) {
                     throw new RuntimeException("Could not initialize HPy JNI backend.");
                 }
                 /*
