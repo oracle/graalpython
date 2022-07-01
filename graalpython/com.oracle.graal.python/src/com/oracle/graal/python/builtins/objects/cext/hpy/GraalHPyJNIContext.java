@@ -102,32 +102,6 @@ final class GraalHPyJNIContext implements TruffleObject {
         return new HPyContextNativePointer(0L);
     }
 
-    enum JNIFunctionSignature {
-        PRIMITIVE1(1),
-        PRIMITIVE2(2),
-        PRIMITIVE3(3),
-        PRIMITIVE4(4),
-        PRIMITIVE5(5),
-        INQUIRY(2),
-        SSIZEOBJARGPROC(4),
-        SSIZESSIZEOBJARGPROC(5),
-        OBJOBJPROC(3),
-        OBJOBJARGPROC(4),
-        INITPROC(5),
-        DESTROYFUNC(1),
-        FREEFUNC(2),
-        GETBUFFERPROC(4),
-        RELEASEBUFFERPROC(3),
-        RICHCOMPAREFUNC(4),
-        DESTRUCTOR(2);
-
-        final int arity;
-
-        JNIFunctionSignature(int arity) {
-            this.arity = arity;
-        }
-    }
-
     @ExportLibrary(InteropLibrary.class)
     static final class GraalHPyJNIFunctionPointer implements TruffleObject {
         final long pointer;
