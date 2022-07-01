@@ -202,6 +202,7 @@ public final class CompilationUnit {
         for (int i = 0; i < varCount; i++) {
             variableStores.add(new ArrayList<>());
         }
+        int[] boxingMetric = new int[varCount];
         byte[] shouldUnboxVariable = new byte[varCount];
 
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
@@ -241,6 +242,7 @@ public final class CompilationUnit {
                     variableStores.get(i.arg).add(i);
                 } else if (i.opcode == OpCodes.LOAD_FAST) {
                     shouldUnboxVariable[i.arg] |= i.quickenOutput;
+                    boxingMetric[i.arg] += i.quickenOutput != 0 ? 1 : -1;
                 }
                 i.bci = buf.size();
                 emitBytecode(i, buf);
@@ -286,11 +288,14 @@ public final class CompilationUnit {
                 }
             }
         }
-        for (int i = 0; i < variableStores.size(); i++) {
+        for (int i = 0; i < varCount; i++) {
             List<Instruction> stores = variableStores.get(i);
             finishedGeneralizeVarsMap[i] = new int[stores.size()];
             for (int j = 0; j < stores.size(); j++) {
                 finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
+            }
+            if (boxingMetric[i] <= 0) {
+                shouldUnboxVariable[i] = 0;
             }
         }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
