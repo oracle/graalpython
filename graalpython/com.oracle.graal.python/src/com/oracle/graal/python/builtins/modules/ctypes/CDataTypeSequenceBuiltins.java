@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins.T__LENGTH_;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArrayType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtrType;
@@ -49,6 +47,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins.T__LENGTH_;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_LENGTH_MUST_BE_0_NOT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_A_TYPE_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
@@ -57,6 +57,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -70,7 +71,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -94,9 +97,15 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
         return CDataTypeSequenceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2, parameterNames = {"itemtype", "length"})
+    @ArgumentClinic(name = "length", conversionClass = IndexConversionNode.class)
     @GenerateNodeFactory
-    abstract static class RepeatNode extends PythonBinaryBuiltinNode {
+    abstract static class RepeatNode extends PythonBinaryClinicBuiltinNode {
+
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CDataTypeSequenceBuiltinsClinicProviders.RepeatNodeClinicProviderGen.INSTANCE;
+        }
+
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
