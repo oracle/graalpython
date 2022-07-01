@@ -364,6 +364,12 @@ public class Tokenizer {
     int nextChar() {
         if (nextCharIndex < codePointsInput.length) {
             int c = codePointsInput[nextCharIndex];
+            if (c == '\r') {
+                if (nextCharIndex + 1 < codePointsInput.length && codePointsInput[nextCharIndex + 1] == '\n') {
+                    nextCharIndex++;
+                }
+                c = '\n';
+            }
             nextCharIndex++;
             return c;
         } else {
@@ -399,6 +405,9 @@ public class Tokenizer {
     void oneBack() {
         if (nextCharIndex > 0 && done != StatusCode.EOF) {
             nextCharIndex--;
+            if (nextCharIndex < codePointsInput.length && codePointsInput[nextCharIndex] == '\n' && nextCharIndex > 0 && codePointsInput[nextCharIndex - 1] == '\r') {
+                nextCharIndex--;
+            }
         }
     }
 
@@ -1276,13 +1285,19 @@ public class Tokenizer {
     }
 
     public String getTokenString(Token tok) {
+        String s;
         if (tok.sourceRange.startOffset >= codePointsInput.length) {
             return "";
         } else if (tok.sourceRange.endOffset >= codePointsInput.length) {
-            return new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
+            s = new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
         } else {
-            return new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
+            s = new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
         }
+        if (s.indexOf('\r') >= 0) {
+            s = s.replaceAll("\r\n", "\n");
+            s = s.replace('\r', '\n');
+        }
+        return s;
     }
 
     public String toString(Token token) {
