@@ -37,6 +37,7 @@ import re
 import shlex
 import shutil
 import sys
+from functools import wraps
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
@@ -80,6 +81,8 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
+
+SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
 
 
 def _sibling(filename):
@@ -442,6 +445,11 @@ def update_unittest_tags(args):
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
+        ('test_list.txt', '*graalpython.lib-python.3.test.test_list.ListTest.test_repr_deep'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialC.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
+        ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -1665,17 +1673,14 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true',
     ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
-        '--llvm.managed', '--python.PosixModuleBackend=java'
-    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
         '--experimental-options', '--python.HPyBackend=NFI'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
         '--experimental-options', '--engine.Compilation=false', '--python.HPyBackend=NFI']), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--llvm.managed', '--python.PosixModuleBackend=java'
-    ]), SUITE, 10)
+        '--experimental-options', '-multi-context'] + SANDBOXED_OPTIONS), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context', '--python.HPyBackend=NFI'
     ]), SUITE, 10)
@@ -2368,6 +2373,13 @@ def run_leak_launcher(input_args, out=None):
         return False
 
 
+def no_return(fn):
+    @wraps(fn)
+    def inner(*args, **kwargs):
+        fn(*args, **kwargs)
+    return inner
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2381,8 +2393,8 @@ mx.update_commands(SUITE, {
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
-    'python-svm': [python_svm, ''],
-    'python-gvm': [python_gvm, ''],
+    'python-svm': [no_return(python_svm), ''],
+    'python-gvm': [no_return(python_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],

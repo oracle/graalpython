@@ -43,6 +43,7 @@ import re
 import shlex
 import sys
 import types
+import json
 
 import mx
 
@@ -190,7 +191,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
         args.enterprise = sec.getboolean('enterprise', False)
         args.no_clean = sec.getboolean('no_clean', False)
-        args.rerun_with_commands = sec['rerun_with_commands']
+        args.rerun_with_commands = sec.get('rerun_with_commands')
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('bad', help="Bad commit for bisection")
@@ -209,21 +210,29 @@ def _bisect_benchmark(argv, bisect_id, email_to):
 
     primary_suite = mx.primary_suite()
 
-    fetched_enterprise = [False]
+    def checkout_enterprise():
+        suite = get_suite('graalpython')
+        ee_suite = get_suite('/vm-enterprise')
+        overlays = '../ci-overlays'
+        if not os.path.isdir(overlays):
+            sys.exit("Needs to have ci-overlays checkout")
+        with open(os.path.join(get_suite("graalpython").dir, "ci.jsonnet")) as f:
+            overlay_rev = json.load(f)['overlay']
+        suite.vc.update_to_branch(overlays, overlay_rev)
+        constants_file = os.path.join(overlays, 'python/imported-constants.json')
+        with open(constants_file) as f:
+            ee_rev = json.load(f)['GRAAL_ENTERPRISE_REVISION']
+        ee_suite.vc.update_to_branch(ee_suite.vc_dir, ee_rev)
 
     def checkout_suite(suite, commit):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         if args.enterprise and suite.name != 'vm-enterprise':
-            checkout_args = ['--dynamicimports', '/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise']
-            if fetched_enterprise[0]:
-                checkout_args.append('--no-fetch')
-            mx.run_mx(checkout_args, out=mx.OutputCapture())
+            checkout_enterprise()
             # Make sure vm is imported before vm-enterprise
             get_suite('/vm')
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
-            fetched_enterprise[0] = True
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         debug_str = "debug: graalpython={} graal={}".format(
@@ -284,7 +293,8 @@ def _bisect_benchmark(argv, bisect_id, email_to):
             if not next_result.good_commit or not next_result.bad_commit:
                 print("Next downstream suite {} does not have both good and bad commits".format(downstream_suite.name))
                 break
-            print("Recursing to downstream suite: {}, commit: {}".format(downstream_suite.name, current_result.bad_commit))
+            print("Recursing to downstream suite: {}, commit: {}".format(downstream_suite.name,
+                                                                         current_result.bad_commit))
             checkout_suite(current_suite, current_result.bad_commit)
             current_result = next_result
             current_suite = downstream_suite
