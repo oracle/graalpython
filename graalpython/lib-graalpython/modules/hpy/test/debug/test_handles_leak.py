@@ -39,6 +39,9 @@
 
 import pytest
 from hpy.debug import set_handle_stack_trace_limit, disable_handle_stack_traces
+from hpy.test.support import HPyTest
+
+pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 
 @pytest.fixture
 def hpy_abi():
