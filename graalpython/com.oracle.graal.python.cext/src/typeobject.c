@@ -612,6 +612,20 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
+    PySequenceMethods* sequences = cls->tp_as_sequence;
+    if (sequences) {
+    	// sequence functions first, so that the number functions take precendence
+        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
+        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
+        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
+        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
+        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
+    }
+
     PyNumberMethods* numbers = cls->tp_as_number;
     if (numbers) {
         ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
@@ -663,19 +677,6 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__matmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
         ADD_SLOT_CONV("__rmatmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_R);
         ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
-    }
-
-    PySequenceMethods* sequences = cls->tp_as_sequence;
-    if (sequences) {
-        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
-        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
-        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
-        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
-        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
-        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
-        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
     PyMappingMethods* mappings = cls->tp_as_mapping;

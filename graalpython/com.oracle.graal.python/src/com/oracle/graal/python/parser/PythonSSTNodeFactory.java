@@ -92,6 +92,7 @@ import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
@@ -185,8 +186,8 @@ public final class PythonSSTNodeFactory {
     public SSTNode createAnnotationType(SSTNode type) {
         SSTNode annotType = type;
         if (futureAnnotations && type != null) {
-            final String value = source.getCharacters().subSequence(type.getStartOffset() - 1, type.getEndOffset() + 1).toString();
-            annotType = createStringLiteral(new String[]{value}, type.getStartOffset(), type.getEndOffset());
+            final String value = source.getCharacters().subSequence(type.getStartOffset(), type.getEndOffset()).toString();
+            annotType = new RawStringLiteralSSTNode(value, type.getStartOffset(), type.getEndOffset());
         }
         return annotType;
     }
