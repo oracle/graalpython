@@ -793,9 +793,10 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         #         except Exception as e: # pylint: disable=broad-except;
         #             self.exc = e
 
-        abi_list = ['cpython', 'universal', 'debug']
+        abi_list = ['cpython', 'universal']
         if include_native:
-            abi_list.append('nfi')
+            # modes 'debug' and 'nfi' can only be used if native access is allowed
+            abi_list.extend(['debug', 'nfi'])
         for abi in abi_list:
             env["TEST_HPY_ABI"] = abi
             run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env.copy(), use_pytest=True)
