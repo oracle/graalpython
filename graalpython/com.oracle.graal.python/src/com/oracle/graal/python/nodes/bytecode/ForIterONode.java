@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,9 +78,10 @@ public abstract class ForIterONode extends PNodeWithContext {
     }
 
     @Specialization
-    boolean doBigIntRange(PBigRangeIterator iterator, int stackTop, Frame stackFrame) {
+    boolean doBigIntRange(PBigRangeIterator iterator, int stackTop, Frame stackFrame,
+                    @Cached PythonObjectFactory factory) {
         if (iterator.hasNextBigInt()) {
-            stackFrame.setObject(stackTop, iterator.nextBigInt());
+            stackFrame.setObject(stackTop, factory.createInt(iterator.nextBigInt()));
             return true;
         }
         iterator.setExhausted();
