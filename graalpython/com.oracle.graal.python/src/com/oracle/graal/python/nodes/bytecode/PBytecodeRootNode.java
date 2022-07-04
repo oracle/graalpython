@@ -883,6 +883,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         TruffleString[] localNames = names;
         Node[] localNodes = adoptedNodes;
         final int bciSlot = bcioffset;
+        final int localCelloffset = celloffset;
 
         setCurrentBci(virtualFrame, bciSlot, initialBci);
 
@@ -1109,7 +1110,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.LOAD_CLOSURE: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
+                        PCell cell = (PCell) localFrame.getObject(localCelloffset + oparg);
                         virtualFrame.setObject(++stackTop, cell);
                         break;
                     }
@@ -1121,22 +1122,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_CLASSDEREF: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadClassDeref(virtualFrame, localFrame, locals, stackTop, beginBci, localNodes, oparg, useCachedNodes);
+                        stackTop = bytecodeLoadClassDeref(virtualFrame, localFrame, locals, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, useCachedNodes);
+                        stackTop = bytecodeLoadDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.STORE_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeStoreDeref(virtualFrame, localFrame, stackTop, oparg);
+                        stackTop = bytecodeStoreDeref(virtualFrame, localFrame, stackTop, oparg, localCelloffset);
                         break;
                     }
                     case OpCodesConstants.DELETE_DEREF: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, useCachedNodes);
+                        bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.STORE_FAST: {
@@ -2709,7 +2710,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeDeleteDeref(Frame localFrame, int bci, Node[] localNodes, int oparg, boolean useCachedNodes) {
+    private void bytecodeDeleteDeref(Frame localFrame, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
         Object value = cell.getRef();
         if (value == null) {
@@ -2718,7 +2719,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         cell.clearRef();
     }
 
-    private int bytecodeStoreDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int oparg) {
+    private int bytecodeStoreDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int oparg, int celloffset) {
         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
@@ -2726,7 +2727,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, boolean useCachedNodes) {
+    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
         TruffleString varName;
         boolean isCellVar;
         if (oparg < cellvars.length) {
@@ -2742,11 +2743,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             virtualFrame.setObject(++stackTop, value);
             return stackTop;
         } else {
-            return bytecodeLoadDeref(virtualFrame, localFrame, stackTop, bci, localNodes, oparg, useCachedNodes);
+            return bytecodeLoadDeref(virtualFrame, localFrame, stackTop, bci, localNodes, oparg, celloffset, useCachedNodes);
         }
     }
 
-    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, boolean useCachedNodes) {
+    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
         Object value = cell.getRef();
         if (value == null) {
