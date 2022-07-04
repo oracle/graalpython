@@ -8,7 +8,7 @@ Disassembly of foo:
 000027         0 LOAD_FAST                         0    (obj)
 000018         2 GET_ITER
 000018   >>    3 FOR_ITER                          13   (to 16)                           can quicken
-000022         5 STORE_FAST                        1    (x)
+000022         5 STORE_FAST                        1    (x)                               generalizes: 3
 000040         7 LOAD_GLOBAL                       0    (print)
 000046         9 LOAD_FAST                         1    (x)
 000040        11 CALL_FUNCTION                     1

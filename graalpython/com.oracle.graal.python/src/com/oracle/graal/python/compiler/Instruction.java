@@ -47,12 +47,12 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 final class Instruction {
 
     final OpCodes opcode;
-    final int arg;
+    int arg;
     final byte[] followingArgs;
     final Block target;
     final SourceRange location;
 
-    public int bci;
+    public int bci = -1;
     public byte quickenOutput;
     public List<Instruction> quickeningGeneralizeList;
 

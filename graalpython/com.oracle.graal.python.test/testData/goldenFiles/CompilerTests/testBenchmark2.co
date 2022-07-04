@@ -21,7 +21,7 @@ Disassembly of HandlerTask:
 
 Disassembly of HandlerTask.__init__:
 000091         0 LOAD_BYTE_I                       0                                      can quicken
-000087         2 STORE_FAST                        6    (x)
+000087         2 STORE_FAST                        6    (x)                               generalizes: 0
 000107         4 LOAD_GLOBAL                       0    (ValueError)
 000101         6 RAISE_VARARGS                     1
 000126         8 LOAD_GLOBAL                       1    (Task)

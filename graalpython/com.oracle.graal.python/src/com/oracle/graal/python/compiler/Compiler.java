@@ -257,9 +257,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 return;
             }
             quickeningStack.add(insn);
-            if (canQuickenInputTypes != 0) {
-                insn.quickeningGeneralizeList = inputs;
-            }
+        }
+        if (canQuickenInputTypes != 0) {
+            insn.quickeningGeneralizeList = inputs;
         }
         if (canQuickenInputTypes != 0 && inputs != null) {
             for (int i = 0; i < inputs.size(); i++) {

@@ -17,15 +17,15 @@ Disassembly of <genexpr>:
 Flags: CO_GENERATOR
 000000         0 LOAD_FAST                         0    (.0)
 000000   >>    2 FOR_ITER                          32   (to 34)                           can quicken
-000012         4 STORE_FAST                        1    (y)
+000012         4 STORE_FAST                        1    (y)                               generalizes: 2
 000049         6 LOAD_FAST                         1    (y)
 000000         8 GET_ITER
 000000   >>    9 FOR_ITER                          23   (to 32)                           can quicken
-000044        11 STORE_FAST                        2    (x)
+000044        11 STORE_FAST                        2    (x)                               generalizes: 9
 000054        13 LOAD_FAST                         2    (x)                               can quicken
 000058        15 LOAD_BYTE_I                       5                                      can quicken
 000054        17 BINARY_OP                         14   (LT)                              can quicken, generalizes: 15, 13
-000000        19 POP_AND_JUMP_IF_FALSE             11   (to 30)
+000000        19 POP_AND_JUMP_IF_FALSE             11   (to 30)                           generalizes: 17
 000001        21 LOAD_GLOBAL                       0    (str)
 000005        23 LOAD_FAST                         2    (x)
 000001        25 CALL_FUNCTION                     1

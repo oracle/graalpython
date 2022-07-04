@@ -4,11 +4,11 @@ Disassembly of <module>:
 000012   >>    4 LOAD_NAME                         0    (i)
 000016         6 LOAD_BYTE_O                       10
 000012         8 BINARY_OP                         14   (LT)                              can quicken
-000006        10 POP_AND_JUMP_IF_FALSE             26   (to 36)
+000006        10 POP_AND_JUMP_IF_FALSE             26   (to 36)                           generalizes: 8
 000025        12 LOAD_NAME                         0    (i)
 000030        14 LOAD_BYTE_O                       3
 000025        16 BINARY_OP                         12   (EQ)                              can quicken
-000022        18 POP_AND_JUMP_IF_FALSE             6    (to 24)
+000022        18 POP_AND_JUMP_IF_FALSE             6    (to 24)                           generalizes: 16
 000037        20 JUMP_FORWARD                      23   (to 43)
 000037        22 JUMP_FORWARD                      12   (to 34)
 000055   >>   24 LOAD_NAME                         0    (i)

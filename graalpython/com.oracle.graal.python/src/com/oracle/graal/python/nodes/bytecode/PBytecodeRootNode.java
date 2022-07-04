@@ -2474,9 +2474,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void bytecodeStoreFastO(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int index) {
         Object object;
-        if (virtualFrame.isObject(stackTop)) {
+        try {
             object = virtualFrame.getObject(stackTop);
-        } else {
+        } catch (FrameSlotTypeException e) {
+            // This should only happen when quickened concurrently in multi-context
+            // mode
             CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeVariableStores(index);
             object = virtualFrame.getValue(stackTop);
