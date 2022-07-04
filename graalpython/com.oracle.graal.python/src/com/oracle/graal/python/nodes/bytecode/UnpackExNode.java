@@ -71,10 +71,10 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class UnpackExNode extends PNodeWithContext {
-    public abstract int execute(Frame virtualFrame, int stackTop, Frame localFrame, Object collection, int countBefore, int countAfter);
+    public abstract int execute(Frame frame, int stackTop, Object collection, int countBefore, int countAfter);
 
     @Specialization(guards = {"cannotBeOverridden(sequence, getClassNode)", "!isPString(sequence)"}, limit = "1")
-    static int doUnpackSequence(int initialStackTop, Frame localFrame, PSequence sequence, int countBefore, int countAfter,
+    static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int countBefore, int countAfter,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
@@ -94,15 +94,15 @@ public abstract class UnpackExNode extends PNodeWithContext {
             errorProfile.enter();
             throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
         }
-        stackTop = moveItemsToStack(storage, localFrame, stackTop, 0, countBefore, getItemNode);
+        stackTop = moveItemsToStack(frame, storage, stackTop, 0, countBefore, getItemNode);
         PList starList = factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
-        localFrame.setObject(stackTop--, starList);
-        moveItemsToStack(storage, localFrame, stackTop, len - countAfter, countAfter, getItemNode);
+        frame.setObject(stackTop--, starList);
+        moveItemsToStack(frame, storage, stackTop, len - countAfter, countAfter, getItemNode);
         return resultStackTop;
     }
 
     @Fallback
-    static int doUnpackIterable(VirtualFrame virtualFrame, int initialStackTop, Frame localFrame, Object collection, int countBefore, int countAfter,
+    static int doUnpackIterable(VirtualFrame frame, int initialStackTop, Object collection, int countBefore, int countAfter,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode getNextNode,
                     @Cached IsBuiltinClassProfile notIterableProfile,
@@ -119,38 +119,38 @@ public abstract class UnpackExNode extends PNodeWithContext {
         int stackTop = resultStackTop;
         Object iterator;
         try {
-            iterator = getIter.execute(virtualFrame, collection);
+            iterator = getIter.execute(frame, collection);
         } catch (PException e) {
             e.expectTypeError(notIterableProfile);
             throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
-        stackTop = moveItemsToStack(virtualFrame, iterator, localFrame, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
-        PList starAndAfter = constructListNode.execute(virtualFrame, iterator);
+        stackTop = moveItemsToStack(frame, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
+        PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
         int lenAfter = lenNode.execute(storage);
         if (lenAfter < countAfter) {
             throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
         }
         if (countAfter == 0) {
-            localFrame.setObject(stackTop, starAndAfter);
+            frame.setObject(stackTop, starAndAfter);
         } else {
             int starLen = lenAfter - countAfter;
             PList starList = factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
-            localFrame.setObject(stackTop--, starList);
-            moveItemsToStack(storage, localFrame, stackTop, starLen, countAfter, getItemNode);
+            frame.setObject(stackTop--, starList);
+            moveItemsToStack(frame, storage, stackTop, starLen, countAfter, getItemNode);
         }
         return resultStackTop;
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(VirtualFrame virtualFrame, Object iterator, Frame localFrame, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
+    private static int moveItemsToStack(VirtualFrame frame, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
                     IsBuiltinClassProfile stopIterationProfile, PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
             try {
-                Object item = getNextNode.execute(virtualFrame, iterator);
-                localFrame.setObject(stackTop--, item);
+                Object item = getNextNode.execute(frame, iterator);
+                frame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(stopIterationProfile);
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
@@ -160,11 +160,11 @@ public abstract class UnpackExNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(SequenceStorage storage, Frame localFrame, int initialStackTop, int offset, int length, SequenceStorageNodes.GetItemScalarNode getItemNode) {
+    private static int moveItemsToStack(VirtualFrame frame, SequenceStorage storage, int initialStackTop, int offset, int length, SequenceStorageNodes.GetItemScalarNode getItemNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
-            localFrame.setObject(stackTop--, getItemNode.execute(storage, offset + i));
+            frame.setObject(stackTop--, getItemNode.execute(storage, offset + i));
         }
         return stackTop;
     }

@@ -60,42 +60,42 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class KwargsMergeNode extends PNodeWithContext {
-    public abstract int execute(Frame virtualFrame, int stackTop, Frame localFrame);
+    public abstract int execute(Frame frame, int stackTop);
 
     @Specialization
-    static int merge(VirtualFrame virtualFrame, int initialStackTop, Frame localFrame,
+    static int merge(VirtualFrame frame, int initialStackTop,
                     @Cached ConcatKeywordsNode.ConcatDictToStorageNode concatNode,
                     @Cached PRaiseNode raise,
                     @Cached BranchProfile keywordsError,
                     @Cached StringNodes.CastToJavaStringCheckedNode castToStringNode,
                     @Cached PyObjectFunctionStr functionStr) {
         int stackTop = initialStackTop;
-        Object mapping = localFrame.getObject(stackTop);
-        localFrame.setObject(stackTop--, null);
-        PDict dict = (PDict) localFrame.getObject(stackTop);
+        Object mapping = frame.getObject(stackTop);
+        frame.setObject(stackTop--, null);
+        PDict dict = (PDict) frame.getObject(stackTop);
         try {
-            HashingStorage resultStorage = concatNode.execute(virtualFrame, dict.getDictStorage(), mapping);
+            HashingStorage resultStorage = concatNode.execute(frame, dict.getDictStorage(), mapping);
             dict.setDictStorage(resultStorage);
         } catch (SameDictKeyException e) {
             keywordsError.enter();
-            Object functionName = getFunctionName(virtualFrame, stackTop, localFrame, functionStr);
+            Object functionName = getFunctionName(frame, stackTop, functionStr);
             String keyName = castToStringNode.cast(e.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
         } catch (NonMappingException e) {
             keywordsError.enter();
-            Object functionName = getFunctionName(virtualFrame, stackTop, localFrame, functionStr);
+            Object functionName = getFunctionName(frame, stackTop, functionStr);
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
         return stackTop;
     }
 
-    private static Object getFunctionName(VirtualFrame virtualFrame, int stackTop, Frame localFrame, PyObjectFunctionStr functionStr) {
+    private static Object getFunctionName(VirtualFrame frame, int stackTop, PyObjectFunctionStr functionStr) {
         /*
          * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
          * this point is [kwargs dict, varargs, callable].
          */
-        Object callable = localFrame.getObject(stackTop - 2);
-        return functionStr.execute(virtualFrame, callable);
+        Object callable = frame.getObject(stackTop - 2);
+        return functionStr.execute(frame, callable);
     }
 
     public static KwargsMergeNode create() {

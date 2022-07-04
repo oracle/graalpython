@@ -65,25 +65,25 @@ public abstract class SendNode extends PNodeWithContext {
     private static final TruffleString T_SEND = tsLiteral("send");
 
     // Returns true when the generator finished
-    public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object iter, Object arg);
+    public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Object iter, Object arg);
 
     @Specialization
-    boolean doGenerator(VirtualFrame virtualFrame, int stackTop, Frame localFrame, PGenerator generator, Object arg,
+    boolean doGenerator(VirtualFrame virtualFrame, int stackTop, PGenerator generator, Object arg,
                     @Cached GeneratorBuiltins.SendNode sendNode,
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = sendNode.execute(virtualFrame, generator, arg);
-            localFrame.setObject(stackTop, value);
+            virtualFrame.setObject(stackTop, value);
             return false;
         } catch (PException e) {
-            handleException(e, stopIterationProfile, getValue, stackTop, localFrame);
+            handleException(virtualFrame, e, stopIterationProfile, getValue, stackTop);
             return true;
         }
     }
 
     @Specialization(guards = "pyIterCheck(iter, getClassNode, lookupNext)", limit = "1")
-    boolean doIterator(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object iter, @SuppressWarnings("unused") PNone arg,
+    boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
                     @Cached GetNextNode getNextNode,
@@ -91,34 +91,34 @@ public abstract class SendNode extends PNodeWithContext {
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = getNextNode.execute(virtualFrame, iter);
-            localFrame.setObject(stackTop, value);
+            virtualFrame.setObject(stackTop, value);
             return false;
         } catch (PException e) {
-            handleException(e, stopIterationProfile, getValue, stackTop, localFrame);
+            handleException(virtualFrame, e, stopIterationProfile, getValue, stackTop);
             return true;
         }
     }
 
     @Fallback
-    boolean doOther(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object obj, Object arg,
+    boolean doOther(VirtualFrame virtualFrame, int stackTop, Object obj, Object arg,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
             Object value = callMethodNode.execute(virtualFrame, obj, T_SEND, arg);
-            localFrame.setObject(stackTop, value);
+            virtualFrame.setObject(stackTop, value);
             return false;
         } catch (PException e) {
-            handleException(e, stopIterationProfile, getValue, stackTop, localFrame);
+            handleException(virtualFrame, e, stopIterationProfile, getValue, stackTop);
             return true;
         }
     }
 
-    private static void handleException(PException e, IsBuiltinClassProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue, int stackTop, Frame localFrame) {
+    private static void handleException(VirtualFrame frame, PException e, IsBuiltinClassProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue, int stackTop) {
         e.expectStopIteration(stopIterationProfile);
         Object value = getValue.execute(e.getUnreifiedException());
-        localFrame.setObject(stackTop, null);
-        localFrame.setObject(stackTop - 1, value);
+        frame.setObject(stackTop, null);
+        frame.setObject(stackTop - 1, value);
     }
 
     protected static boolean pyIterCheck(Object obj, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIternext) {

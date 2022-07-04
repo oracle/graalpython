@@ -65,12 +65,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 @GenerateUncached
 public abstract class ForIterINode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object iterator, int stackTop, Frame stackFrame) throws QuickeningGeneralizeException;
+    public abstract boolean execute(Frame frame, Object iterator, int stackTop) throws QuickeningGeneralizeException;
 
     @Specialization
-    boolean doIntRange(PIntRangeIterator iterator, int stackTop, Frame stackFrame) {
+    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop) {
         if (iterator.hasNextInt()) {
-            stackFrame.setInt(stackTop, iterator.nextInt());
+            frame.setInt(stackTop, iterator.nextInt());
             return true;
         }
         iterator.setExhausted();
@@ -80,7 +80,7 @@ public abstract class ForIterINode extends PNodeWithContext {
     // TODO list, tuple, enumerate, dict keys, dict values, dict items, string, bytes
 
     @Specialization
-    boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop, Frame stackFrame,
+    boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
@@ -93,12 +93,12 @@ public abstract class ForIterINode extends PNodeWithContext {
         try {
             Object res = callNext.executeObject(frame, nextMethod, iterator);
             if (res instanceof Integer) {
-                stackFrame.setInt(stackTop, (int) res);
+                frame.setInt(stackTop, (int) res);
                 return true;
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // TODO other types
-                stackFrame.setObject(stackTop, res);
+                frame.setObject(stackTop, res);
                 throw new QuickeningGeneralizeException(QuickeningTypes.OBJECT);
             }
         } catch (PException e) {

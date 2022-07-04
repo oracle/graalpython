@@ -135,70 +135,29 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
         }
     }
 
-    private void profileFrameSlots(MaterializedFrame generatorFrame) {
-        CompilerAsserts.neverPartOfCompilation();
-        int offset = rootNode.stackoffset;
-        for (int i = 0; i < frameSlotTypes.length; i++) {
-            if (generatorFrame.isObject(offset + i)) {
-                frameSlotTypes[i] = QuickeningTypes.OBJECT;
-            } else if (generatorFrame.isInt(offset + i)) {
-                frameSlotTypes[i] = QuickeningTypes.INT;
-            } else if (generatorFrame.isLong(offset + i)) {
-                frameSlotTypes[i] = QuickeningTypes.LONG;
-            } else if (generatorFrame.isDouble(offset + i)) {
-                frameSlotTypes[i] = QuickeningTypes.DOUBLE;
-            } else if (generatorFrame.isBoolean(offset + i)) {
-                frameSlotTypes[i] = QuickeningTypes.BOOLEAN;
-            } else {
-                throw new IllegalStateException("unexpected frame slot type");
-            }
-        }
-    }
-
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterStateObject) {
         OSRInterpreterState interpreterState = (OSRInterpreterState) interpreterStateObject;
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(osrFrame);
-        copyStackSlotsIntoVirtualFrame(generatorFrame, osrFrame);
-        copyOSRStackRemainderIntoVirtualFrame(generatorFrame, osrFrame, interpreterState.stackTop);
-        return rootNode.executeFromBci(osrFrame, generatorFrame, osrFrame, this, target, interpreterState.stackTop, interpreterState.loopEndBci);
-    }
-
-    @ExplodeLoop
-    private void copyOSRStackRemainderIntoVirtualFrame(MaterializedFrame generatorFrame, VirtualFrame osrFrame, int stackTop) {
-        /*
-         * In addition to stack slots present at resume, OSR needs to also re-virtualize stack items
-         * that have been pushed since resume. Stack slots at a back edge should never be
-         * primitives.
-         */
-        for (int i = resumeStackTop; i <= stackTop; i++) {
-            osrFrame.setObject(i, generatorFrame.getObject(i));
-        }
+        return rootNode.executeFromBci(osrFrame, generatorFrame, this, target, interpreterState.stackTop, interpreterState.loopEndBci);
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
-        Frame stackFrame;
         /*
          * Using the materialized frame as stack would be bad for compiled performance, so we copy
-         * the stack slots back to the virtual frame and use that as the stack in compiled code. The
-         * values are copied back in yield node.
+         * the stack slots back to the virtual frame and use that as the stack. The values are
+         * copied back in yield node.
          * 
          * TODO we could try to re-virtualize the locals too, but we would need to profile the loads
          * and stores to only copy what is actually used, otherwise copying everything makes things
          * worse.
          */
-        if (CompilerDirectives.inInterpreter()) {
-            profileFrameSlots(generatorFrame);
-            stackFrame = generatorFrame;
-        } else {
-            copyStackSlotsIntoVirtualFrame(generatorFrame, frame);
-            stackFrame = frame;
-        }
+        copyStackSlotsIntoVirtualFrame(generatorFrame, frame);
         try {
-            return rootNode.executeFromBci(frame, generatorFrame, stackFrame, this, resumeBci, resumeStackTop, Integer.MAX_VALUE);
+            return rootNode.executeFromBci(frame, generatorFrame, this, resumeBci, resumeStackTop, Integer.MAX_VALUE);
         } finally {
             calleeContext.exit(frame, this);
         }

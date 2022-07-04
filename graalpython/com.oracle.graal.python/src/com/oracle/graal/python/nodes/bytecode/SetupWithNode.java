@@ -56,15 +56,16 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class SetupWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
+    public abstract int execute(Frame frame, int stackTop);
 
     @Specialization
-    static int setup(Frame virtualFrame, int stackTopIn, Frame localFrame,
+    static int setup(VirtualFrame frame, int stackTopIn,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                     @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
@@ -72,21 +73,21 @@ public abstract class SetupWithNode extends PNodeWithContext {
                     @Cached BranchProfile errorProfile,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
-        Object contextManager = localFrame.getObject(stackTop);
+        Object contextManager = frame.getObject(stackTop);
         Object type = getClassNode.execute(contextManager);
-        Object enter = lookupEnter.execute(virtualFrame, type, contextManager);
+        Object enter = lookupEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
         }
-        Object exit = lookupExit.execute(virtualFrame, type, contextManager);
+        Object exit = lookupExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
             errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
         }
-        Object res = callEnter.executeObject(virtualFrame, enter, contextManager);
-        localFrame.setObject(++stackTop, exit);
-        localFrame.setObject(++stackTop, res);
+        Object res = callEnter.executeObject(frame, enter, contextManager);
+        frame.setObject(++stackTop, exit);
+        frame.setObject(++stackTop, res);
         return stackTop;
     }
 
