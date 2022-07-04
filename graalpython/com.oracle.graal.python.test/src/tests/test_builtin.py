@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -69,3 +69,9 @@ class BuiltinTest(unittest.TestCase):
 
         self.assertRaises(TypeError, set_attr, object)
         self.assertRaises(TypeError, set_attr, ValueError)
+
+    def test_builtin_constants(self):
+        import builtins
+        self.assertEqual(getattr(builtins, 'None'), None)
+        self.assertEqual(getattr(builtins, 'False'), False)
+        self.assertEqual(getattr(builtins, 'True'), True)

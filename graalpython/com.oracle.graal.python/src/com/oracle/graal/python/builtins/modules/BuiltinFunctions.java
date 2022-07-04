@@ -279,6 +279,10 @@ import com.oracle.truffle.api.utilities.TriState;
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
 
+    private static final TruffleString T_NONE = PythonUtils.tsLiteral("None");
+    private static final TruffleString T_FALSE = PythonUtils.tsLiteral("False");
+    private static final TruffleString T_TRUE = PythonUtils.tsLiteral("True");
+
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinFunctionsFactory.getFactories();
@@ -287,6 +291,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         addBuiltinConstant(T___GRAALPYTHON__, core.lookupBuiltinModule(T___GRAALPYTHON__));
+        addBuiltinConstant(T_NONE, PNone.NONE);
+        addBuiltinConstant(T_FALSE, false);
+        addBuiltinConstant(T_TRUE, true);
         super.initialize(core);
     }
 
