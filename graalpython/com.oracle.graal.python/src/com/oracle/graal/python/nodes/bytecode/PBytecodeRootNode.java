@@ -868,8 +868,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
     private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci, boolean useCachedNodes) {
-        Object globals = PArguments.getGlobals(virtualFrame);
-        Object locals = PArguments.getSpecialArgument(virtualFrame);
+        Object[] arguments = virtualFrame.getArguments();
+        Object globals = PArguments.getGlobals(arguments);
+        Object locals = PArguments.getSpecialArgument(arguments);
 
         /*
          * We use an object as a workaround for not being able to specify which local variables are
@@ -1683,22 +1684,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             exception = wrapJavaException((Throwable) exception, factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.M, new Object[]{exception}));
                         }
                         if (!fetchedException) {
-                            outerException = PArguments.getException(virtualFrame);
+                            outerException = PArguments.getException(arguments);
                             fetchedException = true;
                         }
                         virtualFrame.setObject(stackTop++, localException);
                         localException = (PException) exception;
-                        PArguments.setException(virtualFrame, localException);
+                        PArguments.setException(arguments, localException);
                         virtualFrame.setObject(stackTop, origException);
                         break;
                     }
                     case OpCodesConstants.POP_EXCEPT: {
-                        localException = popExceptionState(virtualFrame, virtualFrame.getObject(stackTop), outerException);
+                        localException = popExceptionState(arguments, virtualFrame.getObject(stackTop), outerException);
                         virtualFrame.setObject(stackTop--, null);
                         break;
                     }
                     case OpCodesConstants.END_EXC_HANDLER: {
-                        localException = popExceptionState(virtualFrame, virtualFrame.getObject(stackTop - 1), outerException);
+                        localException = popExceptionState(arguments, virtualFrame.getObject(stackTop - 1), outerException);
                         throw bytecodeEndExcHandler(virtualFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
@@ -1707,7 +1708,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = virtualFrame.getObject(stackTop);
                         virtualFrame.setObject(stackTop--, null);
-                        PArguments.setException(PArguments.getGeneratorFrame(virtualFrame), localException);
+                        PArguments.setException(PArguments.getGeneratorFrame(arguments), localException);
                         // See PBytecodeGeneratorRootNode#execute
                         if (localFrame != virtualFrame) {
                             copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);
@@ -1717,11 +1718,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         return GeneratorResult.createYield(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
-                        localException = PArguments.getException(PArguments.getGeneratorFrame(virtualFrame));
+                        localException = PArguments.getException(PArguments.getGeneratorFrame(arguments));
                         if (localException != null) {
-                            PArguments.setException(virtualFrame, localException);
+                            PArguments.setException(arguments, localException);
                         }
-                        Object sendValue = PArguments.getSpecialArgument(virtualFrame);
+                        Object sendValue = PArguments.getSpecialArgument(arguments);
                         if (sendValue == null) {
                             sendValue = PNone.NONE;
                         } else if (sendValue instanceof ThrowData) {
@@ -2771,7 +2772,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private PException popExceptionState(VirtualFrame virtualFrame, Object savedException, PException outerException) {
+    private PException popExceptionState(Object[] arguments, Object savedException, PException outerException) {
         PException localException = null;
         if (savedException instanceof PException) {
             localException = (PException) savedException;
@@ -2779,7 +2780,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (savedException == null) {
             savedException = outerException;
         }
-        PArguments.setException(virtualFrame, (PException) savedException);
+        PArguments.setException(arguments, (PException) savedException);
         return localException;
     }
 
