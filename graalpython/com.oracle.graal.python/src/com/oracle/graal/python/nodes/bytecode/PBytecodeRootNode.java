@@ -187,6 +187,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -1524,6 +1525,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 }
                             }
                         }
+                        TruffleSafepoint.poll(this);
                         oparg = 0;
                         continue;
                     }
