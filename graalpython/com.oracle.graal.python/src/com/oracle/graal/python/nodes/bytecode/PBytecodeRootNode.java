@@ -437,6 +437,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final TruffleString[] varnames;
     @CompilationFinal(dimensions = 1) private final TruffleString[] freevars;
     @CompilationFinal(dimensions = 1) private final TruffleString[] cellvars;
+    @CompilationFinal(dimensions = 1) private final int[] cell2arg;
     @CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
@@ -548,6 +549,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.varnames = co.varnames;
         this.freevars = co.freevars;
         this.cellvars = co.cellvars;
+        this.cell2arg = co.cell2arg;
         this.name = co.name;
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
@@ -737,7 +739,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void copyArgsFirstTime(Object[] args, Frame localFrame) {
         CompilerAsserts.neverPartOfCompilation();
-        variableTypes = new byte[co.varnames.length];
+        variableTypes = new byte[varnames.length];
         int argCount = co.getTotalArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
@@ -3136,8 +3138,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void initCell(Frame localFrame, int i) {
         PCell cell = new PCell(cellEffectivelyFinalAssumptions[i]);
         localFrame.setObject(celloffset + i, cell);
-        if (co.cell2arg != null && co.cell2arg[i] != -1) {
-            int idx = co.cell2arg[i];
+        if (cell2arg != null && cell2arg[i] != -1) {
+            int idx = cell2arg[i];
             cell.setRef(localFrame.getObject(idx));
             localFrame.setObject(idx, null);
         }
