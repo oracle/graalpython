@@ -48,15 +48,19 @@ import java.util.List;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -105,7 +109,7 @@ public abstract class CodeNodes {
             PythonContext context = PythonContext.get(this);
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return createCode(language, context, argcount,
+                return createCode(language, context, this, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
@@ -114,7 +118,7 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, Node node, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -126,8 +130,12 @@ public abstract class CodeNodes {
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
             } else {
-                RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
-                ct = PythonUtils.getOrCreateCallTarget(rootNode);
+                if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                    ct = create().deserializeForBytecodeInterpreter(node, codedata);
+                } else {
+                    RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
+                    ct = PythonUtils.getOrCreateCallTarget(rootNode);
+                }
             }
             if (filename != null) {
                 context.setCodeFilename(ct, filename);
@@ -135,6 +143,12 @@ public abstract class CodeNodes {
             PythonObjectFactory factory = context.factory();
             return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);
+        }
+
+        private RootCallTarget deserializeForBytecodeInterpreter(Node node, byte[] data) {
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(data);
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(node), code, null);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
         }
 
         @TruffleBoundary
