@@ -1654,16 +1654,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         return GeneratorResult.createYield(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
+                        localException = PArguments.getException(PArguments.getGeneratorFrame(virtualFrame));
+                        if (localException != null) {
+                            PArguments.setException(virtualFrame, localException);
+                        }
                         Object sendValue = PArguments.getSpecialArgument(virtualFrame);
                         if (sendValue == null) {
                             sendValue = PNone.NONE;
                         } else if (sendValue instanceof ThrowData) {
                             ThrowData throwData = (ThrowData) sendValue;
                             throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
-                        }
-                        localException = PArguments.getException(PArguments.getGeneratorFrame(virtualFrame));
-                        if (localException != null) {
-                            PArguments.setException(virtualFrame, localException);
                         }
                         stackFrame.setObject(++stackTop, sendValue);
                         break;

@@ -191,6 +191,12 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object setInt(PBaseException self, long value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, (int) value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization
         Object setPInt(PBaseException self, PInt value,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached BaseExceptionAttrNode attrNode) {

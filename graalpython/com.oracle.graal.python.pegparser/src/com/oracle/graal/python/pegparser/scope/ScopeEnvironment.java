@@ -1063,7 +1063,7 @@ public class ScopeEnvironment {
                 node.type.accept(this);
             }
             if (node.name != null) {
-                addDef(node.name, DefUse.Local);
+                addDef(node.name, DefUse.DefLocal);
             }
             visitSequence(node.body);
             return null;
