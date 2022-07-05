@@ -157,11 +157,11 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNodeGen;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
-import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
+import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -174,6 +174,8 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -468,8 +470,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
+
     private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
     private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
+
     @CompilationFinal private Object osrMetadata;
 
     @CompilationFinal private boolean usingCachedNodes;
@@ -1586,7 +1590,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object matchType = stackFrame.getObject(stackTop);
                         stackFrame.setObject(stackTop--, null);
                         ExceptMatchNode matchNode = insertChildNode(localNodes, beginBci, UNCACHED_EXCEPT_MATCH, ExceptMatchNodeGen.class, NODE_EXCEPT_MATCH, useCachedNodes);
-                        if (!matchNode.executeMatch(virtualFrame, exception, matchType)) {
+                        boolean match = false;
+                        if (!(exception instanceof PException) && matchType == null) {
+                            match = true;
+                        }
+                        if (!match) {
+                            match = matchNode.executeMatch(virtualFrame, exception, matchType);
+                        }
+                        if (!match) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
@@ -1616,8 +1627,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.PUSH_EXC_INFO: {
                         Object exception = stackFrame.getObject(stackTop);
+                        Object origException = exception;
                         if (!(exception instanceof PException)) {
-                            throw CompilerDirectives.shouldNotReachHere("interop exception state not implemented");
+                            exception = wrapJavaException((Throwable) exception, factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.M, new Object[]{exception}));
                         }
                         if (!fetchedException) {
                             outerException = PArguments.getException(virtualFrame);
@@ -1626,7 +1638,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackFrame.setObject(stackTop++, localException);
                         localException = (PException) exception;
                         PArguments.setException(virtualFrame, localException);
-                        stackFrame.setObject(stackTop, exception);
+                        stackFrame.setObject(stackTop, origException);
                         break;
                     }
                     case OpCodesConstants.POP_EXCEPT: {
@@ -1722,29 +1734,38 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // prepare next loop
                 oparg = 0;
                 bci++;
+            } catch (PythonExitException e) {
+                throw e;
             } catch (Exception | StackOverflowError | AssertionError e) {
-                // TODO interop exceptions
                 PException pe;
+                boolean isInteropException = false;
                 if (e instanceof PException) {
                     pe = (PException) e;
                 } else {
                     pe = wrapJavaExceptionIfApplicable(e);
                     if (pe == null) {
-                        throw e;
+                        if (e instanceof AbstractTruffleException) {
+                            isInteropException = true;
+                        } else {
+                            throw e;
+                        }
                     }
                 }
+
                 int targetIndex = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
-                if (localException != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
-                } else {
-                    if (getCaughtExceptionNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
-                    }
-                    PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
-                    if (exceptionState != null) {
-                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                if (pe != null) {
+                    if (localException != null) {
+                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
+                    } else {
+                        if (getCaughtExceptionNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
+                        }
+                        PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
+                        if (exceptionState != null) {
+                            ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                        }
                     }
                 }
                 if (targetIndex == -1) {
@@ -1765,13 +1786,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw pe.getExceptionForReraise();
                     }
                 } else {
-                    pe.setCatchingFrameReference(virtualFrame, this, bci);
+                    if (pe != null) {
+                        pe.setCatchingFrameReference(virtualFrame, this, bci);
+                    }
                     int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(stackFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stack size, not the top of stack. so the stackTop
                     // is
                     // to be replaced with the exception
-                    stackFrame.setObject(stackTop, pe);
+                    stackFrame.setObject(stackTop, isInteropException ? e : pe);
                     bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
                 }

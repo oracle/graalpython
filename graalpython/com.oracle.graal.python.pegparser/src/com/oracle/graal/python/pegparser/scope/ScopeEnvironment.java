@@ -312,11 +312,11 @@ public class ScopeEnvironment {
             return ScopeEnvironment.mangle(currentClassName, name);
         }
 
-        private void addDef(String name, DefUse flag) {
-            addDef(name, flag, currentScope);
+        private void addDef(String name, DefUse flag, SSTNode node) {
+            addDef(name, flag, currentScope, node);
         }
 
-        private void addDef(String name, DefUse flag, Scope scope) {
+        private void addDef(String name, DefUse flag, Scope scope, SSTNode node) {
             String mangled = mangle(name);
             EnumSet<DefUse> flags = scope.getUseOfName(mangled);
             if (flags != null) {
@@ -339,7 +339,11 @@ public class ScopeEnvironment {
             scope.symbols.put(mangled, flags);
             switch (flag) {
                 case DefParam:
+                    if (scope.varnames.contains(mangled)) {
+                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), "duplicate argument '%s' in function definition", mangled);
+                    }
                     scope.varnames.add(mangled);
+
                     break;
                 case DefGlobal:
                     EnumSet<DefUse> globalFlags = globals.get(mangled);
@@ -367,7 +371,7 @@ public class ScopeEnvironment {
                     currentScope.flags.add(ScopeFlags.IsCoroutine);
                 }
                 currentScope.flags.add(ScopeFlags.IsComprehension);
-                addDef(".0", DefUse.DefParam);
+                addDef(".0", DefUse.DefParam, value);
                 currentScope.flags.add(ScopeFlags.IsVisitingIterTarget);
                 outermost.target.accept(this);
                 currentScope.flags.remove(ScopeFlags.IsVisitingIterTarget);
@@ -443,14 +447,14 @@ public class ScopeEnvironment {
                     env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "import * only allowed at module level");
                 }
             } else {
-                addDef(importedName, DefUse.DefImport);
+                addDef(importedName, DefUse.DefImport, node);
             }
             return null;
         }
 
         @Override
         public Void visit(ArgTy node) {
-            addDef(node.arg, DefUse.DefParam);
+            addDef(node.arg, DefUse.DefParam, node);
             return null;
         }
 
@@ -592,11 +596,11 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Name node) {
-            addDef(node.id, node.context == ExprContext.Load ? DefUse.Use : DefUse.DefLocal);
+            addDef(node.id, node.context == ExprContext.Load ? DefUse.Use : DefUse.DefLocal, node);
             // Special-case super: it counts as a use of __class__
             if (node.context == ExprContext.Load && currentScope.type == ScopeType.Function &&
                             node.id.equals("super")) {
-                addDef("__class__", DefUse.Use);
+                addDef("__class__", DefUse.Use, node);
             }
             return null;
         }
@@ -625,19 +629,19 @@ public class ScopeEnvironment {
                     if (s.type == ScopeType.Function) {
                         EnumSet<DefUse> uses = s.getUseOfName(targetName);
                         if (uses.contains(DefUse.DefGlobal)) {
-                            addDef(targetName, DefUse.DefGlobal);
+                            addDef(targetName, DefUse.DefGlobal, node);
                         } else {
-                            addDef(targetName, DefUse.DefNonLocal);
+                            addDef(targetName, DefUse.DefNonLocal, node);
                         }
                         currentScope.recordDirective(mangle(targetName), node.getSourceRange());
-                        addDef(targetName, DefUse.DefLocal, s);
+                        addDef(targetName, DefUse.DefLocal, s, node);
                         break;
                     }
                     // If we find a ModuleBlock entry, add as GLOBAL
                     if (s.type == ScopeType.Module) {
-                        addDef(targetName, DefUse.DefGlobal);
+                        addDef(targetName, DefUse.DefGlobal, node);
                         currentScope.recordDirective(mangle(targetName), node.getSourceRange());
-                        addDef(targetName, DefUse.DefGlobal, s);
+                        addDef(targetName, DefUse.DefGlobal, s, node);
                         break;
                     }
                     // Disallow usage in ClassBlock
@@ -773,11 +777,11 @@ public class ScopeEnvironment {
                     return null;
                 }
                 if (node.isSimple) {
-                    addDef(name.id, DefUse.DefAnnot);
-                    addDef(name.id, DefUse.DefLocal);
+                    addDef(name.id, DefUse.DefAnnot, node);
+                    addDef(name.id, DefUse.DefLocal, node);
                 } else {
                     if (node.value != null) {
-                        addDef(name.id, DefUse.DefLocal);
+                        addDef(name.id, DefUse.DefLocal, node);
                     }
                 }
             } else {
@@ -813,7 +817,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AsyncFunctionDef node) {
-            addDef(node.name, DefUse.DefLocal);
+            addDef(node.name, DefUse.DefLocal, node);
             if (node.args != null) {
                 visitSequence(node.args.defaults);
                 visitSequence(node.args.kwDefaults);
@@ -847,7 +851,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.ClassDef node) {
-            addDef(node.name, DefUse.DefLocal);
+            addDef(node.name, DefUse.DefLocal, node);
             visitSequence(node.bases);
             visitSequence(node.keywords);
             visitSequence(node.decoratorList);
@@ -886,7 +890,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.FunctionDef node) {
-            addDef(node.name, DefUse.DefLocal);
+            addDef(node.name, DefUse.DefLocal, node);
             if (node.args != null) {
                 visitSequence(node.args.defaults);
                 visitSequence(node.args.kwDefaults);
@@ -925,7 +929,7 @@ public class ScopeEnvironment {
                     env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before global declaration", n);
                     continue;
                 }
-                addDef(n, DefUse.DefGlobal);
+                addDef(n, DefUse.DefGlobal, node);
                 currentScope.recordDirective(n, node.getSourceRange());
             }
             return null;
@@ -1023,7 +1027,7 @@ public class ScopeEnvironment {
                     env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "name '%s' is assigned to before nonlocal declaration", n);
                     continue;
                 }
-                addDef(n, DefUse.DefNonLocal);
+                addDef(n, DefUse.DefNonLocal, node);
                 currentScope.recordDirective(n, node.getSourceRange());
             }
             return null;
@@ -1063,7 +1067,7 @@ public class ScopeEnvironment {
                 node.type.accept(this);
             }
             if (node.name != null) {
-                addDef(node.name, DefUse.DefLocal);
+                addDef(node.name, DefUse.DefLocal, node);
             }
             visitSequence(node.body);
             return null;

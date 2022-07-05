@@ -71,6 +71,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NO_ALIGNMENT_INFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SYMBOL_IS_MISSING;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_TYPE_HAS_NO_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D;
+import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -83,9 +84,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -137,9 +139,6 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32;
-
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -847,7 +846,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_dyld_shared_cache_contains_path", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    protected abstract static class DyldSharedCacheContainsPath extends PythonBinaryBuiltinNode {
+    protected abstract static class DyldSharedCacheContainsPath extends PythonUnaryBuiltinNode {
         @CompilationFinal private static boolean hasDynamicLoaderCacheValue = false;
         @CompilationFinal private static boolean hasDynamicLoaderCacheInit = false;
 
@@ -1360,13 +1359,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (restype == null) {
                     throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
                 }
-
+        
                 int cc = FFI_DEFAULT_ABI;
                 ffi_cif cif;
                 if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                     throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
-
+        
                 Object error_object = null;
                 if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                     error_object = state.errno;

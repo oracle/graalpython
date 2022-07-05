@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -76,9 +77,10 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object doBigIntRange(PBigRangeIterator iterator) {
+    Object doBigIntRange(PBigRangeIterator iterator,
+                    @Cached PythonObjectFactory factory) {
         if (iterator.hasNextBigInt()) {
-            return iterator.nextBigInt();
+            return factory.createInt(iterator.nextBigInt());
         }
         iterator.setExhausted();
         return null;
