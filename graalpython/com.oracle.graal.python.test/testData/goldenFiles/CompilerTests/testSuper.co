@@ -2,16 +2,18 @@ Disassembly of <module>:
 000000         0 LOAD_BUILD_CLASS
 000000         1 MAKE_FUNCTION                     0    (Foo)
 000000         4 LOAD_STRING                       0    ('Foo')
-000000         6 CALL_FUNCTION                     2
-000000         8 STORE_NAME                        0    (Foo)
-000051        10 LOAD_BUILD_CLASS
-000051        11 MAKE_FUNCTION                     0    (Bar)
-000051        14 LOAD_STRING                       2    ('Bar')
-000061        16 LOAD_NAME                         0    (Foo)
-000051        18 CALL_FUNCTION                     3
-000051        20 STORE_NAME                        1    (Bar)
-000051        22 LOAD_NONE
-000051        23 RETURN_VALUE
+000000         6 COLLECTION_FROM_STACK             2    (Object[])
+000000         8 CALL_FUNCTION_VARARGS
+000000         9 STORE_NAME                        0    (Foo)
+000051        11 LOAD_BUILD_CLASS
+000051        12 MAKE_FUNCTION                     0    (Bar)
+000051        15 LOAD_STRING                       2    ('Bar')
+000061        17 LOAD_NAME                         0    (Foo)
+000051        19 COLLECTION_FROM_STACK             3    (Object[])
+000051        21 CALL_FUNCTION_VARARGS
+000051        22 STORE_NAME                        1    (Bar)
+000051        24 LOAD_NONE
+000051        25 RETURN_VALUE
 
 Disassembly of Foo:
 000000         0 LOAD_NAME                         0    (__name__)

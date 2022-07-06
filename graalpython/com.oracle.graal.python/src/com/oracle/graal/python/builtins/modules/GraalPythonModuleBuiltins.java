@@ -48,11 +48,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
-import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -103,9 +103,9 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -647,6 +647,36 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return env.isHostObject(obj) && (env.isHostSymbol(obj) || lib.isMetaObject(obj));
         }
 
+    }
+
+    @Builtin(name = "dis", minNumOfPositionalArgs = 1, doc = "Helper to disassemble code objects if running with the bytecode interpreter")
+    @GenerateNodeFactory
+    public abstract static class BCIDisNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doMethod(PMethod method) {
+            final Object function = method.getFunction();
+            if (function instanceof PFunction) {
+                return doFunction((PFunction) function);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doFunction(PFunction function) {
+            return doCode(function.getCode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object doCode(PCode code) {
+            System.out.println(code.toDisassembledString());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isCode(value)", "!isPFunction(value)", "!isMethod(value)"})
+        Object doObject(@SuppressWarnings("unused") Object value) {
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = "super", minNumOfPositionalArgs = 1, doc = "Returns HostAdapter instance of the object or None")
