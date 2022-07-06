@@ -63,7 +63,6 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
