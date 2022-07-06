@@ -338,7 +338,7 @@ public class ScopeEnvironment {
             EnumSet<DefUse> flags = scope.getUseOfName(mangled);
             if (flags != null) {
                 if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
-                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, DUPLICATE_ARGUMENT, mangled);
+                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_ARGUMENT, mangled);
                 }
                 flags.add(flag);
             } else {
@@ -346,7 +346,7 @@ public class ScopeEnvironment {
             }
             if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
-                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
+                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
                 }
                 flags.add(DefUse.DefCompIter);
             }
