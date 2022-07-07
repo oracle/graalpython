@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -217,6 +218,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    private static void setCodeUnitFileName(RootNode rootNode, CodeUnit co, TruffleString filename) {
+        PythonContext.get(rootNode).setCodeUnitFilename(co, filename);
+    }
+
+    @TruffleBoundary
     public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
@@ -305,8 +311,24 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static Object[] extractConstants(RootNode rootNode) {
-        ConstantsVisitor visitor = new ConstantsVisitor();
-        return visitor.findConstants(rootNodeForExtraction(rootNode));
+        if (PythonContext.get(null).getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            PBytecodeRootNode bytecodeRootNode = getBytecodeRootNode(rootNode);
+            Object[] cnsts = bytecodeRootNode.getCodeUnit().constants;
+            return PythonUtils.arrayCopyOf(cnsts, cnsts.length);
+        } else {
+            ConstantsVisitor visitor = new ConstantsVisitor();
+            return visitor.findConstants(rootNodeForExtraction(rootNode));
+        }
+    }
+
+    private static PBytecodeRootNode getBytecodeRootNode(RootNode rootNode) {
+        if (rootNode instanceof PBytecodeRootNode) {
+            return (PBytecodeRootNode) rootNode;
+        } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+            return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
+        }
+        assert false : "expected a bytecode root node";
+        return null;
     }
 
     private static class ConstantsVisitor implements NodeVisitor {
@@ -456,9 +478,15 @@ public final class PCode extends PythonBuiltinObject {
         RootNode rootNode = getRootNode();
         setRootNodeFileName(rootNode, filename);
         constants = extractConstants(rootNode);
-        for (Object ob : constants) {
-            if (ob instanceof PCode) {
-                ((PCode) ob).setFilename(filename);
+        for (int i = 0; i < constants.length; i++) {
+            if (constants[i] instanceof PCode) {
+                ((PCode) constants[i]).setFilename(filename);
+            } else if (constants[i] instanceof CodeUnit) {
+                CodeUnit co = (CodeUnit) constants[i];
+                setCodeUnitFileName(rootNode, co, filename);
+                convertConstants = false;
+                constants[i] = convert(rootNode, co, PythonObjectFactory.getUncached());
+                ((PCode) constants[i]).setFilename(filename);
             }
         }
     }
@@ -466,7 +494,15 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public TruffleString getFilename() {
         if (filename == null) {
-            filename = extractFileName(getRootNode());
+            RootNode rn = getRootNode();
+            if (PythonContext.get(null).getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                CodeUnit co = getBytecodeRootNode(rn).getCodeUnit();
+                filename = PythonContext.get(rn).getCodeUnitFilename(co);
+            }
+            if (filename != null) {
+                return filename;
+            }
+            filename = extractFileName(rn);
         }
         return filename;
     }
