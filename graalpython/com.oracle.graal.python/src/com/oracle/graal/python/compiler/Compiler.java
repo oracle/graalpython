@@ -805,7 +805,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ArgTy node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new IllegalStateException("Should not be visited");
     }
 
     @Override
@@ -905,7 +905,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(BINARY_OP, BinaryOps.FLOORDIV.ordinal());
                     break;
                 default:
-                    throw new UnsupportedOperationException("Not supported yet.");
+                    throw new IllegalStateException("Unknown binary operation " + node.op);
             }
             return null;
         } finally {
@@ -1042,6 +1042,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(BINARY_OP, BinaryOps.IN.ordinal());
                 addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 break;
+            default:
+                throw new IllegalStateException("Unknown comparison operation " + op);
         }
     }
 
@@ -1105,7 +1107,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case BYTES:
                     return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
                 default:
-                    throw new UnsupportedOperationException("Not supported yet.");
+                    throw new IllegalStateException("Unknown constant kind " + node.kind);
             }
         } finally {
             setLocation(savedLocation);
@@ -1528,7 +1530,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case SUB:
                     return addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
                 default:
-                    throw new IllegalStateException("Unknown unary operation");
+                    throw new IllegalStateException("Unknown unary operation " + node.op);
             }
         } finally {
             setLocation(savedLocation);
@@ -1738,7 +1740,16 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncFor node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("async for");
+    }
+
+    // TODO temporary helper so that stuff that's not implemented can compile into stubs
+    private Void emitNotImplemented(String what) {
+        addGlobalVariableOpcode(ExprContext.Load, addObject(unit.names, "NotImplementedError"));
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(what)));
+        addOp(CALL_FUNCTION, 1);
+        addOp(RAISE_VARARGS, 1);
+        return null;
     }
 
     @Override
@@ -1749,7 +1760,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncWith node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("async with");
     }
 
     @Override
@@ -1800,7 +1811,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(BINARY_OP, BinaryOps.INPLACE_FLOORDIV.ordinal());
                 break;
             default:
-                throw new UnsupportedOperationException("Not supported yet.");
+                throw new IllegalStateException("Unknown binary inplace operation " + node.op);
         }
         return node.target.accept(this);
     }
@@ -2109,52 +2120,52 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Match node) {
         setLocation(node);
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match");
     }
 
     @Override
     public Void visit(StmtTy.Match.Case node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("case");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchAs node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match as");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchClass node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match class");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match mapping");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchOr node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match or");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match sequence");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match singleton");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchStar node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match star");
     }
 
     @Override
     public Void visit(StmtTy.Match.Pattern.MatchValue node) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return emitNotImplemented("match value");
     }
 
     @Override
@@ -2452,7 +2463,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.With.Item node) {
-        throw new UnsupportedOperationException("should not reach here");
+        throw new IllegalStateException("should not reach here");
     }
 
     private enum UnwindType {
