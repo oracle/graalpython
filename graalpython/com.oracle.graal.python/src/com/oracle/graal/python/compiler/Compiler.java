@@ -504,8 +504,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 ExprTy expr = ((StmtTy.Expr) stmt).value;
                 if (expr instanceof ExprTy.Constant) {
                     Object value = ((ExprTy.Constant) expr).value;
-                    if (value instanceof String) {
-                        return toTruffleStringUncached((String) value);
+                    if (value instanceof TruffleString) {
+                        return (TruffleString) value;
                     }
                 }
             }
