@@ -167,6 +167,11 @@ public final class PCode extends PythonBuiltinObject {
         this.filename = filename;
     }
 
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
+        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, PythonUtils.arrayCopyOf(codeUnit.constants, codeUnit.constants.length), codeUnit.names,
+                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startLine, codeUnit.srcOffsetTable);
+    }
+
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
         super(cls, instanceShape);
