@@ -1057,7 +1057,7 @@ class TestUDPServer(ControlMixin, ThreadingUDPServer):
 
 
 # GR-28433
-if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython':
+if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
     class TestUnixStreamServer(TestTCPServer):
         address_family = socket.AF_UNIX
 
@@ -1738,11 +1738,11 @@ def _get_temp_domain_socket():
 
 
 # GR-28433
-@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython', "Unix sockets required")
+@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy', "Unix sockets required")
 class UnixSocketHandlerTest(SocketHandlerTest):
     """Test for SocketHandler with unix sockets."""
 
-    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython':
+    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
         server_class = TestUnixStreamServer
 
     def setUp(self):
@@ -1820,11 +1820,11 @@ class DatagramHandlerTest(BaseTest):
 
 
 # GR-28433
-@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython', "Unix sockets required")
+@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy', "Unix sockets required")
 class UnixDatagramHandlerTest(DatagramHandlerTest):
     """Test for DatagramHandler using Unix sockets."""
 
-    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython':
+    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
         server_class = TestUnixDatagramServer
 
     def setUp(self):
@@ -1905,11 +1905,11 @@ class SysLogHandlerTest(BaseTest):
 
 
 # GR-28433
-@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython', "Unix sockets required")
+@unittest.skipUnless(hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy', "Unix sockets required")
 class UnixSysLogHandlerTest(SysLogHandlerTest):
     """Test for SysLogHandler with Unix sockets."""
 
-    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython':
+    if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
         server_class = TestUnixDatagramServer
 
     def setUp(self):

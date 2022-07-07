@@ -184,7 +184,7 @@ def libc_ver(executable=None, lib='', version='', chunksize=16384):
 
         executable = sys.executable
 
-    if sys.implementation.name == "graalpython":
+    if sys.implementation.name == "graalpy":
         if executable == sys.executable and not os.path.exists(executable):
             return lib, version
     V = _comparable_version

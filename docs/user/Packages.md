@@ -12,7 +12,7 @@ The best way of using GraalVM's Python runtime is from a virtual environment.
 This generates wrapper scripts and makes the implementation usable from shell as the standard Python interpreter.
 To create the virtual environment with GraalVM:
 ```shell
-graalpython -m venv <venv-dir>
+graalpy -m venv <venv-dir>
 ```
 
 To activate the environment in your shell session call:
@@ -25,12 +25,12 @@ At the moment, there are not enough standard libraries implemented to run the st
 As a convenience, a simple module to install packages is provided (including potential patches required for those packages).
 Try the following to find out more:
 ```shell
-graalpython -m ginstall --help
+graalpy -m ginstall --help
 ```
 
 As a slightly more exciting example, try:
 ```shell
-graalpython -m ginstall install numpy
+graalpy -m ginstall install numpy
 ```
 
 If all goes well (also consider native dependencies of NumPy), you should be able to `import numpy` afterwards.
@@ -53,7 +53,7 @@ A good idea is to include the entire venv folder as a resource, and use Java's r
 ```java
 String venvExePath = getClass().
         getClassLoader().
-        getResource(Paths.get("venv", "bin", "graalpython").toString()).
+        getResource(Paths.get("venv", "bin", "graalpy").toString()).
         getPath();
 
 Context ctx = Context.newBuilder("python").

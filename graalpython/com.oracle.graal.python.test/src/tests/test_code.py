@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -178,7 +178,7 @@ def test_module_code():
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
         assert code.co_name.startswith("<module")
-        if sys.implementation.name == 'graalpython':
+        if sys.implementation.name == 'graalpy':
             assert code.co_firstlineno == 1
         # assert code.co_lnotab  == b''
         assert code.co_freevars == tuple()

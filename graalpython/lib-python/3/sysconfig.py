@@ -21,7 +21,7 @@ __all__ = [
 _INSTALL_SCHEMES = {
     # Graalpython change: custom scheme
     # Keep in sync with distutils.sysconfig_graalpython, distutils.install and site module
-    'graalpython': {
+    'graalpy': {
         'stdlib': '{installed_base}/lib-python/3',
         'platstdlib': '{base}/lib-python/3',
         'purelib': '{base}/lib/python{py_version_short}/site-packages',
@@ -192,7 +192,7 @@ def _expand_vars(scheme, vars):
 
 def _get_default_scheme():
     # XXX Graalpython change
-    return 'graalpython'
+    return 'graalpy'
     # if os.name == 'posix':
     #     # the default scheme for posix is posix_prefix
     #     return 'posix_prefix'

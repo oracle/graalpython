@@ -41,8 +41,6 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -72,9 +70,7 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -108,11 +104,9 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.llvm.api.Toolchain;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
@@ -320,24 +314,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // Temporary - will be replaced with something else when we move this to Truffle
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
-
-            PythonOS os = getPythonOS();
-            String multiArch = PythonUtils.getPythonArch().toJavaStringUncached() + "-" + os.getName().toJavaStringUncached();
-            String cacheTag = "graalpython-38";
-            Env env = context.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainId = toolchain.getIdentifier();
-
-            // only use '.dylib' if we are on 'Darwin-native'
-            String soExt;
-            if (os == PLATFORM_DARWIN && "native".equals(toolchainId)) {
-                soExt = ".dylib";
-            } else {
-                soExt = ".so";
-            }
-
-            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + context.getSoAbi().toJavaStringUncached();
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             TruffleFile file = homePath.resolve(libPythonName);
             return file.getPath();

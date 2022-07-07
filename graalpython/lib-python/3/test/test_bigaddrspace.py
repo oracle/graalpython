@@ -101,6 +101,6 @@ def test_main():
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         support.set_memlimit(sys.argv[1])
-    if sys.implementation.name == "graalpython" and support.max_memuse == 0:
+    if sys.implementation.name == "graalpy" and support.max_memuse == 0:
         support.set_memlimit("2.1G")
     test_main()

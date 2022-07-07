@@ -21,26 +21,23 @@ index 4745f8b9..66d68fa9 100644
      return which == 'local'
  
  
-@@ -153,7 +154,8 @@ DISTUTILS_FINDER = DistutilsMetaFinder()
+@@ -114,7 +115,7 @@ Detect if pip is being imported in a build script. Ref #2355.
+         """
+         import traceback
+         return any(
+-            frame.f_globals['__file__'].endswith('setup.py')
++            frame.f_globals.get('__file__', '').endswith('setup.py')
+             for frame, line in traceback.walk_stack(None)
+         )
+ 
+@@ -123,6 +124,7 @@ DISTUTILS_FINDER = DistutilsMetaFinder()
  
  
  def add_shim():
--    DISTUTILS_FINDER in sys.meta_path or insert_shim()
-+    if enabled():
-+        DISTUTILS_FINDER in sys.meta_path or insert_shim()
- 
- 
- @contextlib.contextmanager
-@@ -166,7 +168,8 @@ def shim():
- 
- 
- def insert_shim():
 -    sys.meta_path.insert(0, DISTUTILS_FINDER)
 +    if enabled():
 +        sys.meta_path.insert(0, DISTUTILS_FINDER)
  
  
- def remove_shim():
 -- 
 2.31.1
-

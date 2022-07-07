@@ -25,9 +25,9 @@ The above command will install Python from the catalog.
 ## Running Python
 
 GraalVM's Python support targets Python 3.8 compatibility.
-While the support is still limited, you can run simple Python commands or programs with the `graalpython` launcher:
+While the support is still limited, you can run simple Python commands or programs with the `graalpy` launcher:
 ```shell
-graalpython [options] [-c cmd | filename]
+graalpy [options] [-c cmd | filename]
 ```
 
 If no program file or command is given, you are dropped into a simple REPL.
@@ -35,7 +35,7 @@ If no program file or command is given, you are dropped into a simple REPL.
 GraalVM supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
 These can be viewed using the following command:
 ```shell
-graalpython --help --help:tools --help:languages
+graalpy --help --help:tools --help:languages
 ```
 
 ## Installing Supported Packages
@@ -45,19 +45,19 @@ It is recommended to always create a virtual environment first, using the standa
 Creating such an environment avoids any incompatible interaction with the local user's packages that may have been
 installed using a system installation of CPython:
 ```shell
-graalpython -m venv my_new_venv
+graalpy -m venv my_new_venv
 source my_new_venv/bin/activate
 ```
 
 To see the list of installable packages, run:
 ```shell
-graalpython -m ginstall install --help
+graalpy -m ginstall install --help
 ```
 
 This will print a short help document including a comma-separated list of packages you
 can install. The installation works as described in that help document:
 ```shell
-graalpython -m ginstall install pandas
+graalpy -m ginstall install pandas
 ```
 
 Note that when calling Python from Java, the polyglot shell, or another language on GraalVM, you should always evaluate the piece of Python code first to make installed packages available:

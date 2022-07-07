@@ -43,7 +43,7 @@ import sys
 
 from textwrap import dedent
 
-if sys.implementation.name == "graalpython" and not __graalpython__.is_native:
+if sys.implementation.name == "graalpy" and not __graalpython__.is_native:
     def test_load_default_verify_keystore():
         # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
         # the JKS keystore:

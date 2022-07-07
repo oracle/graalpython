@@ -868,7 +868,7 @@ class EventLoopTestsMixin:
         # close server
         server.close()
 
-    @unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
     @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'No UNIX Sockets')
     def test_create_unix_server_path_socket_error(self):
         proto = MyProto(loop=self.loop)

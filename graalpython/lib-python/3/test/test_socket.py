@@ -1799,7 +1799,7 @@ class GeneralModuleTests(unittest.TestCase):
             s.bind((support.HOSTv6, 0, 0, 0))
             self._test_socket_fileno(s, socket.AF_INET6, socket.SOCK_STREAM)
 
-        if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython':
+        if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
             tmpdir = tempfile.mkdtemp()
             self.addCleanup(shutil.rmtree, tmpdir)
             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -4084,14 +4084,14 @@ class SendrecvmsgUnixStreamTestBase(SendrecvmsgConnectedBase,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg")
 @requireAttrs(socket, "AF_UNIX")
 class SendmsgUnixStreamTest(SendmsgStreamTests, SendrecvmsgUnixStreamTestBase):
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgUnixStreamTest(RecvmsgTests, RecvmsgGenericStreamTests,
@@ -4099,7 +4099,7 @@ class RecvmsgUnixStreamTest(RecvmsgTests, RecvmsgGenericStreamTests,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgIntoUnixStreamTest(RecvmsgIntoTests, RecvmsgGenericStreamTests,
@@ -4107,14 +4107,14 @@ class RecvmsgIntoUnixStreamTest(RecvmsgIntoTests, RecvmsgGenericStreamTests,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgSCMRightsStreamTest(SCMRightsTest, SendrecvmsgUnixStreamTestBase):
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgIntoSCMRightsStreamTest(RecvmsgIntoMixin, SCMRightsTest,
@@ -4289,7 +4289,7 @@ class BasicSocketPairTest(SocketPairTest):
     def _check_defaults(self, sock):
         self.assertIsInstance(sock, socket.socket)
         # GR-28433
-        if hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpython':
+        if hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpy':
             self.assertEqual(sock.family, socket.AF_UNIX)
         else:
             self.assertEqual(sock.family, socket.AF_INET)
@@ -5066,7 +5066,7 @@ class TestExceptions(unittest.TestCase):
             sock.setblocking(False)
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(sys.platform == 'linux' and hasattr(socket, "AF_UNIX"), 'Linux specific test')
 class TestLinuxAbstractNamespace(unittest.TestCase):
 
@@ -5110,7 +5110,7 @@ class TestLinuxAbstractNamespace(unittest.TestCase):
             self.assertEqual(s.getsockname(), b"\x00python\x00test\x00")
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpython', 'GR-28433')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'test needs socket.AF_UNIX')
 class TestUnixDomain(unittest.TestCase):
 

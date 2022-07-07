@@ -8,14 +8,14 @@ permalink: /reference-manual/python/Tooling/
 
 GraalVM's Python runtime is incomplete and cannot launch the standard Python debugger `pdb`.
 However, it can run the tools that GraalVM provides.
-The `graalpython --help:tools` command will give you more information about tools currently supported on Python.
+The `graalpy --help:tools` command will give you more information about tools currently supported on Python.
 
 ## Debugger
 
-To enable debugging, pass the `--inspect` option to the `graalpython` launcher.
+To enable debugging, pass the `--inspect` option to the `graalpy` launcher.
 For example:
 ```shell
-graalpython --inspect -c "breakpoint(); import os; os.exit()"
+graalpy --inspect -c "breakpoint(); import os; os.exit()"
 Debugger listening on port 9229.
 To start debugging, open the following URL in Chrome:
     chrome-devtools://devtools/bundled/js_app.html?ws=127.0.1.1:9229/76fcb6dd-35267eb09c3
@@ -28,12 +28,12 @@ However, this only works if you pass `--inspect` or some other inspect option. O
 ## Code Coverage
 
 GraalVM comes with a coverage instrument that can be used with `--coverage`.
-Use the `graalpython --help:tools` command to see details on how to use it.
+Use the `graalpy --help:tools` command to see details on how to use it.
 
 In order to work better with existing Python code, the standard library `trace` module is partially supported with this low-overhead GraalVM coverage instrument.
 So you can do this:
 ```shell
-graalpython -m trace -m -c -s my_script.py
+graalpy -m trace -m -c -s my_script.py
 ```
 
 This will work similarly to how it would run on CPython.
@@ -46,13 +46,13 @@ For example, it does not currently track calls, only line counts and called func
 The `_lsprof` built-in module has been implemented using the GraalVM `cpusampler` tool.
 Not all profiling features are currently supported, but basic profiling works:
 ```shell
-graalpython -m cProfile -s sort -m ginstall --help
+graalpy -m cProfile -s sort -m ginstall --help
 ```
 
 The interactive exploration of a stats output file also works:
 ```shell
-graalpython -m cProfile -o ginstall.profile -m ginstall --help
-graalpython -m pstats ginstall.profile
+graalpy -m cProfile -o ginstall.profile -m ginstall --help
+graalpy -m pstats ginstall.profile
 ginstall.profile%
 callers
 [...]

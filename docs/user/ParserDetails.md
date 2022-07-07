@@ -63,13 +63,13 @@ The folder structure created for `.pyc` files looks like this:
 ```python
 top_folder
     __pycache__
-         sourceA.graalpython.pyc
-         sourceB.graalpython.pyc
+         sourceA.graalpy.pyc
+         sourceB.graalpy.pyc
     sourceA.py
     sourceB.py
     sub_folder
         __pycache__
-            sourceX.graalpython.pyc
+            sourceX.graalpy.pyc
         sourceX.py
 ```
 
@@ -78,7 +78,7 @@ This folder may store `.pyc` files created with different versions of Python (in
 
 The current implementation also includes a copy of the original source text in the `.pyc` file.
 This is a minor performance optimization so you can create a `Source` object with the path to the original source file, but you do not need to read the original `*.py` file, which speeds up the process obtaining the Language Implementation framework tree (just one file is read).
-The structure of a `.graalpython.pyc` file is this:
+The structure of a `.graalpy.pyc` file is this:
 ```python
 MAGIC_NUMBER
 source text
@@ -103,7 +103,7 @@ b'\x01\x00\x00\x02[]K\xbf\xd1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 ..
 The creation of `*.pyc` files can be controlled in the same ways as on CPython
 (c.f. https://docs.python.org/3/using/cmdline.html):
 
-  * GraalVM's Python launcher (`graalpython`) reads the `PYTHONDONTWRITEBYTECODE`
+  * GraalVM's Python launcher (`graalpy`) reads the `PYTHONDONTWRITEBYTECODE`
     environment variable. If this is set to a non-empty string, Python will not
     try to write `.pyc` files when importing modules.
   * The launcher command line option `-B`, if given, has the same effect as the
@@ -127,7 +127,7 @@ these language options:
 
 
 Note that a Python context will not enable writing `.pyc` files by default.
-The `graalpython` launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the `__pycache__` location is properly managed and the files in that location are secured against manipulation just like the source `.py` files they were derived from.
+The `graalpy` launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the `__pycache__` location is properly managed and the files in that location are secured against manipulation just like the source `.py` files they were derived from.
 
 Note also that to upgrade the application sources to GraalVM Enteprise's Python runtime, old `.pyc`
 files must be removed by the embedder as required.

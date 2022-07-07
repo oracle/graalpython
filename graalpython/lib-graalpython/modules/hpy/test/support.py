@@ -27,7 +27,7 @@ import re
 import textwrap
 
 PY2 = sys.version_info[0] == 2
-GRAALPYTHON = sys.implementation.name == 'graalpython'
+GRAALPYTHON = sys.implementation.name == 'graalpy'
 DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.platform_id == 'native')
 
 # True if `sys.executable` is set to a value that allows a Python equivalent to

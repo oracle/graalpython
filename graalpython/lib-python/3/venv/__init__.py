@@ -130,11 +130,11 @@ class EnvBuilder:
         # running through java), we always provide a script for launching in
         # venv
         context.libpath = libpath
-        exename = context.python_exe = "graalpython"
+        exename = context.python_exe = "graalpy"
 
         import atexit, tempfile
         tempdir = tempfile.mkdtemp()
-        script = os.path.join(tempdir, "graalpython")
+        script = os.path.join(tempdir, "graalpy")
         if sys.platform == 'win32':
             script += ".bat"
 
@@ -187,7 +187,7 @@ class EnvBuilder:
 
     def _install_compilers(self, context):
         """Puts the Graal LLVM compiler tools on the path"""
-        
+
         # Table of well-known LLVM tools that must be queried by a variable name.
         llvm_tools = {
             "AR": ("ar",),
@@ -212,7 +212,7 @@ class EnvBuilder:
                         dest = os.path.join(bin_dir, name)
                         if not os.path.exists(dest):
                             os.symlink(tool_path, dest)
-        
+
         create_symlinks(llvm_tools, __graalpython__.get_toolchain_tool_path)
         # NOTE: function 'get_toolcahin_paths' returns a tuple
         llvm_path = __graalpython__.get_toolchain_paths("PATH")
@@ -221,9 +221,9 @@ class EnvBuilder:
 
 
     def _patch_shebang(self, context):
-        # Truffle change: we need to patch the pip/pip3 (and maybe other) 
-        # launchers on Darwin because the shebang tries to invoke our 
-        # graalpython shell script but Darwin strictly requires a binary 
+        # Truffle change: we need to patch the pip/pip3 (and maybe other)
+        # launchers on Darwin because the shebang tries to invoke our
+        # graalpython shell script but Darwin strictly requires a binary
         # in the shebang.
         if sys.platform == "darwin":
             bin_dir = os.path.join(context.env_dir, context.bin_name)

@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "6e282183ad827db37d66efbff6454acd7494e142",
+                "version": "9ac931d871078226c9c2753d4c88ef734b9c6d1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "6e282183ad827db37d66efbff6454acd7494e142",
+                "version": "9ac931d871078226c9c2753d4c88ef734b9c6d1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "6e282183ad827db37d66efbff6454acd7494e142",
+                "version": "9ac931d871078226c9c2753d4c88ef734b9c6d1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -651,7 +651,7 @@ suite = {
         "GRAALPYTHON_GRAALVM_SUPPORT": {
             "native": True,
             "platformDependent": True,
-            "description": "Graal.Python support distribution for the GraalVM",
+            "description": "GraalVM Python support distribution for the GraalVM",
             "distDependencies": [
                 "GRAALPYTHON_JNI",
             ],
@@ -672,9 +672,9 @@ suite = {
 
         "GRAALPYTHON_GRAALVM_DOCS": {
             "native": True,
-            "description": "Graal.Python documentation files for the GraalVM",
+            "description": "GraalVM Python documentation files for the GraalVM",
             "layout": {
-                "README_GRAALPYTHON.md": "file:README.md",
+                "README_GRAALPY.md": "file:README.md",
                 "./": "file:docs",
             },
             "maven": False,
@@ -683,10 +683,10 @@ suite = {
         "GRAALPYTHON_GRAALVM_LICENSES": {
             "native": True,
             "platformDependent": True,
-            "description": "Graal.Python support distribution for the GraalVM license files",
+            "description": "GraalVM Python support distribution for the GraalVM license files",
             "layout": {
-                "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
-                "THIRD_PARTY_LICENSE_GRAALPYTHON.txt": "file:THIRD_PARTY_LICENSE.txt",
+                "LICENSE_GRAALPY.txt": "file:LICENSE",
+                "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
         },

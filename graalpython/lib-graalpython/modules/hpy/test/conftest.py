@@ -31,7 +31,7 @@ SELECTED_ABI_MODE = os.environ.get("TEST_HPY_ABI", None)
 if SELECTED_ABI_MODE:
     SELECTED_ABI_MODE = [SELECTED_ABI_MODE]
 IS_VALGRIND_RUN = False
-GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpython' and __graalpython__.platform_id == 'native'
+GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.platform_id == 'native'
 def pytest_addoption(parser):
     parser.addoption(
         "--compiler-v", action="store_true",
@@ -55,10 +55,10 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
-    if (sys.implementation.name in ["graalpython", "pypy"] and
+    if (sys.implementation.name in ["graalpy", "pypy"] and
         "syncgc" in [mark.name for mark in item.iter_markers()]):
         pytest.skip(f"cannot run syncgc test on {sys.implementation.name}")
-    if (sys.implementation.name in ["graalpython"] and
+    if (sys.implementation.name in ["graalpy"] and
         "tp_traverse" in [mark.name for mark in item.iter_markers()]):
         pytest.skip(f"{sys.implementation.name} does not call tp_traverse")
 

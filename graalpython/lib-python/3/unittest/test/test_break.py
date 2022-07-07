@@ -10,7 +10,7 @@ import unittest
 
 @unittest.skipUnless(hasattr(os, 'kill'), "Test requires os.kill")
 @unittest.skipIf(sys.platform =="win32", "Test cannot run on Windows")
-@unittest.skipIf(sys.implementation.name == "graalpython", "[GR-28398] Tests are flaky on graalvm due to the signal handlers.")
+@unittest.skipIf(sys.implementation.name == "graalpy", "[GR-28398] Tests are flaky on graalvm due to the signal handlers.")
 class TestBreak(unittest.TestCase):
     int_handler = None
 

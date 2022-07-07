@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ import unittest
 import sys
 
 # The platform.system() == 'Java' is to make it possible to run with Jython
-if (platform.system() == 'Java' or sys.implementation.name == "graalpython") and \
+if (platform.system() == 'Java' or sys.implementation.name == "graalpy") and \
         not __graalpython__.is_native:
     from java.util import Arrays
     from java.lang import StringBuilder

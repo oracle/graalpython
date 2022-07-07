@@ -1,9 +1,9 @@
 # GraalVM Implementation of Python
 
 This is an early-stage experimental implementation of Python. A primary goal is
-to support SciPy and its constituent libraries. GraalPython can usually execute
+to support SciPy and its constituent libraries. GraalPy can usually execute
 pure Python code faster than CPython (but not when C extensions are
-involved). GraalPython currently aims to be compatible
+involved). GraalPy currently aims to be compatible
 with Python 3.8, but it is a long way from there, and it is very likely that any
 Python program that uses more features of standard library modules or external
 packages will hit something unsupported. At this point, the Python
@@ -11,12 +11,12 @@ implementation is made available for experimentation and curious end-users.
 
 ### Trying it
 
-The easiest option to try GraalPython is
+The easiest option to try GraalPy is
 [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
-you to easily install different GraalPython releases. To get version 21.2.0, for
-example, just run `pyenv install graalpython-21.2.0`.
+you to easily install different GraalPy releases. To get version 21.2.0, for
+example, just run `pyenv install graalpy-21.2.0`.
 
-To try GraalPython with a full GraalVM, including the support for Java embedding
+To try GraalPy with a full GraalVM, including the support for Java embedding
 and interop with other languages, you can use the bundled releases from
 [www.graalvm.org](https://www.graalvm.org/downloads/).
 
@@ -33,9 +33,9 @@ export PATH=$PWD/mx:$PATH
 #### Building
 
 Run `mx --dy /compiler python-gvm` in the `graalpython` repository root. If the build is fine, it will print the full
-path to the `graalpython` executable as the last line of output.
+path to the `graalpy` executable as the last line of output.
 
-For more information and some examples of what you can do with GraalPython,
+For more information and some examples of what you can do with GraalPy,
 check out the [reference](https://www.graalvm.org/reference-manual/python/).
 
 ### Create a virtual environment
@@ -43,7 +43,7 @@ The best way of using the GraalVM implementation of Python is out of a virtual e
 execute the following command in the project directory:
 
 ```
-graalpython -m venv <dir-to-venv>
+graalpy -m venv <dir-to-venv>
 ```
 
 To activate the environment in your shell session call:
@@ -52,7 +52,7 @@ To activate the environment in your shell session call:
 source <dir-to-venv>/bin/activate
 ```
 
-In the venv, multiple executables are available, like `python`, `python3` and `graalpython`. 
+In the venv, multiple executables are available, like `python`, `python3` and `graalpy`. 
 
 ### Installing packages
 
@@ -63,13 +63,13 @@ potential patches required for those packages). Try the following to find out
 which packages are at least partially supported and tested by us in our CI:
 
 ```
-graalpython -m ginstall install --help
+graalpy -m ginstall install --help
 ```
 
 As a slightly exciting example, try:
 
 ```
-graalpython -m ginstall install pandas
+graalpy -m ginstall install pandas
 ```
 
 If all goes well (also consider native dependencies of NumPy), you should be

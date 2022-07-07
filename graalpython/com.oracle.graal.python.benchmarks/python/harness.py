@@ -53,7 +53,7 @@ except ImportError:
     statistics = None
 
 # for compatibility with Jython 2.7
-GRAALPYTHON = getattr(getattr(sys, "implementation", None), "name", None) == "graalpython"
+GRAALPYTHON = getattr(getattr(sys, "implementation", None), "name", None) == "graalpy"
 
 # Try to use the timer with best accuracy. Unfortunately, 'monotonic_ns' is not available everywhere.
 if GRAALPYTHON:
