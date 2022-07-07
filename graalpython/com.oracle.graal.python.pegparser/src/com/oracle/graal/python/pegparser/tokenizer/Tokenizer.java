@@ -1281,7 +1281,7 @@ public class Tokenizer {
         int endLineno = currentLineNumber;
         int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
         int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
-        return new Token(kind, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
+        return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
     public String getTokenString(Token tok) {
@@ -1309,5 +1309,9 @@ public class Tokenizer {
         sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
         return sb.toString();
+    }
+
+    public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
+        return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
 }

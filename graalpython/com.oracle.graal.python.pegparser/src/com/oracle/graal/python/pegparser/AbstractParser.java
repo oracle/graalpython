@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
@@ -299,6 +300,10 @@ abstract class AbstractParser {
         return t;
     }
 
+    public Token peekToken(int position) {
+        return tokenizer.peekToken(position);
+    }
+
     /**
      * _PyPegen_name_token
      */
@@ -487,6 +492,22 @@ abstract class AbstractParser {
         if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
             errorCb.onError(token.sourceRange, BARRY_AS_BDFL);
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * _PyPegen_check_legacy_stmt
+     */
+    public boolean checkLegacyStmt(ExprTy name) {
+        if (!(name instanceof ExprTy.Name)) {
+            return false;
+        }
+        String[] candidates = {"print", "exec"};
+        for (String candidate : candidates) {
+            if (candidate.equals(((ExprTy.Name) name).id)) {
+                return true;
+            }
         }
         return false;
     }
@@ -882,6 +903,88 @@ abstract class AbstractParser {
         errorIndicator = true;
         errorCb.onError(typeError, where.getSourceRange(), msg, argument);
         return null;
+    }
+
+    /**
+     * RAISE_ERROR_KNOWN_RANGE
+     */
+    SSTNode raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, argument);
+        return null;
+    }
+
+    /**
+     * RAISE_ERROR_KNOWN_RANGE
+     */
+    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, argument);
+        return null;
+    }
+
+    /**
+     * RAISE_ERROR_KNOWN_RANGE
+     */
+    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, argument);
+        return null;
+    }
+
+    /**
+     * RAISE_SYNTAX_ERROR_STARTING_FROM
+     */
+    SSTNode raiseSyntaxErrorStartingFrom(Token where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, argument);
+        return null;
+    }
+
+    /**
+     * RAISE_SYNTAX_ERROR_STARTING_FROM
+     */
+    SSTNode raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, argument);
+        return null;
+    }
+
+    /**
+     * _PyPegen_arguments_parsing_error
+     */
+    SSTNode raiseArgumentsParsingError(ExprTy e) {
+        for (KeywordTy keyword : ((ExprTy.Call) e).keywords) {
+            if (keyword.arg == null) {
+                return raiseSyntaxError("positional argument follows keyword argument unpacking");
+            }
+        }
+        return raiseSyntaxError("positional argument follows keyword argument");
+    }
+
+    /**
+     * RAISE_INDENTATION_ERROR
+     */
+    SSTNode raiseIndentationError(String msg, Object... arguments) {
+        errorIndicator = true;
+        Token errorToken = tokenizer.peekToken();
+        errorCb.onError(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
+        return null;
+    }
+
+    void ruleNotImplemented(String s) {
+        debugMessageln("\033[33;5;7m!!! TODO: Convert <%s> to Java !!!\033[0m", s);
+    }
+
+    <T> T lastItem(T[] seq) {
+        return seq[seq.length - 1];
+    }
+
+    ExprTy getLastComprehensionItem(ComprehensionTy comprehension) {
+        if (comprehension.ifs == null || comprehension.ifs.length == 0) {
+            return comprehension.iter;
+        }
+        return lastItem(comprehension.ifs);
     }
 
     /**

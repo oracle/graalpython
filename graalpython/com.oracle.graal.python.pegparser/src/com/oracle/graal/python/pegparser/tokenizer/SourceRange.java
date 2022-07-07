@@ -60,10 +60,11 @@ public final class SourceRange {
     }
 
     public SourceRange withEnd(SourceRange end) {
-        if (end == this) {
-            return this;
-        }
-        return new SourceRange(startOffset, end.endOffset, startLine, startColumn, end.endLine, end.endColumn);
+        return withEnd(end.endOffset, end.endLine, end.endColumn);
+    }
+
+    public SourceRange withEnd(int newEndOffset, int newEndLine, int newEndColumn) {
+        return new SourceRange(startOffset, newEndOffset, startLine, startColumn, newEndLine, newEndColumn);
     }
 
     public SourceRange shiftStartRight(int columns) {
