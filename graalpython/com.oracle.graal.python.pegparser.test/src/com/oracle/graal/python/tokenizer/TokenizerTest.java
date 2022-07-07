@@ -144,8 +144,7 @@ public class TokenizerTest {
         assertToken("Öllo", Token.Kind.NAME);
     }
 
-    // TODO: fix this test, this identifier should not be accepted
-    @Test(expected = AssertionError.class)
+    @Test
     public void testIllegalUnicodeIdentifier() {
         assertToken("€", Token.Kind.ERRORTOKEN);
     }
@@ -179,18 +178,20 @@ public class TokenizerTest {
     public void testInvalidUnderscoreLiterals() {
         String[] invalid = new String[]{
                         // Trailing underscores:
-                        "0_", "42_", /* "1.4j_", */ "0x_", "0b1_", "0xf_", "0o5_", "0 if 1_Else 1",
+                        "0_", "42_", "1.4j_", "0x_", "0b1_", "0xf_", "0o5_", "0 if 1_Else 1",
                         // Underscores in the base selector:
                         "0_b0", "0_xf", "0_o5",
                         // Old-style octal, still disallowed:
-                        /* "0_7", "09_99", */
+                        "0_7", "09_99",
                         // Multiple consecutive underscores:
                         "4_______2", "0.1__4", "0.1__4j", "0b1001__0100", "0xffff__ffff", "0x___",
                         "0o5__77", "1e1__0", "1e1__0j",
                         // Underscore right before a dot:
                         "1_.4", "1_.4j",
                         // Underscore right after a dot:
-                        // TODO "1._4", "1._4j", "._5", "._5j",
+                        "1._4", "1._4j",
+                        // These will be rejected by the grammar, not the tokenizer:
+                        // "._5", "._5j"
                         // Underscore right after a sign:
                         "1.0e+_1", "1.0e+_1j",
                         // Underscore right before j:
@@ -198,7 +199,7 @@ public class TokenizerTest {
                         // Underscore right before e:
                         "1_e1", "1.4_e1", "1.4_e1j",
                         // Underscore right after e:
-                        // TODO "1e_1", "1.4e_1", "1.4e_1j",
+                        "1e_1", "1.4e_1", "1.4e_1j",
                         // Complex cases with parens:
                         "(1+1.5_j_)", "(1+1.5_j)",};
 
@@ -212,7 +213,7 @@ public class TokenizerTest {
                     break;
                 }
             }
-            assertTrue(wasError);
+            assertTrue("Expected ERRORTOKEN for input '" + code + "'", wasError);
         }
     }
 
@@ -236,16 +237,17 @@ public class TokenizerTest {
         checkTokensFromTestDataFile();
     }
 
-    // Test
+    @Test
     public void testNewLines() {
         checkTokens("a = 1\n" + "b = 2", new String[]{
                         "Token NAME [0, 1] (1, 0) (1, 1) 'a'",
                         "Token EQUAL [2, 3] (1, 2) (1, 3) '='",
-                        "Token NUMBER [4, 5] (2, -1) (2, 0) '1'",
-                        "Token NEWLINE [5, 6] (3, 0) (3, 1) '\n'",
-                        "Token NAME [6, 7] (3, 1) (3, 2) 'b'",
-                        "Token EQUAL [8, 9] (3, 3) (3, 4) '='",
-                        "Token NUMBER [10, 11] (3, 5) (3, 6) '2'"});
+                        "Token NUMBER [4, 5] (1, 4) (1, 5) '1'",
+                        "Token NEWLINE [5, 6] (2, -1) (2, 0) '\n'",
+                        "Token NAME [6, 7] (2, 0) (2, 1) 'b'",
+                        "Token EQUAL [8, 9] (2, 2) (2, 3) '='",
+                        "Token NUMBER [10, 11] (2, 4) (2, 5) '2'",
+                        "Token NEWLINE [11, 12] (3, -1) (3, 0) ''"});
     }
 
     private static Token[] getTokens(String code) {
