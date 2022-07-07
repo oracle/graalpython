@@ -583,6 +583,11 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ModTy.Expression node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.body != null) {
+            level++;
+            appendNewLineIndented(sb, node.body.accept(this));
+            level--;
+        }
         return sb.toString();
 
     }

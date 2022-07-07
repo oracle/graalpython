@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.DEDENT;
+import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,8 +103,6 @@ abstract class AbstractParser {
      * Indicates, whether there was found an error
      */
     protected boolean errorIndicator = false;
-    /** Currently used just for indicating, if something was read **/
-    protected int fill;
 
     private ExprTy.Name cachedDummyName;
 
@@ -142,7 +143,6 @@ abstract class AbstractParser {
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
         this.flags = flags;
-        this.fill = 0;
     }
 
     public ErrorCallback getErrorCallback() {
@@ -159,14 +159,19 @@ abstract class AbstractParser {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
             }
-            if (this.fill == 0) {
+            if (tokenizer.getFill() == 0) {
                 raiseSyntaxError("error at start before reading any input");
             } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER) {
                 // TODO we should handle this in better way. See cpython
                 raiseSyntaxError("unexpected EOF while parsing");
             } else {
-                // TODO check indentation errors
-                raiseSyntaxError("invalid syntax");
+                if (tokenizer.peekToken(tokenizer.getFill() - 1).type == INDENT) {
+                    raiseIndentationError("unexpected indent");
+                } else if (tokenizer.peekToken(tokenizer.getFill() - 1).type == DEDENT) {
+                    raiseIndentationError("unexpected unindent");
+                } else {
+                    raiseSyntaxError("invalid syntax");
+                }
             }
         }
         return res;
@@ -293,7 +298,7 @@ abstract class AbstractParser {
         Token t = null;
         for (int i = mark() - 1; i >= 0; i--) {
             t = tokenizer.peekToken(i);
-            if (t.type != Token.Kind.ENDMARKER && (t.type < Token.Kind.NEWLINE || t.type > Token.Kind.DEDENT)) {
+            if (t.type != Token.Kind.ENDMARKER && (t.type < Token.Kind.NEWLINE || t.type > DEDENT)) {
                 break;
             }
         }
@@ -599,7 +604,6 @@ abstract class AbstractParser {
                 }
             }
         }
-        this.fill++;
         return token;
     }
 

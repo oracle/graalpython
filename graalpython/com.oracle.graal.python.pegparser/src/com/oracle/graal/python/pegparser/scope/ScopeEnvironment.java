@@ -120,7 +120,7 @@ public class ScopeEnvironment {
         return blocks.get(node);
     }
 
-    private static void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
+    private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
         HashSet<String> local = new HashSet<>();
         HashMap<String, DefUse> scopes = new HashMap<>();
         HashSet<String> newGlobal = new HashSet<>();
@@ -187,7 +187,7 @@ public class ScopeEnvironment {
         }
     }
 
-    private static void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
+    private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
                     HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
@@ -203,15 +203,17 @@ public class ScopeEnvironment {
             }
         } else if (flags.contains(DefUse.DefNonLocal)) {
             if (bound == null) {
-                // TODO: SyntaxError:
-                // "nonlocal declaration not allowed at module level"
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
             } else if (!bound.contains(name)) {
                 // TODO: SyntaxError:
                 // "no binding for nonlocal '%s' found", name
             }
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
-            free.add(name);
+            if (free != null) {
+                // free is null in the module scope in which case we already reported an error above
+                free.add(name);
+            }
         } else if (!Collections.disjoint(flags, DefUse.DefBound)) {
             scopes.put(name, DefUse.Local);
             local.add(name);
