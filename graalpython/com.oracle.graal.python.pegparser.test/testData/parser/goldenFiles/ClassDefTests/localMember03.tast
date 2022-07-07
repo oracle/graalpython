@@ -4,7 +4,7 @@ Module[0, 210]
         ---- Function body of fn ----
         Assign[14, 41]
             LHS: Name[14, 25] Value: "a_local_var" Store
-            RHS: RAW[28, 41] Value: a local var
+            RHS: RAW[28, 41] Value: "a local var"
         FunctionDef[47, 210]
             Name:f
             ---- Function body of f ----

@@ -1,7 +1,7 @@
 Module[0, 92]
     ClassDef[0, 92] MyClass
         ---- Class body of MyClass ----
-        RAW[16, 44] Value: A simple example class
+        RAW[16, 44] Value: "A simple example class"
         Assign[46, 55]
             LHS: Name[46, 47] Value: "i" Store
             RHS: LONG[50, 55] Value: 12345
@@ -11,6 +11,6 @@ Module[0, 92]
                 Args:
                     ArgTy[63, 67] self
             ---- Function body of f ----
-            Return[72, 92] RAW[79, 92] Value: hello world
+            Return[72, 92] RAW[79, 92] Value: "hello world"
             ---- End of f function ----
         ---- End of MyClass class ----

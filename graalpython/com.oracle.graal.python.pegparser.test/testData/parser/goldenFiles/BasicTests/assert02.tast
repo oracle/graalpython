@@ -15,5 +15,5 @@ Module[0, 59]
                                 Name[31, 36] Value: "marks"
                     Op: NOTEQ
                     RHS: LONG[41, 42] Value: 0
-            Msg: RAW[43, 59] Value: List is empty.
+            Msg: RAW[43, 59] Value: "List is empty."
         ---- End of avg function ----

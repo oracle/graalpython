@@ -92,7 +92,7 @@ Module[0, 357]
         Call[294, 312]
             Target: Name[294, 299] Value: "print"
             Args:
-                RAW[300, 305] Value: sum
+                RAW[300, 305] Value: "sum"
                 Name[307, 311] Value: "sum_"
         ---- End of measure function ----
     FunctionDef[315, 357]

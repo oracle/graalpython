@@ -5,7 +5,7 @@ Module[0, 117]
             Args:
                 ArgTy[15, 16] f
         ---- Function body of walk_stack ----
-        RAW[23, 42] Value: Documentation
+        RAW[23, 42] Value: "Documentation"
         If[47, 76]
             Test: 
                 Compare[50, 59]

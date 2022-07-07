@@ -104,6 +104,34 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         }
     }
 
+    private void appendEscapedString(StringBuilder sb, String s) {
+        sb.append('"');
+        for (char c : s.toCharArray()) {
+            switch (c) {
+                case '"':
+                    sb.append("\\\"");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                default:
+                    if (c >= 32 && c <= 127) {
+                        sb.append(c);
+                    } else {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    }
+                    break;
+            }
+        }
+        sb.append('"');
+    }
+
     @Override
     public String visit(AliasTy node) {
         StringBuilder sb = new StringBuilder();
@@ -237,6 +265,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             case COMPLEX:
                 double[] val = (double[]) node.value;
                 sb.append(String.format("%g%+gj", val[0], val[1]));
+                break;
+            case RAW:
+                String s = (String) node.value;
+                appendEscapedString(sb, s);
                 break;
             default:
                 if (node.value == null || node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {

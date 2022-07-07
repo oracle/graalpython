@@ -2,7 +2,7 @@ Module[0, 42]
     FunctionDef[0, 42]
         Name:fn
         ---- Function body of fn ----
-        RAW[12, 27] Value: This is a doc
+        RAW[12, 27] Value: "This is a doc"
         Yield[30, 42]
-            RAW[36, 42] Value: neco
+            RAW[36, 42] Value: "neco"
         ---- End of fn function ----

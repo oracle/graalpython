@@ -9,8 +9,8 @@ Module[0, 48]
             Iterator: 
                 Tuple[17, 26]
                     Values:
-                        RAW[18, 21] Value: a
-                        RAW[22, 25] Value: b
+                        RAW[18, 21] Value: "a"
+                        RAW[22, 25] Value: "b"
         ComprehensionTy[27, 47]
             Target: Name[31, 32] Value: "s" Store
             Iterator: 

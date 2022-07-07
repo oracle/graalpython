@@ -9,7 +9,7 @@ Module[0, 64]
             Call[24, 64]
                 Target: 
                     Attribute[24, 28] 
-                        Receiver: RAW[24, 28] Value: , 
+                        Receiver: RAW[24, 28] Value: ", "
                         Attr: join
                 Args:
                     GeneratorExp[33, 64]

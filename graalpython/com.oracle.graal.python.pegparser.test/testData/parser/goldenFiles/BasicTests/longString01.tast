@@ -1,2 +1,2 @@
 Module[0, 10]
-    RAW[0, 10] Value: ahoj
+    RAW[0, 10] Value: "ahoj"

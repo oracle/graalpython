@@ -5,7 +5,7 @@ Module[0, 39]
     Assign[6, 39]
         LHS: 
             Subscript[6, 10] Context: Store
-                Slice: RAW[27, 30] Value: j
+                Slice: RAW[27, 30] Value: "j"
                 Value: 
                     Attribute[6, 10] 
                         Receiver: Name[6, 10] Value: "ahoj"

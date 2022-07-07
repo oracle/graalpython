@@ -14,11 +14,10 @@ Module[0, 155]
                 Call[60, 95]
                     Target: Name[60, 65] Value: "print"
                     Args:
-                        RAW[66, 79] Value: inner_inner
+                        RAW[66, 79] Value: "inner_inner"
                     KWArgs:
                         KeywordTy[81, 94]
-                            end: RAW[85, 94] Value:  haha
-
+                            end: RAW[85, 94] Value: " haha\n"
                 Call[102, 112]
                     Target: Name[102, 107] Value: "print"
                     Args:
@@ -30,7 +29,7 @@ Module[0, 155]
         Call[133, 148]
             Target: Name[133, 138] Value: "inner"
             Args:
-                RAW[139, 147] Value:  baf
+                RAW[139, 147] Value: " baf\n"
         ---- End of test function ----
     Call[149, 155]
         Target: Name[149, 153] Value: "test"

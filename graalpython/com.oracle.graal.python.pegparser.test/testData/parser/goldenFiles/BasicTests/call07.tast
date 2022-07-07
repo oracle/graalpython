@@ -2,7 +2,7 @@ Module[0, 31]
     Call[0, 31]
         Target: Name[0, 3] Value: "foo"
         Args:
-            RAW[4, 10] Value: ahoj
+            RAW[4, 10] Value: "ahoj"
         KWArgs:
             KeywordTy[12, 20]
                 arg1: LONG[19, 20] Value: 1

@@ -7,7 +7,7 @@ Module[0, 415]
             ---- Function body of get_nested_class ----
             Assign[46, 68]
                 LHS: Name[46, 60] Value: "method_and_var" Store
-                RHS: RAW[63, 68] Value: var
+                RHS: RAW[63, 68] Value: "var"
             ClassDef[77, 366] Test
                 Bases:
                     Name[88, 94] Value: "object"
@@ -18,7 +18,7 @@ Module[0, 415]
                         Args:
                             ArgTy[128, 132] self
                     ---- Function body of method_and_var ----
-                    Return[151, 166] RAW[158, 166] Value: method
+                    Return[151, 166] RAW[158, 166] Value: "method"
                     ---- End of method_and_var function ----
                 FunctionDef[179, 232]
                     Name:test
@@ -38,7 +38,7 @@ Module[0, 415]
                         Call[293, 306]
                             Target: Name[293, 296] Value: "str"
                             Args:
-                                RAW[297, 305] Value: global
+                                RAW[297, 305] Value: "global"
                     ---- End of actual_global function ----
                 FunctionDef[319, 366]
                     Name:str
