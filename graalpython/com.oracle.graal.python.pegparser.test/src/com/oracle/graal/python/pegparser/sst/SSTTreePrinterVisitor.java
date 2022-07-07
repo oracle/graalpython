@@ -104,7 +104,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         }
     }
 
-    private void appendEscapedString(StringBuilder sb, String s) {
+    private static void appendEscapedString(StringBuilder sb, String s) {
         sb.append('"');
         for (char c : s.toCharArray()) {
             switch (c) {

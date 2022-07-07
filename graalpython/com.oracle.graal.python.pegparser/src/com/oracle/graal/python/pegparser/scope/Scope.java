@@ -168,8 +168,8 @@ public class Scope {
         directives.put(directiveName, directiveSourceRange);
     }
 
-    SourceRange getDirective(String name) {
-        SourceRange range = directives.get(name);
+    SourceRange getDirective(String directiveName) {
+        SourceRange range = directives.get(directiveName);
         assert range != null : "BUG: internal directive bookkeeping broken";
         return range;
     }
