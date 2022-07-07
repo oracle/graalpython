@@ -183,8 +183,12 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )': (1, 'checkVersion(5, "Await expressions are", factory.createAwait(a, $RANGE))'),
     'CHECK_VERSION ( expr_ty , 5 , "The \'@\' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )': (1, 'checkVersion(5, "The \'@\' operator is", factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT, a, b, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params, b, a, newTypeComment((Token) tc), $RANGE))'),
+    'CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async for loops are", factory.createAsyncFor(t, ex, b, el, newTypeComment(tc), $RANGE))'),
+    'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )': (1, 'checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, null, $RANGE))'),
+    'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, newTypeComment(tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'factory.createAnnAssignment(setExprContext(a, ExprContext.Store), b, (ExprTy) c, true, $RANGE);'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'factory.createAnnAssignment(a, b, (ExprTy) c, false, $RANGE);'),
+    'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, false, $RANGE))'),
     'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a)'),
@@ -355,10 +359,6 @@ ACTION_MAPPINGS = {
     'z': (11, 'z'),
 
     # TODO
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )' in rule "for_stmt: with rhs ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?"
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )' in rule "with_stmt: with rhs ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block"
-    # 'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )' in rule "with_stmt: with rhs ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block"
-    # 'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )' in rule "for_if_clause: with rhs ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*"
     # '_PyPegen_nonparen_genexp_in_call ( p , a , b )' in rule "invalid_arguments: with rhs args for_if_clauses"
     #
     # Interactive mode:

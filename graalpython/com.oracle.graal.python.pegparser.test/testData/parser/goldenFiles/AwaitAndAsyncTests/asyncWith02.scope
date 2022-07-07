@@ -1,0 +1,11 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      f: [DefLocal, Local]
+    Scope f Function
+        Flags: [IsCoroutine]
+        Symbols:
+            a: [Use, GlobalImplicit]
+            b: [DefLocal, Local]
+            c: [Use, GlobalImplicit]
+            d: [DefLocal, Local]

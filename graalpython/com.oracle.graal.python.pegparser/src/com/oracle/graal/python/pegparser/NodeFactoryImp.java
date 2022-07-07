@@ -444,6 +444,11 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
+    public StmtTy createAsyncFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.AsyncFor(target, iter, block, elseBlock, typeComment, sourceRange);
+    }
+
+    @Override
     public StmtTy createReturn(ExprTy value, SourceRange sourceRange) {
         return new StmtTy.Return(value, sourceRange);
     }
@@ -541,6 +546,11 @@ public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
         return new StmtTy.With(items, body, typeComment, sourceRange);
+    }
+
+    @Override
+    public StmtTy.AsyncWith createAsyncWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+        return new StmtTy.AsyncWith(items, body, typeComment, sourceRange);
     }
 
     @Override
