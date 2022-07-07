@@ -451,6 +451,9 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
+        # TODO temporary. Tests for async that just happen to pass when AST interpreter completely ignores the async keyword
+        ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_for_tuple'),
+        ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_comp_7'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
