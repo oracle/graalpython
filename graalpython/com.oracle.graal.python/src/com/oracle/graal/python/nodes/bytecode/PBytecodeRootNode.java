@@ -1282,9 +1282,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = virtualFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
-                            if (localFrame != virtualFrame) {
-                                clearFrameSlots(localFrame, stackoffset, stackTop + 1);
-                            }
                             return GeneratorResult.createReturn(value);
                         } else {
                             return value;
