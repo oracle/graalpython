@@ -28,6 +28,7 @@ public class Tokenizer {
     private static final int ALTTABSIZE = 1;
     private static final int MAXINDENT = 100;
     private static final int MAXLEVEL = 200;
+    private static final int UTF8_BOM = 0xFEFF;
 
     /**
      * is_potential_identifier_start
@@ -318,13 +319,17 @@ public class Tokenizer {
 
     private static int[] charsToCodePoints(char[] chars) {
         int cpIndex = 0;
+        boolean hasUTF8Bom = chars.length > 0 && Character.codePointAt(chars, 0) == UTF8_BOM;
         for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
             int cp = Character.codePointAt(chars, charIndex);
             charIndex += Character.charCount(cp);
         }
+        if (hasUTF8Bom) {
+            cpIndex--;
+        }
         int[] codePoints = new int[cpIndex];
         cpIndex = 0;
-        for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
+        for (int charIndex = hasUTF8Bom ? Character.charCount(UTF8_BOM) : 0; charIndex < chars.length; cpIndex++) {
             int cp = Character.codePointAt(chars, charIndex);
             codePoints[cpIndex] = cp;
             charIndex += Character.charCount(cp);
