@@ -1,5 +1,2 @@
 Module[0, 27]
-    RAW[0, 27] Value: 
-ahoj
-hello
-good bye
+    RAW[0, 27] Value: "\nahoj\nhello\ngood bye\n"

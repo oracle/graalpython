@@ -7,4 +7,4 @@ Module[0, 68]
             Call[44, 68]
                 Target: Name[44, 49] Value: "print"
                 Args:
-                    RAW[50, 67] Value: Goodbye, world!
+                    RAW[50, 67] Value: "Goodbye, world!"

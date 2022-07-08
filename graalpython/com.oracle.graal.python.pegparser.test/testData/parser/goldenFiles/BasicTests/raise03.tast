@@ -4,4 +4,4 @@ Module[0, 24]
             Call[6, 24]
                 Target: Name[6, 15] Value: "NameError"
                 Args:
-                    RAW[16, 23] Value: Pavel
+                    RAW[16, 23] Value: "Pavel"

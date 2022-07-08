@@ -91,20 +91,10 @@ public class Scope {
     HashMap<String, EnumSet<DefUse>> symbols = new HashMap<>();
     private List<String> sortedSymbols; // for lazy sorting
 
-    static final class Directive {
-        final String name;
-        final SourceRange sourceRange;
-
-        Directive(String name, SourceRange sourceRange) {
-            this.name = name;
-            this.sourceRange = sourceRange;
-        }
-    }
-
     String name;
     ArrayList<String> varnames = new ArrayList<>();
     ArrayList<Scope> children = new ArrayList<>();
-    ArrayList<Directive> directives;
+    HashMap<String, SourceRange> directives = new HashMap<>();
     ScopeType type;
 
     enum ScopeFlags {
@@ -175,10 +165,13 @@ public class Scope {
     }
 
     void recordDirective(String directiveName, SourceRange directiveSourceRange) {
-        if (directives == null) {
-            directives = new ArrayList<>();
-        }
-        directives.add(new Directive(directiveName, directiveSourceRange));
+        directives.put(directiveName, directiveSourceRange);
+    }
+
+    SourceRange getDirective(String directiveName) {
+        SourceRange range = directives.get(directiveName);
+        assert range != null : "BUG: internal directive bookkeeping broken";
+        return range;
     }
 
     public String getName() {

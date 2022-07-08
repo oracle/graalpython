@@ -11,7 +11,7 @@ Module[0, 302]
                     Target: Name[44, 45] Value: "a"
             Then:
                 Yield[61, 73]
-                    RAW[67, 73] Value: neco
+                    RAW[67, 73] Value: "neco"
                 Return[86, 92]
         If[101, 278]
             Test: 
@@ -21,8 +21,7 @@ Module[0, 302]
                     RHS: NONE[119, 123] Value: null
             Then:
                 Yield[137, 147]
-                    RAW[143, 147] Value: 
-
+                    RAW[143, 147] Value: "\n"
                 If[160, 278]
                     Test: 
                         Compare[163, 181]
@@ -46,5 +45,5 @@ Module[0, 302]
                         Yield[262, 278]
                             Name[268, 278] Value: "caretspace"
         Yield[287, 302]
-            RAW[293, 302] Value: message
+            RAW[293, 302] Value: "message"
         ---- End of format_exception_only function ----

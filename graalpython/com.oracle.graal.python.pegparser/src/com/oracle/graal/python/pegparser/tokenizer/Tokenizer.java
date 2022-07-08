@@ -14,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
+
 /**
  * This class is intentionally kept very close to CPython's tokenizer.c and tokenizer.h files. The
  * last time it was updated to the versions on the v3.10.0 tag in the CPython source code
@@ -499,17 +502,21 @@ public class Tokenizer {
      */
     private static String verifyIdentifier(String tokenString) {
         // inlined the logic from _PyUnicode_ScanIdentifier
-        int invalid = tokenString.length();
-        if (!Character.isJavaIdentifierStart(tokenString.codePointAt(0))) {
+        int len = tokenString.codePointCount(0, tokenString.length());
+        int invalid = len;
+        int cp = tokenString.codePointAt(0);
+        if (cp != '_' && !UCharacter.hasBinaryProperty(cp, UProperty.XID_START)) {
             invalid = 0;
         }
-        for (int i = 1; i < invalid; i++) {
-            if (!Character.isJavaIdentifierPart(tokenString.codePointAt(i))) {
+        for (int i = 1; i < invalid;) {
+            cp = tokenString.codePointAt(i);
+            if (!UCharacter.hasBinaryProperty(cp, UProperty.XID_CONTINUE)) {
                 invalid = i;
                 break;
             }
+            i += Character.charCount(cp);
         }
-        if (invalid < tokenString.length()) {
+        if (invalid < len) {
             int codePoint = tokenString.codePointAt(invalid);
             String printString = new String(new int[]{codePoint}, 0, 1);
             return String.format("invalid character '%s' (U+%x)", printString, codePoint);

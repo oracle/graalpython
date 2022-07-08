@@ -1,0 +1,8 @@
+Module[16, 54]
+    RAW[16, 36] Value: "This is module doc"
+    Assign[38, 43]
+        LHS: Name[38, 39] Value: "a" Store
+        RHS: LONG[42, 43] Value: 1
+    Assign[44, 54]
+        LHS: Name[44, 45] Value: "a" Store
+        RHS: RAW[48, 54] Value: "ahoj"

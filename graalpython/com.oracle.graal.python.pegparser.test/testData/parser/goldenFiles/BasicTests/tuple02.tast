@@ -9,4 +9,4 @@ Module[0, 27]
                         Values:
                             LONG[12, 13] Value: 1
                             LONG[14, 15] Value: 2
-            RAW[20, 26] Value: ahoj
+            RAW[20, 26] Value: "ahoj"

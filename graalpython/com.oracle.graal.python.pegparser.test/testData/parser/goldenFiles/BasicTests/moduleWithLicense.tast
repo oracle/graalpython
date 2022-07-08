@@ -1,0 +1,6 @@
+Module[143, 179]
+    RAW[143, 161] Value: "MODULE A DOC"
+    Call[162, 179]
+        Target: Name[162, 167] Value: "print"
+        Args:
+            RAW[168, 178] Value: "module A"

@@ -4,15 +4,15 @@ Module[0, 98]
         RHS: 
             Dict[8, 48]
                 Values:
-                    Key: RAW[9, 12] Value: a
+                    Key: RAW[9, 12] Value: "a"
                     Val: LONG[14, 15] Value: 1
-                    Key: RAW[17, 20] Value: b
+                    Key: RAW[17, 20] Value: "b"
                     Val: LONG[22, 23] Value: 2
-                    Key: RAW[25, 28] Value: c
+                    Key: RAW[25, 28] Value: "c"
                     Val: LONG[30, 31] Value: 3
-                    Key: RAW[33, 36] Value: d
+                    Key: RAW[33, 36] Value: "d"
                     Val: LONG[38, 39] Value: 4
-                    Key: RAW[41, 44] Value: e
+                    Key: RAW[41, 44] Value: "e"
                     Val: LONG[46, 47] Value: 5
     Assign[49, 98]
         LHS: Name[49, 61] Value: "double_dict1" Store

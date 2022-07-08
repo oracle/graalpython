@@ -2,7 +2,7 @@ Module[0, 22]
     Compare[0, 22]
         LHS: LONG[0, 1] Value: 1
         Op: LT
-        RHS: RAW[4, 8] Value: 10
+        RHS: RAW[4, 8] Value: "10"
         Op: GT
         RHS: BOOLEAN[11, 15] Value: true
         Op: NOTEQ

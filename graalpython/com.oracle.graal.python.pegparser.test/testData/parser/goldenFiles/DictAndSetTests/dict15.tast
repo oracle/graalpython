@@ -2,6 +2,6 @@ Module[0, 14]
     Dict[0, 14]
         Values:
             Key: LONG[1, 2] Value: 1
-            Val: RAW[3, 6] Value: b
-            Key: RAW[7, 10] Value: c
+            Val: RAW[3, 6] Value: "b"
+            Key: RAW[7, 10] Value: "c"
             Val: LONG[11, 13] Value: 14

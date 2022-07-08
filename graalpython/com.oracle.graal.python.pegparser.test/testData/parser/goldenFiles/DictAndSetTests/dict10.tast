@@ -4,10 +4,10 @@ Module[0, 46]
             Val: 
                 Dict[3, 31]
                     Values:
-                        Key: RAW[4, 7] Value: a
-                        Val: RAW[9, 16] Value: hello
-                        Key: RAW[18, 21] Value: b
-                        Val: RAW[23, 30] Value: world
+                        Key: RAW[4, 7] Value: "a"
+                        Val: RAW[9, 16] Value: "hello"
+                        Key: RAW[18, 21] Value: "b"
+                        Val: RAW[23, 30] Value: "world"
             Val: 
                 Dict[35, 45]
                     Values:

@@ -54,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -63,6 +62,7 @@ import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public class ParserTestBase {
     protected static final String GOLDEN_FILE_EXT = ".tast";
@@ -91,7 +91,7 @@ public class ParserTestBase {
 
     // TODO
     @SuppressWarnings("unused")
-    public ModTy parse(String src, String moduleName, int mode) {
+    public ModTy parse(String src, String moduleName, InputType inputType) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
         NodeFactory factory = new NodeFactoryImp();
@@ -104,7 +104,7 @@ public class ParserTestBase {
             }
         };
         Parser parser = new Parser(tokenizer, factory, fexpParser);
-        ModTy result = (ModTy) parser.parse(InputType.FILE);
+        ModTy result = (ModTy) parser.parse(inputType);
         lastParserErrorCallback = parser.getErrorCallback();
         return result;
     }
@@ -122,7 +122,7 @@ public class ParserTestBase {
 // }
 
     public void checkSyntaxError(String source) {
-        ModTy node = parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
             ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
@@ -132,7 +132,7 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
-        ModTy node = parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
             ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
@@ -144,7 +144,7 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
-        ModTy node = parse(source, getFileName(), 1);
+        ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
             ScopeEnvironment.analyze(node, lastParserErrorCallback);
         }
@@ -155,10 +155,32 @@ public class ParserTestBase {
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
     }
 
+    public void checkIndentationError(String source) {
+        ModTy node = parse(source, getFileName(), InputType.FILE);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+        }
+        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
+        assertTrue("Expected Error.", ec.hasErrors());
+        assertSame("Expected IndentationError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Indentation);
+    }
+
+    public void checkIndentationErrorMessage(String source, String expectedMessage) {
+        ModTy node = parse(source, getFileName(), InputType.FILE);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+        }
+        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
+        assertTrue("Expected Error.", ec.hasErrors());
+        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertSame("Expected IndentationError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Indentation);
+        assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
+    }
+
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         String source = readFile(testFile);
-        SSTNode resultNew = parse(source, "Test", 1);
+        SSTNode resultNew = parse(source, "Test", InputType.FILE);
         String tree = printTreeToString(resultNew);
         File goldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
@@ -167,35 +189,28 @@ public class ParserTestBase {
             try (FileWriter fw = new FileWriter(goldenFile)) {
                 fw.write(tree);
             }
-
         }
         assertDescriptionMatches(tree, goldenFile);
     }
 
-// public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception
-// {
-// assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.",
-// testFile.exists());
-// TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
-// Source source = PythonLanguage.newSource(context, src, getFileName(testFile));
-// parse(source, PythonParser.ParserMode.File);
-// ScopeInfo scopeNew = getLastGlobalScope();
-// StringBuilder scopes = new StringBuilder();
-// scopeNew.debugPrint(scopes, 0);
-// File goldenScopeFile = goldenFileNextToTestFile
-// ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
-// : getGoldenFile(SCOPE_FILE_EXT);
-// if (REGENERATE_TREE || !goldenScopeFile.exists()) {
-// try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-// fw.write(scopes.toString());
-// }
-//
-// }
-// assertDescriptionMatches(scopes.toString(), goldenScopeFile);
-// }
+    public void checkScopeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
+        assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
+        String source = readFile(testFile);
+        ModTy mod = parse(source, "<module>", InputType.FILE);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
+        File goldenScopeFile = goldenFileNextToTestFile
+                        ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
+                        : getGoldenFile(SCOPE_FILE_EXT);
+        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
+            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
+                fw.write(env.toString());
+            }
+        }
+        assertDescriptionMatches(env.toString(), goldenScopeFile);
+    }
 
-    public void checkTreeResult(String source, int mode/* , Frame frame */) throws Exception {
-        SSTNode resultNew = parse(source, getFileName(), mode/* , frame */);
+    public void checkTreeResult(String source, InputType inputType/* , Frame frame */) throws Exception {
+        SSTNode resultNew = parse(source, getFileName(), inputType/* , frame */);
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
         if (REGENERATE_TREE || !goldenFile.exists()) {
@@ -233,8 +248,8 @@ public class ParserTestBase {
 // checkTreeResult(source, mode, null);
 // }
 
-    public void checkScopeResult(String source, int mode) throws Exception {
-        ModTy mod = parse(source, "<module>", mode);
+    public void checkScopeResult(String source, InputType inputType) throws Exception {
+        ModTy mod = parse(source, "<module>", inputType);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
         ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
         if (REGENERATE_TREE || !goldenScopeFile.exists()) {
@@ -304,7 +319,7 @@ public class ParserTestBase {
     }
 
     public File getTestFilesDir() {
-        String dataDirPath = "graalpython/com.oracle.graal.python.pegparser.test/testData/testFiles";
+        String dataDirPath = "graalpython/com.oracle.graal.python.pegparser.test/testData/parser/testFiles";
         File dataDir = new File(dataDirPath);
         assertTrue("The test files folder, was not found.", dataDir.exists());
         return dataDir;
@@ -418,12 +433,12 @@ public class ParserTestBase {
 // }
 //
     public void checkScopeAndTree(String source) throws Exception {
-        checkScopeResult(source, 1);
+        checkScopeResult(source, InputType.FILE);
         checkTreeResult(source);
     }
 
     public void checkTreeResult(String source) throws Exception {
-        checkTreeResult(source, 1);
+        checkTreeResult(source, InputType.FILE);
 // checkSSTNodeOffsets(lastSST);
     }
 

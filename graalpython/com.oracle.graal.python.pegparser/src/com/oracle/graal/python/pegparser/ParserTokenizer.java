@@ -91,6 +91,10 @@ public class ParserTokenizer {
         return tokens.get(position);
     }
 
+    protected int getFill() {
+        return tokens.size();
+    }
+
     public String getText(Token token) {
         return tokenizer.getTokenString(token);
     }

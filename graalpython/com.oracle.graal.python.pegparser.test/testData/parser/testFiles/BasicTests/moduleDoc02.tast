@@ -1,0 +1,5 @@
+Module[0, 29]
+    RAW[0, 22] Value: "\nThi is doc\nyes\n"
+    Assign[23, 29]
+        LHS: Name[23, 24] Value: "a" Store
+        RHS: LONG[27, 29] Value: 10

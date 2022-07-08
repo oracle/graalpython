@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import java.io.File;
+
 import org.junit.Test;
 
 public class BasicTests extends ParserTestBase {
@@ -74,55 +76,55 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("yield from f");
     }
 
-// @Test
-// public void moduleDoc01() throws Exception {
-// checkTreeFromFile();
-// }
-//
-// @Test
-// public void moduleDoc02() throws Exception {
-// checkTreeFromFile();
-// }
-//
-// @Test
-// public void moduleDoc03() throws Exception {
-// // testing new lines after the module doc
-// checkTreeFromFile();
-// }
-//
-// @Test
-// public void moduleDoc04() throws Exception {
-// checkTreeFromFile();
-// }
-//
-// @Test
-// public void moduleWithLincense() throws Exception {
-// checkTreeResult(
-// "# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.\n" +
-// "# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.\n" +
-// "\"\"\"MODULE A DOC\"\"\"\n" +
-// "print(\"module A\")");
-// }
-//
-// @Test
-// public void leadingIndent1() throws Exception {
-// checkSyntaxErrorMessage(" 1", "IndentationError: unexpected indent");
-// }
-//
-// @Test
-// public void leadingIndent2() throws Exception {
-// checkTreeResult(" # foo\npass");
-// }
+    @Test
+    public void moduleDoc01() throws Exception {
+        checkTreeFromFile();
+    }
+
+    @Test
+    public void moduleDoc02() throws Exception {
+        checkTreeFromFile();
+    }
+
+    @Test
+    public void moduleDoc03() throws Exception {
+        // testing new lines after the module doc
+        checkTreeFromFile();
+    }
+
+    @Test
+    public void moduleDoc04() throws Exception {
+        checkTreeFromFile();
+    }
+
+    @Test
+    public void moduleWithLicense() throws Exception {
+        checkTreeResult(
+                        "# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.\n" +
+                                        "# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.\n" +
+                                        "\"\"\"MODULE A DOC\"\"\"\n" +
+                                        "print(\"module A\")");
+    }
+
+    @Test
+    public void leadingIndent1() throws Exception {
+        checkIndentationErrorMessage(" 1", "unexpected indent");
+    }
+
+    @Test
+    public void leadingIndent2() throws Exception {
+        checkTreeResult(" # foo\npass");
+    }
 
     @Test
     public void annAssign01() throws Exception {
         checkTreeResult("a: int = 1");
     }
 
-// @Test
-// public void annAssign02() throws Exception {
-// checkTreeResult("a: 1");
-// }
+    @Test
+    public void annAssign02() throws Exception {
+        checkTreeResult("a: 1");
+    }
 
     @Test
     public void assert01() throws Exception {
@@ -147,7 +149,7 @@ public class BasicTests extends ParserTestBase {
     public void assert04() throws Exception {
         checkTreeResult("assert not hascased");
     }
-//
+
 // @Test
 // public void inline01() throws Exception {
 // FrameDescriptor fd = new FrameDescriptor(44);
@@ -192,10 +194,10 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("");
     }
 
-// @Test
-// public void simpleExpression08() throws Exception {
-// checkTreeResult("\"\\uD800\"", PythonParser.ParserMode.Eval);
-// }
+    @Test
+    public void simpleExpression08() throws Exception {
+        checkTreeResult("\"\\uD800\"", InputType.EVAL);
+    }
 
     @Test
     public void longString01() throws Exception {
@@ -385,15 +387,15 @@ public class BasicTests extends ParserTestBase {
         checkSyntaxError("foo(**mydict1, *mylist)");
     }
 
-// @Test
-// public void call14() throws Exception {
-// checkSyntaxError("foo(**mydict1, 1)");
-// }
+    @Test
+    public void call14() throws Exception {
+        checkSyntaxError("foo(**mydict1, 1)");
+    }
 
-// @Test
-// public void call15() throws Exception {
-// checkSyntaxError("foo(arg1=1, 1)");
-// }
+    @Test
+    public void call15() throws Exception {
+        checkSyntaxError("foo(arg1=1, 1)");
+    }
 
     @Test
     public void call16() throws Exception {
@@ -420,12 +422,6 @@ public class BasicTests extends ParserTestBase {
         checkScopeAndTree("def fn(name): \"in\".format(name=name)");
     }
 
-//
-// @Test
-// public void call21() throws Exception {
-// checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
-// }
-//
     @Test
     public void del01() throws Exception {
         checkTreeResult("del x");
@@ -473,21 +469,18 @@ public class BasicTests extends ParserTestBase {
                                         "      break\n");
     }
 
-//
-// @Test
-// public void for05() throws Exception {
-// checkScopeAndTree();
-// }
-//
-// @Test
-// public void for06() throws Exception {
-// checkScopeAndTree();
-// }
-//
+    @Test
+    public void for05() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
+    public void for06() throws Exception {
+        checkScopeAndTree();
+    }
+
     @Test
     public void for07() throws Exception {
-        // TODO: the line 25 in for07.tast should have SourceSection None according the old parser
-        // result.
         checkTreeResult(
                         "for x in range(10):\n" +
                                         "    if x % 2 == 0:\n" +
@@ -573,21 +566,21 @@ public class BasicTests extends ParserTestBase {
                                         "        return 10");
     }
 
-// @Test
-// public void for16() throws Exception {
-// checkSyntaxError(
-// "for i in range(10):\n" +
-// " def foo():\n" +
-// " continue\n");
-// }
-//
-// @Test
-// public void for17() throws Exception {
-// checkSyntaxError(
-// "for i in range(10):\n" +
-// " class foo:\n" +
-// " break\n");
-// }
+    @Test
+    public void for16() throws Exception {
+        checkIndentationError(
+                        "for i in range(10):\n" +
+                                        " def foo():\n" +
+                                        " continue\n");
+    }
+
+    @Test
+    public void for17() throws Exception {
+        checkIndentationError(
+                        "for i in range(10):\n" +
+                                        " class foo:\n" +
+                                        " break\n");
+    }
 
     @Test
     public void global01() throws Exception {
@@ -633,16 +626,16 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("a and b");
     }
 
-// @Test
-// public void not01() throws Exception {
-// checkTreeResult("not a");
-// }
-//
-// @Test
-// public void nonlocal02() throws Exception {
-// checkSyntaxError("nonlocal x");
-// }
-//
+    @Test
+    public void not01() throws Exception {
+        checkTreeResult("not a");
+    }
+
+    @Test
+    public void nonlocal02() throws Exception {
+        checkSyntaxError("nonlocal x");
+    }
+
     @Test
     public void raise01() throws Exception {
         checkTreeResult("raise");
@@ -941,13 +934,13 @@ public class BasicTests extends ParserTestBase {
                                         "        break");
     }
 
-// @Test
-// public void while12() throws Exception {
-// checkSyntaxError(
-// "while False:\n" +
-// " def foo():\n" +
-// " break");
-// }
+    @Test
+    public void while12() throws Exception {
+        checkIndentationError(
+                        "while False:\n" +
+                                        " def foo():\n" +
+                                        " break");
+    }
 
     @Test
     public void with01() throws Exception {
@@ -1001,51 +994,23 @@ public class BasicTests extends ParserTestBase {
         checkTreeResult("x=5 ");
     }
 
-// @Test
-// public void isIdentifier() throws Exception {
-// Assert.assertTrue(StringUtils.isIdentifier("hello"));
-// Assert.assertTrue(StringUtils.isIdentifier("_"));
-// Assert.assertTrue(StringUtils.isIdentifier("b0"));
-// Assert.assertTrue(StringUtils.isIdentifier("bc"));
-// Assert.assertTrue(StringUtils.isIdentifier("b_"));
-// Assert.assertTrue(StringUtils.isIdentifier("µ"));
-//
-// Assert.assertTrue(StringUtils.isIdentifier("for"));
-// Assert.assertTrue(StringUtils.isIdentifier("break"));
-// Assert.assertTrue(StringUtils.isIdentifier("while"));
-// Assert.assertTrue(StringUtils.isIdentifier("return"));
-// Assert.assertTrue(StringUtils.isIdentifier("def"));
-//
-// Assert.assertFalse(StringUtils.isIdentifier(" hello"));
-// Assert.assertFalse(StringUtils.isIdentifier("hello "));
-// Assert.assertFalse(StringUtils.isIdentifier("hel lo"));
-// Assert.assertFalse(StringUtils.isIdentifier("hel?o"));
-// Assert.assertFalse(StringUtils.isIdentifier("hel!o"));
-//
-// Assert.assertFalse(StringUtils.isIdentifier(" "));
-// Assert.assertFalse(StringUtils.isIdentifier("["));
-// Assert.assertFalse(StringUtils.isIdentifier("©"));
-// Assert.assertFalse(StringUtils.isIdentifier("0"));
-// }
-//
-// @Test
-// public void issueGR28345() throws Exception {
-// // wrong node offsets when unicode with various length is used in a comment
-// checkTreeResult("def test_isidentifier():\n" +
-// " # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
-// " self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
-// " 'rld', 'lowo'), 3)");
-// }
+    @Test
+    public void issueGR28345() throws Exception {
+        // wrong node offsets when unicode with various length is used in a comment
+        checkTreeResult("def test_isidentifier():\n" +
+                        " # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
+                        " self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
+                        " 'rld', 'lowo'), 3)");
+    }
 
-// private void checkScopeAndTree() throws Exception {
-// File testFile = getTestFileFromTestAndTestMethod();
-// checkScopeFromFile(testFile, true);
-// checkTreeFromFile(testFile, true);
-// }
-//
-// private void checkTreeFromFile() throws Exception {
-// File testFile = getTestFileFromTestAndTestMethod();
-// checkTreeFromFile(testFile, true);
-// }
+    private void checkScopeAndTree() throws Exception {
+        File testFile = getTestFileFromTestAndTestMethod();
+        checkScopeFromFile(testFile, true);
+        checkTreeFromFile(testFile, true);
+    }
 
+    private void checkTreeFromFile() throws Exception {
+        File testFile = getTestFileFromTestAndTestMethod();
+        checkTreeFromFile(testFile, true);
+    }
 }

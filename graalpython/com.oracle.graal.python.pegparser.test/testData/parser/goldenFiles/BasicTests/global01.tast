@@ -16,7 +16,7 @@ Module[0, 137]
         Call[84, 109]
             Target: Name[84, 89] Value: "print"
             Args:
-                RAW[90, 105] Value: Inside add():
+                RAW[90, 105] Value: "Inside add():"
                 Name[107, 108] Value: "c"
         ---- End of add function ----
     Call[111, 116]
@@ -24,5 +24,5 @@ Module[0, 137]
     Call[117, 137]
         Target: Name[117, 122] Value: "print"
         Args:
-            RAW[123, 133] Value: In main:
+            RAW[123, 133] Value: "In main:"
             Name[135, 136] Value: "c"
