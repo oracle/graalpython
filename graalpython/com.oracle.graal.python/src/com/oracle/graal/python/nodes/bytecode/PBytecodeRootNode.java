@@ -1960,6 +1960,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         boolean result;
         switch (op) {
             case BinaryOpsConstants.EQ:
+            case BinaryOpsConstants.IS:
                 result = left == right;
                 break;
             case BinaryOpsConstants.NE:
