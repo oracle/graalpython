@@ -252,12 +252,16 @@ public final class PArguments {
         arguments[INDEX_CURRENT_FRAME_INFO] = info;
     }
 
-    public static PException getException(Frame frame) {
-        return (PException) getExceptionUnchecked(frame);
+    public static PException getException(Object[] arguments) {
+        return (PException) getExceptionUnchecked(arguments);
     }
 
-    public static Object getExceptionUnchecked(Frame frame) {
-        return frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+    public static PException getException(Frame frame) {
+        return (PException) getExceptionUnchecked(frame.getArguments());
+    }
+
+    public static Object getExceptionUnchecked(Object[] arguments) {
+        return arguments[INDEX_CURRENT_EXCEPTION];
     }
 
     public static void setException(Frame frame, PException exc) {
@@ -422,7 +426,7 @@ public final class PArguments {
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
         return new ThreadState(PArguments.getCurrentFrameInfo(frame),
-                        PArguments.getExceptionUnchecked(frame),
+                        PArguments.getExceptionUnchecked(frame.getArguments()),
                         PArguments.getGlobals(frame));
     }
 

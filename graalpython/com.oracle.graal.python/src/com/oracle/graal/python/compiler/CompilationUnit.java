@@ -277,7 +277,9 @@ public final class CompilationUnit {
             if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
                 finishedGeneralizeInputsMap[insn.bci] = new int[insn.quickeningGeneralizeList.size()];
                 for (int j = 0; j < finishedGeneralizeInputsMap[insn.bci].length; j++) {
-                    finishedGeneralizeInputsMap[insn.bci][j] = insn.quickeningGeneralizeList.get(j).bci;
+                    int bci = insn.quickeningGeneralizeList.get(j).bci;
+                    assert bci >= 0;
+                    finishedGeneralizeInputsMap[insn.bci][j] = bci;
                 }
             }
         }
@@ -395,12 +397,11 @@ public final class CompilationUnit {
                     if (target != null) {
                         int targetPos = blockLocationMap.get(target);
                         int distance = Math.abs(bci + instr.extensions() * 2 - targetPos);
-                        Instruction newInstr = new Instruction(instr.opcode, distance, instr.followingArgs, instr.target, instr.location);
-                        newInstr.quickenOutput = instr.quickenOutput;
-                        if (newInstr.extendedLength() != instr.extendedLength()) {
+                        int prevLength = instr.extendedLength();
+                        instr.arg = distance;
+                        if (instr.extendedLength() != prevLength) {
                             repeat = true;
                         }
-                        block.instr.set(i, newInstr);
                     }
                     bci += instr.extendedLength();
                 }

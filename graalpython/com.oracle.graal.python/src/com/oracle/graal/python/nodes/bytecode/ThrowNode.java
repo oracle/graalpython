@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -67,32 +66,32 @@ public abstract class ThrowNode extends PNodeWithContext {
     private static final TruffleString T_THROW = tsLiteral("throw");
 
     // Returns true when the generator finished
-    public abstract boolean execute(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object iter, PException exception);
+    public abstract boolean execute(VirtualFrame frame, int stackTop, Object iter, PException exception);
 
     @Specialization
-    boolean doGenerator(VirtualFrame virtualFrame, int stackTop, Frame localFrame, PGenerator generator, PException exception,
+    boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, PException exception,
                     @Cached GeneratorBuiltins.ThrowNode throwNode,
                     @Cached GeneratorBuiltins.CloseNode closeNode,
                     @Shared("exitProfile") @Cached IsBuiltinClassProfile profileExit,
                     @Shared("profile") @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Shared("getValue") @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         if (profileExit.profileException(exception, GeneratorExit)) {
-            closeNode.execute(virtualFrame, generator);
+            closeNode.execute(frame, generator);
             throw exception;
         } else {
             try {
-                Object value = throwNode.execute(virtualFrame, generator, exception.getEscapedException(), PNone.NO_VALUE, PNone.NO_VALUE);
-                localFrame.setObject(stackTop, value);
+                Object value = throwNode.execute(frame, generator, exception.getEscapedException(), PNone.NO_VALUE, PNone.NO_VALUE);
+                frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {
-                handleException(e, stopIterationProfile, getValue, stackTop, localFrame);
+                handleException(frame, e, stopIterationProfile, getValue, stackTop);
                 return true;
             }
         }
     }
 
     @Fallback
-    boolean doOther(VirtualFrame virtualFrame, int stackTop, Frame localFrame, Object obj, PException exception,
+    boolean doOther(VirtualFrame frame, int stackTop, Object obj, PException exception,
                     @Cached PyObjectLookupAttr lookupThrow,
                     @Cached PyObjectLookupAttr lookupClose,
                     @Cached CallNode callThrow,
@@ -104,35 +103,35 @@ public abstract class ThrowNode extends PNodeWithContext {
         if (profileExit.profileException(exception, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {
-                close = lookupClose.execute(virtualFrame, obj, T_CLOSE);
+                close = lookupClose.execute(frame, obj, T_CLOSE);
             } catch (PException e) {
-                writeUnraisableNode.execute(virtualFrame, e.getEscapedException(), null, obj);
+                writeUnraisableNode.execute(frame, e.getEscapedException(), null, obj);
             }
             if (close != PNone.NO_VALUE) {
-                callClose.execute(virtualFrame, close);
+                callClose.execute(frame, close);
             }
             throw exception;
         } else {
-            Object throwMethod = lookupThrow.execute(virtualFrame, obj, T_THROW);
+            Object throwMethod = lookupThrow.execute(frame, obj, T_THROW);
             if (throwMethod == PNone.NO_VALUE) {
                 throw exception;
             }
             try {
-                Object value = callThrow.execute(virtualFrame, throwMethod);
-                localFrame.setObject(stackTop, value);
+                Object value = callThrow.execute(frame, throwMethod);
+                frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {
-                handleException(e, stopIterationProfile, getValue, stackTop, localFrame);
+                handleException(frame, e, stopIterationProfile, getValue, stackTop);
                 return true;
             }
         }
     }
 
-    private static void handleException(PException e, IsBuiltinClassProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue, int stackTop, Frame localFrame) {
+    private static void handleException(VirtualFrame frame, PException e, IsBuiltinClassProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue, int stackTop) {
         e.expectStopIteration(stopIterationProfile);
         Object value = getValue.execute(e.getUnreifiedException());
-        localFrame.setObject(stackTop, null);
-        localFrame.setObject(stackTop - 1, value);
+        frame.setObject(stackTop, null);
+        frame.setObject(stackTop - 1, value);
     }
 
     public static ThrowNode create() {

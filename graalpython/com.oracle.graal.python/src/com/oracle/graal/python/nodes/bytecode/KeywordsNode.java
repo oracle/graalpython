@@ -56,27 +56,27 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
 public abstract class KeywordsNode extends PNodeWithContext {
-    public abstract PKeyword[] execute(Frame virtualFrame, Object sourceCollection, int stackTop, Frame localFrame);
+    public abstract PKeyword[] execute(Frame frame, Object sourceCollection, int stackTop);
 
     @Specialization
-    static PKeyword[] kwords(VirtualFrame virtualFrame, Object sourceCollection, int stackTop, Frame localFrame,
+    static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
                     @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
                     @Cached PRaiseNode raise) {
         try {
             return expandKeywordStarargsNode.execute(sourceCollection);
         } catch (NonMappingException e) {
-            Object functionName = getFunctionName(virtualFrame, stackTop, localFrame);
+            Object functionName = getFunctionName(frame, stackTop);
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
     }
 
-    private static Object getFunctionName(VirtualFrame virtualFrame, int stackTop, Frame localFrame) {
+    private static Object getFunctionName(VirtualFrame frame, int stackTop) {
         /*
          * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
          * this point is [kwargs kw, callable].
          */
-        Object callable = localFrame.getObject(stackTop - 2);
-        return PyObjectFunctionStr.getUncached().execute(virtualFrame, callable);
+        Object callable = frame.getObject(stackTop - 2);
+        return PyObjectFunctionStr.getUncached().execute(frame, callable);
     }
 
     public static KeywordsNode create() {

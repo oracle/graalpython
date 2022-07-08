@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,12 +65,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 @GenerateUncached
 public abstract class ForIterONode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object iterator, int stackTop, Frame stackFrame);
+    public abstract boolean execute(Frame frame, Object iterator, int stackTop);
 
     @Specialization
-    boolean doIntRange(PIntRangeIterator iterator, int stackTop, Frame stackFrame) {
+    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop) {
         if (iterator.hasNextInt()) {
-            stackFrame.setObject(stackTop, iterator.nextInt());
+            frame.setObject(stackTop, iterator.nextInt());
             return true;
         }
         iterator.setExhausted();
@@ -77,9 +78,10 @@ public abstract class ForIterONode extends PNodeWithContext {
     }
 
     @Specialization
-    boolean doBigIntRange(PBigRangeIterator iterator, int stackTop, Frame stackFrame) {
+    boolean doBigIntRange(VirtualFrame frame, PBigRangeIterator iterator, int stackTop,
+                    @Cached PythonObjectFactory factory) {
         if (iterator.hasNextBigInt()) {
-            stackFrame.setObject(stackTop, iterator.nextBigInt());
+            frame.setObject(stackTop, factory.createInt(iterator.nextBigInt()));
             return true;
         }
         iterator.setExhausted();
@@ -89,18 +91,19 @@ public abstract class ForIterONode extends PNodeWithContext {
     // TODO list, tuple, enumerate, dict keys, dict values, dict items, string, bytes
 
     @Specialization
-    boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop, Frame stackFrame,
+    boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Cached PRaiseNode raiseNode) {
+        assert iterator != null;
         Object nextMethod = lookupNext.execute(frame, getClassNode.execute(iterator), iterator);
         if (nextMethod == PNone.NO_VALUE) {
             throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
         }
         try {
-            stackFrame.setObject(stackTop, callNext.executeObject(frame, nextMethod, iterator));
+            frame.setObject(stackTop, callNext.executeObject(frame, nextMethod, iterator));
             return true;
         } catch (PException e) {
             e.expectStopIteration(stopIterationProfile);

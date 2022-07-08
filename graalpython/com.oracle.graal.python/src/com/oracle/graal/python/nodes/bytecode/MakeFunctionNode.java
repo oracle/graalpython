@@ -59,7 +59,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.source.Source;
@@ -75,7 +75,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
-    public abstract int execute(Object globals, int initialStackTop, Frame localFrame, int flags);
+    public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
     public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode, TruffleString doc) {
         this.callTarget = callTarget;
@@ -86,7 +86,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     }
 
     @Specialization
-    int makeFunction(Object globals, int initialStackTop, Frame localFrame, int flags,
+    int makeFunction(VirtualFrame frame, Object globals, int initialStackTop, int flags,
                     @Cached PythonObjectFactory factory,
                     @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
         int stackTop = initialStackTop;
@@ -103,20 +103,20 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         Object[] defaults = null;
 
         if ((flags & CodeUnit.HAS_CLOSURE) != 0) {
-            closure = (PCell[]) localFrame.getObject(stackTop);
-            localFrame.setObject(stackTop--, null);
+            closure = (PCell[]) frame.getObject(stackTop);
+            frame.setObject(stackTop--, null);
         }
         if ((flags & CodeUnit.HAS_ANNOTATIONS) != 0) {
-            annotations = localFrame.getObject(stackTop);
-            localFrame.setObject(stackTop--, null);
+            annotations = frame.getObject(stackTop);
+            frame.setObject(stackTop--, null);
         }
         if ((flags & CodeUnit.HAS_KWONLY_DEFAULTS) != 0) {
-            kwdefaults = (PKeyword[]) localFrame.getObject(stackTop);
-            localFrame.setObject(stackTop--, null);
+            kwdefaults = (PKeyword[]) frame.getObject(stackTop);
+            frame.setObject(stackTop--, null);
         }
         if ((flags & CodeUnit.HAS_DEFAULTS) != 0) {
-            defaults = (Object[]) localFrame.getObject(stackTop);
-            localFrame.setObject(stackTop--, null);
+            defaults = (Object[]) frame.getObject(stackTop);
+            frame.setObject(stackTop--, null);
         }
 
         Assumption codeStableAssumption;
@@ -137,7 +137,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             dylib.put(function, T___DOC__, doc);
         }
 
-        localFrame.setObject(++stackTop, function);
+        frame.setObject(++stackTop, function);
         return stackTop;
     }
 

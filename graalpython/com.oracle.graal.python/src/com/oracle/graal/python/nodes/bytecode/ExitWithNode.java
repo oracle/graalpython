@@ -60,26 +60,27 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class ExitWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop, Frame localFrame);
+    public abstract int execute(Frame frame, int stackTop);
 
     @Specialization
-    int exit(Frame virtualFrame, int stackTopIn, Frame localFrame,
+    int exit(VirtualFrame virtualFrame, int stackTopIn,
                     @Cached CallQuaternaryMethodNode callExit,
                     @Cached GetClassNode getClassNode,
                     @Cached GetExceptionTracebackNode getTracebackNode,
                     @Cached PyObjectIsTrueNode isTrueNode,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
-        Object exception = localFrame.getObject(stackTop);
-        localFrame.setObject(stackTop--, null);
-        Object exit = localFrame.getObject(stackTop);
-        localFrame.setObject(stackTop--, null);
-        Object contextManager = localFrame.getObject(stackTop);
-        localFrame.setObject(stackTop--, null);
+        Object exception = virtualFrame.getObject(stackTop);
+        virtualFrame.setObject(stackTop--, null);
+        Object exit = virtualFrame.getObject(stackTop);
+        virtualFrame.setObject(stackTop--, null);
+        Object contextManager = virtualFrame.getObject(stackTop);
+        virtualFrame.setObject(stackTop--, null);
         if (exception == PNone.NONE) {
             callExit.execute(virtualFrame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         } else {
