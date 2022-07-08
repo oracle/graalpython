@@ -257,8 +257,13 @@ public final class CompilationUnit {
         flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
         flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
         flags |= freevars.size() > 0 ? CodeUnit.HAS_CLOSURE : 0;
-        flags |= scope.isGenerator() ? CodeUnit.IS_GENERATOR : 0;
-        flags |= scope.isCoroutine() ? CodeUnit.IS_COROUTINE : 0;
+        if (scope.isGenerator() && scope.isCoroutine()) {
+            flags |= CodeUnit.IS_ASYNC_GENERATOR;
+        } else if (scope.isGenerator()) {
+            flags |= CodeUnit.IS_GENERATOR;
+        } else if (scope.isCoroutine()) {
+            flags |= CodeUnit.IS_COROUTINE;
+        }
 
         final int rangeElements = 4;
         int[] exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];

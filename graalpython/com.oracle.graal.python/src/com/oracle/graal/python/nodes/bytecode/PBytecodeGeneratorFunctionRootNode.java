@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -80,7 +81,16 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         // This is passed from InvokeNode node
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
         assert generatorFunction != null;
-        return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+        if (rootNode.getCodeUnit().isGenerator()) {
+            return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+        } else if (rootNode.getCodeUnit().isCoroutine()) {
+            // TODO populate
+            return factory.createCoroutine();
+        } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
+            // TODO populate
+            return factory.createAsyncGenerator();
+        }
+        throw CompilerDirectives.shouldNotReachHere("Unknown generator/coroutine type");
     }
 
     @Override

@@ -69,6 +69,7 @@ public final class CodeUnit {
     public static final int HAS_VAR_KW_ARGS = 0x20;
     public static final int IS_GENERATOR = 0x40;
     public static final int IS_COROUTINE = 0x80;
+    public static final int IS_ASYNC_GENERATOR = 0x100;
 
     public static final int DISASSEMBLY_NUM_COLUMNS = 8;
 
@@ -222,8 +223,12 @@ public final class CodeUnit {
         return (flags & IS_COROUTINE) != 0;
     }
 
+    public boolean isAsyncGenerator() {
+        return (flags & IS_ASYNC_GENERATOR) != 0;
+    }
+
     public boolean isGeneratorOrCoroutine() {
-        return (flags & (IS_GENERATOR | IS_COROUTINE)) != 0;
+        return (flags & (IS_GENERATOR | IS_COROUTINE | IS_ASYNC_GENERATOR)) != 0;
     }
 
     public boolean isLambda() {
