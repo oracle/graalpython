@@ -84,7 +84,7 @@ Verify that parenthesis are required in a statement
 
 Verify that parenthesis are required when used as a keyword argument value
 
-    >>> dict(a = i for i in range(10))
+    >>> dict(a = i for i in range(10)) # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
        ...
     SyntaxError: invalid syntax
@@ -141,7 +141,7 @@ Verify that syntax error's are raised for genexps used as lvalues
        ...
     SyntaxError: cannot assign to generator expression
 
-    >>> (y for y in (1,2)) += 10
+    >>> (y for y in (1,2)) += 10 # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
        ...
     SyntaxError: cannot assign to generator expression
