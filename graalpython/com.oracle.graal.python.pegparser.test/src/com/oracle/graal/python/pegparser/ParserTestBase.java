@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Rule;
@@ -67,6 +68,8 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 public class ParserTestBase {
     protected static final String GOLDEN_FILE_EXT = ".tast";
     private static final String SCOPE_FILE_EXT = ".scope";
+
+    private static final EnumSet<FutureFeature> EMPTY_FUTURE = EnumSet.noneOf(FutureFeature.class);
 
     protected boolean printDifferenceDetails = false;
     protected int printOnlyDiffIfLenIsBigger = 1000;
@@ -124,7 +127,7 @@ public class ParserTestBase {
     public void checkSyntaxError(String source) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -134,7 +137,7 @@ public class ParserTestBase {
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -146,7 +149,7 @@ public class ParserTestBase {
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -158,7 +161,7 @@ public class ParserTestBase {
     public void checkIndentationError(String source) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -168,7 +171,7 @@ public class ParserTestBase {
     public void checkIndentationErrorMessage(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback);
+            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
         }
         DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
         assertTrue("Expected Error.", ec.hasErrors());
@@ -197,7 +200,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         String source = readFile(testFile);
         ModTy mod = parse(source, "<module>", InputType.FILE);
-        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback, EMPTY_FUTURE);
         File goldenScopeFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                         : getGoldenFile(SCOPE_FILE_EXT);
@@ -251,7 +254,7 @@ public class ParserTestBase {
     public void checkScopeResult(String source, InputType inputType) throws Exception {
         ModTy mod = parse(source, "<module>", inputType);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback, EMPTY_FUTURE);
         if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(env.toString());

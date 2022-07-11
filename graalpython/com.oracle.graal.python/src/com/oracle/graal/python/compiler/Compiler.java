@@ -140,6 +140,7 @@ import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
@@ -170,6 +171,8 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     ScopeEnvironment env;
     EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
+    EnumSet<FutureFeature> futureFeatures = EnumSet.noneOf(FutureFeature.class);
+    int futureLineno = -1;
     int optimizationLevel = 0;
     int nestingLevel = 0;
     CompilationUnit unit;
@@ -185,7 +188,12 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
-        this.env = ScopeEnvironment.analyze(mod, errorCallback);
+        if (mod instanceof ModTy.Module) {
+            parseFuture(((ModTy.Module) mod).body);
+        } else if (mod instanceof ModTy.Interactive) {
+            parseFuture(((ModTy.Interactive) mod).body);
+        }
+        this.env = ScopeEnvironment.analyze(mod, errorCallback, futureFeatures);
         this.optimizationLevel = optimizationLevel;
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
@@ -210,6 +218,70 @@ public class Compiler implements SSTreeVisitor<Void> {
         exitScope();
         return topUnit;
         // return (!(mod instanceof ModTy.Expression));
+    }
+
+    private void parseFuture(StmtTy[] modBody) {
+        if (modBody.length == 0) {
+            return;
+        }
+        boolean done = false;
+        int prevLine = 0;
+        int i = 0;
+        if (getDocstring(modBody) != null) {
+            i++;
+        }
+        for (; i < modBody.length; i++) {
+            StmtTy s = modBody[i];
+            int line = s.getSourceRange().startLine;
+            if (done && line > prevLine) {
+                return;
+            }
+            prevLine = line;
+            if (s instanceof StmtTy.ImportFrom) {
+                StmtTy.ImportFrom importFrom = (StmtTy.ImportFrom) s;
+                if ("__future__".equals(importFrom.module)) {
+                    if (done) {
+                        errorCallback.onError(ErrorType.Syntax, s.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
+                    }
+                    parseFutureFeatures(importFrom, futureFeatures);
+                    futureLineno = line;
+                } else {
+                    done = true;
+                }
+            } else {
+                done = true;
+            }
+        }
+    }
+
+    private void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features) {
+        for (AliasTy alias : node.names) {
+            if (alias.name != null) {
+                switch (alias.name) {
+                    case "nested_scopes":
+                    case "generators":
+                    case "division":
+                    case "absolute_import":
+                    case "with_statement":
+                    case "print_function":
+                    case "unicode_literals":
+                    case "generator_stop":
+                        break;
+                    case "barry_as_FLUFL":
+                        features.add(FutureFeature.BARRY_AS_BDFL);
+                        break;
+                    case "annotations":
+                        features.add(FutureFeature.ANNOTATTIONS);
+                        break;
+                    case "braces":
+                        errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "not a chance");
+                        break;
+                    default:
+                        errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "future feature %s is not defined", alias.name);
+                        break;
+                }
+            }
+        }
     }
 
     private List<Instruction> quickeningStack = new ArrayList<>();
@@ -1679,8 +1751,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
         }
         if (!node.isSimple) {
-            // TODO from __future__ import annotations
-            if (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class) {
+            boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+            /*
+             * Annotations of complex targets does not produce anything under annotations future.
+             * Annotations are only evaluated in a module or class.
+             */
+            if (!futureAnnotations && (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class)) {
                 checkAnnExpr(node.annotation);
             }
         }
@@ -1990,6 +2066,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void visitArgAnnotation(Collector collector, String name, ExprTy annotation) {
+        boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
         if (annotation != null) {
             String mangled = ScopeEnvironment.mangle(unit.privateName, name);
             addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
@@ -2104,6 +2181,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         TruffleString[] names = new TruffleString[node.names.length];
         for (int i = 0; i < node.names.length; i++) {
             names[i] = toTruffleStringUncached(node.names[i].name);
+        }
+        if (node.getSourceRange().startLine > futureLineno && "__future__".equals(node.module)) {
+            errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
         }
         String moduleName = node.module != null ? node.module : "";
         if ("*".equals(node.names[0].name)) {

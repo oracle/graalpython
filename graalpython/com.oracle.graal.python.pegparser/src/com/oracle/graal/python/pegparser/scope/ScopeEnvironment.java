@@ -50,6 +50,7 @@ import java.util.Stack;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeType;
@@ -91,14 +92,16 @@ public class ScopeEnvironment {
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
     final ErrorCallback errorCallback;
+    final EnumSet<FutureFeature> futureFeatures;
 
-    public static ScopeEnvironment analyze(ModTy moduleNode, ErrorCallback errorCallback) {
-        return new ScopeEnvironment(moduleNode, errorCallback);
+    public static ScopeEnvironment analyze(ModTy moduleNode, ErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
+        return new ScopeEnvironment(moduleNode, errorCallback, futureFeatures);
     }
 
-    private ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback) {
+    private ScopeEnvironment(ModTy moduleNode, ErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         // First pass, similar to the entry point `symtable_enter_block' on CPython
         this.errorCallback = errorCallback;
+        this.futureFeatures = futureFeatures;
         FirstPassVisitor visitor = new FirstPassVisitor(moduleNode, this);
         topScope = visitor.currentScope;
         moduleNode.accept(visitor);
@@ -410,11 +413,16 @@ public class ScopeEnvironment {
         }
 
         private void visitAnnotation(ExprTy expr) {
-            enterBlock("_annotation", ScopeType.Annotation, expr);
+            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+            if (futureAnnotations) {
+                enterBlock("_annotation", ScopeType.Annotation, expr);
+            }
             try {
                 expr.accept(this);
             } finally {
-                exitBlock();
+                if (futureAnnotations) {
+                    exitBlock();
+                }
             }
         }
 
@@ -429,8 +437,11 @@ public class ScopeEnvironment {
         }
 
         private void visitAnnotations(StmtTy node, ArgumentsTy args, ExprTy returns) {
+            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATTIONS);
             if (args != null) {
-                enterBlock("_annotation", ScopeType.Annotation, node);
+                if (futureAnnotations) {
+                    enterBlock("_annotation", ScopeType.Annotation, node);
+                }
                 try {
                     visitAnnotations(args.posOnlyArgs);
                     visitAnnotations(args.args);
@@ -442,7 +453,9 @@ public class ScopeEnvironment {
                     }
                     visitAnnotations(args.kwOnlyArgs);
                 } finally {
-                    exitBlock();
+                    if (futureAnnotations) {
+                        exitBlock();
+                    }
                 }
             }
             if (returns != null) {
