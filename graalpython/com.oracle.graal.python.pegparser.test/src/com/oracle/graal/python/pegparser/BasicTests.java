@@ -443,6 +443,16 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void del05() throws Exception {
+        checkTreeResult("del a[i]");
+    }
+
+    @Test
+    public void del06() throws Exception {
+        checkTreeResult("del (a[i])");
+    }
+
+    @Test
     public void for01() throws Exception {
         checkTreeResult("for i in 'ahoj':\n" + "  pass");
     }

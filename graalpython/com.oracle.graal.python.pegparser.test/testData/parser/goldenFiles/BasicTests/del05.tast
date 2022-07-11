@@ -1,0 +1,6 @@
+Module[0, 8]
+    Delete[0, 8]
+        Targets:
+            Subscript[4, 5] Context: Delete
+                Slice: Name[6, 7] Value: "i"
+                Value: Name[4, 5] Value: "a"

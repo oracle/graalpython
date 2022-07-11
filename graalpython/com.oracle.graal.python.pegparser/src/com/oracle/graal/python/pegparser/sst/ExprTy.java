@@ -455,7 +455,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Attribute(value.copyWithContext(ctx), attr, ctx, sourceRange);
+            return new Attribute(value, attr, ctx, sourceRange);
         }
     }
 
@@ -478,7 +478,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Subscript(value.copyWithContext(ctx), slice.copyWithContext(ctx), ctx, sourceRange);
+            return new Subscript(value, slice, ctx, sourceRange);
         }
     }
 
@@ -499,7 +499,7 @@ public abstract class ExprTy extends SSTNode {
 
         @Override
         public ExprTy copyWithContext(ExprContext ctx) {
-            return new Starred(value, ctx, sourceRange);
+            return new Starred(value.copyWithContext(ctx), ctx, sourceRange);
         }
     }
 
