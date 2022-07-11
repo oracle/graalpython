@@ -2403,8 +2403,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 bytecodeStoreFastUnboxB(virtualFrame, localFrame, stackTop, bci, index);
             }
             return;
+        } else if (itemType == QuickeningTypes.OBJECT) {
+            localBC[bci] = OpCodesConstants.STORE_FAST_O;
+            bytecodeStoreFastO(virtualFrame, localFrame, stackTop, index);
+            return;
         }
         // TODO other types
+        generalizeInputs(bci);
         generalizeVariableStores(index);
         virtualFrame.setObject(stackTop, virtualFrame.getValue(stackTop));
         localBC[bci] = OpCodesConstants.STORE_FAST_O;
@@ -2629,8 +2634,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (generalizeVarsMap[index] != null) {
                 for (int i = 0; i < generalizeVarsMap[index].length; i++) {
                     int generalizeBci = generalizeVarsMap[index][i];
-                    generalizeInputs(generalizeBci);
-                    bytecode[generalizeBci] = OpCodesConstants.STORE_FAST_O;
+                    /*
+                     * Keep unadapted stores as they are because we don't know how to generalize
+                     * their unadapted inputs. They will adapt to object once executed.
+                     */
+                    if (bytecode[generalizeBci] != OpCodesConstants.STORE_FAST) {
+                        generalizeInputs(generalizeBci);
+                        bytecode[generalizeBci] = OpCodesConstants.STORE_FAST_O;
+                    }
                 }
             }
         }
