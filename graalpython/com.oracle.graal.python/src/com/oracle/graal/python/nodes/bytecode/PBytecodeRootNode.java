@@ -157,11 +157,11 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNodeGen;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
+import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
-import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -1348,7 +1348,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.DELETE_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteFast(virtualFrame, beginBci, localNodes, oparg, useCachedNodes);
+                        bytecodeDeleteFast(localFrame, beginBci, localNodes, oparg, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_ATTR: {
