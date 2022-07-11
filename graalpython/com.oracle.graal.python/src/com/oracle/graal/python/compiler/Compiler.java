@@ -334,29 +334,34 @@ public class Compiler implements SSTreeVisitor<Void> {
             return false;
         }
         for (StmtTy stmt : stmts) {
-            if (stmt instanceof StmtTy.AnnAssign) {
+            if (containsAnnotations(stmt)) {
                 return true;
-            } else if (stmt instanceof StmtTy.For) {
-                return containsAnnotations(((StmtTy.For) stmt).body) || containsAnnotations(((StmtTy.For) stmt).orElse);
-            } else if (stmt instanceof StmtTy.While) {
-                return containsAnnotations(((StmtTy.While) stmt).body) || containsAnnotations(((StmtTy.While) stmt).orElse);
-            } else if (stmt instanceof StmtTy.If) {
-                return containsAnnotations(((StmtTy.If) stmt).body) || containsAnnotations(((StmtTy.If) stmt).orElse);
-            } else if (stmt instanceof StmtTy.With) {
-                return containsAnnotations(((StmtTy.With) stmt).body);
-            } else if (stmt instanceof StmtTy.Try) {
-                StmtTy.Try tryStmt = (StmtTy.Try) stmt;
-                if (tryStmt.handlers != null) {
-                    for (StmtTy.Try.ExceptHandler h : tryStmt.handlers) {
-                        if (containsAnnotations(h.body)) {
-                            return true;
-                        }
+            }
+        }
+        return false;
+    }
+
+    private boolean containsAnnotations(StmtTy stmt) {
+        if (stmt instanceof StmtTy.AnnAssign) {
+            return true;
+        } else if (stmt instanceof StmtTy.For) {
+            return containsAnnotations(((StmtTy.For) stmt).body) || containsAnnotations(((StmtTy.For) stmt).orElse);
+        } else if (stmt instanceof StmtTy.While) {
+            return containsAnnotations(((StmtTy.While) stmt).body) || containsAnnotations(((StmtTy.While) stmt).orElse);
+        } else if (stmt instanceof StmtTy.If) {
+            return containsAnnotations(((StmtTy.If) stmt).body) || containsAnnotations(((StmtTy.If) stmt).orElse);
+        } else if (stmt instanceof StmtTy.With) {
+            return containsAnnotations(((StmtTy.With) stmt).body);
+        } else if (stmt instanceof StmtTy.Try) {
+            StmtTy.Try tryStmt = (StmtTy.Try) stmt;
+            if (tryStmt.handlers != null) {
+                for (StmtTy.Try.ExceptHandler h : tryStmt.handlers) {
+                    if (containsAnnotations(h.body)) {
+                        return true;
                     }
                 }
-                return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
-            } else {
-                return false;
             }
+            return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
         }
         return false;
     }
