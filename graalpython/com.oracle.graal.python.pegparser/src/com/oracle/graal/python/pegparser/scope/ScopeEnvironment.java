@@ -827,7 +827,13 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AsyncFor node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.target.accept(this);
+            node.iter.accept(this);
+            visitSequence(node.body);
+            if (node.orElse != null) {
+                visitSequence(node.orElse);
+            }
+            return null;
         }
 
         @Override
@@ -854,7 +860,9 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AsyncWith node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.items);
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
@@ -899,7 +907,9 @@ public class ScopeEnvironment {
             node.target.accept(this);
             node.iter.accept(this);
             visitSequence(node.body);
-            visitSequence(node.orElse);
+            if (node.orElse != null) {
+                visitSequence(node.orElse);
+            }
             return null;
         }
 

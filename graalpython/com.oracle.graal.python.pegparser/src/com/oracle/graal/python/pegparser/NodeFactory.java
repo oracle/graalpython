@@ -104,6 +104,8 @@ public interface NodeFactory {
 
     public StmtTy createFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, SourceRange sourceRange);
 
+    public StmtTy createAsyncFor(ExprTy target, ExprTy iter, StmtTy[] block, StmtTy[] elseBlock, String typeComment, SourceRange sourceRange);
+
     public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory);
 
     public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, SourceRange sourceRange);
@@ -183,6 +185,8 @@ public interface NodeFactory {
     public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange);
 
     public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
+
+    public StmtTy createAsyncWith(StmtTy.AsyncWith.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
 
     public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange);
 

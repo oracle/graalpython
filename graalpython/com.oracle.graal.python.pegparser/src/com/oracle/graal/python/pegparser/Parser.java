@@ -3139,9 +3139,11 @@ public final class Parser extends AbstractParser {
                 ((el = _tmp_50_rule()) != null || true)  // else_block?
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
-                ruleNotImplemented("CHECK_VERSION ( stmt_ty , 5 , \"Async for loops are\" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5, "Async for loops are", factory.createAsyncFor(t, ex, b, el, newTypeComment(tc), startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, FOR_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3302,9 +3304,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )
-                ruleNotImplemented("CHECK_VERSION ( stmt_ty , 5 , \"Async with statements are\" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, null, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, WITH_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3334,9 +3338,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
-                ruleNotImplemented("CHECK_VERSION ( stmt_ty , 5 , \"Async with statements are\" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, newTypeComment(tc), startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, WITH_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -11010,9 +11016,11 @@ public final class Parser extends AbstractParser {
                 (c = (ExprTy[])_loop0_165_rule()) != null  // (('if' disjunction))*
             )
             {
-                // TODO: node.action: CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )
-                ruleNotImplemented("CHECK_VERSION ( comprehension_ty , 6 , \"Async comprehensions are\" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, false, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
                 return (ComprehensionTy)_res;
             }

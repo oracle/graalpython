@@ -191,8 +191,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Await node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Value", node.value);
+        level--;
         return sb.toString();
-
     }
 
     @Override
@@ -683,26 +685,17 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(StmtTy.AsyncFor node) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
-        return sb.toString();
-
+        return visit((StmtTy.For) node);
     }
 
     @Override
     public String visit(StmtTy.AsyncFunctionDef node) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
-        return sb.toString();
-
+        return visit((StmtTy.FunctionDef) node);
     }
 
     @Override
     public String visit(StmtTy.AsyncWith node) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node));
-        return sb.toString();
-
+        return visit((StmtTy.With) node);
     }
 
     @Override

@@ -224,6 +224,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
         mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
         mod.setAttribute(tsLiteral("platform_id"), toTruffleStringUncached(toolchain.getIdentifier()));
+        mod.setAttribute(tsLiteral("uses_bytecode_interpreter"), context.getOption(PythonOptions.EnableBytecodeInterpreter));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
@@ -669,8 +670,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doCode(PCode code) {
-            System.out.println(code.toDisassembledString());
-            return PNone.NONE;
+            return toTruffleStringUncached(code.toDisassembledString());
         }
 
         @Specialization(guards = {"!isCode(value)", "!isPFunction(value)", "!isMethod(value)"})

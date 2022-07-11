@@ -28,6 +28,7 @@ public class Tokenizer {
     private static final int ALTTABSIZE = 1;
     private static final int MAXINDENT = 100;
     private static final int MAXLEVEL = 200;
+    private static final int UTF8_BOM = 0xFEFF;
 
     /**
      * is_potential_identifier_start
@@ -135,6 +136,7 @@ public class Tokenizer {
     private int indentationOfAsyncDef = 0;
     /** {@code tok_state->async_def_nl} */
     private boolean asyncDefFollowedByNewline = false;
+    private boolean readNewline = false;
 
     // error_ret
 
@@ -317,13 +319,17 @@ public class Tokenizer {
 
     private static int[] charsToCodePoints(char[] chars) {
         int cpIndex = 0;
+        boolean hasUTF8Bom = chars.length > 0 && Character.codePointAt(chars, 0) == UTF8_BOM;
         for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
             int cp = Character.codePointAt(chars, charIndex);
             charIndex += Character.charCount(cp);
         }
+        if (hasUTF8Bom) {
+            cpIndex--;
+        }
         int[] codePoints = new int[cpIndex];
         cpIndex = 0;
-        for (int charIndex = 0; charIndex < chars.length; cpIndex++) {
+        for (int charIndex = hasUTF8Bom ? Character.charCount(UTF8_BOM) : 0; charIndex < chars.length; cpIndex++) {
             int cp = Character.codePointAt(chars, charIndex);
             codePoints[cpIndex] = cp;
             charIndex += Character.charCount(cp);
@@ -359,12 +365,13 @@ public class Tokenizer {
 
     /**
      * tok_nextc, inlining tok_underflow_string, because that's all we need
-     *
-     * CPython always scans one line ahead, so every tok_underflow_string call will update the
-     * current line number, and then they keep returning the next char until they reach the next
-     * line. We do it differently, since we always have the entire buffer here.
      */
     int nextChar() {
+        if (readNewline) {
+            readNewline = false;
+            currentLineNumber++;
+            lineStartIndex = nextCharIndex;
+        }
         if (nextCharIndex < codePointsInput.length) {
             int c = codePointsInput[nextCharIndex];
             if (c == '\r') {
@@ -374,6 +381,9 @@ public class Tokenizer {
                 c = '\n';
             }
             nextCharIndex++;
+            if (c == '\n') {
+                readNewline = true;
+            }
             return c;
         } else {
             if (nextCharIndex == codePointsInput.length && execInput) {
@@ -408,8 +418,11 @@ public class Tokenizer {
     void oneBack() {
         if (nextCharIndex > 0 && done != StatusCode.EOF) {
             nextCharIndex--;
-            if (nextCharIndex < codePointsInput.length && codePointsInput[nextCharIndex] == '\n' && nextCharIndex > 0 && codePointsInput[nextCharIndex - 1] == '\r') {
-                nextCharIndex--;
+            if (nextCharIndex < codePointsInput.length && codePointsInput[nextCharIndex] == '\n') {
+                if (nextCharIndex > 0 && codePointsInput[nextCharIndex - 1] == '\r') {
+                    nextCharIndex--;
+                }
+                readNewline = false;
             }
         }
     }
@@ -831,13 +844,6 @@ public class Tokenizer {
                     // newline
                     if (c == '\n') {
                         atBeginningOfLine = true;
-                        // since CPython only reads more characters line by line in
-                        // their underflow function, they know that if the next
-                        // character is requested, you'll always be on a new
-                        // line. we do not, so we modify the line number and line
-                        // start here
-                        currentLineNumber++;
-                        lineStartIndex = nextCharIndex;
                         if (blankline || parensNestingLevel > 0) {
                             target = LABEL_NEXTLINE;
                             continue GOTO_LOOP;

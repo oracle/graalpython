@@ -26,8 +26,6 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BUILTINS;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
-import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEFAULTDICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DEQUE_ITER;
@@ -44,10 +42,12 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
@@ -121,6 +121,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PFrozenSet("frozenset", J_BUILTINS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT),
     PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT),
+    PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT),
+    PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT),
     PInt("int", J_BUILTINS),
     PList("list", J_BUILTINS),
     PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT),

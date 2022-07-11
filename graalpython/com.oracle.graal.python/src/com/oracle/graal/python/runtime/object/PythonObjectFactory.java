@@ -847,6 +847,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
 
+    public final Object createCoroutine() {
+        // TODO implement this properly, this is just a placeholder so that typing stuff works
+        return createPythonObject(PythonBuiltinClassType.PCoroutine);
+    }
+
+    public final Object createAsyncGenerator() {
+        // TODO implement this properly, this is just a placeholder so that typing stuff works
+        return createPythonObject(PythonBuiltinClassType.PAsyncGenerator);
+    }
+
     public final PMappingproxy createMappingproxy(Object object) {
         PythonBuiltinClassType mpClass = PythonBuiltinClassType.PMappingproxy;
         return trace(new PMappingproxy(mpClass, mpClass.getInstanceShape(getLanguage()), object));
