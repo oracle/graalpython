@@ -239,15 +239,15 @@ public class TokenizerTest {
 
     @Test
     public void testNewLines() {
-        checkTokens("a = 1\n" + "b = 2", new String[]{
+        checkTokens("a = 1\nb = 2", new String[]{
                         "Token NAME [0, 1] (1, 0) (1, 1) 'a'",
                         "Token EQUAL [2, 3] (1, 2) (1, 3) '='",
                         "Token NUMBER [4, 5] (1, 4) (1, 5) '1'",
-                        "Token NEWLINE [5, 6] (2, -1) (2, 0) '\n'",
+                        "Token NEWLINE [5, 6] (1, 5) (1, 6) '\n'",
                         "Token NAME [6, 7] (2, 0) (2, 1) 'b'",
                         "Token EQUAL [8, 9] (2, 2) (2, 3) '='",
                         "Token NUMBER [10, 11] (2, 4) (2, 5) '2'",
-                        "Token NEWLINE [11, 12] (3, -1) (3, 0) ''"});
+                        "Token NEWLINE [11, 12] (2, 5) (2, 6) ''"});
     }
 
     private static Token[] getTokens(String code) {
