@@ -1,0 +1,5 @@
+Interactive[0, 15]
+    ClassDef[0, 15] A
+        ---- Class body of A ----
+        Pass[11, 15]
+        ---- End of A class ----

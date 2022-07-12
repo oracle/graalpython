@@ -57,7 +57,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.TestErrorCallbackImpl;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
@@ -65,7 +67,7 @@ public class TokenizerTest {
 
     @Rule public TestName name = new TestName();
 
-    private static HashSet<Integer> opTypes = new HashSet<>();
+    private static final HashSet<Integer> opTypes = new HashSet<>();
 
     static {
         opTypes.add(Token.Kind.PERCENT);
@@ -121,7 +123,7 @@ public class TokenizerTest {
     }
 
     private static void assertToken(String code, int kind) {
-        assertEquals(kind, new ParserTokenizer(code).getToken().type);
+        assertEquals(kind, createTokenizer(code).next().type);
     }
 
     @Test
@@ -250,8 +252,36 @@ public class TokenizerTest {
                         "Token NEWLINE [11, 12] (2, 5) (2, 6) ''"});
     }
 
+    @Test
+    public void testInteractiveIncompleteSourceClass() {
+        Tokenizer tokenizer = createInteractiveTokenizer("class A:\n");
+        assertEquals(Token.Kind.NAME, tokenizer.next().type);
+        assertEquals(Token.Kind.NAME, tokenizer.next().type);
+        assertEquals(Token.Kind.COLON, tokenizer.next().type);
+        assertEquals(Token.Kind.NEWLINE, tokenizer.next().type);
+        try {
+            tokenizer.next();
+            fail("Expected Tokenizer to report incomplete source");
+        } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
+            assertEquals(2, e.line);
+        }
+        tokenizer.reportIncompleteSourceIfInteractive = false;
+        assertEquals(Token.Kind.ENDMARKER, tokenizer.next().type);
+    }
+
+    @Test
+    public void testInteractiveIncompleteSourceMultilineString() {
+        Tokenizer tokenizer = createInteractiveTokenizer("\"\"\"abc\ndef\n");
+        try {
+            tokenizer.next();
+            fail("Expected Tokenizer to report incomplete source");
+        } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
+            assertEquals(3, e.line);
+        }
+    }
+
     private static Token[] getTokens(String code) {
-        Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+        Tokenizer tokenizer = createTokenizer(code);
         Token token;
 
         ArrayList<Token> tokens = new ArrayList<>();
@@ -268,7 +298,7 @@ public class TokenizerTest {
     }
 
     private static void checkTokens(String code, String[] tokens) {
-        Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+        Tokenizer tokenizer = createTokenizer(code);
         Token token = tokenizer.next();
         int index = 0;
 
@@ -460,7 +490,7 @@ public class TokenizerTest {
             assertTrue("Was not found golden result for line: '" + line + "'", goldenTokens.containsKey(line));
             List<String> goldenResult = goldenTokens.get(line);
             int goldenResultIndex = 0;
-            Tokenizer tokenizer = new Tokenizer(line, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+            Tokenizer tokenizer = createTokenizer(line);
             Token token;
             do {
                 token = tokenizer.next();
@@ -489,5 +519,23 @@ public class TokenizerTest {
 
     private String getTestFile() throws IOException {
         return Files.readString(Path.of("graalpython/com.oracle.graal.python.pegparser.test/testData/tokenizer/testFiles", getFileName() + ".data"));
+    }
+
+    private static Tokenizer createTokenizer(String code, boolean interactive) {
+        ErrorCallback errorCallback = new TestErrorCallbackImpl() {
+            @Override
+            public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+                fail("Unexpected call to onError");
+            }
+        };
+        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+    }
+
+    private static Tokenizer createTokenizer(String code) {
+        return createTokenizer(code, false);
+    }
+
+    private static Tokenizer createInteractiveTokenizer(String code) {
+        return createTokenizer(code, true);
     }
 }

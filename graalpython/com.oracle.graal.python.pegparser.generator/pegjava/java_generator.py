@@ -974,18 +974,15 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {" % className)
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser);")
-        self.print("}" )
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {" % className)
+            self.print("super(tokenizer, factory, fexprParser, errorCb, startRule);")
+        self.print("}")
+        self.print()
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, errorCb);")
-        self.print("}" )
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb) {" % className)
-        with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, stringFactory, errorCb);")
-        self.print("}" )
+            self.print("super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule);")
+        self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         while self.todo:
             for rulename, rule in list(self.todo.items()):

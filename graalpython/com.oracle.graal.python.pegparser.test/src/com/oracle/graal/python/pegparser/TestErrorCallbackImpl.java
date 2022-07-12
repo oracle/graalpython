@@ -38,18 +38,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser;
-
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultParserErrorCallback implements ErrorCallback {
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
+public class TestErrorCallbackImpl implements ErrorCallback {
+
+    private final List<Error> errors = new ArrayList<>(1);
+
+    public List<Error> getErrors() {
+        return errors;
+    }
+
+    public boolean hasErrors() {
+        return !errors.isEmpty();
+    }
+
+    @Override
+    public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        errors.add(new Error(errorType, sourceRange, message));
+    }
+
+    @Override
+    public void reportIncompleteSource(int line) {
+        throw new IncompleteSourceException(line);
+    }
+
+    public static final class IncompleteSourceException extends RuntimeException {
+
+        private static final long serialVersionUID = 3614789104004878690L;
+
+        public final int line;
+
+        IncompleteSourceException(int line) {
+            this.line = line;
+        }
+    }
 
     public static class Error {
-        private final ErrorCallback.ErrorType type;
+        private final ErrorType type;
         private SourceRange sourceRange;
         private final String message;
 
@@ -70,22 +100,5 @@ public class DefaultParserErrorCallback implements ErrorCallback {
         public String getMessage() {
             return message;
         }
-
     }
-
-    private final List<Error> errors = new ArrayList<>(1);
-
-    public List<Error> getErrors() {
-        return errors;
-    }
-
-    public boolean hasErrors() {
-        return !errors.isEmpty();
-    }
-
-    @Override
-    public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-        errors.add(new Error(errorType, sourceRange, message));
-    }
-
 }

@@ -42,7 +42,6 @@ package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-@FunctionalInterface
 public interface ErrorCallback {
     public enum ErrorType {
         Generic,
@@ -55,6 +54,8 @@ public interface ErrorCallback {
         Value,
         Syntax
     }
+
+    void reportIncompleteSource(int line);
 
     void onError(ErrorType errorType, SourceRange sourceRange, String message);
 

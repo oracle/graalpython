@@ -1156,7 +1156,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
             if (getContext().getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0);
+                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0, false);
             }
             return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };

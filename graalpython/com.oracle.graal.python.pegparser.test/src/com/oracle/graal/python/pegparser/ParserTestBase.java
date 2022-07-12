@@ -76,72 +76,54 @@ public class ParserTestBase {
 
     private static final boolean REGENERATE_TREE = false;
 
-    protected ErrorCallback lastParserErrorCallback;
+    protected TestErrorCallbackImpl errorCallback;
 
     @Rule public TestName name = new TestName();
 
-    public ParserTestBase() {
+    protected ParserTestBase() {
     }
 
     private String getFileName() {
         return name.getMethodName();
     }
 
-// protected Source createSource(File testFile) throws Exception {
-// TruffleFile src = context.getEnv().getInternalTruffleFile(testFile.getAbsolutePath());
-// return PythonLanguage.newSource(context, src, getFileName(testFile));
-// }
-
-    // TODO
     @SuppressWarnings("unused")
     public ModTy parse(String src, String moduleName, InputType inputType) {
+        return parse(src, moduleName, inputType, false);
+    }
 
-        ParserTokenizer tokenizer = new ParserTokenizer(src);
+    @SuppressWarnings("unused")
+    public ModTy parse(String src, String moduleName, InputType inputType, boolean interactiveTerminal) {
+        errorCallback = new TestErrorCallbackImpl();
         NodeFactory factory = new NodeFactoryImp();
-
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
-                ParserTokenizer tok = new ParserTokenizer(code);
-                return (ExprTy) new Parser(tok, factory, this).parse(InputType.FSTRING);
+                ParserTokenizer tok = new ParserTokenizer(errorCallback, code, InputType.FSTRING, interactiveTerminal);
+                return (ExprTy) new Parser(tok, factory, this, errorCallback, InputType.FSTRING).parse();
             }
         };
-        Parser parser = new Parser(tokenizer, factory, fexpParser);
-        ModTy result = (ModTy) parser.parse(inputType);
-        lastParserErrorCallback = parser.getErrorCallback();
-        return result;
+        ParserTokenizer tokenizer = new ParserTokenizer(errorCallback, src, inputType, interactiveTerminal);
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCallback, inputType);
+        return (ModTy) parser.parse();
     }
-
-// public SSTNode parse(String src, String moduleName, PythonParser.ParserMode mode) {
-// return parse(src, moduleName, mode, null);
-// }
-
-// public Node parse(Source source, PythonParser.ParserMode mode) {
-// PythonParser parser = context.getCore().getParser();
-// Node result = ((PythonParserImpl) parser).parseN(mode, 0, context.getCore(), source, null, null);
-// lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
-// lastSST = ((PythonParserImpl) parser).getLastSST();
-// return result;
-// }
 
     public void checkSyntaxError(String source) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
-        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
-        assertTrue("Expected Error.", ec.hasErrors());
-        assertSame("Expected SyntaxError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
+        assertTrue("Expected Error.", errorCallback.hasErrors());
+        assertSame("Expected SyntaxError", errorCallback.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
-        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
-        assertTrue("Expected Error.", ec.hasErrors());
-        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertTrue("Expected Error.", errorCallback.hasErrors());
+        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
         assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
         assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.getMessage() + "\"", error.getMessage().contains(expectedMessage));
     }
@@ -149,11 +131,10 @@ public class ParserTestBase {
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
-        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
-        assertTrue("Expected Error.", ec.hasErrors());
-        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertTrue("Expected Error.", errorCallback.hasErrors());
+        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
         assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
     }
@@ -161,21 +142,19 @@ public class ParserTestBase {
     public void checkIndentationError(String source) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
-        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
-        assertTrue("Expected Error.", ec.hasErrors());
-        assertSame("Expected IndentationError", ec.getErrors().get(0).getType(), ErrorCallback.ErrorType.Indentation);
+        assertTrue("Expected Error.", errorCallback.hasErrors());
+        assertSame("Expected IndentationError", errorCallback.getErrors().get(0).getType(), ErrorCallback.ErrorType.Indentation);
     }
 
     public void checkIndentationErrorMessage(String source, String expectedMessage) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, lastParserErrorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
-        DefaultParserErrorCallback ec = (DefaultParserErrorCallback) lastParserErrorCallback;
-        assertTrue("Expected Error.", ec.hasErrors());
-        DefaultParserErrorCallback.Error error = ec.getErrors().get(0);
+        assertTrue("Expected Error.", errorCallback.hasErrors());
+        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
         assertSame("Expected IndentationError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Indentation);
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
     }
@@ -200,7 +179,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         String source = readFile(testFile);
         ModTy mod = parse(source, "<module>", InputType.FILE);
-        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback, EMPTY_FUTURE);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, errorCallback, EMPTY_FUTURE);
         File goldenScopeFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                         : getGoldenFile(SCOPE_FILE_EXT);
@@ -226,7 +205,6 @@ public class ParserTestBase {
     }
 
     public void checkError(String source, String... expectedErrors) {
-        ParserTokenizer tokenizer = new ParserTokenizer(source);
         NodeFactory factory = new NodeFactoryImp();
         ArrayList<String> errors = new ArrayList<>();
         ErrorCallback errorCb = new ErrorCallback() {
@@ -234,27 +212,29 @@ public class ParserTestBase {
             public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
                 errors.add(String.format("%s[%d:%d]:%s", type.name(), sourceRange.startOffset, sourceRange.endOffset, message));
             }
+
+            @Override
+            public void reportIncompleteSource(int line) {
+                fail("Unexpected call to reportIncompleteSource");
+            }
         };
+        ParserTokenizer tokenizer = new ParserTokenizer(errorCb, source, InputType.FILE, false);
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange range) {
-                ParserTokenizer tok = new ParserTokenizer(code);
-                return (ExprTy) new Parser(tok, factory, this, errorCb).parse(InputType.FSTRING);
+                ParserTokenizer tok = new ParserTokenizer(errorCb, code, InputType.FSTRING, false);
+                return (ExprTy) new Parser(tok, factory, this, errorCb, InputType.FSTRING).parse();
             }
         };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
-        parser.parse(InputType.FILE);
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb, InputType.FILE);
+        parser.parse();
         assertEquals(Arrays.asList(expectedErrors), errors);
     }
-
-// public void checkTreeResult(String source, PythonParser.ParserMode mode) throws Exception {
-// checkTreeResult(source, mode, null);
-// }
 
     public void checkScopeResult(String source, InputType inputType) throws Exception {
         ModTy mod = parse(source, "<module>", inputType);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
-        ScopeEnvironment env = ScopeEnvironment.analyze(mod, lastParserErrorCallback, EMPTY_FUTURE);
+        ScopeEnvironment env = ScopeEnvironment.analyze(mod, errorCallback, EMPTY_FUTURE);
         if (REGENERATE_TREE || !goldenScopeFile.exists()) {
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
                 fw.write(env.toString());
@@ -298,7 +278,7 @@ public class ParserTestBase {
 
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
-            // might be causing failing tests on a different operation systems like Windows :]
+            // might be causing failing tests on a different operating systems like Windows :]
             final String expectedUnified = expectedTrimmed.replaceAll("\r", "");
             final String actualUnified = actualTrimmed.replaceAll("\r", "");
 
@@ -306,7 +286,7 @@ public class ParserTestBase {
                 return; // Only difference is in line separation --> Test passed
             }
 
-            // There are some diffrerences between expected and actual content --> Test failed
+            // There are some differences between expected and actual content --> Test failed
 
             fail("Not matching results: " + (someName == null ? "" : someName) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified));
         }

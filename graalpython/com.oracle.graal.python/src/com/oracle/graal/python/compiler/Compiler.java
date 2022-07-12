@@ -141,6 +141,7 @@ import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
@@ -2668,16 +2669,16 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    public static Parser createParser(String src, ErrorCallback errorCb) {
+    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
         NodeFactory nodeFactory = new NodeFactoryImp();
         PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
                 // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
-                return new Parser(new ParserTokenizer(code), nodeFactory, this, stringFactory, errorCb).fstring_rule();
+                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING).parse();
             }
         };
-        return new Parser(new ParserTokenizer(src), nodeFactory, fexpParser, stringFactory, errorCb);
+        return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType);
     }
 }

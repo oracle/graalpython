@@ -53,20 +53,35 @@ public class ParserTokenizer {
 
     private final Tokenizer tokenizer;
 
-    public ParserTokenizer(String code) {
+    public ParserTokenizer(ErrorCallback errorCallback, String code, InputType type, boolean interactiveTerminal) {
         this.pos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal));
     }
 
-    public ParserTokenizer(byte[] code) {
+    public ParserTokenizer(ErrorCallback errorCallback, byte[] code, InputType type, boolean interactiveTerminal) {
         this.pos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = new Tokenizer(code, true);
+        this.tokenizer = Tokenizer.fromBytes(errorCallback, code, getTokenizerFlags(type, interactiveTerminal));
+    }
+
+    private static EnumSet<Tokenizer.Flag> getTokenizerFlags(InputType type, boolean interactiveTerminal) {
+        EnumSet<Tokenizer.Flag> flags = EnumSet.of(Tokenizer.Flag.TYPE_COMMENT);
+        if (type == InputType.FILE) {
+            flags.add(Tokenizer.Flag.EXEC_INPUT);
+        } else if (type == InputType.SINGLE && interactiveTerminal) {
+            flags.add(Tokenizer.Flag.INTERACTIVE);
+        }
+        return flags;
     }
 
     public int mark() {
         return pos;
+    }
+
+    public void resetState() {
+        pos = 0;
+        tokenizer.reportIncompleteSourceIfInteractive = false;
     }
 
     public void reset(int position) {

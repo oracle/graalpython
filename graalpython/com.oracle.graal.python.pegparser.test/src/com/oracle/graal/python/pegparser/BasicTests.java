@@ -1013,6 +1013,16 @@ public class BasicTests extends ParserTestBase {
                         " 'rld', 'lowo'), 3)");
     }
 
+    @Test
+    public void classInteractive() throws Exception {
+        checkTreeResult("class A:\n" + "  pass\n", InputType.SINGLE);
+    }
+
+    @Test(expected = TestErrorCallbackImpl.IncompleteSourceException.class)
+    public void classInteractiveIncomplete() throws Exception {
+        parse("class A:\n", "<module>", InputType.SINGLE, true);
+    }
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);
