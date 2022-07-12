@@ -264,10 +264,17 @@ public abstract class PyObjectLookupAttr extends Node {
                 if (result == PNone.NO_VALUE) {
                     Object getattr = lookupGetattr.execute(frame, type, receiver);
                     if (getattr != PNone.NO_VALUE) {
-                        return callGetattr.executeObject(frame, getattr, receiver, name);
+                        try {
+                            return callGetattr.executeObject(frame, getattr, receiver, name);
+                        } catch (PException e) {
+                            e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+                            return PNone.NO_VALUE;
+                        }
                     } else {
-                        return null;
+                        return PNone.NO_VALUE;
                     }
+                } else {
+                    return result;
                 }
             }
         }
