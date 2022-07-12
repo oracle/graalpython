@@ -41,6 +41,6 @@
 package com.oracle.graal.python.pegparser;
 
 public enum FutureFeature {
-    ANNOTATTIONS,
+    ANNOTATIONS,
     BARRY_AS_BDFL
 }

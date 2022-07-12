@@ -413,7 +413,7 @@ public class ScopeEnvironment {
         }
 
         private void visitAnnotation(ExprTy expr) {
-            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATIONS);
             if (futureAnnotations) {
                 enterBlock("_annotation", ScopeType.Annotation, expr);
             }
@@ -437,7 +437,7 @@ public class ScopeEnvironment {
         }
 
         private void visitAnnotations(StmtTy node, ArgumentsTy args, ExprTy returns) {
-            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+            boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATIONS);
             if (args != null) {
                 if (futureAnnotations) {
                     enterBlock("_annotation", ScopeType.Annotation, node);

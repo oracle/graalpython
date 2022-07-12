@@ -271,7 +271,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                         features.add(FutureFeature.BARRY_AS_BDFL);
                         break;
                     case "annotations":
-                        features.add(FutureFeature.ANNOTATTIONS);
+                        features.add(FutureFeature.ANNOTATIONS);
                         break;
                     case "braces":
                         errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "not a chance");
@@ -1728,7 +1728,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             /* If we have a simple name in a module or class, store annotation. */
             if (node.isSimple &&
                             (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class)) {
-                boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+                boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATIONS);
                 if (futureAnnotations) {
                     visitAnnexpr(node.annotation);
                 } else {
@@ -1755,7 +1755,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
         }
         if (!node.isSimple) {
-            boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+            boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATIONS);
             /*
              * Annotations of complex targets does not produce anything under annotations future.
              * Annotations are only evaluated in a module or class.
@@ -2073,7 +2073,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (annotation != null) {
             String mangled = ScopeEnvironment.mangle(unit.privateName, name);
             addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
-            if (futureFeatures.contains(FutureFeature.ANNOTATTIONS)) {
+            if (futureFeatures.contains(FutureFeature.ANNOTATIONS)) {
                 visitAnnexpr(annotation);
             } else {
                 if (annotation instanceof ExprTy.Starred) {
