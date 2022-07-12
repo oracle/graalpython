@@ -1,0 +1,28 @@
+Disassembly of <module>:
+000000         0 LOAD_BYTE_O                       0
+000000         2 LOAD_CONST                        0    ([annotations])
+000000         4 IMPORT_NAME                       0    (__future__)
+000000         6 IMPORT_FROM                       1    (annotations)
+000000         8 STORE_NAME                        1    (annotations)
+000000        10 POP_TOP
+000035        11 LOAD_BUILD_CLASS
+000035        12 MAKE_FUNCTION                     0    (Foo)
+000035        15 LOAD_STRING                       1    ('Foo')
+000035        17 COLLECTION_FROM_STACK             2    (Object[])
+000035        19 CALL_FUNCTION_VARARGS
+000035        20 STORE_NAME                        2    (Foo)
+000035        22 LOAD_NONE
+000035        23 RETURN_VALUE
+
+Disassembly of Foo:
+000035         0 LOAD_NAME                         0    (__name__)
+000035         2 STORE_NAME                        1    (__module__)
+000035         4 LOAD_STRING                       0    ('Foo')
+000035         6 STORE_NAME                        2    (__qualname__)
+000035         8 SETUP_ANNOTATIONS
+000048         9 LOAD_STRING                       1    ('a[str]')
+000048        11 LOAD_NAME                         3    (__annotations__)
+000048        13 LOAD_STRING                       2    ('attr')
+000048        15 STORE_SUBSCR
+000048        16 LOAD_NONE
+000048        17 RETURN_VALUE

@@ -1,0 +1,24 @@
+Disassembly of <module>:
+000000         0 LOAD_BUILD_CLASS
+000000         1 MAKE_FUNCTION                     0    (Foo)
+000000         4 LOAD_STRING                       0    ('Foo')
+000000         6 COLLECTION_FROM_STACK             2    (Object[])
+000000         8 CALL_FUNCTION_VARARGS
+000000         9 STORE_NAME                        0    (Foo)
+000000        11 LOAD_NONE
+000000        12 RETURN_VALUE
+
+Disassembly of Foo:
+000000         0 LOAD_NAME                         0    (__name__)
+000000         2 STORE_NAME                        1    (__module__)
+000000         4 LOAD_STRING                       0    ('Foo')
+000000         6 STORE_NAME                        2    (__qualname__)
+000000         8 SETUP_ANNOTATIONS
+000019         9 LOAD_NAME                         3    (a)
+000021        11 LOAD_NAME                         4    (str)
+000019        13 BINARY_SUBSCR
+000013        14 LOAD_NAME                         5    (__annotations__)
+000013        16 LOAD_STRING                       1    ('attr')
+000013        18 STORE_SUBSCR
+000013        19 LOAD_NONE
+000013        20 RETURN_VALUE

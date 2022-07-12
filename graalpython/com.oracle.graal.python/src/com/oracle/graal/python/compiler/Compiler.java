@@ -221,7 +221,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void parseFuture(StmtTy[] modBody) {
-        if (modBody.length == 0) {
+        if (modBody == null || modBody.length == 0) {
             return;
         }
         boolean done = false;
@@ -1728,8 +1728,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             /* If we have a simple name in a module or class, store annotation. */
             if (node.isSimple &&
                             (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class)) {
-                // TODO from __future__ import annotations
-                node.annotation.accept(this);
+                boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
+                if (futureAnnotations) {
+                    visitAnnexpr(node.annotation);
+                } else {
+                    node.annotation.accept(this);
+                }
                 addNameOp("__annotations__", ExprContext.Load);
                 String mangled = ScopeEnvironment.mangle(unit.privateName, name);
                 addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
@@ -2066,21 +2070,27 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void visitArgAnnotation(Collector collector, String name, ExprTy annotation) {
-        boolean futureAnnotations = futureFeatures.contains(FutureFeature.ANNOTATTIONS);
         if (annotation != null) {
             String mangled = ScopeEnvironment.mangle(unit.privateName, name);
             addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
-            // TODO from __future__ import annotations
-            if (annotation instanceof ExprTy.Starred) {
-                // *args: *Ts (where Ts is a TypeVarTuple).
-                // Do [annotation_value] = [*Ts].
-                ((ExprTy.Starred) annotation).value.accept(this);
-                addOp(UNPACK_SEQUENCE, 1);
+            if (futureFeatures.contains(FutureFeature.ANNOTATTIONS)) {
+                visitAnnexpr(annotation);
             } else {
-                annotation.accept(this);
+                if (annotation instanceof ExprTy.Starred) {
+                    // *args: *Ts (where Ts is a TypeVarTuple).
+                    // Do [annotation_value] = [*Ts].
+                    ((ExprTy.Starred) annotation).value.accept(this);
+                    addOp(UNPACK_SEQUENCE, 1);
+                } else {
+                    annotation.accept(this);
+                }
             }
             collector.appendItem();
         }
+    }
+
+    private void visitAnnexpr(ExprTy annotation) {
+        addOp(LOAD_STRING, addObject(unit.constants, Unparser.unparse(annotation)));
     }
 
     private int collectDefaults(ArgumentsTy args) {
