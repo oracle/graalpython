@@ -388,7 +388,7 @@ public class Tokenizer {
         } else {
             if (nextCharIndex == codePointsInput.length && execInput) {
                 // check if we need to report a missing newline before eof
-                if (codePointsInput[nextCharIndex - 1] != '\n') {
+                if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
                     return '\n';
                 }
