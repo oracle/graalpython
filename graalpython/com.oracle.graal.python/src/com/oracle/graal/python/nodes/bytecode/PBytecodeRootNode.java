@@ -184,6 +184,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -829,8 +830,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private static final class LoopCounter {
-        int count;
+    @ValueType
+    private static final class MutableLoopData {
+        int loopCount;
+        /*
+         * This separate tracking of local exception is necessary to make exception state saving
+         * work in generators. On one hand we need to retain the exception that was caught in the
+         * generator, on the other hand we don't want to retain the exception state that was passed
+         * from the outer frame because that changes with every resume.
+         */
+        boolean fetchedException;
+        PException outerException;
+        PException localException;
     }
 
     Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
@@ -876,7 +887,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          * We use an object as a workaround for not being able to specify which local variables are
          * loop constants (GR-35338).
          */
-        LoopCounter loopCount = new LoopCounter();
+        MutableLoopData mutableData = new MutableLoopData();
         int stackTop = initialStackTop;
         int bci = initialBci;
 
@@ -890,18 +901,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         final int localCelloffset = celloffset;
 
         setCurrentBci(virtualFrame, bciSlot, initialBci);
-
-        /*
-         * This separate tracking of local exception is necessary to make exception state saving
-         * work in generators. On one hand we need to retain the exception that was caught in the
-         * generator, on the other hand we don't want to retain the exception state that was passed
-         * from the outer frame because that changes with every resume.
-         */
-        PException localException = null;
-
-        // We initialize this lazily when pushing exception state
-        boolean fetchedException = false;
-        PException outerException = null;
 
         CompilerAsserts.partialEvaluationConstant(localBC);
         CompilerAsserts.partialEvaluationConstant(bci);
@@ -1277,8 +1276,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RETURN_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
-                            LoopNode.reportLoopCount(this, loopCount.count);
+                        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+                            LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
@@ -1488,7 +1487,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
                         if (CompilerDirectives.hasNextTier()) {
-                            loopCount.count++;
+                            mutableData.loopCount++;
                         }
                         if (CompilerDirectives.inInterpreter()) {
                             if (!useCachedNodes) {
@@ -1517,8 +1516,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                         continue;
                                     } else {
                                         // We reached a return/yield
-                                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
-                                            LoopNode.reportLoopCount(this, loopCount.count);
+                                        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+                                            LoopNode.reportLoopCount(this, mutableData.loopCount);
                                         }
                                         return osrResult;
                                     }
@@ -1684,32 +1683,32 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (!(exception instanceof PException)) {
                             exception = wrapJavaException((Throwable) exception, factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.M, new Object[]{exception}));
                         }
-                        if (!fetchedException) {
-                            outerException = PArguments.getException(arguments);
-                            fetchedException = true;
+                        if (!mutableData.fetchedException) {
+                            mutableData.outerException = PArguments.getException(arguments);
+                            mutableData.fetchedException = true;
                         }
-                        virtualFrame.setObject(stackTop++, localException);
-                        localException = (PException) exception;
-                        PArguments.setException(arguments, localException);
+                        virtualFrame.setObject(stackTop++, mutableData.localException);
+                        mutableData.localException = (PException) exception;
+                        PArguments.setException(arguments, mutableData.localException);
                         virtualFrame.setObject(stackTop, origException);
                         break;
                     }
                     case OpCodesConstants.POP_EXCEPT: {
-                        localException = popExceptionState(arguments, virtualFrame.getObject(stackTop), outerException);
+                        mutableData.localException = popExceptionState(arguments, virtualFrame.getObject(stackTop), mutableData.outerException);
                         virtualFrame.setObject(stackTop--, null);
                         break;
                     }
                     case OpCodesConstants.END_EXC_HANDLER: {
-                        localException = popExceptionState(arguments, virtualFrame.getObject(stackTop - 1), outerException);
+                        mutableData.localException = popExceptionState(arguments, virtualFrame.getObject(stackTop - 1), mutableData.outerException);
                         throw bytecodeEndExcHandler(virtualFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
-                            LoopNode.reportLoopCount(this, loopCount.count);
+                        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+                            LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
                         virtualFrame.setObject(stackTop--, null);
-                        PArguments.setException(PArguments.getGeneratorFrame(arguments), localException);
+                        PArguments.setException(PArguments.getGeneratorFrame(arguments), mutableData.localException);
                         // See PBytecodeGeneratorRootNode#execute
                         if (localFrame != virtualFrame) {
                             copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);
@@ -1719,9 +1718,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         return GeneratorResult.createYield(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
-                        localException = PArguments.getException(PArguments.getGeneratorFrame(arguments));
-                        if (localException != null) {
-                            PArguments.setException(arguments, localException);
+                        mutableData.localException = PArguments.getException(PArguments.getGeneratorFrame(arguments));
+                        if (mutableData.localException != null) {
+                            PArguments.setException(arguments, mutableData.localException);
                         }
                         Object sendValue = PArguments.getSpecialArgument(arguments);
                         if (sendValue == null) {
@@ -1809,8 +1808,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 int targetIndex = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (pe != null) {
-                    if (localException != null) {
-                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), localException, exceptionChainProfile1, exceptionChainProfile2);
+                    if (mutableData.localException != null) {
+                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
                     } else {
                         if (getCaughtExceptionNode == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1831,8 +1830,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             clearFrameSlots(localFrame, stackoffset, initialStackTop);
                         }
                     }
-                    if (CompilerDirectives.hasNextTier() && loopCount.count > 0) {
-                        LoopNode.reportLoopCount(this, loopCount.count);
+                    if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+                        LoopNode.reportLoopCount(this, mutableData.loopCount);
                     }
                     if (e == pe) {
                         throw pe;
