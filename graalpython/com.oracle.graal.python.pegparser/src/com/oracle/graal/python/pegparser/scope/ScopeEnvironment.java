@@ -377,7 +377,7 @@ public class ScopeEnvironment {
             }
         }
 
-        private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value) {
+        private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value, Scope.ComprehensionType comprehensionType) {
             boolean isGenerator = e instanceof ExprTy.GeneratorExp;
             ComprehensionTy outermost = generators[0];
             currentScope.comprehensionIterExpression++;
@@ -385,6 +385,7 @@ public class ScopeEnvironment {
             currentScope.comprehensionIterExpression--;
             enterBlock(scopeName, Scope.ScopeType.Function, e);
             try {
+                currentScope.comprehensionType = comprehensionType;
                 if (outermost.isAsync) {
                     currentScope.flags.add(ScopeFlags.IsCoroutine);
                 }
@@ -401,15 +402,32 @@ public class ScopeEnvironment {
                     value.accept(this);
                 }
                 element.accept(this);
-                if (currentScope.flags.contains(ScopeFlags.IsGenerator)) {
-                    // TODO: syntax error 'yield' inside something
-                }
                 if (isGenerator) {
                     currentScope.flags.add(ScopeFlags.IsGenerator);
                 }
             } finally {
                 exitBlock();
             }
+        }
+
+        private void raiseIfComprehensionBlock(ExprTy node) {
+            String msg;
+            switch (currentScope.comprehensionType) {
+                case ListComprehension:
+                    msg = "'yield' inside list comprehension";
+                    break;
+                case SetComprehension:
+                    msg = "'yield' inside set comprehension";
+                    break;
+                case DictComprehension:
+                    msg = "'yield' inside dict comprehension";
+                    break;
+                case GeneratorExpression:
+                default:
+                    msg = "'yield' inside generator expression";
+                    break;
+            }
+            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(),msg);
         }
 
         private void visitAnnotation(ExprTy expr) {
@@ -559,7 +577,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.DictComp node) {
-            handleComprehension(node, "dictcomp", node.generators, node.key, node.value);
+            handleComprehension(node, "dictcomp", node.generators, node.key, node.value, Scope.ComprehensionType.DictComprehension);
             return null;
         }
 
@@ -574,7 +592,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.GeneratorExp node) {
-            handleComprehension(node, "genexp", node.generators, node.element, null);
+            handleComprehension(node, "genexp", node.generators, node.element, null, Scope.ComprehensionType.GeneratorExpression);
             return null;
         }
 
@@ -618,7 +636,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.ListComp node) {
-            handleComprehension(node, "listcomp", node.generators, node.element, null);
+            handleComprehension(node, "listcomp", node.generators, node.element, null, Scope.ComprehensionType.ListComprehension);
             return null;
         }
 
@@ -691,7 +709,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.SetComp node) {
-            handleComprehension(node, "setcomp", node.generators, node.element, null);
+            handleComprehension(node, "setcomp", node.generators, node.element, null, Scope.ComprehensionType.SetComprehension);
             return null;
         }
 
@@ -743,6 +761,9 @@ public class ScopeEnvironment {
                 node.value.accept(this);
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
+            if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
+                raiseIfComprehensionBlock(node);
+            }
             return null;
         }
 
@@ -755,6 +776,9 @@ public class ScopeEnvironment {
                 node.value.accept(this);
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
+            if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
+                raiseIfComprehensionBlock(node);
+            }
             return null;
         }
 

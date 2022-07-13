@@ -42,6 +42,8 @@ package com.oracle.graal.python.pegparser;
 
 import org.junit.Test;
 
+import java.io.File;
+
 public class GeneratorAndCompForTests extends ParserTestBase {
 
     @Test
@@ -298,12 +300,12 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                         "def fn(someset): return ', '.join(f'{name}' for name in someset)");
     }
 
-    // @Test
-    // public void genFromPip() throws Exception {
-    // File testFile = getTestFileFromTestAndTestMethod();
-    // checkScopeFromFile(testFile, true);
-    // checkTreeFromFile(testFile, true);
-    // }
+    @Test
+    public void genFromPip() throws Exception {
+        File testFile = getTestFileFromTestAndTestMethod();
+        checkScopeFromFile(testFile, false);
+        checkTreeFromFile(testFile, false);
+    }
 
     @Test
     public void issueGR18174() throws Exception {

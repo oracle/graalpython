@@ -1,0 +1,16 @@
+Module[0, 38]
+    FunctionDef[24, 38]
+        Name:fn
+        Decorators:
+        Attribute[1, 5] 
+            Receiver: 
+                Attribute[1, 5] 
+                    Receiver: 
+                        Attribute[1, 5] 
+                            Receiver: Name[1, 5] Value: "some"
+                            Attr: path
+                    Attr: to
+            Attr: decorator
+        ---- Function body of fn ----
+        Pass[34, 38]
+        ---- End of fn function ----

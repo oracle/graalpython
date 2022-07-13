@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      outer: [DefLocal, Use, Local]
+    Scope outer Function
+        Symbols:
+            inner: [DefLocal, Use, Local]
+            print: [Use, GlobalImplicit]
+            x: [DefLocal, Use, Local]
+      Scope inner Function
+            Symbols:
+                  print: [Use, GlobalImplicit]
+                  x: [DefLocal, Use, Local]

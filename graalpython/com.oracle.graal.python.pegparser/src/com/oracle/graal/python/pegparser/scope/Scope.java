@@ -114,6 +114,16 @@ public class Scope {
     EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
     int comprehensionIterExpression = 0;
 
+    enum ComprehensionType {
+        NoComprehension,
+        ListComprehension,
+        DictComprehension,
+        SetComprehension,
+        GeneratorExpression
+    }
+
+    ComprehensionType comprehensionType = ComprehensionType.NoComprehension;
+
     SourceRange sourceRange;
 
     @Override

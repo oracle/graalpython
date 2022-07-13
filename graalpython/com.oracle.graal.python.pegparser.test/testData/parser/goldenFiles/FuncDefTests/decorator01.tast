@@ -1,0 +1,32 @@
+Module[0, 140]
+    FunctionDef[0, 76]
+        Name:mydecorator
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[16, 18] fn
+        ---- Function body of mydecorator ----
+        FunctionDef[25, 60]
+            Name:wrap
+            ---- Function body of wrap ----
+            Return[45, 60] 
+                BinOp[52, 60]
+                    Op: ADD
+                    LHS: 
+                        Call[52, 56]
+                            Target: Name[52, 54] Value: "fn"
+                    RHS: LONG[59, 60] Value: 1
+            ---- End of wrap function ----
+        Return[65, 76] Name[72, 76] Value: "wrap"
+        ---- End of mydecorator function ----
+    FunctionDef[91, 120]
+        Name:getNumber
+        Decorators:
+        Name[79, 90] Value: "mydecorator"
+        ---- Function body of getNumber ----
+        Return[112, 120] LONG[119, 120] Value: 1
+        ---- End of getNumber function ----
+    Call[122, 140]
+        Target: Name[122, 127] Value: "print"
+        Args:
+            Call[128, 139]
+                Target: Name[128, 137] Value: "getNumber"

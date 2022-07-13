@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      NONE: [Use, GlobalImplicit]
+      SOMETHING: [DefGlobal, DefLocal, GlobalExplicit]
+      install: [DefLocal, Local]
+      setup: [DefLocal, Local]
+    Scope setup Function
+        Symbols:
+            SOMETHING: [DefGlobal, DefLocal, GlobalExplicit]
+    Scope install Function
+        Symbols:
+            SOMETHING: [Use, GlobalImplicit]

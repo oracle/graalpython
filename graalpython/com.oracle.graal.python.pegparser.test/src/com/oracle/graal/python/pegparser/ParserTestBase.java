@@ -416,7 +416,11 @@ public class ParserTestBase {
 // }
 //
     public void checkScopeAndTree(String source) throws Exception {
-        checkScopeResult(source, InputType.FILE);
+        checkScopeAndTree(source, InputType.FILE);
+    }
+
+    public void checkScopeAndTree(String source, InputType inputType) throws Exception {
+        checkScopeResult(source, inputType);
         checkTreeResult(source);
     }
 

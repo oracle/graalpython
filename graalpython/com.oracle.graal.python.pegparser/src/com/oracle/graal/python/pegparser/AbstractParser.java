@@ -847,6 +847,21 @@ abstract class AbstractParser {
     }
 
     /**
+     * _PyPegen_nonparen_genexp_in_call
+     */
+    SSTNode nonparenGenexpInCall(ExprTy args, ComprehensionTy[] comprehensions) {
+        assert args instanceof ExprTy.Call;
+        ExprTy.Call call = (ExprTy.Call) args;
+        int len = call.args.length;
+        if (len <= 1) {
+            return null;
+        }
+        ComprehensionTy lastComprehension = comprehensions[comprehensions.length - 1];
+        return raiseSyntaxErrorKnownRange(call.args[len - 1], getLastComprehensionItem(lastComprehension),
+                        "Generator expression must be parenthesized");
+    }
+
+    /**
      * RAISE_SYNTAX_ERROR_INVALID_TARGET
      */
     SSTNode raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {

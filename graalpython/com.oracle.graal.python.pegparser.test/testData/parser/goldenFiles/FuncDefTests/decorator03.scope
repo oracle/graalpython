@@ -1,0 +1,6 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      fn: [DefLocal, Local]
+      some: [Use, GlobalImplicit]
+    Scope fn Function

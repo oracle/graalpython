@@ -338,6 +338,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_make_module ( p , a )': (1, 'factory.createModule(a, $RANGE)'),
     '_PyPegen_name_default_pair ( p , a , c , NULL )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getSourceRange()), c)'),
     '_PyPegen_name_default_pair ( p , a , c , tc )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange()), c)'),
+    '_PyPegen_nonparen_genexp_in_call ( p , a , b )': (1, 'nonparenGenexpInCall(a, b)'),
     '_PyPegen_seq_insert_in_front ( p , y , z )': (1, 'this.insertInFront(y,z)'),
     '_PyPegen_set_expr_context ( p , a , Del )': (2, 'this.setExprContext(a,ExprContext.Delete)'),
     '_PyPegen_set_expr_context ( p , a , Store )': (3, 'this.setExprContext(a,ExprContext.Store)'),
@@ -359,8 +360,6 @@ ACTION_MAPPINGS = {
     'z': (11, 'z'),
 
     # TODO
-    # '_PyPegen_nonparen_genexp_in_call ( p , a , b )' in rule "invalid_arguments: with rhs args for_if_clauses"
-    #
     # Interactive mode:
     # '_PyPegen_interactive_exit ( p )' in rule "statement_newline: with rhs $"
     #

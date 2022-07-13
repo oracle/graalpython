@@ -105,17 +105,15 @@ public class LambdaInFunctionTests extends ParserTestBase {
         checkScopeAndTree("def fn():\n" + "  lambda x, *y, **z: 0");
     }
 
-    // @Test
-    // public void positionalOnlyArg01() throws Exception {
-    // checkSyntaxErrorMessage("lambda a, b = 5, /, c: None", "SyntaxError: non-default argument
-    // follows default argument");
-    // }
+    @Test
+    public void positionalOnlyArg01() throws Exception {
+        checkSyntaxErrorMessage("lambda a, b = 5, /, c: None", "non-default argument follows default argument");
+    }
 
-    // @Test
-    // public void positionalOnlyArg02() throws Exception {
-    // checkSyntaxErrorMessage("lambda a = 5, b, /, c: None", "SyntaxError: non-default argument
-    // follows default argument");
-    // }
+    @Test
+    public void positionalOnlyArg02() throws Exception {
+        checkSyntaxErrorMessage("lambda a = 5, b, /, c: None", "non-default argument follows default argument");
+    }
 
     @Test
     public void positionalOnlyArg03() throws Exception {
@@ -157,17 +155,15 @@ public class LambdaInFunctionTests extends ParserTestBase {
         checkSyntaxError("lambda *, /, a: None");
     }
 
-    // @Test
-    // public void positionalOnlyArg11() throws Exception {
-    // checkSyntaxErrorMessage("lambda a, /, a: None", "SyntaxError: duplicate argument 'a' in
-    // function definition");
-    // }
+    @Test
+    public void positionalOnlyArg11() throws Exception {
+        checkSyntaxErrorMessage("lambda a, /, a: None", "duplicate argument 'a' in function definition");
+    }
 
-    // @Test
-    // public void positionalOnlyArg12() throws Exception {
-    // checkSyntaxErrorMessage("lambda a, /, *, a: None", "SyntaxError: duplicate argument 'a' in
-    // function definition");
-    // }
+    @Test
+    public void positionalOnlyArg12() throws Exception {
+        checkSyntaxErrorMessage("lambda a, /, *, a: None", "duplicate argument 'a' in function definition");
+    }
 
     @Test
     public void positionalOnlyArg13() throws Exception {

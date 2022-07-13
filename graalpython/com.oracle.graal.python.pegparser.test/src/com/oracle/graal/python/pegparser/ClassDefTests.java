@@ -237,14 +237,14 @@ public class ClassDefTests extends ParserTestBase {
                                         "        pass\n");
     }
 
-    // @Test
-    // public void metaclass01() throws Exception {
-    // checkScopeAndTree(
-    // "class A:\n" +
-    // " class B:\n" +
-    // " pass\n",
-    // PythonParser.ParserMode.Statement);
-    // }
+    @Test
+    public void metaclass01() throws Exception {
+        checkScopeAndTree(
+                        "class A:\n" +
+                                        "    class B:\n" +
+                                        "        pass\n",
+                        InputType.SINGLE);
+    }
 
     @Test
     public void using__class__01() throws Exception {

@@ -447,7 +447,7 @@ public class Tokenizer {
         int end = nextCharIndex + test.length;
         if (end + 1 < codePointsInput.length) {
             return Arrays.equals(codePointsInput, nextCharIndex, end, test, 0, test.length) &&
-                            !isPotentialIdentifierChar(codePointsInput[end + 1]);
+                            !isPotentialIdentifierChar(codePointsInput[end]);
         } else {
             return false;
         }

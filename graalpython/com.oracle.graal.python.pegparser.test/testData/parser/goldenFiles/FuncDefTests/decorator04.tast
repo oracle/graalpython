@@ -1,0 +1,12 @@
+Module[0, 46]
+    FunctionDef[0, 46]
+        Name:outer
+        ---- Function body of outer ----
+        FunctionDef[29, 46]
+            Name:inner
+            Decorators:
+            Name[16, 26] Value: "decorator1"
+            ---- Function body of inner ----
+            Pass[42, 46]
+            ---- End of inner function ----
+        ---- End of outer function ----

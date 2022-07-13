@@ -99,17 +99,6 @@ public class ListAndSlicingTests extends ParserTestBase {
     public void starExpr01() throws Exception {
         checkTreeResult("[*[1,2,3]]");
     }
-//
-// @Test
-// public void starExpr02() throws Exception {
-// checkSyntaxErrorMessageContains("*[1,2,3]", "can't use starred expression here");
-// }
-//
-// @Test
-// public void starExpr03() throws Exception {
-// checkSyntaxErrorMessageContains("*a = range(5)", "starred assignment target must be in a list or
-// tuple");
-// }
 
     @Test
     public void starExpr04() throws Exception {
@@ -137,15 +126,9 @@ public class ListAndSlicingTests extends ParserTestBase {
                         "    print(b)");
     }
 
-// @Test
-// public void starExpr09() throws Exception {
-// checkSyntaxErrorMessageContains("b = *a", "can't use starred expression here");
-// }
-//
-// @Test
-// public void starExpr10() throws Exception {
-// checkSyntaxErrorMessageContains("[*item for item in l]", "iterable unpacking cannot be used in
-// comprehension");
-// }
+    @Test
+    public void starExpr10() throws Exception {
+        checkSyntaxErrorMessageContains("[*item for item in l]", "iterable unpacking cannot be used in comprehension");
+    }
 
 }
