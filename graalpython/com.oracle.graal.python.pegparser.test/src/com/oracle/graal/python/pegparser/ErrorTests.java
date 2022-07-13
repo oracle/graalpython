@@ -42,6 +42,8 @@ package com.oracle.graal.python.pegparser;
 
 import org.junit.Test;
 
+import java.util.EnumSet;
+
 /**
  * Testing invalid rules. If the test method has the same names, but different number, then it tests
  * different alts in the rule.
@@ -306,5 +308,29 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("class Foo():\n" +
                         " [(42, 1 + ((( j := i )))) for i in range(5)]",
                         "assignment expression within a comprehension cannot be used in a class body");
+    }
+
+    @Test
+    public void nameIsNonlocalAndGlobal() {
+        checkSyntaxErrorMessage("x = 0\ndef f():\n nonlocal x\n global x\n", "name 'x' is nonlocal and global");
+    }
+
+    @Test
+    public void noBindingForNonlocal() {
+        checkSyntaxErrorMessage("def f():\n nonlocal x\n", "no binding for nonlocal 'x' found");
+    }
+
+    @Test
+    public void canNotBeUsedWithinAnnotation() {
+        // without __future__ annotations, these are fine as far as the parser/analyzer are concerned
+        parse("i: (await f()) = 3\n", "<module>", InputType.FILE);
+        parse("i: (yield) = 3\n", "<module>", InputType.FILE);
+        parse("i: (yield from f) = 3\n", "<module>", InputType.FILE);
+        parse("i: (x:=42) = 3\n", "<module>", InputType.FILE);
+        // with __future__ annotations, they are rejected by symtable/ScopeEnvironment
+        checkSyntaxErrorMessage("i: (await f()) = 3\n", "'await expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (yield) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (yield from f) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+        checkSyntaxErrorMessage("i: (x:=42) = 3\n", "'named expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
     }
 }

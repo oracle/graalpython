@@ -194,8 +194,7 @@ public class ScopeEnvironment {
                     HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
-                // TODO: SyntaxError:
-                // "name '%s' is nonlocal and global", name
+                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "name '%s' is nonlocal and global", name);
             }
             scopes.put(name, DefUse.GlobalExplicit);
             if (global != null) {
@@ -208,8 +207,7 @@ public class ScopeEnvironment {
             if (bound == null) {
                 errorCallback.onError(ErrorCallback.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
             } else if (!bound.contains(name)) {
-                // TODO: SyntaxError:
-                // "no binding for nonlocal '%s' found", name
+                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "no binding for nonlocal '%s' found", name);
             }
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
@@ -314,14 +312,17 @@ public class ScopeEnvironment {
             Scope scope = new Scope(name, type, ast);
             env.addScope(ast, scope);
             stack.add(scope);
+            Scope prev = currentScope;
+            if (prev != null) {
+                scope.comprehensionIterExpression = prev.comprehensionIterExpression;
+            }
+            currentScope = scope;
             if (type == Scope.ScopeType.Annotation) {
                 return;
             }
-            if (currentScope != null) {
-                scope.comprehensionIterExpression = currentScope.comprehensionIterExpression;
-                currentScope.children.add(scope);
+            if (prev != null) {
+                prev.children.add(scope);
             }
-            currentScope = scope;
         }
 
         private void exitBlock() {
@@ -430,6 +431,12 @@ public class ScopeEnvironment {
             env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(),msg);
         }
 
+        private void raiseIfAnnotationBlock(String name, ExprTy node) {
+            if (currentScope.type == ScopeType.Annotation) {
+                env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
+            }
+        }
+
         private void visitAnnotation(ExprTy expr) {
             boolean futureAnnotations = env.futureFeatures.contains(FutureFeature.ANNOTATIONS);
             if (futureAnnotations) {
@@ -528,9 +535,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Await node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("await expression", node);
             node.value.accept(this);
             return null;
         }
@@ -653,9 +658,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.NamedExpr node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("named expression", node);
             if (currentScope.comprehensionIterExpression > 0) {
                 env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_ITER_EXPR);
             }
@@ -754,9 +757,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("yield expression", node);
             if (node.value != null) {
                 node.value.accept(this);
             }
@@ -769,9 +770,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.YieldFrom node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("yield expression", node);
             if (node.value != null) {
                 node.value.accept(this);
             }
