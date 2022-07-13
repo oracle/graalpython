@@ -66,11 +66,9 @@ public class UnparserTests extends PythonTests {
     }
 
     private static void checkRoundTrip(String source) {
-        ErrorCallback errorCallback = (errorType, sourceRange, message) -> {
-            throw new AssertionError("Unexpected syntax error: " + message);
-        };
-        Parser parser = Compiler.createParser(source, errorCallback);
-        ModTy.Expression result = (ModTy.Expression) parser.parse(InputType.EVAL);
+        ErrorCallback errorCallback = new CompilerTests.TestErrorCallbackImpl();
+        Parser parser = Compiler.createParser(source, errorCallback, InputType.EVAL, false);
+        ModTy.Expression result = (ModTy.Expression) parser.parse();
         TruffleString unparsed = Unparser.unparse(result.body);
         assertEquals(source, unparsed.toJavaStringUncached());
     }
