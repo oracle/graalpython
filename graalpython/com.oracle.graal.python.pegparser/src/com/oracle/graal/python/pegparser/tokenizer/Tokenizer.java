@@ -1320,4 +1320,24 @@ public class Tokenizer {
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
         return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
+
+    public StatusCode getDone() {
+        return done;
+    }
+
+    public int getParensNestingLevel() {
+        return parensNestingLevel;
+    }
+
+    public int[] getParensStack() {
+        return parensStack;
+    }
+
+    public int[] getParensLineNumberStack() {
+        return parensLineNumberStack;
+    }
+
+    public int[] getParensColumnsStack() {
+        return parensColumnsStack;
+    }
 }

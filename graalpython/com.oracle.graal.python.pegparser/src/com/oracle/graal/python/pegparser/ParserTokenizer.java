@@ -117,4 +117,8 @@ public class ParserTokenizer {
     SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
         return tokenizer.extendRangeToCurrentPosition(rangeStart);
     }
+
+    public Tokenizer getTokenizer() {
+        return tokenizer;
+    }
 }

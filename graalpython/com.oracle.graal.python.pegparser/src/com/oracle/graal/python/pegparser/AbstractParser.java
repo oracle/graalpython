@@ -58,6 +58,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer. The methods
@@ -147,18 +148,22 @@ abstract class AbstractParser {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
             }
-            if (tokenizer.getFill() == 0) {
+            int fill = tokenizer.getFill();
+            if (fill == 0) {
                 raiseSyntaxError("error at start before reading any input");
-            } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER) {
-                // TODO we should handle this in better way. See cpython
-                raiseSyntaxError("unexpected EOF while parsing");
+            } else if (tokenizer.peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getTokenizer().getDone() == Tokenizer.StatusCode.EOF) {
+                if (tokenizer.getTokenizer().getParensNestingLevel() > 0) {
+                    raiseUnclosedParenthesesError();
+                } else {
+                    raiseSyntaxError("unexpected EOF while parsing");
+                }
             } else {
-                if (tokenizer.peekToken(tokenizer.getFill() - 1).type == INDENT) {
+                if (tokenizer.peekToken(fill - 1).type == INDENT) {
                     raiseIndentationError("unexpected indent");
-                } else if (tokenizer.peekToken(tokenizer.getFill() - 1).type == DEDENT) {
+                } else if (tokenizer.peekToken(fill - 1).type == DEDENT) {
                     raiseIndentationError("unexpected unindent");
                 } else {
-                    raiseSyntaxError("invalid syntax");
+                    raiseSyntaxErrorKnownLocation(tokenizer.peekToken(fill - 1), "invalid syntax");
                 }
             }
         }
@@ -568,10 +573,7 @@ abstract class AbstractParser {
         if (e instanceof ExprTy.NamedExpr) {
             return "named expression";
         }
-        // TODO Rise system error
-// PyErr_Format(PyExc_SystemError,
-// "unexpected expression in assignment %d (line %d)",
-// e->kind, e->lineno);
+        assert false : "unexpected expression " + e.getClass() + " in assignment";
         return null;
     }
 
@@ -895,6 +897,15 @@ abstract class AbstractParser {
     }
 
     /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     */
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(typeError, where, msg, argument);
+        return null;
+    }
+
+    /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is node, where error begins
      */
     SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
@@ -977,6 +988,21 @@ abstract class AbstractParser {
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
         return null;
+    }
+
+    /**
+     * raise_unclosed_parentheses_error
+     */
+    void raiseUnclosedParenthesesError() {
+        Tokenizer t = tokenizer.getTokenizer();
+        int level = t.getParensNestingLevel();
+        assert level > 0;
+        int errorLineno = t.getParensLineNumberStack()[level - 1];
+        int errorCol = t.getParensColumnsStack()[level - 1];
+        // TODO unknown source offsets
+        raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
+                new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
+                "'%c' was never closed", t.getParensStack()[level - 1]);
     }
 
     void ruleNotImplemented(String s) {

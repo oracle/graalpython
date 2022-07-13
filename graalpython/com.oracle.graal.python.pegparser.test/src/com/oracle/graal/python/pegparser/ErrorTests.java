@@ -187,7 +187,7 @@ public class ErrorTests extends ParserTestBase {
 
     @Test
     public void invalidPrimary01() throws Exception {
-        checkSyntaxErrorMessage("f{", "invalid syntax");
+        checkSyntaxErrorMessage("f{", "'{' was never closed");
     }
 
     @Test
