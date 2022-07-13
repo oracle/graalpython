@@ -1025,12 +1025,12 @@ public class BasicTests extends ParserTestBase {
 
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
-        checkScopeFromFile(testFile, true);
-        checkTreeFromFile(testFile, true);
+        checkScopeFromFile(testFile, false);
+        checkTreeFromFile(testFile, false);
     }
 
     private void checkTreeFromFile() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
-        checkTreeFromFile(testFile, true);
+        checkTreeFromFile(testFile, false);
     }
 }
