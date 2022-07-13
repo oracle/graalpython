@@ -798,13 +798,11 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
 
         class RaisingThread(threading.Thread):
             def __init__(self, **tkwargs):
-                out = mx.LinesOutputCapture()
-                err = mx.LinesOutputCapture()
-                tkwargs["kwargs"]["out"] = out
-                tkwargs["kwargs"]["err"] = err
+                capture = mx.LinesOutputCapture()
+                tkwargs["kwargs"]["out"] = capture
+                tkwargs["kwargs"]["err"] = capture
                 super().__init__(**tkwargs)
-                self.out = out
-                self.err = err
+                self.out = capture
                 self.exc = None
 
             def run(self):
@@ -830,16 +828,13 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
             for i, t in enumerate(threads):
                 t.join(timeout=1.0)
                 mx.logv("## Progress (last 5 lines) of thread %r:\n%s\n" % (t.name, os.linesep.join(t.out.lines[-5:])))
-                if t.is_alive():
-                    alive[i] = True
-                else:
-                    alive[i] = False
+                alive[i] = t.is_alive()
 
-        for t in threads:
-            if t.exc:
-                mx.log_error("\n\n### stdout of failing thread: \n\n" + str(t.out))
-                mx.log_error("\n\n### stderr of failing thread: \n\n" + str(t.err))
-                raise t.exc
+        thread_exceptions = [t.exc for t in threads]
+        if any(thread_exceptions):
+            for t in threads:
+                mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
+            mx.abort("At least one HPy testing thread failed.")
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None):
