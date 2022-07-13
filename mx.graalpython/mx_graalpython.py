@@ -696,7 +696,8 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False, cwd=None, lock=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -720,8 +721,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     mx.run([python_binary,
             "-c",
             "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpython' else 'cpython'))"],
-           nonZeroIsFatal=True,
-           env=env)
+           nonZeroIsFatal=True, env=env, out=out, err=err)
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
@@ -744,7 +744,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
                 # jacoco only dumps the data on exit, and when we run all our unittests
                 # at once it generates so much data we run out of heap space
                 for testfile in testfiles:
-                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd)
+                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd,
+                           out=out, err=err)
             finally:
                 shutil.move(launcher_path_bak, launcher_path)
         else:
@@ -757,13 +758,14 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
-                mx.run([python_binary, "--jvm", agent_args] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd)
+                mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
+                       nonZeroIsFatal=False, env=env, cwd=cwd, out=out, err=err)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         if lock:
             lock.release()
-        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env, cwd=cwd)
+        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env, cwd=cwd, out=out, err=err)
 
 
 def is_bash_launcher(launcher_path):
@@ -793,33 +795,49 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         mx.log("Ensure 'setuptools' is installed")
         mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"], nonZeroIsFatal=True, env=env)
         # parallelize
-        # import threading
-        # threads = []
-        # lock = threading.RLock()
-        #
-        # class RaisingThread(threading.Thread):
-        #     def run(self):
-        #         self.exc = None
-        #         try:
-        #             super().run()
-        #         except Exception as e: # pylint: disable=broad-except;
-        #             self.exc = e
+        import threading
+        threads = []
+        lock = threading.RLock()
+
+        class RaisingThread(threading.Thread):
+            def __init__(self, **tkwargs):
+                capture = mx.LinesOutputCapture()
+                tkwargs["kwargs"]["out"] = capture
+                tkwargs["kwargs"]["err"] = capture
+                super().__init__(**tkwargs)
+                self.out = capture
+                self.exc = None
+
+            def run(self):
+                try:
+                    super().run()
+                except Exception as e: # pylint: disable=broad-except;
+                    self.exc = e
 
         abi_list = ['cpython', 'universal', 'debug']
         if include_native:
             abi_list.append('nfi')
         for abi in abi_list:
-            env["TEST_HPY_ABI"] = abi
-            run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env.copy(), use_pytest=True)
-            # threads.append(RaisingThread(target=run_python_unittests, args=(python_binary, ), kwargs={
-            #     "args": args, "paths": [_hpy_test_root()], "env": env.copy(), "use_pytest": True, "lock": lock,
-            # }))
-            # threads[-1].start()
-        # for t in threads:
-        #     t.join()
-        # for t in threads:
-        #     if t.exc:
-        #         raise t.exc
+            tenv = env.copy()
+            tenv["TEST_HPY_ABI"] = abi
+            thread = RaisingThread(name=abi, target=run_python_unittests, args=(python_binary, ), kwargs={
+                "args": args, "paths": [_hpy_test_root()], "env": tenv, "use_pytest": True, "lock": lock,
+            })
+            threads.append(thread)
+            thread.start()
+
+        alive = [True] * len(threads)
+        while any(alive):
+            for i, t in enumerate(threads):
+                t.join(timeout=1.0)
+                mx.logv("## Progress (last 5 lines) of thread %r:\n%s\n" % (t.name, os.linesep.join(t.out.lines[-5:])))
+                alive[i] = t.is_alive()
+
+        thread_exceptions = [t.exc for t in threads]
+        if any(thread_exceptions):
+            for t in threads:
+                mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
+            mx.abort("At least one HPy testing thread failed.")
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None):
