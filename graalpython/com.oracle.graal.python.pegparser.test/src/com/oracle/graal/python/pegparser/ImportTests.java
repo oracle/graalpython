@@ -200,10 +200,10 @@ public class ImportTests extends ParserTestBase {
         checkTreeResult("from .bogus import x");
     }
 
-     @Test
-     public void fromImportInFn01() throws Exception {
-         checkSyntaxError("def fn():\n from sys.path import *");
-     }
+    @Test
+    public void fromImportInFn01() throws Exception {
+        checkSyntaxError("def fn():\n from sys.path import *");
+    }
 
     @Test
     public void fromImportInFn02() throws Exception {

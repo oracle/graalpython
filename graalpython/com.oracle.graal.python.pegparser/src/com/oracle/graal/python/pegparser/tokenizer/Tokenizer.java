@@ -312,7 +312,6 @@ public class Tokenizer {
     public static Tokenizer fromBytes(ErrorCallback errorCallback, byte[] code, EnumSet<Flag> flags) {
         // we do not translate newlines or add a missing final newline. we deal
         // with those in the call to get the next character
-        // check_bom
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());

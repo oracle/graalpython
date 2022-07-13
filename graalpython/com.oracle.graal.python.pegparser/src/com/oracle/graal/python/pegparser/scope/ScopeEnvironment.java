@@ -428,7 +428,7 @@ public class ScopeEnvironment {
                     msg = "'yield' inside generator expression";
                     break;
             }
-            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(),msg);
+            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg);
         }
 
         private void raiseIfAnnotationBlock(String name, ExprTy node) {

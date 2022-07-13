@@ -322,7 +322,8 @@ public class ErrorTests extends ParserTestBase {
 
     @Test
     public void canNotBeUsedWithinAnnotation() {
-        // without __future__ annotations, these are fine as far as the parser/analyzer are concerned
+        // without __future__ annotations, these are fine as far as the parser/analyzer are
+        // concerned
         parse("i: (await f()) = 3\n", "<module>", InputType.FILE);
         parse("i: (yield) = 3\n", "<module>", InputType.FILE);
         parse("i: (yield from f) = 3\n", "<module>", InputType.FILE);

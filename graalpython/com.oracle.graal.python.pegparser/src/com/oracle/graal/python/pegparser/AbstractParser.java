@@ -175,7 +175,7 @@ abstract class AbstractParser {
         callInvalidRules = true;
         level = 0;
         cache.clear();
-        tokenizer.resetState();
+        tokenizer.prepareForSecondPass();
     }
 
     /**
@@ -1001,8 +1001,8 @@ abstract class AbstractParser {
         int errorCol = t.getParensColumnsStack()[level - 1];
         // TODO unknown source offsets
         raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
-                new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
-                "'%c' was never closed", t.getParensStack()[level - 1]);
+                        new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
+                        "'%c' was never closed", t.getParensStack()[level - 1]);
     }
 
     void ruleNotImplemented(String s) {
