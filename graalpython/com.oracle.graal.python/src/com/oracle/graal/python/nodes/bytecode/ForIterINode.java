@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Obtains the next value of an iterator. When the iterator is exhausted it returns {@code null}. It
@@ -68,8 +69,9 @@ public abstract class ForIterINode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object iterator, int stackTop) throws QuickeningGeneralizeException;
 
     @Specialization
-    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop) {
-        if (iterator.hasNextInt()) {
+    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop,
+                    @Cached("createCountingProfile()") ConditionProfile conditionProfile) {
+        if (conditionProfile.profile(iterator.hasNextInt())) {
             frame.setInt(stackTop, iterator.nextInt());
             return true;
         }
