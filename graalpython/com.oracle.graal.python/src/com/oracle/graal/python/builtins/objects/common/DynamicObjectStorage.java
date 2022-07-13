@@ -322,14 +322,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @CachedLibrary("self") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
-            HashingStorage newStore;
-            if (PGuards.isBuiltinString(key, profile)) {
-                // To avoid calling the costly length message we use SIZE_THRESHOLD
-                newStore = new HashMapStorage(SIZE_THRESHOLD);
-            } else {
-                newStore = EconomicMapStorage.create(lib.length(self));
-            }
-
+            HashingStorage newStore = EconomicMapStorage.create(lib.length(self));
             newStore = lib.addAllToOther(self, newStore);
             if (gotState.profile(state != null)) {
                 return newLib.setItemWithState(newStore, key, value, state);

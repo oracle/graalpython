@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -57,9 +59,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
@@ -93,7 +92,7 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = PDict.createNewStorage(isJavaString(key), 1);
+        HashingStorage newStore = PDict.createNewStorage(1);
         if (gotState.profile(state != null)) {
             lib.setItemWithState(newStore, key, value, state);
         } else {

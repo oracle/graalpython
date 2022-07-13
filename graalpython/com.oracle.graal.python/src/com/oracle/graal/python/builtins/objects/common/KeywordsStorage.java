@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Iterator;
@@ -196,7 +195,7 @@ public class KeywordsStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, isJavaString(key), length() + 1);
+        HashingStorage newStore = generalize(lib, false, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(newStore, key, value, state);
         } else {

@@ -49,7 +49,6 @@ try:
     set_strategy = __graalpython__.set_storage_strategy
     FACTORIES = [
         lambda: set_strategy(dict(), 'empty'),
-        lambda: set_strategy(dict(), 'hashmap'),
         lambda: set_strategy(dict(), 'dynamicobject'),
         lambda: set_strategy(dict(), 'economicmap'),
     ]

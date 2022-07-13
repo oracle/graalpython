@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -72,6 +71,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -121,14 +121,11 @@ public abstract class HashingCollectionNodes {
         abstract HashingStorage execute(VirtualFrame frame, HashingStorage iterator, Object value);
 
         @Specialization
-        static HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached.Exclusive @Cached ConditionProfile findProfile) {
+        HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
+                        @Cached ObjectHashMap.PutProfiles profiles,
+                        @Cached LoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
-            HashingStorageLibrary.HashingStorageIterable<EconomicMapStorage.DictKey> iter = map.dictKeys();
-            for (EconomicMapStorage.DictKey key : iter) {
-                map.setValue(frame, key, value, findProfile, eqNode);
-            }
+            map.setValueForAllKeys(frame, value, profiles, this, loopProfile);
             return map;
         }
 
