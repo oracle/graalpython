@@ -182,6 +182,21 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testClassAnnotations() {
+        String source = "class Foo:\n" +
+                        "  attr: a[str]";
+        doTest(source);
+    }
+
+    @Test
+    public void testClassAnnotationsFuture() {
+        String source = "from __future__ import annotations\n" +
+                        "class Foo:\n" +
+                        "  attr: a[str]";
+        doTest(source);
+    }
+
+    @Test
     public void testFor() {
         doTest("for i in [1,2]:\n pass");
     }

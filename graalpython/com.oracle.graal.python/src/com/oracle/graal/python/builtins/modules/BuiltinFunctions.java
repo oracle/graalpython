@@ -89,8 +89,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
@@ -909,10 +909,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args);
-            // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
-            // fall back (like their CPython counterparts) to writing to the globals. We only need
-            // to ensure that the `locals()` call still gives us the globals dict
-            PArguments.setCustomLocals(args, globals);
+            setCustomLocals(args, globals);
             RootCallTarget rootCallTarget = getCt.execute(code);
             if (rootCallTarget == null) {
                 throw raise(ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
