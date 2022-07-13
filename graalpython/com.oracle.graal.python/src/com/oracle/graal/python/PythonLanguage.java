@@ -465,7 +465,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 throw new IllegalStateException("Not supported yet");
             }
             InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
-            return parseForBytecodeInterpreter(context, source, inputType, true, 0, context.getOption(PythonOptions.TerminalIsInteractive));
+            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive());
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");

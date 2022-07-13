@@ -89,6 +89,11 @@ public class ErrorCallbackImpl implements ErrorCallback {
 
             @Override
             public SourceSection getSourceSection() {
+                // Tokenizer pretends the input ends with a newline, which is not in the source
+                int len = source.getLength();
+                if (startOffset >= len) {
+                    return source.createSection(len, 0);
+                }
                 return source.createSection(startOffset, endOffset - startOffset);
             }
         };
