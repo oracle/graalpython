@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -757,18 +758,69 @@ public class CompilerTests extends PythonTests {
         doTest(s);
     }
 
+    @Test
+    public void testAssignToDebug() {
+        checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("__debug__ = 1", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("(a, __debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("(a, *__debug__, c) = (1, 2, 3)", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("f(__debug__=1)", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("__debug__: int", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("__debug__ += 1", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("def f(*, x=lambda __debug__:0): pass", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("def f(*args:(lambda __debug__:0)): pass", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("def f(**kwargs:(lambda __debug__:0)): pass", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("def f(**__debug__): pass", "cannot assign to __debug__");
+        checkSyntaxErrorMessage("def f(*xx, __debug__): pass", "cannot assign to __debug__");
+    }
+
+    @Test
+    public void testNoStarredExprHere() {
+        checkSyntaxErrorMessage("*[1,2,3]", "can't use starred expression here");
+        checkSyntaxErrorMessage("*a = range(5)", "starred assignment target must be in a list or tuple");
+        checkSyntaxErrorMessage("b = *a", "can't use starred expression here");
+    }
+
+    @Test
+    public void testRepeatedKwArg() {
+        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "keyword argument repeated");
+    }
+
+    @Test
+    public void testYieldOutsideFunction() {
+        checkSyntaxErrorMessage("yield", "'yield' outside function");
+        checkSyntaxErrorMessage("class foo:yield 1", "'yield' outside function");
+        checkSyntaxErrorMessage("class foo:yield from ()", "'yield' outside function");
+        checkSyntaxErrorMessage("def g(a:(yield)): pass", "'yield' outside function");
+        checkSyntaxErrorMessage("yield x", "'yield' outside function");
+        checkSyntaxErrorMessage("class C: yield 1", "'yield' outside function");
+    }
+
     private void doTest(String src) {
         doTest(src, InputType.FILE);
     }
 
     private void doTest(String src, InputType type) {
+        checkCodeUnit(assemble(src, type));
+    }
+
+    private void checkSyntaxErrorMessage(String src, String msg) {
+        try {
+            assemble(src, InputType.FILE);
+            fail("Expected SyntaxError: " + msg);
+        } catch (SyntaxError e) {
+            Assert.assertEquals(ErrorCallback.ErrorType.Syntax, e.errorType);
+            Assert.assertThat(e.message, CoreMatchers.containsString(msg));
+        }
+    }
+
+    private CodeUnit assemble(String src, InputType type) {
         ErrorCallback errorCallback = new TestErrorCallbackImpl();
         Parser parser = Compiler.createParser(src, errorCallback, type, false);
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
-        CodeUnit co = cu.assemble(0);
-        checkCodeUnit(co);
+        return cu.assemble(0);
     }
 
     private void checkCodeUnit(CodeUnit co) {
@@ -797,8 +849,21 @@ public class CompilerTests extends PythonTests {
 
         @Override
         public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-            fail("Unexpected syntax error: " + message);
+            throw new SyntaxError(errorType, sourceRange, message);
         }
     }
 
+    private static final class SyntaxError extends RuntimeException {
+        private static final long serialVersionUID = 6182610312044069775L;
+
+        final ErrorCallback.ErrorType errorType;
+        final SourceRange sourceRange;
+        final String message;
+
+        SyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, String message) {
+            this.errorType = errorType;
+            this.sourceRange = sourceRange;
+            this.message = message;
+        }
+    }
 }

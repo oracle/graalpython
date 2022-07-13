@@ -903,6 +903,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.value.accept(this);
             switch (node.context) {
                 case Store:
+                    checkForbiddenName(node.attr, node.context);
                     return addOpName(STORE_ATTR, unit.names, node.attr);
                 case Delete:
                     return addOpName(DELETE_ATTR, unit.names, node.attr);
