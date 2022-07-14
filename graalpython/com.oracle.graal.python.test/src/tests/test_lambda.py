@@ -41,3 +41,8 @@ def test_lambda_simple():
     l = lambda x : x * 2
     v = l(5)
     assert v == 10
+
+
+def test_lambda_condition_special():
+    v = [a for a in (1,2,3) if (lambda x : x*2)]
+    assert v == [1,2,3]

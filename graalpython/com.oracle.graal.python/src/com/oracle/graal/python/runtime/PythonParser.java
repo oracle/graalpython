@@ -143,9 +143,14 @@ public interface PythonParser {
         private Source source;
         private final int line;
 
-        public PIncompleteSourceException(String message, Throwable cause, int line) {
+        public PIncompleteSourceException(String message, Throwable cause, int line, Source source) {
             super(message, cause, UNLIMITED_STACK_TRACE, null);
             this.line = line;
+            this.source = source;
+        }
+
+        public PIncompleteSourceException(String message, Throwable cause, int line) {
+            this(message, cause, line, null);
         }
 
         public void setSource(Source source) {

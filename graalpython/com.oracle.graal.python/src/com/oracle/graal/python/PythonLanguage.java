@@ -28,7 +28,6 @@ package com.oracle.graal.python;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -50,8 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -62,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
+import com.oracle.graal.python.compiler.ErrorCallbackImpl;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
@@ -117,7 +115,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
@@ -161,7 +158,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int RELEASE_LEVEL_FINAL = 0xF;
     public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
     public static final TruffleString RELEASE_LEVEL_STRING;
-    public static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
 
     static {
         switch (RELEASE_LEVEL) {
@@ -453,10 +449,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
@@ -468,7 +464,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (!request.getArgumentNames().isEmpty()) {
                 throw new IllegalStateException("Not supported yet");
             }
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+            InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
+            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive());
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
@@ -490,36 +487,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize);
+                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize, false);
             }
         }
         for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
             if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize);
+                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false);
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize) {
-        ErrorCallback errorCb = (errorType, sourceRange, message) -> {
-            throw raiseSyntaxError(source, errorType, sourceRange.startOffset, sourceRange.endOffset, toTruffleStringUncached(message));
-        };
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal) {
+        ErrorCallback errorCb = new ErrorCallbackImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
-            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb);
+            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             Compiler compiler = new Compiler(errorCb);
-            ModTy mod = (ModTy) parser.parse(type);
-            // TODO this is needed until we get complete error handling in the parser
-            if (mod == null) {
-                throw raiseSyntaxError(source, ErrorCallback.ErrorType.Syntax, 0, 0, toTruffleStringUncached("invalid syntax"));
-            }
+            ModTy mod = (ModTy) parser.parse();
+            assert mod != null;
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble(0);
             PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source);
@@ -541,53 +533,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             throw e;
         }
-    }
-
-    private PException raiseSyntaxError(Source source, ErrorCallback.ErrorType errorType, int startOffset, int endOffset, TruffleString message) {
-        Node location = new Node() {
-            @Override
-            public boolean isAdoptable() {
-                return false;
-            }
-
-            @Override
-            public SourceSection getSourceSection() {
-                return source.createSection(startOffset, endOffset - startOffset);
-            }
-        };
-        PBaseException instance;
-        PythonBuiltinClassType cls = PythonBuiltinClassType.SyntaxError;
-        switch (errorType) {
-            case Indentation:
-                cls = PythonBuiltinClassType.IndentationError;
-                break;
-            case Tab:
-                cls = PythonBuiltinClassType.TabError;
-                break;
-        }
-        instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
-        final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
-        SourceSection section = location.getSourceSection();
-        TruffleString filename = toTruffleStringUncached(source.getPath());
-        if (filename == null) {
-            filename = toTruffleStringUncached(source.getName());
-            if (filename == null) {
-                filename = DEFAULT_FILENAME;
-            }
-        }
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
-        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
-        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
-        // Not very nice. This counts on the implementation in traceback.py where if the value of
-        // text attribute is NONE, then the line is not printed
-        Object text = PNone.NONE;
-        if (section.isAvailable()) {
-            text = toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString());
-        }
-        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
-        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
-        instance.setExceptionAttributes(excAttrs);
-        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(this));
     }
 
     private RootNode doParse(PythonContext context, Source source, int optimize) {

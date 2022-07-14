@@ -7,7 +7,6 @@ package com.oracle.graal.python.pegparser.tokenizer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +15,7 @@ import java.util.EnumSet;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 
 /**
  * This class is intentionally kept very close to CPython's tokenizer.c and tokenizer.h files. The
@@ -47,7 +47,7 @@ public class Tokenizer {
     private static final int TABSIZE = 8;
 
     public enum Flag {
-        EXECT_INPUT,
+        EXEC_INPUT,
         INTERACTIVE,
         TYPE_COMMENT
     }
@@ -79,6 +79,8 @@ public class Tokenizer {
         INTERACTIVE_STOP
     }
 
+    private final ErrorCallback errorCallback;
+
     // tok_new initialization is taken care of here
     private final boolean execInput;
 
@@ -86,7 +88,7 @@ public class Tokenizer {
     private final int[] codePointsInput;
     /** {@code tok_state->cur} */
     private int nextCharIndex = 0;
-    /** {@code tok_state->fp_interactive} */
+    /** combines {@code tok_state->fp_interactive} and {@code tok_state->prompt != NULL} */
     private final boolean interactive;
     /** {@code tok_state->start} */
     private int tokenStart = 0;
@@ -119,8 +121,6 @@ public class Tokenizer {
     @SuppressWarnings("unused") private final String filename = null;
     /** {@code tok_state->altindstack} */
     private final int[] altIndentationStack = new int[MAXINDENT];
-    /** {@code tok_state->enc, tok_state->encoding} */
-    private Charset fileEncoding = null;
     /** {@code tok_state->cont_line} */
     // TODO
     @SuppressWarnings("unused") private boolean inContinuationLine = false;
@@ -137,8 +137,18 @@ public class Tokenizer {
     /** {@code tok_state->async_def_nl} */
     private boolean asyncDefFollowedByNewline = false;
     private boolean readNewline = false;
+    /** {@code tok_state->interactive_underflow} */
+    public boolean reportIncompleteSourceIfInteractive = true;
 
     // error_ret
+
+    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags) {
+        this.errorCallback = errorCallback;
+        this.codePointsInput = codePointsInput;
+        this.execInput = flags.contains(Flag.EXEC_INPUT);
+        this.interactive = flags.contains(Flag.INTERACTIVE);
+        this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+    }
 
     /**
      * get_normal_name
@@ -254,31 +264,13 @@ public class Tokenizer {
     // buf_getc
     // buf_ungetc
     // buf_setreadl
-
-    /**
-     * translate_into_utf8
-     */
-    static int[] translateIntoCodePoints(byte[] inputBytes, int offset, Charset fileEncoding) {
-        CharBuffer buf = fileEncoding.decode(ByteBuffer.wrap(inputBytes, offset, inputBytes.length - offset));
-        return buf.codePoints().toArray();
-    }
-
     // translate_newlines
 
-    /**
-     * decode_str
-     */
-    private Tokenizer(byte[] code, EnumSet<Flag> flags) {
-        // we do not translate newlines or add a missing final newline. we deal
-        // with those in the call to get the next character
-        this.execInput = flags.contains(Flag.EXECT_INPUT);
+    private static int getSourceStart(byte[] byteInput) {
+        return checkBOM(byteInput) ? 3 : 0;
+    }
 
-        // check_bom
-        int sourceStart = 0;
-        boolean hasUTF8BOM = checkBOM(code);
-        if (hasUTF8BOM) {
-            sourceStart = 3;
-        }
+    private static Charset detectEncoding(int sourceStart, byte[] code) {
         // If we got a BOM, we need to treat the input as UTF8. But we'll still
         // have to check for coding specs written in the comment line of the
         // first two lines. Since the only valid coding specs in the first lines
@@ -295,8 +287,8 @@ public class Tokenizer {
         // comment.
 
         int offset = sourceStart;
-        this.fileEncoding = checkCodingSpec(code, offset);
-        if (this.fileEncoding == null) {
+        Charset fileEncoding = checkCodingSpec(code, offset);
+        if (fileEncoding == null) {
             // we didn't find the encoding in the first line, so we need to
             // check the second line too
             while (offset < code.length && code[offset] != '\n') {
@@ -304,17 +296,27 @@ public class Tokenizer {
             }
             offset++; // skip over newline
             if (offset < code.length) {
-                this.fileEncoding = checkCodingSpec(code, offset);
+                fileEncoding = checkCodingSpec(code, offset);
             }
         }
-
-        if (this.fileEncoding == null) {
-            this.fileEncoding = StandardCharsets.UTF_8;
+        if (fileEncoding == null) {
+            fileEncoding = StandardCharsets.UTF_8;
         }
+        return fileEncoding;
+    }
 
-        this.codePointsInput = charsToCodePoints(this.fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
-        this.interactive = flags.contains(Flag.INTERACTIVE);
-        this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+    /**
+     * Equivalent of {@code PyTokenizer_FromString} and {@code decode_str}. The encoding of the
+     * input is automatically detected using BOM and/or coding spec comment.
+     */
+    public static Tokenizer fromBytes(ErrorCallback errorCallback, byte[] code, EnumSet<Flag> flags) {
+        // we do not translate newlines or add a missing final newline. we deal
+        // with those in the call to get the next character
+        // check_bom
+        int sourceStart = getSourceStart(code);
+        Charset fileEncoding = detectEncoding(sourceStart, code);
+        int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
+        return new Tokenizer(errorCallback, codePointsInput, flags);
     }
 
     private static int[] charsToCodePoints(char[] chars) {
@@ -338,21 +340,11 @@ public class Tokenizer {
     }
 
     /**
-     * PyTokenizer_FromString
+     * Equivalent of {@code PyTokenizer_FromUTF8}. No charset decoding is performed, BOM or coding
+     * spec comment are ignored,
      */
-    public Tokenizer(byte[] code, boolean execInput) {
-        this(code, execInput ? EnumSet.of(Flag.EXECT_INPUT) : EnumSet.noneOf(Flag.class));
-    }
-
-    /**
-     * PyTokenizer_FromUTF8
-     */
-    public Tokenizer(String code, EnumSet<Flag> flags) {
-        this.codePointsInput = charsToCodePoints(code.toCharArray());
-        this.fileEncoding = StandardCharsets.UTF_8;
-        this.execInput = flags.contains(Flag.EXECT_INPUT);
-        this.interactive = flags.contains(Flag.INTERACTIVE);
-        this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags) {
+        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags);
     }
 
     // PyTokenizer_FromFile
@@ -391,6 +383,13 @@ public class Tokenizer {
                 if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
                     return '\n';
+                }
+            }
+            if (interactive) {
+                if (reportIncompleteSourceIfInteractive) {
+                    errorCallback.reportIncompleteSource(currentLineNumber);
+                } else {
+                    done = StatusCode.INTERACTIVE_STOP;
                 }
             }
             if (done != StatusCode.EOF) {
@@ -766,6 +765,10 @@ public class Tokenizer {
                                 }
                             }
                         }
+                    }
+
+                    if (done == StatusCode.INTERACTIVE_STOP) {
+                        return createToken(Token.Kind.ENDMARKER);
                     }
 
                     // check EOF
@@ -1266,8 +1269,7 @@ public class Tokenizer {
                 }
             }
         } while (bytesRead > 0 && newlines < 2);
-        Tokenizer tokenizer = new Tokenizer(ary, EnumSet.noneOf(Flag.class));
-        return tokenizer.fileEncoding;
+        return detectEncoding(getSourceStart(ary), ary);
     }
 
     // isxdigit

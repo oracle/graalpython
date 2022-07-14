@@ -48,9 +48,9 @@ public class ParseTreePrinter {
     public static void main(String[] args) throws IOException {
         for (String arg : args) {
             byte[] bytes = Files.readAllBytes(Paths.get(arg));
-            ParserTokenizer tokenizer = new ParserTokenizer(bytes);
-            Parser parser = new Parser(tokenizer, new NodeFactoryImp(), null, null);
-            Object result = parser.parse(InputType.FILE);
+            ParserTokenizer tokenizer = new ParserTokenizer(null, bytes, InputType.FILE, false);
+            Parser parser = new Parser(tokenizer, new NodeFactoryImp(), null, null, InputType.FILE);
+            Object result = parser.parse();
             System.out.println("Result of parsing " + arg + ": " + result);
         }
     }

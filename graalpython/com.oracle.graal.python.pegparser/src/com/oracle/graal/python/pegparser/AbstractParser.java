@@ -90,13 +90,13 @@ abstract class AbstractParser {
     private final FExprParser fexprParser;
     protected final NodeFactory factory;
     private final PythonStringFactory<?> stringFactory;
+    private final InputType startRule;
 
     private final int flags;
 
     protected int level = 0;
     protected boolean callInvalidRules = false;
 
-    private boolean isInteractive;
     private boolean parsingStarted;
 
     /**
@@ -118,23 +118,15 @@ abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser) {
-        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), new DefaultParserErrorCallback(), 0);
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {
+        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, startRule, 0);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, int flags) {
-        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), new DefaultParserErrorCallback(), flags);
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {
+        this(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, 0);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb) {
-        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, 0);
-    }
-
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb) {
-        this(tokenizer, factory, fexprParser, stringFactory, errorCb, 0);
-    }
-
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, int flags) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int flags) {
         this.tokenizer = tokenizer;
         this.factory = factory;
         this.fexprParser = fexprParser;
@@ -142,19 +134,15 @@ abstract class AbstractParser {
         this.stringFactory = stringFactory;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
+        this.startRule = startRule;
         this.flags = flags;
     }
 
-    public ErrorCallback getErrorCallback() {
-        return errorCb;
-    }
-
-    public SSTNode parse(InputType inputType) {
-        isInteractive = inputType == InputType.SINGLE;
-        SSTNode res = runParser(inputType);
+    public SSTNode parse() {
+        SSTNode res = runParser(startRule);
         if (res == null) {
             resetParserState();
-            runParser(inputType);
+            runParser(startRule);
             if (errorIndicator) {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
@@ -182,7 +170,7 @@ abstract class AbstractParser {
         callInvalidRules = true;
         level = 0;
         cache.clear();
-        tokenizer.reset(0);
+        tokenizer.resetState();
     }
 
     /**
@@ -281,7 +269,7 @@ abstract class AbstractParser {
         }
         reset(pos);
 
-        if (isInteractive && token.type == Token.Kind.ENDMARKER && parsingStarted) {
+        if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
             parsingStarted = false;
             // TODO: handle implicit DEDENT (PyPARSE_DONT_IMPLY_DEDENT)

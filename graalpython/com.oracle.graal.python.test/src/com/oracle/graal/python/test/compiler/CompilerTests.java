@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,6 +60,8 @@ import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.test.PythonTests;
+
+import static org.junit.Assert.fail;
 
 public class CompilerTests extends PythonTests {
     public CompilerTests() {
@@ -759,11 +762,9 @@ public class CompilerTests extends PythonTests {
     }
 
     private void doTest(String src, InputType type) {
-        ErrorCallback errorCallback = (errorType, sourceRange, message) -> {
-            throw new AssertionError("Unexpected syntax error: " + message);
-        };
-        Parser parser = Compiler.createParser(src, errorCallback);
-        ModTy result = (ModTy) parser.parse(type);
+        ErrorCallback errorCallback = new TestErrorCallbackImpl();
+        Parser parser = Compiler.createParser(src, errorCallback, type, false);
+        ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
         CodeUnit co = cu.assemble(0);
@@ -784,7 +785,19 @@ public class CompilerTests extends PythonTests {
                 Assert.assertEquals(Files.readString(goldenFile), coString);
             }
         } catch (IOException ex) {
-            Assert.fail(ex.getMessage());
+            fail(ex.getMessage());
+        }
+    }
+
+    static class TestErrorCallbackImpl implements ErrorCallback {
+        @Override
+        public void reportIncompleteSource(int line) {
+            fail("Unexpected call to reportIncompleteSource");
+        }
+
+        @Override
+        public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+            fail("Unexpected syntax error: " + message);
         }
     }
 

@@ -901,7 +901,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                             isIncompleteCode = true;
                                         }
                                     }
-                                } while (additionalInput != null && (!additionalInput.isEmpty() || isIncompleteCode));
+                                } while (additionalInput != null && isIncompleteCode);
                                 // Here we can be in these cases:
                                 // The parsing of the code with additional code was ok
                                 // The parsing of the code with additional code thrown an error,

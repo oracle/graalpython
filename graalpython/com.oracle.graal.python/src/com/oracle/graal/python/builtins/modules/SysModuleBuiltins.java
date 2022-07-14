@@ -1203,21 +1203,23 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     text = text.substringUncached(nl + 1, textLen, TS_ENCODING, true);
                     textLen = text.codePointLengthUncached(TS_ENCODING);
                 }
-                int idx = 0;
-                while (true) {
-                    int cp = text.codePointAtIndexUncached(idx, TS_ENCODING);
-                    if (!(cp == ' ' || cp == '\t' || cp == '\f')) {
-                        break;
+                if (!text.isEmpty()) {
+                    int idx = 0;
+                    while (true) {
+                        int cp = text.codePointAtIndexUncached(idx, TS_ENCODING);
+                        if (!(cp == ' ' || cp == '\t' || cp == '\f')) {
+                            break;
+                        }
+                        idx++;
+                        offset--;
                     }
-                    idx++;
-                    offset--;
+                    text = text.substringUncached(idx, textLen - idx, TS_ENCODING, true);
                 }
-                text = text.substringUncached(idx, textLen - idx, TS_ENCODING, true);
             }
 
             fileWriteString(frame, out, "    ");
             fileWriteString(frame, out, text);
-            if (text.codePointAtIndexUncached(0, TS_ENCODING) == '\0' || text.codePointAtIndexUncached(text.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
+            if (text.isEmpty() || text.codePointAtIndexUncached(text.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
                 fileWriteString(frame, out, T_NEWLINE);
             }
             if (offset == -1) {

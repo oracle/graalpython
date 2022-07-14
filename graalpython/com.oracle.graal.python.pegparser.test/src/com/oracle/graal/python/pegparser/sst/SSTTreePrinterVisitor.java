@@ -591,7 +591,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
             level--;
         }
         return sb.toString();
-
     }
 
     @Override
@@ -599,15 +598,20 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
-
     }
 
     @Override
     public String visit(ModTy.Interactive node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.body != null) {
+            level++;
+            for (SSTNode child : node.body) {
+                appendNewLineIndented(sb, child.accept(this));
+            }
+            level--;
+        }
         return sb.toString();
-
     }
 
     @Override
