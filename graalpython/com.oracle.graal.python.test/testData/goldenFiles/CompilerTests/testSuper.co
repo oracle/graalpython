@@ -50,7 +50,8 @@ Disassembly of Bar:
 Disassembly of Bar.boo:
 000094         0 LOAD_GLOBAL                       0    (super)
 000094         2 CALL_FUNCTION                     0
-000094         4 CALL_METHOD                       0    (boo)
-000094         7 POP_TOP
-000094         8 LOAD_NONE
-000094         9 RETURN_VALUE
+000094         4 LOAD_METHOD                       1    (boo)
+000094         6 CALL_METHOD                       0    (super)
+000094         8 POP_TOP
+000094         9 LOAD_NONE
+000094        10 RETURN_VALUE
