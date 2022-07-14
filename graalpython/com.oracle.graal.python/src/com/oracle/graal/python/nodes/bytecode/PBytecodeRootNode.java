@@ -1793,18 +1793,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (PythonExitException e) {
                 throw e;
             } catch (Exception | StackOverflowError | AssertionError e) {
-                PException pe;
+                PException pe = null;
                 boolean isInteropException = false;
                 if (e instanceof PException) {
                     pe = (PException) e;
+                } else if (e instanceof AbstractTruffleException) {
+                    isInteropException = true;
                 } else {
                     pe = wrapJavaExceptionIfApplicable(e);
                     if (pe == null) {
-                        if (e instanceof AbstractTruffleException) {
-                            isInteropException = true;
-                        } else {
-                            throw e;
-                        }
+                        throw e;
                     }
                 }
 
@@ -1838,8 +1836,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     if (e == pe) {
                         throw pe;
-                    } else {
+                    } else if (pe != null) {
                         throw pe.getExceptionForReraise();
+                    } else {
+                        throw e;
                     }
                 } else {
                     if (pe != null) {
@@ -2652,6 +2652,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof AbstractTruffleException) {
+            return null;
+        }
         if (e instanceof ControlFlowException) {
             return null;
         }
