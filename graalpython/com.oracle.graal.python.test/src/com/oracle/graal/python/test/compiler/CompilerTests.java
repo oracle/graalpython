@@ -759,6 +759,12 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testNamedExpr() {
+        String s = "if x := g():\n  print(x)\n";
+        doTest(s);
+    }
+
+    @Test
     public void testAssignToDebug() {
         checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
         checkSyntaxErrorMessage("__debug__ = 1", "cannot assign to __debug__");
@@ -814,7 +820,7 @@ public class CompilerTests extends PythonTests {
         }
     }
 
-    private CodeUnit assemble(String src, InputType type) {
+    private static CodeUnit assemble(String src, InputType type) {
         ErrorCallback errorCallback = new TestErrorCallbackImpl();
         Parser parser = Compiler.createParser(src, errorCallback, type, false);
         ModTy result = (ModTy) parser.parse();
@@ -849,7 +855,7 @@ public class CompilerTests extends PythonTests {
 
         @Override
         public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-            throw new SyntaxError(errorType, sourceRange, message);
+            throw new SyntaxError(errorType, message);
         }
     }
 
@@ -857,12 +863,10 @@ public class CompilerTests extends PythonTests {
         private static final long serialVersionUID = 6182610312044069775L;
 
         final ErrorCallback.ErrorType errorType;
-        final SourceRange sourceRange;
         final String message;
 
-        SyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, String message) {
+        SyntaxError(ErrorCallback.ErrorType errorType, String message) {
             this.errorType = errorType;
-            this.sourceRange = sourceRange;
             this.message = message;
         }
     }
