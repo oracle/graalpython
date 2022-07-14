@@ -1339,4 +1339,16 @@ public class Tokenizer {
     public int[] getParensColumnsStack() {
         return parensColumnsStack;
     }
+
+    public int getNextCharIndex() {
+        return nextCharIndex;
+    }
+
+    public int getLineStartIndex() {
+        return lineStartIndex;
+    }
+
+    public int getCurrentLineNumber() {
+        return currentLineNumber;
+    }
 }

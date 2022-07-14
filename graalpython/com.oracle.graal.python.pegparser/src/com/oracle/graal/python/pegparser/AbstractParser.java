@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.DEDENT;
+import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.ERRORTOKEN;
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
 
 import java.lang.reflect.Array;
@@ -594,6 +595,9 @@ abstract class AbstractParser {
                 }
             }
         }
+        if (token.type == ERRORTOKEN) {
+            tokenizerError();
+        }
         return token;
     }
 
@@ -995,14 +999,57 @@ abstract class AbstractParser {
      */
     void raiseUnclosedParenthesesError() {
         Tokenizer t = tokenizer.getTokenizer();
-        int level = t.getParensNestingLevel();
-        assert level > 0;
-        int errorLineno = t.getParensLineNumberStack()[level - 1];
-        int errorCol = t.getParensColumnsStack()[level - 1];
+        int nestingLevel = t.getParensNestingLevel();
+        assert nestingLevel > 0;
+        int errorLineno = t.getParensLineNumberStack()[nestingLevel - 1];
+        int errorCol = t.getParensColumnsStack()[nestingLevel - 1];
         // TODO unknown source offsets
         raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
                         new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
-                        "'%c' was never closed", t.getParensStack()[level - 1]);
+                        "'%c' was never closed", t.getParensStack()[nestingLevel - 1]);
+    }
+
+    /**
+     * tokenizer_error
+     */
+    void tokenizerError() {
+        Tokenizer t = tokenizer.getTokenizer();
+        ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
+        String msg;
+        int colOffset = -1;
+        switch (t.getDone()) {
+            case BAD_TOKEN:
+                msg = "invalid token";
+                break;
+            case EOF:
+                if (t.getParensNestingLevel() > 0) {
+                    raiseUnclosedParenthesesError();
+                } else {
+                    raiseSyntaxError("unexpected EOF while parsing");
+                }
+                return;
+            case DEDENT_INVALID:
+                raiseIndentationError("unindent does not match any outer indentation level");
+                return;
+            case TABS_SPACES_INCONSISTENT:
+                errorType = ErrorCallback.ErrorType.Tab;
+                msg = "inconsistent use of tabs and spaces in indentation";
+                break;
+            case TOO_DEEP_INDENTATION:
+                errorType = ErrorCallback.ErrorType.Indentation;
+                msg = "too many levels of indentation";
+                break;
+            case LINE_CONTINUATION_ERROR:
+                msg = "unexpected character after line continuation character";
+                colOffset = t.getNextCharIndex() - t.getLineStartIndex();
+                break;
+            default:
+                msg = "unknown parsing error";
+                break;
+        }
+        // TODO unknown source offsets
+        raiseErrorKnownLocation(errorType, new SourceRange(0, 0, t.getCurrentLineNumber(),
+                        colOffset >= 0 ? colOffset : 0, t.getCurrentLineNumber(), -1), msg);
     }
 
     void ruleNotImplemented(String s) {
