@@ -71,8 +71,9 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NO_ALIGNMENT_INFO;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SYMBOL_IS_MISSING;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIS_TYPE_HAS_NO_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_ARGUMENTS_D_MAXIMUM_IS_D;
+import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
+import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
@@ -151,6 +152,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -161,7 +163,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -192,9 +193,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
-import com.oracle.truffle.api.strings.TruffleString.ParseLongNode;
-import com.oracle.truffle.api.strings.TruffleString.SubstringNode;
-import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
+import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -258,14 +257,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         DLHandler handle;
         if (context.getEnv().isNativeAccessAllowed()) {
-            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, T_EMPTY_STRING, rtldLocal,
-                            CodePointLengthNode.getUncached(), SimpleTruffleStringFormatNode.getUncached(),
-                            ParseLongNode.getUncached(), SubstringNode.getUncached(), SwitchEncodingNode.getUncached());
+            handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_EMPTY_STRING, rtldLocal);
             setCtypeNFIHelpers(this, context, handle);
         } else {
             try {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
-                handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, T_EMPTY_STRING, true);
+                handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
                 setCtypeLLVMHelpers(this, context, handle);
             } catch (IOException | ImportException | ApiInitException e) {
                 // TODO(fa): properly handle errors
@@ -364,12 +361,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @ExportLibrary(value = InteropLibrary.class, delegateTo = "library")
     protected static final class DLHandler implements TruffleObject {
         final Object library;
-        final TruffleString name;
+        final String name;
         final long adr;
         final boolean isManaged;
         boolean isClosed;
 
-        private DLHandler(Object library, long adr, TruffleString name, boolean isManaged) {
+        private DLHandler(Object library, long adr, String name, boolean isManaged) {
             this.library = library;
             this.adr = adr;
             this.name = name;
@@ -638,24 +635,24 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dlopen", minNumOfPositionalArgs = 1, parameterNames = {"name", "mode"})
+    @Builtin(name = "dlopen", minNumOfPositionalArgs = 1, parameterNames = {"$self", "name", "mode"}, declaresExplicitSelf = true)
     // TODO: 'name' might need to be processed using FSConverter.
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString, defaultValue = "T_EMPTY_STRING", useDefaultForNone = true)
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "Integer.MIN_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
-    protected abstract static class DlOpenNode extends PythonBinaryClinicBuiltinNode {
+    protected abstract static class DlOpenNode extends PythonTernaryClinicBuiltinNode {
 
         private static final TruffleString MACOS_Security_LIB = tsLiteral("/System/Library/Frameworks/Security.framework/Security");
         private static final TruffleString MACOS_CoreFoundation_LIB = tsLiteral("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
         // "LibFFILibrary(" + handle + ")"
         private static final int LIBFFI_ADR_FORMAT_START = "LibFFILibrary".length() + 1;
 
-        private static final TruffleString T_RTLD_LOCAL = tsLiteral("RTLD_LOCAL|RTLD_NOW");
-        private static final TruffleString T_RTLD_GLOBAL = tsLiteral("RTLD_GLOBAL|RTLD_NOW");
+        private static final String T_RTLD_LOCAL = "RTLD_LOCAL|RTLD_NOW";
+        private static final String T_RTLD_GLOBAL = "RTLD_GLOBAL|RTLD_NOW";
 
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(DlOpenNode.class);
 
-        protected static TruffleString flagsToString(int flag) {
+        protected static String flagsToString(int flag) {
             return (flag & RTLD_LOCAL.getValueIfDefined()) != 0 ? T_RTLD_LOCAL : T_RTLD_GLOBAL;
         }
 
@@ -664,46 +661,47 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             return CtypesModuleBuiltinsClinicProviders.DlOpenNodeClinicProviderGen.INSTANCE;
         }
 
-        protected static DLHandler loadNFILibrary(PythonContext context, NFIBackend backendType, TruffleString name, int flags,
-                        TruffleString.CodePointLengthNode codePointLengthNode, SimpleTruffleStringFormatNode formatNode,
-                        TruffleString.ParseLongNode parseLongNode, TruffleString.SubstringNode substringNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
-            TruffleString src;
+        @TruffleBoundary
+        protected static DLHandler loadNFILibrary(PythonContext context, NFIBackend backendType, String name, int flags) {
+            String src;
             if (!name.isEmpty()) {
-                src = formatNode.format("%sload (%s) \"%s\"", backendType.withClause, flagsToString(flags), name);
+                src = String.format("%sload (%s) \"%s\"", backendType.withClause, flagsToString(flags), name);
             } else {
-                src = T_DEFAULT;
+                src = J_DEFAULT;
             }
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(formatNode.format("Loading native library %s %s", name, backendType.withClause).toJavaStringUncached());
+                LOGGER.fine(String.format("Loading native library %s %s", name, backendType.withClause));
             }
             Object handler = load(context, src, name);
             InteropLibrary lib = InteropLibrary.getUncached();
-            TruffleString handleStr;
+            String handleStr;
             try {
-                handleStr = switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(handler)), TS_ENCODING);
+                handleStr = lib.asString(lib.toDisplayString(handler));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
             }
-            TruffleString adrStr = substringNode.execute(handleStr, LIBFFI_ADR_FORMAT_START, codePointLengthNode.execute(handleStr, TS_ENCODING) - LIBFFI_ADR_FORMAT_START - 1, TS_ENCODING, false);
+            String adrStr = handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - LIBFFI_ADR_FORMAT_START - 1);
             try {
-                long adr = parseLongNode.execute(adrStr, 10);
+                long adr = Long.parseLong(adrStr, 10);
                 return new DLHandler(handler, adr, name, false);
-            } catch (TruffleString.NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 // TODO handle exception [GR-38101]
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         @TruffleBoundary
-        private static Object load(PythonContext context, TruffleString src, TruffleString name) {
-            CompilerAsserts.neverPartOfCompilation();
-            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src.toJavaStringUncached(), "load:" + name.toJavaStringUncached()).internal(true).build();
+        private static Object load(PythonContext context, String src, String name) {
+            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
             return context.getEnv().parseInternal(loadSrc).call();
         }
 
         @TruffleBoundary
-        protected static Object loadLLVMLibrary(PythonContext context, TruffleString path) throws Exception {
-            CompilerAsserts.neverPartOfCompilation();
+        protected static Object loadLLVMLibrary(PythonContext context, TruffleString path) throws ImportException, ApiInitException, IOException {
+            if (path.isEmpty()) {
+                CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
+                return cApiContext.getLLVMLibrary();
+            }
             Source loadSrc = Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
             return context.getEnv().parseInternal(loadSrc).call();
         }
@@ -718,36 +716,38 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object py_dl_open(VirtualFrame frame, TruffleString name_str, int m,
+        Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
                         @Cached PyObjectHashNode hashNode,
                         @Cached AuditNode auditNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached CodePointLengthNode codePointLengthNode,
                         @Cached EndsWithNode endsWithNode,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Cached SimpleTruffleStringFormatNode formatNode,
-                        @Cached TruffleString.ParseLongNode parseLongNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached EqualNode eqNode) {
+            auditNode.audit("ctypes.dlopen", name);
+            if (name.isEmpty()) {
+                return factory().createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
+            }
+
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
-            auditNode.audit("ctypes.dlopen", name_str);
-            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
+            PythonContext context = getContext();
             DLHandler handle;
             Exception exception = null;
+            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || endsWithNode.executeBoolean(frame, name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING));
             try {
-                if (endsWithNode.executeBoolean(frame, name_str, getContext().getSoAbi(), 0, codePointLengthNode.execute(name_str, TS_ENCODING))) {
-                    Object handler = loadLLVMLibrary(getContext(), name_str);
+                if (loadWithLLVM) {
+                    Object handler = loadLLVMLibrary(context, name);
                     long adr = hashNode.execute(frame, handler);
-                    handle = new DLHandler(handler, adr, name_str, true);
-                    registerAddress(getContext(), handle.adr, handle);
+                    handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
+                    registerAddress(context, handle.adr, handle);
                     return factory().createNativeVoidPtr(handle);
                 } else {
+                    CtypesThreadState ctypes = CtypesThreadState.get(context, getLanguage());
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
-                    if (!eqNode.execute(name_str, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name_str, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
-                        handle = loadNFILibrary(getContext(), ctypes.backendType, name_str, mode, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
-                        registerAddress(getContext(), handle.adr, handle);
+                    if (!eqNode.execute(name, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
+                        handle = loadNFILibrary(context, ctypes.backendType, name.toJavaStringUncached(), mode);
+                        registerAddress(context, handle.adr, handle);
                         return factory().createNativeVoidPtr(handle, handle.adr);
                     }
                 }
@@ -756,7 +756,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             }
             throw raise(OSError, getErrMsg(exception));
         }
-
     }
 
     static DLHandler getHandler(Object ptr, PythonContext context) {
@@ -909,13 +908,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPString(PString ppath,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Shared("codePointLength") @Cached CodePointLengthNode codePointLengthNode,
-                        @Shared("formatNode") @Cached SimpleTruffleStringFormatNode formatNode,
-                        @Shared("parseLongNode") @Cached ParseLongNode parseLongNode,
-                        @Shared("substringNode") @Cached SubstringNode substringNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode) {
-            return doString(ppath.getValueUncached(), ilib, codePointLengthNode, formatNode, parseLongNode, substringNode, switchEncodingNode);
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
+            return doString(ppath.getValueUncached(), ilib);
         }
 
         @CompilationFinal Object cachedFunction = null;
@@ -923,12 +917,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         // TODO: 'path' might need to be processed using FSConverter.
         @Specialization
         Object doString(TruffleString path,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Shared("codePointLength") @Cached CodePointLengthNode codePointLengthNode,
-                        @Shared("formatNode") @Cached SimpleTruffleStringFormatNode formatNode,
-                        @Shared("parseLongNode") @Cached ParseLongNode parseLongNode,
-                        @Shared("substringNode") @Cached SubstringNode substringNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
             if (!hasDynamicLoaderCache()) {
                 throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, "_dyld_shared_cache_contains_path");
             }
@@ -937,8 +926,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 if (cachedFunction == null) {
                     String name = "_dyld_shared_cache_contains_path";
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, T_EMPTY_STRING, RTLD_LOCAL.getValueIfDefined(), codePointLengthNode, formatNode, parseLongNode,
-                                    substringNode, switchEncodingNode);
+                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, J_EMPTY_STRING, RTLD_LOCAL.getValueIfDefined());
                     Object sym = ilib.readMember(handle.getLibrary(), name);
                     // bool _dyld_shared_cache_contains_path(const char* path)
                     Source source = Source.newBuilder(J_NFI_LANGUAGE, "(string):sint32", name).build();
@@ -1327,8 +1315,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        protected static Object getFunction(NativeFunction pProc, TruffleString signature, PythonContext context) throws Exception {
-            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature.toJavaStringUncached(), pProc.name.toJavaStringUncached()).build();
+        protected static Object getFunction(NativeFunction pProc, String signature, PythonContext context) throws Exception {
+            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, pProc.name.toJavaStringUncached()).build();
             Object nfiSignature = context.getEnv().parseInternal(source).call();
             return SignatureLibrary.getUncached().bind(nfiSignature, pProc.sym);
         }
@@ -1354,7 +1342,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 TruffleString signature = FFIType.buildNFISignature(atypes, restype, appendStringNode, toStringNode);
                 Object function;
                 try {
-                    function = getFunction(pProc, signature, context);
+                    function = getFunction(pProc, signature.toJavaStringUncached(), context);
                 } catch (Exception e) {
                     throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
                 }
@@ -1382,45 +1370,45 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
          */
         /*- TODO (mq) require more support from NFI.
         void _call_function_pointer(int flags,
-                                    NativeFunction pProc,
-                                    Object[] avalues,
-                                    FFIType[] atypes,
-                                    FFIType restype,
-                                    Object resmem,
-                                    int argcount,
-                                    CtypesThreadState state) {
-                // XXX check before here
-                if (restype == null) {
-                    throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
-                }
+                                NativeFunction pProc,
+                                Object[] avalues,
+                                FFIType[] atypes,
+                                FFIType restype,
+                                Object resmem,
+                                int argcount,
+                                CtypesThreadState state) {
+            // XXX check before here
+            if (restype == null) {
+                throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
+            }
 
-                int cc = FFI_DEFAULT_ABI;
-                ffi_cif cif;
-                if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
-                    throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
-                }
+            int cc = FFI_DEFAULT_ABI;
+            ffi_cif cif;
+            if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
+                throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
+            }
 
-                Object error_object = null;
-                if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
-                    error_object = state.errno;
-                }
-                if ((flags & FUNCFLAG_PYTHONAPI) == 0)
-                    Py_UNBLOCK_THREADS
-                if ((flags & FUNCFLAG_USE_ERRNO) != 0) {
-                    int temp = state.errno;
-                    state.errno = errno;
-                    errno = temp;
-                }
-                ffi_call(&cif, pProc, resmem, avalues);
-                if ((flags & FUNCFLAG_USE_ERRNO) != 0) {
-                    int temp = state.errno;
-                    state.errno = errno;
-                    errno = temp;
-                }
-                if ((flags & FUNCFLAG_PYTHONAPI) == 0)
-                    Py_BLOCK_THREADS
-                if ((flags & FUNCFLAG_PYTHONAPI) && PyErr_Occurred()) {
-                }
+            Object error_object = null;
+            if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
+                error_object = state.errno;
+            }
+            if ((flags & FUNCFLAG_PYTHONAPI) == 0)
+                Py_UNBLOCK_THREADS
+            if ((flags & FUNCFLAG_USE_ERRNO) != 0) {
+                int temp = state.errno;
+                state.errno = errno;
+                errno = temp;
+            }
+            ffi_call(&cif, pProc, resmem, avalues);
+            if ((flags & FUNCFLAG_USE_ERRNO) != 0) {
+                int temp = state.errno;
+                state.errno = errno;
+                errno = temp;
+            }
+            if ((flags & FUNCFLAG_PYTHONAPI) == 0)
+                Py_BLOCK_THREADS
+            if ((flags & FUNCFLAG_PYTHONAPI) && PyErr_Occurred()) {
+            }
         }
         */
     }
@@ -1568,10 +1556,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
             /*-
             if (PyUnicode_Check(obj)) { // CTYPES_UNICODE
-                pa.ffi_type = ffi_type_pointer;
-                pa.value = PyUnicode_AsWideCharString(obj, NULL);
-                pa.keep = PyCapsule_New(pa.value.p, CTYPES_CAPSULE_NAME_PYMEM, pymem_destructor);
-                return 0;
+            pa.ffi_type = ffi_type_pointer;
+            pa.value = PyUnicode_AsWideCharString(obj, NULL);
+            pa.keep = PyCapsule_New(pa.value.p, CTYPES_CAPSULE_NAME_PYMEM, pymem_destructor);
+            return 0;
             }
             */
 
