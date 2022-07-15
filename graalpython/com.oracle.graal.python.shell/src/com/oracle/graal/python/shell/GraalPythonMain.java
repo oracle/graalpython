@@ -490,7 +490,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             exec_list.add("-classpath");
             exec_list.add(System.getProperty("java.class.path"));
-            exec_list.add(GraalPythonMain.class.getName());
+            exec_list.add(getMainClass());
             if (relaunchArgs != null) {
                 exec_list.addAll(relaunchArgs);
             }
@@ -1026,7 +1026,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
      * Some system properties have already been read at this point, so to change them, we just
      * re-execute the process with the additional options.
      */
-    private static void subExec(List<String> args, List<String> subProcessDefs) {
+    private void subExec(List<String> args, List<String> subProcessDefs) {
         List<String> cmd = getCmdline(args, subProcessDefs);
         try {
             System.exit(new ProcessBuilder(cmd.toArray(new String[0])).inheritIO().start().waitFor());
@@ -1037,7 +1037,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
-    static List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
+    private List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
         List<String> cmd = new ArrayList<>();
         if (isAOT()) {
             cmd.add(ProcessProperties.getExecutableName());
@@ -1064,7 +1064,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 assert subProcArg.startsWith("D") || subProcArg.startsWith("agent");
                 cmd.add("-" + subProcArg);
             }
-            cmd.add(GraalPythonMain.class.getName());
+            cmd.add(getMainClass());
         }
 
         cmd.addAll(args);
