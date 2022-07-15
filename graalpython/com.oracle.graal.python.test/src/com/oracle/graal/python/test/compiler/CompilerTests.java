@@ -810,7 +810,7 @@ public class CompilerTests extends PythonTests {
         checkCodeUnit(assemble(src, type));
     }
 
-    private void checkSyntaxErrorMessage(String src, String msg) {
+    private static void checkSyntaxErrorMessage(String src, String msg) {
         try {
             assemble(src, InputType.FILE);
             fail("Expected SyntaxError: " + msg);
