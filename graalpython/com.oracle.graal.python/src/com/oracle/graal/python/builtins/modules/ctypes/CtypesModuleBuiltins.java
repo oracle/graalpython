@@ -956,8 +956,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         private static Object initializeDyldSharedCacheContainsPathFunction(PythonContext context, CtypesModuleBuiltins builtins) {
             try {
                 if (context.getEnv().isNativeAccessAllowed()) {
+                    // note: sizeof(bool) == 1
                     // bool _dyld_shared_cache_contains_path(const char* path)
-                    return createNFIHelperFunction(context, builtins.rtldDefault, DYLD_SHARED_CACHE_CONTAINS_PATH, "(POINTER):SINT32");
+                    return createNFIHelperFunction(context, builtins.rtldDefault, DYLD_SHARED_CACHE_CONTAINS_PATH, "(POINTER):SINT8");
                 }
                 InteropLibrary lib = InteropLibrary.getUncached(builtins.rtldDefault.library);
                 if (lib.isMemberReadable(builtins.rtldDefault.library, DYLD_SHARED_CACHE_CONTAINS_PATH)) {
