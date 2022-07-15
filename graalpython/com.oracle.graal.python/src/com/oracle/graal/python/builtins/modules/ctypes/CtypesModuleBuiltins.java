@@ -102,9 +102,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextLongBuiltins.PyLongAsVoidPtr;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
@@ -112,12 +114,15 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectS
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -127,7 +132,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -209,6 +213,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     }
 
     private DLHandler rtldDefault;
+    private Object dyldSharedCacheContainsPathFunction;
     @CompilationFinal private Object strlenFunction;
     @CompilationFinal private Object memcpyFunction;
 
@@ -286,29 +291,29 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
     private static void setCtypeLLVMHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, PythonContext context, DLHandler h) {
         try {
-            ctypesModuleBuiltins.strlenFunction = InteropLibrary.getUncached().readMember(h.library, NativeCAPISymbol.FUN_STRLEN.getName().toJavaStringUncached());
-            ctypesModuleBuiltins.memcpyFunction = InteropLibrary.getUncached().readMember(h.library, NativeCAPISymbol.FUN_MEMCPY.getName().toJavaStringUncached());
-        } catch (UnsupportedMessageException e) {
-            e.printStackTrace();
-        } catch (UnknownIdentifierException e) {
-            e.printStackTrace();
+            InteropLibrary lib = InteropLibrary.getUncached(h.library);
+            ctypesModuleBuiltins.strlenFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_STRLEN.getName().toJavaStringUncached());
+            ctypesModuleBuiltins.memcpyFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_MEMCPY.getName().toJavaStringUncached());
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
     private static void setCtypeNFIHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, PythonContext context, DLHandler h) {
-        ctypesModuleBuiltins.strlenFunction = createNFIHelperFunction(context, h, "strlen", "(POINTER):UINT32");
-        ctypesModuleBuiltins.memcpyFunction = createNFIHelperFunction(context, h, "memcpy", "([UINT8], POINTER, UINT32):POINTER");
-    }
-
-    private static Object createNFIHelperFunction(PythonContext context, DLHandler h, String name, String signature) {
         try {
-            Object symbol = InteropLibrary.getUncached().readMember(h.library, name);
-            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, name).build();
-            Object nfiSignature = context.getEnv().parseInternal(source).call();
-            return SignatureLibrary.getUncached().bind(nfiSignature, symbol);
+            ctypesModuleBuiltins.strlenFunction = createNFIHelperFunction(context, h, "strlen", "(POINTER):UINT32");
+            ctypesModuleBuiltins.memcpyFunction = createNFIHelperFunction(context, h, "memcpy", "([UINT8], POINTER, UINT32):POINTER");
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
+    }
+
+    @TruffleBoundary
+    private static Object createNFIHelperFunction(PythonContext context, DLHandler h, String name, String signature) throws UnsupportedMessageException, UnknownIdentifierException {
+        Object symbol = InteropLibrary.getUncached().readMember(h.library, name);
+        Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, name).build();
+        Object nfiSignature = context.getEnv().parseInternal(source).call();
+        return SignatureLibrary.getUncached().bind(nfiSignature, symbol);
     }
 
     protected static final String J_UNPICKLE = "_unpickle";
@@ -877,11 +882,19 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_dyld_shared_cache_contains_path", minNumOfPositionalArgs = 1)
+    @Builtin(name = "_dyld_shared_cache_contains_path", parameterNames = {"$self", "path"}, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    protected abstract static class DyldSharedCacheContainsPath extends PythonUnaryBuiltinNode {
+    @ArgumentClinic(name = "path", conversionClass = FsConverterNode.class)
+    protected abstract static class DyldSharedCacheContainsPath extends PythonBinaryClinicBuiltinNode {
+        private static final String DYLD_SHARED_CACHE_CONTAINS_PATH = "_dyld_shared_cache_contains_path";
+
         @CompilationFinal private static boolean hasDynamicLoaderCacheValue = false;
         @CompilationFinal private static boolean hasDynamicLoaderCacheInit = false;
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DyldSharedCacheContainsPathClinicProviderGen.INSTANCE;
+        }
 
         private static boolean hasDynamicLoaderCache() {
             if (hasDynamicLoaderCacheInit) {
@@ -907,37 +920,53 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPString(PString ppath,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            return doString(ppath.getValueUncached(), ilib);
+        Object doBytes(PythonModule self, PBytes path,
+                        @Cached ToBytesNode toBytesNode,
+                        @CachedLibrary(limit = "1") InteropLibrary ilib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @CachedLibrary(limit = "1") PythonNativeWrapperLibrary wrapperLib) {
+            if (!hasDynamicLoaderCache()) {
+                throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, DYLD_SHARED_CACHE_CONTAINS_PATH);
+            }
+
+            CtypesModuleBuiltins builtins = (CtypesModuleBuiltins) self.getBuiltins();
+            Object cachedFunction = builtins.dyldSharedCacheContainsPathFunction;
+            if (cachedFunction == null) {
+                cachedFunction = initializeDyldSharedCacheContainsPathFunction(getContext(), builtins);
+                builtins.dyldSharedCacheContainsPathFunction = cachedFunction;
+            }
+            if (!ilib.isNull(cachedFunction)) {
+                try {
+                    // note: CByteArrayWrapper is '\0' terminated
+                    CByteArrayWrapper byteArrayWrapper = new CByteArrayWrapper(toBytesNode.execute(path));
+                    try {
+                        Object result = ilib.execute(cachedFunction, byteArrayWrapper);
+                        return resultLib.asInt(result) != 0;
+                    } finally {
+                        byteArrayWrapper.free(wrapperLib);
+                    }
+                } catch (InteropException e) {
+                    // fall through
+                }
+            }
+            return false;
         }
 
-        @CompilationFinal Object cachedFunction = null;
-
-        // TODO: 'path' might need to be processed using FSConverter.
-        @Specialization
-        Object doString(TruffleString path,
-                        @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            if (!hasDynamicLoaderCache()) {
-                throw raise(NotImplementedError, S_SYMBOL_IS_MISSING, "_dyld_shared_cache_contains_path");
-            }
-
+        @TruffleBoundary
+        private static Object initializeDyldSharedCacheContainsPathFunction(PythonContext context, CtypesModuleBuiltins builtins) {
             try {
-                if (cachedFunction == null) {
-                    String name = "_dyld_shared_cache_contains_path";
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    DLHandler handle = DlOpenNode.loadNFILibrary(getContext(), NFIBackend.NATIVE, J_EMPTY_STRING, RTLD_LOCAL.getValueIfDefined());
-                    Object sym = ilib.readMember(handle.getLibrary(), name);
+                if (context.getEnv().isNativeAccessAllowed()) {
                     // bool _dyld_shared_cache_contains_path(const char* path)
-                    Source source = Source.newBuilder(J_NFI_LANGUAGE, "(string):sint32", name).build();
-                    Object nfiSignature = getContext().getEnv().parseInternal(source).call();
-                    cachedFunction = SignatureLibrary.getUncached().bind(nfiSignature, sym);
-                    assert ilib.isExecutable(cachedFunction);
+                    return createNFIHelperFunction(context, builtins.rtldDefault, DYLD_SHARED_CACHE_CONTAINS_PATH, "(POINTER):SINT32");
                 }
-                return (int) ilib.execute(cachedFunction, path) != 0;
+                InteropLibrary lib = InteropLibrary.getUncached(builtins.rtldDefault.library);
+                if (lib.isMemberReadable(builtins.rtldDefault.library, DYLD_SHARED_CACHE_CONTAINS_PATH)) {
+                    return lib.readMember(builtins.rtldDefault.library, DYLD_SHARED_CACHE_CONTAINS_PATH);
+                }
             } catch (InteropException e) {
-                return false;
+                // fall through
             }
+            return context.getNativeNull();
         }
     }
 
