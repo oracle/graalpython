@@ -1,0 +1,111 @@
+Module[0, 691]
+    FunctionDef[0, 691]
+        Name:find_on_path
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[17, 25] importer
+                ArgTy[27, 36] path_item
+                ArgTy[38, 42] only
+            Defaults:
+                BOOLEAN[43, 48] Value: false
+        ---- Function body of find_on_path ----
+        If[55, 276]
+            Test: 
+                Call[58, 85]
+                    Target: Name[58, 74] Value: "_is_unpacked_egg"
+                    Args:
+                        Name[75, 84] Value: "path_item"
+            Then:
+                Yield[95, 261]
+                    Call[101, 261]
+                        Target: 
+                            Attribute[101, 113] 
+                                Receiver: Name[101, 113] Value: "Distribution"
+                                Attr: from_filename
+                        Args:
+                            Name[141, 150] Value: "path_item"
+                        KWArgs:
+                            KeywordTy[152, 251]
+                                metadata: Call[161, 251]
+                                    Target: Name[161, 173] Value: "PathMetadata"
+                                    Args:
+                                        Name[191, 200] Value: "path_item"
+                                        Call[202, 237]
+                                            Target: 
+                                                Attribute[202, 204] 
+                                                    Receiver: 
+                                                        Attribute[202, 204] 
+                                                            Receiver: Name[202, 204] Value: "os"
+                                                            Attr: path
+                                                    Attr: join
+                                            Args:
+                                                Name[215, 224] Value: "path_item"
+                                                RAW[226, 236] Value: "EGG-INFO"
+                Return[270, 276]
+        Assign[282, 315]
+            LHS: Name[282, 289] Value: "entries" Store
+            RHS: 
+                Call[292, 315]
+                    Target: Name[292, 304] Value: "safe_listdir"
+                    Args:
+                        Name[305, 314] Value: "path_item"
+        Assign[321, 430]
+            LHS: Name[321, 329] Value: "filtered" Store
+            RHS: 
+                GeneratorExp[332, 430]
+                    Element: Name[342, 347] Value: "entry"
+                    ComprehensionTy[356, 424]
+                        Target: Name[360, 365] Value: "entry" Store
+                        Iterator: Name[369, 376] Value: "entries"
+                        Ifs:
+                            Call[388, 424]
+                                Target: Name[388, 400] Value: "dist_factory"
+                                Args:
+                                    Name[401, 410] Value: "path_item"
+                                    Name[412, 417] Value: "entry"
+                                    Name[419, 423] Value: "only"
+        Assign[436, 488]
+            LHS: Name[436, 453] Value: "path_item_entries" Store
+            RHS: 
+                Call[456, 488]
+                    Target: Name[456, 478] Value: "_by_version_descending"
+                    Args:
+                        Name[479, 487] Value: "filtered"
+        For[493, 691]
+            Target: Name[497, 502] Value: "entry" Store
+            Iter: Name[506, 523] Value: "path_item_entries"
+            Body:
+                Assign[533, 574]
+                    LHS: Name[533, 541] Value: "fullpath" Store
+                    RHS: 
+                        Call[544, 574]
+                            Target: 
+                                Attribute[544, 546] 
+                                    Receiver: 
+                                        Attribute[544, 546] 
+                                            Receiver: Name[544, 546] Value: "os"
+                                            Attr: path
+                                    Attr: join
+                            Args:
+                                Name[557, 566] Value: "path_item"
+                                Name[568, 573] Value: "entry"
+                Assign[583, 629]
+                    LHS: Name[583, 590] Value: "factory" Store
+                    RHS: 
+                        Call[593, 629]
+                            Target: Name[593, 605] Value: "dist_factory"
+                            Args:
+                                Name[606, 615] Value: "path_item"
+                                Name[617, 622] Value: "entry"
+                                Name[624, 628] Value: "only"
+                For[638, 691]
+                    Target: Name[642, 646] Value: "dist" Store
+                    Iter: 
+                        Call[650, 667]
+                            Target: Name[650, 657] Value: "factory"
+                            Args:
+                                Name[658, 666] Value: "fullpath"
+                    Body:
+                        Yield[681, 691]
+                            Name[687, 691] Value: "dist"
+        ---- End of find_on_path function ----

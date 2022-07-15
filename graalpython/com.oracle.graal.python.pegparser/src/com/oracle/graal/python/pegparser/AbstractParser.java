@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.DEDENT;
+import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.ERRORTOKEN;
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
 
 import java.lang.reflect.Array;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer. The methods
@@ -147,18 +149,22 @@ abstract class AbstractParser {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
             }
-            if (tokenizer.getFill() == 0) {
+            int fill = tokenizer.getFill();
+            if (fill == 0) {
                 raiseSyntaxError("error at start before reading any input");
-            } else if (tokenizer.peekToken().type == Token.Kind.ENDMARKER) {
-                // TODO we should handle this in better way. See cpython
-                raiseSyntaxError("unexpected EOF while parsing");
+            } else if (tokenizer.peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getTokenizer().getDone() == Tokenizer.StatusCode.EOF) {
+                if (tokenizer.getTokenizer().getParensNestingLevel() > 0) {
+                    raiseUnclosedParenthesesError();
+                } else {
+                    raiseSyntaxError("unexpected EOF while parsing");
+                }
             } else {
-                if (tokenizer.peekToken(tokenizer.getFill() - 1).type == INDENT) {
+                if (tokenizer.peekToken(fill - 1).type == INDENT) {
                     raiseIndentationError("unexpected indent");
-                } else if (tokenizer.peekToken(tokenizer.getFill() - 1).type == DEDENT) {
+                } else if (tokenizer.peekToken(fill - 1).type == DEDENT) {
                     raiseIndentationError("unexpected unindent");
                 } else {
-                    raiseSyntaxError("invalid syntax");
+                    raiseSyntaxErrorKnownLocation(tokenizer.peekToken(fill - 1), "invalid syntax");
                 }
             }
         }
@@ -170,7 +176,7 @@ abstract class AbstractParser {
         callInvalidRules = true;
         level = 0;
         cache.clear();
-        tokenizer.resetState();
+        tokenizer.prepareForSecondPass();
     }
 
     /**
@@ -568,10 +574,7 @@ abstract class AbstractParser {
         if (e instanceof ExprTy.NamedExpr) {
             return "named expression";
         }
-        // TODO Rise system error
-// PyErr_Format(PyExc_SystemError,
-// "unexpected expression in assignment %d (line %d)",
-// e->kind, e->lineno);
+        assert false : "unexpected expression " + e.getClass() + " in assignment";
         return null;
     }
 
@@ -591,6 +594,9 @@ abstract class AbstractParser {
                     }
                 }
             }
+        }
+        if (token.type == ERRORTOKEN) {
+            tokenizerError();
         }
         return token;
     }
@@ -847,6 +853,21 @@ abstract class AbstractParser {
     }
 
     /**
+     * _PyPegen_nonparen_genexp_in_call
+     */
+    SSTNode nonparenGenexpInCall(ExprTy args, ComprehensionTy[] comprehensions) {
+        assert args instanceof ExprTy.Call;
+        ExprTy.Call call = (ExprTy.Call) args;
+        int len = call.args.length;
+        if (len <= 1) {
+            return null;
+        }
+        ComprehensionTy lastComprehension = comprehensions[comprehensions.length - 1];
+        return raiseSyntaxErrorKnownRange(call.args[len - 1], getLastComprehensionItem(lastComprehension),
+                        "Generator expression must be parenthesized");
+    }
+
+    /**
      * RAISE_SYNTAX_ERROR_INVALID_TARGET
      */
     SSTNode raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {
@@ -876,6 +897,15 @@ abstract class AbstractParser {
     SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, argument);
+        return null;
+    }
+
+    /**
+     * RAISE_ERROR_KNOWN_LOCATION
+     */
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
+        errorIndicator = true;
+        errorCb.onError(typeError, where, msg, argument);
         return null;
     }
 
@@ -962,6 +992,64 @@ abstract class AbstractParser {
         Token errorToken = tokenizer.peekToken();
         errorCb.onError(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
         return null;
+    }
+
+    /**
+     * raise_unclosed_parentheses_error
+     */
+    void raiseUnclosedParenthesesError() {
+        Tokenizer t = tokenizer.getTokenizer();
+        int nestingLevel = t.getParensNestingLevel();
+        assert nestingLevel > 0;
+        int errorLineno = t.getParensLineNumberStack()[nestingLevel - 1];
+        int errorCol = t.getParensColumnsStack()[nestingLevel - 1];
+        // TODO unknown source offsets
+        raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
+                        new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
+                        "'%c' was never closed", t.getParensStack()[nestingLevel - 1]);
+    }
+
+    /**
+     * tokenizer_error
+     */
+    void tokenizerError() {
+        Tokenizer t = tokenizer.getTokenizer();
+        ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
+        String msg;
+        int colOffset = -1;
+        switch (t.getDone()) {
+            case BAD_TOKEN:
+                msg = "invalid token";
+                break;
+            case EOF:
+                if (t.getParensNestingLevel() > 0) {
+                    raiseUnclosedParenthesesError();
+                } else {
+                    raiseSyntaxError("unexpected EOF while parsing");
+                }
+                return;
+            case DEDENT_INVALID:
+                raiseIndentationError("unindent does not match any outer indentation level");
+                return;
+            case TABS_SPACES_INCONSISTENT:
+                errorType = ErrorCallback.ErrorType.Tab;
+                msg = "inconsistent use of tabs and spaces in indentation";
+                break;
+            case TOO_DEEP_INDENTATION:
+                errorType = ErrorCallback.ErrorType.Indentation;
+                msg = "too many levels of indentation";
+                break;
+            case LINE_CONTINUATION_ERROR:
+                msg = "unexpected character after line continuation character";
+                colOffset = t.getNextCharIndex() - t.getLineStartIndex();
+                break;
+            default:
+                msg = "unknown parsing error";
+                break;
+        }
+        // TODO unknown source offsets
+        raiseErrorKnownLocation(errorType, new SourceRange(0, 0, t.getCurrentLineNumber(),
+                        colOffset >= 0 ? colOffset : 0, t.getCurrentLineNumber(), -1), msg);
     }
 
     void ruleNotImplemented(String s) {

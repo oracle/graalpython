@@ -12594,9 +12594,7 @@ public final class Parser extends AbstractParser {
                 (b = (ComprehensionTy[])for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
-                // TODO: node.action: _PyPegen_nonparen_genexp_in_call ( p , a , b )
-                ruleNotImplemented("_PyPegen_nonparen_genexp_in_call ( p , a , b )");
-                _res = null;
+                _res = nonparenGenexpInCall(a, b);
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 return (Object)_res;
             }

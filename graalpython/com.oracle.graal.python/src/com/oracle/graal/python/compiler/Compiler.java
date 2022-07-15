@@ -903,6 +903,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.value.accept(this);
             switch (node.context) {
                 case Store:
+                    checkForbiddenName(node.attr, node.context);
                     return addOpName(STORE_ATTR, unit.names, node.attr);
                 case Delete:
                     return addOpName(DELETE_ATTR, unit.names, node.attr);
@@ -1470,7 +1471,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.NamedExpr node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            addOp(DUP_TOP);
+            node.target.accept(this);
+            return null;
         } finally {
             setLocation(savedLocation);
         }

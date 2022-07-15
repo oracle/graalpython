@@ -312,7 +312,6 @@ public class Tokenizer {
     public static Tokenizer fromBytes(ErrorCallback errorCallback, byte[] code, EnumSet<Flag> flags) {
         // we do not translate newlines or add a missing final newline. we deal
         // with those in the call to get the next character
-        // check_bom
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
@@ -447,7 +446,7 @@ public class Tokenizer {
         int end = nextCharIndex + test.length;
         if (end + 1 < codePointsInput.length) {
             return Arrays.equals(codePointsInput, nextCharIndex, end, test, 0, test.length) &&
-                            !isPotentialIdentifierChar(codePointsInput[end + 1]);
+                            !isPotentialIdentifierChar(codePointsInput[end]);
         } else {
             return false;
         }
@@ -1319,5 +1318,37 @@ public class Tokenizer {
 
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
         return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+    }
+
+    public StatusCode getDone() {
+        return done;
+    }
+
+    public int getParensNestingLevel() {
+        return parensNestingLevel;
+    }
+
+    public int[] getParensStack() {
+        return parensStack;
+    }
+
+    public int[] getParensLineNumberStack() {
+        return parensLineNumberStack;
+    }
+
+    public int[] getParensColumnsStack() {
+        return parensColumnsStack;
+    }
+
+    public int getNextCharIndex() {
+        return nextCharIndex;
+    }
+
+    public int getLineStartIndex() {
+        return lineStartIndex;
+    }
+
+    public int getCurrentLineNumber() {
+        return currentLineNumber;
     }
 }

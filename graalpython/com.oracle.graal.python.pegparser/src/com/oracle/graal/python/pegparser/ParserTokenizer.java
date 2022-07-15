@@ -79,11 +79,22 @@ public class ParserTokenizer {
         return pos;
     }
 
-    public void resetState() {
+    /**
+     * Called by the parser when the first attempt to parse the source failed before starting the
+     * second pass which uses the invalid_xxx grammar rules. The position in the token stream is
+     * reset to the start and the tokenizer stops calling
+     * {@link ErrorCallback#reportIncompleteSource(int)} in interactive mode, since the second pass
+     * is run only to report errors (it is not expected to succeed).
+     */
+    public void prepareForSecondPass() {
         pos = 0;
         tokenizer.reportIncompleteSourceIfInteractive = false;
     }
 
+    /**
+     * Called by the parser whenever it needs to backtrack to reset the current position in the
+     * token stream.
+     */
     public void reset(int position) {
         pos = position;
     }
@@ -116,5 +127,9 @@ public class ParserTokenizer {
 
     SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
         return tokenizer.extendRangeToCurrentPosition(rangeStart);
+    }
+
+    public Tokenizer getTokenizer() {
+        return tokenizer;
     }
 }

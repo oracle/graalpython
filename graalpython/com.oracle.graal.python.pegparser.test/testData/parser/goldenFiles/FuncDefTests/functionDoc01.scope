@@ -1,0 +1,5 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      test: [DefLocal, Local]
+    Scope test Function

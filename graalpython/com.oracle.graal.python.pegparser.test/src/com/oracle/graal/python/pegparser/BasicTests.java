@@ -1023,14 +1023,19 @@ public class BasicTests extends ParserTestBase {
         parse("class A:\n", "<module>", InputType.SINGLE, true);
     }
 
+    @Test
+    public void testUnclosedParentheses() {
+        checkSyntaxErrorMessage("print(", "'(' was never closed");
+    }
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
-        checkScopeFromFile(testFile, true);
-        checkTreeFromFile(testFile, true);
+        checkScopeFromFile(testFile, false);
+        checkTreeFromFile(testFile, false);
     }
 
     private void checkTreeFromFile() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
-        checkTreeFromFile(testFile, true);
+        checkTreeFromFile(testFile, false);
     }
 }

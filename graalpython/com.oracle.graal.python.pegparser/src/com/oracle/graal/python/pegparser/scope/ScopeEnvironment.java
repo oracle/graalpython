@@ -194,8 +194,7 @@ public class ScopeEnvironment {
                     HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
-                // TODO: SyntaxError:
-                // "name '%s' is nonlocal and global", name
+                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "name '%s' is nonlocal and global", name);
             }
             scopes.put(name, DefUse.GlobalExplicit);
             if (global != null) {
@@ -208,8 +207,7 @@ public class ScopeEnvironment {
             if (bound == null) {
                 errorCallback.onError(ErrorCallback.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
             } else if (!bound.contains(name)) {
-                // TODO: SyntaxError:
-                // "no binding for nonlocal '%s' found", name
+                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "no binding for nonlocal '%s' found", name);
             }
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
@@ -314,14 +312,17 @@ public class ScopeEnvironment {
             Scope scope = new Scope(name, type, ast);
             env.addScope(ast, scope);
             stack.add(scope);
+            Scope prev = currentScope;
+            if (prev != null) {
+                scope.comprehensionIterExpression = prev.comprehensionIterExpression;
+            }
+            currentScope = scope;
             if (type == Scope.ScopeType.Annotation) {
                 return;
             }
-            if (currentScope != null) {
-                scope.comprehensionIterExpression = currentScope.comprehensionIterExpression;
-                currentScope.children.add(scope);
+            if (prev != null) {
+                prev.children.add(scope);
             }
-            currentScope = scope;
         }
 
         private void exitBlock() {
@@ -377,7 +378,7 @@ public class ScopeEnvironment {
             }
         }
 
-        private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value) {
+        private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value, Scope.ComprehensionType comprehensionType) {
             boolean isGenerator = e instanceof ExprTy.GeneratorExp;
             ComprehensionTy outermost = generators[0];
             currentScope.comprehensionIterExpression++;
@@ -385,6 +386,7 @@ public class ScopeEnvironment {
             currentScope.comprehensionIterExpression--;
             enterBlock(scopeName, Scope.ScopeType.Function, e);
             try {
+                currentScope.comprehensionType = comprehensionType;
                 if (outermost.isAsync) {
                     currentScope.flags.add(ScopeFlags.IsCoroutine);
                 }
@@ -401,14 +403,37 @@ public class ScopeEnvironment {
                     value.accept(this);
                 }
                 element.accept(this);
-                if (currentScope.flags.contains(ScopeFlags.IsGenerator)) {
-                    // TODO: syntax error 'yield' inside something
-                }
                 if (isGenerator) {
                     currentScope.flags.add(ScopeFlags.IsGenerator);
                 }
             } finally {
                 exitBlock();
+            }
+        }
+
+        private void raiseIfComprehensionBlock(ExprTy node) {
+            String msg;
+            switch (currentScope.comprehensionType) {
+                case ListComprehension:
+                    msg = "'yield' inside list comprehension";
+                    break;
+                case SetComprehension:
+                    msg = "'yield' inside set comprehension";
+                    break;
+                case DictComprehension:
+                    msg = "'yield' inside dict comprehension";
+                    break;
+                case GeneratorExpression:
+                default:
+                    msg = "'yield' inside generator expression";
+                    break;
+            }
+            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg);
+        }
+
+        private void raiseIfAnnotationBlock(String name, ExprTy node) {
+            if (currentScope.type == ScopeType.Annotation) {
+                env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
             }
         }
 
@@ -510,9 +535,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Await node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("await expression", node);
             node.value.accept(this);
             return null;
         }
@@ -559,7 +582,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.DictComp node) {
-            handleComprehension(node, "dictcomp", node.generators, node.key, node.value);
+            handleComprehension(node, "dictcomp", node.generators, node.key, node.value, Scope.ComprehensionType.DictComprehension);
             return null;
         }
 
@@ -574,7 +597,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.GeneratorExp node) {
-            handleComprehension(node, "genexp", node.generators, node.element, null);
+            handleComprehension(node, "genexp", node.generators, node.element, null, Scope.ComprehensionType.GeneratorExpression);
             return null;
         }
 
@@ -618,7 +641,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.ListComp node) {
-            handleComprehension(node, "listcomp", node.generators, node.element, null);
+            handleComprehension(node, "listcomp", node.generators, node.element, null, Scope.ComprehensionType.ListComprehension);
             return null;
         }
 
@@ -635,9 +658,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.NamedExpr node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("named expression", node);
             if (currentScope.comprehensionIterExpression > 0) {
                 env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_ITER_EXPR);
             }
@@ -691,7 +712,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.SetComp node) {
-            handleComprehension(node, "setcomp", node.generators, node.element, null);
+            handleComprehension(node, "setcomp", node.generators, node.element, null, Scope.ComprehensionType.SetComprehension);
             return null;
         }
 
@@ -736,25 +757,27 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("yield expression", node);
             if (node.value != null) {
                 node.value.accept(this);
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
+            if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
+                raiseIfComprehensionBlock(node);
+            }
             return null;
         }
 
         @Override
         public Void visit(ExprTy.YieldFrom node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                // TODO: raise syntax error
-            }
+            raiseIfAnnotationBlock("yield expression", node);
             if (node.value != null) {
                 node.value.accept(this);
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
+            if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
+                raiseIfComprehensionBlock(node);
+            }
             return null;
         }
 

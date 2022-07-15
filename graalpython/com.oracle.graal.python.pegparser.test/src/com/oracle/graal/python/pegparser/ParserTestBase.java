@@ -129,9 +129,13 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
+        checkSyntaxErrorMessage(source, expectedMessage, EMPTY_FUTURE);
+    }
+
+    public void checkSyntaxErrorMessage(String source, String expectedMessage, EnumSet<FutureFeature> futureFeatures) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
+            ScopeEnvironment.analyze(node, errorCallback, futureFeatures);
         }
         assertTrue("Expected Error.", errorCallback.hasErrors());
         TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
@@ -416,7 +420,11 @@ public class ParserTestBase {
 // }
 //
     public void checkScopeAndTree(String source) throws Exception {
-        checkScopeResult(source, InputType.FILE);
+        checkScopeAndTree(source, InputType.FILE);
+    }
+
+    public void checkScopeAndTree(String source, InputType inputType) throws Exception {
+        checkScopeResult(source, inputType);
         checkTreeResult(source);
     }
 

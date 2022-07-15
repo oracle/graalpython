@@ -1,0 +1,15 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      outer: [DefLocal, Use, Local]
+    Scope outer Function
+        Flags: [HasChildWithFreeVars]
+        Symbols:
+            inner: [DefLocal, Use, Local]
+            x: [DefLocal, Cell]
+      Scope inner Function
+            Flags: [HasFreeVars]
+            Symbols:
+                  print: [Use, GlobalImplicit]
+                  x: [Use, Free]

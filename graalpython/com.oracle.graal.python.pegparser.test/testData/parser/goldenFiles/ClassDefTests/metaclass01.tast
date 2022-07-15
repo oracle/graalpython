@@ -1,0 +1,8 @@
+Module[0, 34]
+    ClassDef[0, 34] A
+        ---- Class body of A ----
+        ClassDef[13, 34] B
+            ---- Class body of B ----
+            Pass[30, 34]
+            ---- End of B class ----
+        ---- End of A class ----
