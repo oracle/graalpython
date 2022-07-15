@@ -680,7 +680,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
             }
-            String adrStr = handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - LIBFFI_ADR_FORMAT_START - 1);
+            String adrStr = handleStr.substring(LIBFFI_ADR_FORMAT_START, handleStr.length() - 1);
             try {
                 long adr = Long.parseLong(adrStr, 10);
                 return new DLHandler(handler, adr, name, false);
