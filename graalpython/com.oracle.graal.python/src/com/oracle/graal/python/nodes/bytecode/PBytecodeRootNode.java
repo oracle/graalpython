@@ -541,7 +541,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.signature = sign;
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
-        this.conditionProfiles = new int[co.code.length];
+        this.conditionProfiles = new int[co.conditionProfileCount];
         this.outputCanQuicken = co.outputCanQuicken;
         this.variableShouldUnbox = co.variableShouldUnbox;
         this.generalizeInputsMap = co.generalizeInputsMap;
@@ -706,12 +706,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final int CONDITION_PROFILE_MAX_VALUE = 0x3fffffff;
 
     // Inlined from ConditionProfile.Counting#profile
-    private boolean profileCondition(boolean value, int bci, boolean useCachedNodes) {
+    private boolean profileCondition(boolean value, byte[] localBC, int bci, boolean useCachedNodes) {
         if (!useCachedNodes) {
             return value;
         }
-        int t = conditionProfiles[bci];
-        int f = conditionProfiles[bci + 1];
+        int index = Byte.toUnsignedInt(localBC[bci + 2]) & Byte.toUnsignedInt(localBC[bci + 3]) << 8;
+        int t = conditionProfiles[index];
+        int f = conditionProfiles[index + 1];
         boolean val = value;
         if (val) {
             if (t == 0) {
@@ -723,7 +724,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             if (CompilerDirectives.inInterpreter()) {
                 if (t < CONDITION_PROFILE_MAX_VALUE) {
-                    conditionProfiles[bci] = t + 1;
+                    conditionProfiles[index] = t + 1;
                 }
             }
         } else {
@@ -736,7 +737,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             if (CompilerDirectives.inInterpreter()) {
                 if (f < CONDITION_PROFILE_MAX_VALUE) {
-                    conditionProfiles[bci + 1] = f + 1;
+                    conditionProfiles[index + 1] = f + 1;
                 }
             }
         }
@@ -1447,25 +1448,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE_O: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        if (profileCondition(!bytecodePopCondition(virtualFrame, stackTop--, localNodes, bci, useCachedNodes), bci, useCachedNodes)) {
+                        if (profileCondition(!bytecodePopCondition(virtualFrame, stackTop--, localNodes, bci, useCachedNodes), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_TRUE_O: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        if (profileCondition(bytecodePopCondition(virtualFrame, stackTop--, localNodes, bci, useCachedNodes), bci, useCachedNodes)) {
+                        if (profileCondition(bytecodePopCondition(virtualFrame, stackTop--, localNodes, bci, useCachedNodes), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
@@ -1475,13 +1476,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
                             continue;
                         }
-                        if (profileCondition(!virtualFrame.getBoolean(stackTop--), bci, useCachedNodes)) {
+                        if (profileCondition(!virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
@@ -1491,13 +1492,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
                             continue;
                         }
-                        if (profileCondition(virtualFrame.getBoolean(stackTop--), bci, useCachedNodes)) {
+                        if (profileCondition(virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
@@ -1505,14 +1506,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
                         Object cond = virtualFrame.getObject(stackTop);
-                        if (profileCondition(!isTrue.execute(virtualFrame, cond), bci, useCachedNodes)) {
+                        if (profileCondition(!isTrue.execute(virtualFrame, cond), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
                             virtualFrame.setObject(stackTop--, null);
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
@@ -1520,14 +1521,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
                         Object cond = virtualFrame.getObject(stackTop);
-                        if (profileCondition(isTrue.execute(virtualFrame, cond), bci, useCachedNodes)) {
+                        if (profileCondition(isTrue.execute(virtualFrame, cond), localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
                             virtualFrame.setObject(stackTop--, null);
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }
@@ -1695,13 +1696,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (!match) {
                             match = matchNode.executeMatch(virtualFrame, exception, matchType);
                         }
-                        if (profileCondition(!match, bci, useCachedNodes)) {
+                        if (profileCondition(!match, localBC, bci, useCachedNodes)) {
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
                             continue;
                         } else {
-                            bci++;
+                            bci += 3;
                         }
                         break;
                     }

@@ -1206,6 +1206,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             Object[] constants = readObjectArray();
             long[] primitiveConstants = readLongArray();
             int[] exceptionHandlerRanges = readIntArray();
+            int conditionProfileCount = readInt();
             int startOffset = readInt();
             int startLine = readInt();
             byte[] outputCanQuicken = readBytes();
@@ -1213,7 +1214,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int[][] generalizeInputsMap = readSparseTable();
             int[][] generalizeVarsMap = readSparseTable();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
-                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, startOffset, startLine,
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, conditionProfileCount, startOffset, startLine,
                             outputCanQuicken, variableShouldUnbox, generalizeInputsMap, generalizeVarsMap);
         }
 
@@ -1240,6 +1241,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeObjectArray(code.constants);
             writeLongArray(code.primitiveConstants);
             writeIntArray(code.exceptionHandlerRanges);
+            writeInt(code.conditionProfileCount);
             writeInt(code.startOffset);
             writeInt(code.startLine);
             writeBytes(code.outputCanQuicken);
