@@ -720,8 +720,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,
             "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpython' else 'cpython'))"],
-           nonZeroIsFatal=True, env=env, out=out, err=err)
+            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpy' else 'cpython'))"],
+            nonZeroIsFatal=True, env=env, out=out, err=err)
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
@@ -736,7 +736,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
             # with the arguments
             basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
+            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpy').resolve())
             launcher_path_bak = launcher_path + ".bak"
             shutil.copy(launcher_path, launcher_path_bak)
             try:
