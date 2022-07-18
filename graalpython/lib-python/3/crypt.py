@@ -10,7 +10,9 @@ except ModuleNotFoundError:
     else:
         raise ImportError("The required _crypt module was not built as part of CPython")
 
+# Begin Truffle change
 import errno
+# End Truffle change
 import string as _string
 from random import SystemRandom as _SystemRandom
 from collections import namedtuple as _namedtuple
@@ -89,6 +91,7 @@ def _add_method(name, *args, rounds=None):
     method = _Method(name, *args)
     globals()['METHOD_' + name] = method
     salt = mksalt(method, rounds=rounds)
+    # Begin Truffle change
     result = None
     try:
         result = crypt('', salt)
@@ -97,6 +100,7 @@ def _add_method(name, *args, rounds=None):
         if e.errno == errno.EINVAL:
             return False
         raise
+    # End Truffle change
     if result and len(result) == method.total_size:
         methods.append(method)
         return True
