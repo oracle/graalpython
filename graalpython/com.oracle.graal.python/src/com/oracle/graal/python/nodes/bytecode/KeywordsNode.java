@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -58,7 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class KeywordsNode extends PNodeWithContext {
     public abstract PKeyword[] execute(Frame frame, Object sourceCollection, int stackTop);
 
-    @Specialization
+    @Specialization(guards = "!isPNone(sourceCollection)")
     static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
                     @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
                     @Cached PRaiseNode raise) {
@@ -68,6 +69,12 @@ public abstract class KeywordsNode extends PNodeWithContext {
             Object functionName = getFunctionName(frame, stackTop);
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
+    }
+
+    @Specialization
+    static PKeyword[] none(VirtualFrame frame, PNone sourceCollection, int stackTop,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, getFunctionName(frame, stackTop), sourceCollection);
     }
 
     private static Object getFunctionName(VirtualFrame frame, int stackTop) {
