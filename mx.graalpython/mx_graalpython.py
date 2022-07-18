@@ -843,12 +843,12 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
 def run_tagged_unittests(python_binary, env=None, cwd=None):
     if env is None:
         env = os.environ
-    sub_env = dict(
+    sub_env = env.copy()
+    sub_env.update(dict(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
-    )
-    sub_env.update(env)
+    ))
     run_python_unittests(
         python_binary,
         args=["-v"],
