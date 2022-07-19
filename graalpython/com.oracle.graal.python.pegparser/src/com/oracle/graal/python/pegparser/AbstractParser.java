@@ -278,7 +278,11 @@ abstract class AbstractParser {
         if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
             parsingStarted = false;
-            // TODO: handle implicit DEDENT (PyPARSE_DONT_IMPLY_DEDENT)
+            Tokenizer t = tokenizer.getTokenizer();
+            if (t.getCurrentIndentIndex() > 0) {
+                t.setPendingIndents(-t.getCurrentIndentIndex());
+                t.setCurrentIndentIndex(0);
+            }
         } else {
             parsingStarted = true;
         }
@@ -561,7 +565,7 @@ abstract class AbstractParser {
                     boolean value = (Boolean) constant.value;
                     return value ? "True" : "False";
                 case ELLIPSIS:
-                    return "Ellipsis";
+                    return "ellipsis";
             }
             return "literal";
         }

@@ -1351,4 +1351,16 @@ public class Tokenizer {
     public int getCurrentLineNumber() {
         return currentLineNumber;
     }
+
+    public int getCurrentIndentIndex() {
+        return currentIndentIndex;
+    }
+
+    public void setCurrentIndentIndex(int currentIndentIndex) {
+        this.currentIndentIndex = currentIndentIndex;
+    }
+
+    public void setPendingIndents(int pendingIndents) {
+        this.pendingIndents = pendingIndents;
+    }
 }
