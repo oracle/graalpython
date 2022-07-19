@@ -1,4 +1,4 @@
-import unittest
+import unittest, sys
 
 # For scope testing.
 g = "Global variable"
@@ -76,9 +76,10 @@ class DictComprehensionTest(unittest.TestCase):
         with self.assertRaisesRegex(SyntaxError, "cannot assign"):
             compile("{x: y for y, x in ((1, 2), (3, 4))} = 5", "<test>",
                     "exec")
-
-        with self.assertRaisesRegex(SyntaxError, "cannot assign"):
-            compile("{x: y for y, x in ((1, 2), (3, 4))} += 5", "<test>",
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        if not (sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter):
+            with self.assertRaisesRegex(SyntaxError, "cannot assign"):
+                compile("{x: y for y, x in ((1, 2), (3, 4))} += 5", "<test>",
                     "exec")
 
     def test_evaluation_order(self):

@@ -160,20 +160,22 @@ class ExceptionTests(unittest.TestCase):
             else:
                 self.fail("failed to get expected SyntaxError")
 
-        s = '''print "old style"'''
-        ckmsg(s, "Missing parentheses in call to 'print'. "
-                 "Did you mean print(\"old style\")?")
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        if not (sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter):
+            s = '''print "old style"'''
+            ckmsg(s, "Missing parentheses in call to 'print'. "
+                     "Did you mean print(\"old style\")?")
 
-        s = '''print "old style",'''
-        ckmsg(s, "Missing parentheses in call to 'print'. "
-                 "Did you mean print(\"old style\", end=\" \")?")
+            s = '''print "old style",'''
+            ckmsg(s, "Missing parentheses in call to 'print'. "
+                     "Did you mean print(\"old style\", end=\" \")?")
 
-        s = '''exec "old style"'''
-        ckmsg(s, "Missing parentheses in call to 'exec'")
+            s = '''exec "old style"'''
+            ckmsg(s, "Missing parentheses in call to 'exec'")
 
-        # should not apply to subclasses, see issue #31161
-        s = '''if True:\nprint "No indent"'''
-        ckmsg(s, "expected an indented block", IndentationError)
+            # should not apply to subclasses, see issue #31161
+            s = '''if True:\nprint "No indent"'''
+            ckmsg(s, "expected an indented block", IndentationError)
 
         s = '''if True:\n        print()\n\texec "mixed tabs and spaces"'''
         ckmsg(s, "inconsistent use of tabs and spaces in indentation", TabError)

@@ -155,7 +155,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             cachedCode = PythonObjectFactory.getUncached().createCode(callTarget, bytecodeRootNode.getSignature(), code);
         }
         TruffleString doc = null;
-        if (code.constants.length > 0 && code.constants[0] instanceof TruffleString) {
+        if (code.constants.length > 0 && code.constants[0] instanceof TruffleString && !code.lambda) {
             doc = (TruffleString) code.constants[0];
         }
         return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode, doc);

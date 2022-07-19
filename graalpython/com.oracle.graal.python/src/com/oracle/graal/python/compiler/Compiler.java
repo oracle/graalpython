@@ -94,6 +94,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_FAST;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_INT;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_LONG;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_METHOD;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
@@ -1057,17 +1058,16 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
 
             if (hasOnlyPlainArgs(args, keywords) && shortCall) {
-                byte[] followingArgs = null;
                 if (op == CALL_METHOD_VARARGS) {
-                    followingArgs = new byte[]{(byte) args.length};
+                    addOp(LOAD_METHOD, opArg);
                     op = CALL_METHOD;
                 } else {
-                    opArg = args.length;
                     op = CALL_FUNCTION;
                 }
+                opArg = args.length;
                 // fast calls without extra arguments array
                 visitSequence(args);
-                return addOp(op, opArg, followingArgs);
+                return addOp(op, opArg);
             } else {
                 return callHelper(op, opArg, 0, args, keywords);
             }
@@ -1281,8 +1281,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             // TODO add optimized op for small chains
             addOp(LOAD_STRING, addObject(unit.constants, T_EMPTY_STRING));
+            addOpName(LOAD_METHOD, unit.names, "join");
             collectIntoArray(node.values, CollectionBits.LIST);
-            addOp(CALL_METHOD, addObject(unit.names, "join"), new byte[]{1});
+            addOp(CALL_METHOD, 1);
             return null;
         } finally {
             setLocation(savedLocation);

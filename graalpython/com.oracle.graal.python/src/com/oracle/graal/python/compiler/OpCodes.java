@@ -161,6 +161,13 @@ public enum OpCodes {
      */
     LOAD_ATTR(1, 1, 1),
     /**
+     * Reads method on an object. The method name is determined by the first immediate operand which
+     * indexes the names array ({@code co_names}).
+     *
+     * Pushes: read method
+     */
+    LOAD_METHOD(1, 1, 2),
+    /**
      * Writes an attribute - {@code a.b = c}. {@code b} is determined by the immediate operand which
      * indexes the names array ({@code co_names}).
      *
@@ -369,15 +376,15 @@ public enum OpCodes {
      */
     CALL_METHOD_VARARGS(1, 1, 1),
     /**
-     * Calls method on an object using a number of stack args determined by the second immediate
-     * operand. The method name is determined by the first immediate operand which indexes the names
-     * array ({@code co_names}).
+     * Calls method on an object using a number of stack args determined by the first immediate
+     * operand.
      *
-     * Pops: multiple arguments depending on the second immediate operand (0 - 3), then the receiver
+     * Pops: multiple arguments depending on the first immediate operand, then the method and the
+     * receiver
      *
      * Pushes: call result
      */
-    CALL_METHOD(2, (oparg, followingArgs, withJump) -> Byte.toUnsignedInt(followingArgs[0]) + 1, 1),
+    CALL_METHOD(1, (oparg, followingArgs, withJump) -> oparg + 2, 1),
     /**
      * Calls a callable using a number of stack args determined by the immediate operand.
      *

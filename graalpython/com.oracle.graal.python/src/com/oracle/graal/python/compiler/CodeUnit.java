@@ -358,6 +358,7 @@ public final class CodeUnit {
                         line[5] = varnames[oparg].toJavaStringUncached();
                         break;
                     case LOAD_NAME:
+                    case LOAD_METHOD:
                     case STORE_NAME:
                     case DELETE_NAME:
                     case IMPORT_NAME:
@@ -393,7 +394,7 @@ public final class CodeUnit {
                         break;
                     }
                     case CALL_METHOD: {
-                        line[4] = String.format("% 2d", followingArgs[0]);
+                        line[4] = String.format("% 2d", oparg);
                         line[5] = names[oparg].toJavaStringUncached();
                         break;
                     }

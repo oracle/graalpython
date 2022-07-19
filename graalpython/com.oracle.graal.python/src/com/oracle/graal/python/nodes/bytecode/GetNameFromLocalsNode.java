@@ -87,7 +87,7 @@ public abstract class GetNameFromLocalsNode extends PNodeWithContext {
                     if (isCellVar) {
                         throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, name);
                     } else {
-                        throw raiseNode.raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, name);
+                        return null;
                     }
                 }
             }

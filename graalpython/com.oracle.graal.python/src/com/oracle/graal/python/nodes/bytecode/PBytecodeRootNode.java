@@ -1586,12 +1586,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     }
-                    case OpCodesConstants.CALL_METHOD: {
+                    case OpCodesConstants.LOAD_METHOD: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        TruffleString methodName = localNames[oparg];
+                        stackTop = bytecodeLoadMethod(virtualFrame, stackTop, bci, oparg, localNames, localNodes, useCachedNodes);
+                        break;
+                    }
+                    case OpCodesConstants.CALL_METHOD: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeCallMethod(virtualFrame, stackTop, beginBci, argcount, methodName, localNodes, useCachedNodes);
+                        stackTop = bytecodeCallMethod(virtualFrame, stackTop, beginBci, argcount, localNodes, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.CALL_METHOD_VARARGS: {
@@ -1789,18 +1793,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (PythonExitException e) {
                 throw e;
             } catch (Exception | StackOverflowError | AssertionError e) {
-                PException pe;
+                PException pe = null;
                 boolean isInteropException = false;
                 if (e instanceof PException) {
                     pe = (PException) e;
+                } else if (e instanceof AbstractTruffleException) {
+                    isInteropException = true;
                 } else {
                     pe = wrapJavaExceptionIfApplicable(e);
                     if (pe == null) {
-                        if (e instanceof AbstractTruffleException) {
-                            isInteropException = true;
-                        } else {
-                            throw e;
-                        }
+                        throw e;
                     }
                 }
 
@@ -1834,8 +1836,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     if (e == pe) {
                         throw pe;
-                    } else {
+                    } else if (pe != null) {
                         throw pe.getExceptionForReraise();
+                    } else {
+                        throw e;
                     }
                 } else {
                     if (pe != null) {
@@ -2648,6 +2652,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
+        if (e instanceof AbstractTruffleException) {
+            return null;
+        }
         if (e instanceof ControlFlowException) {
             return null;
         }
@@ -3009,20 +3016,31 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeCallMethod(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, TruffleString methodName, Node[] localNodes, boolean useCachedNodes) {
-        Object rcvr = virtualFrame.getObject(stackTop - oparg);
+    private int bytecodeLoadMethod(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
+        Object rcvr = virtualFrame.getObject(stackTop);
+        TruffleString methodName = localNames[oparg];
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, PyObjectGetMethodNodeGen.class, NODE_OBJECT_GET_METHOD, useCachedNodes);
         Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
-        switch (oparg) {
+        virtualFrame.setObject(++stackTop, func);
+        return stackTop;
+    }
+
+    private int bytecodeCallMethod(VirtualFrame virtualFrame, int stackTop, int bci, int argcount, Node[] localNodes, boolean useCachedNodes) {
+        Object func = virtualFrame.getObject(stackTop - argcount);
+        Object rcvr = virtualFrame.getObject(stackTop - argcount - 1);
+
+        switch (argcount) {
             case 0: {
                 CallUnaryMethodNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL_UNARY_METHOD, CallUnaryMethodNodeGen.class, NODE_CALL_UNARY_METHOD, useCachedNodes);
                 Object result = callNode.executeObject(virtualFrame, func, rcvr);
+                virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, result);
                 break;
             }
             case 1: {
                 CallBinaryMethodNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL_BINARY_METHOD, CallBinaryMethodNodeGen.class, NODE_CALL_BINARY_METHOD, useCachedNodes);
                 Object result = callNode.executeObject(virtualFrame, func, rcvr, virtualFrame.getObject(stackTop));
+                virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, result);
                 break;
@@ -3032,6 +3050,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 Object arg1 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
                 Object arg0 = virtualFrame.getObject(stackTop);
+                virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, rcvr, arg0, arg1));
                 break;
@@ -3044,6 +3063,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 Object arg1 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
                 Object arg0 = virtualFrame.getObject(stackTop);
+                virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, rcvr, arg0, arg1, arg2));
                 break;

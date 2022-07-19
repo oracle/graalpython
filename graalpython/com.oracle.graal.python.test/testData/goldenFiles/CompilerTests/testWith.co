@@ -9,12 +9,13 @@ Disassembly of <module>:
 000016        13 SETUP_WITH
 000042        14 STORE_NAME                        2    (f)
 000047        16 LOAD_NAME                         2    (f)
-000055        18 LOAD_STRING                       2    ('foo')
-000047        20 CALL_METHOD                       1    (write)
-000047        23 POP_TOP
-000047        24 LOAD_NONE
-000016        25 EXIT_WITH                                                               (exc handler 14 - 25; stack: 2)
-000062        26 LOAD_NAME                         0    (print)
-000068        28 LOAD_STRING                       3    ('after')
-000062        30 CALL_FUNCTION                     1
-000062        32 RETURN_VALUE
+000047        18 LOAD_METHOD                       3    (write)
+000055        20 LOAD_STRING                       2    ('foo')
+000047        22 CALL_METHOD                       1    (open)
+000047        24 POP_TOP
+000047        25 LOAD_NONE
+000016        26 EXIT_WITH                                                               (exc handler 14 - 26; stack: 2)
+000062        27 LOAD_NAME                         0    (print)
+000068        29 LOAD_STRING                       3    ('after')
+000062        31 CALL_FUNCTION                     1
+000062        33 RETURN_VALUE
