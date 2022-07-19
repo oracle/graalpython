@@ -928,6 +928,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
     private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci, boolean useCachedNodes) {
+        boolean wasCompiled = CompilerDirectives.inCompiledCode();
         Object[] arguments = virtualFrame.getArguments();
         Object globals = PArguments.getGlobals(arguments);
         Object locals = PArguments.getSpecialArgument(arguments);
@@ -964,7 +965,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(stackTop);
 
-            if (CompilerDirectives.inCompiledCode() && bci > loopEndBci) {
+            if (wasCompiled && bci > loopEndBci) {
                 /*
                  * This means we're in OSR and we just jumped out of the OSR compiled loop. We want
                  * to return to the caller to continue in interpreter again otherwise we would most
