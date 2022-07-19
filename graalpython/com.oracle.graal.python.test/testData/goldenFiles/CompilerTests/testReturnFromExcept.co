@@ -9,37 +9,37 @@ Disassembly of foo:
 000028         2 LOAD_BYTE_O                       10
 000022         4 CALL_FUNCTION                     1
 000013         6 GET_ITER
-000013   >>    7 FOR_ITER                          50   (to 57)                           can quicken
+000013   >>    7 FOR_ITER                          52   (to 59)                           can quicken
 000017         9 STORE_FAST                        0    (i)                               generalizes: 7
 000048        11 LOAD_BYTE_I                       1                                      can quicken
 000052        13 LOAD_BYTE_I                       0                                      can quicken
 000048        15 BINARY_OP                         8    (TRUEDIV)                         generalizes: 13, 11
 000048        17 POP_TOP
-000048        18 JUMP_FORWARD                      37   (to 55)
+000048        18 JUMP_FORWARD                      39   (to 57)
 000048        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
 000065        21 LOAD_GLOBAL                       1    (RuntimeError)
-000058        23 MATCH_EXC_OR_JUMP                 31   (to 54)
-000058        25 UNWRAP_EXC
-000058        26 STORE_FAST                        1    (e)
-000096        28 LOAD_GLOBAL                       2    (a)
-000089        30 LOAD_NONE
-000089        31 STORE_FAST                        1    (e)
-000089        33 DELETE_FAST                       1    (e)
-000089        35 ROT_TWO
-000089        36 POP_EXCEPT
+000058        23 MATCH_EXC_OR_JUMP                 33   (to 56)
+000058        27 UNWRAP_EXC
+000058        28 STORE_FAST                        1    (e)
+000096        30 LOAD_GLOBAL                       2    (a)
+000089        32 LOAD_NONE
+000089        33 STORE_FAST                        1    (e)
+000089        35 DELETE_FAST                       1    (e)
 000089        37 ROT_TWO
-000089        38 POP_TOP
-000089        39 RETURN_VALUE
-000089        40 LOAD_NONE
-000089        41 STORE_FAST                        1    (e)
-000089        43 DELETE_FAST                       1    (e)
-000089        45 POP_EXCEPT
-000089        46 JUMP_FORWARD                      9    (to 55)
-000089        48 LOAD_NONE                                                               (exc handler 28 - 40; stack: 2)
-000089        49 STORE_FAST                        1    (e)
-000089        51 DELETE_FAST                       1    (e)
-000089        53 END_EXC_HANDLER
-000089   >>   54 END_EXC_HANDLER                                                         (exc handler 21 - 28; stack: 2 | exc handler 40 - 54; stack: 2)
-000089   >>   55 JUMP_BACKWARD                     48   (to 7)
-000089   >>   57 LOAD_NONE
-000089        58 RETURN_VALUE
+000089        38 POP_EXCEPT
+000089        39 ROT_TWO
+000089        40 POP_TOP
+000089        41 RETURN_VALUE
+000089        42 LOAD_NONE
+000089        43 STORE_FAST                        1    (e)
+000089        45 DELETE_FAST                       1    (e)
+000089        47 POP_EXCEPT
+000089        48 JUMP_FORWARD                      9    (to 57)
+000089        50 LOAD_NONE                                                               (exc handler 30 - 42; stack: 2)
+000089        51 STORE_FAST                        1    (e)
+000089        53 DELETE_FAST                       1    (e)
+000089        55 END_EXC_HANDLER
+000089   >>   56 END_EXC_HANDLER                                                         (exc handler 21 - 30; stack: 2 | exc handler 42 - 56; stack: 2)
+000089   >>   57 JUMP_BACKWARD                     50   (to 7)
+000089   >>   59 LOAD_NONE
+000089        60 RETURN_VALUE

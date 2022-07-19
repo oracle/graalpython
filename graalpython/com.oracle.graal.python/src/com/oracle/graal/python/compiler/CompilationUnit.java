@@ -87,6 +87,7 @@ public final class CompilationUnit {
     final CompilationScope scopeType;
     final String privateName;
     BlockInfo blockInfo;
+    int conditionProfileCount;
 
     Block currentBlock = startBlock;
     int maxStackSize = 0;
@@ -316,6 +317,7 @@ public final class CompilationUnit {
                         orderedKeys(constants, new Object[0]),
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
+                        conditionProfileCount,
                         startLocation.startOffset,
                         startLocation.startLine,
                         finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);

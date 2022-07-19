@@ -167,7 +167,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 23;
+    public static final int BYTECODE_VERSION = 24;
 
     private final ErrorCallback errorCallback;
 
@@ -446,8 +446,21 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void addOp(OpCodes code, Block target) {
+        addOp(code, target, null);
+    }
+
+    private void addConditionalJump(OpCodes code, Block target) {
+        int profileIndex = unit.conditionProfileCount;
+        unit.conditionProfileCount += 2;
+        if (profileIndex != (short) profileIndex) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "Too many conditionals in compilation unit");
+        }
+        addOp(code, target, new byte[]{(byte) (profileIndex & 0xFF), (byte) (profileIndex << 8)});
+    }
+
+    private void addOp(OpCodes code, Block target, byte[] follwingArgs) {
         Block b = unit.currentBlock;
-        Instruction insn = new Instruction(code, 0, null, target, unit.currentLocation);
+        Instruction insn = new Instruction(code, 0, follwingArgs, target, unit.currentLocation);
         b.instr.add(insn);
         pushOp(insn);
     }
@@ -1008,7 +1021,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             for (int i = 0; i < values.length - 1; i++) {
                 ExprTy v = values[i];
                 v.accept(this);
-                addOp(op, end);
+                addConditionalJump(op, end);
             }
             values[values.length - 1].accept(this);
             unit.useNextBlock(end);
@@ -1142,7 +1155,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(DUP_TOP);
                     addOp(ROT_THREE);
                     addCompareOp(node.ops[i]);
-                    addOp(JUMP_IF_FALSE_OR_POP, cleanup);
+                    addConditionalJump(JUMP_IF_FALSE_OR_POP, cleanup);
                 }
                 node.comparators[i].accept(this);
                 addCompareOp(node.ops[i]);
@@ -2178,9 +2191,9 @@ public class Compiler implements SSTreeVisitor<Void> {
         // See compiler_jump_if in CPython
         test.accept(this);
         if (jumpIfTrue) {
-            addOp(POP_AND_JUMP_IF_TRUE, next);
+            addConditionalJump(POP_AND_JUMP_IF_TRUE, next);
         } else {
-            addOp(POP_AND_JUMP_IF_FALSE, next);
+            addConditionalJump(POP_AND_JUMP_IF_FALSE, next);
         }
     }
 
@@ -2398,7 +2411,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 String bindingName = node.handlers[i].name;
                 if (node.handlers[i].type != null) {
                     node.handlers[i].type.accept(this);
-                    addOp(MATCH_EXC_OR_JUMP, nextHandler);
+                    addConditionalJump(MATCH_EXC_OR_JUMP, nextHandler);
                     if (bindingName != null) {
                         addOp(UNWRAP_EXC);
                         addNameOp(bindingName, ExprContext.Store);

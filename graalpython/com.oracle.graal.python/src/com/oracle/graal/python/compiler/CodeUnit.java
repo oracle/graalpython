@@ -97,6 +97,8 @@ public final class CodeUnit {
 
     public final int[] exceptionHandlerRanges;
 
+    public final int conditionProfileCount;
+
     public final int startOffset;
     public final int startLine;
 
@@ -113,7 +115,8 @@ public final class CodeUnit {
                     byte[] code, byte[] linetable, int flags,
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
-                    int[] exceptionHandlerRanges, int startOffset, int startLine,
+                    int[] exceptionHandlerRanges, int conditionProfileCount,
+                    int startOffset, int startLine,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
@@ -132,6 +135,7 @@ public final class CodeUnit {
         this.constants = constants;
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
+        this.conditionProfileCount = conditionProfileCount;
         this.startOffset = startOffset;
         this.startLine = startLine;
         this.outputCanQuicken = outputCanQuicken;

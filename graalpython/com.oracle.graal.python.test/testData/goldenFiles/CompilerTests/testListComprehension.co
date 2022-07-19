@@ -16,20 +16,20 @@ Disassembly of <module>:
 Disassembly of <listcomp>:
 000000         0 COLLECTION_FROM_STACK             0    (list)
 000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          31   (to 35)                           can quicken
+000000   >>    4 FOR_ITER                          33   (to 37)                           can quicken
 000012         6 STORE_FAST                        1    (y)                               generalizes: 4
 000049         8 LOAD_FAST                         1    (y)
 000000        10 GET_ITER
-000000   >>   11 FOR_ITER                          22   (to 33)                           can quicken
+000000   >>   11 FOR_ITER                          24   (to 35)                           can quicken
 000044        13 STORE_FAST                        2    (x)                               generalizes: 11
 000054        15 LOAD_FAST                         2    (x)                               can quicken
 000058        17 LOAD_BYTE_I                       5                                      can quicken
 000054        19 BINARY_OP                         14   (LT)                              can quicken, generalizes: 17, 15
-000000        21 POP_AND_JUMP_IF_FALSE             10   (to 31)                           generalizes: 19
-000001        23 LOAD_GLOBAL                       0    (str)
-000005        25 LOAD_FAST                         2    (x)
-000001        27 CALL_FUNCTION                     1
-000000        29 ADD_TO_COLLECTION                 3    (list)
-000000   >>   31 JUMP_BACKWARD                     20   (to 11)
-000000   >>   33 JUMP_BACKWARD                     29   (to 4)
-000000   >>   35 RETURN_VALUE
+000000        21 POP_AND_JUMP_IF_FALSE             12   (to 33)                           generalizes: 19
+000001        25 LOAD_GLOBAL                       0    (str)
+000005        27 LOAD_FAST                         2    (x)
+000001        29 CALL_FUNCTION                     1
+000000        31 ADD_TO_COLLECTION                 3    (list)
+000000   >>   33 JUMP_BACKWARD                     22   (to 11)
+000000   >>   35 JUMP_BACKWARD                     31   (to 4)
+000000   >>   37 RETURN_VALUE

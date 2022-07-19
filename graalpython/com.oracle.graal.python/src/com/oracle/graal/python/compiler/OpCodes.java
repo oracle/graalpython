@@ -455,28 +455,28 @@ public enum OpCodes {
      * 
      * Pops (if not jumping): top of the stack
      */
-    JUMP_IF_FALSE_OR_POP(1, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_FALSE_OR_POP(3, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
     /**
      * Jump forward by the offset in the immediate operand if the top of the stack is false (in
      * Python sense).
      *
      * Pops (if not jumping): top of the stack
      */
-    JUMP_IF_TRUE_OR_POP(1, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
+    JUMP_IF_TRUE_OR_POP(3, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
     /**
      * Jump forward by the offset in the immediate operand if the top of the stack is false (in
      * Python sense).
      *
      * Pops: top of the stack
      */
-    POP_AND_JUMP_IF_FALSE(1, 1, 0),
+    POP_AND_JUMP_IF_FALSE(3, 1, 0),
     /**
      * Jump forward by the offset in the immediate operand if the top of the stack is true (in
      * Python sense).
      *
      * Pops: top of the stack
      */
-    POP_AND_JUMP_IF_TRUE(1, 1, 0),
+    POP_AND_JUMP_IF_TRUE(3, 1, 0),
 
     // making callables
     /**
@@ -573,7 +573,7 @@ public enum OpCodes {
      * 
      * Pushes (if jumping): the exception
      */
-    MATCH_EXC_OR_JUMP(1, 2, 1),
+    MATCH_EXC_OR_JUMP(3, 2, 1),
     /**
      * Save the current exception state on the stack and set it to the exception on the stack. The
      * exception object is {@link PException}, not a python exception. The exception is pushed back

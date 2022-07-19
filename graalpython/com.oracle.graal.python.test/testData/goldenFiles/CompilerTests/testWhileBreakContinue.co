@@ -4,22 +4,22 @@ Disassembly of <module>:
 000012   >>    4 LOAD_NAME                         0    (i)
 000016         6 LOAD_BYTE_O                       10
 000012         8 BINARY_OP                         14   (LT)                              can quicken
-000006        10 POP_AND_JUMP_IF_FALSE             26   (to 36)                           generalizes: 8
-000025        12 LOAD_NAME                         0    (i)
-000030        14 LOAD_BYTE_O                       3
-000025        16 BINARY_OP                         12   (EQ)                              can quicken
-000022        18 POP_AND_JUMP_IF_FALSE             6    (to 24)                           generalizes: 16
-000037        20 JUMP_FORWARD                      23   (to 43)
-000037        22 JUMP_FORWARD                      12   (to 34)
-000055   >>   24 LOAD_NAME                         0    (i)
-000060        26 LOAD_BYTE_O                       1
-000055        28 BINARY_OP                         1    (INPLACE_ADD)
-000055        30 STORE_NAME                        0    (i)
-000066        32 JUMP_BACKWARD                     28   (to 4)
-000066   >>   34 JUMP_BACKWARD                     30   (to 4)
-000083   >>   36 LOAD_NAME                         1    (print)
-000089        38 LOAD_STRING                       0    ('else')
-000083        40 CALL_FUNCTION                     1
-000083        42 POP_TOP
-000083   >>   43 LOAD_NONE
-000083        44 RETURN_VALUE
+000006        10 POP_AND_JUMP_IF_FALSE             30   (to 40)                           generalizes: 8
+000025        14 LOAD_NAME                         0    (i)
+000030        16 LOAD_BYTE_O                       3
+000025        18 BINARY_OP                         12   (EQ)                              can quicken
+000022        20 POP_AND_JUMP_IF_FALSE             8    (to 28)                           generalizes: 18
+000037        24 JUMP_FORWARD                      23   (to 47)
+000037        26 JUMP_FORWARD                      12   (to 38)
+000055   >>   28 LOAD_NAME                         0    (i)
+000060        30 LOAD_BYTE_O                       1
+000055        32 BINARY_OP                         1    (INPLACE_ADD)
+000055        34 STORE_NAME                        0    (i)
+000066        36 JUMP_BACKWARD                     32   (to 4)
+000066   >>   38 JUMP_BACKWARD                     34   (to 4)
+000083   >>   40 LOAD_NAME                         1    (print)
+000089        42 LOAD_STRING                       0    ('else')
+000083        44 CALL_FUNCTION                     1
+000083        46 POP_TOP
+000083   >>   47 LOAD_NONE
+000083        48 RETURN_VALUE

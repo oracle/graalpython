@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -52,12 +51,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Obtains the next value of an iterator. When the iterator is exhausted it returns {@code null}. It
@@ -68,20 +67,10 @@ public abstract class ForIterONode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object iterator, int stackTop);
 
     @Specialization
-    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop) {
-        if (iterator.hasNextInt()) {
+    boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop,
+                    @Cached("createCountingProfile()") ConditionProfile conditionProfile) {
+        if (conditionProfile.profile(iterator.hasNextInt())) {
             frame.setObject(stackTop, iterator.nextInt());
-            return true;
-        }
-        iterator.setExhausted();
-        return false;
-    }
-
-    @Specialization
-    boolean doBigIntRange(VirtualFrame frame, PBigRangeIterator iterator, int stackTop,
-                    @Cached PythonObjectFactory factory) {
-        if (iterator.hasNextBigInt()) {
-            frame.setObject(stackTop, factory.createInt(iterator.nextBigInt()));
             return true;
         }
         iterator.setExhausted();

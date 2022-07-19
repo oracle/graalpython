@@ -1,14 +1,14 @@
 Disassembly of <module>:
 000003         0 LOAD_FALSE_B                                                             can quicken
-000000         1 POP_AND_JUMP_IF_FALSE             10   (to 11)                           generalizes: 0
-000013         3 LOAD_NAME                         0    (print)
-000019         5 LOAD_TRUE_O
-000013         6 CALL_FUNCTION                     1
-000013         8 POP_TOP
-000013         9 JUMP_FORWARD                      8    (to 17)
-000034   >>   11 LOAD_NAME                         0    (print)
-000040        13 LOAD_FALSE_O
-000034        14 CALL_FUNCTION                     1
-000034        16 POP_TOP
-000034   >>   17 LOAD_NONE
-000034        18 RETURN_VALUE
+000000         1 POP_AND_JUMP_IF_FALSE             12   (to 13)                           generalizes: 0
+000013         5 LOAD_NAME                         0    (print)
+000019         7 LOAD_TRUE_O
+000013         8 CALL_FUNCTION                     1
+000013        10 POP_TOP
+000013        11 JUMP_FORWARD                      8    (to 19)
+000034   >>   13 LOAD_NAME                         0    (print)
+000040        15 LOAD_FALSE_O
+000034        16 CALL_FUNCTION                     1
+000034        18 POP_TOP
+000034   >>   19 LOAD_NONE
+000034        20 RETURN_VALUE

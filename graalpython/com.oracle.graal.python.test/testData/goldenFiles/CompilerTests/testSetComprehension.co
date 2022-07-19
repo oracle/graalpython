@@ -10,17 +10,17 @@ Disassembly of <module>:
 Disassembly of <setcomp>:
 000000         0 COLLECTION_FROM_STACK             0    (set)
 000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          26   (to 30)                           can quicken
+000000   >>    4 FOR_ITER                          28   (to 32)                           can quicken
 000011         6 STORE_FAST                        1    (x)                               generalizes: 4
 000029         8 LOAD_FAST                         1    (x)                               can quicken
 000033        10 LOAD_BYTE_I                       2                                      can quicken
 000029        12 BINARY_OP                         10   (MOD)                             can quicken, generalizes: 10, 8
 000038        14 LOAD_BYTE_I                       0                                      can quicken
 000029        16 BINARY_OP                         12   (EQ)                              can quicken, generalizes: 14, 12
-000000        18 POP_AND_JUMP_IF_FALSE             10   (to 28)                           generalizes: 16
-000001        20 LOAD_FAST                         1    (x)                               can quicken
-000005        22 LOAD_BYTE_I                       2                                      can quicken
-000001        24 BINARY_OP                         4    (MUL)                             generalizes: 22, 20
-000000        26 ADD_TO_COLLECTION                 2    (set)
-000000   >>   28 JUMP_BACKWARD                     24   (to 4)
-000000   >>   30 RETURN_VALUE
+000000        18 POP_AND_JUMP_IF_FALSE             12   (to 30)                           generalizes: 16
+000001        22 LOAD_FAST                         1    (x)                               can quicken
+000005        24 LOAD_BYTE_I                       2                                      can quicken
+000001        26 BINARY_OP                         4    (MUL)                             generalizes: 24, 22
+000000        28 ADD_TO_COLLECTION                 2    (set)
+000000   >>   30 JUMP_BACKWARD                     26   (to 4)
+000000   >>   32 RETURN_VALUE
