@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
@@ -332,8 +333,10 @@ public final class PCode extends PythonBuiltinObject {
             return (PBytecodeRootNode) rootNode;
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
             return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
+        } else if (rootNode instanceof PBytecodeGeneratorRootNode) {
+            return ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
         }
-        assert false : "expected a bytecode root node ";
+        assert false : "expected a bytecode root node";
         return null;
     }
 
@@ -411,6 +414,9 @@ public final class PCode extends PythonBuiltinObject {
         }
         if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
             return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
+        }
+        if (rootNode instanceof PBytecodeGeneratorRootNode) {
+            return ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
         }
         return rootNode;
     }
@@ -501,11 +507,12 @@ public final class PCode extends PythonBuiltinObject {
     public TruffleString getFilename() {
         if (filename == null) {
             RootNode rn = getRootNode();
-            if (PythonContext.get(null).getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            PythonContext ctx = PythonContext.get(rn);
+            if (ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
                 // TODO bci: maybe we don't need the BadOPCodeNode at all
                 if (!(rn instanceof BadOPCodeNode)) {
                     CodeUnit co = getBytecodeRootNode(rn).getCodeUnit();
-                    filename = PythonContext.get(rn).getCodeUnitFilename(co);
+                    filename = ctx.getCodeUnitFilename(co);
                 }
             }
             if (filename != null) {

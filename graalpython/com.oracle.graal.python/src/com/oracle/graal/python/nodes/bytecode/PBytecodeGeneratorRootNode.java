@@ -216,4 +216,8 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public int getResumeStackTop() {
         return resumeStackTop;
     }
+
+    public PBytecodeRootNode getBytecodeRootNode() {
+        return rootNode;
+    }
 }
