@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -332,7 +333,7 @@ public final class PCode extends PythonBuiltinObject {
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
             return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
         }
-        assert false : "expected a bytecode root node";
+        assert false : "expected a bytecode root node ";
         return null;
     }
 
@@ -501,8 +502,11 @@ public final class PCode extends PythonBuiltinObject {
         if (filename == null) {
             RootNode rn = getRootNode();
             if (PythonContext.get(null).getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                CodeUnit co = getBytecodeRootNode(rn).getCodeUnit();
-                filename = PythonContext.get(rn).getCodeUnitFilename(co);
+                // TODO bci: maybe we don't need the BadOPCodeNode at all
+                if (!(rn instanceof BadOPCodeNode)) {
+                    CodeUnit co = getBytecodeRootNode(rn).getCodeUnit();
+                    filename = PythonContext.get(rn).getCodeUnitFilename(co);
+                }
             }
             if (filename != null) {
                 return filename;
