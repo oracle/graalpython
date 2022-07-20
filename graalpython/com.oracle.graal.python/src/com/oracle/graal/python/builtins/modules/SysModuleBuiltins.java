@@ -241,6 +241,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
+    private static final TruffleString T_SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is not implemented.");
     private static final String COMPILE_TIME;
     public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
@@ -960,6 +961,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         boolean doGeneric() {
             return getContext().isFinalizing();
+        }
+    }
+
+    @Builtin(name = "settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
+                    "function call.  See the debugger chapter in the library manual.")
+    @GenerateNodeFactory
+    abstract static class SetTrace extends PythonBuiltinNode {
+        @Specialization
+        Object settrace() {
+            throw raise(RuntimeError, T_SETTRACE_NOT_IMPLEMENTED);
         }
     }
 
