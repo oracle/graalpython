@@ -127,7 +127,6 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             }
 
             @ExportMessage
-            @TruffleBoundary
             byte readByte(int byteOffset,
                             @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
                 int ch = codePointAtIndexNode.execute(str, byteOffset, TS_ENCODING);
