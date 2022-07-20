@@ -53,6 +53,15 @@ public class TracingTests {
     }
 
     @Test
+    public void traceCall() {
+        String source = "import sys\n" +
+                        "sys.settrace(lambda frame,ev,arg: ev == 'call' and print(ev))\n" +
+                        "def foo(): str(1);print('7')\n" +
+                        "foo()";
+        PythonTests.assertPrints("call\n7\n", source);
+    }
+
+    @Test
     public void gettraceReturnsSettrace() {
         String source = "import sys\n" +
                         "print(sys.gettrace())\n" +

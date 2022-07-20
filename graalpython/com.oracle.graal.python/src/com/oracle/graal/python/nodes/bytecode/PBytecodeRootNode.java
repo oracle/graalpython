@@ -148,6 +148,9 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -1063,6 +1066,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             unboxVariables(localFrame);
         }
 
+        final PythonContext context = PythonContext.get(this);
+        final PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        final Object globalTraceFn = threadState.getTraceFun();
+
         /*
          * We use an object as a workaround for not being able to specify which local variables are
          * loop constants (GR-35338).
@@ -1084,6 +1091,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(localBC);
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
+
+        Object localTraceFn = null;
+        final PFrame pyFrame;
+
+        if (globalTraceFn != null && !threadState.isTracing()) {
+            MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
+            pyFrame = fr.execute(virtualFrame, this, true, true);
+            localTraceFn = invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes);
+        } else {
+            pyFrame = null;
+        }
 
         int oparg = 0;
         while (true) {
@@ -1543,6 +1561,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
+                        if (globalTraceFn != null && localTraceFn != null && !threadState.isTracing()) {
+                            invokeTraceFunction(context, localTraceFn, value, threadState, virtualFrame, pyFrame, beginBci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
+                        }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
                         } else {
@@ -2118,6 +2139,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             }
         }
+    }
+
+    private Object invokeTraceFunction(PythonContext context, Object traceFn, Object arg, PythonContext.PythonThreadState threadState, VirtualFrame virtualFrame, PFrame tracing, int bci,
+                                       Node[] localNodes, PythonContext.TraceEvent ev, boolean useCachedNodes) {
+        threadState.tracingStart(ev);
+        CallTernaryMethodNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL_TERNARY_METHOD, CallTernaryMethodNodeGen.class, NODE_CALL_TERNARY_METHOD, useCachedNodes);
+        Object nonNullArg = arg == null ? PNone.NONE : arg;
+        Object result = callNode.execute(virtualFrame, traceFn, tracing, ev.pythonName, nonNullArg);
+        threadState.tracingStop();
+        return result == PNone.NONE ? null : result;
     }
 
     @ExplodeLoop
