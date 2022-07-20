@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -199,6 +199,17 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
+    }
+
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                    @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.execute(frame, arg1, arg2, PNone.NO_VALUE);
     }
 
     /**
