@@ -97,6 +97,12 @@ public class EconomicMapStorage extends HashingStorage {
         public int hashCode() {
             return (int) hash;
         }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return value + "@" + hash;
+        }
     }
 
     private final PEMap map;
