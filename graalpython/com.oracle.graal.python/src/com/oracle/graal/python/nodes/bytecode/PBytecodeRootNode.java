@@ -3403,7 +3403,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             case CollectionBits.KWORDS: {
-                throw CompilerDirectives.shouldNotReachHere("keywords merging handled elsewhere");
+                PKeyword[] array1 = (PKeyword[]) collection1;
+                PKeyword[] array2 = (PKeyword[]) collection2;
+                PKeyword[] combined = new PKeyword[array1.length + array2.length];
+                System.arraycopy(array1, 0, combined, 0, array1.length);
+                System.arraycopy(array2, 0, combined, array1.length, array2.length);
+                result = combined;
+                break;
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
