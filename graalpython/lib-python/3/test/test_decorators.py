@@ -1,4 +1,5 @@
-import unittest, sys
+import unittest
+from test import support
 
 def funcattrs(**kwds):
     def decorate(func):
@@ -151,9 +152,7 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(counts['double'], 4)
 
     def test_errors(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         # Test syntax restrictions - these are all compile-time errors:
         #

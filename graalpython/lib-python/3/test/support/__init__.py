@@ -122,6 +122,15 @@ __all__ = [
     "ALWAYS_EQ", "LARGEST", "SMALLEST"
     ]
 
+def skipIfBCI(test):
+    # TODO GR-39439: the error messages changed between 3.8 and 3.10
+    if isBCI():
+        test.skipTest("due to changed error messages between 3.8 and 3.10")
+
+def isBCI():
+    # TODO GR-39439: the error messages changed between 3.8 and 3.10
+    return sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter
+        
 class Error(Exception):
     """Base class for regression test exceptions."""
 

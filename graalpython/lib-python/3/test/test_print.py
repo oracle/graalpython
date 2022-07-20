@@ -136,9 +136,7 @@ class TestPy2MigrationHint(unittest.TestCase):
     """
 
     def test_normal_string(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         python2_print_str = 'print "Hello World"'
         with self.assertRaises(SyntaxError) as context:
@@ -147,9 +145,7 @@ class TestPy2MigrationHint(unittest.TestCase):
         self.assertIn('print("Hello World")', str(context.exception))
 
     def test_string_with_soft_space(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         python2_print_str = 'print "Hello World",'
         with self.assertRaises(SyntaxError) as context:
@@ -158,9 +154,7 @@ class TestPy2MigrationHint(unittest.TestCase):
         self.assertIn('print("Hello World", end=" ")', str(context.exception))
 
     def test_string_with_excessive_whitespace(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         python2_print_str = 'print  "Hello World", '
         with self.assertRaises(SyntaxError) as context:
@@ -169,9 +163,7 @@ class TestPy2MigrationHint(unittest.TestCase):
         self.assertIn('print("Hello World", end=" ")', str(context.exception))
 
     def test_string_with_leading_whitespace(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         python2_print_str = '''if 1:
             print "Hello World"
@@ -185,9 +177,7 @@ class TestPy2MigrationHint(unittest.TestCase):
     # it is in the same line as the header of a compound statement
     # and/or followed by a semicolon
     def test_string_with_semicolon(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
 
         python2_print_str = 'print p;'
         with self.assertRaises(SyntaxError) as context:
@@ -196,9 +186,7 @@ class TestPy2MigrationHint(unittest.TestCase):
         self.assertIn('print(p)', str(context.exception))
 
     def test_string_in_loop_on_same_line(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
             
         python2_print_str = 'for i in s: print i'
         with self.assertRaises(SyntaxError) as context:

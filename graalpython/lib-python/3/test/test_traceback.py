@@ -991,9 +991,7 @@ class TestStack(unittest.TestCase):
         self.assertEqual(s[0].locals, None)
 
     def test_format_locals(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
+        support.skipIfBCI(self)
             
         def some_inner(k, v):
             a = 1

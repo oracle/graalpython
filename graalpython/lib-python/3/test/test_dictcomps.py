@@ -1,4 +1,5 @@
-import unittest, sys
+import unittest
+from test import support
 
 # For scope testing.
 g = "Global variable"
@@ -75,9 +76,8 @@ class DictComprehensionTest(unittest.TestCase):
     def test_illegal_assignment(self):
         with self.assertRaisesRegex(SyntaxError, "cannot assign"):
             compile("{x: y for y, x in ((1, 2), (3, 4))} = 5", "<test>",
-                    "exec")
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if not (sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter):
+                    "exec")        
+        if not support.isBCI():
             with self.assertRaisesRegex(SyntaxError, "cannot assign"):
                 compile("{x: y for y, x in ((1, 2), (3, 4))} += 5", "<test>",
                     "exec")
