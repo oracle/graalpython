@@ -45,6 +45,7 @@ import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -241,7 +242,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
-    private static final TruffleString T_SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is not implemented.");
+    private static final TruffleString T_SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is only implemented for the bytecode interpreter.");
     private static final String COMPILE_TIME;
     public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
@@ -969,8 +970,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetTrace extends PythonBuiltinNode {
         @Specialization
-        Object settrace() {
-            throw raise(RuntimeError, T_SETTRACE_NOT_IMPLEMENTED);
+        Object settrace(Object function) {
+            PythonContext ctx = getContext();
+            if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                throw raise(NotImplementedError, T_SETTRACE_NOT_IMPLEMENTED);
+            }
+            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+            if (function == PNone.NONE) {
+                state.setTraceFun(null);
+            } else {
+                state.setTraceFun(function);
+            }
+            return PNone.NONE;
         }
     }
 
@@ -978,8 +989,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTrace extends PythonBuiltinNode {
         @Specialization
-        static Object gettrace() {
-            return PNone.NONE;
+        Object gettrace() {
+            PythonContext ctx = getContext();
+            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+            Object trace = state.getTraceFun();
+            return trace == null ? PNone.NONE : trace;
+
         }
     }
 
