@@ -143,6 +143,7 @@ import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectHashNodeGen;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -269,9 +270,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
                 handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
                 setCtypeLLVMHelpers(this, context, handle);
-            } catch (IOException | ImportException | ApiInitException e) {
-                // TODO(fa): properly handle errors
-                throw CompilerDirectives.shouldNotReachHere();
+            } catch (ApiInitException e) {
+                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+            } catch (ImportException e) {
+                throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
+            } catch (IOException e) {
+                throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, EqualNode.getUncached());
             }
         }
         NativeFunction memmove = MemMoveFunction.create(handle, context);
