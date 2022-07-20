@@ -232,14 +232,17 @@ class EnvBuilder:
                 abs_entry = os.path.join(bin_dir, entry)
                 if os.path.isfile(abs_entry):
                     with open(abs_entry, "r+") as f:
-                        content = f.read()
-                        expected_shebang = "#!" + python_exe
-                        if content.startswith(expected_shebang):
-                            f.seek(0)
-                            f.truncate()
-                            logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
-                            content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
-                            f.write(content)
+                        try:
+                            content = f.read()
+                            expected_shebang = "#!" + python_exe
+                            if content.startswith(expected_shebang):
+                                f.seek(0)
+                                f.truncate()
+                                logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
+                                content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
+                                f.write(content)
+                        except UnicodeDecodeError:
+                            pass # may happen for binary files
 
 
     def create_configuration(self, context):
