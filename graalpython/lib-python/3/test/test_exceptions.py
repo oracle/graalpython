@@ -160,8 +160,7 @@ class ExceptionTests(unittest.TestCase):
             else:
                 self.fail("failed to get expected SyntaxError")
 
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if not (sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter):
+        if not support.isBCI():
             s = '''print "old style"'''
             ckmsg(s, "Missing parentheses in call to 'print'. "
                      "Did you mean print(\"old style\")?")
