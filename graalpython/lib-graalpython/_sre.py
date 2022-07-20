@@ -170,7 +170,7 @@ FLAG_NAMES = [
     (FLAG_DOTALL, "DOTALL"),
     (FLAG_UNICODE, "UNICODE"),
     (FLAG_VERBOSE, "VERBOSE"),
-    (FLAG_DEBUG, "DEBUG"),
+    # (FLAG_DEBUG, "DEBUG"), # there is no DEBUG flag in tregex
     (FLAG_ASCII, "ASCII"),
 ]
 
@@ -311,6 +311,7 @@ class Pattern():
                 flags_str.append(char)
         self.__flags_str = "".join(flags_str)
         self.__compiled_regexes = {}
+        self.__cached_flags = None
         compiled_regex = self.__tregex_compile()
         self.groups = compiled_regex.groupCount - 1
         groups = compiled_regex.groups
@@ -331,6 +332,8 @@ class Pattern():
     @property
     def flags(self):
         # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
+        if self.__cached_flags != None:
+            return self.__cached_flags
         flags = self.__input_flags
         regex_flags = self.__tregex_compile().flags
         for flag, name in FLAG_NAMES:
@@ -339,6 +342,7 @@ class Pattern():
                     flags |= flag
             except AttributeError:
                 pass
+        self.__cached_flags = flags
         return flags
 
     def __check_input_type(self, input):
