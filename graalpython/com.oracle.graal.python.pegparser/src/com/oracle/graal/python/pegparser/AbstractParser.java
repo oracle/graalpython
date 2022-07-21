@@ -600,7 +600,7 @@ abstract class AbstractParser {
             }
         }
         if (token.type == ERRORTOKEN) {
-            tokenizerError();
+            tokenizerError(token);
         }
         return token;
     }
@@ -1016,8 +1016,11 @@ abstract class AbstractParser {
     /**
      * tokenizer_error
      */
-    void tokenizerError() {
+    void tokenizerError(Token token) {
         Tokenizer t = tokenizer.getTokenizer();
+        if (token.type == ERRORTOKEN && t.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
+            raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
+        }
         ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
         String msg;
         int colOffset = -1;

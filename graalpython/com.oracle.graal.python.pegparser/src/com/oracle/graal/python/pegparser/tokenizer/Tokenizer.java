@@ -416,14 +416,19 @@ public class Tokenizer {
         }
     }
 
-    // _syntaxerror_range
-    // syntaxerror_known_range
+    /**
+     * syntaxerror_known_range, _syntaxerror_range
+     */
+    Token syntaxError(int colOffset, int endColOffset, String message) {
+        done = StatusCode.SYNTAX_ERROR;
+        return createToken(Token.Kind.ERRORTOKEN, message);
+    }
+
     /**
      * syntaxerror
      */
     Token syntaxError(String message) {
-        done = StatusCode.SYNTAX_ERROR;
-        return createToken(Token.Kind.ERRORTOKEN, message);
+        return syntaxError(-1, -1, message);
     }
 
     /**
@@ -987,7 +992,8 @@ public class Tokenizer {
                                     /* Old-style octal: now disallowed. */
                                     oneBack();
                                     nextCharIndex = zerosEnd;
-                                    return syntaxError("leading zeros in decimal integer " +
+                                    return syntaxError(tokenStart + 1 - lineStartIndex, zerosEnd - lineStartIndex,
+                                                    "leading zeros in decimal integer " +
                                                     "literals are not permitted; " +
                                                     "use an 0o prefix for octal integers");
                                 }
@@ -1134,10 +1140,10 @@ public class Tokenizer {
                                 int start = currentLineNumber;
                                 currentLineNumber = firstLineNumber;
                                 if (quote_size == 3) {
-                                    return syntaxError(String.format("unterminated triple-quoted string literal " +
+                                    return syntaxError(String.format("unterminated triple-quoted string literal" +
                                                     " (detected at line %d)", start));
                                 } else {
-                                    return syntaxError(String.format("unterminated string literal " +
+                                    return syntaxError(String.format("unterminated string literal" +
                                                     " (detected at line %d)", start));
                                 }
                             }
