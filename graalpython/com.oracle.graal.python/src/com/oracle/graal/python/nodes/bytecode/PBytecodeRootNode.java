@@ -1097,9 +1097,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (globalTraceFn != null && !threadState.isTracing()) {
             MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
             pyFrame = fr.execute(virtualFrame, this, true, true);
-            pyFrame.setLineLock(getFirstLineno());
-            pyFrame.setLocalTraceFun(invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
-            pyFrame.lineUnlock();
+            if(initialBci == 0) {
+                pyFrame.setLineLock(getFirstLineno());
+                pyFrame.setLocalTraceFun(invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
+                pyFrame.lineUnlock();
+            }
         } else {
             pyFrame = null;
         }
