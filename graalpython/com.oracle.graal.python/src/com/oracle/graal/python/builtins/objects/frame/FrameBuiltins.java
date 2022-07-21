@@ -154,15 +154,36 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
-        @Specialization
-        Object get(@SuppressWarnings("unused") PFrame self) {
-            // TODO: frames: This must return the traceback if there is a
-            // handled exception here
+        @Specialization(guards = "isNoValue(v)")
+        static Object doit(PFrame self, @SuppressWarnings("unused") PNone v) {
+            Object traceFun = self.getLocalTraceFun();
+            return traceFun == null?PNone.NONE:traceFun;
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doit(PFrame self, Object v) {
+            self.setLocalTraceFun(v == PNone.NONE ? null : v);
             return PNone.NONE;
         }
+    }
+
+    @Builtin(name = "f_trace_lines", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isSetter = true, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class TraceLinesNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(v)")
+        static boolean doit(PFrame self, @SuppressWarnings("unused") PNone v) {
+            return self.getTraceLine();
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doit(PFrame self, boolean v) {
+            self.setTraceLine(v);
+            return PNone.NONE;
+        }
+
     }
 
     @Builtin(name = "f_code", minNumOfPositionalArgs = 1, isGetter = true)

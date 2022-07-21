@@ -1092,21 +1092,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
 
-        Object localTraceFn = null;
         final PFrame pyFrame;
 
         if (globalTraceFn != null && !threadState.isTracing()) {
             MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
             pyFrame = fr.execute(virtualFrame, this, true, true);
-            localTraceFn = invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes);
+            pyFrame.setLineLock(getFirstLineno());
+            pyFrame.setLocalTraceFun(invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
+            pyFrame.lineUnlock();
         } else {
             pyFrame = null;
         }
+
+        int pastLine = globalTraceFn == null?0:getFirstLineno();
 
         int oparg = 0;
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
+
+            if(globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun() != null && pyFrame.getTraceLine() && bciToLine(bci) != pastLine) {
+                pastLine = bciToLine(bci);
+                pyFrame.setLineLock(pastLine);
+                try {
+                    pyFrame.setLocalTraceFun(invokeTraceFunction(context, pyFrame.getLocalTraceFun(), null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.LINE, useCachedNodes));
+                } catch(Throwable e) {
+                    pyFrame.setLocalTraceFun(null);
+                    throw e;
+                } finally {
+                    pyFrame.lineUnlock();
+                }
+            }
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
@@ -1561,8 +1577,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
-                        if (globalTraceFn != null && localTraceFn != null && !threadState.isTracing()) {
-                            invokeTraceFunction(context, localTraceFn, value, threadState, virtualFrame, pyFrame, beginBci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
+                        if (globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun()!= null ) {
+                            pyFrame.setLineLock(bciToLine(bci));
+                            try {
+                                invokeTraceFunction(context, pyFrame.getLocalTraceFun(), value, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
+                            } catch(Throwable e) {
+                                pyFrame.setLocalTraceFun(null);
+                                throw e;
+                            } finally {
+                                pyFrame.lineUnlock();
+                            }
                         }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
@@ -2146,9 +2170,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         threadState.tracingStart(ev);
         CallTernaryMethodNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL_TERNARY_METHOD, CallTernaryMethodNodeGen.class, NODE_CALL_TERNARY_METHOD, useCachedNodes);
         Object nonNullArg = arg == null ? PNone.NONE : arg;
-        Object result = callNode.execute(virtualFrame, traceFn, tracing, ev.pythonName, nonNullArg);
-        threadState.tracingStop();
-        return result == PNone.NONE ? null : result;
+        try {
+            Object result = callNode.execute(virtualFrame, traceFn, tracing, ev.pythonName, nonNullArg);
+            return result == PNone.NONE ? null : result;
+        } finally {
+            threadState.tracingStop();
+        }
     }
 
     @ExplodeLoop
