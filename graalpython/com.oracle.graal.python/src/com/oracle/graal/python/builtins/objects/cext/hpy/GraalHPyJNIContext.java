@@ -102,10 +102,22 @@ final class GraalHPyJNIContext implements TruffleObject {
         return new HPyContextNativePointer(0L);
     }
 
+    /**
+     * Represents a native function pointer that will be called using an appropriate JNI trampoline
+     * function depending on the {@link #signature} and the {@link #debug} flag.
+     */
     @ExportLibrary(InteropLibrary.class)
     static final class GraalHPyJNIFunctionPointer implements TruffleObject {
         final long pointer;
         final LLVMType signature;
+
+        /**
+         * Function pointers created through {@code HPyModule_Create} or {@code HPyType_FromSpec}
+         * remembers if the context that created it was in debug mode. Depending on this flag, we
+         * decide which trampolines (universal or debug) we need to use. For reference: In CPython
+         * this is implicitly given by the fact that the HPy context is stored in a C global
+         * variable {@code _ctx_for_trampolines}.
+         */
         final boolean debug;
 
         GraalHPyJNIFunctionPointer(long pointer, LLVMType signature, boolean debug) {
@@ -134,6 +146,19 @@ final class GraalHPyJNIContext implements TruffleObject {
                 return callUniversal(receiver, cachedSignature, arguments, interopLibrary, convertArgNode);
             }
 
+            /**
+             * Uses the appropriate trampoline to call the native function pointer. This method
+             * merges all compatible signatures to reduce the number of necessary trampolines. For
+             * example:
+             *
+             * <pre>
+             *     typedef HPy (*HPyFunc_unaryfunc)(HPyContext *ctx, HPy);
+             *     typedef HPy_ssize_t (*HPyFunc_lenfunc)(HPyContext *ctx, HPy);
+             * </pre>
+             *
+             * use the same trampoline {@link GraalHPyContext#executePrimitive2(long, long, long)}
+             * since all arguments and the return value can be represented as {@code jlong}.
+             */
             private static long callUniversal(GraalHPyJNIFunctionPointer receiver, LLVMType signature, Object[] arguments,
                             InteropLibrary interopLibrary, GraalHPyJNIConvertArgNode convertArgNode) {
                 switch (signature) {
@@ -209,6 +234,27 @@ final class GraalHPyJNIContext implements TruffleObject {
                 throw CompilerDirectives.shouldNotReachHere();
             }
 
+            /**
+             * When we are in debug mode, we need to use different trampolines for calling the HPy
+             * extension functions because object parameters (that will become handles) will be
+             * wrapped in debug handles ({@code DHPy}) and, vice versa, object return values need to
+             * be unwrapped. This un/-wrapping is done by the trampoline via calling
+             * {@code DHPy_open} and {@code DHPy_unwrap}. Method
+             * {@link #callUniversal(GraalHPyJNIFunctionPointer, LLVMType, Object[], InteropLibrary, GraalHPyJNIConvertArgNode)}
+             * merges signatures as much as possible, for example:
+             *
+             * <pre>
+             *     typedef HPy (*HPyFunc_unaryfunc)(HPyContext *ctx, HPy);
+             *     typedef HPy_ssize_t (*HPyFunc_lenfunc)(HPyContext *ctx, HPy);
+             * </pre>
+             *
+             * will both use the universal trampoline
+             * {@link GraalHPyContext#executePrimitive2(long, long, long)} Considering the C
+             * signature of them, we can represent both, {@code HPy} and {@code HPy_ssize_t}, as
+             * {@code jlong} but we need to call {@code DHPy_unwrap} on the result of
+             * {@code HPyFunc_unaryfunc} while we can just pass the {@code HPy_ssize_t} value
+             * through as {@code jlong}.
+             */
             private static long callDebug(GraalHPyJNIFunctionPointer receiver, LLVMType signature, Object[] arguments,
                             InteropLibrary interopLibrary, GraalHPyJNIConvertArgNode convertArgNode) {
                 switch (signature) {
