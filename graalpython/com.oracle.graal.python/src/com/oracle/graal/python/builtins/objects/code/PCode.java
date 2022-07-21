@@ -746,7 +746,14 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public String toString() {
         String codeName = this.getName() == null ? "None" : this.getName().toJavaStringUncached();
-        String codeFilename = this.getFilename() == null ? "None" : this.getFilename().toJavaStringUncached();
+        /*
+         * This might be called without an active context (i.e. when dumping graphs), we cannot use
+         * getFilename
+         */
+        String codeFilename = getSourceSectionFileName(rootNodeForExtraction(getRootNode()).getSourceSection());
+        if (codeFilename == null) {
+            codeFilename = "None";
+        }
         int codeFirstLineNo = this.getFirstLineNo() == 0 ? -1 : this.getFirstLineNo();
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
