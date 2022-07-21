@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
-import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -318,6 +317,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<GetNameFromLocalsNode> NODE_GET_NAME_FROM_LOCALS = GetNameFromLocalsNode::create;
     private static final SetupAnnotationsNode UNCACHED_SETUP_ANNOTATIONS = SetupAnnotationsNode.getUncached();
     private static final NodeSupplier<SetupAnnotationsNode> NODE_SETUP_ANNOTATIONS = SetupAnnotationsNode::create;
+    private static final GetSendValueNode UNCACHED_GET_SEND_VALUE = GetSendValueNode.getUncached();
+    private static final NodeSupplier<GetSendValueNode> NODE_GET_SEND_VALUE = GetSendValueNode::create;
 
     private static final NodeSupplier<IntBuiltins.AddNode> NODE_INT_ADD = IntBuiltins.AddNode::create;
     private static final NodeSupplier<IntBuiltins.SubNode> NODE_INT_SUB = IntBuiltins.SubNode::create;
@@ -1798,14 +1799,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (mutableData.localException != null) {
                             PArguments.setException(arguments, mutableData.localException);
                         }
-                        Object sendValue = PArguments.getSpecialArgument(arguments);
-                        if (sendValue == null) {
-                            sendValue = PNone.NONE;
-                        } else if (sendValue instanceof ThrowData) {
-                            ThrowData throwData = (ThrowData) sendValue;
-                            throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
-                        }
-                        virtualFrame.setObject(++stackTop, sendValue);
+                        GetSendValueNode node = insertChildNode(localNodes, bci, UNCACHED_GET_SEND_VALUE, GetSendValueNodeGen.class, NODE_GET_SEND_VALUE, useCachedNodes);
+                        virtualFrame.setObject(++stackTop, node.execute(PArguments.getSpecialArgument(arguments)));
                         break;
                     }
                     case OpCodesConstants.SEND: {
