@@ -386,7 +386,7 @@ def known_packages():
             if key in os.environ:
                 scikit_learn_build_env[key] = os.environ[key]
 
-        if sys.implementation.name == "graalpython":
+        if sys.implementation.name == "graalpy":
             if not os.environ.get("VIRTUAL_ENV", None):
                 xit("scikit-learn can only be installed within a venv.")
             from distutils.sysconfig import get_config_var

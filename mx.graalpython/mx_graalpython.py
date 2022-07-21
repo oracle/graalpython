@@ -811,7 +811,7 @@ def run_ginstall(python_binary):
     env_dir = os.path.realpath(tempfile.mkdtemp())
     mx.log("using graalpython venv: {}".format(env_dir))
     mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
-    mx.run(["graalpython", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
 
 
 def is_bash_launcher(launcher_path):
