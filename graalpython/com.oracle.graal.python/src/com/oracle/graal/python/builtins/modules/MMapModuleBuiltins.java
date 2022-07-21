@@ -96,7 +96,21 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ACCESS_READ", PMMap.ACCESS_READ);
         addBuiltinConstant("ACCESS_WRITE", PMMap.ACCESS_WRITE);
         addBuiltinConstant("ACCESS_COPY", PMMap.ACCESS_COPY);
+        // 'PROT_EXEC': 4,
+        // 'PROT_READ': 1,
+        // 'PROT_WRITE': 2,
+        // 'MAP_SHARED': 1,
+        // 'MAP_PRIVATE': 2,
+        // 'MAP_ANON': 4096,
+        // 'MAP_ANONYMOUS': 4096,
+        // 'MADV_NORMAL': 0,
+        // 'MADV_RANDOM': 1,
+        // 'MADV_SEQUENTIAL': 2,
+        // 'MADV_WILLNEED': 3,
+        // 'MADV_DONTNEED': 4,
+        // 'MADV_FREE': 5
 
+        addBuiltinConstant("ALLOCATIONGRANULARITY", 4096);
         addBuiltinConstant("PAGESIZE", 4096);
 
         for (PosixConstants.IntConstant c : PosixConstants.mmapFlags) {
