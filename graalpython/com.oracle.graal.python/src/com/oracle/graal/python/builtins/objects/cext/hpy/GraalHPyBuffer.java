@@ -46,15 +46,14 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -110,6 +109,7 @@ public final class GraalHPyBuffer implements TruffleObject {
     private final GraalHPyContext context;
     private final CExtPyBuffer buffer;
 
+    private GraalHPyHandle ownerHandle;
     Object nativePointer;
 
     public GraalHPyBuffer(GraalHPyContext context, CExtPyBuffer buffer) {
@@ -139,46 +139,45 @@ public final class GraalHPyBuffer implements TruffleObject {
     }
 
     @ExportMessage
-    static class ReadMember {
-        @Specialization(guards = "receiver.getSupplier() == cachedSupplier")
-        static Object readMember(GraalHPyBuffer receiver, String member,
-                        @Cached(value = "receiver.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
-                        @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) throws UnknownIdentifierException {
-            switch (member) {
-                case J_MEMBER_BUF:
-                    return receiver.buffer.getBuf();
-                case J_MEMBER_OBJ:
-                    Object obj = receiver.buffer.getObj();
-                    return toNativeNode.execute(receiver.context, obj != null ? obj : PNone.NO_VALUE);
-                case J_MEMBER_LEN:
-                    return receiver.buffer.getLen();
-                case J_MEMBER_ITEMSIZE:
-                    return receiver.buffer.getItemSize();
-                case J_MEMBER_READONLY:
-                    return PInt.intValue(receiver.buffer.isReadOnly());
-                case J_MEMBER_NDIM:
-                    return receiver.buffer.getDims();
-                case J_MEMBER_FORMAT:
-                    return receiver.buffer.getFormat() != null ? new CStringWrapper(receiver.buffer.getFormat()) : toNativeNode.execute(receiver.context, PNone.NO_VALUE);
-                case J_MEMBER_SHAPE:
-                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getShape());
-                case J_MEMBER_STRIDES:
-                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getStrides());
-                case J_MEMBER_SUBOFFSETS:
-                    return toCArray(receiver.context, toNativeNode, receiver.buffer.getSuboffsets());
-                case J_MEMBER_INTERNAL:
-                    return receiver.buffer.getInternal();
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnknownIdentifierException.create(member);
+    Object readMember(String member,
+                    @Shared("toNativeNode") @Cached HPyAsHandleNode toNativeNode) throws UnknownIdentifierException {
+        switch (member) {
+            case J_MEMBER_BUF:
+                return buffer.getBuf();
+            case J_MEMBER_OBJ:
+                if (ownerHandle == null) {
+                    Object obj = buffer.getObj();
+                    ownerHandle = toNativeNode.execute(context, obj != null ? obj : PNone.NO_VALUE);
+                }
+                return ownerHandle;
+            case J_MEMBER_LEN:
+                return buffer.getLen();
+            case J_MEMBER_ITEMSIZE:
+                return buffer.getItemSize();
+            case J_MEMBER_READONLY:
+                return PInt.intValue(buffer.isReadOnly());
+            case J_MEMBER_NDIM:
+                return buffer.getDims();
+            case J_MEMBER_FORMAT:
+                return buffer.getFormat() != null ? new CStringWrapper(buffer.getFormat()) : toNativeNode.execute(context, PNone.NO_VALUE);
+            case J_MEMBER_SHAPE:
+                return toCArray(context, toNativeNode, buffer.getShape());
+            case J_MEMBER_STRIDES:
+                return toCArray(context, toNativeNode, buffer.getStrides());
+            case J_MEMBER_SUBOFFSETS:
+                return toCArray(context, toNativeNode, buffer.getSuboffsets());
+            case J_MEMBER_INTERNAL:
+                return buffer.getInternal();
         }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw UnknownIdentifierException.create(member);
+    }
 
-        private static Object toCArray(CExtContext context, CExtToNativeNode toNativeNode, int[] arr) {
-            if (arr != null) {
-                return new CIntArrayWrapper(arr);
-            }
-            return toNativeNode.execute(context, PNone.NO_VALUE);
+    private static Object toCArray(CExtContext context, HPyAsHandleNode toNativeNode, int[] arr) {
+        if (arr != null) {
+            return new CIntArrayWrapper(arr);
         }
+        return toNativeNode.execute(context, PNone.NO_VALUE);
     }
 
     @ExportMessage
@@ -195,8 +194,7 @@ public final class GraalHPyBuffer implements TruffleObject {
     @ExportMessage
     void toNative(
                     @Cached PCallHPyFunction callBufferToNativeNode,
-                    @Cached(value = "this.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
-                    @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode,
+                    @Shared("toNativeNode") @Cached HPyAsHandleNode toNativeNode,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         if (nativePointer == null) {
@@ -205,9 +203,13 @@ public final class GraalHPyBuffer implements TruffleObject {
              * it's doing some shortcuts since we know that each value is going to receive
              * 'toNative'. So, we eagerly convert them to native.
              */
+            if (ownerHandle == null) {
+                Object obj = buffer.getObj();
+                ownerHandle = toNativeNode.execute(context, obj != null ? obj : PNone.NO_VALUE);
+            }
             Object[] args = new Object[]{
                             buffer.getBuf(), // buf
-                            toNativeNode.execute(context, buffer.getObj()), // obj
+                            ownerHandle, // obj
                             buffer.getLen(), // len
                             buffer.getItemSize(), // itemsize
                             PInt.intValue(buffer.isReadOnly()), // readonly
@@ -229,11 +231,10 @@ public final class GraalHPyBuffer implements TruffleObject {
         return 0;
     }
 
-    ConversionNodeSupplier getSupplier() {
-        return context.getSupplier();
-    }
-
     void free(PCallHPyFunction callBufferFreeNode) {
+        if (ownerHandle != null) {
+            ownerHandle.closeAndInvalidate(context);
+        }
         if (nativePointer != null) {
             callBufferFreeNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_FREE, nativePointer);
         }

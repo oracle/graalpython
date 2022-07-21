@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-/**
- * A thin wrapper around {@link GraalHPyHandle} for exposing handles to the user space.
- */
-public final class PDebugHandle extends PythonBuiltinObject {
-    private final GraalHPyHandle handle;
+#ifndef CTX_TRACKER_H_
+#define CTX_TRACKER_H_
 
-    public PDebugHandle(Object cls, Shape instanceShape, GraalHPyHandle handle) {
-        super(cls, instanceShape);
-        this.handle = handle;
-    }
+typedef struct {
+    HPy_ssize_t capacity;  // allocated handles
+    HPy_ssize_t length;    // used handles
+    HPy *handles;
+} _HPyTracker_s;
 
-    public boolean eq(PDebugHandle other) {
-        return handle == other.handle;
-    }
-
-    public Object getObj() {
-        return handle.getDelegate();
-    }
-
-    @TruffleBoundary
-    public long getId() {
-        return GraalHPyBoxing.boxHandle(handle.getDebugId());
-    }
-
-    @TruffleBoundary
-    public void close(GraalHPyDebugContext debugContext) {
-        handle.closeAndInvalidate(debugContext);
-    }
-
-    @TruffleBoundary
-    public boolean isClosed() {
-        return !handle.isPointer(ConditionProfile.getUncached());
-    }
+static inline _HPyTracker_s *_ht2hp(HPyTracker ht) {
+    return (_HPyTracker_s *) (ht)._i;
 }
+static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
+    return (HPyTracker) {(HPy_ssize_t) (hp)};
+}
+
+_HPy_HIDDEN HPyTracker
+ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
+
+_HPy_HIDDEN int
+raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN int
+ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
+
+_HPy_HIDDEN void
+ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
+
+_HPy_HIDDEN void
+ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
+
+#endif /* CTX_TRACKER_H_ */

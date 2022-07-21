@@ -167,11 +167,11 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.PyUnicodeReadCharNode;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2814,8 +2814,8 @@ public abstract class GraalHPyContextFunctions {
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.T_REPR, pythonObject);
-                stderr.println(CastToTruffleStringNode.getUncached().execute(reprObj).toJavaStringUncached());
+                stderr.println(PyObjectReprAsTruffleStringNode.getUncached().execute(null, pythonObject).toJavaStringUncached());
+                stderr.flush();
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point
             }

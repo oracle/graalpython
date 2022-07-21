@@ -303,7 +303,7 @@ public abstract class CExtContext {
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName.toJavaStringUncached())) {
                 GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
-                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, false, llvmInteropLib, checkHPyResultNode);
+                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, llvmInteropLib, checkHPyResultNode);
             }
             return cApiContext.initCApiModule(location, llvmLibrary, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {

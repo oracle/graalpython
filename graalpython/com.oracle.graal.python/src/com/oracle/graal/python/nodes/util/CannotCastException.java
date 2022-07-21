@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
-public class CannotCastException extends ControlFlowException {
+public final class CannotCastException extends ControlFlowException {
     private static final long serialVersionUID = 1L;
-    static final CannotCastException INSTANCE = new CannotCastException();
+    public static final CannotCastException INSTANCE = new CannotCastException();
 }

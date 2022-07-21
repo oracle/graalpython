@@ -618,7 +618,7 @@ public final class PythonUtils {
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = toTruffleStringUncached(builtin.name());
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(name, type, numDefaults, flags, callTarget);
+        PBuiltinFunction function = factory.createBuiltinFunction(name, type, numDefaults, flags, callTarget);
         if (klass != null) {
             WriteAttributeToObjectNode.getUncached(true).execute(klass, name, function);
         }

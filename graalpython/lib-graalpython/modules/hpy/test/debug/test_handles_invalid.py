@@ -39,8 +39,10 @@
 
 import pytest
 from hpy.debug.leakdetector import LeakDetector
-from hpy.test.support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD
+from hpy.test.support import SUPPORTS_SYS_EXECUTABLE, IS_PYTHON_DEBUG_BUILD, GRAALPYTHON, HPyTest
 from hpy.test.conftest import IS_VALGRIND_RUN
+
+pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 
 @pytest.fixture
 def hpy_abi():
@@ -141,8 +143,15 @@ def test_cant_use_closed_handle(compiler, hpy_debug_capture):
         assert hpy_debug_capture.invalid_handles_count == 4
         mod.f_varargs('foo', 'bar')
         assert hpy_debug_capture.invalid_handles_count == 5
-        mod.h('baz')
-        assert hpy_debug_capture.invalid_handles_count == 6
+        if not GRAALPYTHON:
+            # GraalPython does not support this test because of the strict
+            # separation between universal adn debug context. The debug context
+            # still correctly detects the invalid handle access but later, the
+            # runtime will still try to close the argument handle and there is
+            # no means to propagate that information to the handle owner.
+            # Hence, an assertion will fail.
+            mod.h('baz')
+            assert hpy_debug_capture.invalid_handles_count == 6
 
 
 @pytest.mark.xfail(reason="graalpython does not prevent reuse of leaked handles for other handles and thus cannot always catch this")

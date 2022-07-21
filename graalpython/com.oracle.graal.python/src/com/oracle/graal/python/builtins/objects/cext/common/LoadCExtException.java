@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LoadCExtException extends Exception {
@@ -55,7 +54,7 @@ public abstract class LoadCExtException extends Exception {
     protected final TruffleString formatString;
     protected final Object[] formatArgs;
 
-    protected LoadCExtException(PException cause, TruffleString name, TruffleString formatString, Object... formatArgs) {
+    protected LoadCExtException(PException cause, TruffleString name, TruffleString formatString, Object[] formatArgs) {
         /*
          * We use the super constructor that initializes the cause to null. Without that, the cause
          * would be this exception itself. This helps escape analysis: it avoids the circle of an
@@ -82,7 +81,7 @@ public abstract class LoadCExtException extends Exception {
         private static final long serialVersionUID = 982734876234786L;
 
         public ApiInitException(PException cause, TruffleString name, TruffleString formatString, Object... formatArgs) {
-            super(cause, name, null, formatString, formatArgs);
+            super(cause, name, formatString, formatArgs);
         }
 
         public PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
@@ -95,7 +94,7 @@ public abstract class LoadCExtException extends Exception {
 
     public static final class ImportException extends LoadCExtException {
         private static final long serialVersionUID = 7862376523476548L;
-        protected final Object path;
+        private final Object path;
 
         public ImportException(PException cause, TruffleString name, TruffleString path, TruffleString formatString, Object... formatArgs) {
             super(cause, name, formatString, formatArgs);

@@ -105,9 +105,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFac
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -483,7 +480,6 @@ public final class PythonContext extends Python3Core {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
-    @CompilationFinal private GraalHPyDebugContext hPyDebugContext;
 
     private TruffleString soABI; // cache for soAPI
 
@@ -2148,27 +2144,15 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
-     * Equivalent of {@code debug_ctx.c: hpy_debug_get_ctx}.
-     */
-    public GraalHPyDebugContext getHPyDebugContext() {
-        if (hPyDebugContext == null) {
-            hPyDebugContext = initDebugMode();
-        }
-        return hPyDebugContext;
-    }
-
-    /**
      * Equivalent of {@code debug_ctx.c: hpy_debug_init_ctx}.
      */
     @TruffleBoundary
-    private GraalHPyDebugContext initDebugMode() {
+    private Object initDebugMode() {
         if (!hasHPyContext()) {
-            throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
+            throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy universal context");
         }
-        getLanguage().noHPyDebugModeAssumption.invalidate();
-        GraalHPyDebugContext debugCtx = new GraalHPyDebugContext(hPyContext);
-        PCallHPyFunctionNodeGen.getUncached().call(debugCtx, GraalHPyNativeSymbol.GRAAL_HPY_SET_DEBUG_CONTEXT, debugCtx);
-        return debugCtx;
+        // TODO: call 'hpy_debug_init_ctx'
+        throw CompilerDirectives.shouldNotReachHere("not yet implemented");
     }
 
     public boolean isGcEnabled() {

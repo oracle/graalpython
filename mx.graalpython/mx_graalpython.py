@@ -814,9 +814,10 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
                 except Exception as e: # pylint: disable=broad-except;
                     self.exc = e
 
-        abi_list = ['cpython', 'universal', 'debug']
+        abi_list = ['cpython', 'universal']
         if include_native:
-            abi_list.append('nfi')
+            # modes 'debug' and 'nfi' can only be used if native access is allowed
+            abi_list.extend(['debug', 'nfi'])
         for abi in abi_list:
             tenv = env.copy()
             tenv["TEST_HPY_ABI"] = abi
@@ -2280,6 +2281,9 @@ def update_hpy_import_cmd(args):
     def exclude_subdir(subdir):
         return lambda relpath: relpath.startswith(subdir)
 
+    def exclude_files(*files):
+        return lambda relpath: str(os.path.normpath(relpath)) in files
+
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
 
@@ -2324,10 +2328,18 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
 
-    # debug sources go into 'lib-graalpython/module/hpy/debug'
+    # debug Python sources go into 'lib-graalpython/module/hpy/debug'
     debug_files_dest = join(_get_core_home(), "modules", "hpy", "debug")
     import_files(hpy_repo_debug_dir, debug_files_dest, exclude_subdir("src"))
     remove_inexistent_files(hpy_repo_debug_dir, debug_files_dest)
+
+    # debug mode goes into 'com.oracle.graal.python.jni/src/debug'
+    debugctx_src = join(hpy_repo_debug_dir, "src")
+    debugctx_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "debug")
+    debugctx_hdr = join(debugctx_src, "include", "hpy_debug.h")
+    import_files(debugctx_src, debugctx_dest, exclude_files(
+        "autogen_debug_ctx_call.i", "debug_ctx_cpython.c", debugctx_hdr))
+    import_file(debugctx_hdr, join(debugctx_dest, "hpy_debug.h"))
 
     # import 'version.py' by path and read '__version__'
     from importlib import util

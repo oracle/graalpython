@@ -468,6 +468,17 @@ class HPyTest:
         """
         return True
 
+    @staticmethod
+    def supports_debug_mode():
+        """ Returns True if the underlying Python implementation supports
+            the debug mode.
+        """
+        from hpy.universal import _debug
+        try:
+            return _debug.get_open_handles() is not None
+        except:
+            return False
+
 
 class HPyDebugCapture:
     """

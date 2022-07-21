@@ -666,6 +666,7 @@ typedef HPyGlobal* _HPyGlobalPtr;
 #define HPyField void*
 #define HPyThreadState void*
 #define HPyGlobal void*
+#define _HPyCapsule_key int32_t
 
 #define SELECT_CTX(__ctx__) ((__ctx__) == g_universal_ctx ? g_universal_ctx : g_debug_ctx)
 
@@ -991,8 +992,8 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilename)(HPyContext *ctx,
      return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilename, ctx, h_type, filename_fsencoded);
 }
 
-HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_SetFromErrnoWithFilenameObjects)(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2) {
-     return UPCALL_HPY(ctx_Err_SetFromErrnoWithFilenameObjects, ctx, h_type, filename1, filename2);
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetFromErrnoWithFilenameObjects)(HPyContext *ctx, HPy h_type, HPy filename1, HPy filename2) {
+     UPCALL_VOID(ctx_Err_SetFromErrnoWithFilenameObjects, ctx, h_type, filename1, filename2);
 }
 
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_Occurred)(HPyContext *ctx)
@@ -1004,9 +1005,9 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_ExceptionMatches)(HPyContext *ctx, HPy exc
      return (int) UPCALL_I32(ctx_Err_ExceptionMatches, ctx, exc);
 }
 
-HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NoMemory)(HPyContext *ctx)
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_NoMemory)(HPyContext *ctx)
 {
-	return UPCALL_HPY0(ctx_Err_NoMemory, ctx);
+	UPCALL_VOID0(ctx_Err_NoMemory, ctx);
 }
 
 HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_Clear)(HPyContext *ctx)
@@ -1486,6 +1487,7 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(SeqIter_New)(HPyContext *ctx, HPy seq) {
 #undef HPyField
 #undef HPyThreadState
 #undef HPyGlobal
+#undef _HPyCapsule_key
 
 #undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME

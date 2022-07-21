@@ -37,9 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from hpy.test.support import SUPPORTS_SYS_EXECUTABLE
+from hpy.test.support import SUPPORTS_SYS_EXECUTABLE, HPyTest
 import os
 import pytest
+
+pytestmark = pytest.mark.skipif(not HPyTest.supports_debug_mode(), reason="debug mode not supported")
 
 # Tests detection of usage of char pointers associated with invalid already
 # closed handles. For now, the debug mode does not provide any hook for this
