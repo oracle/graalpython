@@ -865,7 +865,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             }
 
-            return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop(), Integer.MAX_VALUE);
+            return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
         }
@@ -886,14 +886,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterStateObject) {
         OSRInterpreterState interpreterState = (OSRInterpreterState) interpreterStateObject;
-        return executeFromBci(osrFrame, osrFrame, this, target, interpreterState.stackTop, interpreterState.loopEndBci);
+        return executeFromBci(osrFrame, osrFrame, this, target, interpreterState.stackTop);
     }
 
-    private static final class OSRContinuation {
+    private static final class InterpreterContinuation {
         public final int bci;
         public final int stackTop;
 
-        private OSRContinuation(int bci, int stackTop) {
+        private InterpreterContinuation(int bci, int stackTop) {
             this.bci = bci;
             this.stackTop = stackTop;
         }
@@ -913,7 +913,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PException localException;
     }
 
-    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
+    Object executeFromBci(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
         /*
          * A lot of python code is executed just a single time, such as top level module code. We
          * want to save some time and memory by trying to first use uncached nodes. We use two
@@ -921,34 +921,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          * cached or uncached nodes.
          */
         if (usingCachedNodes) {
-            return executeCached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, loopEndBci);
+            return executeCached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop);
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             usingCachedNodes = true;
-            Object result = executeUncached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, loopEndBci);
-            if (result instanceof OSRContinuation) {
-                OSRContinuation continuation = (OSRContinuation) result;
-                return executeCached(virtualFrame, localFrame, osrNode, continuation.bci, continuation.stackTop, loopEndBci);
+            Object result = executeUncached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop);
+            if (result instanceof InterpreterContinuation) {
+                InterpreterContinuation continuation = (InterpreterContinuation) result;
+                return executeCached(virtualFrame, localFrame, osrNode, continuation.bci, continuation.stackTop);
             }
             return result;
         }
     }
 
     @BytecodeInterpreterSwitch
-    private Object executeCached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
-        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, loopEndBci, true);
+    private Object executeCached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
+        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, true);
     }
 
     @BytecodeInterpreterSwitch
-    private Object executeUncached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci) {
-        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, loopEndBci, false);
+    private Object executeUncached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
+        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, false);
     }
 
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
-    private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, int loopEndBci, boolean useCachedNodes) {
-        boolean wasCompiled = CompilerDirectives.inCompiledCode();
+    private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, boolean useCachedNodes) {
         Object[] arguments = virtualFrame.getArguments();
         Object globals = PArguments.getGlobals(arguments);
         Object locals = PArguments.getSpecialArgument(arguments);
@@ -984,22 +983,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(stackTop);
-
-            if (wasCompiled && bci > loopEndBci) {
-                /*
-                 * This means we're in OSR and we just jumped out of the OSR compiled loop. We want
-                 * to return to the caller to continue in interpreter again otherwise we would most
-                 * likely deopt on the next instruction. The caller handles the special return value
-                 * in JUMP_BACKWARD. In generators, we need to additionally copy the stack items
-                 * back to the generator frame.
-                 */
-                if (localFrame != virtualFrame) {
-                    copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);
-                    // Clear slots that were popped (if any)
-                    clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
-                }
-                return new OSRContinuation(bci, stackTop);
-            }
 
             try {
                 switch (bc) {
@@ -1568,7 +1551,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         if (CompilerDirectives.inInterpreter()) {
                             if (!useCachedNodes) {
-                                return new OSRContinuation(bci, stackTop);
+                                return new InterpreterContinuation(bci, stackTop);
                             }
                             if (BytecodeOSRNode.pollOSRBackEdge(osrNode)) {
                                 /*
@@ -1581,23 +1564,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                  * variables) or it will get mixed up. To retain such state, put it
                                  * into the frame instead.
                                  */
-                                Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop, beginBci), null, virtualFrame);
+                                Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
                                 if (osrResult != null) {
-                                    if (osrResult instanceof OSRContinuation) {
-                                        // We should continue executing in interpreter after the
-                                        // loop
-                                        OSRContinuation continuation = (OSRContinuation) osrResult;
-                                        bci = continuation.bci;
-                                        stackTop = continuation.stackTop;
-                                        oparg = 0;
-                                        continue;
-                                    } else {
-                                        // We reached a return/yield
-                                        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
-                                            LoopNode.reportLoopCount(this, mutableData.loopCount);
-                                        }
-                                        return osrResult;
+                                    if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+                                        LoopNode.reportLoopCount(this, mutableData.loopCount);
                                     }
+                                    return osrResult;
                                 }
                             }
                         }

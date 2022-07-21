@@ -42,10 +42,8 @@ package com.oracle.graal.python.nodes.bytecode;
 
 final class OSRInterpreterState {
     public final int stackTop;
-    public final int loopEndBci;
 
-    public OSRInterpreterState(int stackTop, int loopEndBci) {
+    public OSRInterpreterState(int stackTop) {
         this.stackTop = stackTop;
-        this.loopEndBci = loopEndBci;
     }
 }
