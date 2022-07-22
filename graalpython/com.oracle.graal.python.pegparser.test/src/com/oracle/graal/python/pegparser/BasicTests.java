@@ -1029,7 +1029,7 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
-    public void multipleStatements()  {
+    public void multipleStatements() {
         checkSyntaxErrorMessage("a = 1\nb = 1", "multiple statements found while compiling a single statement", InputType.SINGLE);
     }
 

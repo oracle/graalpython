@@ -386,8 +386,6 @@ public class Tokenizer {
                 if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
                     readNewline = true;
-                    // We don't set readNewline here deliberately since we need the ENDMARKER token
-                    // to be reported on this line, not the next one.
                     return '\n';
                 }
             }
@@ -422,6 +420,7 @@ public class Tokenizer {
     /**
      * syntaxerror_known_range, _syntaxerror_range
      */
+    @SuppressWarnings("unused")     // TODO use column offsets
     Token syntaxError(int colOffset, int endColOffset, String message) {
         done = StatusCode.SYNTAX_ERROR;
         return createToken(Token.Kind.ERRORTOKEN, message);
@@ -997,8 +996,8 @@ public class Tokenizer {
                                     nextCharIndex = zerosEnd;
                                     return syntaxError(tokenStart + 1 - lineStartIndex, zerosEnd - lineStartIndex,
                                                     "leading zeros in decimal integer " +
-                                                    "literals are not permitted; " +
-                                                    "use an 0o prefix for octal integers");
+                                                                    "literals are not permitted; " +
+                                                                    "use an 0o prefix for octal integers");
                                 }
                                 Token syntaxError = verifyEndOfNumber(c, "decimal");
                                 if (syntaxError != null) {
