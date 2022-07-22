@@ -1288,8 +1288,8 @@ public class Tokenizer {
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
-        int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
-        int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
+        int colOffset = kind != Token.Kind.ENDMARKER && (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
+        int endColOffset = kind != Token.Kind.ENDMARKER && (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
         return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
