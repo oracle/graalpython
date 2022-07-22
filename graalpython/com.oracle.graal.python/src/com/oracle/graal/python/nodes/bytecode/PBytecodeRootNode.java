@@ -184,7 +184,6 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -2143,8 +2142,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.ADD:
                 case BinaryOpsConstants.INPLACE_ADD:
                     try {
-                        result = PythonUtils.addExact(left, right);
-                    } catch (OverflowException e) {
+                        result = Math.addExact(left, right);
+                    } catch (ArithmeticException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
                         bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
@@ -2154,8 +2153,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.SUB:
                 case BinaryOpsConstants.INPLACE_SUB:
                     try {
-                        result = PythonUtils.subtractExact(left, right);
-                    } catch (OverflowException e) {
+                        result = Math.subtractExact(left, right);
+                    } catch (ArithmeticException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
                         bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
@@ -2165,8 +2164,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.MUL:
                 case BinaryOpsConstants.INPLACE_MUL:
                     try {
-                        result = PythonUtils.multiplyExact(left, right);
-                    } catch (OverflowException e) {
+                        result = Math.multiplyExact(left, right);
+                    } catch (ArithmeticException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
                         bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
