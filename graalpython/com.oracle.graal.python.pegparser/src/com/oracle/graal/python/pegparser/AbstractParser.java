@@ -168,6 +168,10 @@ abstract class AbstractParser {
                 }
             }
         }
+        if (startRule == InputType.SINGLE && tokenizer.getTokenizer().isBadSingleStatement()) {
+            return raiseSyntaxError("multiple statements found while compiling a single statement");
+        }
+
         return res;
     }
 

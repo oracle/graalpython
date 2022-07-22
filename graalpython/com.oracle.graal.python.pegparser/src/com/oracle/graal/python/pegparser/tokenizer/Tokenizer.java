@@ -1332,6 +1332,36 @@ public class Tokenizer {
         return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
+    /**
+     * bad_single_statement
+     */
+    public boolean isBadSingleStatement() {
+        int cur = nextCharIndex;
+        if (cur >= codePointsInput.length) {
+            return false;
+        }
+        int c = codePointsInput[cur];
+        while (true) {
+            while (c == ' ' || c == '\t' || c == '\n' || c == '\014') {
+                cur++;
+                if (cur >= codePointsInput.length) {
+                    return false;
+                }
+                c = codePointsInput[cur];
+            }
+            if (c != '#') {
+                return true;
+            }
+            while (c != '\n') {
+                cur++;
+                if (cur >= codePointsInput.length) {
+                    return false;
+                }
+                c = codePointsInput[cur];
+            }
+        }
+    }
+
     public StatusCode getDone() {
         return done;
     }
