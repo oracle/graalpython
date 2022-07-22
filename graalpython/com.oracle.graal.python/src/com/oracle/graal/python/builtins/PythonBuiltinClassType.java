@@ -382,7 +382,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Capsule("PyCapsule"),
 
     // A marker for @Builtin that is not a class. Must always come last.
-    nil(null);
+    nil("nil");
 
     private static class Flags {
 
