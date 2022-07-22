@@ -71,6 +71,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -112,8 +113,10 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -650,32 +653,39 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "dis", minNumOfPositionalArgs = 1, doc = "Helper to disassemble code objects if running with the bytecode interpreter")
+    @Builtin(name = "dis", minNumOfPositionalArgs = 1, parameterNames = {"obj", "quickened"}, doc = "Helper to disassemble code objects if running with the bytecode interpreter")
+    @ArgumentClinic(name = "quickened", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class BCIDisNode extends PythonUnaryBuiltinNode {
+    public abstract static class BCIDisNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object doMethod(PMethod method) {
+        Object doMethod(PMethod method, boolean quickened) {
             final Object function = method.getFunction();
             if (function instanceof PFunction) {
-                return doFunction((PFunction) function);
+                return doFunction((PFunction) function, quickened);
             }
             return PNone.NONE;
         }
 
         @Specialization
-        Object doFunction(PFunction function) {
-            return doCode(function.getCode());
+        Object doFunction(PFunction function, boolean quickened) {
+            return doCode(function.getCode(), quickened);
         }
 
         @Specialization
         @TruffleBoundary
-        Object doCode(PCode code) {
-            return toTruffleStringUncached(code.toDisassembledString());
+        Object doCode(PCode code, boolean quickened) {
+            return toTruffleStringUncached(code.toDisassembledString(quickened));
         }
 
-        @Specialization(guards = {"!isCode(value)", "!isPFunction(value)", "!isMethod(value)"})
-        Object doObject(@SuppressWarnings("unused") Object value) {
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doObject(Object value, Object quickened) {
             return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GraalPythonModuleBuiltinsClinicProviders.BCIDisNodeClinicProviderGen.INSTANCE;
         }
     }
 

@@ -759,10 +759,13 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public String toDisassembledString() {
+    public String toDisassembledString(boolean quickened) {
         final RootNode rootNode = getRootCallTarget().getRootNode();
         if (rootNode instanceof PBytecodeRootNode) {
             CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            if (quickened) {
+                return code.toString(((PBytecodeRootNode) rootNode).getBytecode());
+            }
             return code.toString();
         }
         return J_EMPTY_STRING;

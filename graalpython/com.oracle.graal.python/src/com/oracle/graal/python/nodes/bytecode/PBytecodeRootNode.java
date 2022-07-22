@@ -631,6 +631,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return co;
     }
 
+    public byte[] getBytecode() {
+        return bytecode;
+    }
+
     @FunctionalInterface
     private interface NodeSupplier<T> {
 
