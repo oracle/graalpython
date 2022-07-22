@@ -255,6 +255,10 @@ the \'lazy\' dog.\n\
         self.assertRaises(SyntaxError, eval, ".. .")
 
     def test_eof_error(self):
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
+            self.skipTest("due to changed error messages between 3.8 and 3.10")
+
         samples = ("def foo(", "\ndef foo(", "def foo(\n")
         for s in samples:
             with self.assertRaises(SyntaxError) as cm:

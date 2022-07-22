@@ -1058,9 +1058,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (mode.equalsUncached(T_EXEC, TS_ENCODING)) {
                 pm = ParserMode.File;
                 // CPython adds a newline and we need to do the same in order to produce
-                // SyntaxError with the same offset when the line is incomplete
-                if (code.isEmpty() || code.codePointAtIndexUncached(code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
-                    code = code.concatUncached(T_NEWLINE, TS_ENCODING, true);
+                // SyntaxError with the same offset when the line is incomplete.
+                // The new parser does this on its own - we must not add a newline here since
+                // that would lead to incorrect line number for the ENDMARKER token.
+                if (!context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                    if (code.isEmpty() || code.codePointAtIndexUncached(code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
+                        code = code.concatUncached(T_NEWLINE, TS_ENCODING, true);
+                    }
                 }
             } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
                 pm = ParserMode.Eval;

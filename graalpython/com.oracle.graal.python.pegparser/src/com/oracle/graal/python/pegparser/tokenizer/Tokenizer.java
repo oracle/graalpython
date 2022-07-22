@@ -381,6 +381,8 @@ public class Tokenizer {
                 // check if we need to report a missing newline before eof
                 if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
+                    // We don't set readNewline here deliberately since we need the ENDMARKER token
+                    // to be reported on this line, not the next one.
                     return '\n';
                 }
             }
@@ -390,11 +392,7 @@ public class Tokenizer {
                 } else {
                     done = StatusCode.INTERACTIVE_STOP;
                 }
-            }
-            if (done != StatusCode.EOF) {
-                // the first EOF is on the new line
-                currentLineNumber++;
-                lineStartIndex = nextCharIndex;
+                return EOF;
             }
             done = StatusCode.EOF;
             return EOF;
@@ -411,8 +409,8 @@ public class Tokenizer {
                 if (nextCharIndex > 0 && codePointsInput[nextCharIndex - 1] == '\r') {
                     nextCharIndex--;
                 }
-                readNewline = false;
             }
+            readNewline = false;
         }
     }
 
