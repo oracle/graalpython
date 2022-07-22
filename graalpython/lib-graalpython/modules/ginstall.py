@@ -187,7 +187,7 @@ def known_packages():
     def Cython(extra_opts=None, **kwargs):
         if extra_opts is None:
             extra_opts = []
-        install_from_pypi("Cython==0.29.13", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
+        install_from_pypi("Cython==0.29.30", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
 
     @pip_package()
     def setuptools(**kwargs):
@@ -282,12 +282,14 @@ def known_packages():
     @pip_package()
     def numpy(**kwargs):
         setuptools(**kwargs)
+        Cython(**kwargs)
         # honor following selected env variables: BLAS, LAPACK, ATLAS
         numpy_build_env = {}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 numpy_build_env[key] = os.environ[key]
-        install_from_pypi("numpy==1.16.4", env=numpy_build_env, **kwargs)
+        # correctly detecting the CPU features is currently not supported
+        install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
@@ -531,7 +533,13 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
-def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None, pre_install_hook=None, build_cmd=[]):
+
+def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
+                      build_cmd=None):
+    if build_cmd is None:
+        build_cmd = []
+    if extra_opts is None:
+        extra_opts = []
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
