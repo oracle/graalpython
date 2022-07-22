@@ -253,6 +253,32 @@ public class TokenizerTest {
     }
 
     @Test
+    public void testEofCoordImplicitNewline() {
+        Tokenizer tokenizer = createTokenizer("a");
+        assertEquals(Token.Kind.NAME, tokenizer.next().type);
+        assertEquals(Token.Kind.NEWLINE, tokenizer.next().type);
+        Token t = tokenizer.next();
+        assertEquals(Token.Kind.ENDMARKER, t.type);
+        assertEquals(1, t.getSourceRange().startLine);
+        assertEquals(-1, t.getSourceRange().startColumn);
+        assertEquals(1, t.getSourceRange().endLine);
+        assertEquals(-1, t.getSourceRange().endColumn);
+    }
+
+    @Test
+    public void testEofCoordExplicitNewline() {
+        Tokenizer tokenizer = createTokenizer("a\n");
+        assertEquals(Token.Kind.NAME, tokenizer.next().type);
+        assertEquals(Token.Kind.NEWLINE, tokenizer.next().type);
+        Token t = tokenizer.next();
+        assertEquals(Token.Kind.ENDMARKER, t.type);
+        assertEquals(1, t.getSourceRange().startLine);
+        assertEquals(-1, t.getSourceRange().startColumn);
+        assertEquals(1, t.getSourceRange().endLine);
+        assertEquals(-1, t.getSourceRange().endColumn);
+    }
+
+    @Test
     public void testInteractiveIncompleteSourceClass() {
         Tokenizer tokenizer = createInteractiveTokenizer("class A:\n");
         assertEquals(Token.Kind.NAME, tokenizer.next().type);
@@ -263,7 +289,7 @@ public class TokenizerTest {
             tokenizer.next();
             fail("Expected Tokenizer to report incomplete source");
         } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
-            assertEquals(2, e.line);
+            assertEquals(1, e.line);
         }
         tokenizer.reportIncompleteSourceIfInteractive = false;
         assertEquals(Token.Kind.ENDMARKER, tokenizer.next().type);
@@ -276,7 +302,7 @@ public class TokenizerTest {
             tokenizer.next();
             fail("Expected Tokenizer to report incomplete source");
         } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
-            assertEquals(3, e.line);
+            assertEquals(2, e.line);
         }
     }
 

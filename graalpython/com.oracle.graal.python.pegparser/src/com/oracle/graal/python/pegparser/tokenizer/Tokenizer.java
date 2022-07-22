@@ -360,7 +360,11 @@ public class Tokenizer {
     int nextChar() {
         if (readNewline) {
             readNewline = false;
-            currentLineNumber++;
+            if (nextCharIndex < codePointsInput.length) {
+                // cpython does not increment the line number when the last line is empty
+                // (early exit from tok_underflow_file/tok_underflow_string)
+                currentLineNumber++;
+            }
             lineStartIndex = nextCharIndex;
         }
         if (nextCharIndex < codePointsInput.length) {
@@ -381,6 +385,7 @@ public class Tokenizer {
                 // check if we need to report a missing newline before eof
                 if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
+                    readNewline = true;
                     // We don't set readNewline here deliberately since we need the ENDMARKER token
                     // to be reported on this line, not the next one.
                     return '\n';
@@ -1285,11 +1290,14 @@ public class Tokenizer {
     }
 
     private Token createToken(int kind, Object extraData) {
+        if (kind == Token.Kind.ENDMARKER) {
+            return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, currentLineNumber, -1, currentLineNumber, -1), extraData);
+        }
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
-        int colOffset = kind != Token.Kind.ENDMARKER && (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
-        int endColOffset = kind != Token.Kind.ENDMARKER && (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
+        int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
+        int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
         return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
