@@ -1320,10 +1320,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RAISE_VARARGS: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        int count = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
-                        break;
+                        int count = Byte.toUnsignedInt(localBC[bci + 1]);
+                        throw bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
                     }
                     case OpCodesConstants.RETURN_VALUE: {
                         if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
@@ -1855,7 +1853,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                int targetIndex = findHandler(bci);
+                int targetIndex = findHandler(beginBci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (pe != null) {
                     if (mutableData.localException != null) {
@@ -1892,7 +1890,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 } else {
                     if (pe != null) {
-                        pe.setCatchingFrameReference(virtualFrame, this, bci);
+                        pe.setCatchingFrameReference(virtualFrame, this, beginBci);
                     }
                     int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(virtualFrame, stackTop, stackSizeOnEntry + stackoffset);
@@ -3130,7 +3128,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
+    private PException bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
         RaiseNode raiseNode = insertChildNode(localNodes, bci, RaiseNodeGen.class, NODE_RAISENODE);
         Object cause;
         Object exception;
@@ -3147,7 +3145,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             exception = PNone.NO_VALUE;
         }
         raiseNode.execute(virtualFrame, exception, cause);
-        return stackTop;
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
