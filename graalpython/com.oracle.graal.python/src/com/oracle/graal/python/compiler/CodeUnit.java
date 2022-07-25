@@ -306,7 +306,7 @@ public final class CodeUnit {
                     case LOAD_BIGINT:
                     case LOAD_STRING:
                     case LOAD_BYTES:
-                    case LOAD_TUPLE:
+                    case LOAD_CONST_COLLECTION:
                     case MAKE_KEYWORD: {
                         Object constant = constants[oparg];
                         if (constant instanceof CodeUnit) {
@@ -331,8 +331,8 @@ public final class CodeUnit {
                                 line[5] = Objects.toString(constant);
                             }
                         }
-                        if (opcode == OpCodes.LOAD_TUPLE) {
-                            line[5] += " type " + TupleConstantType.values()[followingArgs[0]];
+                        if (opcode == OpCodes.LOAD_CONST_COLLECTION) {
+                            line[5] += " type " + collectionTypeToString(followingArgs[0]) + " into " + collectionKindToString(followingArgs[0]);
                         }
                         break;
                     }
@@ -425,26 +425,7 @@ public final class CodeUnit {
                     case COLLECTION_ADD_COLLECTION:
                     case ADD_TO_COLLECTION:
                         line[4] = String.format("% 2d", CollectionBits.elementCount(oparg));
-                        switch (CollectionBits.elementType(oparg)) {
-                            case CollectionBits.LIST:
-                                line[5] = "list";
-                                break;
-                            case CollectionBits.TUPLE:
-                                line[5] = "tuple";
-                                break;
-                            case CollectionBits.SET:
-                                line[5] = "set";
-                                break;
-                            case CollectionBits.DICT:
-                                line[5] = "dict";
-                                break;
-                            case CollectionBits.KWORDS:
-                                line[5] = "PKeyword[]";
-                                break;
-                            case CollectionBits.OBJECT:
-                                line[5] = "Object[]";
-                                break;
-                        }
+                        line[5] = collectionKindToString(oparg);
                         break;
                     case UNPACK_EX:
                         line[5] = String.format("%d, %d", oparg, Byte.toUnsignedInt(followingArgs[0]));
@@ -533,5 +514,39 @@ public final class CodeUnit {
         }
 
         return sb.toString();
+    }
+
+    private static String collectionKindToString(int oparg) {
+        switch (CollectionBits.collectionKind(oparg)) {
+            case CollectionBits.KIND_LIST:
+                return "list";
+            case CollectionBits.KIND_TUPLE:
+                return "tuple";
+            case CollectionBits.KIND_SET:
+                return "set";
+            case CollectionBits.KIND_DICT:
+                return "dict";
+            case CollectionBits.KIND_KWORDS:
+                return "PKeyword[]";
+            case CollectionBits.KIND_OBJECT:
+                return "Object[]";
+        }
+        throw new IllegalStateException("Unknown kind");
+    }
+
+    private static String collectionTypeToString(int oparg) {
+        switch (CollectionBits.elementType(oparg)) {
+            case CollectionBits.ELEMENT_BOOLEAN:
+                return "boolean";
+            case CollectionBits.ELEMENT_INT:
+                return "int";
+            case CollectionBits.ELEMENT_LONG:
+                return "long";
+            case CollectionBits.ELEMENT_DOUBLE:
+                return "double";
+            case CollectionBits.ELEMENT_OBJECT:
+                return "Object";
+        }
+        throw new IllegalStateException("Unknown type");
     }
 }

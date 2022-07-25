@@ -1,6 +1,3 @@
 Disassembly of <module>:
-000001         0 LOAD_BYTE_O                       1
-000004         2 LOAD_BYTE_O                       2
-000007         4 LOAD_BYTE_O                       3
-000000         6 COLLECTION_FROM_STACK             3    (list)
-000000         8 RETURN_VALUE
+000000         0 LOAD_CONST_COLLECTION             0    ([1, 2, 3] type int into list)
+000000         3 RETURN_VALUE

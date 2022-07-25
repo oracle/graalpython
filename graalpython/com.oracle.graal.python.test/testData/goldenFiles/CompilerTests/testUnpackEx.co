@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000011         0 LOAD_TUPLE                        0    ([1, 2, 3, 4, 5] type INT)
+000011         0 LOAD_CONST_COLLECTION             0    ([1, 2, 3, 4, 5] type int into tuple)
 000000         3 UNPACK_EX                         1    (1, 1)
 000000         6 STORE_NAME                        0    (a)
 000004         8 STORE_NAME                        1    (b)

@@ -94,7 +94,6 @@ import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
-import com.oracle.graal.python.compiler.TupleConstantTypeConstants;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
@@ -1050,11 +1049,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
                         break;
                     }
-                    case OpCodesConstants.LOAD_TUPLE: {
+                    case OpCodesConstants.LOAD_CONST_COLLECTION: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        int type = Byte.toUnsignedInt(localBC[++bci]);
+                        int typeAndKind = Byte.toUnsignedInt(localBC[++bci]);
                         Object array = localConsts[oparg];
-                        bytecodeLoadTuple(virtualFrame, ++stackTop, array, type);
+                        bytecodeLoadConstCollection(virtualFrame, ++stackTop, array, typeAndKind);
                         break;
                     }
                     case OpCodesConstants.LOAD_COMPLEX: {
@@ -1101,7 +1100,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
-                        int type = CollectionBits.elementType(countAndType);
+                        int type = CollectionBits.collectionKind(countAndType);
                         stackTop = bytecodeCollectionFromStack(virtualFrame, type, count, stackTop, localNodes, beginBci, useCachedNodes);
                         break;
                     }
@@ -1109,7 +1108,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
-                        int type = CollectionBits.elementType(countAndType);
+                        int type = CollectionBits.collectionKind(countAndType);
                         // Just combine COLLECTION_FROM_STACK and COLLECTION_ADD_COLLECTION for now
                         stackTop = bytecodeCollectionFromStack(virtualFrame, type, count, stackTop, localNodes, beginBci, useCachedNodes);
                         stackTop = bytecodeCollectionAddCollection(virtualFrame, type, stackTop, localNodes, beginBci + 1, useCachedNodes);
@@ -1119,7 +1118,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int depthAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int depth = CollectionBits.elementCount(depthAndType);
-                        int type = CollectionBits.elementType(depthAndType);
+                        int type = CollectionBits.collectionKind(depthAndType);
                         stackTop = bytecodeAddToCollection(virtualFrame, stackTop, beginBci, localNodes, depth, type, useCachedNodes);
                         break;
                     }
@@ -2986,28 +2985,62 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeLoadTuple(VirtualFrame virtualFrame, int stackTop, Object array, int type) {
+    private void bytecodeLoadConstCollection(VirtualFrame virtualFrame, int stackTop, Object array, int typeAndKind) {
+        Object result;
         SequenceStorage storage;
-        switch (type) {
-            case TupleConstantTypeConstants.INT:
-                storage = new IntSequenceStorage((int[]) array);
+        int kind = CollectionBits.collectionKind(typeAndKind);
+        assert kind == CollectionBits.KIND_LIST || kind == CollectionBits.KIND_TUPLE;
+        boolean list = kind == CollectionBits.KIND_LIST;
+        switch (CollectionBits.elementType(typeAndKind)) {
+            case CollectionBits.ELEMENT_INT: {
+                int[] a = (int[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new IntSequenceStorage(a);
                 break;
-            case TupleConstantTypeConstants.LONG:
-                storage = new LongSequenceStorage((long[]) array);
+            }
+            case CollectionBits.ELEMENT_LONG: {
+                long[] a = (long[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new LongSequenceStorage(a);
                 break;
-            case TupleConstantTypeConstants.BOOLEAN:
-                storage = new BoolSequenceStorage((boolean[]) array);
+            }
+            case CollectionBits.ELEMENT_BOOLEAN: {
+                boolean[] a = (boolean[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new BoolSequenceStorage(a);
                 break;
-            case TupleConstantTypeConstants.DOUBLE:
-                storage = new DoubleSequenceStorage((double[]) array);
+            }
+            case CollectionBits.ELEMENT_DOUBLE: {
+                double[] a = (double[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new DoubleSequenceStorage(a);
                 break;
-            case TupleConstantTypeConstants.OBJECT:
-                storage = new ObjectSequenceStorage((Object[]) array);
+            }
+            case CollectionBits.ELEMENT_OBJECT: {
+                Object[] a = (Object[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new ObjectSequenceStorage(a);
                 break;
+            }
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }
-        virtualFrame.setObject(stackTop, factory.createTuple(storage));
+        if (list) {
+            result = factory.createList(storage);
+        } else {
+            result = factory.createTuple(storage);
+        }
+        virtualFrame.setObject(stackTop, result);
     }
 
     private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
@@ -3300,19 +3333,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = oldStackTop;
         Object res = null;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 Object[] store = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createList(store);
                 break;
             }
-            case CollectionBits.TUPLE: {
+            case CollectionBits.KIND_TUPLE: {
                 Object[] store = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createTuple(store);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 PSet set = factory.createSet();
                 HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
@@ -3323,7 +3356,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 res = set;
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 PDict dict = factory.createDict();
                 HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
@@ -3336,13 +3369,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 res = dict;
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 PKeyword[] kwds = new PKeyword[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, kwds);
                 res = kwds;
                 break;
             }
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 Object[] objs = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, objs);
                 res = objs;
@@ -3358,37 +3391,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object sourceCollection = virtualFrame.getObject(stackTop);
         Object result;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 ListNodes.ConstructListNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_LIST, ListNodesFactory.ConstructListNodeGen.class, NODE_CONSTRUCT_LIST,
                                 useCachedNodes);
                 result = constructNode.execute(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.TUPLE: {
+            case CollectionBits.KIND_TUPLE: {
                 TupleNodes.ConstructTupleNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_TUPLE, TupleNodesFactory.ConstructTupleNodeGen.class, NODE_CONSTRUCT_TUPLE,
                                 useCachedNodes);
                 result = constructNode.execute(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetNodes.ConstructSetNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_SET, SetNodesFactory.ConstructSetNodeGen.class, NODE_CONSTRUCT_SET, useCachedNodes);
                 result = constructNode.executeWith(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 // TODO create uncached node
                 HashingStorage.InitNode initNode = insertChildNode(localNodes, nodeIndex, HashingStorageFactory.InitNodeGen.class, NODE_HASHING_STORAGE_INIT);
                 HashingStorage storage = initNode.execute(virtualFrame, sourceCollection, PKeyword.EMPTY_KEYWORDS);
                 result = factory.createDict(storage);
                 break;
             }
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXECUTE_STARARGS, ExecutePositionalStarargsNodeGen.class, NODE_EXECUTE_STARARGS,
                                 useCachedNodes);
                 result = executeStarargsNode.executeWith(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 KeywordsNode keywordsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_KEYWORDS, KeywordsNodeGen.class, NODE_KEYWORDS, useCachedNodes);
                 result = keywordsNode.execute(virtualFrame, sourceCollection, stackTop);
                 break;
@@ -3405,21 +3438,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object collection2 = virtualFrame.getObject(stackTop);
         Object result;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 // TODO uncached node
                 ListBuiltins.ListExtendNode extendNode = insertChildNode(localNodes, nodeIndex, ListBuiltinsFactory.ListExtendNodeFactory.ListExtendNodeGen.class, NODE_LIST_EXTEND);
                 extendNode.execute(virtualFrame, (PList) collection1, collection2);
                 result = collection1;
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetBuiltins.UpdateSingleNode updateNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_UPDATE, SetBuiltinsFactory.UpdateSingleNodeGen.class, NODE_SET_UPDATE, useCachedNodes);
                 PSet set = (PSet) collection1;
                 set.setDictStorage(updateNode.execute(virtualFrame, set.getDictStorage(), collection2));
                 result = set;
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 // TODO uncached node
                 DictNodes.UpdateNode updateNode = insertChildNode(localNodes, nodeIndex, DictNodesFactory.UpdateNodeGen.class, NODE_DICT_UPDATE);
                 updateNode.execute(virtualFrame, (PDict) collection1, collection2);
@@ -3427,7 +3460,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             // Note: we don't allow this operation for tuple
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 Object[] array1 = (Object[]) collection1;
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXECUTE_STARARGS, ExecutePositionalStarargsNodeGen.class, NODE_EXECUTE_STARARGS,
                                 useCachedNodes);
@@ -3438,7 +3471,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 result = combined;
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 PKeyword[] array1 = (PKeyword[]) collection1;
                 PKeyword[] array2 = (PKeyword[]) collection2;
                 PKeyword[] combined = new PKeyword[array1.length + array2.length];
@@ -3461,17 +3494,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object collection = virtualFrame.getObject(stackTop - depth);
         Object item = virtualFrame.getObject(stackTop);
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 ListNodes.AppendNode appendNode = insertChildNode(localNodes, nodeIndex, UNCACHED_LIST_APPEND, ListNodesFactory.AppendNodeGen.class, NODE_LIST_APPEND, useCachedNodes);
                 appendNode.execute((PList) collection, item);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetNodes.AddNode addNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ADD, SetNodesFactory.AddNodeGen.class, NODE_SET_ADD, useCachedNodes);
                 addNode.execute(virtualFrame, (PSet) collection, item);
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 Object key = virtualFrame.getObject(stackTop - 1);
                 HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
