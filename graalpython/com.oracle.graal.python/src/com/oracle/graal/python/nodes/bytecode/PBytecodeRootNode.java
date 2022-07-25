@@ -3540,6 +3540,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return -1;
     }
 
+    public Source getSource() {
+        return source;
+    }
+
     @Override
     public SourceSection getSourceSection() {
         if (sourceSection != null) {

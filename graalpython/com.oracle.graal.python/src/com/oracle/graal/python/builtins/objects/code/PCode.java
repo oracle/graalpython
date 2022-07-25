@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.code;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -75,10 +76,8 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
-import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -143,8 +142,6 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
-    // convert the constants (code units) to code on first access
-    private boolean convertConstants = true;
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
         super(cls, instanceShape);
@@ -170,7 +167,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
-        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, PythonUtils.arrayCopyOf(codeUnit.constants, codeUnit.constants.length), codeUnit.names,
+        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, null, codeUnit.names,
                         codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startLine, codeUnit.srcOffsetTable);
     }
 
@@ -225,11 +222,6 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static void setCodeUnitFileName(RootNode rootNode, CodeUnit co, TruffleString filename) {
-        PythonContext.get(rootNode).setCodeUnitFilename(co, filename);
-    }
-
-    @TruffleBoundary
     public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
@@ -237,7 +229,11 @@ public final class PCode extends PythonBuiltinObject {
         PythonContext context = PythonContext.get(rootNode);
         TruffleString filename;
         if (context != null) {
-            filename = context.getCodeFilename(funcRootNode.getCallTarget());
+            if (rootNode instanceof PBytecodeRootNode) {
+                filename = context.getCodeUnitFilename(((PBytecodeRootNode) rootNode).getCodeUnit());
+            } else {
+                filename = context.getCodeFilename(funcRootNode.getCallTarget());
+            }
         } else {
             return toTruffleStringUncached(funcRootNode.getName());
         }
@@ -317,14 +313,18 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Object[] extractConstants(RootNode rootNode) {
-        if (PythonContext.get(null).getOption(PythonOptions.EnableBytecodeInterpreter)) {
-            PBytecodeRootNode bytecodeRootNode = getBytecodeRootNode(rootNode);
-            Object[] cnsts = bytecodeRootNode.getCodeUnit().constants;
-            return PythonUtils.arrayCopyOf(cnsts, cnsts.length);
+    private static Object[] extractConstants(RootNode node) {
+        RootNode rootNode = rootNodeForExtraction(node);
+        if (rootNode instanceof PBytecodeRootNode) {
+            Object[] originalConstants = ((PBytecodeRootNode) rootNode).getCodeUnit().constants;
+            Object[] constants = new Object[originalConstants.length];
+            for (int i = 0; i < constants.length; i++) {
+                constants[i] = convertConstantToPythonSpace(rootNode, originalConstants[i]);
+            }
+            return constants;
         } else {
             ConstantsVisitor visitor = new ConstantsVisitor();
-            return visitor.findConstants(rootNodeForExtraction(rootNode));
+            return visitor.findConstants(rootNode);
         }
     }
 
@@ -487,18 +487,26 @@ public final class PCode extends PythonBuiltinObject {
     public void setFilename(TruffleString filename) {
         CompilerAsserts.neverPartOfCompilation();
         this.filename = filename;
-        RootNode rootNode = getRootNode();
+        RootNode rootNode = rootNodeForExtraction(getRootNode());
         setRootNodeFileName(rootNode, filename);
-        constants = extractConstants(rootNode);
-        for (int i = 0; i < constants.length; i++) {
-            if (constants[i] instanceof PCode) {
-                ((PCode) constants[i]).setFilename(filename);
-            } else if (constants[i] instanceof CodeUnit) {
-                CodeUnit co = (CodeUnit) constants[i];
-                setCodeUnitFileName(rootNode, co, filename);
-                convertConstants = false;
-                constants[i] = convert(rootNode, co, PythonObjectFactory.getUncached());
-                ((PCode) constants[i]).setFilename(filename);
+        if (rootNode instanceof PBytecodeRootNode) {
+            PythonContext context = PythonContext.get(rootNode);
+            CodeUnit co = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            context.setCodeUnitFilename(co, filename);
+            for (int i = 0; i < co.constants.length; i++) {
+                if (co.constants[i] instanceof CodeUnit) {
+                    context.setCodeUnitFilename((CodeUnit) co.constants[i], filename);
+                }
+            }
+        } else {
+            constants = extractConstants(rootNode);
+            for (int i = 0; i < constants.length; i++) {
+                if (constants[i] instanceof PCode) {
+                    ((PCode) constants[i]).setFilename(filename);
+                } else if (constants[i] instanceof CodeUnit) {
+                    CodeUnit co = (CodeUnit) constants[i];
+                    PythonContext.get(rootNode).setCodeUnitFilename(co, filename);
+                }
             }
         }
     }
@@ -506,19 +514,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public TruffleString getFilename() {
         if (filename == null) {
-            RootNode rn = getRootNode();
-            PythonContext ctx = PythonContext.get(rn);
-            if (ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                // TODO bci: maybe we don't need the BadOPCodeNode at all
-                if (!(rn instanceof BadOPCodeNode)) {
-                    CodeUnit co = getBytecodeRootNode(rn).getCodeUnit();
-                    filename = ctx.getCodeUnitFilename(co);
-                }
-            }
-            if (filename != null) {
-                return filename;
-            }
-            filename = extractFileName(rn);
+            filename = extractFileName(rootNodeForExtraction(getRootNode()));
         }
         return filename;
     }
@@ -588,28 +584,32 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public Object[] getConstants(PythonObjectFactory factory) {
+    public Object[] getConstants() {
         if (constants == null) {
             constants = extractConstants(getRootNode());
-        }
-        if (convertConstants) {
-            convertConstants = false;
-            RootNode rootNode = getRootNode();
-            for (int i = 0; i < constants.length; i++) {
-                constants[i] = convert(rootNode, constants[i], factory);
-            }
         }
         return constants;
     }
 
     @TruffleBoundary
-    private static Object convert(RootNode rootNode, Object o, PythonObjectFactory factory) {
+    private static Object convertConstantToPythonSpace(RootNode rootNode, Object o) {
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
         if (o instanceof CodeUnit) {
             CodeUnit code = ((CodeUnit) o);
             PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
-            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code.varnames.length, code.stacksize, code.flags, code.constants,
-                            code.names,
-                            code.varnames, code.freevars, code.cellvars, null, code.name, code.startOffset, code.srcOffsetTable);
+            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
+        } else if (o instanceof BigInteger) {
+            return factory.createInt((BigInteger) o);
+        } else if (o instanceof double[]) {
+            double[] num = (double[]) o;
+            return factory.createComplex(num[0], num[1]);
+        } else if (o instanceof byte[]) {
+            return factory.createBytes((byte[]) o);
+        } else if (o instanceof TruffleString[]) {
+            TruffleString[] strings = (TruffleString[]) o;
+            Object[] array = new Object[strings.length];
+            System.arraycopy(strings, 0, array, 0, strings.length);
+            return factory.createTuple(array);
         }
         return o;
     }
@@ -775,7 +775,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        return createTuple(this.getConstants(factory), factory);
+        return createTuple(this.getConstants(), factory);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {
