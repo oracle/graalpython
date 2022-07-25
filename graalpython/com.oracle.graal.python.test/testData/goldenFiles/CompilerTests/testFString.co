@@ -10,9 +10,9 @@ Disassembly of <module>:
 000022        16 LOAD_METHOD                       0    (join)
 000022        18 LOAD_STRING                       3    ('5')
 000022        20 COLLECTION_FROM_STACK             1    (list)
-000022        22 CALL_METHOD                       1    (a)
+000022        22 CALL_METHOD                       1
 000018        24 FORMAT_VALUE                      6    (REPR + SPEC)
 000024        26 LOAD_STRING                       4    ('after')
 000000        28 COLLECTION_FROM_STACK             5    (list)
-000000        30 CALL_METHOD                       1    (a)
+000000        30 CALL_METHOD                       1
 000000        32 RETURN_VALUE

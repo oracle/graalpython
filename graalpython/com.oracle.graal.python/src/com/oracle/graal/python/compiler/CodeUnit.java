@@ -399,7 +399,6 @@ public final class CodeUnit {
                     }
                     case CALL_METHOD: {
                         line[4] = String.format("% 2d", oparg);
-                        line[5] = names[oparg].toJavaStringUncached();
                         break;
                     }
                     case UNARY_OP:

@@ -28,7 +28,7 @@ Disassembly of <module>:
 000125        57 STORE_NAME                        4    (time)
 000153        59 LOAD_NAME                         4    (time)
 000153        61 LOAD_METHOD                       4    (time)
-000153        63 CALL_METHOD                       0    (__name__)
+000153        63 CALL_METHOD                       0
 000145        65 STORE_NAME                        5    (start)
 000176        67 LOAD_NAME                         2    (len)
 000180        69 LOAD_NAME                         1    (sys)
@@ -57,7 +57,7 @@ Disassembly of <module>:
 000336       114 LOAD_NAME                         10   (__file__)
 000346       116 LOAD_NAME                         4    (time)
 000346       118 LOAD_METHOD                       4    (time)
-000346       120 CALL_METHOD                       0    (__name__)
+000346       120 CALL_METHOD                       0
 000360       122 LOAD_NAME                         5    (start)
 000346       124 BINARY_OP                         2    (SUB)
 000335       126 COLLECTION_FROM_STACK             2    (tuple)
