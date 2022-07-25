@@ -178,8 +178,9 @@ def test_module_code():
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
         assert code.co_name.startswith("<module")
-        if sys.implementation.name == 'graalpy':
-            assert code.co_firstlineno == 1
+        # AST interpreter doesn't pass this
+        if not sys.implementation.name == 'graalpy' or __graalpython__.uses_bytecode_interpreter:
+            assert code.co_firstlineno == 40
         # assert code.co_lnotab  == b''
         assert code.co_freevars == tuple()
         assert code.co_cellvars == tuple()
