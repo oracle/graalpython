@@ -1032,21 +1032,26 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeString(TruffleString v) throws IOException {
-            InternalByteArray ba = v.switchEncodingUncached(Encoding.UTF_8).getInternalByteArrayUncached(Encoding.UTF_8);
+            /*
+             * UTF-8 doesn't support surrogates, we fall back on UTF-32 if the string contains them
+             */
+            Encoding encoding;
+            if (v.isCompatibleTo(Encoding.UTF_8)) {
+                encoding = Encoding.UTF_8;
+                writeInt(0);
+            } else {
+                encoding = Encoding.UTF_32;
+                writeInt(1);
+            }
+            InternalByteArray ba = v.switchEncodingUncached(encoding).getInternalByteArrayUncached(encoding);
             writeSize(ba.getLength());
             out.write(ba.getArray(), ba.getOffset(), ba.getLength());
         }
 
         private TruffleString readString() {
+            Encoding encoding = readInt() == 0 ? Encoding.UTF_8 : Encoding.UTF_32;
             int sz = readSize();
-            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true).switchEncodingUncached(TS_ENCODING);
-        }
-
-        private TruffleString readTruffleString() {
-            int sz = readSize();
-            byte[] data = new byte[sz];
-            readNBytes(sz, data);
-            return TruffleString.fromByteArrayUncached(data, Encoding.UTF_8, false).switchEncodingUncached(TS_ENCODING);
+            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, encoding, true).switchEncodingUncached(TS_ENCODING);
         }
 
         private void writeShortString(String v) throws IOException {
@@ -1251,7 +1256,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode() {
-            TruffleString fileName = readTruffleString();
+            TruffleString fileName = readString();
             int flags = readInt();
 
             int codeLen = readSize();
