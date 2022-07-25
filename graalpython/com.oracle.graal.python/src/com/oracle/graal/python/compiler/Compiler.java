@@ -591,6 +591,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private TruffleString getDocstring(StmtTy[] body) {
+        if (optimizationLevel >= 2) {
+            return null;
+        }
         if (body != null && body.length > 0) {
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr) {
@@ -1914,6 +1917,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Assert node) {
+        // TODO warn when test is a tuple
+        if (optimizationLevel > 0) {
+            return null;
+        }
         setLocation(node);
         Block end = new Block();
         jumpIf(node.test, end, true);
