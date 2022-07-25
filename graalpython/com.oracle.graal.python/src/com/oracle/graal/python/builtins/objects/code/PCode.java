@@ -199,20 +199,22 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
-        if (rootNode instanceof PClosureRootNode) {
-            return ((PClosureRootNode) rootNode).getFreeVars();
-        } else if (rootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) rootNode).getCodeUnit().freevars;
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PClosureRootNode) {
+            return ((PClosureRootNode) funcRootNode).getFreeVars();
+        } else if (funcRootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) funcRootNode).getCodeUnit().freevars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
     }
 
     private static TruffleString[] extractCellVars(RootNode rootNode) {
-        if (rootNode instanceof PClosureFunctionRootNode) {
-            return ((PClosureFunctionRootNode) rootNode).getCellVars();
-        } else if (rootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) rootNode).getCodeUnit().cellvars;
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PClosureFunctionRootNode) {
+            return ((PClosureFunctionRootNode) funcRootNode).getCellVars();
+        } else if (funcRootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) funcRootNode).getCodeUnit().cellvars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         }
@@ -282,11 +284,12 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            CodeUnit code = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
             return code.stacksize + code.varnames.length + code.cellvars.length + code.freevars.length;
         }
-        return rootNode.getFrameDescriptor().getNumberOfSlots();
+        return funcRootNode.getFrameDescriptor().getNumberOfSlots();
     }
 
     @TruffleBoundary

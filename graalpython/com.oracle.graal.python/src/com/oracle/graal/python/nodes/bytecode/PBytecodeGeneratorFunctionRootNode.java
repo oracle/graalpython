@@ -122,4 +122,9 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     public PBytecodeRootNode getBytecodeRootNode() {
         return rootNode;
     }
+
+    @Override
+    protected byte[] extractCode() {
+        return rootNode.extractCode();
+    }
 }
