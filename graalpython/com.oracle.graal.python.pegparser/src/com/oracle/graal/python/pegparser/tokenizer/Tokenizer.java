@@ -360,7 +360,11 @@ public class Tokenizer {
     int nextChar() {
         if (readNewline) {
             readNewline = false;
-            currentLineNumber++;
+            if (nextCharIndex < codePointsInput.length) {
+                // cpython does not increment the line number when the last line is empty
+                // (early exit from tok_underflow_file/tok_underflow_string)
+                currentLineNumber++;
+            }
             lineStartIndex = nextCharIndex;
         }
         if (nextCharIndex < codePointsInput.length) {
@@ -381,6 +385,7 @@ public class Tokenizer {
                 // check if we need to report a missing newline before eof
                 if (codePointsInput.length == 0 || codePointsInput[nextCharIndex - 1] != '\n') {
                     nextCharIndex++;
+                    readNewline = true;
                     return '\n';
                 }
             }
@@ -390,11 +395,7 @@ public class Tokenizer {
                 } else {
                     done = StatusCode.INTERACTIVE_STOP;
                 }
-            }
-            if (done != StatusCode.EOF) {
-                // the first EOF is on the new line
-                currentLineNumber++;
-                lineStartIndex = nextCharIndex;
+                return EOF;
             }
             done = StatusCode.EOF;
             return EOF;
@@ -411,19 +412,25 @@ public class Tokenizer {
                 if (nextCharIndex > 0 && codePointsInput[nextCharIndex - 1] == '\r') {
                     nextCharIndex--;
                 }
-                readNewline = false;
             }
+            readNewline = false;
         }
     }
 
-    // _syntaxerror_range
-    // syntaxerror_known_range
+    /**
+     * syntaxerror_known_range, _syntaxerror_range
+     */
+    @SuppressWarnings("unused")     // TODO use column offsets
+    Token syntaxError(int colOffset, int endColOffset, String message) {
+        done = StatusCode.SYNTAX_ERROR;
+        return createToken(Token.Kind.ERRORTOKEN, message);
+    }
+
     /**
      * syntaxerror
      */
     Token syntaxError(String message) {
-        done = StatusCode.SYNTAX_ERROR;
-        return createToken(Token.Kind.ERRORTOKEN, message);
+        return syntaxError(-1, -1, message);
     }
 
     /**
@@ -987,9 +994,10 @@ public class Tokenizer {
                                     /* Old-style octal: now disallowed. */
                                     oneBack();
                                     nextCharIndex = zerosEnd;
-                                    return syntaxError("leading zeros in decimal integer " +
-                                                    "literals are not permitted; " +
-                                                    "use an 0o prefix for octal integers");
+                                    return syntaxError(tokenStart + 1 - lineStartIndex, zerosEnd - lineStartIndex,
+                                                    "leading zeros in decimal integer " +
+                                                                    "literals are not permitted; " +
+                                                                    "use an 0o prefix for octal integers");
                                 }
                                 Token syntaxError = verifyEndOfNumber(c, "decimal");
                                 if (syntaxError != null) {
@@ -1134,10 +1142,10 @@ public class Tokenizer {
                                 int start = currentLineNumber;
                                 currentLineNumber = firstLineNumber;
                                 if (quote_size == 3) {
-                                    return syntaxError(String.format("unterminated triple-quoted string literal " +
+                                    return syntaxError(String.format("unterminated triple-quoted string literal" +
                                                     " (detected at line %d)", start));
                                 } else {
-                                    return syntaxError(String.format("unterminated string literal " +
+                                    return syntaxError(String.format("unterminated string literal" +
                                                     " (detected at line %d)", start));
                                 }
                             }
@@ -1281,6 +1289,9 @@ public class Tokenizer {
     }
 
     private Token createToken(int kind, Object extraData) {
+        if (kind == Token.Kind.ENDMARKER) {
+            return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, currentLineNumber, -1, currentLineNumber, -1), extraData);
+        }
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
@@ -1320,6 +1331,36 @@ public class Tokenizer {
         return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
+    /**
+     * bad_single_statement
+     */
+    public boolean isBadSingleStatement() {
+        int cur = nextCharIndex;
+        if (cur >= codePointsInput.length) {
+            return false;
+        }
+        int c = codePointsInput[cur];
+        while (true) {
+            while (c == ' ' || c == '\t' || c == '\n' || c == '\014') {
+                cur++;
+                if (cur >= codePointsInput.length) {
+                    return false;
+                }
+                c = codePointsInput[cur];
+            }
+            if (c != '#') {
+                return true;
+            }
+            while (c != '\n') {
+                cur++;
+                if (cur >= codePointsInput.length) {
+                    return false;
+                }
+                c = codePointsInput[cur];
+            }
+        }
+    }
+
     public StatusCode getDone() {
         return done;
     }
@@ -1350,5 +1391,17 @@ public class Tokenizer {
 
     public int getCurrentLineNumber() {
         return currentLineNumber;
+    }
+
+    public int getCurrentIndentIndex() {
+        return currentIndentIndex;
+    }
+
+    public void setCurrentIndentIndex(int currentIndentIndex) {
+        this.currentIndentIndex = currentIndentIndex;
+    }
+
+    public void setPendingIndents(int pendingIndents) {
+        this.pendingIndents = pendingIndents;
     }
 }

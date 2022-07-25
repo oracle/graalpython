@@ -973,7 +973,8 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.Global node) {
             for (String n : node.names) {
-                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(n));
+                String mangled = mangle(n);
+                EnumSet<DefUse> cur = currentScope.getUseOfName(mangled);
                 if (cur != null) {
                     String msg = null;
                     if (cur.contains(DefUse.DefParam)) {
@@ -991,7 +992,7 @@ public class ScopeEnvironment {
                     }
                 }
                 addDef(n, DefUse.DefGlobal, node);
-                currentScope.recordDirective(n, node.getSourceRange());
+                currentScope.recordDirective(mangled, node.getSourceRange());
             }
             return null;
         }
@@ -1071,7 +1072,8 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.NonLocal node) {
             for (String n : node.names) {
-                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(n));
+                String mangled = mangle(n);
+                EnumSet<DefUse> cur = currentScope.getUseOfName(n);
                 if (cur != null) {
                     String msg = null;
                     if (cur.contains(DefUse.DefParam)) {
@@ -1089,7 +1091,7 @@ public class ScopeEnvironment {
                     }
                 }
                 addDef(n, DefUse.DefNonLocal, node);
-                currentScope.recordDirective(n, node.getSourceRange());
+                currentScope.recordDirective(mangled, node.getSourceRange());
             }
             return null;
         }

@@ -168,6 +168,10 @@ abstract class AbstractParser {
                 }
             }
         }
+        if (startRule == InputType.SINGLE && tokenizer.getTokenizer().isBadSingleStatement()) {
+            return raiseSyntaxError("multiple statements found while compiling a single statement");
+        }
+
         return res;
     }
 
@@ -278,7 +282,11 @@ abstract class AbstractParser {
         if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
             parsingStarted = false;
-            // TODO: handle implicit DEDENT (PyPARSE_DONT_IMPLY_DEDENT)
+            Tokenizer t = tokenizer.getTokenizer();
+            if (t.getCurrentIndentIndex() > 0) {
+                t.setPendingIndents(-t.getCurrentIndentIndex());
+                t.setCurrentIndentIndex(0);
+            }
         } else {
             parsingStarted = true;
         }
@@ -561,7 +569,7 @@ abstract class AbstractParser {
                     boolean value = (Boolean) constant.value;
                     return value ? "True" : "False";
                 case ELLIPSIS:
-                    return "Ellipsis";
+                    return "ellipsis";
             }
             return "literal";
         }
@@ -596,7 +604,7 @@ abstract class AbstractParser {
             }
         }
         if (token.type == ERRORTOKEN) {
-            tokenizerError();
+            tokenizerError(token);
         }
         return token;
     }
@@ -1012,8 +1020,11 @@ abstract class AbstractParser {
     /**
      * tokenizer_error
      */
-    void tokenizerError() {
+    void tokenizerError(Token token) {
         Tokenizer t = tokenizer.getTokenizer();
+        if (token.type == ERRORTOKEN && t.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
+            raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
+        }
         ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
         String msg;
         int colOffset = -1;

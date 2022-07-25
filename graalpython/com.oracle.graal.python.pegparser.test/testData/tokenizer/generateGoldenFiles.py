@@ -74,6 +74,12 @@ for file in files:
                         end = list(end)
                         end[1] = start[1] + len(text)
                         end = tuple(end)
+                    elif token.type == Token.ENDMARKER:
+                        # The c tokenizer reports different coordinates for ENDMARKER - it is on
+                        # the previous line with -1 as the column offsets.
+                        if start[1] == 0:
+                            start = end = (start[0] - 1, -1)
+                        outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
                     else:
                         outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
                         if token.type == Token.OP:

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -54,9 +57,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public class ErrorCallbackImpl implements ErrorCallback {
 
@@ -77,10 +77,10 @@ public class ErrorCallbackImpl implements ErrorCallback {
 
     @Override
     public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-        throw raiseSyntaxError(errorType, sourceRange.startOffset, sourceRange.endOffset, toTruffleStringUncached(message));
+        throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message));
     }
 
-    private PException raiseSyntaxError(ErrorCallback.ErrorType errorType, int startOffset, int endOffset, TruffleString message) {
+    private PException raiseSyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, TruffleString message) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {
@@ -89,12 +89,37 @@ public class ErrorCallbackImpl implements ErrorCallback {
 
             @Override
             public SourceSection getSourceSection() {
-                // Tokenizer pretends the input ends with a newline, which is not in the source
-                int len = source.getLength();
-                if (startOffset >= len) {
-                    return source.createSection(len, 0);
+                // TODO the parser should probably guarantee correct coordinates to make the
+                // following checks unnecessary
+                if (sourceRange.startLine > source.getLineCount() || sourceRange.endLine > source.getLineCount()) {
+                    // Tokenizer pretends the input ends with a newline, which is not in the source
+                    return source.createSection(source.getLength(), 0);
                 }
-                return source.createSection(startOffset, endOffset - startOffset);
+                int startCol = Math.max(sourceRange.startColumn, 0) + 1;
+                startCol = Math.min(startCol, source.getLineLength(sourceRange.startLine) + 1);
+                int endCol;
+                if (sourceRange.endColumn < 0) {
+                    if (sourceRange.startLine == sourceRange.endLine) {
+                        endCol = startCol;
+                    } else {
+                        endCol = 1;
+                    }
+                } else {
+                    endCol = sourceRange.endColumn + 1;
+                }
+                endCol = Math.min(endCol, source.getLineLength(sourceRange.endLine) + 1);
+                if (sourceRange.endLine == source.getLineCount() && endCol == source.getLineLength(sourceRange.endLine) + 1) {
+                    // Source.createSection does not like it when the end coord points past the
+                    // end of the source.
+                    if (endCol > 1 && (sourceRange.startLine < sourceRange.endLine || startCol < endCol)) {
+                        // Column index must be at least 1.
+                        endCol--;
+                    } else {
+                        // There's no correct line:column coord for the last empty line.
+                        return source.createSection(source.getLength(), 0);
+                    }
+                }
+                return source.createSection(sourceRange.startLine, startCol, sourceRange.endLine, endCol);
             }
         };
         PBaseException instance;
@@ -109,7 +134,6 @@ public class ErrorCallbackImpl implements ErrorCallback {
         }
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
-        SourceSection section = location.getSourceSection();
         TruffleString filename = toTruffleStringUncached(source.getPath());
         if (filename == null) {
             filename = toTruffleStringUncached(source.getName());
@@ -118,13 +142,13 @@ public class ErrorCallbackImpl implements ErrorCallback {
             }
         }
         excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
-        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
-        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
+        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = sourceRange.startLine;
+        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = sourceRange.startColumn + 1;
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;
-        if (section.isAvailable()) {
-            text = toTruffleStringUncached(source.getCharacters(section.getStartLine()).toString());
+        if (sourceRange.startLine <= source.getLineCount()) {
+            text = toTruffleStringUncached(source.getCharacters(sourceRange.startLine).toString());
         }
         excAttrs[SyntaxErrorBuiltins.IDX_MSG] = message;
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;

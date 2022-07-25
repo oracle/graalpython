@@ -133,7 +133,15 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage, EnumSet<FutureFeature> futureFeatures) {
-        ModTy node = parse(source, getFileName(), InputType.FILE);
+        checkSyntaxErrorMessage(source, expectedMessage, InputType.FILE, futureFeatures);
+    }
+
+    public void checkSyntaxErrorMessage(String source, String expectedMessage, InputType inputType) {
+        checkSyntaxErrorMessage(source, expectedMessage, inputType, EMPTY_FUTURE);
+    }
+
+    public void checkSyntaxErrorMessage(String source, String expectedMessage, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
+        ModTy node = parse(source, getFileName(), inputType);
         if (node != null) {
             ScopeEnvironment.analyze(node, errorCallback, futureFeatures);
         }
