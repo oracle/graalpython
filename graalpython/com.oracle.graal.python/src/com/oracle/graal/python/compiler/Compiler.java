@@ -99,6 +99,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_TUPLE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
@@ -1593,6 +1594,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                             }
                         }
                     }
+                    boolean emittedConstant = tryCollectConstantTuple(node);
+                    if (emittedConstant) {
+                        return null;
+                    }
                     if (!useList) {
                         collectIntoArray(node.elements, CollectionBits.TUPLE);
                     } else {
@@ -1609,6 +1614,100 @@ public class Compiler implements SSTreeVisitor<Void> {
         } finally {
             setLocation(savedLocation);
         }
+    }
+
+    private boolean tryCollectConstantTuple(ExprTy.Tuple node) {
+        /*
+         * We try to store the whole tuple as a Java array constant when all the elements are
+         * constant and context-independent.
+         */
+        if (node.elements == null || node.elements.length == 0) {
+            return false;
+        }
+
+        TupleConstantType constantType = null;
+        List<Object> constants = new ArrayList<>();
+
+        for (ExprTy e : node.elements) {
+            if (e instanceof ExprTy.Constant) {
+                ExprTy.Constant c = (ExprTy.Constant) e;
+                if (c.kind == ExprTy.Constant.Kind.BOOLEAN) {
+                    constantType = determineConstantType(constantType, TupleConstantType.BOOLEAN);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.LONG) {
+                    long val = (long) c.value;
+                    if (val == (int) val) {
+                        constantType = determineConstantType(constantType, TupleConstantType.INT);
+                    } else {
+                        constantType = determineConstantType(constantType, TupleConstantType.LONG);
+                    }
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    constantType = determineConstantType(constantType, TupleConstantType.DOUBLE);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.RAW) {
+                    constantType = determineConstantType(constantType, TupleConstantType.OBJECT);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.NONE) {
+                    constantType = determineConstantType(constantType, TupleConstantType.OBJECT);
+                    constants.add(PNone.NONE);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        Object newConstant = null;
+        switch (constantType) {
+            case OBJECT:
+                newConstant = constants.toArray(new Object[0]);
+                break;
+            case INT: {
+                int[] a = new int[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (int) (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case LONG: {
+                long[] a = new long[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case BOOLEAN: {
+                boolean[] a = new boolean[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (boolean) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case DOUBLE: {
+                double[] a = new double[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (double) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+        }
+        addOp(LOAD_TUPLE, addObject(unit.constants, newConstant), new byte[]{(byte) constantType.ordinal()});
+        return true;
+    }
+
+    TupleConstantType determineConstantType(TupleConstantType existing, TupleConstantType type) {
+        if (existing == null || existing == type) {
+            return type;
+        }
+        if (existing == TupleConstantType.LONG && type == TupleConstantType.INT || existing == TupleConstantType.INT && type == TupleConstantType.LONG) {
+            return TupleConstantType.LONG;
+        }
+        return TupleConstantType.OBJECT;
     }
 
     @Override

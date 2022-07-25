@@ -94,6 +94,7 @@ import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
+import com.oracle.graal.python.compiler.TupleConstantTypeConstants;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
@@ -177,6 +178,12 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -1041,6 +1048,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_BYTES: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         virtualFrame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_TUPLE: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        int type = Byte.toUnsignedInt(localBC[++bci]);
+                        Object array = localConsts[oparg];
+                        bytecodeLoadTuple(virtualFrame, ++stackTop, array, type);
                         break;
                     }
                     case OpCodesConstants.LOAD_COMPLEX: {
@@ -2970,6 +2984,30 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PSlice slice = sliceNode.execute(start, stop, step);
         virtualFrame.setObject(stackTop, slice);
         return stackTop;
+    }
+
+    private void bytecodeLoadTuple(VirtualFrame virtualFrame, int stackTop, Object array, int type) {
+        SequenceStorage storage;
+        switch (type) {
+            case TupleConstantTypeConstants.INT:
+                storage = new IntSequenceStorage((int[]) array);
+                break;
+            case TupleConstantTypeConstants.LONG:
+                storage = new LongSequenceStorage((long[]) array);
+                break;
+            case TupleConstantTypeConstants.BOOLEAN:
+                storage = new BoolSequenceStorage((boolean[]) array);
+                break;
+            case TupleConstantTypeConstants.DOUBLE:
+                storage = new DoubleSequenceStorage((double[]) array);
+                break;
+            case TupleConstantTypeConstants.OBJECT:
+                storage = new ObjectSequenceStorage((Object[]) array);
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+        virtualFrame.setObject(stackTop, factory.createTuple(storage));
     }
 
     private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes) {

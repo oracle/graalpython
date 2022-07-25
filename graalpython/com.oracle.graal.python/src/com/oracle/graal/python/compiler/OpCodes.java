@@ -363,6 +363,11 @@ public enum OpCodes {
      * indexed by the immediate operand.
      */
     LOAD_COMPLEX(1, 0, 1),
+    /*
+     * Creates a tuple out of a Java array in constants array indexed by the immediate operand. The
+     * second immediate operand determines the array type.
+     */
+    LOAD_TUPLE(2, 0, 1),
 
     // calling
     /**

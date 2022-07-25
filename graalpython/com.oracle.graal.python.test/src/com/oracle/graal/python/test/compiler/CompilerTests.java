@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.test.compiler;
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -60,9 +61,8 @@ import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
-
-import static org.junit.Assert.fail;
 
 public class CompilerTests extends PythonTests {
     public CompilerTests() {
@@ -528,8 +528,33 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
-    public void testTupleLiteral() {
+    public void testTupleLiteralInts() {
         doTest("(1, 2, 3)");
+    }
+
+    @Test
+    public void testTupleLiteralDoubles() {
+        doTest("(1.0, 2.0, 3.0)");
+    }
+
+    @Test
+    public void testTupleLiteralBooleans() {
+        doTest("(False, True)");
+    }
+
+    @Test
+    public void testTupleLiteralObjects() {
+        doTest("('a', 1, None)");
+    }
+
+    @Test
+    public void testTupleLiteralMixed() {
+        doTest("(1, 2, 3.0)");
+    }
+
+    @Test
+    public void testTupleLiteralNonConstant() {
+        doTest("(1, 2, [3])");
     }
 
     @Test

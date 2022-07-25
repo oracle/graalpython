@@ -306,6 +306,7 @@ public final class CodeUnit {
                     case LOAD_BIGINT:
                     case LOAD_STRING:
                     case LOAD_BYTES:
+                    case LOAD_TUPLE:
                     case MAKE_KEYWORD: {
                         Object constant = constants[oparg];
                         if (constant instanceof CodeUnit) {
@@ -316,11 +317,22 @@ public final class CodeUnit {
                             } else if (constant instanceof byte[]) {
                                 byte[] bytes = (byte[]) constant;
                                 line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
+                            } else if (constant instanceof int[]) {
+                                line[5] = Arrays.toString((int[]) constant);
+                            } else if (constant instanceof long[]) {
+                                line[5] = Arrays.toString((long[]) constant);
+                            } else if (constant instanceof boolean[]) {
+                                line[5] = Arrays.toString((boolean[]) constant);
+                            } else if (constant instanceof double[]) {
+                                line[5] = Arrays.toString((double[]) constant);
                             } else if (constant instanceof Object[]) {
                                 line[5] = Arrays.toString((Object[]) constant);
                             } else {
                                 line[5] = Objects.toString(constant);
                             }
+                        }
+                        if (opcode == OpCodes.LOAD_TUPLE) {
+                            line[5] += " type " + TupleConstantType.values()[followingArgs[0]];
                         }
                         break;
                     }

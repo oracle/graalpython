@@ -1,0 +1,3 @@
+Disassembly of <module>:
+000000         0 LOAD_TUPLE                        0    ([false, true] type BOOLEAN)
+000000         3 RETURN_VALUE

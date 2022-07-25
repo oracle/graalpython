@@ -82,6 +82,9 @@ import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -615,9 +618,14 @@ public final class PCode extends PythonBuiltinObject {
             return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
         } else if (o instanceof BigInteger) {
             return factory.createInt((BigInteger) o);
+        } else if (o instanceof int[]) {
+            return factory.createTuple((int[]) o);
+        } else if (o instanceof long[]) {
+            return factory.createTuple(new LongSequenceStorage((long[]) o));
         } else if (o instanceof double[]) {
-            double[] num = (double[]) o;
-            return factory.createComplex(num[0], num[1]);
+            return factory.createTuple(new DoubleSequenceStorage((double[]) o));
+        } else if (o instanceof boolean[]) {
+            return factory.createTuple(new BoolSequenceStorage((boolean[]) o));
         } else if (o instanceof byte[]) {
             return factory.createBytes((byte[]) o);
         } else if (o instanceof TruffleString[]) {
