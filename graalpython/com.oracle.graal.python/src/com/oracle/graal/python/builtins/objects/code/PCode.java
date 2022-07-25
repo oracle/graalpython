@@ -52,12 +52,15 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -167,7 +170,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
-        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, codeUnit.stacksize, -1, null, codeUnit.names,
+        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, codeUnit.names,
                         codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startLine, codeUnit.srcOffsetTable);
     }
 
@@ -316,28 +319,37 @@ public final class PCode extends PythonBuiltinObject {
     private static Object[] extractConstants(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
         if (rootNode instanceof PBytecodeRootNode) {
-            Object[] originalConstants = ((PBytecodeRootNode) rootNode).getCodeUnit().constants;
-            Object[] constants = new Object[originalConstants.length];
-            for (int i = 0; i < constants.length; i++) {
-                constants[i] = convertConstantToPythonSpace(rootNode, originalConstants[i]);
+            CodeUnit co = ((PBytecodeRootNode) rootNode).getCodeUnit();
+            Set<Object> bytecodeConstants = new HashSet<>();
+            for (int bci = 0; bci < co.code.length;) {
+                OpCodes op = OpCodes.VALUES[co.code[bci]];
+                if (op == OpCodes.LOAD_BYTE_O) {
+                    bytecodeConstants.add(Byte.toUnsignedInt(co.code[bci + 1]));
+                } else if (op == OpCodes.LOAD_BYTE_I) {
+                    bytecodeConstants.add(Byte.toUnsignedInt(co.code[bci + 1]));
+                } else if (op == OpCodes.LOAD_NONE) {
+                    bytecodeConstants.add(PNone.NONE);
+                } else if (op == OpCodes.LOAD_TRUE) {
+                    bytecodeConstants.add(true);
+                } else if (op == OpCodes.LOAD_FALSE) {
+                    bytecodeConstants.add(false);
+                } else if (op == OpCodes.LOAD_ELLIPSIS) {
+                    bytecodeConstants.add(PEllipsis.INSTANCE);
+                }
+                bci += op.length();
             }
-            return constants;
+            List<Object> constants = new ArrayList<>(bytecodeConstants);
+            for (int i = 0; i < co.primitiveConstants.length; i++) {
+                constants.add(co.primitiveConstants[i]);
+            }
+            for (int i = 0; i < co.constants.length; i++) {
+                constants.add(convertConstantToPythonSpace(rootNode, co.constants[i]));
+            }
+            return constants.toArray(new Object[0]);
         } else {
             ConstantsVisitor visitor = new ConstantsVisitor();
             return visitor.findConstants(rootNode);
         }
-    }
-
-    private static PBytecodeRootNode getBytecodeRootNode(RootNode rootNode) {
-        if (rootNode instanceof PBytecodeRootNode) {
-            return (PBytecodeRootNode) rootNode;
-        } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
-            return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
-        } else if (rootNode instanceof PBytecodeGeneratorRootNode) {
-            return ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
-        }
-        assert false : "expected a bytecode root node";
-        return null;
     }
 
     private static class ConstantsVisitor implements NodeVisitor {
