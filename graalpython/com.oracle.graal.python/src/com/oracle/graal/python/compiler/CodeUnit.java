@@ -302,6 +302,9 @@ public final class CodeUnit {
                     case EXTENDED_ARG:
                         line[4] = "";
                         break;
+                    case LOAD_BYTE:
+                        line[4] = String.format("% 2d", (byte) oparg);
+                        break;
                     case LOAD_CONST:
                     case LOAD_BIGINT:
                     case LOAD_STRING:

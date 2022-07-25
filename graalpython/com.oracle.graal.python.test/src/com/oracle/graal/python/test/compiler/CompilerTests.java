@@ -81,6 +81,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testMinusFolding() {
+        doTest("-1 * -7.0");
+    }
+
+    @Test
     public void testAssignment() {
         doTest("a = 12");
     }

@@ -132,6 +132,7 @@ import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -1721,6 +1722,22 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.UnaryOp node) {
         SourceRange savedLocation = setLocation(node);
         try {
+            // Basic constant folding for unary negation
+            if (node.op == ExprTy.UnaryOp.Operator.SUB && node.operand instanceof ExprTy.Constant) {
+                ExprTy.Constant c = (ExprTy.Constant) node.operand;
+                if (c.kind == ExprTy.Constant.Kind.LONG) {
+                    long v = (long) c.value;
+                    if (v != Long.MIN_VALUE) {
+                        return visit(new ExprTy.Constant(-v, c.kind, c.getSourceRange()));
+                    } else {
+                        return visit(new ExprTy.Constant((BigInteger.valueOf(v)).negate(), ExprTy.Constant.Kind.BIGINTEGER, c.getSourceRange()));
+                    }
+                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    return visit(new ExprTy.Constant(-(double) c.value, c.kind, c.getSourceRange()));
+                } else if (c.kind == ExprTy.Constant.Kind.BIGINTEGER) {
+                    return visit(new ExprTy.Constant(((BigInteger) c.value).negate(), c.kind, c.getSourceRange()));
+                }
+            }
             node.operand.accept(this);
             switch (node.op) {
                 case ADD:

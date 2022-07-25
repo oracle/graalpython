@@ -62,7 +62,6 @@ final class Instruction {
         this.followingArgs = followingArgs;
         this.target = target;
         this.location = location;
-        assert arg >= 0;
         assert opcode.argLength < 2 || followingArgs.length == opcode.argLength - 1;
     }
 
