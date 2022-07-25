@@ -329,9 +329,10 @@ public final class PCode extends PythonBuiltinObject {
             Set<Object> bytecodeConstants = new HashSet<>();
             for (int bci = 0; bci < co.code.length;) {
                 OpCodes op = OpCodes.VALUES[co.code[bci]];
-                if (op == OpCodes.LOAD_BYTE_O) {
-                    bytecodeConstants.add(Byte.toUnsignedInt(co.code[bci + 1]));
-                } else if (op == OpCodes.LOAD_BYTE_I) {
+                if (op.quickens != null) {
+                    op = op.quickens;
+                }
+                if (op == OpCodes.LOAD_BYTE) {
                     bytecodeConstants.add(Byte.toUnsignedInt(co.code[bci + 1]));
                 } else if (op == OpCodes.LOAD_NONE) {
                     bytecodeConstants.add(PNone.NONE);
@@ -341,16 +342,18 @@ public final class PCode extends PythonBuiltinObject {
                     bytecodeConstants.add(false);
                 } else if (op == OpCodes.LOAD_ELLIPSIS) {
                     bytecodeConstants.add(PEllipsis.INSTANCE);
+                } else if (op == OpCodes.LOAD_INT || op == OpCodes.LOAD_LONG) {
+                    bytecodeConstants.add(co.primitiveConstants[Byte.toUnsignedInt(co.code[bci + 1])]);
+                } else if (op == OpCodes.LOAD_DOUBLE) {
+                    bytecodeConstants.add(Double.longBitsToDouble(co.primitiveConstants[Byte.toUnsignedInt(co.code[bci + 1])]));
                 }
                 bci += op.length();
             }
-            List<Object> constants = new ArrayList<>(bytecodeConstants);
-            for (int i = 0; i < co.primitiveConstants.length; i++) {
-                constants.add(co.primitiveConstants[i]);
-            }
+            List<Object> constants = new ArrayList<>();
             for (int i = 0; i < co.constants.length; i++) {
                 constants.add(convertConstantToPythonSpace(rootNode, co.constants[i]));
             }
+            constants.addAll(bytecodeConstants);
             return constants.toArray(new Object[0]);
         } else {
             ConstantsVisitor visitor = new ConstantsVisitor();
