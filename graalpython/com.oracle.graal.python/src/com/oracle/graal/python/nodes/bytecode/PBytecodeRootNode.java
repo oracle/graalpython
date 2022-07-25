@@ -3513,10 +3513,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    public int getStartOffset() {
-        return co.startOffset;
-    }
-
     @TruffleBoundary
     public int bciToLine(int bci) {
         if (source != null && source.hasCharacters() && bci >= 0) {
@@ -3531,15 +3527,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @TruffleBoundary
     public int getFirstLineno() {
-        if (source != null && source.hasCharacters()) {
-            // TODO the same problem as bciToLine
-            return source.createSection(co.startOffset, 0).getStartLine();
-        }
-        return -1;
-    }
-
-    public Source getSource() {
-        return source;
+        return co.startLine;
     }
 
     @Override
@@ -3556,7 +3544,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createUnavailableSection();
             return sourceSection;
         } else {
-            sourceSection = source.createSection(co.startOffset, co.findMaxOffset() - co.startOffset);
+            // TODO report the whole range, not just the first line
+            sourceSection = source.createSection(co.startLine);
             return sourceSection;
         }
     }
