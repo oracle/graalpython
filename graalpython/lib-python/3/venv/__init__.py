@@ -208,7 +208,7 @@ class EnvBuilder:
             for tool_var in table:
                 tool_path = resolver(tool_var)
                 if os.path.exists(tool_path):
-                    for name in llvm_tools[tool_var]:
+                    for name in table[tool_var]:
                         dest = os.path.join(bin_dir, name)
                         if not os.path.exists(dest):
                             os.symlink(tool_path, dest)
