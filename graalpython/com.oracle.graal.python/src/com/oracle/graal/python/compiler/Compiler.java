@@ -163,6 +163,7 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -454,10 +455,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addConditionalJump(OpCodes code, Block target) {
         int profileIndex = unit.conditionProfileCount;
         unit.conditionProfileCount += 2;
-        if (profileIndex != (short) profileIndex) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "Too many conditionals in compilation unit");
-        }
-        addOp(code, target, new byte[]{(byte) (profileIndex & 0xFF), (byte) (profileIndex << 8)});
+        /*
+         * Intentionally ignoring overflow in the conversion of the index. If the unit has more than
+         * 2^16 conditionals it most likely wouldn't compile anyway, so there's not much harm if
+         * there's some false sharing of profiles.
+         */
+        byte[] follwingArgs = new byte[2];
+        ByteArraySupport.littleEndian().putShort(follwingArgs, 0, (short) profileIndex);
+        addOp(code, target, follwingArgs);
     }
 
     private void addOp(OpCodes code, Block target, byte[] follwingArgs) {
