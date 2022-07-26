@@ -278,6 +278,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char ARRAY_TYPE_LONG = 'l';
         private static final char ARRAY_TYPE_DOUBLE = 'd';
         private static final char ARRAY_TYPE_BYTE = 'b';
+        private static final char ARRAY_TYPE_BOOLEAN = 'B';
         private static final char ARRAY_TYPE_SHORT = 's';
         private static final char ARRAY_TYPE_STRING = 'S';
         private static final int MAX_MARSHAL_STACK_DEPTH = 201;
@@ -784,6 +785,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_SHORT);
                     writeShortArray((short[]) v);
+                } else if (v instanceof boolean[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_BOOLEAN);
+                    writeBooleanArray((boolean[]) v);
                 } else if (v instanceof double[]) {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_DOUBLE);
@@ -879,6 +884,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeShort(a[i]);
+            }
+        }
+
+        private void writeBooleanArray(boolean[] a) throws IOException {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeByte(a[i] ? 1 : 0);
             }
         }
 
@@ -1100,6 +1112,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readDoubleArray();
                 case ARRAY_TYPE_SHORT:
                     return readShortArray();
+                case ARRAY_TYPE_BOOLEAN:
+                    return readBooleanArray();
                 case ARRAY_TYPE_STRING:
                     return readStringArray();
                 case ARRAY_TYPE_OBJECT:
@@ -1141,6 +1155,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             short[] a = new short[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readShort();
+            }
+            return a;
+        }
+
+        private boolean[] readBooleanArray() {
+            int length = readInt();
+            boolean[] a = new boolean[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readByte() != 0;
             }
             return a;
         }
