@@ -1485,6 +1485,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
+                            generalizeInputs(bci);
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
                             continue;
                         }
@@ -1501,6 +1502,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.POP_AND_JUMP_IF_TRUE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
+                            generalizeInputs(bci);
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
                             continue;
                         }
