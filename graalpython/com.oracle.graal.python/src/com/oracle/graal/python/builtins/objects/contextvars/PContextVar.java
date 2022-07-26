@@ -45,6 +45,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
+
 public final class PContextVar extends PythonBuiltinObject {
     private static int nextId = 0;
     private final int hashForHamt = nextId++;
@@ -78,5 +80,19 @@ public final class PContextVar extends PythonBuiltinObject {
     public void setValue(PythonContext.PythonThreadState state, Object value) {
         PContextVarsContext current = state.getContextVarsContext();
         current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
+    }
+
+    public Object get(Object defaultValue) {
+        Object result = value.get();
+        if (result != null) {
+            return result;
+        }
+        if (defaultValue != PContextVar.NO_DEFAULT) {
+            return defaultValue;
+        }
+        if (def != PContextVar.NO_DEFAULT) {
+            return def;
+        }
+        return null;
     }
 }

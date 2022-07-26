@@ -60,6 +60,8 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextContextVarBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
@@ -536,6 +538,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextBoolBuiltins(),
                         new PythonCextBytesBuiltins(),
                         new PythonCextCEvalBuiltins(),
+                        new PythonCextContextVarBuiltins(),
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),
                         new PythonCextContextBuiltins(),
