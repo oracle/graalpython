@@ -144,7 +144,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     public static MakeFunctionNode create(PythonLanguage language, CodeUnit code, Source source) {
         RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(language, code, source);
+        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(language, code, source, null);
         if (code.isGeneratorOrCoroutine()) {
             // TODO what should the frameDescriptor be? does it matter?
             callTarget = new PBytecodeGeneratorFunctionRootNode(language, bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, code.name).getCallTarget();

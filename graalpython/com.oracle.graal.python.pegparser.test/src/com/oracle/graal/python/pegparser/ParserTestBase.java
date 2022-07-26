@@ -151,6 +151,15 @@ public class ParserTestBase {
         assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
     }
 
+    public void checkDeprecationWarning(String source, String expectedMessage) {
+        ModTy node = parse(source, getFileName(), InputType.FILE);
+        if (node != null) {
+            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
+        }
+        assertTrue("Expected a DeprecationWarning.", errorCallback.hasWarnings());
+        assertEquals(expectedMessage, errorCallback.getWarnings().get(0).getMessage());
+    }
+
     public void checkIndentationError(String source) {
         ModTy node = parse(source, getFileName(), InputType.FILE);
         if (node != null) {
@@ -223,6 +232,11 @@ public class ParserTestBase {
             @Override
             public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
                 errors.add(String.format("%s[%d:%d]:%s", type.name(), sourceRange.startOffset, sourceRange.endOffset, message));
+            }
+
+            @Override
+            public void warnDeprecation(SourceRange sourceRange, String message) {
+                fail("Unexpected deprecation warning");
             }
 
             @Override

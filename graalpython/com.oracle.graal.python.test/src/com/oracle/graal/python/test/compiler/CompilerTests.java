@@ -887,6 +887,11 @@ public class CompilerTests extends PythonTests {
         public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
             throw new SyntaxError(errorType, message);
         }
+
+        @Override
+        public void warnDeprecation(SourceRange sourceRange, String message) {
+            throw new AssertionError("Unexpected warning: " + message);
+        }
     }
 
     private static final class SyntaxError extends RuntimeException {

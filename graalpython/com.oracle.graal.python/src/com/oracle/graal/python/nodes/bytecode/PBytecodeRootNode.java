@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.ErrorCallbackImpl;
 import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
@@ -436,6 +437,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final CodeUnit co;
     private final Source source;
     private SourceSection sourceSection;
+    private final ErrorCallbackImpl parserErrorCallback; // For deferred deprecation warnings
 
     @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
@@ -531,12 +533,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source) {
-        this(language, makeFrameDescriptor(co), makeSignature(co), co, source);
+    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, ErrorCallbackImpl parserErrorCallback) {
+        this(language, makeFrameDescriptor(co), makeSignature(co), co, source, parserErrorCallback);
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, ErrorCallbackImpl parserErrorCallback) {
         super(language, fd);
         ((FrameInfo) fd.getInfo()).rootNode = this;
         this.celloffset = co.varnames.length;
@@ -544,6 +546,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.stackoffset = freeoffset + co.freevars.length;
         this.bcioffset = stackoffset + co.stacksize;
         this.source = source;
+        this.parserErrorCallback = parserErrorCallback;
         this.signature = sign;
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
@@ -3658,6 +3661,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source);
+        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source, parserErrorCallback);
+    }
+
+    public void triggerDeferredDeprecationWarnings() {
+        if (parserErrorCallback != null) {
+            parserErrorCallback.triggerDeprecationWarnings();
+        }
     }
 }

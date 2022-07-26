@@ -148,7 +148,7 @@ public abstract class CodeNodes {
 
         private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data) {
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(data);
-            RootNode rootNode = new PBytecodeRootNode(language, code, null);
+            RootNode rootNode = new PBytecodeRootNode(language, code, null, null);
             if (code.isGeneratorOrCoroutine()) {
                 rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
             }
