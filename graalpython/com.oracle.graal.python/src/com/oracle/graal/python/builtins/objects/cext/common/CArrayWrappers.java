@@ -156,6 +156,11 @@ public abstract class CArrayWrappers {
         return UNSAFE.allocateMemory(size);
     }
 
+    @TruffleBoundary
+    private static void freeBoundary(long address) {
+        UNSAFE.freeMemory(address);
+    }
+
     @ExportLibrary(InteropLibrary.class)
     public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
@@ -178,6 +183,14 @@ public abstract class CArrayWrappers {
                 return (long) nativePointer;
             }
             return interopLibrary.asPointer(nativePointer);
+        }
+
+        public void free(PythonNativeWrapperLibrary lib) {
+            if (lib.isNative(this)) {
+                Object nativePointer = lib.getNativePointer(this);
+                assert nativePointer instanceof Long;
+                freeBoundary((long) nativePointer);
+            }
         }
     }
 

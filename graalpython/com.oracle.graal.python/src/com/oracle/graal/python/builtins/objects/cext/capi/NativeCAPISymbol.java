@@ -230,6 +230,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_DATETIME_DELTA_BASICSIZE("get_PyDateTime_Delta_basicsize"),
 
     // ctypes
+    FUN_STRLEN("strlen"),
+    FUN_MEMCPY("memcpy"),
     FUN_MEMMOVE("memmove"),
     FUN_MEMSET("memset"),
     FUN_STRING_AT("string_at"),
