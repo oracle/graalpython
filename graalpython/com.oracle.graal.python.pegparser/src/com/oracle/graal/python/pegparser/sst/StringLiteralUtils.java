@@ -127,6 +127,11 @@ public abstract class StringLiteralUtils {
 
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
+                for (int i = 0; i < text.length(); i++) {
+                    if (text.charAt(i) >= 0x80) {
+                        errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, "bytes can only contain ASCII literal characters");
+                    }
+                }
                 if (sb != null || isFormatString) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
