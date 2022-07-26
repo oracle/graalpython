@@ -728,6 +728,13 @@ public enum OpCodes {
         }
     }
 
+    public static final class MakeFunctionFlags {
+        public static final int HAS_DEFAULTS = 0x1;
+        public static final int HAS_KWONLY_DEFAULTS = 0x2;
+        public static final int HAS_ANNOTATIONS = 0x04;
+        public static final int HAS_CLOSURE = 0x08;
+    }
+
     public static final OpCodes[] VALUES = new OpCodes[values().length];
 
     static {

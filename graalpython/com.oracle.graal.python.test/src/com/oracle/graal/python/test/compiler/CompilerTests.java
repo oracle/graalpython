@@ -856,7 +856,7 @@ public class CompilerTests extends PythonTests {
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
-        return cu.assemble(0);
+        return cu.assemble();
     }
 
     private void checkCodeUnit(CodeUnit co) {

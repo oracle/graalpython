@@ -153,7 +153,7 @@ public abstract class CodeNodes {
 
         @TruffleBoundary
         public static PCode createCode(PythonContext context, int flags, byte[] codedata, TruffleString filename, int firstlineno, byte[] lnotab) {
-            boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
+            boolean isNotAModule = (flags & PCode.CO_GRAALPYHON_MODULE) == 0;
             String jFilename = filename.toJavaStringUncached();
             PythonLanguage language = context.getLanguage();
             Supplier<CallTarget> createCode = () -> {

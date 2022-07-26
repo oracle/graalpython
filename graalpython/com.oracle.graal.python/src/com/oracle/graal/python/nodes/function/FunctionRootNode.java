@@ -29,7 +29,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -116,10 +115,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         newUninitializedBody.accept(nodeVisitor);
         return new FunctionRootNode(PythonLanguage.get(this), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
                         newSignature, doc);
-    }
-
-    public boolean isLambda() {
-        return functionName.equals(BuiltinNames.J_LAMBDA_NAME);
     }
 
     @Override

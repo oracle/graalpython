@@ -816,7 +816,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void makeClosure(CodeUnit code) {
+    private void makeClosure(CodeUnit code, int makeFunctionFlags) {
+        int flags = makeFunctionFlags;
         if (code.freevars.length > 0) {
             // add the closure
             for (TruffleString tfv : code.freevars) {
@@ -831,8 +832,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(LOAD_CLOSURE, arg);
             }
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
+            flags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
         }
-        int flags = code.flags & (CodeUnit.HAS_DEFAULTS | CodeUnit.HAS_KWONLY_DEFAULTS | CodeUnit.HAS_ANNOTATIONS | CodeUnit.HAS_CLOSURE);
         addObject(unit.constants, code.qualname);
         addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) flags});
     }
@@ -1313,17 +1314,17 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             checkForbiddenArgs(node.args);
-            int flags = collectDefaults(node.args);
+            int makeFunctionFlags = collectDefaults(node.args);
             enterScope("<lambda>", CompilationScope.Lambda, node, node.args);
             CodeUnit code;
             try {
                 node.body.accept(this);
                 addOp(RETURN_VALUE);
-                code = unit.assemble(flags);
+                code = unit.assemble();
             } finally {
                 exitScope();
             }
-            makeClosure(code);
+            makeClosure(code, makeFunctionFlags);
             return null;
         } finally {
             setLocation(savedLocation);
@@ -1417,9 +1418,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (type != ComprehensionType.GENEXPR) {
                 addOp(RETURN_VALUE);
             }
-            CodeUnit code = unit.assemble(0);
+            CodeUnit code = unit.assemble();
             exitScope();
-            makeClosure(code);
+            makeClosure(code, 0);
             generators[0].iter.accept(this);
             addOp(GET_ITER);
             addOp(CALL_FUNCTION, 1);
@@ -2069,17 +2070,18 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(LOAD_NONE);
         }
         addOp(RETURN_VALUE);
-        CodeUnit co = unit.assemble(0);
+        CodeUnit co = unit.assemble();
         exitScope();
 
         addOp(LOAD_BUILD_CLASS);
-        makeClosure(co);
+        makeClosure(co, 0);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
 
         callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
 
         if (node.decoratorList != null) {
-            for (ExprTy decorator : node.decoratorList) {
+            ExprTy[] decoratorList = node.decoratorList;
+            for (int i = 0; i < decoratorList.length; i++) {
                 addOp(CALL_FUNCTION, 1);
             }
         }
@@ -2155,11 +2157,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(node.decoratorList);
 
         // visit defaults outside the function scope
-        int flags = collectDefaults(node.args);
+        int makeFunctionFlags = collectDefaults(node.args);
 
         boolean hasAnnotations = visitAnnotations(node.args, node.returns);
         if (hasAnnotations) {
-            flags |= CodeUnit.HAS_ANNOTATIONS;
+            makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS;
         }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
@@ -2170,12 +2172,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             TruffleString docString = getDocstring(node.body);
             addObject(unit.constants, docString == null ? PNone.NONE : docString);
             visitSequence(node.body);
-            code = unit.assemble(flags);
+            code = unit.assemble();
         } finally {
             exitScope();
         }
 
-        makeClosure(code);
+        makeClosure(code, makeFunctionFlags);
 
         if (node.decoratorList != null) {
             ExprTy[] decoratorList = node.decoratorList;
@@ -2240,11 +2242,11 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private int collectDefaults(ArgumentsTy args) {
-        int flags = 0;
+        int makeFunctionFlags = 0;
         if (args != null) {
             if (args.defaults != null && args.defaults.length > 0) {
                 collectIntoArray(args.defaults, CollectionBits.KIND_OBJECT);
-                flags |= CodeUnit.HAS_DEFAULTS;
+                makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_DEFAULTS;
             }
             if (args.kwDefaults != null && args.kwDefaults.length > 0) {
                 ArrayList<KeywordTy> defs = new ArrayList<>();
@@ -2257,10 +2259,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                 }
                 collectKeywords(defs.toArray(KeywordTy[]::new), null);
-                flags |= CodeUnit.HAS_KWONLY_DEFAULTS;
+                makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS;
             }
         }
-        return flags;
+        return makeFunctionFlags;
     }
 
     private void checkForbiddenArgs(ArgumentsTy args) {

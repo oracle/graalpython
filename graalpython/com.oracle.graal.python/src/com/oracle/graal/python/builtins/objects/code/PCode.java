@@ -107,12 +107,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    public static final long FLAG_VAR_ARGS = 0x4;
-    public static final long FLAG_VAR_KW_ARGS = 0x8;
-    public static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
-    public static final long FLAG_GENERATOR = 0x20;
-    public static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
-    // redundant anyway
+    public static final int CO_VARARGS = 0x4;
+    public static final int CO_VARKEYWORDS = 0x8;
+    public static final int CO_GENERATOR = 0x20;
+    /* GraalPy-specific, used to be CO_NOFREE in CPython */
+    public static final int CO_GRAALPYHON_MODULE = 0x40;
+    public static final int CO_COROUTINE = 0x80;
+    public static final int CO_ITERABLE_COROUTINE = 0x100;
+    public static final int CO_ASYNC_GENERATOR = 0x200;
 
     // callTargetSupplier may be null, in which case callTarget and signature will be
     // set. Otherwise, these are lazily created from the supplier.
@@ -448,7 +450,7 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNode;
         if (funcRootNode instanceof ModuleRootNode) {
             // Not on CPython
-            flags |= FLAG_MODULE;
+            flags |= CO_GRAALPYHON_MODULE;
         }
         if (funcRootNode instanceof PBytecodeRootNode) {
             CodeUnit codeUnit = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
@@ -460,30 +462,25 @@ public final class PCode extends PythonBuiltinObject {
         } else {
             // 0x20 - generator
             if (funcRootNode instanceof GeneratorFunctionRootNode) {
-                flags |= FLAG_GENERATOR;
+                flags |= CO_GENERATOR;
                 funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
             }
             // 0x04 - *arguments
             if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarArgsNode.class) != null) {
-                flags |= FLAG_VAR_ARGS;
+                flags |= CO_VARARGS;
             }
             // 0x08 - **keywords
             if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
-                flags |= FLAG_VAR_KW_ARGS;
-            }
-            // 0x10 - lambda, not on CPython
-            if (funcRootNode instanceof FunctionRootNode && ((FunctionRootNode) funcRootNode).isLambda()) {
-                flags |= FLAG_LAMBDA;
+                flags |= CO_VARKEYWORDS;
             }
         }
         return flags;
     }
 
     private static int getFlags(int flags, CodeUnit codeUnit) {
-        flags |= codeUnit.isGenerator() ? FLAG_GENERATOR : 0;
-        flags |= codeUnit.takesVarArgs() ? FLAG_VAR_ARGS : 0;
-        flags |= codeUnit.takesVarKeywordArgs() ? FLAG_VAR_KW_ARGS : 0;
-        flags |= codeUnit.isLambda() ? FLAG_LAMBDA : 0;
+        flags |= codeUnit.isGenerator() ? CO_GENERATOR : 0;
+        flags |= codeUnit.takesVarArgs() ? CO_VARARGS : 0;
+        flags |= codeUnit.takesVarKeywordArgs() ? CO_VARKEYWORDS : 0;
         return flags;
     }
 
@@ -657,19 +654,19 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public boolean isGenerator() {
-        return (getFlags() & FLAG_GENERATOR) > 0;
+        return (getFlags() & CO_GENERATOR) > 0;
     }
 
     public static boolean isModule(int flags) {
-        return (flags & FLAG_MODULE) > 0;
+        return (flags & CO_GRAALPYHON_MODULE) > 0;
     }
 
     static boolean takesVarArgs(int flags) {
-        return (flags & FLAG_VAR_ARGS) > 0;
+        return (flags & CO_VARARGS) > 0;
     }
 
     static boolean takesVarKeywordArgs(int flags) {
-        return (flags & FLAG_VAR_KW_ARGS) > 0;
+        return (flags & CO_VARKEYWORDS) > 0;
     }
 
     public boolean takesVarArgs() {

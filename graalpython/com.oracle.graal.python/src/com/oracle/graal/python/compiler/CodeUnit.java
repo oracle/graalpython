@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -61,17 +62,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * the filename to make it easier to keep in native images.
  */
 public final class CodeUnit {
-    public static final int HAS_DEFAULTS = 0x1;
-    public static final int HAS_KWONLY_DEFAULTS = 0x2;
-    public static final int HAS_ANNOTATIONS = 0x04;
-    public static final int HAS_CLOSURE = 0x08;
-    public static final int HAS_VAR_ARGS = 0x10;
-    public static final int HAS_VAR_KW_ARGS = 0x20;
-    public static final int IS_GENERATOR = 0x40;
-    public static final int IS_COROUTINE = 0x80;
-    public static final int IS_ASYNC_GENERATOR = 0x100;
-
-    public static final int DISASSEMBLY_NUM_COLUMNS = 8;
+    private static final int DISASSEMBLY_NUM_COLUMNS = 8;
 
     public final TruffleString name;
     public final TruffleString qualname;
@@ -204,39 +195,27 @@ public final class CodeUnit {
     }
 
     public boolean takesVarKeywordArgs() {
-        return (flags & HAS_VAR_KW_ARGS) != 0;
+        return (flags & PCode.CO_VARKEYWORDS) != 0;
     }
 
     public boolean takesVarArgs() {
-        return (flags & HAS_VAR_ARGS) != 0;
-    }
-
-    public boolean hasDefaults() {
-        return (flags & HAS_DEFAULTS) != 0;
-    }
-
-    public boolean hasKwDefaults() {
-        return (flags & HAS_KWONLY_DEFAULTS) != 0;
+        return (flags & PCode.CO_VARARGS) != 0;
     }
 
     public boolean isGenerator() {
-        return (flags & IS_GENERATOR) != 0;
+        return (flags & PCode.CO_GENERATOR) != 0;
     }
 
     public boolean isCoroutine() {
-        return (flags & IS_COROUTINE) != 0;
+        return (flags & PCode.CO_COROUTINE) != 0;
     }
 
     public boolean isAsyncGenerator() {
-        return (flags & IS_ASYNC_GENERATOR) != 0;
+        return (flags & PCode.CO_ASYNC_GENERATOR) != 0;
     }
 
     public boolean isGeneratorOrCoroutine() {
-        return (flags & (IS_GENERATOR | IS_COROUTINE | IS_ASYNC_GENERATOR)) != 0;
-    }
-
-    public boolean isLambda() {
-        return lambda;
+        return (flags & (PCode.CO_GENERATOR | PCode.CO_COROUTINE | PCode.CO_ASYNC_GENERATOR | PCode.CO_ITERABLE_COROUTINE)) != 0;
     }
 
     public int getTotalArgCount() {

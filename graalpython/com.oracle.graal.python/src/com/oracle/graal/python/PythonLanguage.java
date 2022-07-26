@@ -507,7 +507,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
-            CodeUnit co = cu.assemble(0);
+            CodeUnit co = cu.assemble();
             PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source);
             GilNode gil = GilNode.getUncached();
             boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
