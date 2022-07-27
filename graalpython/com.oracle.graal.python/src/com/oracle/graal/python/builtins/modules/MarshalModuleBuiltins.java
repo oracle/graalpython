@@ -1045,15 +1045,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private void writeString(TruffleString v) throws IOException {
             /*
-             * UTF-8 doesn't support surrogates, we fall back on UTF-32 if the string contains them
+             * Ugly workaround for GR-39571 - TruffleString UTF-8 doesn't support surrogate
+             * passthrough. If the string contains surrogates, we mark it and emit it as UTF-32.
              */
             Encoding encoding;
             if (v.isCompatibleTo(Encoding.UTF_8)) {
                 encoding = Encoding.UTF_8;
-                writeInt(0);
             } else {
-                encoding = Encoding.UTF_32;
-                writeInt(1);
+                encoding = Encoding.UTF_32LE;
+                writeInt(-1);
             }
             InternalByteArray ba = v.switchEncodingUncached(encoding).getInternalByteArrayUncached(encoding);
             writeSize(ba.getLength());
@@ -1061,8 +1061,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private TruffleString readString() {
-            Encoding encoding = readInt() == 0 ? Encoding.UTF_8 : Encoding.UTF_32;
-            int sz = readSize();
+            Encoding encoding = Encoding.UTF_8;
+            int sz = readInt();
+            if (sz < 0) {
+                encoding = Encoding.UTF_32LE;
+                sz = readSize();
+            }
             return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, encoding, true).switchEncodingUncached(TS_ENCODING);
         }
 
