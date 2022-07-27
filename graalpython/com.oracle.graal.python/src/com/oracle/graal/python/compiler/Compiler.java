@@ -1321,6 +1321,8 @@ public class Compiler implements SSTreeVisitor<Void> {
             checkForbiddenArgs(node.args);
             int makeFunctionFlags = collectDefaults(node.args);
             enterScope("<lambda>", CompilationScope.Lambda, node, node.args);
+            /* Make None the first constant, so the lambda can't have a docstring. */
+            addObject(unit.constants, PNone.NONE);
             CodeUnit code;
             try {
                 node.body.accept(this);

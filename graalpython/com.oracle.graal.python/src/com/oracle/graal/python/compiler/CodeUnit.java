@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.compiler;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -100,8 +97,6 @@ public final class CodeUnit {
     public final int[][] generalizeInputsMap;
     public final int[][] generalizeVarsMap;
 
-    public final boolean lambda;
-
     public CodeUnit(TruffleString name, TruffleString qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
                     byte[] code, byte[] linetable, int flags,
@@ -146,7 +141,6 @@ public final class CodeUnit {
         this.variableShouldUnbox = variableShouldUnbox;
         this.generalizeInputsMap = generalizeInputsMap;
         this.generalizeVarsMap = generalizeVarsMap;
-        this.lambda = name.equalsUncached(BuiltinNames.T_LAMBDA_NAME, TS_ENCODING);
     }
 
     OpCodes codeForBC(int bc) {
@@ -185,26 +179,6 @@ public final class CodeUnit {
             diffIdx++;
         }
         return currentOffset;
-    }
-
-    public int findMaxOffset() {
-        int currentOffset = startOffset;
-        int maxOffset = startOffset;
-
-        for (int i = 0; i < srcOffsetTable.length; i++) {
-            byte diff = srcOffsetTable[i];
-            int overflow = 0;
-            while (diff == (byte) 128) {
-                overflow += 127;
-                diff = srcOffsetTable[++i];
-            }
-            if (diff < 0) {
-                overflow = -overflow;
-            }
-            currentOffset += overflow + diff;
-            maxOffset = Math.max(maxOffset, currentOffset);
-        }
-        return maxOffset;
     }
 
     public boolean takesVarKeywordArgs() {
