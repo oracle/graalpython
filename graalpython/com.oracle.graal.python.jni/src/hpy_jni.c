@@ -60,6 +60,15 @@
 
 static JNIEnv* jniEnv;
 
+#define ALL_FIELDS \
+    FIELD(hpyHandleTable, CLASS_HPYCONTEXT, SIG_JOBJECTARRAY) \
+    FIELD(hpyGlobalsTable, CLASS_HPYCONTEXT, SIG_JOBJECTARRAY) \
+    FIELD(nextHandle, CLASS_HPYCONTEXT, SIG_INT)
+
+#define FIELD(name, clazz, jniSig) static jfieldID jniField_ ## name;
+ALL_FIELDS
+#undef FIELD
+
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
     UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
@@ -549,9 +558,62 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
 }
 
+static inline jsize get_handle_table_size(HPyContext *ctx) {
+    return HANDLE_TABLE_SIZE(ctx->_private);
+}
+
+static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject element, bool update_native_cache) {
+    /* TODO(fa): for now, we fall back to the upcall */
+    if (update_native_cache) {
+        return 0;
+    }
+
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
+    if (hpy_handles == NULL) {
+        LOGS("hpy handle table is NULL")
+        return 0;
+    }
+
+    /* try to reuse a closed handle from our native list */
+    jsize next_handle;
+    if (unclosedHandleTop > 0) {
+        uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
+        LOG("%llu", recycled)
+        assert(recycled < INT32_MAX);
+        next_handle = (jsize) recycled;
+    } else {
+        next_handle = (*jniEnv)->GetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle);
+        LOG("%d", next_handle)
+        jsize s = get_handle_table_size(ctx);
+        if (next_handle >= s) {
+            return 0;
+        }
+        (*jniEnv)->SetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle, next_handle+1);
+    }
+    (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
+    /* TODO(fa): update native data pointer cache here (if specified) */
+    return boxHandle(next_handle);
+}
+
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
     uint64_t bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
+        jobject hpy_globals = (*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyGlobalsTable);
+        if (hpy_globals == NULL) {
+            LOGS("hpy globals is NULL")
+            return HPy_NULL;
+        }
+        jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_globals, (jsize)unboxHandle(bits));
+        if (element == NULL) {
+            LOGS("globals element is NULL")
+            return HPy_NULL;
+        }
+
+        uint64_t new_handle = get_hpy_handle_for_object(ctx, element, false);
+        if (new_handle) {
+            load_global_native_data_pointer(ctx, bits, new_handle);
+            return toPtr(new_handle);
+        }
         return original_Global_Load(ctx, global);
     } else {
         return toPtr(bits);
@@ -721,6 +783,8 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
+#define CLASS_HPYCONTEXT clazz
+
 #define SIG_HPY "J"
 #define SIG_HPYFIELD "J"
 #define SIG_HPYGLOBAL "J"
@@ -735,6 +799,17 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_JCHARARRAY "[C"
 #define SIG_JLONGARRAY "[J"
 #define SIG_STRING "Ljava/lang/String;"
+#define SIG_JOBJECTARRAY "[Ljava/lang/Object;"
+
+#define FIELD(name, clazz, jniSig) \
+    jniField_ ## name = (*env)->GetFieldID(env, clazz, #name, jniSig); \
+    if (jniField_ ## name == NULL) { \
+        LOGS("ERROR: jni field " #name " not found found !\n"); \
+        return 1; \
+    }
+
+ALL_FIELDS
+#undef FIELD
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \

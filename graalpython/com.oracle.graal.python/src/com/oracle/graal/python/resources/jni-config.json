@@ -32,6 +32,11 @@
     {"name":"ctxFieldLoad","parameterTypes":["long","long"] },
     {"name":"ctxFieldStore","parameterTypes":["long","long","long"] },
     {"name":"getHPyDebugContext","parameterTypes":[] }
+  ],
+  "fields":[
+    {"name":"hpyHandleTable"},
+    {"name":"hpyGlobalsTable"},
+    {"name":"nextHandle"}
   ]
 }
 ]
