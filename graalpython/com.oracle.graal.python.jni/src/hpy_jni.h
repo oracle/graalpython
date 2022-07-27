@@ -39,12 +39,6 @@
  * SOFTWARE.
  */
 
-/*
- * Native implementation of HPyTupleBuilder.
- * This is written in a way that we could also use the internal functions
- * 'builder_*' to implement HPyListBuilder.
- */
-
 #include <hpy.h>
 #include <jni.h>
 #include <stdint.h>
