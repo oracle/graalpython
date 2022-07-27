@@ -117,7 +117,7 @@ public abstract class ImportFromNode extends PNodeWithContext {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, name, pkgname, pkgpath);
         } else {
             if (pkgpathObj == null) {
-                pkgnameObj = PNone.NONE;
+                pkgpathObj = PNone.NONE;
             }
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, pkgnameObj, pkgpathObj, ErrorMessages.CANNOT_IMPORT_NAME, name, pkgname, pkgpath);
         }
