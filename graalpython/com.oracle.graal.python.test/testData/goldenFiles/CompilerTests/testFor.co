@@ -1,10 +1,8 @@
 Disassembly of <module>:
-000010         0 LOAD_BYTE_O                       1
-000012         2 LOAD_BYTE_O                       2
-000009         4 COLLECTION_FROM_STACK             2    (list)
-000000         6 GET_ITER
-000000   >>    7 FOR_ITER                          6    (to 13)
-000004         9 STORE_NAME                        0    (i)
-000000        11 JUMP_BACKWARD                     4    (to 7)
-000000   >>   13 LOAD_NONE
-000000        14 RETURN_VALUE
+000009         0 LOAD_CONST_COLLECTION             0    ([1, 2] type int into list)
+000000         3 GET_ITER
+000000   >>    4 FOR_ITER                          6    (to 10)
+000004         6 STORE_NAME                        0    (i)
+000000         8 JUMP_BACKWARD                     4    (to 4)
+000000   >>   10 LOAD_NONE
+000000        11 RETURN_VALUE

@@ -86,6 +86,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLASSDEREF;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLOSURE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_COMPLEX;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_CONST;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_CONST_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_DEREF;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_DOUBLE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_ELLIPSIS;
@@ -131,6 +132,7 @@ import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -161,6 +163,7 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -452,10 +455,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addConditionalJump(OpCodes code, Block target) {
         int profileIndex = unit.conditionProfileCount;
         unit.conditionProfileCount += 2;
-        if (profileIndex != (short) profileIndex) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "Too many conditionals in compilation unit");
-        }
-        addOp(code, target, new byte[]{(byte) (profileIndex & 0xFF), (byte) (profileIndex << 8)});
+        /*
+         * Intentionally ignoring overflow in the conversion of the index. If the unit has more than
+         * 2^16 conditionals it most likely wouldn't compile anyway, so there's not much harm if
+         * there's some false sharing of profiles.
+         */
+        byte[] follwingArgs = new byte[2];
+        ByteArraySupport.littleEndian().putShort(follwingArgs, 0, (short) profileIndex);
+        addOp(code, target, follwingArgs);
     }
 
     private void addOp(OpCodes code, Block target, byte[] follwingArgs) {
@@ -590,6 +597,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private TruffleString getDocstring(StmtTy[] body) {
+        if (optimizationLevel >= 2) {
+            return null;
+        }
         if (body != null && body.length > 0) {
             StmtTy stmt = body[0];
             if (stmt instanceof StmtTy.Expr) {
@@ -623,7 +633,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         public Collector(int typeBits) {
             this.typeBits = typeBits;
-            stackItemsPerItem = typeBits == CollectionBits.DICT ? 2 : 1;
+            stackItemsPerItem = typeBits == CollectionBits.KIND_DICT ? 2 : 1;
         }
 
         public Collector(int typeBits, int stackItems) {
@@ -633,7 +643,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         public void appendItem() {
             stackItems += stackItemsPerItem;
-            if (stackItems + stackItemsPerItem > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+            if (stackItems + stackItemsPerItem > CollectionBits.KIND_MASK) {
                 doFlushStack();
             }
         }
@@ -645,7 +655,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         protected void doFlushStack() {
-            assert stackItems <= CollectionBits.MAX_STACK_ELEMENT_COUNT;
+            assert stackItems <= CollectionBits.KIND_MASK;
             if (collectionOnStack) {
                 addOp(COLLECTION_ADD_STACK, typeBits | stackItems);
             } else {
@@ -678,7 +688,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private class KwargsMergingDictCollector extends Collector {
         public KwargsMergingDictCollector(OpCodes callOp) {
-            super(CollectionBits.DICT);
+            super(CollectionBits.KIND_DICT);
             /*
              * We're making assumptions about the stack layout below this instruction to obtain the
              * callable for error reporting. If we ever add more keywords call instructions, we need
@@ -732,7 +742,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void collectIntoDict(ExprTy[] keys, ExprTy[] values) {
-        Collector collector = new Collector(CollectionBits.DICT);
+        Collector collector = new Collector(CollectionBits.KIND_DICT);
         if (keys != null) {
             assert keys.length == values.length;
             for (int i = 0; i < keys.length; i++) {
@@ -778,7 +788,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
         if (!hasSplat) {
-            Collector collector = new Collector(CollectionBits.KWORDS);
+            Collector collector = new Collector(CollectionBits.KIND_KWORDS);
             for (KeywordTy k : keywords) {
                 k.accept(this);
                 collector.appendItem();
@@ -787,7 +797,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else if (keywords.length == 1) {
             // Just one splat, no need for merging
             keywords[0].value.accept(this);
-            addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KWORDS);
+            addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KIND_KWORDS);
         } else {
             /*
              * We need to emit bytecodes for proper keywords merging with checking for duplicate
@@ -807,11 +817,12 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
             }
             collector.finishCollection();
-            addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KWORDS);
+            addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KIND_KWORDS);
         }
     }
 
-    private void makeClosure(CodeUnit code) {
+    private void makeClosure(CodeUnit code, int makeFunctionFlags) {
+        int flags = makeFunctionFlags;
         if (code.freevars.length > 0) {
             // add the closure
             for (TruffleString tfv : code.freevars) {
@@ -826,8 +837,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(LOAD_CLOSURE, arg);
             }
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
+            flags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
         }
-        int flags = code.flags & (CodeUnit.HAS_DEFAULTS | CodeUnit.HAS_KWONLY_DEFAULTS | CodeUnit.HAS_ANNOTATIONS | CodeUnit.HAS_CLOSURE);
         addObject(unit.constants, code.qualname);
         addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) flags});
     }
@@ -1090,7 +1101,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private Void callHelper(OpCodes op, int opArg, int alreadyOnStack, ExprTy[] args, KeywordTy[] keywords) {
-        collectIntoArray(args, CollectionBits.OBJECT, op == CALL_METHOD_VARARGS ? 1 + alreadyOnStack : alreadyOnStack);
+        collectIntoArray(args, CollectionBits.KIND_OBJECT, op == CALL_METHOD_VARARGS ? 1 + alreadyOnStack : alreadyOnStack);
         if (keywords.length > 0) {
             assert op == CALL_FUNCTION_VARARGS;
             collectKeywords(keywords, CALL_FUNCTION_KW);
@@ -1295,7 +1306,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             // TODO add optimized op for small chains
             addOp(LOAD_STRING, addObject(unit.constants, T_EMPTY_STRING));
             addOpName(LOAD_METHOD, unit.names, "join");
-            collectIntoArray(node.values, CollectionBits.LIST);
+            collectIntoArray(node.values, CollectionBits.KIND_LIST);
             addOp(CALL_METHOD, 1);
             return null;
         } finally {
@@ -1308,17 +1319,17 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             checkForbiddenArgs(node.args);
-            int flags = collectDefaults(node.args);
+            int makeFunctionFlags = collectDefaults(node.args);
             enterScope("<lambda>", CompilationScope.Lambda, node, node.args);
             CodeUnit code;
             try {
                 node.body.accept(this);
                 addOp(RETURN_VALUE);
-                code = unit.assemble(flags);
+                code = unit.assemble();
             } finally {
                 exitScope();
             }
-            makeClosure(code);
+            makeClosure(code, makeFunctionFlags);
             return null;
         } finally {
             setLocation(savedLocation);
@@ -1363,7 +1374,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case Store:
                     return unpackInto(node.elements);
                 case Load:
-                    collectIntoArray(node.elements, CollectionBits.LIST);
+                    boolean emittedConstant = tryCollectConstantCollection(node.elements, CollectionBits.KIND_LIST);
+                    if (emittedConstant) {
+                        return null;
+                    }
+                    collectIntoArray(node.elements, CollectionBits.KIND_LIST);
                     return null;
                 case Delete:
                 default:
@@ -1375,9 +1390,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private enum ComprehensionType {
-        LIST(CollectionBits.LIST),
-        SET(CollectionBits.SET),
-        DICT(CollectionBits.DICT),
+        LIST(CollectionBits.KIND_LIST),
+        SET(CollectionBits.KIND_SET),
+        DICT(CollectionBits.KIND_DICT),
         GENEXPR(-1);
 
         public final int typeBits;
@@ -1408,9 +1423,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (type != ComprehensionType.GENEXPR) {
                 addOp(RETURN_VALUE);
             }
-            CodeUnit code = unit.assemble(0);
+            CodeUnit code = unit.assemble();
             exitScope();
-            makeClosure(code);
+            makeClosure(code, 0);
             generators[0].iter.accept(this);
             addOp(GET_ITER);
             addOp(CALL_FUNCTION, 1);
@@ -1459,7 +1474,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                  * There is an iterator for every generator on the stack. We need to append to the
                  * collection that's below them
                  */
-                if (collectionStackDepth > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                if (collectionStackDepth > CollectionBits.KIND_MASK) {
                     errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many levels of nested comprehensions");
                 }
                 addOp(ADD_TO_COLLECTION, collectionStackDepth | type.typeBits);
@@ -1498,7 +1513,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Set node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            collectIntoArray(node.elements, CollectionBits.SET);
+            collectIntoArray(node.elements, CollectionBits.KIND_SET);
             return null;
         } finally {
             setLocation(savedLocation);
@@ -1582,7 +1597,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                      */
                     boolean useList = false;
                     if (node.elements != null) {
-                        if (node.elements.length > CollectionBits.MAX_STACK_ELEMENT_COUNT) {
+                        if (node.elements.length > CollectionBits.KIND_MASK) {
                             useList = true;
                         } else {
                             for (ExprTy e : node.elements) {
@@ -1593,13 +1608,17 @@ public class Compiler implements SSTreeVisitor<Void> {
                             }
                         }
                     }
+                    boolean emittedConstant = tryCollectConstantCollection(node.elements, CollectionBits.KIND_TUPLE);
+                    if (emittedConstant) {
+                        return null;
+                    }
                     if (!useList) {
-                        collectIntoArray(node.elements, CollectionBits.TUPLE);
+                        collectIntoArray(node.elements, CollectionBits.KIND_TUPLE);
                     } else {
-                        collectIntoArray(node.elements, CollectionBits.LIST);
+                        collectIntoArray(node.elements, CollectionBits.KIND_LIST);
                         // FIXME this operation copies the underlying storage, we should make a
                         // separate instruction for shallow conversion
-                        addOp(COLLECTION_FROM_COLLECTION, CollectionBits.TUPLE);
+                        addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KIND_TUPLE);
                     }
                     return null;
                 case Delete:
@@ -1611,10 +1630,120 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    private boolean tryCollectConstantCollection(ExprTy[] elements, int collectionKind) {
+        /*
+         * We try to store the whole tuple as a Java array constant when all the elements are
+         * constant and context-independent.
+         */
+        if (elements == null || elements.length == 0) {
+            return false;
+        }
+
+        int constantType = -1;
+        List<Object> constants = new ArrayList<>();
+
+        for (ExprTy e : elements) {
+            if (e instanceof ExprTy.Constant) {
+                ExprTy.Constant c = (ExprTy.Constant) e;
+                if (c.kind == ExprTy.Constant.Kind.BOOLEAN) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_BOOLEAN);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.LONG) {
+                    long val = (long) c.value;
+                    if (val == (int) val) {
+                        constantType = determineConstantType(constantType, CollectionBits.ELEMENT_INT);
+                    } else {
+                        constantType = determineConstantType(constantType, CollectionBits.ELEMENT_LONG);
+                    }
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_DOUBLE);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.RAW) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
+                    constants.add(c.value);
+                } else if (c.kind == ExprTy.Constant.Kind.NONE) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
+                    constants.add(PNone.NONE);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        Object newConstant = null;
+        switch (constantType) {
+            case CollectionBits.ELEMENT_OBJECT:
+                newConstant = constants.toArray(new Object[0]);
+                break;
+            case CollectionBits.ELEMENT_INT: {
+                int[] a = new int[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (int) (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_LONG: {
+                long[] a = new long[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_BOOLEAN: {
+                boolean[] a = new boolean[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (boolean) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_DOUBLE: {
+                double[] a = new double[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (double) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+        }
+        addOp(LOAD_CONST_COLLECTION, addObject(unit.constants, newConstant), new byte[]{(byte) (constantType | collectionKind)});
+        return true;
+    }
+
+    int determineConstantType(int existing, int type) {
+        if (existing == -1 || existing == type) {
+            return type;
+        }
+        if (existing == CollectionBits.ELEMENT_LONG && type == CollectionBits.ELEMENT_INT || existing == CollectionBits.ELEMENT_INT && type == CollectionBits.ELEMENT_LONG) {
+            return CollectionBits.ELEMENT_LONG;
+        }
+        return CollectionBits.ELEMENT_OBJECT;
+    }
+
     @Override
     public Void visit(ExprTy.UnaryOp node) {
         SourceRange savedLocation = setLocation(node);
         try {
+            // Basic constant folding for unary negation
+            if (node.op == ExprTy.UnaryOp.Operator.SUB && node.operand instanceof ExprTy.Constant) {
+                ExprTy.Constant c = (ExprTy.Constant) node.operand;
+                if (c.kind == ExprTy.Constant.Kind.LONG) {
+                    long v = (long) c.value;
+                    if (v != Long.MIN_VALUE) {
+                        return visit(new ExprTy.Constant(-v, c.kind, c.getSourceRange()));
+                    } else {
+                        return visit(new ExprTy.Constant((BigInteger.valueOf(v)).negate(), ExprTy.Constant.Kind.BIGINTEGER, c.getSourceRange()));
+                    }
+                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    return visit(new ExprTy.Constant(-(double) c.value, c.kind, c.getSourceRange()));
+                } else if (c.kind == ExprTy.Constant.Kind.BIGINTEGER) {
+                    return visit(new ExprTy.Constant(((BigInteger) c.value).negate(), c.kind, c.getSourceRange()));
+                }
+            }
             node.operand.accept(this);
             switch (node.op) {
                 case ADD:
@@ -1815,6 +1944,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Assert node) {
+        // TODO warn when test is a tuple
+        if (optimizationLevel > 0) {
+            return null;
+        }
         setLocation(node);
         Block end = new Block();
         jumpIf(node.test, end, true);
@@ -1942,17 +2075,18 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(LOAD_NONE);
         }
         addOp(RETURN_VALUE);
-        CodeUnit co = unit.assemble(0);
+        CodeUnit co = unit.assemble();
         exitScope();
 
         addOp(LOAD_BUILD_CLASS);
-        makeClosure(co);
+        makeClosure(co, 0);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
 
         callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
 
         if (node.decoratorList != null) {
-            for (ExprTy decorator : node.decoratorList) {
+            ExprTy[] decoratorList = node.decoratorList;
+            for (int i = 0; i < decoratorList.length; i++) {
                 addOp(CALL_FUNCTION, 1);
             }
         }
@@ -2028,11 +2162,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(node.decoratorList);
 
         // visit defaults outside the function scope
-        int flags = collectDefaults(node.args);
+        int makeFunctionFlags = collectDefaults(node.args);
 
         boolean hasAnnotations = visitAnnotations(node.args, node.returns);
         if (hasAnnotations) {
-            flags |= CodeUnit.HAS_ANNOTATIONS;
+            makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS;
         }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
@@ -2043,12 +2177,12 @@ public class Compiler implements SSTreeVisitor<Void> {
             TruffleString docString = getDocstring(node.body);
             addObject(unit.constants, docString == null ? PNone.NONE : docString);
             visitSequence(node.body);
-            code = unit.assemble(flags);
+            code = unit.assemble();
         } finally {
             exitScope();
         }
 
-        makeClosure(code);
+        makeClosure(code, makeFunctionFlags);
 
         if (node.decoratorList != null) {
             ExprTy[] decoratorList = node.decoratorList;
@@ -2062,7 +2196,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private boolean visitAnnotations(ArgumentsTy args, ExprTy returns) {
-        Collector collector = new Collector(CollectionBits.DICT);
+        Collector collector = new Collector(CollectionBits.KIND_DICT);
         if (args != null) {
             visitArgAnnotations(collector, args.args);
             visitArgAnnotations(collector, args.posOnlyArgs);
@@ -2113,11 +2247,11 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private int collectDefaults(ArgumentsTy args) {
-        int flags = 0;
+        int makeFunctionFlags = 0;
         if (args != null) {
             if (args.defaults != null && args.defaults.length > 0) {
-                collectIntoArray(args.defaults, CollectionBits.OBJECT);
-                flags |= CodeUnit.HAS_DEFAULTS;
+                collectIntoArray(args.defaults, CollectionBits.KIND_OBJECT);
+                makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_DEFAULTS;
             }
             if (args.kwDefaults != null && args.kwDefaults.length > 0) {
                 ArrayList<KeywordTy> defs = new ArrayList<>();
@@ -2130,10 +2264,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                 }
                 collectKeywords(defs.toArray(KeywordTy[]::new), null);
-                flags |= CodeUnit.HAS_KWONLY_DEFAULTS;
+                makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS;
             }
         }
-        return flags;
+        return makeFunctionFlags;
     }
 
     private void checkForbiddenArgs(ArgumentsTy args) {

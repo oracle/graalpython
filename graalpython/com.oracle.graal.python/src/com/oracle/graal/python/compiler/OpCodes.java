@@ -363,6 +363,12 @@ public enum OpCodes {
      * indexed by the immediate operand.
      */
     LOAD_COMPLEX(1, 0, 1),
+    /*
+     * Creates a collection out of a Java array in constants array indexed by the immediate operand.
+     * The second immediate operand determines the array type and kind, using values from {@link
+     * CollectionBits}. The only allowed kinds are list and tuple.
+     */
+    LOAD_CONST_COLLECTION(2, 0, 1),
 
     // calling
     /**
@@ -547,7 +553,7 @@ public enum OpCodes {
      * 
      * Pops: item to be added
      */
-    ADD_TO_COLLECTION(1, (oparg, followingArgs, withJump) -> CollectionBits.elementType(oparg) == CollectionBits.DICT ? 2 : 1, 0),
+    ADD_TO_COLLECTION(1, (oparg, followingArgs, withJump) -> CollectionBits.collectionKind(oparg) == CollectionBits.KIND_DICT ? 2 : 1, 0),
     /**
      * Like {@link #COLLECTION_ADD_COLLECTION} for dicts, but with checks for duplicate keys
      * necessary for keyword arguments merge. Note it works with dicts. Keyword arrays need to be
@@ -695,21 +701,38 @@ public enum OpCodes {
     POP_AND_JUMP_IF_TRUE_B(POP_AND_JUMP_IF_TRUE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_TRUE_O);
 
     public static final class CollectionBits {
-        public static final int MAX_STACK_ELEMENT_COUNT = 0b00011111;
-        public static final int LIST = 0b00100000;
-        public static final int TUPLE = 0b01000000;
-        public static final int SET = 0b01100000;
-        public static final int DICT = 0b10000000;
-        public static final int KWORDS = 0b10100000;
-        public static final int OBJECT = 0b11000000;
+        public static final int KIND_MASK = 0b00011111;
+        public static final int KIND_LIST = 0b00100000;
+        public static final int KIND_TUPLE = 0b01000000;
+        public static final int KIND_SET = 0b01100000;
+        public static final int KIND_DICT = 0b10000000;
+        public static final int KIND_KWORDS = 0b10100000;
+        public static final int KIND_OBJECT = 0b11000000;
+
+        public static final byte ELEMENT_INT = 1;
+        public static final byte ELEMENT_LONG = 2;
+        public static final byte ELEMENT_BOOLEAN = 3;
+        public static final byte ELEMENT_DOUBLE = 4;
+        public static final byte ELEMENT_OBJECT = 5;
 
         public static int elementCount(int oparg) {
-            return oparg & MAX_STACK_ELEMENT_COUNT;
+            return oparg & KIND_MASK;
         }
 
         public static int elementType(int oparg) {
-            return oparg & ~MAX_STACK_ELEMENT_COUNT;
+            return oparg & KIND_MASK;
         }
+
+        public static int collectionKind(int oparg) {
+            return oparg & ~KIND_MASK;
+        }
+    }
+
+    public static final class MakeFunctionFlags {
+        public static final int HAS_DEFAULTS = 0x1;
+        public static final int HAS_KWONLY_DEFAULTS = 0x2;
+        public static final int HAS_ANNOTATIONS = 0x04;
+        public static final int HAS_CLOSURE = 0x08;
     }
 
     public static final OpCodes[] VALUES = new OpCodes[values().length];

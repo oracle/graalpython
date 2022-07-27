@@ -94,6 +94,7 @@ import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
@@ -177,6 +178,12 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -430,6 +437,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final CodeUnit co;
     private final Source source;
     private SourceSection sourceSection;
+    // For deferred deprecation warnings
+    private final RaisePythonExceptionErrorCallback parserErrorCallback;
 
     @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
@@ -488,7 +497,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.info(new FrameInfo());
         // locals
         for (int i = 0; i < co.varnames.length; i++) {
-            newBuilder.addSlot(FrameSlotKind.Illegal, co.varnames[i], null);
+            TruffleString varname = co.varnames[i];
+            if (co.arg2cell != null && i < co.arg2cell.length && co.arg2cell[i] >= 0) {
+                /*
+                 * If an argument is a cell, its slot gets superseded by the cell's slot below. We
+                 * need to hide it from LocalsStorage and other introspection.
+                 */
+                varname = null;
+            }
+            newBuilder.addSlot(FrameSlotKind.Illegal, varname, null);
         }
         // cells
         for (int i = 0; i < co.cellvars.length; i++) {
@@ -525,12 +542,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source) {
-        this(language, makeFrameDescriptor(co), makeSignature(co), co, source);
+    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+        this(language, makeFrameDescriptor(co), makeSignature(co), co, source, parserErrorCallback);
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
         ((FrameInfo) fd.getInfo()).rootNode = this;
         this.celloffset = co.varnames.length;
@@ -538,6 +555,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.stackoffset = freeoffset + co.freevars.length;
         this.bcioffset = stackoffset + co.stacksize;
         this.source = source;
+        this.parserErrorCallback = parserErrorCallback;
         this.signature = sign;
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
@@ -767,7 +785,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             copyArgsFirstTime(args, localFrame);
             return;
         }
-        int argCount = co.getTotalArgCount();
+        int argCount = co.getRegularArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
             if (variableTypes[i] == QuickeningTypes.OBJECT) {
@@ -790,7 +808,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void copyArgsFirstTime(Object[] args, Frame localFrame) {
         CompilerAsserts.neverPartOfCompilation();
         variableTypes = new byte[varnames.length];
-        int argCount = co.getTotalArgCount();
+        int argCount = co.getRegularArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
             if ((variableShouldUnbox[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
@@ -822,7 +840,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
         copyArgs(arguments, localFrame);
-        int varIdx = co.getTotalArgCount();
+        int varIdx = co.getRegularArgCount();
         if (co.takesVarArgs()) {
             localFrame.setObject(varIdx++, factory.createTuple(PArguments.getVariableArguments(arguments)));
         }
@@ -1043,6 +1061,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(++stackTop, factory.createBytes((byte[]) localConsts[oparg]));
                         break;
                     }
+                    case OpCodesConstants.LOAD_CONST_COLLECTION: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        int typeAndKind = Byte.toUnsignedInt(localBC[++bci]);
+                        Object array = localConsts[oparg];
+                        bytecodeLoadConstCollection(virtualFrame, ++stackTop, array, typeAndKind);
+                        break;
+                    }
                     case OpCodesConstants.LOAD_COMPLEX: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         double[] num = (double[]) localConsts[oparg];
@@ -1087,7 +1112,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
-                        int type = CollectionBits.elementType(countAndType);
+                        int type = CollectionBits.collectionKind(countAndType);
                         stackTop = bytecodeCollectionFromStack(virtualFrame, type, count, stackTop, localNodes, beginBci, useCachedNodes);
                         break;
                     }
@@ -1095,7 +1120,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int countAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int count = CollectionBits.elementCount(countAndType);
-                        int type = CollectionBits.elementType(countAndType);
+                        int type = CollectionBits.collectionKind(countAndType);
                         // Just combine COLLECTION_FROM_STACK and COLLECTION_ADD_COLLECTION for now
                         stackTop = bytecodeCollectionFromStack(virtualFrame, type, count, stackTop, localNodes, beginBci, useCachedNodes);
                         stackTop = bytecodeCollectionAddCollection(virtualFrame, type, stackTop, localNodes, beginBci + 1, useCachedNodes);
@@ -1105,7 +1130,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int depthAndType = Byte.toUnsignedInt(localBC[++bci]);
                         int depth = CollectionBits.elementCount(depthAndType);
-                        int type = CollectionBits.elementType(depthAndType);
+                        int type = CollectionBits.collectionKind(depthAndType);
                         stackTop = bytecodeAddToCollection(virtualFrame, stackTop, beginBci, localNodes, depth, type, useCachedNodes);
                         break;
                     }
@@ -1320,10 +1345,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.RAISE_VARARGS: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        int count = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
-                        break;
+                        int count = Byte.toUnsignedInt(localBC[bci + 1]);
+                        throw bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
                     }
                     case OpCodesConstants.RETURN_VALUE: {
                         if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
@@ -1474,6 +1497,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
+                            generalizeInputs(bci);
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
                             continue;
                         }
@@ -1490,6 +1514,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.POP_AND_JUMP_IF_TRUE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
+                            generalizeInputs(bci);
                             bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
                             continue;
                         }
@@ -1855,7 +1880,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                int targetIndex = findHandler(bci);
+                int targetIndex = findHandler(beginBci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (pe != null) {
                     if (mutableData.localException != null) {
@@ -1892,7 +1917,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 } else {
                     if (pe != null) {
-                        pe.setCatchingFrameReference(virtualFrame, this, bci);
+                        pe.setCatchingFrameReference(virtualFrame, this, beginBci);
                     }
                     int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(virtualFrame, stackTop, stackSizeOnEntry + stackoffset);
@@ -2974,6 +2999,64 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    private void bytecodeLoadConstCollection(VirtualFrame virtualFrame, int stackTop, Object array, int typeAndKind) {
+        Object result;
+        SequenceStorage storage;
+        int kind = CollectionBits.collectionKind(typeAndKind);
+        assert kind == CollectionBits.KIND_LIST || kind == CollectionBits.KIND_TUPLE;
+        boolean list = kind == CollectionBits.KIND_LIST;
+        switch (CollectionBits.elementType(typeAndKind)) {
+            case CollectionBits.ELEMENT_INT: {
+                int[] a = (int[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new IntSequenceStorage(a);
+                break;
+            }
+            case CollectionBits.ELEMENT_LONG: {
+                long[] a = (long[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new LongSequenceStorage(a);
+                break;
+            }
+            case CollectionBits.ELEMENT_BOOLEAN: {
+                boolean[] a = (boolean[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new BoolSequenceStorage(a);
+                break;
+            }
+            case CollectionBits.ELEMENT_DOUBLE: {
+                double[] a = (double[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new DoubleSequenceStorage(a);
+                break;
+            }
+            case CollectionBits.ELEMENT_OBJECT: {
+                Object[] a = (Object[]) array;
+                if (list) {
+                    a = PythonUtils.arrayCopyOf(a, a.length);
+                }
+                storage = new ObjectSequenceStorage(a);
+                break;
+            }
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+        if (list) {
+            result = factory.createList(storage);
+        } else {
+            result = factory.createTuple(storage);
+        }
+        virtualFrame.setObject(stackTop, result);
+    }
+
     private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         CallNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
@@ -3130,7 +3213,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
+    private PException bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
         RaiseNode raiseNode = insertChildNode(localNodes, bci, RaiseNodeGen.class, NODE_RAISENODE);
         Object cause;
         Object exception;
@@ -3147,7 +3230,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             exception = PNone.NO_VALUE;
         }
         raiseNode.execute(virtualFrame, exception, cause);
-        return stackTop;
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
@@ -3264,19 +3347,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = oldStackTop;
         Object res = null;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 Object[] store = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createList(store);
                 break;
             }
-            case CollectionBits.TUPLE: {
+            case CollectionBits.KIND_TUPLE: {
                 Object[] store = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
                 res = factory.createTuple(store);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 PSet set = factory.createSet();
                 HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
@@ -3287,7 +3370,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 res = set;
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 PDict dict = factory.createDict();
                 HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
@@ -3300,13 +3383,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 res = dict;
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 PKeyword[] kwds = new PKeyword[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, kwds);
                 res = kwds;
                 break;
             }
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 Object[] objs = new Object[count];
                 moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, objs);
                 res = objs;
@@ -3322,37 +3405,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object sourceCollection = virtualFrame.getObject(stackTop);
         Object result;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 ListNodes.ConstructListNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_LIST, ListNodesFactory.ConstructListNodeGen.class, NODE_CONSTRUCT_LIST,
                                 useCachedNodes);
                 result = constructNode.execute(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.TUPLE: {
+            case CollectionBits.KIND_TUPLE: {
                 TupleNodes.ConstructTupleNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_TUPLE, TupleNodesFactory.ConstructTupleNodeGen.class, NODE_CONSTRUCT_TUPLE,
                                 useCachedNodes);
                 result = constructNode.execute(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetNodes.ConstructSetNode constructNode = insertChildNode(localNodes, nodeIndex, UNCACHED_CONSTRUCT_SET, SetNodesFactory.ConstructSetNodeGen.class, NODE_CONSTRUCT_SET, useCachedNodes);
                 result = constructNode.executeWith(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 // TODO create uncached node
                 HashingStorage.InitNode initNode = insertChildNode(localNodes, nodeIndex, HashingStorageFactory.InitNodeGen.class, NODE_HASHING_STORAGE_INIT);
                 HashingStorage storage = initNode.execute(virtualFrame, sourceCollection, PKeyword.EMPTY_KEYWORDS);
                 result = factory.createDict(storage);
                 break;
             }
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXECUTE_STARARGS, ExecutePositionalStarargsNodeGen.class, NODE_EXECUTE_STARARGS,
                                 useCachedNodes);
                 result = executeStarargsNode.executeWith(virtualFrame, sourceCollection);
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 KeywordsNode keywordsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_KEYWORDS, KeywordsNodeGen.class, NODE_KEYWORDS, useCachedNodes);
                 result = keywordsNode.execute(virtualFrame, sourceCollection, stackTop);
                 break;
@@ -3369,21 +3452,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object collection2 = virtualFrame.getObject(stackTop);
         Object result;
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 // TODO uncached node
                 ListBuiltins.ListExtendNode extendNode = insertChildNode(localNodes, nodeIndex, ListBuiltinsFactory.ListExtendNodeFactory.ListExtendNodeGen.class, NODE_LIST_EXTEND);
                 extendNode.execute(virtualFrame, (PList) collection1, collection2);
                 result = collection1;
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetBuiltins.UpdateSingleNode updateNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_UPDATE, SetBuiltinsFactory.UpdateSingleNodeGen.class, NODE_SET_UPDATE, useCachedNodes);
                 PSet set = (PSet) collection1;
                 set.setDictStorage(updateNode.execute(virtualFrame, set.getDictStorage(), collection2));
                 result = set;
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 // TODO uncached node
                 DictNodes.UpdateNode updateNode = insertChildNode(localNodes, nodeIndex, DictNodesFactory.UpdateNodeGen.class, NODE_DICT_UPDATE);
                 updateNode.execute(virtualFrame, (PDict) collection1, collection2);
@@ -3391,7 +3474,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
             // Note: we don't allow this operation for tuple
-            case CollectionBits.OBJECT: {
+            case CollectionBits.KIND_OBJECT: {
                 Object[] array1 = (Object[]) collection1;
                 ExecutePositionalStarargsNode executeStarargsNode = insertChildNode(localNodes, nodeIndex, UNCACHED_EXECUTE_STARARGS, ExecutePositionalStarargsNodeGen.class, NODE_EXECUTE_STARARGS,
                                 useCachedNodes);
@@ -3402,7 +3485,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 result = combined;
                 break;
             }
-            case CollectionBits.KWORDS: {
+            case CollectionBits.KIND_KWORDS: {
                 PKeyword[] array1 = (PKeyword[]) collection1;
                 PKeyword[] array2 = (PKeyword[]) collection2;
                 PKeyword[] combined = new PKeyword[array1.length + array2.length];
@@ -3425,17 +3508,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object collection = virtualFrame.getObject(stackTop - depth);
         Object item = virtualFrame.getObject(stackTop);
         switch (type) {
-            case CollectionBits.LIST: {
+            case CollectionBits.KIND_LIST: {
                 ListNodes.AppendNode appendNode = insertChildNode(localNodes, nodeIndex, UNCACHED_LIST_APPEND, ListNodesFactory.AppendNodeGen.class, NODE_LIST_APPEND, useCachedNodes);
                 appendNode.execute((PList) collection, item);
                 break;
             }
-            case CollectionBits.SET: {
+            case CollectionBits.KIND_SET: {
                 SetNodes.AddNode addNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ADD, SetNodesFactory.AddNodeGen.class, NODE_SET_ADD, useCachedNodes);
                 addNode.execute(virtualFrame, (PSet) collection, item);
                 break;
             }
-            case CollectionBits.DICT: {
+            case CollectionBits.KIND_DICT: {
                 Object key = virtualFrame.getObject(stackTop - 1);
                 HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
@@ -3515,10 +3598,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    public int getStartOffset() {
-        return co.startOffset;
-    }
-
     @TruffleBoundary
     public int bciToLine(int bci) {
         if (source != null && source.hasCharacters() && bci >= 0) {
@@ -3533,11 +3612,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @TruffleBoundary
     public int getFirstLineno() {
-        if (source != null && source.hasCharacters()) {
-            // TODO the same problem as bciToLine
-            return source.createSection(co.startOffset, 0).getStartLine();
-        }
-        return -1;
+        return co.startLine;
     }
 
     @Override
@@ -3554,7 +3629,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createUnavailableSection();
             return sourceSection;
         } else {
-            sourceSection = source.createSection(co.startOffset, co.findMaxOffset() - co.startOffset);
+            // TODO report the whole range, not just the first line
+            sourceSection = source.createSection(co.startLine);
             return sourceSection;
         }
     }
@@ -3594,6 +3670,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source);
+        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source, parserErrorCallback);
+    }
+
+    public void triggerDeferredDeprecationWarnings() {
+        if (parserErrorCallback != null) {
+            parserErrorCallback.triggerDeprecationWarnings();
+        }
     }
 }

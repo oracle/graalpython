@@ -1,6 +1,5 @@
 *test.test_asyncio.test_base_events.BaseEventLoopTests.test_call_soon_non_callable
 *test.test_asyncio.test_base_events.BaseEventLoopTests.test_close
-*test.test_asyncio.test_base_events.BaseEventLoopTests.test_run_forever_keyboard_interrupt
 *test.test_asyncio.test_base_events.BaseEventLoopTests.test_run_until_complete_loop
 *test.test_asyncio.test_base_events.BaseEventLoopTests.test_run_until_complete_type_error
 *test.test_asyncio.test_base_events.BaseEventLoopTests.test_set_debug

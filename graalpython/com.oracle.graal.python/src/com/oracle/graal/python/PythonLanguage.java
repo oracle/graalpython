@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.compiler.ErrorCallbackImpl;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -475,7 +474,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     // Proceed with binary source
                 }
             }
-            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source);
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source, null);
             return PythonUtils.getOrCreateCallTarget(rootNode);
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
@@ -500,21 +499,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal) {
-        ErrorCallback errorCb = new ErrorCallbackImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
-            CodeUnit co = cu.assemble(0);
-            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source);
+            CodeUnit co = cu.assemble();
+            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source, errorCb);
             GilNode gil = GilNode.getUncached();
             boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
-            try {
-                bytecodeRootNode.triggerDeprecationWarnings();
-            } finally {
-                gil.release(context, wasAcquired);
+            if (topLevel) {
+                try {
+                    errorCb.triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
             }
             RootNode rootNode = bytecodeRootNode;
             if (topLevel && context.isCoreInitialized()) {

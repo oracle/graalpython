@@ -40,34 +40,55 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class ErrorCallbackImpl implements ErrorCallback {
+public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     private static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
 
     private final Source source;
     private final boolean withJavaStackTrace;
+    private List<DeprecationWarning> deprecationWarnings;
 
-    public ErrorCallbackImpl(Source source, boolean withJavaStackTrace) {
+    public RaisePythonExceptionErrorCallback(Source source, boolean withJavaStackTrace) {
         this.source = source;
         this.withJavaStackTrace = withJavaStackTrace;
+    }
+
+    private static class DeprecationWarning {
+        final SourceRange sourceRange;
+        final TruffleString message;
+
+        public DeprecationWarning(SourceRange sourceRange, TruffleString message) {
+            this.sourceRange = sourceRange;
+            this.message = message;
+        }
     }
 
     @Override
@@ -134,13 +155,7 @@ public class ErrorCallbackImpl implements ErrorCallback {
         }
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
-        TruffleString filename = toTruffleStringUncached(source.getPath());
-        if (filename == null) {
-            filename = toTruffleStringUncached(source.getName());
-            if (filename == null) {
-                filename = DEFAULT_FILENAME;
-            }
-        }
+        TruffleString filename = getFilename();
         excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = sourceRange.startLine;
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = sourceRange.startColumn + 1;
@@ -154,5 +169,48 @@ public class ErrorCallbackImpl implements ErrorCallback {
         excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = text;
         instance.setExceptionAttributes(excAttrs);
         throw PException.fromObject(instance, location, withJavaStackTrace);
+    }
+
+    private TruffleString getFilename() {
+        TruffleString filename = toTruffleStringUncached(source.getPath());
+        if (filename == null) {
+            filename = toTruffleStringUncached(source.getName());
+            if (filename == null) {
+                filename = DEFAULT_FILENAME;
+            }
+        }
+        return filename;
+    }
+
+    @Override
+    public void warnDeprecation(SourceRange sourceRange, String message) {
+        if (deprecationWarnings == null) {
+            deprecationWarnings = new ArrayList<>();
+        }
+        deprecationWarnings.add(new DeprecationWarning(sourceRange, toTruffleStringUncached(message)));
+    }
+
+    public void triggerDeprecationWarnings() {
+        if (deprecationWarnings != null) {
+            triggerDeprecationWarningsBoundary();
+        }
+    }
+
+    @TruffleBoundary
+    private void triggerDeprecationWarningsBoundary() {
+        PythonModule warnings = PythonContext.get(null).lookupBuiltinModule(T__WARNINGS);
+        for (DeprecationWarning warning : deprecationWarnings) {
+            try {
+                PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
+                                warning.message, PythonBuiltinClassType.DeprecationWarning, getFilename(), warning.sourceRange.startLine);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.DeprecationWarning, IsBuiltinClassProfile.getUncached());
+                /*
+                 * Replace the DeprecationWarning exception with a SyntaxError to get a more
+                 * accurate error report
+                 */
+                throw raiseSyntaxError(ErrorType.Syntax, warning.sourceRange, warning.message);
+            }
+        }
     }
 }

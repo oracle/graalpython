@@ -66,7 +66,7 @@ public class ParserTokenizer {
     }
 
     private static EnumSet<Tokenizer.Flag> getTokenizerFlags(InputType type, boolean interactiveTerminal) {
-        EnumSet<Tokenizer.Flag> flags = EnumSet.of(Tokenizer.Flag.TYPE_COMMENT);
+        EnumSet<Tokenizer.Flag> flags = EnumSet.noneOf(Tokenizer.Flag.class);
         if (type == InputType.FILE) {
             flags.add(Tokenizer.Flag.EXEC_INPUT);
         } else if (type == InputType.SINGLE && interactiveTerminal) {

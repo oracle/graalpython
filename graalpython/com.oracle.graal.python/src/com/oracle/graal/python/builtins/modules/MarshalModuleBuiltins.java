@@ -278,6 +278,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char ARRAY_TYPE_LONG = 'l';
         private static final char ARRAY_TYPE_DOUBLE = 'd';
         private static final char ARRAY_TYPE_BYTE = 'b';
+        private static final char ARRAY_TYPE_BOOLEAN = 'B';
         private static final char ARRAY_TYPE_SHORT = 's';
         private static final char ARRAY_TYPE_STRING = 'S';
         private static final int MAX_MARSHAL_STACK_DEPTH = 201;
@@ -784,6 +785,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_SHORT);
                     writeShortArray((short[]) v);
+                } else if (v instanceof boolean[]) {
+                    writeByte(TYPE_ARRAY | flag);
+                    writeByte(ARRAY_TYPE_BOOLEAN);
+                    writeBooleanArray((boolean[]) v);
                 } else if (v instanceof double[]) {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_DOUBLE);
@@ -879,6 +884,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeShort(a[i]);
+            }
+        }
+
+        private void writeBooleanArray(boolean[] a) throws IOException {
+            writeInt(a.length);
+            for (int i = 0; i < a.length; i++) {
+                writeByte(a[i] ? 1 : 0);
             }
         }
 
@@ -1032,21 +1044,30 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeString(TruffleString v) throws IOException {
-            InternalByteArray ba = v.switchEncodingUncached(Encoding.UTF_8).getInternalByteArrayUncached(Encoding.UTF_8);
+            /*
+             * Ugly workaround for GR-39571 - TruffleString UTF-8 doesn't support surrogate
+             * passthrough. If the string contains surrogates, we mark it and emit it as UTF-32.
+             */
+            Encoding encoding;
+            if (v.isCompatibleTo(Encoding.UTF_8)) {
+                encoding = Encoding.UTF_8;
+            } else {
+                encoding = Encoding.UTF_32LE;
+                writeInt(-1);
+            }
+            InternalByteArray ba = v.switchEncodingUncached(encoding).getInternalByteArrayUncached(encoding);
             writeSize(ba.getLength());
             out.write(ba.getArray(), ba.getOffset(), ba.getLength());
         }
 
         private TruffleString readString() {
-            int sz = readSize();
-            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true).switchEncodingUncached(TS_ENCODING);
-        }
-
-        private TruffleString readTruffleString() {
-            int sz = readSize();
-            byte[] data = new byte[sz];
-            readNBytes(sz, data);
-            return TruffleString.fromByteArrayUncached(data, Encoding.UTF_8, false).switchEncodingUncached(TS_ENCODING);
+            Encoding encoding = Encoding.UTF_8;
+            int sz = readInt();
+            if (sz < 0) {
+                encoding = Encoding.UTF_32LE;
+                sz = readSize();
+            }
+            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, encoding, true).switchEncodingUncached(TS_ENCODING);
         }
 
         private void writeShortString(String v) throws IOException {
@@ -1095,6 +1116,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readDoubleArray();
                 case ARRAY_TYPE_SHORT:
                     return readShortArray();
+                case ARRAY_TYPE_BOOLEAN:
+                    return readBooleanArray();
                 case ARRAY_TYPE_STRING:
                     return readStringArray();
                 case ARRAY_TYPE_OBJECT:
@@ -1136,6 +1159,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             short[] a = new short[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readShort();
+            }
+            return a;
+        }
+
+        private boolean[] readBooleanArray() {
+            int length = readInt();
+            boolean[] a = new boolean[length];
+            for (int i = 0; i < length; i++) {
+                a[i] = readByte() != 0;
             }
             return a;
         }
@@ -1251,7 +1283,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode() {
-            TruffleString fileName = readTruffleString();
+            TruffleString fileName = readString();
             int flags = readInt();
 
             int codeLen = readSize();

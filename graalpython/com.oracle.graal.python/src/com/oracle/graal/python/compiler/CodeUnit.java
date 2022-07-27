@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -61,17 +62,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * the filename to make it easier to keep in native images.
  */
 public final class CodeUnit {
-    public static final int HAS_DEFAULTS = 0x1;
-    public static final int HAS_KWONLY_DEFAULTS = 0x2;
-    public static final int HAS_ANNOTATIONS = 0x04;
-    public static final int HAS_CLOSURE = 0x08;
-    public static final int HAS_VAR_ARGS = 0x10;
-    public static final int HAS_VAR_KW_ARGS = 0x20;
-    public static final int IS_GENERATOR = 0x40;
-    public static final int IS_COROUTINE = 0x80;
-    public static final int IS_ASYNC_GENERATOR = 0x100;
-
-    public static final int DISASSEMBLY_NUM_COLUMNS = 8;
+    private static final int DISASSEMBLY_NUM_COLUMNS = 8;
 
     public final TruffleString name;
     public final TruffleString qualname;
@@ -91,6 +82,7 @@ public final class CodeUnit {
     public final TruffleString[] cellvars;
     public final TruffleString[] freevars;
     public final int[] cell2arg;
+    public final int[] arg2cell;
 
     public final Object[] constants;
     public final long[] primitiveConstants;
@@ -118,6 +110,7 @@ public final class CodeUnit {
                     int[] exceptionHandlerRanges, int conditionProfileCount,
                     int startOffset, int startLine,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+        int[] arg2cell;
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -132,6 +125,17 @@ public final class CodeUnit {
         this.cellvars = cellvars;
         this.freevars = freevars;
         this.cell2arg = cell2arg;
+        arg2cell = null;
+        if (cell2arg != null) {
+            arg2cell = new int[getTotalArgCount()];
+            Arrays.fill(arg2cell, -1);
+            for (int i = 0; i < cell2arg.length; i++) {
+                if (cell2arg[i] >= 0) {
+                    arg2cell[cell2arg[i]] = i;
+                }
+            }
+        }
+        this.arg2cell = arg2cell;
         this.constants = constants;
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
@@ -204,43 +208,42 @@ public final class CodeUnit {
     }
 
     public boolean takesVarKeywordArgs() {
-        return (flags & HAS_VAR_KW_ARGS) != 0;
+        return (flags & PCode.CO_VARKEYWORDS) != 0;
     }
 
     public boolean takesVarArgs() {
-        return (flags & HAS_VAR_ARGS) != 0;
-    }
-
-    public boolean hasDefaults() {
-        return (flags & HAS_DEFAULTS) != 0;
-    }
-
-    public boolean hasKwDefaults() {
-        return (flags & HAS_KWONLY_DEFAULTS) != 0;
+        return (flags & PCode.CO_VARARGS) != 0;
     }
 
     public boolean isGenerator() {
-        return (flags & IS_GENERATOR) != 0;
+        return (flags & PCode.CO_GENERATOR) != 0;
     }
 
     public boolean isCoroutine() {
-        return (flags & IS_COROUTINE) != 0;
+        return (flags & PCode.CO_COROUTINE) != 0;
     }
 
     public boolean isAsyncGenerator() {
-        return (flags & IS_ASYNC_GENERATOR) != 0;
+        return (flags & PCode.CO_ASYNC_GENERATOR) != 0;
     }
 
     public boolean isGeneratorOrCoroutine() {
-        return (flags & (IS_GENERATOR | IS_COROUTINE | IS_ASYNC_GENERATOR)) != 0;
+        return (flags & (PCode.CO_GENERATOR | PCode.CO_COROUTINE | PCode.CO_ASYNC_GENERATOR | PCode.CO_ITERABLE_COROUTINE)) != 0;
     }
 
-    public boolean isLambda() {
-        return lambda;
+    public int getRegularArgCount() {
+        return argCount + positionalOnlyArgCount + kwOnlyArgCount;
     }
 
     public int getTotalArgCount() {
-        return argCount + positionalOnlyArgCount + kwOnlyArgCount;
+        int count = getRegularArgCount();
+        if (takesVarArgs()) {
+            count++;
+        }
+        if (takesVarKeywordArgs()) {
+            count++;
+        }
+        return count;
     }
 
     @SuppressWarnings("fallthrough")
@@ -302,10 +305,14 @@ public final class CodeUnit {
                     case EXTENDED_ARG:
                         line[4] = "";
                         break;
+                    case LOAD_BYTE:
+                        line[4] = String.format("% 2d", (byte) oparg);
+                        break;
                     case LOAD_CONST:
                     case LOAD_BIGINT:
                     case LOAD_STRING:
                     case LOAD_BYTES:
+                    case LOAD_CONST_COLLECTION:
                     case MAKE_KEYWORD: {
                         Object constant = constants[oparg];
                         if (constant instanceof CodeUnit) {
@@ -316,11 +323,22 @@ public final class CodeUnit {
                             } else if (constant instanceof byte[]) {
                                 byte[] bytes = (byte[]) constant;
                                 line[5] = BytesUtils.bytesRepr(bytes, bytes.length);
+                            } else if (constant instanceof int[]) {
+                                line[5] = Arrays.toString((int[]) constant);
+                            } else if (constant instanceof long[]) {
+                                line[5] = Arrays.toString((long[]) constant);
+                            } else if (constant instanceof boolean[]) {
+                                line[5] = Arrays.toString((boolean[]) constant);
+                            } else if (constant instanceof double[]) {
+                                line[5] = Arrays.toString((double[]) constant);
                             } else if (constant instanceof Object[]) {
                                 line[5] = Arrays.toString((Object[]) constant);
                             } else {
                                 line[5] = Objects.toString(constant);
                             }
+                        }
+                        if (opcode == OpCodes.LOAD_CONST_COLLECTION) {
+                            line[5] += " type " + collectionTypeToString(followingArgs[0]) + " into " + collectionKindToString(followingArgs[0]);
                         }
                         break;
                     }
@@ -399,7 +417,6 @@ public final class CodeUnit {
                     }
                     case CALL_METHOD: {
                         line[4] = String.format("% 2d", oparg);
-                        line[5] = names[oparg].toJavaStringUncached();
                         break;
                     }
                     case UNARY_OP:
@@ -414,26 +431,7 @@ public final class CodeUnit {
                     case COLLECTION_ADD_COLLECTION:
                     case ADD_TO_COLLECTION:
                         line[4] = String.format("% 2d", CollectionBits.elementCount(oparg));
-                        switch (CollectionBits.elementType(oparg)) {
-                            case CollectionBits.LIST:
-                                line[5] = "list";
-                                break;
-                            case CollectionBits.TUPLE:
-                                line[5] = "tuple";
-                                break;
-                            case CollectionBits.SET:
-                                line[5] = "set";
-                                break;
-                            case CollectionBits.DICT:
-                                line[5] = "dict";
-                                break;
-                            case CollectionBits.KWORDS:
-                                line[5] = "PKeyword[]";
-                                break;
-                            case CollectionBits.OBJECT:
-                                line[5] = "Object[]";
-                                break;
-                        }
+                        line[5] = collectionKindToString(oparg);
                         break;
                     case UNPACK_EX:
                         line[5] = String.format("%d, %d", oparg, Byte.toUnsignedInt(followingArgs[0]));
@@ -522,5 +520,39 @@ public final class CodeUnit {
         }
 
         return sb.toString();
+    }
+
+    private static String collectionKindToString(int oparg) {
+        switch (CollectionBits.collectionKind(oparg)) {
+            case CollectionBits.KIND_LIST:
+                return "list";
+            case CollectionBits.KIND_TUPLE:
+                return "tuple";
+            case CollectionBits.KIND_SET:
+                return "set";
+            case CollectionBits.KIND_DICT:
+                return "dict";
+            case CollectionBits.KIND_KWORDS:
+                return "PKeyword[]";
+            case CollectionBits.KIND_OBJECT:
+                return "Object[]";
+        }
+        throw new IllegalStateException("Unknown kind");
+    }
+
+    private static String collectionTypeToString(int oparg) {
+        switch (CollectionBits.elementType(oparg)) {
+            case CollectionBits.ELEMENT_BOOLEAN:
+                return "boolean";
+            case CollectionBits.ELEMENT_INT:
+                return "int";
+            case CollectionBits.ELEMENT_LONG:
+                return "long";
+            case CollectionBits.ELEMENT_DOUBLE:
+                return "double";
+            case CollectionBits.ELEMENT_OBJECT:
+                return "Object";
+        }
+        throw new IllegalStateException("Unknown type");
     }
 }

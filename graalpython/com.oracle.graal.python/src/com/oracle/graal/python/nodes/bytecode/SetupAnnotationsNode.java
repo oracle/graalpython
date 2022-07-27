@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -49,6 +50,8 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -97,9 +100,12 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         void doOther(VirtualFrame frame, Object locals,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectSetItem setItem,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PythonObjectFactory factory) {
-            Object annotations = getItem.execute(frame, locals, T___ANNOTATIONS__);
-            if (annotations == null) {
+            try {
+                getItem.execute(frame, locals, T___ANNOTATIONS__);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.KeyError, errorProfile);
                 setItem.execute(frame, locals, T___ANNOTATIONS__, factory.createDict());
             }
         }

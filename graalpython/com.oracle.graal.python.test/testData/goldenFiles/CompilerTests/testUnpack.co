@@ -1,9 +1,7 @@
 Disassembly of <module>:
-000007         0 LOAD_BYTE_O                       1
-000010         2 LOAD_BYTE_O                       2
-000007         4 COLLECTION_FROM_STACK             2    (tuple)
-000000         6 UNPACK_SEQUENCE                   2
-000000         8 STORE_NAME                        0    (a)
-000003        10 STORE_NAME                        1    (b)
-000000        12 LOAD_NONE
-000000        13 RETURN_VALUE
+000007         0 LOAD_CONST_COLLECTION             0    ([1, 2] type int into tuple)
+000000         3 UNPACK_SEQUENCE                   2
+000000         5 STORE_NAME                        0    (a)
+000003         7 STORE_NAME                        1    (b)
+000000         9 LOAD_NONE
+000000        10 RETURN_VALUE

@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import org.junit.Test;
-
 import java.util.EnumSet;
+
+import org.junit.Test;
 
 /**
  * Testing invalid rules. If the test method has the same names, but different number, then it tests
@@ -333,5 +333,10 @@ public class ErrorTests extends ParserTestBase {
         checkSyntaxErrorMessage("i: (yield) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
         checkSyntaxErrorMessage("i: (yield from f) = 3\n", "'yield expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
         checkSyntaxErrorMessage("i: (x:=42) = 3\n", "'named expression' can not be used within an annotation", EnumSet.of(FutureFeature.ANNOTATIONS));
+    }
+
+    @Test
+    public void testDeprecationInvalidEscape() {
+        checkDeprecationWarning("'\\z'", "invalid escape sequence '\\z'");
     }
 }

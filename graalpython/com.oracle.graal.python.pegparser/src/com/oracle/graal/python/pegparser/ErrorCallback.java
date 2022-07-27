@@ -59,11 +59,17 @@ public interface ErrorCallback {
 
     void onError(ErrorType errorType, SourceRange sourceRange, String message);
 
+    void warnDeprecation(SourceRange sourceRange, String message);
+
     default void onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
         onError(errorType, sourceRange, String.format(message, arguments));
     }
 
     default void onError(SourceRange sourceRange, String message, Object... arguments) {
         onError(ErrorType.Generic, sourceRange, String.format(message, arguments));
+    }
+
+    default void warnDeprecation(SourceRange sourceRange, String message, Object... arguments) {
+        warnDeprecation(sourceRange, String.format(message, arguments));
     }
 }

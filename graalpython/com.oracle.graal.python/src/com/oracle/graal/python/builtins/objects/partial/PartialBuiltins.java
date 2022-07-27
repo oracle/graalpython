@@ -129,7 +129,7 @@ public class PartialBuiltins extends PythonBuiltins {
         return PartialBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "func", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, doc = "function object to use in future partial calls")
+    @Builtin(name = "func", minNumOfPositionalArgs = 1, isGetter = true, doc = "function object to use in future partial calls")
     @GenerateNodeFactory
     public abstract static class PartialFuncNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -138,7 +138,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "args", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, doc = "tuple of arguments to future partial calls")
+    @Builtin(name = "args", minNumOfPositionalArgs = 1, isGetter = true, doc = "tuple of arguments to future partial calls")
     @GenerateNodeFactory
     public abstract static class PartialArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -170,7 +170,7 @@ public class PartialBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "keywords", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, doc = "dictionary of keyword arguments to future partial calls")
+    @Builtin(name = "keywords", minNumOfPositionalArgs = 1, isGetter = true, doc = "dictionary of keyword arguments to future partial calls")
     @GenerateNodeFactory
     public abstract static class PartialKeywordsNode extends PythonUnaryBuiltinNode {
         @Specialization

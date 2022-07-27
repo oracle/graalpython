@@ -127,6 +127,11 @@ public abstract class StringLiteralUtils {
 
             text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
+                for (int i = 0; i < text.length(); i++) {
+                    if (text.charAt(i) >= 0x80) {
+                        errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, "bytes can only contain ASCII literal characters");
+                    }
+                }
                 if (sb != null || isFormatString) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
@@ -427,7 +432,7 @@ public abstract class StringLiteralUtils {
                                     // treated as \N escape sequence
                                     index++;
                                 } else if (lookahead(text, index, len, '{')) {
-                                    warnInvalidEscapeSequence(errorCallback, text.charAt(index + 1));
+                                    warnInvalidEscapeSequence(errorCallback, textSourceRange, text.charAt(index + 1));
                                 } else if (lookahead(text, index, len, 'N', '{')) {
                                     // skip escape sequence \N{...}, it should not be treated as an
                                     // expression inside f-string, but \\N{...} should be left
@@ -938,7 +943,7 @@ public abstract class StringLiteralUtils {
                         charList.append(chr);
                         if (!wasDeprecationWarning) {
                             wasDeprecationWarning = true;
-                            warnInvalidEscapeSequence(errors, chr);
+                            warnInvalidEscapeSequence(errors, sourceRange, chr);
                         }
                     }
             }
@@ -1052,7 +1057,7 @@ public abstract class StringLiteralUtils {
                     default:
                         if (!wasDeprecationWarning) {
                             wasDeprecationWarning = true;
-                            warnInvalidEscapeSequence(errorCallback, nextChar);
+                            warnInvalidEscapeSequence(errorCallback, sourceRange, nextChar);
                         }
                         sb.appendCodePoint(ch);
                         sb.appendCodePoint(nextChar);
@@ -1193,10 +1198,8 @@ public abstract class StringLiteralUtils {
         return -1;
     }
 
-    // TODO
-    @SuppressWarnings("unused")
-    public static void warnInvalidEscapeSequence(ErrorCallback errorCallback, char nextChar) {
-        // errorCallback.warn("invalid escape sequence '\\%c'", nextChar);
+    public static void warnInvalidEscapeSequence(ErrorCallback errorCallback, SourceRange sourceRange, char nextChar) {
+        errorCallback.warnDeprecation(sourceRange, "invalid escape sequence '\\%c'", nextChar);
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";

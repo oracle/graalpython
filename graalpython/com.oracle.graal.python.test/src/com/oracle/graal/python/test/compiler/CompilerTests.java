@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.test.compiler;
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -60,9 +61,8 @@ import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
-
-import static org.junit.Assert.fail;
 
 public class CompilerTests extends PythonTests {
     public CompilerTests() {
@@ -78,6 +78,11 @@ public class CompilerTests extends PythonTests {
     @Test
     public void testComplexNumber() {
         doTest("-2 + 3j");
+    }
+
+    @Test
+    public void testMinusFolding() {
+        doTest("-1 * -7.0");
     }
 
     @Test
@@ -528,8 +533,38 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
-    public void testTupleLiteral() {
+    public void testTupleLiteralInts() {
         doTest("(1, 2, 3)");
+    }
+
+    @Test
+    public void testTupleLiteralDoubles() {
+        doTest("(1.0, 2.0, 3.0)");
+    }
+
+    @Test
+    public void testTupleLiteralBooleans() {
+        doTest("(False, True)");
+    }
+
+    @Test
+    public void testTupleLiteralObjects() {
+        doTest("('a', 1, None)");
+    }
+
+    @Test
+    public void testTupleLiteralMixed() {
+        doTest("(1, 2, 3.0)");
+    }
+
+    @Test
+    public void testTupleLiteralNonConstant() {
+        doTest("(1, 2, [3])");
+    }
+
+    @Test
+    public void testTupleLiteralMixedIntegers() {
+        doTest("(1, 17179869184, 3)");
     }
 
     @Test
@@ -826,7 +861,7 @@ public class CompilerTests extends PythonTests {
         ModTy result = (ModTy) parser.parse();
         Compiler compiler = new Compiler(errorCallback);
         CompilationUnit cu = compiler.compile(result, EnumSet.noneOf(Compiler.Flags.class), 2);
-        return cu.assemble(0);
+        return cu.assemble();
     }
 
     private void checkCodeUnit(CodeUnit co) {
@@ -856,6 +891,11 @@ public class CompilerTests extends PythonTests {
         @Override
         public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
             throw new SyntaxError(errorType, message);
+        }
+
+        @Override
+        public void warnDeprecation(SourceRange sourceRange, String message) {
+            throw new AssertionError("Unexpected warning: " + message);
         }
     }
 

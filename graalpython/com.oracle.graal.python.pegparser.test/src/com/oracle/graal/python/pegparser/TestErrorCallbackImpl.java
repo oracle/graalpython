@@ -48,18 +48,32 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 public class TestErrorCallbackImpl implements ErrorCallback {
 
     private final List<Error> errors = new ArrayList<>(1);
+    private final List<Error> warnings = new ArrayList<>(0);
 
     public List<Error> getErrors() {
         return errors;
+    }
+
+    public List<Error> getWarnings() {
+        return warnings;
     }
 
     public boolean hasErrors() {
         return !errors.isEmpty();
     }
 
+    public boolean hasWarnings() {
+        return !warnings.isEmpty();
+    }
+
     @Override
     public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
         errors.add(new Error(errorType, sourceRange, message));
+    }
+
+    @Override
+    public void warnDeprecation(SourceRange sourceRange, String message) {
+        warnings.add(new Error(ErrorType.Syntax, sourceRange, message));
     }
 
     @Override

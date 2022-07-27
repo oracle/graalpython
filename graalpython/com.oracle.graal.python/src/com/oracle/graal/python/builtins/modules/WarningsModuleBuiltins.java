@@ -156,7 +156,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T___WARNINGREGISTRY__ = tsLiteral("__warningregistry__");
 
     private static final String J_WARN = "warn";
+    private static final String J_WARN_EXPLICIT = "warn_explicit";
     public static final TruffleString T_WARN = tsLiteral(J_WARN);
+    public static final TruffleString T_WARN_EXPLICIT = tsLiteral(J_WARN_EXPLICIT);
 
     private static final TruffleString T_ERROR = tsLiteral("error");
     private static final TruffleString T_ALWAYS = tsLiteral("always");
@@ -1053,8 +1055,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     @ReportPolymorphism
     @NodeInfo(shortName = "warnings_warn_explicit")
-    @Builtin(name = "warn_explicit", minNumOfPositionalArgs = 5, parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals",
-                    "source"}, declaresExplicitSelf = true)
+    @Builtin(name = J_WARN_EXPLICIT, minNumOfPositionalArgs = 5, //
+                    parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"}, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class WarnExplicitBuiltinNode extends PythonBuiltinNode {
         @Specialization

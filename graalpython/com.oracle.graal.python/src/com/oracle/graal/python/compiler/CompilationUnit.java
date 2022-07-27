@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -178,7 +179,7 @@ public final class CompilationUnit {
         }
     }
 
-    public CodeUnit assemble(int flags) {
+    public CodeUnit assemble() {
         addImplicitReturn();
         calculateJumpInstructionArguments();
 
@@ -254,16 +255,15 @@ public final class CompilationUnit {
             b = b.next;
         }
 
-        assert flags < 256;
-        flags |= takesVarArgs ? CodeUnit.HAS_VAR_ARGS : 0;
-        flags |= takesVarKeywordArgs ? CodeUnit.HAS_VAR_KW_ARGS : 0;
-        flags |= freevars.size() > 0 ? CodeUnit.HAS_CLOSURE : 0;
+        int flags = 0;
+        flags |= takesVarArgs ? PCode.CO_VARARGS : 0;
+        flags |= takesVarKeywordArgs ? PCode.CO_VARKEYWORDS : 0;
         if (scope.isGenerator() && scope.isCoroutine()) {
-            flags |= CodeUnit.IS_ASYNC_GENERATOR;
+            flags |= PCode.CO_ASYNC_GENERATOR;
         } else if (scope.isGenerator()) {
-            flags |= CodeUnit.IS_GENERATOR;
+            flags |= PCode.CO_GENERATOR;
         } else if (scope.isCoroutine()) {
-            flags |= CodeUnit.IS_COROUTINE;
+            flags |= PCode.CO_COROUTINE;
         }
 
         final int rangeElements = 4;

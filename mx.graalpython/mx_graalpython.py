@@ -454,6 +454,7 @@ def update_unittest_tags(args):
         # TODO temporary. Tests for async that just happen to pass when AST interpreter completely ignores the async keyword
         ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_for_tuple'),
         ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_comp_7'),
+        ('test_asyncio.txt', '*test.test_asyncio.test_base_events.BaseEventLoopTests.test_run_forever_keyboard_interrupt'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions

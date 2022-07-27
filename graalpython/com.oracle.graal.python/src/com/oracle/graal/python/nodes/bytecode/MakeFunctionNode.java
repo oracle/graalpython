@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
@@ -102,19 +103,19 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         PKeyword[] kwdefaults = null;
         Object[] defaults = null;
 
-        if ((flags & CodeUnit.HAS_CLOSURE) != 0) {
+        if ((flags & OpCodes.MakeFunctionFlags.HAS_CLOSURE) != 0) {
             closure = (PCell[]) frame.getObject(stackTop);
             frame.setObject(stackTop--, null);
         }
-        if ((flags & CodeUnit.HAS_ANNOTATIONS) != 0) {
+        if ((flags & OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS) != 0) {
             annotations = frame.getObject(stackTop);
             frame.setObject(stackTop--, null);
         }
-        if ((flags & CodeUnit.HAS_KWONLY_DEFAULTS) != 0) {
+        if ((flags & OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS) != 0) {
             kwdefaults = (PKeyword[]) frame.getObject(stackTop);
             frame.setObject(stackTop--, null);
         }
-        if ((flags & CodeUnit.HAS_DEFAULTS) != 0) {
+        if ((flags & OpCodes.MakeFunctionFlags.HAS_DEFAULTS) != 0) {
             defaults = (Object[]) frame.getObject(stackTop);
             frame.setObject(stackTop--, null);
         }
@@ -143,7 +144,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     public static MakeFunctionNode create(PythonLanguage language, CodeUnit code, Source source) {
         RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(language, code, source);
+        PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(language, code, source, null);
         if (code.isGeneratorOrCoroutine()) {
             // TODO what should the frameDescriptor be? does it matter?
             callTarget = new PBytecodeGeneratorFunctionRootNode(language, bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, code.name).getCallTarget();
