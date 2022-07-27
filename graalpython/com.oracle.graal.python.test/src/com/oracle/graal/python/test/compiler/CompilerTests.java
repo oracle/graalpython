@@ -563,6 +563,11 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testTupleLiteralMixedIntegers() {
+        doTest("(1, 17179869184, 3)");
+    }
+
+    @Test
     public void testTupleLiteralExpand() {
         doTest("(1, 2, 3, *a, 5)");
     }

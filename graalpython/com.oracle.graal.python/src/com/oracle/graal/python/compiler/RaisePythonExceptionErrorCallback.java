@@ -68,7 +68,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class ErrorCallbackImpl implements ErrorCallback {
+public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     private static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
 
@@ -76,7 +76,7 @@ public class ErrorCallbackImpl implements ErrorCallback {
     private final boolean withJavaStackTrace;
     private List<DeprecationWarning> deprecationWarnings;
 
-    public ErrorCallbackImpl(Source source, boolean withJavaStackTrace) {
+    public RaisePythonExceptionErrorCallback(Source source, boolean withJavaStackTrace) {
         this.source = source;
         this.withJavaStackTrace = withJavaStackTrace;
     }
@@ -198,9 +198,9 @@ public class ErrorCallbackImpl implements ErrorCallback {
 
     @TruffleBoundary
     private void triggerDeprecationWarningsBoundary() {
+        PythonModule warnings = PythonContext.get(null).lookupBuiltinModule(T__WARNINGS);
         for (DeprecationWarning warning : deprecationWarnings) {
             try {
-                PythonModule warnings = PythonContext.get(null).lookupBuiltinModule(T__WARNINGS);
                 PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
                                 warning.message, PythonBuiltinClassType.DeprecationWarning, getFilename(), warning.sourceRange.startLine);
             } catch (PException e) {

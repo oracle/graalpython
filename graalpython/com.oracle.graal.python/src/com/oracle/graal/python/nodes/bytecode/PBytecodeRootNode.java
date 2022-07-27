@@ -89,12 +89,12 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.ErrorCallbackImpl;
 import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
@@ -437,7 +437,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final CodeUnit co;
     private final Source source;
     private SourceSection sourceSection;
-    private final ErrorCallbackImpl parserErrorCallback; // For deferred deprecation warnings
+    // For deferred deprecation warnings
+    private final RaisePythonExceptionErrorCallback parserErrorCallback;
 
     @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
@@ -541,12 +542,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, ErrorCallbackImpl parserErrorCallback) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         this(language, makeFrameDescriptor(co), makeSignature(co), co, source, parserErrorCallback);
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, ErrorCallbackImpl parserErrorCallback) {
+    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
         ((FrameInfo) fd.getInfo()).rootNode = this;
         this.celloffset = co.varnames.length;
