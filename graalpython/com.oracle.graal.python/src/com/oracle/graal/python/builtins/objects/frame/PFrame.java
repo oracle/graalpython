@@ -236,7 +236,9 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setLine(int line) {
-        if(lockLine) return;
+        if (lockLine) {
+            return;
+        }
         this.line = line;
     }
 

@@ -160,7 +160,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(v)")
         static Object doit(PFrame self, @SuppressWarnings("unused") PNone v) {
             Object traceFun = self.getLocalTraceFun();
-            return traceFun == null?PNone.NONE:traceFun;
+            return traceFun == null ? PNone.NONE : traceFun;
         }
 
         @Specialization(guards = "!isNoValue(v)")

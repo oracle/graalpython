@@ -348,8 +348,8 @@ public final class PythonContext extends Python3Core {
 
         public void setTraceFun(Object traceFun) {
             if (this.traceFun != traceFun) {
-                this.traceFun = traceFun;
                 transferToInterpreterAndInvalidate();
+                this.traceFun = traceFun;
             }
         }
 

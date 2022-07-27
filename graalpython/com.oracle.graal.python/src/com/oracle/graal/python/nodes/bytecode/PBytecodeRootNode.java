@@ -68,6 +68,8 @@ import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictNodesFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -150,7 +152,6 @@ import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -1093,13 +1094,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         PFrame pyFrame;
 
+        int pastLine = -1;
         if (threadState.getTraceFun() != null && !threadState.isTracing()) {
             MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
             pyFrame = fr.execute(virtualFrame, this, true, true);
-            if (initialBci == 0) {
-                pyFrame.setLineLock(getFirstLineno());
+            if (initialBci == 0 || isGeneratorOrCoroutine) {
+                pyFrame.setLineLock(initialBci == 0 ? getFirstLineno() : (pastLine = bciToLine(initialBci)));
                 try {
-                    pyFrame.setLocalTraceFun(invokeTraceFunction(context, threadState.getTraceFun(), null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
+                    pyFrame.setLocalTraceFun(invokeTraceFunction(threadState.getTraceFun(), null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
                 } catch (Throwable e) {
                     threadState.setTraceFun(null);
                     throw e;
@@ -1111,7 +1113,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             pyFrame = null;
         }
 
-        int pastLine = -1;
         int returnLine = pastLine;
         int pastBci = initialBci;
 
@@ -1119,24 +1120,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
-            if (threadState.getTraceFun() != null && !threadState.isTracing() ) {
-                if(pyFrame == null) {
+            if (threadState.getTraceFun() != null && !threadState.isTracing()) {
+                if (pyFrame == null) {
                     MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
                     pyFrame = fr.execute(virtualFrame, this, true, true);
                 }
                 boolean onANewLine = bciToLine(bci) != pastLine;
                 pastLine = bciToLine(bci);
                 OpCodes c = OpCodes.fromOpCode(localBC[pastBci]);
-                if (pyFrame.getLocalTraceFun() != null && pyFrame.getTraceLine() && (pastBci > bci || (onANewLine && (!OpCodes.fromOpCode(localBC[pastBci]).isJump() || pastBci + c.length() >= bci || bciToLine(bci - 1) != bciToLine(bci))))) {
+                if (pyFrame.getLocalTraceFun() != null && pyFrame.getTraceLine() && (pastBci > bci || (onANewLine && (pastBci + c.length() >= bci || bciToLine(bci - 1) != bciToLine(bci))))) {
                     returnLine = pastLine;
                     pyFrame.setLineLock(pastLine);
                     try {
                         pyFrame.setLocalTraceFun(
-                                        invokeTraceFunction(context, pyFrame.getLocalTraceFun(), null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.LINE,
+                                        invokeTraceFunction(pyFrame.getLocalTraceFun(), null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.LINE,
                                                         useCachedNodes));
-                    } catch (Throwable e) {
-                        pyFrame.setLocalTraceFun(null);
-                        throw e;
                     } finally {
                         pyFrame.lineUnlock();
                     }
@@ -1599,18 +1597,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
-                        if (threadState.getTraceFun() != null && !threadState.isTracing() ) {
-                            if(pyFrame == null) {
+                        if (threadState.getTraceFun() != null && !threadState.isTracing()) {
+                            if (pyFrame == null) {
                                 MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
                                 pyFrame = fr.execute(virtualFrame, this, true, true);
                             }
                             if (pyFrame.getLocalTraceFun() != null) {
                                 pyFrame.setLineLock(pyFrame.getTraceLine() ? returnLine : bciToLine(bci));
                                 try {
-                                    invokeTraceFunction(context, pyFrame.getLocalTraceFun(), value, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
-                                } catch (Throwable e) {
-                                    pyFrame.setLocalTraceFun(null);
-                                    throw e;
+                                    invokeTraceFunction(pyFrame.getLocalTraceFun(), value, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
                                 } finally {
                                     pyFrame.lineUnlock();
                                 }
@@ -1890,6 +1885,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stackTop++;
                             bci++;
                         } else {
+                            if (threadState.getTraceFun() != null && !threadState.isTracing()) {
+                                if (pyFrame == null) {
+                                    MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create,
+                                                    useCachedNodes);
+                                    pyFrame = fr.execute(virtualFrame, this, true, true);
+                                }
+                                if (pyFrame.getLocalTraceFun() != null) {
+                                    pyFrame.setLocalTraceFun(invokeTraceFunction(pyFrame.getLocalTraceFun(),
+                                                    factory.createTuple(
+                                                                    new Object[]{PythonBuiltinClassType.StopIteration, factory.createBaseException(PythonBuiltinClassType.StopIteration), PNone.NONE}),
+                                                    threadState, virtualFrame, pyFrame, bci,
+                                                    localNodes,
+                                                    PythonContext.TraceEvent.EXCEPTION, useCachedNodes));
+                                }
+                            }
                             virtualFrame.setObject(stackTop--, null);
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
@@ -1916,6 +1926,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stackTop++;
                             bci++;
                         } else {
+                            if (threadState.getTraceFun() != null && !threadState.isTracing()) {
+                                if (pyFrame == null) {
+                                    MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create,
+                                                    useCachedNodes);
+                                    pyFrame = fr.execute(virtualFrame, this, true, true);
+                                }
+                                if (pyFrame.getLocalTraceFun() != null) {
+                                    pyFrame.setLocalTraceFun(invokeTraceFunction(pyFrame.getLocalTraceFun(),
+                                                    factory.createTuple(new Object[]{PythonBuiltinClassType.StopIteration, factory.createBaseException(PythonBuiltinClassType.StopIteration),
+                                                                    PNone.NONE}),
+                                                    threadState, virtualFrame, pyFrame, bci,
+                                                    localNodes,
+                                                    PythonContext.TraceEvent.EXCEPTION, useCachedNodes));
+                                }
+                            }
                             virtualFrame.setObject(stackTop--, null);
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
@@ -2054,6 +2079,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             // Clear slots that were popped (if any)
                             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
                         }
+                        if (threadState.getTraceFun() != null && !threadState.isTracing()) {
+                            if (pyFrame == null) {
+                                MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create,
+                                                useCachedNodes);
+                                pyFrame = fr.execute(virtualFrame, this, true, true);
+                            }
+                            if (pyFrame.getLocalTraceFun() != null) {
+                                pyFrame.setLineLock(pyFrame.getTraceLine() ? returnLine : bciToLine(bci));
+                                try {
+                                    invokeTraceFunction(pyFrame.getLocalTraceFun(), value, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN,
+                                                    useCachedNodes);
+                                } finally {
+                                    pyFrame.lineUnlock();
+                                }
+                            }
+                        }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
@@ -2141,19 +2182,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                if (threadState.getTraceFun() != null && !threadState.isTracing()) {
-                    if(pyFrame == null) {
+                if (threadState.getTraceFun() != null && !threadState.isTracing() && pe != null) {
+                    if (pyFrame == null) {
                         MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
                         pyFrame = fr.execute(virtualFrame, this, true, true);
                     }
                     if (pyFrame.getLocalTraceFun() != null) {
-                        try {
-                            pyFrame.setLocalTraceFun(invokeTraceFunction(context, pyFrame.getLocalTraceFun(), PNone.NONE, threadState, virtualFrame, pyFrame, bci, localNodes,
-                                    PythonContext.TraceEvent.EXCEPTION, useCachedNodes));
-                        } catch (Throwable exc) {
-                            pyFrame.setLocalTraceFun(null);
-                            throw exc;
-                        }
+                        GetExceptionTracebackNode tbn = insertChildNode(localNodes, bci, GetExceptionTracebackNode.getUncached(), GetExceptionTracebackNodeGen.class, GetExceptionTracebackNode::create, useCachedNodes);
+                        Object tb = tbn.execute(pe);
+                        pyFrame.setLocalTraceFun(invokeTraceFunction(pyFrame.getLocalTraceFun(),
+                                        factory.createTuple(new Object[]{pe.getClass(), pe.setCatchingFrameAndGetEscapedException(virtualFrame, this), tb}), threadState, virtualFrame, pyFrame, bci,
+                                        localNodes,
+                                        PythonContext.TraceEvent.EXCEPTION, useCachedNodes));
                     }
                 }
 
@@ -2185,18 +2225,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
                         LoopNode.reportLoopCount(this, mutableData.loopCount);
                     }
-                    if (threadState.getTraceFun() != null ) {
-                        if(pyFrame == null) {
+                    if (threadState.getTraceFun() != null) {
+                        if (pyFrame == null) {
                             MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
                             pyFrame = fr.execute(virtualFrame, this, true, true);
                         }
-                        if(pyFrame.getLocalTraceFun() != null) {
+                        if (pyFrame.getLocalTraceFun() != null) {
                             pyFrame.setLineLock(pyFrame.getTraceLine() ? returnLine : bciToLine(bci));
                             try {
-                                invokeTraceFunction(context, pyFrame.getLocalTraceFun(), PNone.NONE, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
-                            } catch (Throwable exc) {
-                                pyFrame.setLocalTraceFun(null);
-                                throw exc;
+                                invokeTraceFunction(pyFrame.getLocalTraceFun(), PNone.NONE, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
                             } finally {
                                 pyFrame.lineUnlock();
                             }
@@ -2226,7 +2263,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private Object invokeTraceFunction(PythonContext context, Object traceFn, Object arg, PythonContext.PythonThreadState threadState, VirtualFrame virtualFrame, PFrame tracing, int bci,
+    private Object invokeTraceFunction(Object traceFn, Object arg, PythonContext.PythonThreadState threadState, VirtualFrame virtualFrame, PFrame tracing, int bci,
                                        Node[] localNodes, PythonContext.TraceEvent ev, boolean useCachedNodes) {
         threadState.tracingStart(ev);
         CallTernaryMethodNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL_TERNARY_METHOD, CallTernaryMethodNodeGen.class, NODE_CALL_TERNARY_METHOD, useCachedNodes);
@@ -2234,6 +2271,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         try {
             Object result = callNode.execute(virtualFrame, traceFn, tracing, ev.pythonName, nonNullArg);
             return result == PNone.NONE ? null : result;
+        } catch (Throwable e) {
+            threadState.setTraceFun(null);
+            throw e;
         } finally {
             threadState.tracingStop();
         }
