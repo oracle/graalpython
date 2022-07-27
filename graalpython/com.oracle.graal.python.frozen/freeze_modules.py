@@ -533,7 +533,7 @@ public final class FrozenModules {"""
 
 def freeze_module(src):
     with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
-        code_obj = compile(src_file.read(), src.id, "exec")
+        code_obj = compile(src_file.read(), f"<frozen {src.id}>", "exec")
         marshal.dump(code_obj, binary_file)
 
 
