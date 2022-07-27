@@ -1756,9 +1756,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public long ctxAsStruct(long handle) {
         increment(Counter.UpcallCast);
-
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
-        return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
+        try {
+            return castLong(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        } catch (CannotCastException e) {
+            return 0;
+        }
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
@@ -2233,7 +2236,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long ctxFieldLoad(long bits, long idx) {
         increment(Counter.UpcallFieldLoad);
         Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
-        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx - 1];
+        // HPyField index is always non-zero because zero means: uninitialized
+        assert idx > 0;
+        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx];
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(referent));
     }
 
@@ -2241,22 +2246,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         increment(Counter.UpcallFieldStore);
         PythonObject owner = (PythonObject) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object referent = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value));
-
-        Object[] hpyFields = owner.getHpyFields();
-        if (idx == 0) {
-            if (hpyFields == null) {
-                idx = 1;
-                hpyFields = new Object[]{referent};
-            } else {
-                idx = hpyFields.length + 1;
-                hpyFields = PythonUtils.arrayCopyOf(hpyFields, (int) idx);
-                hpyFields[(int) idx - 1] = referent;
-            }
-            owner.setHpyFields(hpyFields);
-        } else {
-            hpyFields[(int) idx - 1] = referent;
-        }
-        return idx;
+        return GraalHPyFieldStore.assign(owner, referent, (int) idx);
     }
 
     public long ctxGlobalLoad(long bits) {

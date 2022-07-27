@@ -66,7 +66,7 @@ public class PythonObject extends PythonAbstractObject {
     public static final byte HAS_MATERIALIZED_DICT = 0b1000;
     /**
      * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
-     * 
+     *
      * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
      */
     public static final byte IS_STATIC_BASE = 0b10000;
@@ -175,11 +175,23 @@ public class PythonObject extends PythonAbstractObject {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
 
-    public Object[] getHpyFields() {
+    public final Object[] getHpyFields() {
         return hpyFields;
     }
 
-    public void setHpyFields(Object[] hpyFields) {
+    public final void setHpyFields(Object[] hpyFields) {
         this.hpyFields = hpyFields;
+    }
+
+    public final void setHPyNativeSpace(Object dataPtr) {
+        if (hpyFields == null) {
+            hpyFields = new Object[] { dataPtr };
+        } else {
+            hpyFields[0] = dataPtr;
+        }
+    }
+
+    public final Object getHPyNativeSpace() {
+        return hpyFields != null ? hpyFields[0] : 0L;
     }
 }

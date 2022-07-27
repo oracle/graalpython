@@ -54,9 +54,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltinsFactory.HPyObjectNewNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -134,7 +134,6 @@ public abstract class GraalHPyObjectBuiltins {
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CallVarargsMethodNode callNewNode;
-        @Child private WriteAttributeToObjectNode writeNativeSpaceNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -163,7 +162,7 @@ public abstract class GraalHPyObjectBuiltins {
                 PythonUtils.arraycopy(arguments, 0, argsWithSelf, 1, arguments.length);
                 self = explicitSelf;
             }
-            Object dataPtr = PNone.NO_VALUE;
+            Object dataPtr = null;
             if (self instanceof PythonClass) {
                 // allocate native space
                 long basicSize = ((PythonClass) self).basicSize;
@@ -192,11 +191,11 @@ public abstract class GraalHPyObjectBuiltins {
 
                 /*
                  * Since we are creating an object with an unknown constructor, the Java type may be
-                 * anything (e.g. PInt, etc). So, we need to store the native space pointer into a
-                 * hidden key.
+                 * anything (e.g. PInt, etc). However, we require it to be a PythonObject otherwise
+                 * we don't know where to store the native data pointer.
                  */
-                if (dataPtr != PNone.NO_VALUE) {
-                    ensureWriteNativeSpaceNode().execute(pythonObject, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                if (dataPtr != null && pythonObject instanceof PythonObject) {
+                    ((PythonObject) pythonObject).setHPyNativeSpace(dataPtr);
                 }
             }
             return pythonObject;
@@ -222,14 +221,6 @@ public abstract class GraalHPyObjectBuiltins {
                 callNewNode = insert(CallVarargsMethodNode.create());
             }
             return callNewNode;
-        }
-
-        private WriteAttributeToObjectNode ensureWriteNativeSpaceNode() {
-            if (writeNativeSpaceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNativeSpaceNode = insert(WriteAttributeToObjectNode.create());
-            }
-            return writeNativeSpaceNode;
         }
 
         @TruffleBoundary

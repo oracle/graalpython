@@ -3081,27 +3081,26 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        private int assign(PythonObject owner, Object referent, int location) {
+        static int assign(PythonObject owner, Object referent, int location) {
             Object[] hpyFields = owner.getHpyFields();
             if (location != 0) {
                 assert hpyFields != null;
-                hpyFields[location - 1] = referent;
+                hpyFields[location] = referent;
                 return location;
             } else {
                 int newLocation;
                 if (hpyFields == null) {
                     newLocation = 1;
-                    hpyFields = new Object[]{referent};
+                    hpyFields = new Object[]{0, referent};
                 } else {
-                    newLocation = hpyFields.length + 1;
-                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation);
-                    hpyFields[newLocation - 1] = referent;
+                    newLocation = hpyFields.length;
+                    hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation + 1);
+                    hpyFields[newLocation] = referent;
                 }
                 owner.setHpyFields(hpyFields);
                 return newLocation;
             }
         }
-
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -3149,7 +3148,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     Object owner = asPythonObjectNode.execute(context, arguments[1]);
                     if (owner instanceof PythonObject) {
-                        referent = ((PythonObject) owner).getHpyFields()[idx - 1];
+                        referent = ((PythonObject) owner).getHpyFields()[idx];
                     } else {
                         throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
                     }
@@ -3201,7 +3200,8 @@ public abstract class GraalHPyContextFunctions {
                         }
                     }
                     if (GraalHPyBoxing.isBoxedHandle(bits)) {
-                        idx = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+                        idx = GraalHPyBoxing.unboxHandle(bits);
+                        // idx = context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
                     }
                 }
 

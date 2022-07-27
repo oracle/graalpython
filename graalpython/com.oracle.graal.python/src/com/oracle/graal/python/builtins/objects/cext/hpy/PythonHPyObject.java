@@ -45,14 +45,10 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PythonHPyObject extends PythonObject {
 
-    private final Object hpyNativeSpace;
-
     public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
         super(pythonClass, instanceShape);
-        this.hpyNativeSpace = hpyNativeSpace;
-    }
-
-    public Object getHPyNativeSpace() {
-        return hpyNativeSpace;
+        if (hpyNativeSpace != null) {
+            this.setHpyFields(new Object[]{hpyNativeSpace});
+        }
     }
 }

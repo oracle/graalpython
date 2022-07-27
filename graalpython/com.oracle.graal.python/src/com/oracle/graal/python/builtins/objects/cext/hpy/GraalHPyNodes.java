@@ -134,7 +134,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -1428,8 +1427,8 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
-        static GraalHPyHandle doGlobal(GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
-            return hpyContext.createGlobal(object, id);
+        static GraalHPyHandle doGlobal(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
+            return GraalHPyHandle.createGlobal(object, id);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
@@ -1997,10 +1996,12 @@ public class GraalHPyNodes {
                     Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
                     metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
                 }
-                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
-                if (destroyFunc != null) {
-                    context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                if (metaBasicSize != 0) {
+                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
+                    newType.setHPyNativeSpace(dataPtr);
+                    if (destroyFunc != null) {
+                        context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                    }
                 }
 
                 // determine and set the correct module attribute
@@ -2279,20 +2280,14 @@ public class GraalHPyNodes {
         public abstract Object execute(Object object);
 
         @Specialization
-        static Object doPythonHPyObject(PythonHPyObject object) {
+        static Object doPythonObject(PythonObject object) {
             return object.getHPyNativeSpace();
         }
 
-        @Specialization(guards = "!isHPyObject(object)")
-        static Object doPythonHPyObject(PythonObject object,
-                        @Cached ReadAttributeFromDynamicObjectNode readNativeSpaceNode) {
-            return readNativeSpaceNode.execute(object.getStorage(), GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
-        }
-
         @Fallback
-        static Object doOther(Object object,
-                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
-            return readNativeSpaceNode.execute(object, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+        Object doOther(@SuppressWarnings("unused") Object object) {
+            // TODO(fa): this should be a backend-specific value
+            return PythonContext.get(this).getNativeNull();
         }
     }
 
