@@ -40,20 +40,13 @@
  */
 
 #include "hpy_jni.h"
+#include "hpy_log.h"
 
 #include <wchar.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-
-#ifndef NDEBUG
-#define LOG(FORMAT, ...) printf("%-15s (%s:%d): %s " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__);
-#define LOGS(FORMAT) printf("%-15s (%s:%d): " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__);
-#else
-#define LOG(FORMAT, ...)
-#define LOGS(FORMAT)
-#endif
 
 //*************************
 // JNI upcalls
