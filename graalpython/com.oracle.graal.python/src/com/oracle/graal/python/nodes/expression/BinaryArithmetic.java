@@ -345,11 +345,6 @@ public enum BinaryArithmetic {
         }
 
         @Specialization
-        final double divLL(long x, long y) {
-            return divDD(x, y);
-        }
-
-        @Specialization
         final double doDD(long x, double y) {
             return divDD(x, y);
         }
