@@ -89,6 +89,7 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -312,7 +313,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
-    private static final long SIZEOF_LONG = java.lang.Long.BYTES;
+    static final long SIZEOF_LONG = java.lang.Long.BYTES;
 
     private static final TruffleString T_NAME = tsLiteral("HPy Universal ABI (GraalVM backend)");
 
@@ -1453,10 +1454,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                  */
                 if (useNativeFastPaths) {
                     PythonContext context = getContext();
-                    InteropLibrary interop = InteropLibrary.getUncached();
                     SignatureLibrary signatures = SignatureLibrary.getUncached();
                     try {
                         Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.J_PYTHON_JNI_LIBRARY_NAME);
+                        InteropLibrary interop = InteropLibrary.getUncached(rlib);
 
                         Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
                         Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
@@ -1470,8 +1471,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                          * initialize it.
                          */
                         allocateNativeSpacePointersMirror();
-
-                        interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -2759,6 +2758,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             newIdx = idx;
         }
         hpyGlobalsTable[newIdx] = delegate;
+        if (useNativeFastPaths && isPointer()) {
+            mirrorGlobalNativeSpacePointerToNative(delegate, newIdx);
+        }
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("allocating HPy global %d (object: %s)", newIdx, delegate));
         }
@@ -2779,7 +2781,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             int newSize = Math.max(16, hpyGlobalsTable.length * 2);
             LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
-            // TODO: (tfel) mirror these to native as we do for handles? not sure if it pays
+            if (useNativeFastPaths && isPointer()) {
+                reallocateNativeSpacePointersMirror(hpyHandleTable.length, handle);
+            }
         }
         return handle;
     }
@@ -2791,11 +2795,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private int resizeHandleTable() {
         CompilerAsserts.neverPartOfCompilation();
         assert nextHandle == hpyHandleTable.length;
+        int oldSize = hpyHandleTable.length;
         int newSize = Math.max(16, hpyHandleTable.length * 2);
         LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
         hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
         if (useNativeFastPaths && isPointer()) {
-            reallocateNativeSpacePointersMirror();
+            reallocateNativeSpacePointersMirror(oldSize, hpyGlobalsTable.length);
         }
         return nextHandle++;
     }
@@ -2872,20 +2877,43 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private void mirrorNativeSpacePointerToNative(Object delegate, int handleID) {
         assert isPointer();
         assert useNativeFastPaths;
-        Object nativeSpace = HPyGetNativeSpacePointerNodeGen.getUncached().execute(delegate);
-        try {
-            long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
-            unsafe.putLong(nativeSpacePointers + handleID * SIZEOF_LONG, l);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere();
+        long l;
+        if (delegate instanceof PythonObject) {
+            Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
+            try {
+                l = nativeSpace instanceof Long ? ((long) nativeSpace) : InteropLibrary.getUncached().asPointer(nativeSpace);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } else {
+            l = 0;
         }
+        GraalHPyNativeCache.putHandleNativeSpacePointer(nativeSpacePointers, handleID, l);
     }
 
     @TruffleBoundary
-    private void reallocateNativeSpacePointersMirror() {
+    private void mirrorGlobalNativeSpacePointerToNative(Object delegate, int globalID) {
         assert isPointer();
         assert useNativeFastPaths;
-        nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * SIZEOF_LONG);
+        long l;
+        if (delegate instanceof PythonObject) {
+            Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
+            try {
+                l = nativeSpace instanceof Long ? ((long) nativeSpace) : InteropLibrary.getUncached().asPointer(nativeSpace);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } else {
+            l = 0;
+        }
+        GraalHPyNativeCache.putGlobalNativeSpacePointer(nativeSpacePointers, hpyHandleTable.length, globalID, l);
+    }
+
+    @TruffleBoundary
+    private void reallocateNativeSpacePointersMirror(int oldHandleTabelSize, int oldGlobalsTableSize) {
+        assert isPointer();
+        assert useNativeFastPaths;
+        nativeSpacePointers = GraalHPyNativeCache.reallocateNativeCache(nativeSpacePointers, oldHandleTabelSize, hpyHandleTable.length, oldGlobalsTableSize, hpyGlobalsTable.length);
         try {
             InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -2902,9 +2930,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      */
     @TruffleBoundary
     private void allocateNativeSpacePointersMirror() {
-        long arraySize = hpyHandleTable.length * SIZEOF_LONG;
-        long arrayPtr = unsafe.allocateMemory(arraySize);
-        unsafe.setMemory(arrayPtr, arraySize, (byte) 0);
+        long arrayPtr = GraalHPyNativeCache.allocateNativeCache(hpyHandleTable.length, hpyGlobalsTable.length);
 
         // publish pointer value (needed for initialization)
         nativeSpacePointers = arrayPtr;

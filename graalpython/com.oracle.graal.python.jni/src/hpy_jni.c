@@ -41,6 +41,7 @@
 
 #include "hpy_jni.h"
 #include "hpy_log.h"
+#include "hpy_native_cache.h"
 
 #include <wchar.h>
 #include <assert.h>
@@ -320,8 +321,7 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
-        void** space = (void**)ctx->_private;
-        return space[unboxHandle(bits)];
+        return get_handle_native_data_pointer(ctx, bits);
     } else {
         return NULL;
     }
