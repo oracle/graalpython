@@ -3256,7 +3256,7 @@ public abstract class GraalHPyContextFunctions {
                         // if asHandleNode wasn't used above, it acts as a branch profile
                         // here. otherwise we're probably already pulling in a lot of code
                         // and are a bit too polymorphic
-                        return asHandleNode.execute(context, context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate());
+                        return asHandleNode.execute(context, context.getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)));
                     } else {
                         // tagged handles can be returned directly
                         return bits;

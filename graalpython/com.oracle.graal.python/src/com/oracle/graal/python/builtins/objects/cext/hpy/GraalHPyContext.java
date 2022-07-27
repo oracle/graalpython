@@ -905,7 +905,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private Object[] hpyHandleTable;
     private int nextHandle = 1;
 
-    private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    private Object[] hpyGlobalsTable = new Object[]{GraalHPyHandle.NULL_HANDLE_DELEGATE};
     private final HandleStack freeStack = new HandleStack(16);
     private long hPyDebugContext;
     private long nativePointer;
@@ -2252,18 +2252,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long ctxGlobalLoad(long bits) {
         increment(Counter.UpcallGlobalLoad);
         assert GraalHPyBoxing.isBoxedHandle(bits);
-        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate()));
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits))));
     }
 
     public long ctxGlobalStore(long bits, long v) {
         increment(Counter.UpcallGlobalStore);
-        Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v));
-        int idx = 0;
-        if (bits > 0) {
-            idx = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
-        }
-        GraalHPyHandle newHandle = createGlobal(value, idx);
-        return newHandle.getGlobalId();
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return createGlobal(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)), GraalHPyBoxing.unboxHandle(bits));
     }
 
     @ExportMessage
@@ -2755,7 +2750,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return GraalHPyHandle.createField(delegate, idx);
     }
 
-    public GraalHPyHandle createGlobal(Object delegate, int idx) {
+    public int createGlobal(Object delegate, int idx) {
         assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when creating global";
         final int newIdx;
         if (idx <= 0) {
@@ -2763,12 +2758,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             newIdx = idx;
         }
-        GraalHPyHandle h = GraalHPyHandle.createGlobal(delegate, newIdx);
-        hpyGlobalsTable[newIdx] = h;
+        hpyGlobalsTable[newIdx] = delegate;
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("allocating HPy global %d (object: %s)", newIdx, delegate));
         }
-        return h;
+        return newIdx;
     }
 
     private int allocateHPyGlobal() {
@@ -2937,7 +2931,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return hpyHandleTable[handle];
     }
 
-    public GraalHPyHandle getObjectForHPyGlobal(int handle) {
+    public Object getObjectForHPyGlobal(int handle) {
         assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from global";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyGlobalsTable[handle];
