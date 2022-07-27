@@ -82,6 +82,7 @@ public final class CodeUnit {
     public final TruffleString[] cellvars;
     public final TruffleString[] freevars;
     public final int[] cell2arg;
+    public final int[] arg2cell;
 
     public final Object[] constants;
     public final long[] primitiveConstants;
@@ -109,6 +110,7 @@ public final class CodeUnit {
                     int[] exceptionHandlerRanges, int conditionProfileCount,
                     int startOffset, int startLine,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+        int[] arg2cell;
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -123,6 +125,17 @@ public final class CodeUnit {
         this.cellvars = cellvars;
         this.freevars = freevars;
         this.cell2arg = cell2arg;
+        arg2cell = null;
+        if (cell2arg != null) {
+            arg2cell = new int[getTotalArgCount()];
+            Arrays.fill(arg2cell, -1);
+            for (int i = 0; i < cell2arg.length; i++) {
+                if (cell2arg[i] >= 0) {
+                    arg2cell[cell2arg[i]] = i;
+                }
+            }
+        }
+        this.arg2cell = arg2cell;
         this.constants = constants;
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
@@ -218,8 +231,19 @@ public final class CodeUnit {
         return (flags & (PCode.CO_GENERATOR | PCode.CO_COROUTINE | PCode.CO_ASYNC_GENERATOR | PCode.CO_ITERABLE_COROUTINE)) != 0;
     }
 
-    public int getTotalArgCount() {
+    public int getRegularArgCount() {
         return argCount + positionalOnlyArgCount + kwOnlyArgCount;
+    }
+
+    public int getTotalArgCount() {
+        int count = getRegularArgCount();
+        if (takesVarArgs()) {
+            count++;
+        }
+        if (takesVarKeywordArgs()) {
+            count++;
+        }
+        return count;
     }
 
     @SuppressWarnings("fallthrough")

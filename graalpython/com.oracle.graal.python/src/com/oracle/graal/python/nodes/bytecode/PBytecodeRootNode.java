@@ -496,7 +496,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         newBuilder.info(new FrameInfo());
         // locals
         for (int i = 0; i < co.varnames.length; i++) {
-            newBuilder.addSlot(FrameSlotKind.Illegal, co.varnames[i], null);
+            TruffleString varname = co.varnames[i];
+            if (co.arg2cell != null && i < co.arg2cell.length && co.arg2cell[i] >= 0) {
+                /*
+                 * If an argument is a cell, its slot gets superseded by the cell's slot below. We
+                 * need to hide it from LocalsStorage and other introspection.
+                 */
+                varname = null;
+            }
+            newBuilder.addSlot(FrameSlotKind.Illegal, varname, null);
         }
         // cells
         for (int i = 0; i < co.cellvars.length; i++) {
@@ -776,7 +784,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             copyArgsFirstTime(args, localFrame);
             return;
         }
-        int argCount = co.getTotalArgCount();
+        int argCount = co.getRegularArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
             if (variableTypes[i] == QuickeningTypes.OBJECT) {
@@ -799,7 +807,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void copyArgsFirstTime(Object[] args, Frame localFrame) {
         CompilerAsserts.neverPartOfCompilation();
         variableTypes = new byte[varnames.length];
-        int argCount = co.getTotalArgCount();
+        int argCount = co.getRegularArgCount();
         for (int i = 0; i < argCount; i++) {
             Object arg = args[i + PArguments.USER_ARGUMENTS_OFFSET];
             if ((variableShouldUnbox[i] & QuickeningTypes.INT) != 0 && arg instanceof Integer) {
@@ -831,7 +839,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
         copyArgs(arguments, localFrame);
-        int varIdx = co.getTotalArgCount();
+        int varIdx = co.getRegularArgCount();
         if (co.takesVarArgs()) {
             localFrame.setObject(varIdx++, factory.createTuple(PArguments.getVariableArguments(arguments)));
         }
