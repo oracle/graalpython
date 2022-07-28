@@ -48,7 +48,6 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
-import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -111,11 +110,17 @@ public class NativeLibrary {
      * This is a helper exception that will be thrown in case a library is {@link #optional} and not
      * available.
      */
-    public static class NativeLibraryCannotBeLoaded extends PythonControlFlowException {
+    public static class NativeLibraryCannotBeLoaded extends RuntimeException {
         private static final NativeLibraryCannotBeLoaded INSTANCE = new NativeLibraryCannotBeLoaded();
         private static final long serialVersionUID = 6066722947025284374L;
 
         private NativeLibraryCannotBeLoaded() {
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
         }
     }
 

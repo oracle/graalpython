@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
-
-public class NonMappingException extends PythonControlFlowException {
+public class NonMappingException extends RuntimeException {
 
     private static final long serialVersionUID = -5215981713505181732L;
 
@@ -57,4 +55,9 @@ public class NonMappingException extends PythonControlFlowException {
         return object;
     }
 
+    @SuppressWarnings("sync-override")
+    @Override
+    public final Throwable fillInStackTrace() {
+        return this;
+    }
 }
