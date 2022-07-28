@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-public class SameDictKeyException extends RuntimeException {
+public final class SameDictKeyException extends RuntimeException {
 
     private static final long serialVersionUID = 301451134733299948L;
 
     private final Object key;
 
     public SameDictKeyException(Object key) {
-        super();
+        super(null, null);
         this.key = key;
     }
 
@@ -57,7 +57,7 @@ public class SameDictKeyException extends RuntimeException {
 
     @SuppressWarnings("sync-override")
     @Override
-    public final Throwable fillInStackTrace() {
+    public Throwable fillInStackTrace() {
         return this;
     }
 }

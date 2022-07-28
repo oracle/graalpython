@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-public class NonMappingException extends RuntimeException {
+public final class NonMappingException extends RuntimeException {
 
     private static final long serialVersionUID = -5215981713505181732L;
 
     private final Object object;
 
     public NonMappingException(Object object) {
-        super();
+        super(null, null);
         this.object = object;
     }
 
@@ -57,7 +57,7 @@ public class NonMappingException extends RuntimeException {
 
     @SuppressWarnings("sync-override")
     @Override
-    public final Throwable fillInStackTrace() {
+    public Throwable fillInStackTrace() {
         return this;
     }
 }

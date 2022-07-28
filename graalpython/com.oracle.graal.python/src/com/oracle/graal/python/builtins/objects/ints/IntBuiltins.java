@@ -519,13 +519,17 @@ public class IntBuiltins extends PythonBuiltins {
             return divDD(x, y);
         }
 
-        @Specialization
+        @Specialization(guards = {"fitsIntoDouble(x)", "fitsIntoDouble(y)"})
         double divLL(long x, long y) {
-            if (fitsIntoDouble(x) && fitsIntoDouble(y)) {
-                return divDD(x, y);
-            } else {
-                return op(PInt.longToBigInteger(x), PInt.longToBigInteger(y), getRaiseNode());
+            return divDD(x, y);
+        }
+
+        @Specialization(guards = {"!fitsIntoDouble(x) || !fitsIntoDouble(y)"})
+        double divLLLarge(long x, long y) {
+            if (y == 0) {
+                throw raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
+            return op(PInt.longToBigInteger(x), PInt.longToBigInteger(y), getRaiseNode());
         }
 
         double divDD(double x, double y) {
@@ -581,7 +585,7 @@ public class IntBuiltins extends PythonBuiltins {
             return d;
         }
 
-        private static boolean fitsIntoDouble(long x) {
+        protected static boolean fitsIntoDouble(long x) {
             return x < (1L << 52) && x > -(1L << 52);
         }
 

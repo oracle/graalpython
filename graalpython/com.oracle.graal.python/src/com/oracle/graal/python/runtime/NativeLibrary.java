@@ -110,16 +110,17 @@ public class NativeLibrary {
      * This is a helper exception that will be thrown in case a library is {@link #optional} and not
      * available.
      */
-    public static class NativeLibraryCannotBeLoaded extends RuntimeException {
+    public static final class NativeLibraryCannotBeLoaded extends RuntimeException {
         private static final NativeLibraryCannotBeLoaded INSTANCE = new NativeLibraryCannotBeLoaded();
         private static final long serialVersionUID = 6066722947025284374L;
 
         private NativeLibraryCannotBeLoaded() {
+            super(null, null);
         }
 
         @SuppressWarnings("sync-override")
         @Override
-        public final Throwable fillInStackTrace() {
+        public Throwable fillInStackTrace() {
             return this;
         }
     }

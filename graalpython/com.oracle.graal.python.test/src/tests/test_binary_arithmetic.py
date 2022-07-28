@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -193,6 +193,15 @@ def test_floor_div():
     assert_exception(lambda: 3.0 // False, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
+
+
+def test_true_div():
+    assert 1 / 2 == 0.5
+    assert 108086391056891904 / 30023997515803307 == 3.6
+    assert 295147905179352825856 / 2 == 1.4757395258967641e+20
+    assert_exception(lambda: 1 / 0, ZeroDivisionError)
+    assert_exception(lambda: 108086391056891904 / 0, ZeroDivisionError)
+    assert_exception(lambda: 295147905179352825856 / 0, ZeroDivisionError)
 
 
 def test_int_rfloor_div():
