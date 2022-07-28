@@ -2446,5 +2446,6 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
-    'python-leak-test': [run_leak_launcher, '']
+    'python-leak-test': [run_leak_launcher, ''],
+    'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
 })
