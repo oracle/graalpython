@@ -61,6 +61,12 @@ PyInterpreterState_GetID(PyInterpreterState *interp)
     return 0;
 }
 
+PyInterpreterState* PyInterpreterState_Main()
+{
+    // TODO: not yet supported
+    return NULL;
+}
+
 typedef PyGILState_STATE (*py_gil_state_ensure_fun_t)();
 UPCALL_TYPED_ID(PyGILState_Ensure, py_gil_state_ensure_fun_t);
 PyGILState_STATE PyGILState_Ensure() {
