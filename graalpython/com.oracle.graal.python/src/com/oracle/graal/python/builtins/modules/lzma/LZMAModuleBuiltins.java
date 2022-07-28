@@ -75,7 +75,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import org.tukaani.xz.FilterOptions;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZ;
@@ -83,6 +82,7 @@ import org.tukaani.xz.XZOutputStream;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -97,7 +97,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,6 +104,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = LZMAModuleBuiltins.J__LZMA)
 public class LZMAModuleBuiltins extends PythonBuiltins {
@@ -200,7 +200,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         long[] preset = new long[2];
         if (lzmaSupport.isAvailable()) {
             try {
-                lzmaSupport.getMarcos(as(c, formats),
+                lzmaSupport.getMacros(as(c, formats),
                                 as(c, checks), as(c, FILTERS),
                                 as(c, mfs), as(c, modes), as(c, preset));
                 FORMAT_AUTO = formats[FORMAT_AUTO_INDEX];

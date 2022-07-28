@@ -156,7 +156,7 @@ public class NFIBz2Support {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
             this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, Bz2NativeFunctions.values(),
-                            backend, noNativeAccessHelp, true);
+                            backend, noNativeAccessHelp, false);
             this.available = true;
         } else {
             this.pythonContext = null;

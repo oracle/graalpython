@@ -380,7 +380,7 @@ public class NFILZMASupport {
      * @param preset uint64_t* preset
      *
      */
-    public Object getMarcos(Object formats, Object checks, Object filters, Object mfs, Object modes, Object preset) {
+    public Object getMacros(Object formats, Object checks, Object filters, Object mfs, Object modes, Object preset) {
         return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.get_macros, formats, checks, filters, mfs, modes, preset);
     }
 
