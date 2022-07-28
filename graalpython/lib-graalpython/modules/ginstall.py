@@ -100,6 +100,7 @@ def pip_package(name=None, try_import=False):
         return wrapper
     return decorator
 
+
 def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **kwargs):
     cwd_log = "cd " + cwd + " ;" if cwd else ""
     print("+", cwd_log, ' '.join(args))
@@ -114,6 +115,7 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
             xit_msg.append(result.stderr.decode("utf-8"))
         xit("{}", os.linesep.join(xit_msg))
     return result.returncode
+
 
 def known_packages():
     @pip_package()
@@ -503,6 +505,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     elif quiet:
         info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
+
 # NOTE: Following 3 functions are duplicated in pip_hook.py:
 # creates a search list of a versioned file:
 # {name}-X.Y.Z.{suffix}, {name}-X.Y.{suffix}, {name}-X.{suffix}, {name}.{suffix}
@@ -520,10 +523,12 @@ def list_versioned(pkg_name, versions, dir, suffix):
     res.append(os.path.join(dir, pkg_name + suffix))
     return res
 
+
 def first_existing(pkg_name, versions, dir, suffix):
     for filename in list_versioned(pkg_name, versions, dir, suffix):
         if os.path.exists(filename):
             return filename
+
 
 def read_first_existing(pkg_name, versions, dir, suffix):
     filename = first_existing(pkg_name, versions, dir, suffix)
@@ -589,6 +594,7 @@ def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=Tru
     else:
         xit("Package not found: '{!s}'", package)
 
+
 def get_site_packages_path():
     if site.ENABLE_USER_SITE:
         return site.getusersitepackages()
@@ -597,6 +603,7 @@ def get_site_packages_path():
             if s.endswith("site-packages"):
                 return s
     return None
+
 
 def main(argv):
     parser = argparse.ArgumentParser(description="The simple Python package installer for GraalVM")
@@ -639,7 +646,8 @@ def main(argv):
 
     subparsers.add_parser(
         "pypi",
-        help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies for you)",
+        help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies "
+             "for you)",
         description="Attempt to install a package from PyPI"
     ).add_argument(
         "package",
@@ -661,6 +669,7 @@ def main(argv):
         user_site = get_site_packages_path()
         for pkg in args.package.split(","):
             deleted = False
+            p = None
             for p in sys.path:
                 if p.startswith(user_site):
                     # +1 due to the path separator
