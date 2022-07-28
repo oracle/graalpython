@@ -611,6 +611,11 @@ non-important content
                             ["f'{3)+(4}'",
                              ])
 
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        import sys
+        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
+            self.skipTest("due to changed error messages between 3.8 and 3.10")
+
         self.assertAllRaise(SyntaxError, 'EOL while scanning string literal',
                             ["f'{\n}'",
                              ])
@@ -1192,7 +1197,7 @@ non-important content
         # GraalPython patch: commented out to allow GraalPython to successfully parse this file
         # self.assertEqual(f'{(x:=10)}', '10')
         # it can not be 10 until will not support walrus operator
-        # self.assertEqual(x, 10)  
+        # self.assertEqual(x, 10)
 
 
 if __name__ == '__main__':

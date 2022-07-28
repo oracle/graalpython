@@ -543,7 +543,7 @@ public abstract class StringLiteralUtils {
                                 braceLevelInExpression--;
                                 char expected = ch == ')' ? '(' : '[';
                                 if (bracesInExpression[braceLevelInExpression] != expected) {
-                                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], ch);
+                                    errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, ch, bracesInExpression[braceLevelInExpression]);
                                     return -1;
                                 }
                                 break;
@@ -560,7 +560,7 @@ public abstract class StringLiteralUtils {
                                 } else {
                                     braceLevelInExpression--;
                                     if (bracesInExpression[braceLevelInExpression] != '{') {
-                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, bracesInExpression[braceLevelInExpression], '}');
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, '}', bracesInExpression[braceLevelInExpression]);
                                         return -1;
                                     }
                                 }
@@ -1202,7 +1202,7 @@ public abstract class StringLiteralUtils {
         errorCallback.warnDeprecation(sourceRange, "invalid escape sequence '\\%c'", nextChar);
     }
 
-    private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
+    private static final String UNICODE_ERROR = "(unicode error) 'unicodeescape' codec can't decode bytes in position %d-%d:";
     private static final String ILLEGAL_CHARACTER = "illegal Unicode character";
     private static final String TRAILING_S_IN_STR = "Trailing %s in string";
     private static final String MALFORMED_ERROR = " malformed \\N character escape";

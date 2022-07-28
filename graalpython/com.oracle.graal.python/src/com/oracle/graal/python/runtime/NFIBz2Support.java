@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -156,7 +156,7 @@ public class NFIBz2Support {
         if (context.isNativeAccessAllowed()) {
             this.pythonContext = context;
             this.typedNativeLib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, Bz2NativeFunctions.values(),
-                            backend, noNativeAccessHelp, true);
+                            backend, noNativeAccessHelp, false);
             this.available = true;
         } else {
             this.pythonContext = null;

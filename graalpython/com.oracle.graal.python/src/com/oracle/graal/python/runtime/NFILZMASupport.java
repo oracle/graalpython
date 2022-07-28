@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -380,7 +380,7 @@ public class NFILZMASupport {
      * @param preset uint64_t* preset
      *
      */
-    public Object getMarcos(Object formats, Object checks, Object filters, Object mfs, Object modes, Object preset) {
+    public Object getMacros(Object formats, Object checks, Object filters, Object mfs, Object modes, Object preset) {
         return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.get_macros, formats, checks, filters, mfs, modes, preset);
     }
 

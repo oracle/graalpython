@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -157,6 +158,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int RELEASE_LEVEL_FINAL = 0xF;
     public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
     public static final TruffleString RELEASE_LEVEL_STRING;
+    public static final String FROZEN_FILENAME_PREFIX = "<frozen ";
+    public static final String FROZEN_FILENAME_SUFFIX = ">";
 
     static {
         switch (RELEASE_LEVEL) {
@@ -466,13 +469,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
             byte[] bytes = source.getBytes().toByteArray();
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
+            boolean internal = shouldMarkSourceInternal(context);
             // The original file path should be passed as the name
             if (source.getName() != null && !source.getName().isEmpty()) {
+                String path = source.getName();
+                if (path.startsWith(FROZEN_FILENAME_PREFIX) && path.endsWith(FROZEN_FILENAME_SUFFIX)) {
+                    String id = path.substring(FROZEN_FILENAME_PREFIX.length(), path.length() - FROZEN_FILENAME_SUFFIX.length());
+                    String fs = context.getEnv().getFileNameSeparator();
+                    path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
+                }
                 try {
-                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(source.getName())).name(code.name.toJavaStringUncached()).build();
-                } catch (IOException e) {
+                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
+                } catch (IOException | SecurityException | UnsupportedOperationException e) {
                     // Proceed with binary source
                 }
+            }
+            if (internal && !source.isInternal()) {
+                source = Source.newBuilder(source).internal(true).build();
             }
             PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source, null);
             return PythonUtils.getOrCreateCallTarget(rootNode);
@@ -834,13 +847,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return newSource(ctxt, Source.newBuilder(ID, src).name(name));
     }
 
-    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
-        boolean coreIsInitialized = ctxt.isCoreInitialized();
-        boolean internal = !coreIsInitialized && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
-        if (internal) {
+    private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
+        if (shouldMarkSourceInternal(context)) {
             srcBuilder.internal(true);
         }
         return srcBuilder.build();
+    }
+
+    private static boolean shouldMarkSourceInternal(PythonContext ctxt) {
+        return !ctxt.isCoreInitialized() && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
     }
 
     @Override
