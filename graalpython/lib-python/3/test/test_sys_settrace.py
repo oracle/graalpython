@@ -7,6 +7,11 @@ import difflib
 import gc
 from functools import wraps
 import asyncio
+import builtins
+
+# only while the bytecode interpreter is not the default
+if not getattr(getattr(builtins, '__graalpython__', None), 'uses_bytecode_interpreter', True):
+    raise unittest.SkipTest("sys.settrace only works in the bytecode interpreter")
 
 
 class tracecontext:
