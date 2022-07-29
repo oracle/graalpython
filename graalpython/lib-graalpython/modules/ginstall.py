@@ -363,7 +363,7 @@ def known_packages():
     def cassowary(**kwargs):
         install_from_pypi("cassowary==0.5.2", **kwargs)
 
-    @pip_package()
+    @pip_package(name="PIL")
     def Pillow(**kwargs):
         setuptools(**kwargs)
         build_env = {"MAX_CONCURRENCY": "0"}
