@@ -316,25 +316,25 @@ public abstract class StringLiteralUtils {
                 specifierSourceRange = specifierSourceRange.withEnd(specToken.getSourceRange(text, textSourceRange));
                 specifier = new ExprTy.JoinedStr(specifierParts, specifierSourceRange);
             }
-            ExprTy.FormattedValue.ConversionType conversionType;
+            int conversionType;
             switch (token.type) {
                 case TOKEN_TYPE_EXPRESSION_STR:
-                    conversionType = ExprTy.FormattedValue.ConversionType.STR;
+                    conversionType = 's';
                     break;
                 case TOKEN_TYPE_EXPRESSION_REPR:
-                    conversionType = ExprTy.FormattedValue.ConversionType.REPR;
+                    conversionType = 'r';
                     break;
                 case TOKEN_TYPE_EXPRESSION_ASCII:
-                    conversionType = ExprTy.FormattedValue.ConversionType.ASCII;
+                    conversionType = 'a';
                     break;
                 default:
-                    conversionType = ExprTy.FormattedValue.ConversionType.NONE;
+                    conversionType = -1;
             }
             SourceRange range = token.getSourceRange(text, textSourceRange);
             if (specifierSourceRange != null) {
                 range = range.withEnd(specifierSourceRange);
             }
-            if (conversionType != ExprTy.FormattedValue.ConversionType.NONE) {
+            if (conversionType != -1) {
                 range = range.shiftEndRight(2);
             }
             return new ExprTy.FormattedValue(expression, conversionType, specifier, range);

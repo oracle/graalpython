@@ -590,18 +590,19 @@ public class Unparser implements SSTreeVisitor<Void> {
         appendStr(outerBrace);
         appendStr(tempFvStr);
 
-        if (node.conversion != ExprTy.FormattedValue.ConversionType.NONE) {
+        if (node.conversion > 0) {
             switch (node.conversion) {
-                case ASCII:
+                case 'a':
                     conversion = "!a";
                     break;
-                case REPR:
+                case 'r':
                     conversion = "!r";
                     break;
-                case STR:
+                case 's':
                     conversion = "!s";
                     break;
                 default:
+                    // TODO GR-40162 raise SystemError
                     throw new IllegalStateException("unknown f-value conversion kind");
             }
             appendStr(conversion);

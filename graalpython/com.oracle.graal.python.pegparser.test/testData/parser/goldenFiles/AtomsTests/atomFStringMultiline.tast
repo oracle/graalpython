@@ -8,5 +8,5 @@ Module[0, 45]
                         Op: Add
                         LHS: Name[5, 7] Value: "v1"
                         RHS: Name[10, 12] Value: "v2"
-                Conversion: NONE
+                Conversion: -1
             RAW[28, 42] Value: "\nAnother line."

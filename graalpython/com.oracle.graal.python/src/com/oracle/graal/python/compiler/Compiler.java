@@ -1255,19 +1255,20 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.value.accept(this);
             int oparg;
             switch (node.conversion) {
-                case STR:
+                case 's':
                     oparg = FormatOptions.FVC_STR;
                     break;
-                case REPR:
+                case 'r':
                     oparg = FormatOptions.FVC_REPR;
                     break;
-                case ASCII:
+                case 'a':
                     oparg = FormatOptions.FVC_ASCII;
                     break;
-                case NONE:
+                case -1:
                     oparg = FormatOptions.FVC_NONE;
                     break;
                 default:
+                    // TODO GR-40162 raise SystemError
                     throw new IllegalStateException("Unknown format conversion");
             }
             if (node.formatSpec != null) {

@@ -330,18 +330,12 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class FormattedValue extends ExprTy {
-        public enum ConversionType {
-            STR,
-            REPR,
-            ASCII,
-            NONE
-        }
 
         public final ExprTy value;
-        public final ConversionType conversion;
+        public final int conversion;
         public final ExprTy formatSpec;
 
-        public FormattedValue(ExprTy value, ConversionType conversion, ExprTy formatSpec, SourceRange sourceRange) {
+        public FormattedValue(ExprTy value, int conversion, ExprTy formatSpec, SourceRange sourceRange) {
             super(sourceRange);
             this.value = value;
             this.conversion = conversion;
