@@ -452,6 +452,10 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
     setup_env['CFLAGS'] = cflags if cflags else ""
 
+    user_build_cmd = os_env.get("GINSTALL_BUILD_CMD", "")
+    if user_build_cmd:
+        build_cmd = user_build_cmd.split(" ")
+
     bare_name = _download_with_curl_and_extract(tempdir, url, quiet=quiet)
 
     file_realpath = os.path.dirname(os.path.realpath(__file__))
