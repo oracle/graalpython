@@ -367,7 +367,11 @@ def known_packages():
     def Pillow(**kwargs):
         setuptools(**kwargs)
         build_env = {"MAX_CONCURRENCY": "0"}
-        install_from_pypi("Pillow==6.2.0", build_cmd=["build_ext", "--disable-jpeg"], env=build_env, **kwargs)
+        build_cmd = ["build_ext", "--disable-jpeg"]
+        zlib_root = os.environ.get("ZLIB_ROOT", None)
+        if zlib_root:
+            build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
+        install_from_pypi("Pillow==6.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
 
     @pip_package()
     def matplotlib(**kwargs):
