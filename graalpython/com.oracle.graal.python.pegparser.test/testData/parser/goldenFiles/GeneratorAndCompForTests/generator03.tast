@@ -1,6 +1,7 @@
 Module[0, 47]
     FunctionDef[0, 47]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Assign[12, 18]
             LHS: Name[12, 13] Value: "c" Store

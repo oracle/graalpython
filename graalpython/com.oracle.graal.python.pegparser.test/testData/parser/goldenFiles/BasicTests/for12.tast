@@ -1,6 +1,7 @@
 Module[0, 52]
     FunctionDef[0, 52]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         For[12, 52]
             Target: 

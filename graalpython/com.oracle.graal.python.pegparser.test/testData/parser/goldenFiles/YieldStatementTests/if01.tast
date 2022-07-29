@@ -1,6 +1,7 @@
 Module[0, 52]
     FunctionDef[0, 52]
         Name:gen
+        ArgumentsTy[0, 0]
         ---- Function body of gen ----
         If[13, 52]
             Test: Name[16, 17] Value: "b"

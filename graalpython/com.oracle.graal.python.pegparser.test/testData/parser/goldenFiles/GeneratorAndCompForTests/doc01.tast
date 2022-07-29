@@ -1,6 +1,7 @@
 Module[0, 42]
     FunctionDef[0, 42]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         RAW[12, 27] Value: "This is a doc"
         Yield[30, 42]

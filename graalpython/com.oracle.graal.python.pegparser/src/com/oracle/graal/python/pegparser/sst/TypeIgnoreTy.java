@@ -48,7 +48,7 @@ public abstract class TypeIgnoreTy extends SSTNode {
         super(sourceRange);
     }
 
-    public static final class TypeIgnore extends SSTNode {
+    public static final class TypeIgnore extends TypeIgnoreTy {
         public final int lineNo;
         public final String tag;
 

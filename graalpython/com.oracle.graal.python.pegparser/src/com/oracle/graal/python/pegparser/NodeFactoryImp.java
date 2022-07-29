@@ -65,6 +65,9 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_ARG_ARRAY;
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_EXPR_ARRAY;
+
 public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, SourceRange sourceRange) {
@@ -300,7 +303,7 @@ public class NodeFactoryImp implements NodeFactory {
                 posOnlyArgs[i++] = p.name;
             }
         } else {
-            posOnlyArgs = new ArgTy[0];
+            posOnlyArgs = EMPTY_ARG_ARRAY;
         }
 
         ArgTy[] posArgs;
@@ -321,7 +324,7 @@ public class NodeFactoryImp implements NodeFactory {
         } else if (paramWithoutDefault != null) {
             posArgs = paramWithoutDefault;
         } else {
-            posArgs = new ArgTy[0];
+            posArgs = EMPTY_ARG_ARRAY;
         }
 
         ExprTy[] posDefaults;
@@ -355,12 +358,18 @@ public class NodeFactoryImp implements NodeFactory {
                 kwDefaults[j] = starEtc.kwOnlyArgs[j].def;
             }
         } else {
-            kwOnlyArgs = new ArgTy[0];
-            kwDefaults = AbstractParser.EMPTY_EXPR;
+            kwOnlyArgs = EMPTY_ARG_ARRAY;
+            kwDefaults = EMPTY_EXPR_ARRAY;
         }
 
         return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults,
                         new SourceRange(0, 0, 0, 0, 0, 0));
+    }
+
+    @Override
+    public ArgumentsTy emptyArguments() {
+        return new ArgumentsTy(EMPTY_ARG_ARRAY, EMPTY_ARG_ARRAY, null, EMPTY_ARG_ARRAY, EMPTY_EXPR_ARRAY,
+                null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0, 0, 0));
     }
 
     @Override
@@ -381,12 +390,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createTuple(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
-        return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
+        return new ExprTy.Tuple(values != null ? values : EMPTY_EXPR_ARRAY, context, sourceRange);
     }
 
     @Override
     public ExprTy createList(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
-        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
+        return new ExprTy.List(values != null ? values : EMPTY_EXPR_ARRAY, context, sourceRange);
     }
 
     @Override
@@ -482,8 +491,8 @@ public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, SourceRange sourceRange) {
         return new StmtTy.ClassDef(((ExprTy.Name) name).id,
-                        call == null ? AbstractParser.EMPTY_EXPR : ((ExprTy.Call) call).args,
-                        call == null ? AbstractParser.EMPTY_KWDS : ((ExprTy.Call) call).keywords,
+                        call == null ? EMPTY_EXPR_ARRAY : ((ExprTy.Call) call).args,
+                        call == null ? AbstractParser.EMPTY_KEYWORD_ARRAY : ((ExprTy.Call) call).keywords,
                         body, null, sourceRange);
     }
 

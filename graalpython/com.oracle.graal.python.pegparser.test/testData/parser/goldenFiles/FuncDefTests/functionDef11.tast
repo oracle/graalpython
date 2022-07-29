@@ -1,6 +1,7 @@
 Module[1, 47]
     FunctionDef[1, 38]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         Assign[19, 25]
             LHS: Name[19, 20] Value: "x" Store

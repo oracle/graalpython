@@ -1,6 +1,7 @@
 Module[0, 58]
     FunctionDef[0, 58]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         For[12, 58]
             Target: Name[16, 17] Value: "x" Store

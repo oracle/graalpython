@@ -7,6 +7,7 @@ Module[0, 140]
         ---- Function body of mydecorator ----
         FunctionDef[25, 60]
             Name:wrap
+            ArgumentsTy[0, 0]
             ---- Function body of wrap ----
             Return[45, 60] 
                 BinOp[52, 60]
@@ -22,6 +23,7 @@ Module[0, 140]
         Name:getNumber
         Decorators:
         Name[79, 90] Value: "mydecorator"
+        ArgumentsTy[0, 0]
         ---- Function body of getNumber ----
         Return[112, 120] LONG[119, 120] Value: 1
         ---- End of getNumber function ----

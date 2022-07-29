@@ -1,6 +1,7 @@
 Module[1, 35]
     FunctionDef[1, 35]
         Name:foo
+        ArgumentsTy[0, 0]
         ---- Function body of foo ----
         Assign[16, 22]
             LHS: Name[16, 17] Value: "a" Store

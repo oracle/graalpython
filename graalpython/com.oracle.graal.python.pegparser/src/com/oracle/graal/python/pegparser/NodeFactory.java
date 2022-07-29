@@ -138,6 +138,8 @@ public interface NodeFactory {
 
     public ArgumentsTy createArguments(ArgTy[] slashWithoutDefault, SlashWithDefault slashWithDefault, ArgTy[] paramWithoutDefault, NameDefaultPair[] paramWithDefault, StarEtc starEtc);
 
+    public ArgumentsTy emptyArguments();
+
     public ComprehensionTy createComprehension(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, SourceRange sourceRange);
 
     public ExprTy createListComprehension(ExprTy name, ComprehensionTy[] generators, SourceRange sourceRange);

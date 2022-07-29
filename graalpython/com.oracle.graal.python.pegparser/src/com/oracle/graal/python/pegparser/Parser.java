@@ -5963,7 +5963,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createFunctionDef(((ExprTy.Name) n).id, params, b, (ExprTy) a, newTypeComment((Token) tc), startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
@@ -6009,7 +6009,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params, b, a, newTypeComment((Token) tc), startToken.sourceRange.withEnd(endToken.sourceRange)));
+                _res = checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, a, newTypeComment((Token) tc), startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 return (StmtTy)_res;
             }
@@ -7649,7 +7649,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createLambda(a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createLambda(a == null ? factory.emptyArguments() : a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LAMBDEF_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9918,7 +9918,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createCall(a, new ExprTy[] {b}, EMPTY_KWDS, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createCall(a, new ExprTy[] {b}, EMPTY_KEYWORD_ARRAY, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9945,7 +9945,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KWDS, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR_ARRAY, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KEYWORD_ARRAY, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12390,7 +12390,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createCall(a, new ExprTy[] {b}, EMPTY_KWDS, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createCall(a, new ExprTy[] {b}, EMPTY_KEYWORD_ARRAY, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12419,7 +12419,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KWDS, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR_ARRAY, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KEYWORD_ARRAY, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);

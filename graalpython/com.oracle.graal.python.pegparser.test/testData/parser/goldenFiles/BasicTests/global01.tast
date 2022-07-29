@@ -4,6 +4,7 @@ Module[0, 137]
         RHS: LONG[4, 5] Value: 0
     FunctionDef[25, 109]
         Name:add
+        ArgumentsTy[0, 0]
         ---- Function body of add ----
         Global[40, 48]: c 
         Assign[53, 62]

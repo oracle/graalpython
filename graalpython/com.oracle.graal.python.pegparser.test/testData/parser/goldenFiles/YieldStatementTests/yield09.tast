@@ -1,6 +1,7 @@
 Module[0, 20]
     FunctionDef[0, 20]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         BinOp[9, 20]
             Op: Mult

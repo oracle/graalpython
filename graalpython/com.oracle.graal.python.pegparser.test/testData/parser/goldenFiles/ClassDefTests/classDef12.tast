@@ -1,9 +1,11 @@
 Module[0, 415]
     FunctionDef[0, 415]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         FunctionDef[14, 388]
             Name:get_nested_class
+            ArgumentsTy[0, 0]
             ---- Function body of get_nested_class ----
             Assign[46, 68]
                 LHS: Name[46, 60] Value: "method_and_var" Store

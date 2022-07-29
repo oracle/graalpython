@@ -1,6 +1,7 @@
 Module[0, 17]
     FunctionDef[0, 17]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         AugAssign[11, 17]
             Op: Add

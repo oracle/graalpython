@@ -1,6 +1,7 @@
 Module[0, 39]
     AsyncFunctionDef[0, 39]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         Assign[16, 39]
             LHS: 

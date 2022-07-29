@@ -9,6 +9,7 @@ Module[0, 58]
             ---- Function body of run ----
             FunctionDef[34, 58]
                 Name:f
+                ArgumentsTy[0, 0]
                 ---- Function body of f ----
                 Call[51, 58]
                     Target: Name[51, 56] Value: "super"

@@ -1,12 +1,14 @@
 Module[0, 168]
     FunctionDef[0, 159]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         Assign[17, 28]
             LHS: Name[17, 18] Value: "x" Store
             RHS: RAW[21, 28] Value: "local"
         FunctionDef[38, 119]
             Name:inner
+            ArgumentsTy[0, 0]
             ---- Function body of inner ----
             NonLocal[59, 69]: x 
             Assign[78, 92]

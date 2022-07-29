@@ -1,6 +1,7 @@
 Module[0, 61]
     FunctionDef[0, 61]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Try[12, 15]
             Body:

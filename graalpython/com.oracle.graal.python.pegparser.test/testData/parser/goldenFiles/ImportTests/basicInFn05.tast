@@ -1,6 +1,7 @@
 Module[0, 39]
     FunctionDef[0, 39]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Import[12, 39]
             sys

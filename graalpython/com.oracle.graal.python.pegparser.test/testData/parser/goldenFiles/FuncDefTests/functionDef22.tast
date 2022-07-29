@@ -1,17 +1,20 @@
 Module[0, 89]
     FunctionDef[0, 74]
         Name:test
+        ArgumentsTy[0, 0]
         ---- Function body of test ----
         Assign[14, 19]
             LHS: Name[14, 15] Value: "a" Store
             RHS: LONG[18, 19] Value: 1
         FunctionDef[23, 38]
             Name:fn1
+            ArgumentsTy[0, 0]
             ---- Function body of fn1 ----
             Pass[34, 38]
             ---- End of fn1 function ----
         FunctionDef[41, 56]
             Name:fn2
+            ArgumentsTy[0, 0]
             ---- Function body of fn2 ----
             Pass[52, 56]
             ---- End of fn2 function ----

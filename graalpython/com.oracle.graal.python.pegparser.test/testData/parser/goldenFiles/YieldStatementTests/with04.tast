@@ -1,6 +1,7 @@
 Module[0, 49]
     FunctionDef[0, 49]
         Name:gen
+        ArgumentsTy[0, 0]
         ---- Function body of gen ----
         With[13, 49]
             Items:

@@ -1,6 +1,7 @@
 Module[0, 56]
     FunctionDef[0, 56]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         With[12, 56]
             Items:

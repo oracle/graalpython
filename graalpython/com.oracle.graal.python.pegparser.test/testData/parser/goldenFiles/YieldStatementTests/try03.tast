@@ -1,6 +1,7 @@
 Module[0, 105]
     FunctionDef[0, 105]
         Name:gen
+        ArgumentsTy[0, 0]
         ---- Function body of gen ----
         Try[13, 16]
             Body:

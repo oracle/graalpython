@@ -70,8 +70,9 @@ import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
  * the future.
  */
 abstract class AbstractParser {
-    protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
-    protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+    static final ExprTy[] EMPTY_EXPR_ARRAY = new ExprTy[0];
+    static final KeywordTy[] EMPTY_KEYWORD_ARRAY = new KeywordTy[0];
+    static final ArgTy[] EMPTY_ARG_ARRAY = new ArgTy[0];
 
     /**
      * Corresponds to TARGET_TYPES in CPython
@@ -802,7 +803,7 @@ abstract class AbstractParser {
      */
     final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, SourceRange sourceRange) {
         if (b == null) {
-            return factory.createCall(dummyName(), a, EMPTY_KWDS, sourceRange);
+            return factory.createCall(dummyName(), a, EMPTY_KEYWORD_ARRAY, sourceRange);
         } else {
             ExprTy[] starred = extractStarredExpressions(b);
             ExprTy[] args;

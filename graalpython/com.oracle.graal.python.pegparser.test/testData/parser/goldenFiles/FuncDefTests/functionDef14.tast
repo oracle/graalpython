@@ -1,6 +1,7 @@
 Module[0, 71]
     FunctionDef[0, 36]
         Name:bla
+        ArgumentsTy[0, 0]
         ---- Function body of bla ----
         Call[13, 36]
             Target: Name[13, 20] Value: "install"

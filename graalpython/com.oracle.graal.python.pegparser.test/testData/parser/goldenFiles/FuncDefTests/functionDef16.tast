@@ -1,6 +1,7 @@
 Module[0, 132]
     FunctionDef[0, 125]
         Name:test
+        ArgumentsTy[0, 0]
         ---- Function body of test ----
         FunctionDef[14, 107]
             Name:inner
@@ -10,6 +11,7 @@ Module[0, 132]
             ---- Function body of inner ----
             FunctionDef[35, 89]
                 Name:inner_inner
+                ArgumentsTy[0, 0]
                 ---- Function body of inner_inner ----
                 Call[60, 89]
                     Target: Name[60, 65] Value: "print"

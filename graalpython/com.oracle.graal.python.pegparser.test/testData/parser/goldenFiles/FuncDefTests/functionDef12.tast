@@ -1,9 +1,11 @@
 Module[0, 81]
     FunctionDef[0, 72]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         FunctionDef[18, 48]
             Name:inner
+            ArgumentsTy[0, 0]
             ---- Function body of inner ----
             Call[39, 48]
                 Target: Name[39, 44] Value: "print"

@@ -1,6 +1,7 @@
 Module[0, 94]
     FunctionDef[0, 94]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         FunctionDef[15, 74]
             Name:recursionInner
