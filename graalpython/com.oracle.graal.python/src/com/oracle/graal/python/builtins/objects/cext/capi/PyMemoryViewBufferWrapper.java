@@ -237,14 +237,24 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(J_SHAPE, key)"})
         static Object getShape(PMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
-            return intArrayToNativePySSizeArray.execute(object.getBufferShape());
+            int[] shape = object.getBufferShape();
+            if (shape == null) {
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
+            }
+            return intArrayToNativePySSizeArray.execute(shape);
         }
 
         @Specialization(guards = {"eq(J_STRIDES, key)"})
         static Object getStrides(PMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
-            return intArrayToNativePySSizeArray.execute(object.getBufferStrides());
+            int[] strides = object.getBufferStrides();
+            if (strides == null) {
+                return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
+            }
+            return intArrayToNativePySSizeArray.execute(strides);
         }
 
         @Specialization(guards = {"eq(J_SUBOFFSETS, key)"})
