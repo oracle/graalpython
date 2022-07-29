@@ -195,10 +195,10 @@ public abstract class StmtTy extends SSTNode {
 
     public static final class AugAssign extends StmtTy {
         public final ExprTy target;
-        public final ExprTy.BinOp.Operator op;
+        public final OperatorTy op;
         public final ExprTy value;
 
-        public AugAssign(ExprTy target, ExprTy.BinOp.Operator op, ExprTy value, SourceRange sourceRange) {
+        public AugAssign(ExprTy target, OperatorTy op, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
             this.target = target;
             this.op = op;
@@ -526,30 +526,13 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Try extends StmtTy {
-        public static final class ExceptHandler extends SSTNode {
-            public final ExprTy type;
-            public final String name;
-            public final StmtTy[] body;
-
-            public ExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
-                super(sourceRange);
-                this.type = type;
-                this.name = name;
-                this.body = body;
-            }
-
-            @Override
-            public <T> T accept(SSTreeVisitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
 
         public final StmtTy[] body;
-        public final ExceptHandler[] handlers;
+        public final ExceptHandlerTy[] handlers;
         public final StmtTy[] orElse;
         public final StmtTy[] finalBody;
 
-        public Try(StmtTy[] body, ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+        public Try(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
             super(sourceRange);
             this.body = body;
             this.handlers = handlers;

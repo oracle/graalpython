@@ -28,10 +28,10 @@ Module[0, 208]
                                             Attr: items
                             Ifs:
                                 UnaryOp[114, 127]
-                                    Op: NOT
+                                    Op: Not
                                     Value: Compare[118, 127]
                                         LHS: Name[118, 123] Value: "count"
-                                        Op: GT
+                                        Op: Gt
                                         RHS: LONG[126, 127] Value: 0
             For[137, 188]
                 Target: Name[141, 145] Value: "elem" Store
@@ -39,7 +39,7 @@ Module[0, 208]
                 Body:
                     Delete[174, 188]
                         Targets:
-                            Subscript[178, 182] Context: Delete
+                            Subscript[178, 182] Context: Del
                                 Slice: Name[183, 187] Value: "elem"
                                 Value: Name[178, 182] Value: "self"
             Return[197, 208] Name[204, 208] Value: "self"

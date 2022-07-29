@@ -17,7 +17,7 @@ Module[0, 302]
             Test: 
                 Compare[104, 123]
                     LHS: Name[104, 111] Value: "badline"
-                    Op: ISNOT
+                    Op: IsNot
                     RHS: NONE[119, 123] Value: null
             Then:
                 Yield[137, 147]
@@ -26,7 +26,7 @@ Module[0, 302]
                     Test: 
                         Compare[163, 181]
                             LHS: Name[163, 169] Value: "offset"
-                            Op: ISNOT
+                            Op: IsNot
                             RHS: NONE[177, 181] Value: null
                     Then:
                         Assign[199, 245]

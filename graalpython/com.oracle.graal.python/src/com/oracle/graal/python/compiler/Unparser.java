@@ -50,12 +50,15 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -323,55 +326,55 @@ public class Unparser implements SSTreeVisitor<Void> {
         String op;
         boolean rassoc = false;
         switch (node.op) {
-            case ADD:
+            case Add:
                 op = " + ";
                 pr = PR_ARITH;
                 break;
-            case SUB:
+            case Sub:
                 op = " - ";
                 pr = PR_ARITH;
                 break;
-            case MULT:
+            case Mult:
                 op = " * ";
                 pr = PR_TERM;
                 break;
-            case MATMULT:
+            case MatMult:
                 op = " @ ";
                 pr = PR_TERM;
                 break;
-            case DIV:
+            case Div:
                 op = " / ";
                 pr = PR_TERM;
                 break;
-            case MOD:
+            case Mod:
                 op = " % ";
                 pr = PR_TERM;
                 break;
-            case LSHIFT:
+            case LShift:
                 op = " << ";
                 pr = PR_SHIFT;
                 break;
-            case RSHIFT:
+            case RShift:
                 op = " >> ";
                 pr = PR_SHIFT;
                 break;
-            case BITOR:
+            case BitOr:
                 op = " | ";
                 pr = PR_BOR;
                 break;
-            case BITXOR:
+            case BitXor:
                 op = " ^ ";
                 pr = PR_BXOR;
                 break;
-            case BITAND:
+            case BitAnd:
                 op = " & ";
                 pr = PR_BAND;
                 break;
-            case FLOORDIV:
+            case FloorDiv:
                 op = " // ";
                 pr = PR_TERM;
                 break;
-            case POW:
+            case Pow:
                 op = " ** ";
                 pr = PR_POWER;
                 rassoc = true;
@@ -389,8 +392,8 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.BoolOp node) {
-        String op = node.op == ExprTy.BoolOp.Type.And ? " and " : " or ";
-        int pr = node.op == ExprTy.BoolOp.Type.And ? PR_AND : PR_OR;
+        String op = node.op == BoolOpTy.And ? " and " : " or ";
+        int pr = node.op == BoolOpTy.And ? PR_AND : PR_OR;
         appendStrIf(level > pr, "(");
         for (int i = 0; i < node.values.length; i++) {
             appendStrIf(i > 0, op);
@@ -451,34 +454,34 @@ public class Unparser implements SSTreeVisitor<Void> {
 
         for (int i = 0; i < comparatorCount; i++) {
             switch (node.ops[i]) {
-                case EQ:
+                case Eq:
                     op = " == ";
                     break;
-                case NOTEQ:
+                case NotEq:
                     op = " != ";
                     break;
-                case LT:
+                case Lt:
                     op = " < ";
                     break;
-                case LTE:
+                case LtE:
                     op = " <= ";
                     break;
-                case GT:
+                case Gt:
                     op = " > ";
                     break;
-                case GTE:
+                case GtE:
                     op = " >= ";
                     break;
-                case IS:
+                case Is:
                     op = " is ";
                     break;
-                case ISNOT:
+                case IsNot:
                     op = " is not ";
                     break;
-                case IN:
+                case In:
                     op = " in ";
                     break;
-                case NOTIN:
+                case NotIn:
                     op = " not in ";
                     break;
                 default:
@@ -768,19 +771,19 @@ public class Unparser implements SSTreeVisitor<Void> {
         String op;
         int pr;
         switch (node.op) {
-            case INVERT:
+            case Invert:
                 op = "~";
                 pr = PR_FACTOR;
                 break;
-            case NOT:
+            case Not:
                 op = "not ";
                 pr = PR_NOT;
                 break;
-            case ADD:
+            case UAdd:
                 op = "+";
                 pr = PR_FACTOR;
                 break;
-            case SUB:
+            case USub:
                 op = "-";
                 pr = PR_FACTOR;
                 break;
@@ -849,7 +852,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(ModTy.TypeIgnore node) {
+    public Void visit(TypeIgnoreTy.TypeIgnore node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
@@ -1004,7 +1007,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Try.ExceptHandler node) {
+    public Void visit(ExceptHandlerTy.ExceptHandler node) {
         throw new IllegalStateException("unknown expression kind");
     }
 

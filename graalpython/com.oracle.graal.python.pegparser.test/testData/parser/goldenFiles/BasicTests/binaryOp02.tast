@@ -1,5 +1,5 @@
 Module[0, 11]
     BinOp[0, 11]
-        Op: ADD
+        Op: Add
         LHS: RAW[0, 6] Value: "ahoj"
         RHS: LONG[9, 11] Value: 10

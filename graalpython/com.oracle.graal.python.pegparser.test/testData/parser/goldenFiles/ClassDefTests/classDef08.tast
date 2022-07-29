@@ -9,7 +9,7 @@ Module[0, 128]
             ---- Function body of fn1 ----
             Return[43, 65] 
                 BinOp[51, 64]
-                    Op: MOD
+                    Op: Mod
                     LHS: Name[51, 57] Value: "format"
                     RHS: Name[60, 64] Value: "args"
             ---- End of fn1 function ----

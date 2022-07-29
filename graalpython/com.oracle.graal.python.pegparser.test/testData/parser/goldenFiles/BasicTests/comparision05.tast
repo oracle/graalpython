@@ -3,11 +3,11 @@ Module[0, 16]
         LHS: 
             Call[0, 3]
                 Target: Name[0, 1] Value: "x"
-        Op: LT
+        Op: Lt
         RHS: 
             Call[6, 9]
                 Target: Name[6, 7] Value: "y"
-        Op: LTE
+        Op: LtE
         RHS: 
             Call[13, 16]
                 Target: Name[13, 14] Value: "z"

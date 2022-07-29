@@ -54,12 +54,17 @@ public final class ArgumentsTy extends SSTNode {
 
     public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, SourceRange sourceRange) {
         super(sourceRange);
+        assert posOnlyArgs != null;
         this.posOnlyArgs = posOnlyArgs;
+        assert args != null;
         this.args = args;
         this.varArg = varArg;
+        assert kwOnlyArgs != null;
         this.kwOnlyArgs = kwOnlyArgs;
+        assert kwDefaults != null;
         this.kwDefaults = kwDefaults;
         this.kwArg = kwArg;
+        assert defaults != null;
         this.defaults = defaults;
     }
 

@@ -12,18 +12,18 @@ Module[0, 81]
                     Test: 
                         Compare[32, 38]
                             LHS: Name[32, 33] Value: "x"
-                            Op: EQ
+                            Op: Eq
                             RHS: LONG[37, 38] Value: 1
                     Then:
                         Yield[47, 55]
                             UnaryOp[53, 55]
-                                Op: SUB
+                                Op: USub
                                 Value: LONG[54, 55] Value: 1
                 Assign[61, 68]
                     LHS: Name[61, 62] Value: "x" Store
                     RHS: 
                         BinOp[65, 68]
-                            Op: SUB
+                            Op: Sub
                             LHS: Name[65, 66] Value: "x"
                             RHS: LONG[67, 68] Value: 1
                 Yield[74, 81]

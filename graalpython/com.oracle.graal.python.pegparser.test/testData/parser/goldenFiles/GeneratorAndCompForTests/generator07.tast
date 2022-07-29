@@ -13,7 +13,7 @@ Module[0, 121]
                             Target: Name[24, 27] Value: "len"
                             Args:
                                 Name[28, 29] Value: "h"
-                    Op: GT
+                    Op: Gt
                     RHS: LONG[33, 34] Value: 1
             Body:
                 While[44, 121]

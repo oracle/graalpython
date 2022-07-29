@@ -11,10 +11,10 @@ Module[0, 49]
         ---- Function body of foo ----
         Return[24, 40] 
             BinOp[31, 40]
-                Op: ADD
+                Op: Add
                 LHS: 
                     BinOp[31, 36]
-                        Op: ADD
+                        Op: Add
                         LHS: Name[31, 32] Value: "a"
                         RHS: Name[35, 36] Value: "b"
                 RHS: Name[39, 40] Value: "c"

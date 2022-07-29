@@ -3,7 +3,7 @@ Module[0, 20]
         Name:f
         ---- Function body of f ----
         BinOp[9, 20]
-            Op: MULT
+            Op: Mult
             LHS: 
                 Yield[10, 17]
                     LONG[16, 17] Value: 1

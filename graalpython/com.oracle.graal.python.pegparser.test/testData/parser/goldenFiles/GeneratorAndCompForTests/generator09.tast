@@ -17,7 +17,7 @@ Module[0, 89]
             Condition: 
                 Compare[63, 68]
                     LHS: Name[63, 64] Value: "h"
-                    Op: GT
+                    Op: Gt
                     RHS: LONG[67, 68] Value: 1
             Body:
                 Yield[78, 89]

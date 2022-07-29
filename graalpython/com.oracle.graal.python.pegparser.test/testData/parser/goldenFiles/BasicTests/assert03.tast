@@ -6,7 +6,7 @@ Module[0, 47]
             Test: 
                 Compare[22, 30]
                     LHS: Name[22, 25] Value: "len"
-                    Op: NOTEQ
+                    Op: NotEq
                     RHS: LONG[29, 30] Value: 0
             Msg: 
                 Call[32, 47]

@@ -20,7 +20,7 @@ Module[0, 98]
             DictComp[64, 98]
                 Key: Name[65, 66] Value: "k"
                 Value: BinOp[67, 70]
-                    Op: MULT
+                    Op: Mult
                     LHS: Name[67, 68] Value: "v"
                     RHS: LONG[69, 70] Value: 2
                 ComprehensionTy[71, 97]

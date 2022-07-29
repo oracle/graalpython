@@ -52,7 +52,13 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
@@ -79,12 +85,12 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, SourceRange sourceRange) {
+    public StmtTy createAugAssignment(ExprTy lhs, OperatorTy operation, ExprTy rhs, SourceRange sourceRange) {
         return new StmtTy.AugAssign(lhs, operation, rhs, sourceRange);
     }
 
     @Override
-    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, SourceRange sourceRange) {
+    public ExprTy createBinaryOp(OperatorTy op, ExprTy left, ExprTy right, SourceRange sourceRange) {
         return new ExprTy.BinOp(left, op, right, sourceRange);
     }
 
@@ -119,7 +125,7 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Attribute(receiver, name, context, sourceRange);
     }
 
@@ -256,17 +262,17 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, SourceRange sourceRange) {
+    public ExprTy createUnaryOp(UnaryOpTy op, ExprTy value, SourceRange sourceRange) {
         return new ExprTy.UnaryOp(op, value, sourceRange);
     }
 
     @Override
-    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContext context) {
+    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContextTy context) {
         return new ExprTy.Name(name, context, sourceRange);
     }
 
     @Override
-    public ExprTy createStarred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createStarred(ExprTy value, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Starred(value, context, sourceRange);
     }
 
@@ -359,7 +365,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, SourceRange sourceRange) {
-        ExprTy.Compare.Operator[] ops = new ExprTy.Compare.Operator[pairs.length];
+        CmpOpTy[] ops = new CmpOpTy[pairs.length];
         ExprTy[] rights = new ExprTy[pairs.length];
         for (int i = 0; i < pairs.length; i++) {
             ops[i] = pairs[i].op;
@@ -369,17 +375,17 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Subscript(receiver, subscript, context, sourceRange);
     }
 
     @Override
-    public ExprTy createTuple(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createTuple(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
     }
 
     @Override
-    public ExprTy createList(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createList(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
     }
 
@@ -499,12 +505,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createAnd(ExprTy[] values, SourceRange sourceRange) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, sourceRange);
+        return new ExprTy.BoolOp(BoolOpTy.And, values, sourceRange);
     }
 
     @Override
     public ExprTy createOr(ExprTy[] values, SourceRange sourceRange) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, sourceRange);
+        return new ExprTy.BoolOp(BoolOpTy.Or, values, sourceRange);
     }
 
     @Override
@@ -528,13 +534,13 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+    public StmtTy createTry(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
         return new StmtTy.Try(body, handlers, orElse, finalBody, sourceRange);
     }
 
     @Override
-    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
-        return new StmtTy.Try.ExceptHandler(type, name, body, sourceRange);
+    public ExceptHandlerTy createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
+        return new ExceptHandlerTy.ExceptHandler(type, name, body, sourceRange);
     }
 
     @Override

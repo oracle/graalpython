@@ -50,6 +50,7 @@ public final class ArgTy extends SSTNode {
 
     public ArgTy(String arg, ExprTy annotation, String typeComment, SourceRange sourceRange) {
         super(sourceRange);
+        assert arg != null;
         this.arg = arg;
         this.annotation = annotation;
         this.typeComment = typeComment;

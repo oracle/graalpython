@@ -1,6 +1,6 @@
 Module[0, 10]
     AugAssign[0, 10]
-        Op: ADD
+        Op: Add
         LHS: Name[0, 1] Value: "a" Store
         RHS: 
             Tuple[5, 10]

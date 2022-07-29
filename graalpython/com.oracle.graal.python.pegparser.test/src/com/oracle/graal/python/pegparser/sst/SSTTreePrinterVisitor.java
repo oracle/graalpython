@@ -42,8 +42,6 @@ package com.oracle.graal.python.pegparser.sst;
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.pegparser.ExprContext;
-
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static final String INDENTATION = "    ";
@@ -381,7 +379,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.List node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         if (node.elements != null) {
@@ -415,7 +413,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Name node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(" Value: \"").append(node.id).append('"');
-        if (node.context != ExprContext.Load) {
+        if (node.context != ExprContextTy.Load) {
             sb.append(' ').append(node.context);
         }
         return sb.toString();
@@ -504,7 +502,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Subscript node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         level++;
@@ -518,7 +516,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Tuple node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         if (node.elements != null) {
@@ -629,7 +627,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(ModTy.TypeIgnore node) {
+    public String visit(TypeIgnoreTy.TypeIgnore node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -978,7 +976,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Try.ExceptHandler node) {
+    public String visit(ExceptHandlerTy.ExceptHandler node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;

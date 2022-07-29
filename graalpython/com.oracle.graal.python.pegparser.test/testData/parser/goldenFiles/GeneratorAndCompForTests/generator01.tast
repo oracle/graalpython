@@ -2,7 +2,7 @@ Module[0, 24]
     GeneratorExp[0, 24]
         Element: 
             BinOp[1, 4]
-                Op: MULT
+                Op: Mult
                 LHS: Name[1, 2] Value: "x"
                 RHS: Name[3, 4] Value: "x"
         ComprehensionTy[5, 23]

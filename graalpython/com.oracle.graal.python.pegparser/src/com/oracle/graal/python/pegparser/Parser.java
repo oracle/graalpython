@@ -1686,7 +1686,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createAnnAssignment(setExprContext(a, ExprContext.Store), b, (ExprTy) c, true, startToken.sourceRange.withEnd(endToken.sourceRange));;
+                _res = factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, startToken.sourceRange.withEnd(endToken.sourceRange));;
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -1753,7 +1753,7 @@ public final class Parser extends AbstractParser {
             }
             int _cut_var = 0;
             ExprTy a;
-            ExprTy.BinOp.Operator b;
+            OperatorTy b;
             ExprTy c;
             if (
                 (a = single_target_rule()) != null  // single_target
@@ -1812,7 +1812,7 @@ public final class Parser extends AbstractParser {
     //     | '>>='
     //     | '**='
     //     | '//='
-    public ExprTy.BinOp.Operator augassign_rule()
+    public OperatorTy augassign_rule()
     {
         if (errorIndicator) {
             return null;
@@ -1820,8 +1820,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AUGASSIGN_ID)) {
-            _res = (ExprTy.BinOp.Operator)cache.getResult(_mark, AUGASSIGN_ID);
-            return (ExprTy.BinOp.Operator)_res;
+            _res = (OperatorTy)cache.getResult(_mark, AUGASSIGN_ID);
+            return (OperatorTy)_res;
         }
         { // '+='
             if (errorIndicator) {
@@ -1832,9 +1832,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(36)) != null  // token='+='
             )
             {
-                _res = ExprTy.BinOp.Operator.ADD;
+                _res = OperatorTy.Add;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1847,9 +1847,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(37)) != null  // token='-='
             )
             {
-                _res = ExprTy.BinOp.Operator.SUB;
+                _res = OperatorTy.Sub;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1862,9 +1862,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(38)) != null  // token='*='
             )
             {
-                _res = ExprTy.BinOp.Operator.MULT;
+                _res = OperatorTy.Mult;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1877,9 +1877,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(50)) != null  // token='@='
             )
             {
-                _res = ExprTy.BinOp.Operator.MATMULT;
+                _res = OperatorTy.MatMult;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1892,9 +1892,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(39)) != null  // token='/='
             )
             {
-                _res = ExprTy.BinOp.Operator.DIV;
+                _res = OperatorTy.Div;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1907,9 +1907,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(40)) != null  // token='%='
             )
             {
-                _res = ExprTy.BinOp.Operator.MOD;
+                _res = OperatorTy.Mod;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1922,9 +1922,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(41)) != null  // token='&='
             )
             {
-                _res = ExprTy.BinOp.Operator.BITAND;
+                _res = OperatorTy.BitAnd;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1937,9 +1937,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(42)) != null  // token='|='
             )
             {
-                _res = ExprTy.BinOp.Operator.BITOR;
+                _res = OperatorTy.BitOr;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1952,9 +1952,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(43)) != null  // token='^='
             )
             {
-                _res = ExprTy.BinOp.Operator.BITXOR;
+                _res = OperatorTy.BitXor;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1967,9 +1967,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(44)) != null  // token='<<='
             )
             {
-                _res = ExprTy.BinOp.Operator.LSHIFT;
+                _res = OperatorTy.LShift;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1982,9 +1982,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(45)) != null  // token='>>='
             )
             {
-                _res = ExprTy.BinOp.Operator.RSHIFT;
+                _res = OperatorTy.RShift;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -1997,9 +1997,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(46)) != null  // token='**='
             )
             {
-                _res = ExprTy.BinOp.Operator.POW;
+                _res = OperatorTy.Pow;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
@@ -2012,15 +2012,15 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(48)) != null  // token='//='
             )
             {
-                _res = ExprTy.BinOp.Operator.FLOORDIV;
+                _res = OperatorTy.FloorDiv;
                 cache.putResult(_mark, AUGASSIGN_ID, _res);
-                return (ExprTy.BinOp.Operator)_res;
+                return (OperatorTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, AUGASSIGN_ID, _res);
-        return (ExprTy.BinOp.Operator)_res;
+        return (OperatorTy)_res;
     }
 
     // global_stmt: 'global' ','.NAME+
@@ -3511,7 +3511,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             StmtTy[] b;
             StmtTy[] el;
-            StmtTy.Try.ExceptHandler[] ex;
+            ExceptHandlerTy[] ex;
             StmtTy[] f;
             if (
                 (_keyword = expect(517)) != null  // token='try'
@@ -3520,7 +3520,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (b = block_rule()) != null  // block
                 &&
-                (ex = (StmtTy.Try.ExceptHandler[])_loop1_62_rule()) != null  // except_block+
+                (ex = (ExceptHandlerTy[])_loop1_62_rule()) != null  // except_block+
                 &&
                 ((el = _tmp_63_rule()) != null || true)  // else_block?
                 &&
@@ -3543,7 +3543,7 @@ public final class Parser extends AbstractParser {
     //     | 'except' expression ['as' NAME] ':' block
     //     | 'except' ':' block
     //     | invalid_except_stmt
-    public StmtTy.Try.ExceptHandler except_block_rule()
+    public ExceptHandlerTy except_block_rule()
     {
         if (errorIndicator) {
             return null;
@@ -3551,8 +3551,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, EXCEPT_BLOCK_ID)) {
-            _res = (StmtTy.Try.ExceptHandler)cache.getResult(_mark, EXCEPT_BLOCK_ID);
-            return (StmtTy.Try.ExceptHandler)_res;
+            _res = (ExceptHandlerTy)cache.getResult(_mark, EXCEPT_BLOCK_ID);
+            return (ExceptHandlerTy)_res;
         }
         Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_except_stmt_indent
@@ -3566,7 +3566,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_except_stmt_indent_var;
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
-                return (StmtTy.Try.ExceptHandler)_res;
+                return (ExceptHandlerTy)_res;
             }
             reset(_mark);
         }
@@ -3593,7 +3593,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, startToken.sourceRange);
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
-                return (StmtTy.Try.ExceptHandler)_res;
+                return (ExceptHandlerTy)_res;
             }
             reset(_mark);
         }
@@ -3614,7 +3614,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = factory.createExceptHandler(null, null, b, startToken.sourceRange);
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
-                return (StmtTy.Try.ExceptHandler)_res;
+                return (ExceptHandlerTy)_res;
             }
             reset(_mark);
         }
@@ -3629,13 +3629,13 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_except_stmt_var;
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
-                return (StmtTy.Try.ExceptHandler)_res;
+                return (ExceptHandlerTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
-        return (StmtTy.Try.ExceptHandler)_res;
+        return (ExceptHandlerTy)_res;
     }
 
     // finally_block: invalid_finally_stmt | 'finally' &&':' block
@@ -4518,7 +4518,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.ADD, real, imag, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Add, real, imag, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, COMPLEX_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4543,7 +4543,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.SUB, real, imag, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Sub, real, imag, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, COMPLEX_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4598,7 +4598,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, number, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createUnaryOp(UnaryOpTy.USub, number, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4621,6 +4621,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, SIGNED_REAL_NUMBER_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // real_number
             if (errorIndicator) {
                 return null;
@@ -4648,9 +4649,11 @@ public final class Parser extends AbstractParser {
                 (real = real_number_rule()) != null  // real_number
             )
             {
-                // TODO: node.action: _PyAST_UnaryOp ( USub , real , EXTRA )
-                ruleNotImplemented("_PyAST_UnaryOp ( USub , real , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createUnaryOp(UnaryOpTy.USub, real, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SIGNED_REAL_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7064,7 +7067,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(this.insertInFront(a, b), ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7086,7 +7089,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(new ExprTy[] {a}, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7141,7 +7144,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createStarred(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createStarred(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7231,7 +7234,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createStarred(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createStarred(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7292,7 +7295,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createNamedExp(this.check(this.setExprContext(a, ExprContext.Store)), b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createNamedExp(this.check(this.setExprContext(a, ExprContextTy.Store)), b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, ASSIGNMENT_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7449,7 +7452,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.insertInFront(a, b), ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(this.insertInFront(a, b), ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -7471,7 +7474,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(new ExprTy[] {a}, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -8429,7 +8432,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.NOT, a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createUnaryOp(UnaryOpTy.Not, a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, INVERSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -8711,7 +8714,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.EQ,a);;
+                _res = new CmpopExprPair(CmpOpTy.Eq, a);
                 cache.putResult(_mark, EQ_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8746,7 +8749,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTEQ,a);
+                _res = new CmpopExprPair(CmpOpTy.NotEq, a);
                 cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8781,7 +8784,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.LTE,a);
+                _res = new CmpopExprPair(CmpOpTy.LtE, a);
                 cache.putResult(_mark, LTE_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8816,7 +8819,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.LT,a);
+                _res = new CmpopExprPair(CmpOpTy.Lt, a);
                 cache.putResult(_mark, LT_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8851,7 +8854,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.GTE,a);
+                _res = new CmpopExprPair(CmpOpTy.GtE, a);
                 cache.putResult(_mark, GTE_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8886,7 +8889,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.GT,a);
+                _res = new CmpopExprPair(CmpOpTy.Gt, a);
                 cache.putResult(_mark, GT_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8924,7 +8927,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.NOTIN,a);
+                _res = new CmpopExprPair(CmpOpTy.NotIn, a);
                 cache.putResult(_mark, NOTIN_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8959,7 +8962,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.IN,a);
+                _res = new CmpopExprPair(CmpOpTy.In, a);
                 cache.putResult(_mark, IN_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -8997,7 +9000,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.ISNOT,a);
+                _res = new CmpopExprPair(CmpOpTy.IsNot, a);
                 cache.putResult(_mark, ISNOT_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -9032,7 +9035,7 @@ public final class Parser extends AbstractParser {
                 (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
-                _res = new CmpopExprPair(ExprTy.Compare.Operator.IS,a);
+                _res = new CmpopExprPair(CmpOpTy.Is, a);
                 cache.putResult(_mark, IS_BITWISE_OR_ID, _res);
                 return (CmpopExprPair)_res;
             }
@@ -9093,7 +9096,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITOR, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.BitOr, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9166,7 +9169,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITXOR, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.BitXor, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9239,7 +9242,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.BITAND, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.BitAnd, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9312,7 +9315,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.LSHIFT, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.LShift, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9336,7 +9339,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.RSHIFT, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.RShift, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9409,7 +9412,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.ADD, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Add, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9433,7 +9436,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.SUB, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Sub, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9512,7 +9515,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.MULT, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Mult, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9536,7 +9539,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.DIV, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Div, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9560,7 +9563,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.FLOORDIV, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.FloorDiv, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9584,7 +9587,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.MOD, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Mod, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9608,7 +9611,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = checkVersion(5, "The '@' operator is", factory.createBinaryOp(ExprTy.BinOp.Operator.MATMULT, a, b, startToken.sourceRange.withEnd(endToken.sourceRange)));
+                _res = checkVersion(5, "The '@' operator is", factory.createBinaryOp(OperatorTy.MatMult, a, b, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9660,7 +9663,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.ADD, a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createUnaryOp(UnaryOpTy.UAdd, a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FACTOR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9682,7 +9685,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.SUB, a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createUnaryOp(UnaryOpTy.USub, a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FACTOR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9704,7 +9707,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createUnaryOp(ExprTy.UnaryOp.Operator.INVERT, a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createUnaryOp(UnaryOpTy.Invert, a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FACTOR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9762,7 +9765,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createBinaryOp(ExprTy.BinOp.Operator.POW, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createBinaryOp(OperatorTy.Pow, a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, POWER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -9894,7 +9897,7 @@ public final class Parser extends AbstractParser {
                 (b = name_token()) != null  // NAME
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Load, startToken.sourceRange);
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -9965,7 +9968,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
-                _res = factory.createSubscript(a, b, ExprContext.Load, startToken.sourceRange);
+                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10034,7 +10037,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SLICES_ID, _res);
                 return (ExprTy)_res;
             }
@@ -10356,7 +10359,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createList(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createList(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LIST_ID, _res);
                 return (ExprTy)_res;
             }
@@ -10460,7 +10463,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, TUPLE_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11362,7 +11365,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createStarred(a, ExprContext.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createStarred(a, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11575,7 +11578,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.insertInFront(a,b), ExprContext.Store, startToken.sourceRange.withEnd(endToken.sourceRange));;
+                _res = factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));;
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11706,7 +11709,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createStarred(this.setExprContext(a, ExprContext.Store), ExprContext.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createStarred(this.setExprContext(a, ExprContextTy.Store), ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11765,7 +11768,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Store, startToken.sourceRange);
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange);
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11791,7 +11794,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContext.Store, startToken.sourceRange);
+                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange);
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11843,7 +11846,7 @@ public final class Parser extends AbstractParser {
                 (a = name_token()) != null  // NAME
             )
             {
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = this.setExprContext(a, ExprContextTy.Store);
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11864,7 +11867,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = this.setExprContext(a, ExprContextTy.Store);
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11889,7 +11892,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(a, ExprContext.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createTuple(a, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11914,7 +11917,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createList(a, ExprContext.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = factory.createList(a, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11961,7 +11964,7 @@ public final class Parser extends AbstractParser {
                 (a = name_token()) != null  // NAME
             )
             {
-                _res = this.setExprContext(a,ExprContext.Store);
+                _res = this.setExprContext(a, ExprContextTy.Store);
                 cache.putResult(_mark, SINGLE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12025,7 +12028,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Store, startToken.sourceRange);
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange);
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12051,7 +12054,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContext.Store, startToken.sourceRange);
+                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange);
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12130,7 +12133,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Delete, startToken.sourceRange);
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Del, startToken.sourceRange);
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12156,7 +12159,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContext.Delete, startToken.sourceRange);
+                _res = factory.createSubscript(a, b, ExprContextTy.Del, startToken.sourceRange);
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12204,7 +12207,7 @@ public final class Parser extends AbstractParser {
                 (a = name_token()) != null  // NAME
             )
             {
-                _res = this.setExprContext(a,ExprContext.Delete);
+                _res = this.setExprContext(a, ExprContextTy.Del);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12225,7 +12228,7 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                _res = this.setExprContext(a,ExprContext.Delete);
+                _res = this.setExprContext(a, ExprContextTy.Del);
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12246,7 +12249,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                _res = factory.createTuple(a,ExprContext.Delete, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTuple(a, ExprContextTy.Del, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12267,7 +12274,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
-                _res = factory.createList(a, ExprContext.Delete, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createList(a, ExprContextTy.Del, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, DEL_T_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12331,7 +12342,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContext.Load, startToken.sourceRange);
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12356,7 +12367,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContext.Load, startToken.sourceRange);
+                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange);
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -13137,11 +13148,11 @@ public final class Parser extends AbstractParser {
             }
             ExprTy _tmp_207_var;
             ExprTy a;
-            ExprTy.BinOp.Operator augassign_var;
+            OperatorTy augassign_var;
             if (
                 (a = (ExprTy)star_expressions_rule()) != null  // star_expressions
                 &&
-                (augassign_var = (ExprTy.BinOp.Operator)augassign_rule()) != null  // augassign
+                (augassign_var = (OperatorTy)augassign_rule()) != null  // augassign
                 &&
                 (_tmp_207_var = (ExprTy)_tmp_207_rule()) != null  // yield_expr | star_expressions
             )
@@ -17574,7 +17585,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_62: except_block
-    public StmtTy.Try.ExceptHandler[] _loop1_62_rule()
+    public ExceptHandlerTy[] _loop1_62_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17583,26 +17594,26 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_62_ID)) {
             _res = cache.getResult(_mark, _LOOP1_62_ID);
-            return (StmtTy.Try.ExceptHandler[])_res;
+            return (ExceptHandlerTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.Try.ExceptHandler> _children = new ArrayList<>();
+        List<ExceptHandlerTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // except_block
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.Try.ExceptHandler except_block_var;
+            ExceptHandlerTy except_block_var;
             while (
-                (except_block_var = (StmtTy.Try.ExceptHandler)except_block_rule()) != null  // except_block
+                (except_block_var = (ExceptHandlerTy)except_block_rule()) != null  // except_block
             )
             {
                 _res = except_block_var;
-                if (_res instanceof StmtTy.Try.ExceptHandler) {
-                    _children.add((StmtTy.Try.ExceptHandler)_res);
+                if (_res instanceof ExceptHandlerTy) {
+                    _children.add((ExceptHandlerTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.Try.ExceptHandler[])_res));
+                    _children.addAll(Arrays.asList((ExceptHandlerTy[])_res));
                 }
                 _mark = mark();
             }
@@ -17611,7 +17622,7 @@ public final class Parser extends AbstractParser {
         if (_children.size() == 0) {
             return null;
         }
-        StmtTy.Try.ExceptHandler[] _seq = _children.toArray(new StmtTy.Try.ExceptHandler[_children.size()]);
+        ExceptHandlerTy[] _seq = _children.toArray(new ExceptHandlerTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_62_ID, _seq);
         return _seq;
     }

@@ -17,7 +17,7 @@ Module[0, 54]
         LHS: Name[41, 42] Value: "a" Store
         RHS: 
             BinOp[45, 54]
-                Op: ADD
+                Op: Add
                 LHS: 
                     Attribute[45, 46] 
                         Receiver: Name[45, 46] Value: "p"

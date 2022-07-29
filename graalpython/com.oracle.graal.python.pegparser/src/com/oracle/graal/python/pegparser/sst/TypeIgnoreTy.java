@@ -43,25 +43,24 @@ package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-public final class ComprehensionTy extends SSTNode {
-    public final ExprTy target;
-    public final ExprTy iter;
-    public final ExprTy[] ifs;
-    public final boolean isAsync;
-
-    public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, SourceRange sourceRange) {
+public abstract class TypeIgnoreTy extends SSTNode {
+    TypeIgnoreTy(SourceRange sourceRange) {
         super(sourceRange);
-        assert target != null;
-        this.target = target;
-        assert iter != null;
-        this.iter = iter;
-        assert ifs != null;
-        this.ifs = ifs;
-        this.isAsync = isAsync;
     }
 
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    public static final class TypeIgnore extends SSTNode {
+        public final int lineNo;
+        public final String tag;
+
+        public TypeIgnore(int lineNo, String tag, SourceRange sourceRange) {
+            super(sourceRange);
+            this.lineNo = lineNo;
+            this.tag = tag;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 }

@@ -28,7 +28,7 @@ Module[0, 104]
                             Target: Name[73, 76] Value: "len"
                             Args:
                                 Name[77, 78] Value: "h"
-                    Op: GT
+                    Op: Gt
                     RHS: LONG[82, 83] Value: 1
             Body:
                 Yield[93, 104]

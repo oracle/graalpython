@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ExprTy extends SSTNode {
@@ -49,23 +48,18 @@ public abstract class ExprTy extends SSTNode {
         super(sourceRange);
     }
 
-    public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContext newContext) {
+    public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContextTy newContext) {
         return this;
     }
 
     public static final class BoolOp extends ExprTy {
-        public BoolOp(Type op, ExprTy[] values, SourceRange sourceRange) {
+        public BoolOp(BoolOpTy op, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
             this.op = op;
             this.values = values;
         }
 
-        public enum Type {
-            And,
-            Or
-        }
-
-        public final Type op;
+        public final BoolOpTy op;
         public final ExprTy[] values;
 
         @Override
@@ -91,27 +85,12 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BinOp extends ExprTy {
-        public enum Operator {
-            ADD,
-            SUB,
-            MULT,
-            MATMULT,
-            DIV,
-            MOD,
-            POW,
-            LSHIFT,
-            RSHIFT,
-            BITOR,
-            BITXOR,
-            BITAND,
-            FLOORDIV
-        }
 
         public final ExprTy left;
-        public final Operator op;
+        public final OperatorTy op;
         public final ExprTy right;
 
-        public BinOp(ExprTy left, Operator op, ExprTy right, SourceRange sourceRange) {
+        public BinOp(ExprTy left, OperatorTy op, ExprTy right, SourceRange sourceRange) {
             super(sourceRange);
             this.left = left;
             this.op = op;
@@ -125,17 +104,11 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class UnaryOp extends ExprTy {
-        public enum Operator {
-            INVERT,
-            NOT,
-            ADD,
-            SUB
-        }
 
-        public final Operator op;
+        public final UnaryOpTy op;
         public final ExprTy operand;
 
-        public UnaryOp(Operator op, ExprTy operand, SourceRange sourceRange) {
+        public UnaryOp(UnaryOpTy op, ExprTy operand, SourceRange sourceRange) {
             super(sourceRange);
             this.op = op;
             this.operand = operand;
@@ -320,24 +293,12 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Compare extends ExprTy {
-        public enum Operator {
-            EQ,
-            NOTEQ,
-            LT,
-            LTE,
-            GT,
-            GTE,
-            IS,
-            ISNOT,
-            IN,
-            NOTIN
-        }
 
         public final ExprTy left;
-        public final Operator[] ops;
+        public final CmpOpTy[] ops;
         public final ExprTy[] comparators;
 
-        public Compare(ExprTy left, Operator[] ops, ExprTy[] comparators, SourceRange sourceRange) {
+        public Compare(ExprTy left, CmpOpTy[] ops, ExprTy[] comparators, SourceRange sourceRange) {
             super(sourceRange);
             this.left = left;
             this.ops = ops;
@@ -439,9 +400,9 @@ public abstract class ExprTy extends SSTNode {
     public static final class Attribute extends ExprTy {
         public final ExprTy value;
         public final String attr;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Attribute(ExprTy value, String attr, ExprContext context, SourceRange sourceRange) {
+        public Attribute(ExprTy value, String attr, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.value = value;
             this.attr = attr;
@@ -454,7 +415,7 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             return new Attribute(value, attr, ctx, sourceRange);
         }
     }
@@ -462,9 +423,9 @@ public abstract class ExprTy extends SSTNode {
     public static final class Subscript extends ExprTy {
         public final ExprTy value;
         public final ExprTy slice;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Subscript(ExprTy value, ExprTy slice, ExprContext context, SourceRange sourceRange) {
+        public Subscript(ExprTy value, ExprTy slice, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.value = value;
             this.slice = slice;
@@ -477,16 +438,16 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             return new Subscript(value, slice, ctx, sourceRange);
         }
     }
 
     public static final class Starred extends ExprTy {
         public final ExprTy value;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Starred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+        public Starred(ExprTy value, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.value = value;
             this.context = context;
@@ -498,16 +459,16 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             return new Starred(value.copyWithContext(ctx), ctx, sourceRange);
         }
     }
 
     public static final class Name extends ExprTy {
         public final String id;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Name(String id, ExprContext context, SourceRange sourceRange) {
+        public Name(String id, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.id = id;
             this.context = context;
@@ -519,16 +480,16 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             return new Name(id, ctx, sourceRange);
         }
     }
 
     public static final class List extends ExprTy {
         public final ExprTy[] elements;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public List(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+        public List(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.elements = elements;
             this.context = context;
@@ -540,7 +501,7 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             ExprTy[] newElements = new ExprTy[elements.length];
             for (int i = 0; i < newElements.length; i++) {
                 newElements[i] = elements[i].copyWithContext(ctx);
@@ -551,9 +512,9 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Tuple extends ExprTy {
         public final ExprTy[] elements;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Tuple(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+        public Tuple(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.elements = elements;
             this.context = context;
@@ -565,7 +526,7 @@ public abstract class ExprTy extends SSTNode {
         }
 
         @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
+        public ExprTy copyWithContext(ExprContextTy ctx) {
             ExprTy[] newElements = new ExprTy[elements.length];
             for (int i = 0; i < newElements.length; i++) {
                 newElements[i] = elements[i].copyWithContext(ctx);

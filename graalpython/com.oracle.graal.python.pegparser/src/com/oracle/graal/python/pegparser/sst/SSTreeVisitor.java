@@ -125,8 +125,6 @@ public interface SSTreeVisitor<T> {
 
     T visit(ModTy.Module node);
 
-    T visit(ModTy.TypeIgnore node);
-
     T visit(StmtTy.AnnAssign node);
 
     T visit(StmtTy.Assert node);
@@ -187,8 +185,6 @@ public interface SSTreeVisitor<T> {
 
     T visit(StmtTy.Try node);
 
-    T visit(StmtTy.Try.ExceptHandler node);
-
     T visit(StmtTy.While node);
 
     T visit(StmtTy.With node);
@@ -200,4 +196,8 @@ public interface SSTreeVisitor<T> {
     T visit(StmtTy.Continue aThis);
 
     T visit(StmtTy.Pass aThis);
+
+    T visit(ExceptHandlerTy.ExceptHandler node);
+
+    T visit(TypeIgnoreTy.TypeIgnore node);
 }

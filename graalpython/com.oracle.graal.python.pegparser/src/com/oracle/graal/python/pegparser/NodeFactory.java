@@ -47,7 +47,11 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
@@ -60,9 +64,9 @@ public interface NodeFactory {
 
     public StmtTy createAssignment(ExprTy[] lhs, ExprTy rhs, String typeComment, SourceRange sourceRange);
 
-    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, SourceRange sourceRange);
+    public StmtTy createAugAssignment(ExprTy lhs, OperatorTy operation, ExprTy rhs, SourceRange sourceRange);
 
-    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, SourceRange sourceRange);
+    public ExprTy createBinaryOp(OperatorTy op, ExprTy left, ExprTy right, SourceRange sourceRange);
 
     public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] rights, SourceRange sourceRange);
 
@@ -82,7 +86,7 @@ public interface NodeFactory {
         return createGetAttribute(receiver, name, null, sourceRange);
     }
 
-    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, SourceRange sourceRange);
+    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContextTy context, SourceRange sourceRange);
 
     public StmtTy createPass(SourceRange sourceRange);
 
@@ -108,25 +112,25 @@ public interface NodeFactory {
 
     public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory);
 
-    public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContext context, SourceRange sourceRange);
+    public ExprTy createSubscript(ExprTy receiver, ExprTy slice, ExprContextTy context, SourceRange sourceRange);
 
-    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, SourceRange sourceRange);
+    public ExprTy createUnaryOp(UnaryOpTy op, ExprTy value, SourceRange sourceRange);
 
     default ExprTy.Name createVariable(String name, SourceRange sourceRange) {
-        return createVariable(name, sourceRange, ExprContext.Load);
+        return createVariable(name, sourceRange, ExprContextTy.Load);
     }
 
-    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContext context);
+    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContextTy context);
 
-    public ExprTy createTuple(ExprTy[] values, ExprContext context, SourceRange sourceRange);
+    public ExprTy createTuple(ExprTy[] values, ExprContextTy context, SourceRange sourceRange);
 
-    public ExprTy createList(ExprTy[] values, ExprContext context, SourceRange sourceRange);
+    public ExprTy createList(ExprTy[] values, ExprContextTy context, SourceRange sourceRange);
 
     public ExprTy createDict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange);
 
     public ExprTy createSet(ExprTy[] values, SourceRange sourceRange);
 
-    public ExprTy createStarred(ExprTy value, ExprContext context, SourceRange sourceRange);
+    public ExprTy createStarred(ExprTy value, ExprContextTy context, SourceRange sourceRange);
 
     public KeywordTy createKeyword(String arg, ExprTy value, SourceRange sourceRange);
 
@@ -180,9 +184,9 @@ public interface NodeFactory {
 
     public AliasTy createAlias(String name, String asName, SourceRange sourceRange);
 
-    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange);
+    public StmtTy createTry(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange);
 
-    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange);
+    public ExceptHandlerTy createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange);
 
     public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
 

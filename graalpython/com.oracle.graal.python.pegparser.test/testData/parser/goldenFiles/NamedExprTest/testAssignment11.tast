@@ -8,7 +8,7 @@ Module[0, 61]
                         Name[8, 9] Value: "x"
                         Name[11, 12] Value: "y"
                         BinOp[14, 17]
-                            Op: DIV
+                            Op: Div
                             LHS: Name[14, 15] Value: "x"
                             RHS: Name[16, 17] Value: "y"
                 ComprehensionTy[19, 60]
@@ -24,5 +24,5 @@ Module[0, 61]
                                             Target: Name[48, 52] Value: "spam"
                                             Args:
                                                 Name[53, 54] Value: "x"
-                            Op: GT
+                            Op: Gt
                             RHS: LONG[59, 60] Value: 0

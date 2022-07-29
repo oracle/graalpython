@@ -23,39 +23,39 @@ Module[0, 357]
                     Condition: 
                         Compare[92, 99]
                             LHS: Name[92, 93] Value: "j"
-                            Op: LT
+                            Op: Lt
                             RHS: Name[96, 99] Value: "num"
                     Body:
                         AugAssign[113, 165]
-                            Op: ADD
+                            Op: Add
                             LHS: Name[113, 117] Value: "sum_" Store
                             RHS: 
                                 BinOp[121, 165]
-                                    Op: DIV
+                                    Op: Div
                                     LHS: DOUBLE[121, 124] Value: 1.0
                                     RHS: 
                                         BinOp[128, 164]
-                                            Op: ADD
+                                            Op: Add
                                             LHS: 
                                                 BinOp[128, 160]
-                                                    Op: ADD
+                                                    Op: Add
                                                     LHS: 
                                                         BinOp[129, 155]
-                                                            Op: RSHIFT
+                                                            Op: RShift
                                                             LHS: 
                                                                 BinOp[129, 150]
-                                                                    Op: MULT
+                                                                    Op: Mult
                                                                     LHS: 
                                                                         BinOp[130, 135]
-                                                                            Op: ADD
+                                                                            Op: Add
                                                                             LHS: Name[130, 131] Value: "i"
                                                                             RHS: Name[134, 135] Value: "j"
                                                                     RHS: 
                                                                         BinOp[140, 149]
-                                                                            Op: ADD
+                                                                            Op: Add
                                                                             LHS: 
                                                                                 BinOp[140, 145]
-                                                                                    Op: ADD
+                                                                                    Op: Add
                                                                                     LHS: Name[140, 141] Value: "i"
                                                                                     RHS: Name[144, 145] Value: "j"
                                                                             RHS: LONG[148, 149] Value: 1
@@ -63,7 +63,7 @@ Module[0, 357]
                                                     RHS: Name[159, 160] Value: "i"
                                             RHS: LONG[163, 164] Value: 1
                         AugAssign[178, 184]
-                            Op: ADD
+                            Op: Add
                             LHS: Name[178, 179] Value: "j" Store
                             RHS: LONG[183, 184] Value: 1
         Return[190, 201] Name[197, 201] Value: "sum_"

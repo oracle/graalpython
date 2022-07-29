@@ -12,7 +12,7 @@ Module[0, 214]
                     LHS: Name[35, 41] Value: "result" Store
                     RHS: 
                         BinOp[44, 49]
-                            Op: DIV
+                            Op: Div
                             LHS: Name[44, 45] Value: "x"
                             RHS: Name[48, 49] Value: "y"
             Except:

@@ -17,7 +17,7 @@ Module[0, 165]
                             Test: 
                                 Compare[91, 110]
                                     LHS: Name[91, 100] Value: "candidate"
-                                    Op: IN
+                                    Op: In
                                     RHS: 
                                         Subscript[104, 106]
                                             Slice: 

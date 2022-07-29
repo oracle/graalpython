@@ -5,7 +5,7 @@ Module[0, 45]
             FormattedValue[16, 27]
                 Value: 
                     BinOp[5, 12]
-                        Op: ADD
+                        Op: Add
                         LHS: Name[5, 7] Value: "v1"
                         RHS: Name[10, 12] Value: "v2"
                 Conversion: NONE

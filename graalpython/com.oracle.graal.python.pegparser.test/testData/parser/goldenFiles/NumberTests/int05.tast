@@ -1,6 +1,6 @@
 Module[0, 3]
     UnaryOp[0, 3]
-        Op: SUB
+        Op: USub
         Value: UnaryOp[1, 3]
-            Op: SUB
+            Op: USub
             Value: LONG[2, 3] Value: 2

@@ -10,14 +10,14 @@ Module[0, 186]
             Iter: Name[35, 39] Value: "self"
             Body:
                 AugAssign[49, 59]
-                    Op: ADD
+                    Op: Add
                     LHS: Name[49, 54] Value: "count" Store
                     RHS: LONG[58, 59] Value: 1
                 If[68, 103]
                     Test: 
                         Compare[71, 81]
                             LHS: Name[71, 76] Value: "count"
-                            Op: GTE
+                            Op: GtE
                             RHS: LONG[80, 81] Value: 3
                     Then:
                         Continue[95, 103]
@@ -25,7 +25,7 @@ Module[0, 186]
                     Test: 
                         Compare[115, 125]
                             LHS: Name[115, 120] Value: "count"
-                            Op: EQ
+                            Op: Eq
                             RHS: LONG[124, 125] Value: 4
                     Then:
                         For[139, 186]

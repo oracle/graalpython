@@ -10,7 +10,7 @@ Module[0, 140]
             ---- Function body of wrap ----
             Return[45, 60] 
                 BinOp[52, 60]
-                    Op: ADD
+                    Op: Add
                     LHS: 
                         Call[52, 56]
                             Target: Name[52, 54] Value: "fn"

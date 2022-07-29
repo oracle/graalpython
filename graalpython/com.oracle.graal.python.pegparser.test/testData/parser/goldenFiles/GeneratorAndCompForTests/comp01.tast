@@ -15,7 +15,7 @@ Module[0, 94]
                                 Ifs:
                                     Compare[35, 41]
                                         LHS: Name[35, 36] Value: "i"
-                                        Op: NOTEQ
+                                        Op: NotEq
                                         RHS: Name[40, 41] Value: "j"
                 ComprehensionTy[64, 82]
                     Target: Name[68, 69] Value: "t" Store

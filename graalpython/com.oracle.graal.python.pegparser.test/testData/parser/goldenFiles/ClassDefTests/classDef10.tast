@@ -21,7 +21,7 @@ Module[0, 83]
                     Target: Name[72, 76] Value: "test"
                     Args:
                         BinOp[77, 82]
-                            Op: ADD
+                            Op: Add
                             LHS: Name[77, 80] Value: "arg"
                             RHS: LONG[81, 82] Value: 1
             ---- End of test function ----

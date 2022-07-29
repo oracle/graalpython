@@ -53,7 +53,9 @@ import java.util.Map;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
@@ -643,7 +645,7 @@ abstract class AbstractParser {
      * includes an attempt with a symbol and a scope stream synchronized to the token stream, but it
      * doesn't really work with the pegen generator.
      */
-    protected ExprTy setExprContext(ExprTy node, ExprContext context) {
+    protected ExprTy setExprContext(ExprTy node, ExprContextTy context) {
         return node.copyWithContext(context);
     }
 
@@ -665,10 +667,10 @@ abstract class AbstractParser {
     // data where we need it.
 
     public static final class CmpopExprPair {
-        final ExprTy.Compare.Operator op;
+        final CmpOpTy op;
         final ExprTy expr;
 
-        CmpopExprPair(ExprTy.Compare.Operator op, ExprTy expr) {
+        CmpopExprPair(CmpOpTy op, ExprTy expr) {
             this.op = op;
             this.expr = expr;
         }
@@ -847,7 +849,7 @@ abstract class AbstractParser {
         if (expr instanceof ExprTy.Compare) {
             if (type == TargetsType.FOR_TARGETS) {
                 ExprTy.Compare compare = (ExprTy.Compare) expr;
-                if (compare.ops[0] == ExprTy.Compare.Operator.IN) {
+                if (compare.ops[0] == CmpOpTy.In) {
                     return getInvalidTarget(compare.left, type);
                 }
                 return null;

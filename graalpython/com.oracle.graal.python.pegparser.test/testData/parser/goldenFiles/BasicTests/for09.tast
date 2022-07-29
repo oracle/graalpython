@@ -16,7 +16,7 @@ Module[0, 94]
                                 Target: Name[30, 36] Value: "call01"
                                 Args:
                                     Name[37, 38] Value: "i"
-                        Op: EQ
+                        Op: Eq
                         RHS: LONG[41, 42] Value: 0
                 Then:
                     Break[52, 57]

@@ -48,25 +48,11 @@ public abstract class ModTy extends SSTNode {
         super(sourceRange);
     }
 
-    public static final class TypeIgnore extends SSTNode {
-        public final String tag;
-
-        public TypeIgnore(String tag, SourceRange sourceRange) {
-            super(sourceRange);
-            this.tag = tag;
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-    }
-
     public static final class Module extends ModTy {
         public final StmtTy[] body;
-        public final TypeIgnore[] typeIgnores;
+        public final TypeIgnoreTy[] typeIgnores;
 
-        public Module(StmtTy[] body, TypeIgnore[] typeIgnores, SourceRange sourceRange) {
+        public Module(StmtTy[] body, TypeIgnoreTy[] typeIgnores, SourceRange sourceRange) {
             super(sourceRange);
             this.body = body;
             this.typeIgnores = typeIgnores;

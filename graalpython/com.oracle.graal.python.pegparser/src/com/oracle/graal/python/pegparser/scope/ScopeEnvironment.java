@@ -49,7 +49,7 @@ import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.ExprContext;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
@@ -58,12 +58,14 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
@@ -647,9 +649,9 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(ExprTy.Name node) {
-            addDef(node.id, node.context == ExprContext.Load ? DefUse.Use : DefUse.DefLocal, node);
+            addDef(node.id, node.context == ExprContextTy.Load ? DefUse.Use : DefUse.DefLocal, node);
             // Special-case super: it counts as a use of __class__
-            if (node.context == ExprContext.Load && currentScope.type == ScopeType.Function &&
+            if (node.context == ExprContextTy.Load && currentScope.type == ScopeType.Function &&
                             node.id.equals("super")) {
                 addDef("__class__", DefUse.Use, node);
             }
@@ -811,7 +813,7 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(ModTy.TypeIgnore node) {
+        public Void visit(TypeIgnoreTy.TypeIgnore node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
@@ -1125,7 +1127,7 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(StmtTy.Try.ExceptHandler node) {
+        public Void visit(ExceptHandlerTy.ExceptHandler node) {
             if (node.type != null) {
                 node.type.accept(this);
             }

@@ -10,7 +10,7 @@ Module[0, 137]
             LHS: Name[53, 54] Value: "c" Store
             RHS: 
                 BinOp[57, 62]
-                    Op: ADD
+                    Op: Add
                     LHS: Name[57, 58] Value: "c"
                     RHS: LONG[61, 62] Value: 2
         Call[84, 109]

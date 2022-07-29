@@ -13,7 +13,7 @@ Module[0, 59]
                             Target: Name[27, 30] Value: "len"
                             Args:
                                 Name[31, 36] Value: "marks"
-                    Op: NOTEQ
+                    Op: NotEq
                     RHS: LONG[41, 42] Value: 0
             Msg: RAW[43, 59] Value: "List is empty."
         ---- End of avg function ----

@@ -12,7 +12,7 @@ Module[0, 51]
                 Defaults:
                     Name[23, 26] Value: "bar"
                     BinOp[33, 39]
-                        Op: ADD
+                        Op: Add
                         LHS: Name[33, 37] Value: "blat"
                         RHS: LONG[38, 39] Value: 2
             Body: LONG[50, 51] Value: 0

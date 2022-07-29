@@ -12,10 +12,10 @@ Module[0, 68]
                     Compare[27, 37]
                         LHS: 
                             BinOp[27, 32]
-                                Op: MOD
+                                Op: Mod
                                 LHS: Name[27, 28] Value: "x"
                                 RHS: LONG[31, 32] Value: 2
-                        Op: EQ
+                        Op: Eq
                         RHS: LONG[36, 37] Value: 0
                 Then:
                     Continue[47, 55]

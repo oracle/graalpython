@@ -6,7 +6,7 @@ Module[0, 96]
         Test: 
             Compare[13, 23]
                 LHS: Name[13, 16] Value: "var"
-                Op: EQ
+                Op: Eq
                 RHS: LONG[20, 23] Value: 200
         Then:
             Call[27, 36]
@@ -18,7 +18,7 @@ Module[0, 96]
                 Test: 
                     Compare[42, 52]
                         LHS: Name[42, 45] Value: "var"
-                        Op: EQ
+                        Op: Eq
                         RHS: LONG[49, 52] Value: 150
                 Then:
                     Call[56, 67]
@@ -30,7 +30,7 @@ Module[0, 96]
                         Test: 
                             Compare[73, 83]
                                 LHS: Name[73, 76] Value: "var"
-                                Op: EQ
+                                Op: Eq
                                 RHS: LONG[80, 83] Value: 100
                         Then:
                             Call[87, 96]

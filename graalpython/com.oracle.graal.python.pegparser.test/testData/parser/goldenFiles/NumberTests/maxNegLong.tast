@@ -1,4 +1,4 @@
 Module[0, 11]
     UnaryOp[0, 11]
-        Op: SUB
+        Op: USub
         Value: LONG[1, 11] Value: 2147483649

@@ -49,6 +49,7 @@ public final class AliasTy extends SSTNode {
 
     public AliasTy(String name, String asName, SourceRange sourceRange) {
         super(sourceRange);
+        assert name != null;
         this.name = name;
         this.asName = asName;
     }
