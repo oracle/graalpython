@@ -31,7 +31,7 @@ Module[0, 244]
             Name:gen
             ArgumentsTy[0, 0]
             ---- Function body of gen ----
-            NonLocal[167, 179]: ret 
+            Nonlocal[167, 179]: ret 
             Assign[188, 213]
                 LHS: Name[188, 191] Value: "ret" Store
                 RHS: 

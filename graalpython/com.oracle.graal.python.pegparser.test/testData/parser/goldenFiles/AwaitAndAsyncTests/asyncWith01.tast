@@ -5,7 +5,7 @@ Module[0, 34]
         ---- Function body of f ----
         AsyncWith[16, 34]
             Items:
-                Item[27, 28]
+                WithItemTy[27, 28]
                     ContextExpr: LONG[27, 28] Value: 1
             Body:
                 Pass[30, 34]

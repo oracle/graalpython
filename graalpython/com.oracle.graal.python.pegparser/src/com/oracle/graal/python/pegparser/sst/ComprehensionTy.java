@@ -55,7 +55,6 @@ public final class ComprehensionTy extends SSTNode {
         this.target = target;
         assert iter != null;
         this.iter = iter;
-        assert ifs != null;
         this.ifs = ifs;
         this.isAsync = isAsync;
     }

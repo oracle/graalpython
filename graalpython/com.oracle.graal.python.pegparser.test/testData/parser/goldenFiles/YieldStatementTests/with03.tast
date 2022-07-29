@@ -7,7 +7,7 @@ Module[0, 47]
         ---- Function body of gen ----
         With[14, 47]
             Items:
-                Item[19, 20]
+                WithItemTy[19, 20]
                     ContextExpr: Name[19, 20] Value: "a"
             Body:
                 Yield[26, 34]

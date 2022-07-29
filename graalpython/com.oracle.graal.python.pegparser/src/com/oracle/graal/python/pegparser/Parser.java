@@ -3213,14 +3213,14 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token _literal_2;
             Token _opt_var;
-            StmtTy.With.Item[] a;
+            WithItemTy[] a;
             StmtTy[] b;
             if (
                 (_keyword = expect(515)) != null  // token='with'
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = (StmtTy.With.Item[])_gather_51_rule()) != null  // ','.with_item+
+                (a = (WithItemTy[])_gather_51_rule()) != null  // ','.with_item+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -3247,13 +3247,13 @@ public final class Parser extends AbstractParser {
             }
             Token _keyword;
             Token _literal;
-            StmtTy.With.Item[] a;
+            WithItemTy[] a;
             StmtTy[] b;
             Token tc;
             if (
                 (_keyword = expect(515)) != null  // token='with'
                 &&
-                (a = (StmtTy.With.Item[])_gather_53_rule()) != null  // ','.with_item+
+                (a = (WithItemTy[])_gather_53_rule()) != null  // ','.with_item+
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
@@ -3281,7 +3281,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token _literal_2;
             Token _opt_var;
-            StmtTy.With.Item[] a;
+            WithItemTy[] a;
             Token async_var;
             StmtTy[] b;
             if (
@@ -3291,7 +3291,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = (StmtTy.With.Item[])_gather_56_rule()) != null  // ','.with_item+
+                (a = (WithItemTy[])_gather_56_rule()) != null  // ','.with_item+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -3318,7 +3318,7 @@ public final class Parser extends AbstractParser {
             }
             Token _keyword;
             Token _literal;
-            StmtTy.With.Item[] a;
+            WithItemTy[] a;
             Token async_var;
             StmtTy[] b;
             Token tc;
@@ -3327,7 +3327,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(515)) != null  // token='with'
                 &&
-                (a = (StmtTy.With.Item[])_gather_58_rule()) != null  // ','.with_item+
+                (a = (WithItemTy[])_gather_58_rule()) != null  // ','.with_item+
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
@@ -3370,7 +3370,7 @@ public final class Parser extends AbstractParser {
     //     | expression 'as' star_target &(',' | ')' | ':')
     //     | invalid_with_item
     //     | expression
-    public StmtTy.With.Item with_item_rule()
+    public WithItemTy with_item_rule()
     {
         if (errorIndicator) {
             return null;
@@ -3378,8 +3378,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WITH_ITEM_ID)) {
-            _res = (StmtTy.With.Item)cache.getResult(_mark, WITH_ITEM_ID);
-            return (StmtTy.With.Item)_res;
+            _res = (WithItemTy)cache.getResult(_mark, WITH_ITEM_ID);
+            return (WithItemTy)_res;
         }
         Token startToken = getAndInitializeToken();
         { // expression 'as' star_target &(',' | ')' | ':')
@@ -3405,7 +3405,7 @@ public final class Parser extends AbstractParser {
                 }
                 _res = factory.createWithItem(e, t, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
-                return (StmtTy.With.Item)_res;
+                return (WithItemTy)_res;
             }
             reset(_mark);
         }
@@ -3420,7 +3420,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_with_item_var;
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
-                return (StmtTy.With.Item)_res;
+                return (WithItemTy)_res;
             }
             reset(_mark);
         }
@@ -3439,13 +3439,13 @@ public final class Parser extends AbstractParser {
                 }
                 _res = factory.createWithItem(e, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, WITH_ITEM_ID, _res);
-                return (StmtTy.With.Item)_res;
+                return (WithItemTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, WITH_ITEM_ID, _res);
-        return (StmtTy.With.Item)_res;
+        return (WithItemTy)_res;
     }
 
     // try_stmt:
@@ -3711,7 +3711,7 @@ public final class Parser extends AbstractParser {
             }
             ExprTy _keyword;
             Token _literal;
-            StmtTy.Match.Case[] cases;
+            MatchCaseTy[] cases;
             Token dedent_var;
             Token indent_var;
             Token newline_var;
@@ -3727,7 +3727,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (indent_var = expect(Token.Kind.INDENT)) != null  // token='INDENT'
                 &&
-                (cases = (StmtTy.Match.Case[])_loop1_66_rule()) != null  // case_block+
+                (cases = (MatchCaseTy[])_loop1_66_rule()) != null  // case_block+
                 &&
                 (dedent_var = expect(Token.Kind.DEDENT)) != null  // token='DEDENT'
             )
@@ -3816,7 +3816,7 @@ public final class Parser extends AbstractParser {
     }
 
     // case_block: invalid_case_block | "case" patterns guard? ':' block
-    public StmtTy.Match.Case case_block_rule()
+    public MatchCaseTy case_block_rule()
     {
         if (errorIndicator) {
             return null;
@@ -3824,8 +3824,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CASE_BLOCK_ID)) {
-            _res = (StmtTy.Match.Case)cache.getResult(_mark, CASE_BLOCK_ID);
-            return (StmtTy.Match.Case)_res;
+            _res = (MatchCaseTy)cache.getResult(_mark, CASE_BLOCK_ID);
+            return (MatchCaseTy)_res;
         }
         if (callInvalidRules) { // invalid_case_block
             if (errorIndicator) {
@@ -3838,7 +3838,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_case_block_var;
                 cache.putResult(_mark, CASE_BLOCK_ID, _res);
-                return (StmtTy.Match.Case)_res;
+                return (MatchCaseTy)_res;
             }
             reset(_mark);
         }
@@ -3867,13 +3867,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_match_case ( pattern , guard , body , p -> arena )");
                 _res = null;
                 cache.putResult(_mark, CASE_BLOCK_ID, _res);
-                return (StmtTy.Match.Case)_res;
+                return (MatchCaseTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, CASE_BLOCK_ID, _res);
-        return (StmtTy.Match.Case)_res;
+        return (MatchCaseTy)_res;
     }
 
     // guard: 'if' named_expression
@@ -17147,7 +17147,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_52: ',' with_item
-    public StmtTy.With.Item[] _loop0_52_rule()
+    public WithItemTy[] _loop0_52_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17156,10 +17156,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_52_ID)) {
             _res = cache.getResult(_mark, _LOOP0_52_ID);
-            return (StmtTy.With.Item[])_res;
+            return (WithItemTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.With.Item> _children = new ArrayList<>();
+        List<WithItemTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
@@ -17167,30 +17167,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            StmtTy.With.Item elem;
+            WithItemTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
             )
             {
                 _res = elem;
-                if (_res instanceof StmtTy.With.Item) {
-                    _children.add((StmtTy.With.Item)_res);
+                if (_res instanceof WithItemTy) {
+                    _children.add((WithItemTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.With.Item[])_res));
+                    _children.addAll(Arrays.asList((WithItemTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
+        WithItemTy[] _seq = _children.toArray(new WithItemTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_52_ID, _seq);
         return _seq;
     }
 
     // _gather_51: with_item _loop0_52
-    public StmtTy.With.Item[] _gather_51_rule()
+    public WithItemTy[] _gather_51_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17198,34 +17198,34 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_51_ID)) {
-            _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_51_ID);
-            return (StmtTy.With.Item[])_res;
+            _res = (WithItemTy[])cache.getResult(_mark, _GATHER_51_ID);
+            return (WithItemTy[])_res;
         }
         { // with_item _loop0_52
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.With.Item elem;
-            StmtTy.With.Item[] seq;
+            WithItemTy elem;
+            WithItemTy[] seq;
             if (
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
                 &&
-                (seq = (StmtTy.With.Item[])_loop0_52_rule()) != null  // _loop0_52
+                (seq = (WithItemTy[])_loop0_52_rule()) != null  // _loop0_52
             )
             {
-                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
+                _res = insertInFront(elem, seq, WithItemTy.class);
                 cache.putResult(_mark, _GATHER_51_ID, _res);
-                return (StmtTy.With.Item[])_res;
+                return (WithItemTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_51_ID, _res);
-        return (StmtTy.With.Item[])_res;
+        return (WithItemTy[])_res;
     }
 
     // _loop0_54: ',' with_item
-    public StmtTy.With.Item[] _loop0_54_rule()
+    public WithItemTy[] _loop0_54_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17234,10 +17234,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_54_ID)) {
             _res = cache.getResult(_mark, _LOOP0_54_ID);
-            return (StmtTy.With.Item[])_res;
+            return (WithItemTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.With.Item> _children = new ArrayList<>();
+        List<WithItemTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
@@ -17245,30 +17245,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            StmtTy.With.Item elem;
+            WithItemTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
             )
             {
                 _res = elem;
-                if (_res instanceof StmtTy.With.Item) {
-                    _children.add((StmtTy.With.Item)_res);
+                if (_res instanceof WithItemTy) {
+                    _children.add((WithItemTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.With.Item[])_res));
+                    _children.addAll(Arrays.asList((WithItemTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
+        WithItemTy[] _seq = _children.toArray(new WithItemTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_54_ID, _seq);
         return _seq;
     }
 
     // _gather_53: with_item _loop0_54
-    public StmtTy.With.Item[] _gather_53_rule()
+    public WithItemTy[] _gather_53_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17276,30 +17276,30 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_53_ID)) {
-            _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_53_ID);
-            return (StmtTy.With.Item[])_res;
+            _res = (WithItemTy[])cache.getResult(_mark, _GATHER_53_ID);
+            return (WithItemTy[])_res;
         }
         { // with_item _loop0_54
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.With.Item elem;
-            StmtTy.With.Item[] seq;
+            WithItemTy elem;
+            WithItemTy[] seq;
             if (
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
                 &&
-                (seq = (StmtTy.With.Item[])_loop0_54_rule()) != null  // _loop0_54
+                (seq = (WithItemTy[])_loop0_54_rule()) != null  // _loop0_54
             )
             {
-                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
+                _res = insertInFront(elem, seq, WithItemTy.class);
                 cache.putResult(_mark, _GATHER_53_ID, _res);
-                return (StmtTy.With.Item[])_res;
+                return (WithItemTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_53_ID, _res);
-        return (StmtTy.With.Item[])_res;
+        return (WithItemTy[])_res;
     }
 
     // _tmp_55: TYPE_COMMENT
@@ -17335,7 +17335,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_57: ',' with_item
-    public StmtTy.With.Item[] _loop0_57_rule()
+    public WithItemTy[] _loop0_57_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17344,10 +17344,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_57_ID)) {
             _res = cache.getResult(_mark, _LOOP0_57_ID);
-            return (StmtTy.With.Item[])_res;
+            return (WithItemTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.With.Item> _children = new ArrayList<>();
+        List<WithItemTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
@@ -17355,30 +17355,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            StmtTy.With.Item elem;
+            WithItemTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
             )
             {
                 _res = elem;
-                if (_res instanceof StmtTy.With.Item) {
-                    _children.add((StmtTy.With.Item)_res);
+                if (_res instanceof WithItemTy) {
+                    _children.add((WithItemTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.With.Item[])_res));
+                    _children.addAll(Arrays.asList((WithItemTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
+        WithItemTy[] _seq = _children.toArray(new WithItemTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_57_ID, _seq);
         return _seq;
     }
 
     // _gather_56: with_item _loop0_57
-    public StmtTy.With.Item[] _gather_56_rule()
+    public WithItemTy[] _gather_56_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17386,34 +17386,34 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_56_ID)) {
-            _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_56_ID);
-            return (StmtTy.With.Item[])_res;
+            _res = (WithItemTy[])cache.getResult(_mark, _GATHER_56_ID);
+            return (WithItemTy[])_res;
         }
         { // with_item _loop0_57
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.With.Item elem;
-            StmtTy.With.Item[] seq;
+            WithItemTy elem;
+            WithItemTy[] seq;
             if (
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
                 &&
-                (seq = (StmtTy.With.Item[])_loop0_57_rule()) != null  // _loop0_57
+                (seq = (WithItemTy[])_loop0_57_rule()) != null  // _loop0_57
             )
             {
-                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
+                _res = insertInFront(elem, seq, WithItemTy.class);
                 cache.putResult(_mark, _GATHER_56_ID, _res);
-                return (StmtTy.With.Item[])_res;
+                return (WithItemTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_56_ID, _res);
-        return (StmtTy.With.Item[])_res;
+        return (WithItemTy[])_res;
     }
 
     // _loop0_59: ',' with_item
-    public StmtTy.With.Item[] _loop0_59_rule()
+    public WithItemTy[] _loop0_59_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17422,10 +17422,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_59_ID)) {
             _res = cache.getResult(_mark, _LOOP0_59_ID);
-            return (StmtTy.With.Item[])_res;
+            return (WithItemTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.With.Item> _children = new ArrayList<>();
+        List<WithItemTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' with_item
@@ -17433,30 +17433,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            StmtTy.With.Item elem;
+            WithItemTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
             )
             {
                 _res = elem;
-                if (_res instanceof StmtTy.With.Item) {
-                    _children.add((StmtTy.With.Item)_res);
+                if (_res instanceof WithItemTy) {
+                    _children.add((WithItemTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.With.Item[])_res));
+                    _children.addAll(Arrays.asList((WithItemTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        StmtTy.With.Item[] _seq = _children.toArray(new StmtTy.With.Item[_children.size()]);
+        WithItemTy[] _seq = _children.toArray(new WithItemTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_59_ID, _seq);
         return _seq;
     }
 
     // _gather_58: with_item _loop0_59
-    public StmtTy.With.Item[] _gather_58_rule()
+    public WithItemTy[] _gather_58_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17464,30 +17464,30 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_58_ID)) {
-            _res = (StmtTy.With.Item[])cache.getResult(_mark, _GATHER_58_ID);
-            return (StmtTy.With.Item[])_res;
+            _res = (WithItemTy[])cache.getResult(_mark, _GATHER_58_ID);
+            return (WithItemTy[])_res;
         }
         { // with_item _loop0_59
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.With.Item elem;
-            StmtTy.With.Item[] seq;
+            WithItemTy elem;
+            WithItemTy[] seq;
             if (
-                (elem = (StmtTy.With.Item)with_item_rule()) != null  // with_item
+                (elem = (WithItemTy)with_item_rule()) != null  // with_item
                 &&
-                (seq = (StmtTy.With.Item[])_loop0_59_rule()) != null  // _loop0_59
+                (seq = (WithItemTy[])_loop0_59_rule()) != null  // _loop0_59
             )
             {
-                _res = insertInFront(elem, seq, StmtTy.With.Item.class);
+                _res = insertInFront(elem, seq, WithItemTy.class);
                 cache.putResult(_mark, _GATHER_58_ID, _res);
-                return (StmtTy.With.Item[])_res;
+                return (WithItemTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_58_ID, _res);
-        return (StmtTy.With.Item[])_res;
+        return (WithItemTy[])_res;
     }
 
     // _tmp_60: TYPE_COMMENT
@@ -17727,7 +17727,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_66: case_block
-    public StmtTy.Match.Case[] _loop1_66_rule()
+    public MatchCaseTy[] _loop1_66_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17736,26 +17736,26 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP1_66_ID)) {
             _res = cache.getResult(_mark, _LOOP1_66_ID);
-            return (StmtTy.Match.Case[])_res;
+            return (MatchCaseTy[])_res;
         }
         int _start_mark = mark();
-        List<StmtTy.Match.Case> _children = new ArrayList<>();
+        List<MatchCaseTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // case_block
             if (errorIndicator) {
                 return null;
             }
-            StmtTy.Match.Case case_block_var;
+            MatchCaseTy case_block_var;
             while (
-                (case_block_var = (StmtTy.Match.Case)case_block_rule()) != null  // case_block
+                (case_block_var = (MatchCaseTy)case_block_rule()) != null  // case_block
             )
             {
                 _res = case_block_var;
-                if (_res instanceof StmtTy.Match.Case) {
-                    _children.add((StmtTy.Match.Case)_res);
+                if (_res instanceof MatchCaseTy) {
+                    _children.add((MatchCaseTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((StmtTy.Match.Case[])_res));
+                    _children.addAll(Arrays.asList((MatchCaseTy[])_res));
                 }
                 _mark = mark();
             }
@@ -17764,7 +17764,7 @@ public final class Parser extends AbstractParser {
         if (_children.size() == 0) {
             return null;
         }
-        StmtTy.Match.Case[] _seq = _children.toArray(new StmtTy.Match.Case[_children.size()]);
+        MatchCaseTy[] _seq = _children.toArray(new MatchCaseTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_66_ID, _seq);
         return _seq;
     }

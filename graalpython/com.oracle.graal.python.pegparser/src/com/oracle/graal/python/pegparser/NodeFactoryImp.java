@@ -57,6 +57,9 @@ import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef;
+import com.oracle.graal.python.pegparser.sst.StmtTy.FunctionDef;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
@@ -440,7 +443,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators) {
-        return ((StmtTy.FunctionDef) funcDef).copyWithDecorators(decorators);
+        if (funcDef instanceof AsyncFunctionDef) {
+            StmtTy.AsyncFunctionDef f = (StmtTy.AsyncFunctionDef) funcDef;
+            return new AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+        }
+        StmtTy.FunctionDef f = (StmtTy.FunctionDef) funcDef;
+        return new FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
     }
 
     @Override
@@ -504,7 +512,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createNonLocal(String[] names, SourceRange sourceRange) {
-        return new StmtTy.NonLocal(names, sourceRange);
+        return new StmtTy.Nonlocal(names, sourceRange);
     }
 
     @Override
@@ -553,18 +561,18 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
+    public WithItemTy createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
         // TODO check if context expr is not null -> throw error
-        return new StmtTy.With.Item(contextExpr, optionalVars, sourceRange);
+        return new WithItemTy(contextExpr, optionalVars, sourceRange);
     }
 
     @Override
-    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+    public StmtTy.With createWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
         return new StmtTy.With(items, body, typeComment, sourceRange);
     }
 
     @Override
-    public StmtTy.AsyncWith createAsyncWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+    public StmtTy.AsyncWith createAsyncWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
         return new StmtTy.AsyncWith(items, body, typeComment, sourceRange);
     }
 

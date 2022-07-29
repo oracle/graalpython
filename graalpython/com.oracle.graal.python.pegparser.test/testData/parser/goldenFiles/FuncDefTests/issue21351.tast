@@ -12,7 +12,7 @@ Module[0, 207]
                 Args:
                     ArgTy[47, 50] obj
             ---- Function body of toInternal ----
-            NonLocal[61, 73]: var 
+            Nonlocal[61, 73]: var 
             Assign[82, 88]
                 LHS: Name[82, 83] Value: "x" Store
                 RHS: LONG[86, 88] Value: 10

@@ -5,7 +5,7 @@ Module[0, 56]
         ---- Function body of fn ----
         With[12, 56]
             Items:
-                Item[17, 25]
+                WithItemTy[17, 25]
                     ContextExpr: 
                         Call[17, 20]
                             Target: Name[17, 18] Value: "A"
@@ -13,7 +13,7 @@ Module[0, 56]
             Body:
                 With[31, 56]
                     Items:
-                        Item[36, 44]
+                        WithItemTy[36, 44]
                             ContextExpr: 
                                 Call[36, 39]
                                     Target: Name[36, 37] Value: "B"

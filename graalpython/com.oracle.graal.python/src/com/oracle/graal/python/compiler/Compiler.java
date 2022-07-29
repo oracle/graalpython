@@ -159,6 +159,9 @@ import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -1999,7 +2002,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
-        return visitFunctionDef(node, true);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, true);
     }
 
     @Override
@@ -2159,32 +2162,32 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
-        return visitFunctionDef(node, false);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, false);
     }
 
-    private Void visitFunctionDef(StmtTy.FunctionDef node, boolean isAsync) {
+    private Void visitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, boolean isAsync) {
         setLocation(node);
-        checkForbiddenArgs(node.args);
+        checkForbiddenArgs(args);
 
         // visit decorators
-        visitSequence(node.decoratorList);
+        visitSequence(decoratorList);
 
         // visit defaults outside the function scope
-        int makeFunctionFlags = collectDefaults(node.args);
+        int makeFunctionFlags = collectDefaults(args);
 
-        boolean hasAnnotations = visitAnnotations(node.args, node.returns);
+        boolean hasAnnotations = visitAnnotations(args, returns);
         if (hasAnnotations) {
             makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS;
         }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
-        enterScope(node.name, scopeType, node, node.args);
+        enterScope(name, scopeType, node, args);
 
         CodeUnit code;
         try {
-            TruffleString docString = getDocstring(node.body);
+            TruffleString docString = getDocstring(body);
             addObject(unit.constants, docString == null ? PNone.NONE : docString);
-            visitSequence(node.body);
+            visitSequence(body);
             code = unit.assemble();
         } finally {
             exitScope();
@@ -2192,14 +2195,13 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         makeClosure(code, makeFunctionFlags);
 
-        if (node.decoratorList != null) {
-            ExprTy[] decoratorList = node.decoratorList;
+        if (decoratorList != null) {
             for (int i = 0; i < decoratorList.length; i++) {
                 addOp(CALL_FUNCTION, 1);
             }
         }
 
-        addNameOp(node.name, ExprContextTy.Store);
+        addNameOp(name, ExprContextTy.Store);
         return null;
     }
 
@@ -2380,52 +2382,52 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Match.Case node) {
+    public Void visit(MatchCaseTy node) {
         return emitNotImplemented("case");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchAs node) {
+    public Void visit(PatternTy.MatchAs node) {
         return emitNotImplemented("match as");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchClass node) {
+    public Void visit(PatternTy.MatchClass node) {
         return emitNotImplemented("match class");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
+    public Void visit(PatternTy.MatchMapping node) {
         return emitNotImplemented("match mapping");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchOr node) {
+    public Void visit(PatternTy.MatchOr node) {
         return emitNotImplemented("match or");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
+    public Void visit(PatternTy.MatchSequence node) {
         return emitNotImplemented("match sequence");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
+    public Void visit(PatternTy.MatchSingleton node) {
         return emitNotImplemented("match singleton");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchStar node) {
+    public Void visit(PatternTy.MatchStar node) {
         return emitNotImplemented("match star");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchValue node) {
+    public Void visit(PatternTy.MatchValue node) {
         return emitNotImplemented("match value");
     }
 
     @Override
-    public Void visit(StmtTy.NonLocal node) {
+    public Void visit(StmtTy.Nonlocal node) {
         setLocation(node);
         return null;
     }
@@ -2689,7 +2691,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block body = new Block();
         Block handler = new Block();
 
-        StmtTy.With.Item item = node.items[itemIndex];
+        WithItemTy item = node.items[itemIndex];
         item.contextExpr.accept(this);
         addOp(SETUP_WITH);
         unit.pushBlock(new BlockInfo.With(body, handler, node));
@@ -2719,7 +2721,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.With.Item node) {
+    public Void visit(WithItemTy node) {
         throw new IllegalStateException("should not reach here");
     }
 

@@ -60,7 +60,6 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert op != null;
             this.op = op;
-            assert values != null;
             this.values = values;
         }
 
@@ -174,9 +173,7 @@ public abstract class ExprTy extends SSTNode {
 
         public Dict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
-            assert keys != null;
             this.keys = keys;
-            assert values != null;
             this.values = values;
         }
 
@@ -191,7 +188,6 @@ public abstract class ExprTy extends SSTNode {
 
         public Set(ExprTy[] elements, SourceRange sourceRange) {
             super(sourceRange);
-            assert elements != null;
             this.elements = elements;
         }
 
@@ -209,7 +205,6 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert element != null;
             this.element = element;
-            assert generators != null;
             this.generators = generators;
         }
 
@@ -227,7 +222,6 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert element != null;
             this.element = element;
-            assert generators != null;
             this.generators = generators;
         }
 
@@ -248,7 +242,6 @@ public abstract class ExprTy extends SSTNode {
             this.key = key;
             assert value != null;
             this.value = value;
-            assert generators != null;
             this.generators = generators;
         }
 
@@ -266,7 +259,6 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert element != null;
             this.element = element;
-            assert generators != null;
             this.generators = generators;
         }
 
@@ -330,9 +322,7 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert left != null;
             this.left = left;
-            assert ops != null;
             this.ops = ops;
-            assert comparators != null;
             this.comparators = comparators;
         }
 
@@ -351,9 +341,7 @@ public abstract class ExprTy extends SSTNode {
             super(sourceRange);
             assert func != null;
             this.func = func;
-            assert args != null;
             this.args = args;
-            assert keywords != null;
             this.keywords = keywords;
         }
 
@@ -388,7 +376,6 @@ public abstract class ExprTy extends SSTNode {
 
         public JoinedStr(ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
-            assert values != null;
             this.values = values;
         }
 
@@ -531,7 +518,6 @@ public abstract class ExprTy extends SSTNode {
 
         public List(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
-            assert elements != null;
             this.elements = elements;
             assert context != null;
             this.context = context;
@@ -558,7 +544,6 @@ public abstract class ExprTy extends SSTNode {
 
         public Tuple(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
-            assert elements != null;
             this.elements = elements;
             assert context != null;
             this.context = context;

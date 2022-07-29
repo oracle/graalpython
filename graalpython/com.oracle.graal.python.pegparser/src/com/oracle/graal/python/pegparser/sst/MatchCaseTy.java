@@ -38,20 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-public final class KeywordTy extends SSTNode {
-    public final String arg;
-    public final ExprTy value;
+public final class MatchCaseTy extends SSTNode {
+    public final PatternTy pattern;
+    public final ExprTy guard;
+    public final StmtTy[] body;
 
-    public KeywordTy(String arg, ExprTy value, SourceRange sourceRange) {
+    public MatchCaseTy(PatternTy pattern, ExprTy guard, StmtTy[] body, SourceRange sourceRange) {
         super(sourceRange);
-        this.arg = arg;
-        assert value != null;
-        this.value = value;
+        assert pattern != null;
+        this.pattern = pattern;
+        this.guard = guard;
+        this.body = body;
     }
 
     @Override

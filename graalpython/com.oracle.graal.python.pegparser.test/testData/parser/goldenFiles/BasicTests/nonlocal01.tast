@@ -10,7 +10,7 @@ Module[0, 168]
             Name:inner
             ArgumentsTy[0, 0]
             ---- Function body of inner ----
-            NonLocal[59, 69]: x 
+            Nonlocal[59, 69]: x 
             Assign[78, 92]
                 LHS: Name[78, 79] Value: "x" Store
                 RHS: RAW[82, 92] Value: "nonlocal"

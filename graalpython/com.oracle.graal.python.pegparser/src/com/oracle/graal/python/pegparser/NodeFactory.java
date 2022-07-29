@@ -50,6 +50,7 @@ import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
@@ -190,11 +191,11 @@ public interface NodeFactory {
 
     public ExceptHandlerTy createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange);
 
-    public StmtTy createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
+    public StmtTy createWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
 
-    public StmtTy createAsyncWith(StmtTy.AsyncWith.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
+    public StmtTy createAsyncWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange);
 
-    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange);
+    public WithItemTy createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange);
 
     public ExprTy createAwait(ExprTy value, SourceRange sourceRange);
 

@@ -58,6 +58,9 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
@@ -943,52 +946,52 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Match.Case node) {
+    public Void visit(MatchCaseTy node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchAs node) {
+    public Void visit(PatternTy.MatchAs node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchClass node) {
+    public Void visit(PatternTy.MatchClass node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
+    public Void visit(PatternTy.MatchMapping node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchOr node) {
+    public Void visit(PatternTy.MatchOr node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
+    public Void visit(PatternTy.MatchSequence node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
+    public Void visit(PatternTy.MatchSingleton node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchStar node) {
+    public Void visit(PatternTy.MatchStar node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchValue node) {
+    public Void visit(PatternTy.MatchValue node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.NonLocal node) {
+    public Void visit(StmtTy.Nonlocal node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
@@ -1023,7 +1026,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.With.Item node) {
+    public Void visit(WithItemTy node) {
         throw new IllegalStateException("unknown expression kind");
     }
 

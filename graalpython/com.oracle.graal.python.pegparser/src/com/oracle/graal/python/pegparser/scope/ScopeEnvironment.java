@@ -65,6 +65,9 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 
 /**
@@ -1027,52 +1030,52 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(StmtTy.Match.Case node) {
+        public Void visit(MatchCaseTy node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchAs node) {
+        public Void visit(PatternTy.MatchAs node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchClass node) {
+        public Void visit(PatternTy.MatchClass node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
+        public Void visit(PatternTy.MatchMapping node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchOr node) {
+        public Void visit(PatternTy.MatchOr node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
+        public Void visit(PatternTy.MatchSequence node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
+        public Void visit(PatternTy.MatchSingleton node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchStar node) {
+        public Void visit(PatternTy.MatchStar node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.Match.Pattern.MatchValue node) {
+        public Void visit(PatternTy.MatchValue node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public Void visit(StmtTy.NonLocal node) {
+        public Void visit(StmtTy.Nonlocal node) {
             for (String n : node.names) {
                 String mangled = mangle(n);
                 EnumSet<DefUse> cur = currentScope.getUseOfName(n);
@@ -1154,7 +1157,7 @@ public class ScopeEnvironment {
         }
 
         @Override
-        public Void visit(StmtTy.With.Item node) {
+        public Void visit(WithItemTy node) {
             node.contextExpr.accept(this);
             if (node.optionalVars != null) {
                 node.optionalVars.accept(this);

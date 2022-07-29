@@ -38,7 +38,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -46,39 +45,6 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 public abstract class StmtTy extends SSTNode {
     StmtTy(SourceRange sourceRange) {
         super(sourceRange);
-    }
-
-    public static final class Pass extends StmtTy {
-        public Pass(SourceRange sourceRange) {
-            super(sourceRange);
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-    }
-
-    public static final class Break extends StmtTy {
-        public Break(SourceRange sourceRange) {
-            super(sourceRange);
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-    }
-
-    public static final class Continue extends StmtTy {
-        public Continue(SourceRange sourceRange) {
-            super(sourceRange);
-        }
-
-        @Override
-        public <T> T accept(SSTreeVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
     }
 
     public static class FunctionDef extends StmtTy {
@@ -91,7 +57,9 @@ public abstract class StmtTy extends SSTNode {
 
         public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
             super(sourceRange);
+            assert name != null;
             this.name = name;
+            assert args != null;
             this.args = args;
             this.body = body;
             this.decoratorList = decoratorList;
@@ -103,25 +71,31 @@ public abstract class StmtTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        public FunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
-            return new FunctionDef(name, args, body, newDecoratorList, returns, typeComment, sourceRange);
-        }
     }
 
-    public static final class AsyncFunctionDef extends FunctionDef {
+    public static final class AsyncFunctionDef extends StmtTy {
+        public final String name;
+        public final ArgumentsTy args;
+        public final StmtTy[] body;
+        public final ExprTy[] decoratorList;
+        public final ExprTy returns;
+        public final String typeComment;
+
         public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
-            super(name, args, body, decoratorList, returns, typeComment, sourceRange);
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+            assert args != null;
+            this.args = args;
+            this.body = body;
+            this.decoratorList = decoratorList;
+            this.returns = returns;
+            this.typeComment = typeComment;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public AsyncFunctionDef copyWithDecorators(ExprTy[] newDecoratorList) {
-            return new AsyncFunctionDef(name, args, body, newDecoratorList, returns, typeComment, sourceRange);
         }
     }
 
@@ -134,6 +108,7 @@ public abstract class StmtTy extends SSTNode {
 
         public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, SourceRange sourceRange) {
             super(sourceRange);
+            assert name != null;
             this.name = name;
             this.bases = bases;
             this.keywords = keywords;
@@ -183,6 +158,7 @@ public abstract class StmtTy extends SSTNode {
         public Assign(ExprTy[] targets, ExprTy value, String typeComment, SourceRange sourceRange) {
             super(sourceRange);
             this.targets = targets;
+            assert value != null;
             this.value = value;
             this.typeComment = typeComment;
         }
@@ -200,8 +176,11 @@ public abstract class StmtTy extends SSTNode {
 
         public AugAssign(ExprTy target, OperatorTy op, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
+            assert target != null;
             this.target = target;
+            assert op != null;
             this.op = op;
+            assert value != null;
             this.value = value;
         }
 
@@ -219,7 +198,9 @@ public abstract class StmtTy extends SSTNode {
 
         public AnnAssign(ExprTy target, ExprTy annotation, ExprTy value, boolean isSimple, SourceRange sourceRange) {
             super(sourceRange);
+            assert target != null;
             this.target = target;
+            assert annotation != null;
             this.annotation = annotation;
             this.value = value;
             this.isSimple = isSimple;
@@ -240,7 +221,9 @@ public abstract class StmtTy extends SSTNode {
 
         public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
             super(sourceRange);
+            assert target != null;
             this.target = target;
+            assert iter != null;
             this.iter = iter;
             this.body = body;
             this.orElse = orElse;
@@ -253,9 +236,22 @@ public abstract class StmtTy extends SSTNode {
         }
     }
 
-    public static final class AsyncFor extends For {
+    public static final class AsyncFor extends StmtTy {
+        public final ExprTy target;
+        public final ExprTy iter;
+        public final StmtTy[] body;
+        public final StmtTy[] orElse;
+        public final String typeComment;
+
         public AsyncFor(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
-            super(target, iter, body, orElse, typeComment, sourceRange);
+            super(sourceRange);
+            assert target != null;
+            this.target = target;
+            assert iter != null;
+            this.iter = iter;
+            this.body = body;
+            this.orElse = orElse;
+            this.typeComment = typeComment;
         }
 
         @Override
@@ -271,6 +267,7 @@ public abstract class StmtTy extends SSTNode {
 
         public While(ExprTy test, StmtTy[] body, StmtTy[] orElse, SourceRange sourceRange) {
             super(sourceRange);
+            assert test != null;
             this.test = test;
             this.body = body;
             this.orElse = orElse;
@@ -289,6 +286,7 @@ public abstract class StmtTy extends SSTNode {
 
         public If(ExprTy test, StmtTy[] body, StmtTy[] orElse, SourceRange sourceRange) {
             super(sourceRange);
+            assert test != null;
             this.test = test;
             this.body = body;
             this.orElse = orElse;
@@ -301,27 +299,12 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static class With extends StmtTy {
-        public static final class Item extends SSTNode {
-            public final ExprTy contextExpr;
-            public final ExprTy optionalVars;
 
-            public Item(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
-                super(sourceRange);
-                this.contextExpr = contextExpr;
-                this.optionalVars = optionalVars;
-            }
-
-            @Override
-            public <T> T accept(SSTreeVisitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
-
-        public final Item[] items;
+        public final WithItemTy[] items;
         public final StmtTy[] body;
         public final String typeComment;
 
-        public With(Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+        public With(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
             super(sourceRange);
             this.items = items;
             this.body = body;
@@ -334,9 +317,17 @@ public abstract class StmtTy extends SSTNode {
         }
     }
 
-    public static final class AsyncWith extends With {
-        public AsyncWith(Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
-            super(items, body, typeComment, sourceRange);
+    public static final class AsyncWith extends StmtTy {
+
+        public final WithItemTy[] items;
+        public final StmtTy[] body;
+        public final String typeComment;
+
+        public AsyncWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+            super(sourceRange);
+            this.items = items;
+            this.body = body;
+            this.typeComment = typeComment;
         }
 
         @Override
@@ -346,159 +337,13 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Match extends StmtTy {
-        public static abstract class Pattern extends SSTNode {
-            Pattern(SourceRange sourceRange) {
-                super(sourceRange);
-            }
-
-            public static final class MatchValue extends Pattern {
-                public final ExprTy value;
-
-                public MatchValue(ExprTy value, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.value = value;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchSingleton extends Pattern {
-                public final ExprTy.Constant value;
-
-                public MatchSingleton(ExprTy.Constant value, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.value = value;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchSequence extends Pattern {
-                public final Pattern[] patterns;
-
-                public MatchSequence(Pattern[] patterns, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.patterns = patterns;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchMapping extends Pattern {
-                public final ExprTy[] keys;
-                public final Pattern[] patterns;
-                public final String rest;
-
-                public MatchMapping(ExprTy[] keys, Pattern[] patterns, String rest, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.keys = keys;
-                    this.patterns = patterns;
-                    this.rest = rest;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchClass extends Pattern {
-                public final ExprTy cls;
-                public final Pattern[] patterns;
-                public final String[] kwdAttrs;
-                public final Pattern[] kwdPatters;
-
-                public MatchClass(ExprTy cls, Pattern[] patterns, String[] kwdAttrs, Pattern[] kwdPatters, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.cls = cls;
-                    this.patterns = patterns;
-                    this.kwdAttrs = kwdAttrs;
-                    this.kwdPatters = kwdPatters;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchStar extends Pattern {
-                public final String name;
-
-                public MatchStar(String name, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.name = name;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchAs extends Pattern {
-                public final Pattern pattern;
-                public final String name;
-
-                public MatchAs(Pattern pattern, String name, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.pattern = pattern;
-                    this.name = name;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-
-            public static final class MatchOr extends Pattern {
-                public final Pattern[] patterns;
-
-                public MatchOr(Pattern[] patterns, SourceRange sourceRange) {
-                    super(sourceRange);
-                    this.patterns = patterns;
-                }
-
-                @Override
-                public <T> T accept(SSTreeVisitor<T> visitor) {
-                    return visitor.visit(this);
-                }
-            }
-        }
-
-        public static final class Case extends SSTNode {
-            public final Pattern pattern;
-            public final ExprTy guard;
-            public final StmtTy[] body;
-
-            public Case(Pattern pattern, ExprTy guard, StmtTy[] body, SourceRange sourceRange) {
-                super(sourceRange);
-                this.pattern = pattern;
-                this.guard = guard;
-                this.body = body;
-            }
-
-            @Override
-            public <T> T accept(SSTreeVisitor<T> visitor) {
-                return visitor.visit(this);
-            }
-        }
 
         public final ExprTy subject;
-        public final Case[] cases;
+        public final MatchCaseTy[] cases;
 
-        public Match(ExprTy subject, Case[] cases, SourceRange sourceRange) {
+        public Match(ExprTy subject, MatchCaseTy[] cases, SourceRange sourceRange) {
             super(sourceRange);
+            assert subject != null;
             this.subject = subject;
             this.cases = cases;
         }
@@ -552,6 +397,7 @@ public abstract class StmtTy extends SSTNode {
 
         public Assert(ExprTy test, ExprTy msg, SourceRange sourceRange) {
             super(sourceRange);
+            assert test != null;
             this.test = test;
             this.msg = msg;
         }
@@ -608,10 +454,10 @@ public abstract class StmtTy extends SSTNode {
         }
     }
 
-    public static final class NonLocal extends StmtTy {
+    public static final class Nonlocal extends StmtTy {
         public final String[] names;
 
-        public NonLocal(String[] names, SourceRange sourceRange) {
+        public Nonlocal(String[] names, SourceRange sourceRange) {
             super(sourceRange);
             this.names = names;
         }
@@ -627,6 +473,7 @@ public abstract class StmtTy extends SSTNode {
 
         public Expr(ExprTy value) {
             super(value.sourceRange);
+            assert value != null;
             this.value = value;
         }
 
@@ -635,4 +482,38 @@ public abstract class StmtTy extends SSTNode {
             return visitor.visit(this);
         }
     }
+
+    public static final class Pass extends StmtTy {
+        public Pass(SourceRange sourceRange) {
+            super(sourceRange);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class Break extends StmtTy {
+        public Break(SourceRange sourceRange) {
+            super(sourceRange);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class Continue extends StmtTy {
+        public Continue(SourceRange sourceRange) {
+            super(sourceRange);
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
 }

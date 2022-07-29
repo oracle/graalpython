@@ -57,7 +57,6 @@ public abstract class ExceptHandlerTy extends SSTNode {
             super(sourceRange);
             this.type = type;
             this.name = name;
-            assert body != null;
             this.body = body;
         }
 

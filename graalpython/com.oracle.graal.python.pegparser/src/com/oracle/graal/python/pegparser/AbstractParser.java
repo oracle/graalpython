@@ -58,7 +58,7 @@ import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
-import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
@@ -708,9 +708,9 @@ abstract class AbstractParser {
 
     public static final class KeyPatternPair {
         final ExprTy key;
-        final StmtTy.Match.Pattern pattern;
+        final PatternTy pattern;
 
-        KeyPatternPair(ExprTy key, StmtTy.Match.Pattern pattern) {
+        KeyPatternPair(ExprTy key, PatternTy pattern) {
             this.key = key;
             this.pattern = pattern;
         }

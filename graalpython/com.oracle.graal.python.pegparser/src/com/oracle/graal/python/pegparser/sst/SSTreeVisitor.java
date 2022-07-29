@@ -53,151 +53,90 @@ public interface SSTreeVisitor<T> {
         return null;
     }
 
-    T visit(AliasTy node);
+    T visit(ModTy.Module node);
+    T visit(ModTy.Interactive node);
+    T visit(ModTy.Expression node);
+    T visit(ModTy.FunctionType node);
 
-    T visit(ArgTy node);
+    T visit(StmtTy.FunctionDef node);
+    T visit(StmtTy.AsyncFunctionDef node);
+    T visit(StmtTy.ClassDef node);
+    T visit(StmtTy.Return node);
+    T visit(StmtTy.Delete node);
+    T visit(StmtTy.Assign node);
+    T visit(StmtTy.AugAssign node);
+    T visit(StmtTy.AnnAssign node);
+    T visit(StmtTy.For node);
+    T visit(StmtTy.AsyncFor node);
+    T visit(StmtTy.While node);
+    T visit(StmtTy.If node);
+    T visit(StmtTy.With node);
+    T visit(StmtTy.AsyncWith node);
+    T visit(StmtTy.Match node);
+    T visit(StmtTy.Raise node);
+    T visit(StmtTy.Try node);
+    T visit(StmtTy.Assert node);
+    T visit(StmtTy.Import node);
+    T visit(StmtTy.ImportFrom node);
+    T visit(StmtTy.Global node);
+    T visit(StmtTy.Nonlocal node);
+    T visit(StmtTy.Expr node);
+    T visit(StmtTy.Pass node);
+    T visit(StmtTy.Break node);
+    T visit(StmtTy.Continue node);
+
+    T visit(ExprTy.BoolOp node);
+    T visit(ExprTy.NamedExpr node);
+    T visit(ExprTy.BinOp node);
+    T visit(ExprTy.UnaryOp node);
+    T visit(ExprTy.Lambda node);
+    T visit(ExprTy.IfExp node);
+    T visit(ExprTy.Dict node);
+    T visit(ExprTy.Set node);
+    T visit(ExprTy.ListComp node);
+    T visit(ExprTy.SetComp node);
+    T visit(ExprTy.DictComp node);
+    T visit(ExprTy.GeneratorExp node);
+    T visit(ExprTy.Await node);
+    T visit(ExprTy.Yield node);
+    T visit(ExprTy.YieldFrom node);
+    T visit(ExprTy.Compare node);
+    T visit(ExprTy.Call node);
+    T visit(ExprTy.FormattedValue node);
+    T visit(ExprTy.JoinedStr node);
+    T visit(ExprTy.Constant node);
+    T visit(ExprTy.Attribute node);
+    T visit(ExprTy.Subscript node);
+    T visit(ExprTy.Starred node);
+    T visit(ExprTy.Name node);
+    T visit(ExprTy.List node);
+    T visit(ExprTy.Tuple node);
+    T visit(ExprTy.Slice node);
+
+    T visit(ComprehensionTy node);
+
+    T visit(ExceptHandlerTy.ExceptHandler node);
 
     T visit(ArgumentsTy node);
 
-    T visit(ComprehensionTy aThis);
-
-    T visit(ExprTy.Attribute node);
-
-    T visit(ExprTy.Await node);
-
-    T visit(ExprTy.BinOp node);
-
-    T visit(ExprTy.BoolOp node);
-
-    T visit(ExprTy.Call node);
-
-    T visit(ExprTy.Compare node);
-
-    T visit(ExprTy.Constant node);
-
-    T visit(ExprTy.Dict node);
-
-    T visit(ExprTy.DictComp node);
-
-    T visit(ExprTy.FormattedValue node);
-
-    T visit(ExprTy.GeneratorExp node);
-
-    T visit(ExprTy.IfExp node);
-
-    T visit(ExprTy.JoinedStr node);
-
-    T visit(ExprTy.Lambda node);
-
-    T visit(ExprTy.List node);
-
-    T visit(ExprTy.ListComp node);
-
-    T visit(ExprTy.Name node);
-
-    T visit(ExprTy.NamedExpr node);
-
-    T visit(ExprTy.Set node);
-
-    T visit(ExprTy.SetComp node);
-
-    T visit(ExprTy.Slice node);
-
-    T visit(ExprTy.Starred node);
-
-    T visit(ExprTy.Subscript node);
-
-    T visit(ExprTy.Tuple node);
-
-    T visit(ExprTy.UnaryOp node);
-
-    T visit(ExprTy.Yield node);
-
-    T visit(ExprTy.YieldFrom node);
+    T visit(ArgTy node);
 
     T visit(KeywordTy node);
 
-    T visit(ModTy.Expression node);
+    T visit(AliasTy node);
 
-    T visit(ModTy.FunctionType node);
+    T visit(WithItemTy node);
 
-    T visit(ModTy.Interactive node);
+    T visit(MatchCaseTy node);
 
-    T visit(ModTy.Module node);
-
-    T visit(StmtTy.AnnAssign node);
-
-    T visit(StmtTy.Assert node);
-
-    T visit(StmtTy.Assign node);
-
-    T visit(StmtTy.AsyncFor node);
-
-    T visit(StmtTy.AsyncFunctionDef node);
-
-    T visit(StmtTy.AsyncWith node);
-
-    T visit(StmtTy.AugAssign node);
-
-    T visit(StmtTy.ClassDef node);
-
-    T visit(StmtTy.Delete node);
-
-    T visit(StmtTy.Expr node);
-
-    T visit(StmtTy.For node);
-
-    T visit(StmtTy.FunctionDef node);
-
-    T visit(StmtTy.Global node);
-
-    T visit(StmtTy.If node);
-
-    T visit(StmtTy.Import node);
-
-    T visit(StmtTy.ImportFrom node);
-
-    T visit(StmtTy.Match node);
-
-    T visit(StmtTy.Match.Case node);
-
-    T visit(StmtTy.Match.Pattern.MatchAs node);
-
-    T visit(StmtTy.Match.Pattern.MatchClass node);
-
-    T visit(StmtTy.Match.Pattern.MatchMapping node);
-
-    T visit(StmtTy.Match.Pattern.MatchOr node);
-
-    T visit(StmtTy.Match.Pattern.MatchSequence node);
-
-    T visit(StmtTy.Match.Pattern.MatchSingleton node);
-
-    T visit(StmtTy.Match.Pattern.MatchStar node);
-
-    T visit(StmtTy.Match.Pattern.MatchValue node);
-
-    T visit(StmtTy.NonLocal node);
-
-    T visit(StmtTy.Raise node);
-
-    T visit(StmtTy.Return node);
-
-    T visit(StmtTy.Try node);
-
-    T visit(StmtTy.While node);
-
-    T visit(StmtTy.With node);
-
-    T visit(StmtTy.With.Item node);
-
-    T visit(StmtTy.Break aThis);
-
-    T visit(StmtTy.Continue aThis);
-
-    T visit(StmtTy.Pass aThis);
-
-    T visit(ExceptHandlerTy.ExceptHandler node);
+    T visit(PatternTy.MatchValue node);
+    T visit(PatternTy.MatchSingleton node);
+    T visit(PatternTy.MatchSequence node);
+    T visit(PatternTy.MatchMapping node);
+    T visit(PatternTy.MatchClass node);
+    T visit(PatternTy.MatchStar node);
+    T visit(PatternTy.MatchAs node);
+    T visit(PatternTy.MatchOr node);
 
     T visit(TypeIgnoreTy.TypeIgnore node);
 }

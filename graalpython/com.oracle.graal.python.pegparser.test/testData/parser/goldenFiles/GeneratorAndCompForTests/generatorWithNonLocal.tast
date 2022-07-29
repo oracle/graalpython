@@ -14,7 +14,7 @@ Module[0, 247]
                 Name:doit
                 ArgumentsTy[0, 0]
                 ---- Function body of doit ----
-                NonLocal[76, 93]: exec_gen 
+                Nonlocal[76, 93]: exec_gen 
                 Assign[100, 115]
                     LHS: Name[100, 108] Value: "exec_gen" Store
                     RHS: BOOLEAN[111, 115] Value: true
