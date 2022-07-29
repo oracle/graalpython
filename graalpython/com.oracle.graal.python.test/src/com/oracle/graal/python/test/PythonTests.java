@@ -349,12 +349,19 @@ public class PythonTests {
         return System.getProperty("useBytecodeCompiler") != null;
     }
 
+    private static org.graalvm.polyglot.Source.Builder configureBuilder(org.graalvm.polyglot.Source.Builder builder) {
+        if (usingBytecodeCompiler()) {
+            return builder.mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE);
+        }
+        return builder;
+    }
+
     public static org.graalvm.polyglot.Source createSource(String source) {
-        return org.graalvm.polyglot.Source.newBuilder("python", source, "Unnamed").buildLiteral();
+        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", source, "Unnamed")).buildLiteral();
     }
 
     public static org.graalvm.polyglot.Source createSource(File path) throws IOException {
-        return org.graalvm.polyglot.Source.newBuilder("python", path).build();
+        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", path)).build();
     }
 
     public static Value runScript(String[] args, File path, OutputStream out, OutputStream err) {

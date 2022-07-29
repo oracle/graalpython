@@ -68,7 +68,10 @@ public final class PFrame extends PythonBuiltinObject {
     private int line = -2;
     private int lasti = -1;
 
-    /* when emitting trace events, the line number will not be correct by default, so it has be manually managed */
+    /*
+     * when emitting trace events, the line number will not be correct by default, so it has be
+     * manually managed
+     */
     private boolean lockLine = false;
 
     private Object localTraceFun = null;
