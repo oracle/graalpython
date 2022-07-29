@@ -40,18 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -59,7 +54,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -186,18 +180,15 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static String[] toStringArray(Object[] array) {
-            List<String> list = new ArrayList<>(array.length);
-            for (Object item : array) {
-                item = assertNoJavaString(item);
-                if (item instanceof TruffleString) {
-                    list.add(((TruffleString) item).toJavaStringUncached());
-                }
-                if (item instanceof PString) {
-                    list.add(CastToJavaStringNode.getUncached().execute(item));
-                }
+        private static String[] toStringArray(TruffleString[] array) {
+            if (array == null) {
+                return null;
             }
-            return list.toArray(new String[list.size()]);
+            String[] result = new String[array.length];
+            for (int i = 0; i < array.length; i++) {
+                result[i] = array[i].toJavaStringUncached();
+            }
+            return result;
         }
 
         public static CreateCodeNode create() {
