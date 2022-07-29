@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
 import java.util.Arrays;
 import java.util.List;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -409,6 +411,7 @@ public class CodeBuiltins extends PythonBuiltins {
                         Object[] coCellvars, TruffleString coFilename,
                         TruffleString coName, Object coLnotab,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             try {
                 return createCodeNode.execute(frame,
@@ -420,10 +423,10 @@ public class CodeBuiltins extends PythonBuiltins {
                                 coFlags == -1 ? self.co_flags() : coFlags,
                                 PGuards.isNone(coCode) ? self.getCodestring() : bufferLib.getInternalOrCopiedByteArray(coCode),
                                 coConsts.length == 0 ? null : coConsts,
-                                coNames.length == 0 ? self.getNames() : coNames,
-                                coVarnames.length == 0 ? self.getVarnames() : coVarnames,
-                                coFreevars.length == 0 ? self.getFreeVars() : coFreevars,
-                                coCellvars.length == 0 ? self.getCellVars() : coCellvars,
+                                coNames.length == 0 ? null : objectArrayToTruffleStringArray(coNames, castToTruffleStringNode),
+                                coVarnames.length == 0 ? null : objectArrayToTruffleStringArray(coVarnames, castToTruffleStringNode),
+                                coFreevars.length == 0 ? null : objectArrayToTruffleStringArray(coFreevars, castToTruffleStringNode),
+                                coCellvars.length == 0 ? null : objectArrayToTruffleStringArray(coCellvars, castToTruffleStringNode),
                                 coFilename.isEmpty() ? self.co_filename() : coFilename,
                                 coName.isEmpty() ? self.co_name() : coName,
                                 coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
