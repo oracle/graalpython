@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundD
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -177,11 +178,13 @@ public abstract class CallNode extends PNodeWithContext {
                     @Cached PForeignToPTypeNode fromForeign,
                     @Cached BranchProfile keywordsError,
                     @Cached BranchProfile typeError,
+                    @Cached GilNode gil,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         if (keywords.length != 0) {
             keywordsError.enter();
             throw raise.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
+        gil.release(true);
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length)));
         } catch (ArityException | UnsupportedTypeException e) {
@@ -190,6 +193,8 @@ public abstract class CallNode extends PNodeWithContext {
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             // PyObjectGetMethod is supposed to have checked isMemberInvocable
             throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
+        } finally {
+            gil.acquire();
         }
     }
 

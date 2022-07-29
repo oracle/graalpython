@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,7 +88,7 @@ public abstract class PyObjectGetMethod extends Node {
     public abstract Object execute(Frame frame, Object receiver, TruffleString name);
 
     @ValueType
-    public final static class ForeignMethod {
+    public static final class ForeignMethod {
         public final Object receiver;
         public final String methodName;
 
@@ -229,9 +230,17 @@ public abstract class PyObjectGetMethod extends Node {
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached TruffleString.ToJavaStringNode toJavaString,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Cached PyObjectGetAttr getAttr) {
+                    @Cached PyObjectGetAttr getAttr,
+                    @Cached GilNode gil) {
         String jName = toJavaString.execute(name);
-        if (lib.isMemberInvocable(receiver, jName)) {
+        boolean memberInvocable;
+        gil.release(true);
+        try {
+            memberInvocable = lib.isMemberInvocable(receiver, jName);
+        } finally {
+            gil.acquire();
+        }
+        if (memberInvocable) {
             return new ForeignMethod(receiver, jName);
         } else {
             return new BoundDescriptor(getAttr.execute(frame, receiver, name));
