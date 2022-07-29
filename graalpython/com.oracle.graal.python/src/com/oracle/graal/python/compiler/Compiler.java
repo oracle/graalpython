@@ -154,6 +154,7 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
@@ -613,9 +614,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (stmt instanceof StmtTy.Expr) {
                 ExprTy expr = ((StmtTy.Expr) stmt).value;
                 if (expr instanceof ExprTy.Constant) {
-                    Object value = ((ExprTy.Constant) expr).value;
-                    if (value instanceof TruffleString) {
-                        return (TruffleString) value;
+                    ConstantValue value = ((ExprTy.Constant) expr).value;
+                    if (value.kind == ConstantValue.Kind.RAW) {
+                        return value.getRaw(TruffleString.class);
                     }
                 }
             }
@@ -1195,30 +1196,30 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Constant node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            switch (node.kind) {
-                case OBJECT:
-                    return addOp(LOAD_CONST, addObject(unit.constants, node.value));
+            switch (node.value.kind) {
+                case ARBITRARY_PYTHON_OBJECT:
+                    // TODO GR-40165: avoid sharing this code
+                    return addOp(LOAD_CONST, addObject(unit.constants, node.value.getArbitraryPythonObject()));
                 case NONE:
                     return addOp(LOAD_NONE);
                 case ELLIPSIS:
                     return addOp(LOAD_ELLIPSIS);
                 case BOOLEAN:
-                    return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
+                    return addOp(node.value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    return addLoadNumber((Long) node.value);
+                    return addLoadNumber(node.value.getLong());
                 case DOUBLE:
-                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
+                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(node.value.getDouble())));
                 case COMPLEX:
-                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value));
+                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value.getComplex()));
                 case BIGINTEGER:
-                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
+                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value.getBigInteger()));
                 case RAW:
-                    assert node.value instanceof TruffleString;
-                    return addOp(LOAD_STRING, addObject(unit.constants, node.value));
+                    return addOp(LOAD_STRING, addObject(unit.constants, node.value.getRaw(TruffleString.class)));
                 case BYTES:
-                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
+                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value.getBytes()));
                 default:
-                    throw new IllegalStateException("Unknown constant kind " + node.kind);
+                    throw new IllegalStateException("Unknown constant kind " + node.value.kind);
             }
         } finally {
             setLocation(savedLocation);
@@ -1656,24 +1657,24 @@ public class Compiler implements SSTreeVisitor<Void> {
         for (ExprTy e : elements) {
             if (e instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) e;
-                if (c.kind == ExprTy.Constant.Kind.BOOLEAN) {
+                if (c.value.kind == ConstantValue.Kind.BOOLEAN) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_BOOLEAN);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.LONG) {
-                    long val = (long) c.value;
+                    constants.add(c.value.getBoolean());
+                } else if (c.value.kind == ConstantValue.Kind.LONG) {
+                    long val = c.value.getLong();
                     if (val == (int) val) {
                         constantType = determineConstantType(constantType, CollectionBits.ELEMENT_INT);
                     } else {
                         constantType = determineConstantType(constantType, CollectionBits.ELEMENT_LONG);
                     }
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    constants.add(val);
+                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_DOUBLE);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.RAW) {
+                    constants.add(c.value.getDouble());
+                } else if (c.value.kind == ConstantValue.Kind.RAW) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.NONE) {
+                    constants.add(c.value.getRaw(TruffleString.class));
+                } else if (c.value.kind == ConstantValue.Kind.NONE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
                     constants.add(PNone.NONE);
                 } else {
@@ -1742,17 +1743,17 @@ public class Compiler implements SSTreeVisitor<Void> {
             // Basic constant folding for unary negation
             if (node.op == UnaryOpTy.USub && node.operand instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) node.operand;
-                if (c.kind == ExprTy.Constant.Kind.LONG) {
-                    long v = (long) c.value;
+                if (c.value.kind == ConstantValue.Kind.LONG) {
+                    long v = c.value.getLong();
                     if (v != Long.MIN_VALUE) {
-                        return visit(new ExprTy.Constant(-v, c.kind, c.getSourceRange()));
+                        return visit(new ExprTy.Constant(ConstantValue.ofLong(-v), null, c.getSourceRange()));
                     } else {
-                        return visit(new ExprTy.Constant((BigInteger.valueOf(v)).negate(), ExprTy.Constant.Kind.BIGINTEGER, c.getSourceRange()));
+                        return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(BigInteger.valueOf(v).negate()), null, c.getSourceRange()));
                     }
-                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
-                    return visit(new ExprTy.Constant(-(double) c.value, c.kind, c.getSourceRange()));
-                } else if (c.kind == ExprTy.Constant.Kind.BIGINTEGER) {
-                    return visit(new ExprTy.Constant(((BigInteger) c.value).negate(), c.kind, c.getSourceRange()));
+                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
+                    return visit(new ExprTy.Constant(ConstantValue.ofDouble(-c.value.getDouble()), null, c.getSourceRange()));
+                } else if (c.value.kind == ConstantValue.Kind.BIGINTEGER) {
+                    return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(c.value.getBigInteger().negate()), null, c.getSourceRange()));
                 }
             }
             node.operand.accept(this);

@@ -52,6 +52,7 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
@@ -117,17 +118,17 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createBooleanLiteral(boolean value, SourceRange sourceRange) {
-        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ofBoolean(value), null, sourceRange);
     }
 
     @Override
     public ExprTy createNone(SourceRange sourceRange) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.NONE, sourceRange);
+        return new ExprTy.Constant(ConstantValue.NONE, null, sourceRange);
     }
 
     @Override
     public ExprTy createEllipsis(SourceRange sourceRange) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.ELLIPSIS, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ELLIPSIS, null, sourceRange);
     }
 
     @Override
@@ -217,13 +218,9 @@ public class NodeFactoryImp implements NodeFactory {
 
         if (isComplex) {
             double imag = Double.parseDouble(number.substring(0, number.length() - 1));
-            return new ExprTy.Constant(new double[]{0.0, imag},
-                            ExprTy.Constant.Kind.COMPLEX,
-                            sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofComplex(0.0, imag), null, sourceRange);
         } else if (isFloat) {
-            return new ExprTy.Constant(Double.parseDouble(number),
-                            ExprTy.Constant.Kind.DOUBLE,
-                            sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofDouble(Double.parseDouble(number)), null, sourceRange);
         } else {
             final long max = Long.MAX_VALUE;
             final long moltmax = max / base;
@@ -253,12 +250,12 @@ public class NodeFactoryImp implements NodeFactory {
                         bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
                         i++;
                     }
-                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, sourceRange);
+                    return new ExprTy.Constant(ConstantValue.ofBigInteger(bigResult), null, sourceRange);
                 }
                 result = next;
                 i++;
             }
-            return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofLong(result), null, sourceRange);
         }
     }
 

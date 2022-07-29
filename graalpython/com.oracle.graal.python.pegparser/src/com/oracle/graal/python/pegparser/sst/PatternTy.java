@@ -63,9 +63,9 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchSingleton extends PatternTy {
-        public final Object value;
+        public final ConstantValue value;
 
-        public MatchSingleton(Object value, SourceRange sourceRange) {
+        public MatchSingleton(ConstantValue value, SourceRange sourceRange) {
             super(sourceRange);
             assert value != null;
             this.value = value;

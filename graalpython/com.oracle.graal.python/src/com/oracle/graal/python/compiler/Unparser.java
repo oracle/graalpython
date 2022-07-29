@@ -50,6 +50,7 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.BoolOpTy;
@@ -151,7 +152,7 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     private void appendFStringElement(ExprTy e, boolean isFormatSpec) {
         if (e instanceof ExprTy.Constant) {
-            appendFString((TruffleString) ((ExprTy.Constant) e).value);
+            appendFString(((ExprTy.Constant) e).value.getRaw(TruffleString.class));
         } else if (e instanceof ExprTy.JoinedStr) {
             appendJoinedStr((ExprTy.JoinedStr) e, isFormatSpec);
         } else if (e instanceof ExprTy.FormattedValue) {
@@ -303,7 +304,7 @@ public class Unparser implements SSTreeVisitor<Void> {
         /*
          * Special case: integers require a space for attribute access to be unambiguous.
          */
-        if (v instanceof ExprTy.Constant && (((ExprTy.Constant) v).kind == ExprTy.Constant.Kind.LONG || ((ExprTy.Constant) v).kind == ExprTy.Constant.Kind.BIGINTEGER)) {
+        if (v instanceof ExprTy.Constant && (((ExprTy.Constant) v).value.kind == ConstantValue.Kind.LONG || ((ExprTy.Constant) v).value.kind == ConstantValue.Kind.BIGINTEGER)) {
             period = " .";
         } else {
             period = ".";
@@ -501,35 +502,34 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        switch (node.kind) {
+        switch (node.value.kind) {
             case LONG:
-                builder.appendLongNumberUncached((Long) node.value);
+                builder.appendLongNumberUncached(node.value.getLong());
                 return null;
             case DOUBLE:
                 FloatFormatter f = new FloatFormatter(null, FloatBuiltins.StrNode.spec);
                 f.setMinFracDigits(1);
-                TruffleString result = f.format((Double) node.value).getResult();
+                TruffleString result = f.format(node.value.getDouble()).getResult();
                 appendStr(result);
                 return null;
             case BOOLEAN:
-                appendStr(((boolean) node.value) ? "True" : "False");
+                appendStr(node.value.getBoolean() ? "True" : "False");
                 return null;
             case RAW:
-                assert node.value instanceof TruffleString;
-                appendStr(StringNodes.StringReprNode.getUncached().execute((TruffleString) node.value));
+                appendStr(StringNodes.StringReprNode.getUncached().execute(node.value.getRaw(TruffleString.class)));
                 return null;
             case BIGINTEGER:
-                appendStr(node.value.toString());
+                appendStr(node.value.getBigInteger().toString());
                 return null;
             case NONE:
                 appendStr("None");
                 return null;
             case BYTES:
-                byte[] bytes = (byte[]) node.value;
+                byte[] bytes = node.value.getBytes();
                 BytesUtils.reprLoop(builder, bytes, bytes.length, TruffleStringBuilder.AppendCodePointNode.getUncached());
                 return null;
             case COMPLEX:
-                double[] num = (double[]) node.value;
+                double[] num = node.value.getComplex();
                 ComplexFormatter formatter = new ComplexFormatter(null, new Spec(-1, Spec.NONE));
                 formatter.format(num[0], num[1]);
                 appendStr(formatter.pad().getResult());
@@ -537,8 +537,8 @@ public class Unparser implements SSTreeVisitor<Void> {
             case ELLIPSIS:
                 appendStr("...");
                 return null;
-            case OBJECT:
-                // TODO what are these? I don't think we emit them
+            case ARBITRARY_PYTHON_OBJECT:
+                // TODO GR-40165: what are these? I don't think we emit them
                 throw new IllegalStateException("Object literals not supported when unparsing");
             default:
                 throw new IllegalStateException("unknown constant kind");

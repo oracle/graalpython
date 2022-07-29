@@ -135,11 +135,11 @@ public abstract class StringLiteralUtils {
                 if (sb != null || isFormatString) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
-                        return new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sourceRange);
+                        return new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sourceRange);
                     } else if (bb != null) {
-                        return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
+                        return new ExprTy.Constant(ConstantValue.ofBytes(bb.build()), null, sourceRange);
                     } else {
-                        return new ExprTy.Constant(text.getBytes(), ExprTy.Constant.Kind.BYTES, sourceRange);
+                        return new ExprTy.Constant(ConstantValue.ofBytes(text.getBytes()), null, sourceRange);
                     }
                 }
                 if (bb == null) {
@@ -153,7 +153,7 @@ public abstract class StringLiteralUtils {
             } else {
                 if (bb != null) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
-                    return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
+                    return new ExprTy.Constant(ConstantValue.ofBytes(bb.build()), null, sourceRange);
                 }
                 if (isFormat) {
                     isFormatString = true;
@@ -161,7 +161,7 @@ public abstract class StringLiteralUtils {
                         formatStringParts = new ArrayList<>();
                     }
                     if (sb != null && !sb.isEmpty()) {
-                        formatStringParts.add(new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sbSourceRange));
+                        formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sbSourceRange));
                         sb = null;
                     }
 
@@ -182,16 +182,16 @@ public abstract class StringLiteralUtils {
         }
 
         if (bb != null) {
-            return new ExprTy.Constant(bb.build(), ExprTy.Constant.Kind.BYTES, sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofBytes(bb.build()), null, sourceRange);
         } else if (isFormatString) {
             assert formatStringParts != null; // guaranteed due to how isFormatString is set
             if (sb != null && !sb.isEmpty()) {
-                formatStringParts.add(new ExprTy.Constant(sb.build(), ExprTy.Constant.Kind.RAW, sbSourceRange));
+                formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sbSourceRange));
             }
             ExprTy[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
             return new ExprTy.JoinedStr(formatParts, sourceRange);
         }
-        return new ExprTy.Constant(sb == null ? stringFactory.emptyString() : sb.build(), ExprTy.Constant.Kind.RAW, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ofRaw(sb == null ? stringFactory.emptyString() : sb.build()), null, sourceRange);
     }
 
     private static final class FormatStringParser {
@@ -280,7 +280,7 @@ public abstract class StringLiteralUtils {
                 } else {
                     o = stringFactory.fromJavaString(code);
                 }
-                return new ExprTy.Constant(o, ExprTy.Constant.Kind.RAW, token.getSourceRange(text, textSourceRange));
+                return new ExprTy.Constant(ConstantValue.ofRaw(o), null, token.getSourceRange(text, textSourceRange));
             }
             int specTokensCount = token.formatTokensCount;
             // the expression has to be wrapped in ()

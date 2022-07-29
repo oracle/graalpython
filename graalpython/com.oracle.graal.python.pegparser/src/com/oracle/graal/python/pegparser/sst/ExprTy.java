@@ -386,26 +386,14 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Constant extends ExprTy {
-        public enum Kind {
-            OBJECT,
-            NONE,
-            ELLIPSIS,
-            BOOLEAN,
-            LONG,
-            DOUBLE,
-            COMPLEX,
-            BIGINTEGER,
-            RAW,
-            BYTES
-        }
+        public final ConstantValue value;
+        public final String kind;
 
-        public final Object value;
-        public final Kind kind;
-
-        public Constant(Object value, Kind kind, SourceRange sourceRange) {
+        public Constant(ConstantValue value, String kind, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
-            this.kind = kind == null ? Kind.OBJECT : kind;
+            this.kind = kind;
         }
 
         @Override

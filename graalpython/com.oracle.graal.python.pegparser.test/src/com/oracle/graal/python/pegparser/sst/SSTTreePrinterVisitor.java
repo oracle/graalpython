@@ -252,32 +252,41 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Constant node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.kind).append("[").append(node.getSourceRange().startOffset);
+        sb.append(node.value.kind).append("[").append(node.getSourceRange().startOffset);
         sb.append(", ").append(node.getSourceRange().endOffset).append("]");
         sb.append(" Value: ");
-        switch (node.kind) {
+        appendConstantValue(sb, node.value);
+        return sb.toString();
+    }
+
+    private void appendConstantValue(StringBuilder sb, ConstantValue value) {
+        switch (value.kind) {
+            case BIGINTEGER:
+                sb.append(value.getBigInteger());
+                break;
+            case BOOLEAN:
+                sb.append(value.getBoolean());
+                break;
             case LONG:
-                sb.append((long) node.value);
+                sb.append(value.getLong());
                 break;
             case DOUBLE:
-                sb.append((double) node.value);
+                sb.append(value.getDouble());
                 break;
             case COMPLEX:
-                double[] val = (double[]) node.value;
+                double[] val = value.getComplex();
                 sb.append(String.format("%g%+gj", val[0], val[1]));
                 break;
             case RAW:
-                String s = (String) node.value;
-                appendEscapedString(sb, s);
+                appendEscapedString(sb, value.getRaw(String.class));
+                break;
+            case ELLIPSIS:
+            case NONE:
+                sb.append((Object) null);
                 break;
             default:
-                if (node.value == null || node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {
-                    sb.append(node.value);
-                } else {
-                    sb.append("<unprintable value>");
-                }
+                sb.append("<unprintable value>");
         }
-        return sb.toString();
     }
 
     @Override

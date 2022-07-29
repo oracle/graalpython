@@ -565,12 +565,11 @@ abstract class AbstractParser {
         }
         if (e instanceof ExprTy.Constant) {
             ExprTy.Constant constant = (ExprTy.Constant) e;
-            switch (constant.kind) {
+            switch (constant.value.kind) {
                 case NONE:
                     return "None";
                 case BOOLEAN:
-                    boolean value = (Boolean) constant.value;
-                    return value ? "True" : "False";
+                    return constant.value.getBoolean() ? "True" : "False";
                 case ELLIPSIS:
                     return "ellipsis";
             }
