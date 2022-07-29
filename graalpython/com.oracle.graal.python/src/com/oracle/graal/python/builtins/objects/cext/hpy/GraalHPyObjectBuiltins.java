@@ -142,7 +142,7 @@ public abstract class GraalHPyObjectBuiltins {
                 return doGeneric(frame, self, arguments, keywords);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new VarargsBuiltinDirectInvocationNotSupported();
+            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
         }
 
         @Specialization

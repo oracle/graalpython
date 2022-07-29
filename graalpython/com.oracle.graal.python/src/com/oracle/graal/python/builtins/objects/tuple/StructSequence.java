@@ -309,7 +309,7 @@ public class StructSequence {
                 return error(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new VarargsBuiltinDirectInvocationNotSupported();
+            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
         }
 
         @Specialization

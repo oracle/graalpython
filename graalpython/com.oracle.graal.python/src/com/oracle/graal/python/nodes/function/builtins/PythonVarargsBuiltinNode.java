@@ -52,7 +52,11 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
+        public static final VarargsBuiltinDirectInvocationNotSupported INSTANCE = new VarargsBuiltinDirectInvocationNotSupported();
         private static final long serialVersionUID = 1L;
+
+        private VarargsBuiltinDirectInvocationNotSupported() {
+        }
     }
 
     /**
@@ -61,7 +65,7 @@ public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     @SuppressWarnings("unused")
     public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords)
                     throws VarargsBuiltinDirectInvocationNotSupported {
-        throw new VarargsBuiltinDirectInvocationNotSupported();
+        throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
     }
 
     /**

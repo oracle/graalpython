@@ -94,7 +94,7 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
                 return doGeneric(arguments[0], null, null);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new VarargsBuiltinDirectInvocationNotSupported();
+            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
         }
 
         @Specialization

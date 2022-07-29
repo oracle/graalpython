@@ -2559,7 +2559,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new VarargsBuiltinDirectInvocationNotSupported();
+                throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
             }
             if (arguments.length == 1) {
                 return initNoArgs(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
