@@ -1681,7 +1681,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, startToken.sourceRange.withEnd(endToken.sourceRange));;
+                _res = factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -1709,7 +1709,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createAnnAssignment(a, b, (ExprTy) c, false, startToken.sourceRange.withEnd(endToken.sourceRange));;
+                _res = factory.createAnnAssignment(a, b, (ExprTy) c, false, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -11573,7 +11573,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));;
+                _res = factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
                 return (ExprTy)_res;
             }

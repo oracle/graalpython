@@ -257,7 +257,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         return sb.toString();
     }
 
-    private void appendConstantValue(StringBuilder sb, ConstantValue value) {
+    private static void appendConstantValue(StringBuilder sb, ConstantValue value) {
         switch (value.kind) {
             case BIGINTEGER:
                 sb.append(value.getBigInteger());

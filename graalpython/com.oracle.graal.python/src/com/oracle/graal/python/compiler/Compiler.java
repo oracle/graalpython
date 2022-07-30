@@ -1199,7 +1199,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         try {
             switch (node.value.kind) {
                 case ARBITRARY_PYTHON_OBJECT:
-                    // TODO GR-40165: avoid sharing this code
+                    // TODO GR-40165: the code object being compiled must not be shared
                     return addOp(LOAD_CONST, addObject(unit.constants, node.value.getArbitraryPythonObject()));
                 case NONE:
                     return addOp(LOAD_NONE);
