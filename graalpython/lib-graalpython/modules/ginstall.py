@@ -371,6 +371,8 @@ def known_packages():
         zlib_root = os.environ.get("ZLIB_ROOT", None)
         if zlib_root:
             build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
+        else:
+            info("If Pillow installation fails due to missing zlib, try to set environment variable ZLIB_ROOT.")
         install_from_pypi("Pillow==6.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
 
     @pip_package()
