@@ -38,19 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ExprTy extends SSTNode {
+
     ExprTy(SourceRange sourceRange) {
         super(sourceRange);
     }
 
     public static final class BoolOp extends ExprTy {
         public final BoolOpTy op;
-        public final ExprTy[] values;
+        public final ExprTy[] values;   // nullable
 
         public BoolOp(BoolOpTy op, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
@@ -84,7 +84,6 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BinOp extends ExprTy {
-
         public final ExprTy left;
         public final OperatorTy op;
         public final ExprTy right;
@@ -106,7 +105,6 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class UnaryOp extends ExprTy {
-
         public final UnaryOpTy op;
         public final ExprTy operand;
 
@@ -164,8 +162,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Dict extends ExprTy {
-        public final ExprTy[] keys;
-        public final ExprTy[] values;
+        public final ExprTy[] keys;   // nullable
+        public final ExprTy[] values;   // nullable
 
         public Dict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
@@ -180,7 +178,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Set extends ExprTy {
-        public final ExprTy[] elements;
+        public final ExprTy[] elements;   // nullable
 
         public Set(ExprTy[] elements, SourceRange sourceRange) {
             super(sourceRange);
@@ -195,7 +193,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class ListComp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public ListComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
@@ -212,7 +210,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class SetComp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public SetComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
@@ -230,7 +228,7 @@ public abstract class ExprTy extends SSTNode {
     public static final class DictComp extends ExprTy {
         public final ExprTy key;
         public final ExprTy value;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
@@ -249,7 +247,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class GeneratorExp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public GeneratorExp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
@@ -280,7 +278,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Yield extends ExprTy {
-        public final ExprTy value;
+        public final ExprTy value;   // nullable
 
         public Yield(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -309,10 +307,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Compare extends ExprTy {
-
         public final ExprTy left;
-        public final CmpOpTy[] ops;
-        public final ExprTy[] comparators;
+        public final CmpOpTy[] ops;   // nullable
+        public final ExprTy[] comparators;   // nullable
 
         public Compare(ExprTy left, CmpOpTy[] ops, ExprTy[] comparators, SourceRange sourceRange) {
             super(sourceRange);
@@ -330,8 +327,8 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Call extends ExprTy {
         public final ExprTy func;
-        public final ExprTy[] args;
-        public final KeywordTy[] keywords;
+        public final ExprTy[] args;   // nullable
+        public final KeywordTy[] keywords;   // nullable
 
         public Call(ExprTy func, ExprTy[] args, KeywordTy[] keywords, SourceRange sourceRange) {
             super(sourceRange);
@@ -348,10 +345,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class FormattedValue extends ExprTy {
-
         public final ExprTy value;
         public final int conversion;
-        public final ExprTy formatSpec;
+        public final ExprTy formatSpec;   // nullable
 
         public FormattedValue(ExprTy value, int conversion, ExprTy formatSpec, SourceRange sourceRange) {
             super(sourceRange);
@@ -368,7 +364,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class JoinedStr extends ExprTy {
-        public final ExprTy[] values;
+        public final ExprTy[] values;   // nullable
 
         public JoinedStr(ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
@@ -383,7 +379,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Constant extends ExprTy {
         public final ConstantValue value;
-        public final String kind;
+        public final String kind;   // nullable
 
         public Constant(ConstantValue value, String kind, SourceRange sourceRange) {
             super(sourceRange);
@@ -477,7 +473,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class List extends ExprTy {
-        public final ExprTy[] elements;
+        public final ExprTy[] elements;   // nullable
         public final ExprContextTy context;
 
         public List(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
@@ -494,7 +490,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Tuple extends ExprTy {
-        public final ExprTy[] elements;
+        public final ExprTy[] elements;   // nullable
         public final ExprContextTy context;
 
         public Tuple(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
@@ -511,9 +507,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Slice extends ExprTy {
-        public final ExprTy lower;
-        public final ExprTy upper;
-        public final ExprTy step;
+        public final ExprTy lower;   // nullable
+        public final ExprTy upper;   // nullable
+        public final ExprTy step;   // nullable
 
         public Slice(ExprTy lower, ExprTy upper, ExprTy step, SourceRange sourceRange) {
             super(sourceRange);

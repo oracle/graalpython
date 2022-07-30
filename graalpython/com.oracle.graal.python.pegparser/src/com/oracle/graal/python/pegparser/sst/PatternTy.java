@@ -43,6 +43,7 @@ package com.oracle.graal.python.pegparser.sst;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class PatternTy extends SSTNode {
+
     PatternTy(SourceRange sourceRange) {
         super(sourceRange);
     }
@@ -78,7 +79,7 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchSequence extends PatternTy {
-        public final PatternTy[] patterns;
+        public final PatternTy[] patterns;   // nullable
 
         public MatchSequence(PatternTy[] patterns, SourceRange sourceRange) {
             super(sourceRange);
@@ -92,9 +93,9 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchMapping extends PatternTy {
-        public final ExprTy[] keys;
-        public final PatternTy[] patterns;
-        public final String rest;
+        public final ExprTy[] keys;   // nullable
+        public final PatternTy[] patterns;   // nullable
+        public final String rest;   // nullable
 
         public MatchMapping(ExprTy[] keys, PatternTy[] patterns, String rest, SourceRange sourceRange) {
             super(sourceRange);
@@ -111,16 +112,17 @@ public abstract class PatternTy extends SSTNode {
 
     public static final class MatchClass extends PatternTy {
         public final ExprTy cls;
-        public final PatternTy[] patterns;
-        public final String[] kwdAttrs;
-        public final PatternTy[] kwdPatters;
+        public final PatternTy[] patterns;   // nullable
+        public final String[] kwdAttrs;   // nullable
+        public final PatternTy[] kwdPatterns;   // nullable
 
-        public MatchClass(ExprTy cls, PatternTy[] patterns, String[] kwdAttrs, PatternTy[] kwdPatters, SourceRange sourceRange) {
+        public MatchClass(ExprTy cls, PatternTy[] patterns, String[] kwdAttrs, PatternTy[] kwdPatterns, SourceRange sourceRange) {
             super(sourceRange);
+            assert cls != null;
             this.cls = cls;
             this.patterns = patterns;
             this.kwdAttrs = kwdAttrs;
-            this.kwdPatters = kwdPatters;
+            this.kwdPatterns = kwdPatterns;
         }
 
         @Override
@@ -130,7 +132,7 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchStar extends PatternTy {
-        public final String name;
+        public final String name;   // nullable
 
         public MatchStar(String name, SourceRange sourceRange) {
             super(sourceRange);
@@ -144,8 +146,8 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchAs extends PatternTy {
-        public final PatternTy pattern;
-        public final String name;
+        public final PatternTy pattern;   // nullable
+        public final String name;   // nullable
 
         public MatchAs(PatternTy pattern, String name, SourceRange sourceRange) {
             super(sourceRange);
@@ -160,7 +162,7 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchOr extends PatternTy {
-        public final PatternTy[] patterns;
+        public final PatternTy[] patterns;   // nullable
 
         public MatchOr(PatternTy[] patterns, SourceRange sourceRange) {
             super(sourceRange);

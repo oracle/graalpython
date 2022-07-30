@@ -44,7 +44,7 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class WithItemTy extends SSTNode {
     public final ExprTy contextExpr;
-    public final ExprTy optionalVars;
+    public final ExprTy optionalVars;   // nullable
 
     public WithItemTy(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
         super(sourceRange);

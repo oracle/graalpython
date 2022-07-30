@@ -42,5 +42,5 @@ package com.oracle.graal.python.pegparser.sst;
 
 public enum BoolOpTy {
     And,
-    Or
+    Or,
 }

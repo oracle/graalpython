@@ -38,20 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ExceptHandlerTy extends SSTNode {
+
     ExceptHandlerTy(SourceRange sourceRange) {
         super(sourceRange);
     }
 
     public static final class ExceptHandler extends ExceptHandlerTy {
-        public final ExprTy type;
-        public final String name;
-        public final StmtTy[] body;
+        public final ExprTy type;   // nullable
+        public final String name;   // nullable
+        public final StmtTy[] body;   // nullable
 
         public ExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
             super(sourceRange);

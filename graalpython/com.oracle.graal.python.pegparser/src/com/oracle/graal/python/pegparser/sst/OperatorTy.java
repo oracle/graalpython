@@ -53,5 +53,5 @@ public enum OperatorTy {
     BitOr,
     BitXor,
     BitAnd,
-    FloorDiv
+    FloorDiv,
 }

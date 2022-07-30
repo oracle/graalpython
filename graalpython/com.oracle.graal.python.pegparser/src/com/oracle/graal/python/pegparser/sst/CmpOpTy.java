@@ -50,5 +50,5 @@ public enum CmpOpTy {
     Is,
     IsNot,
     In,
-    NotIn
+    NotIn,
 }

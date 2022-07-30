@@ -44,8 +44,8 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class MatchCaseTy extends SSTNode {
     public final PatternTy pattern;
-    public final ExprTy guard;
-    public final StmtTy[] body;
+    public final ExprTy guard;   // nullable
+    public final StmtTy[] body;   // nullable
 
     public MatchCaseTy(PatternTy pattern, ExprTy guard, StmtTy[] body, SourceRange sourceRange) {
         super(sourceRange);

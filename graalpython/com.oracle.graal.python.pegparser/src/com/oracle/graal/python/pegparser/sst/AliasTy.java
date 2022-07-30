@@ -38,14 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class AliasTy extends SSTNode {
     public final String name;
-    public final String asName;
+    public final String asName;   // nullable
 
     public AliasTy(String name, String asName, SourceRange sourceRange) {
         super(sourceRange);
@@ -58,5 +57,4 @@ public final class AliasTy extends SSTNode {
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

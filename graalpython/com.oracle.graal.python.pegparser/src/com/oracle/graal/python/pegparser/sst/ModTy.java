@@ -38,19 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ModTy extends SSTNode {
+
     ModTy(SourceRange sourceRange) {
         super(sourceRange);
     }
 
     public static final class Module extends ModTy {
-        public final StmtTy[] body;
-        public final TypeIgnoreTy[] typeIgnores;
+        public final StmtTy[] body;   // nullable
+        public final TypeIgnoreTy[] typeIgnores;   // nullable
 
         public Module(StmtTy[] body, TypeIgnoreTy[] typeIgnores, SourceRange sourceRange) {
             super(sourceRange);
@@ -65,7 +65,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class Interactive extends ModTy {
-        public final StmtTy[] body;
+        public final StmtTy[] body;   // nullable
 
         public Interactive(StmtTy[] body, SourceRange sourceRange) {
             super(sourceRange);
@@ -83,6 +83,7 @@ public abstract class ModTy extends SSTNode {
 
         public Expression(ExprTy body, SourceRange sourceRange) {
             super(sourceRange);
+            assert body != null;
             this.body = body;
         }
 
@@ -93,12 +94,13 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class FunctionType extends ModTy {
-        public final ExprTy[] argTypes;
+        public final ExprTy[] argTypes;   // nullable
         public final ExprTy returns;
 
         public FunctionType(ExprTy[] argTypes, ExprTy returns, SourceRange sourceRange) {
             super(sourceRange);
             this.argTypes = argTypes;
+            assert returns != null;
             this.returns = returns;
         }
 

@@ -38,10 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 public interface SSTreeVisitor<T> {
+
     default <U> U visitSequence(SSTNode[] sequence) {
         if (sequence != null) {
             for (SSTNode n : sequence) {

@@ -38,12 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class TypeIgnoreTy extends SSTNode {
+
     TypeIgnoreTy(SourceRange sourceRange) {
         super(sourceRange);
     }
@@ -55,6 +55,7 @@ public abstract class TypeIgnoreTy extends SSTNode {
         public TypeIgnore(int lineNo, String tag, SourceRange sourceRange) {
             super(sourceRange);
             this.lineNo = lineNo;
+            assert tag != null;
             this.tag = tag;
         }
 

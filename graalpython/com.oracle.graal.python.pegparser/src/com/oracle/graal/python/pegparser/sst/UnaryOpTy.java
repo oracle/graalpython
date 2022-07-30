@@ -44,5 +44,5 @@ public enum UnaryOpTy {
     Invert,
     Not,
     UAdd,
-    USub
+    USub,
 }

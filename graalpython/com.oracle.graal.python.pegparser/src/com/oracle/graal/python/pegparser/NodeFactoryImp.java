@@ -148,7 +148,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createExpression(ExprTy expr) {
-        return new StmtTy.Expr(expr);
+        return new StmtTy.Expr(expr, expr.getSourceRange());
     }
 
     @Override
