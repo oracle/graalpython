@@ -49,12 +49,7 @@ import com.oracle.graal.python.pegparser.sst.*;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings({"all", "cast"})
 public final class Parser extends AbstractParser {

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.pegparser.sst;
 
-import java.math.BigInteger;
-
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static final String INDENTATION = "    ";
