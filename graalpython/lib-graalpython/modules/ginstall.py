@@ -363,11 +363,17 @@ def known_packages():
     def cassowary(**kwargs):
         install_from_pypi("cassowary==0.5.2", **kwargs)
 
-    @pip_package()
+    @pip_package(name="PIL")
     def Pillow(**kwargs):
         setuptools(**kwargs)
         build_env = {"MAX_CONCURRENCY": "0"}
-        install_from_pypi("Pillow==6.2.0", build_cmd=["build_ext", "--disable-jpeg"], env=build_env, **kwargs)
+        build_cmd = ["build_ext", "--disable-jpeg"]
+        zlib_root = os.environ.get("ZLIB_ROOT", None)
+        if zlib_root:
+            build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
+        else:
+            info("If Pillow installation fails due to missing zlib, try to set environment variable ZLIB_ROOT.")
+        install_from_pypi("Pillow==6.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
 
     @pip_package()
     def matplotlib(**kwargs):
@@ -447,6 +453,10 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     setup_env.update(env)
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
     setup_env['CFLAGS'] = cflags if cflags else ""
+
+    user_build_cmd = os_env.get("GINSTALL_BUILD_CMD", "")
+    if user_build_cmd:
+        build_cmd = user_build_cmd.split(" ")
 
     bare_name = _download_with_curl_and_extract(tempdir, url, quiet=quiet)
 
