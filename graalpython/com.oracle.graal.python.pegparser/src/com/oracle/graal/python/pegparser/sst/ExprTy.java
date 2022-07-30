@@ -48,10 +48,6 @@ public abstract class ExprTy extends SSTNode {
         super(sourceRange);
     }
 
-    public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContextTy newContext) {
-        return this;
-    }
-
     public static final class BoolOp extends ExprTy {
         public final BoolOpTy op;
         public final ExprTy[] values;
@@ -421,11 +417,6 @@ public abstract class ExprTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            return new Attribute(value, attr, ctx, sourceRange);
-        }
     }
 
     public static final class Subscript extends ExprTy {
@@ -447,11 +438,6 @@ public abstract class ExprTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            return new Subscript(value, slice, ctx, sourceRange);
-        }
     }
 
     public static final class Starred extends ExprTy {
@@ -469,11 +455,6 @@ public abstract class ExprTy extends SSTNode {
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            return new Starred(value.copyWithContext(ctx), ctx, sourceRange);
         }
     }
 
@@ -493,11 +474,6 @@ public abstract class ExprTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            return new Name(id, ctx, sourceRange);
-        }
     }
 
     public static final class List extends ExprTy {
@@ -515,15 +491,6 @@ public abstract class ExprTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            ExprTy[] newElements = new ExprTy[elements.length];
-            for (int i = 0; i < newElements.length; i++) {
-                newElements[i] = elements[i].copyWithContext(ctx);
-            }
-            return new List(newElements, ctx, sourceRange);
-        }
     }
 
     public static final class Tuple extends ExprTy {
@@ -540,15 +507,6 @@ public abstract class ExprTy extends SSTNode {
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContextTy ctx) {
-            ExprTy[] newElements = new ExprTy[elements.length];
-            for (int i = 0; i < newElements.length; i++) {
-                newElements[i] = elements[i].copyWithContext(ctx);
-            }
-            return new Tuple(newElements, ctx, sourceRange);
         }
     }
 

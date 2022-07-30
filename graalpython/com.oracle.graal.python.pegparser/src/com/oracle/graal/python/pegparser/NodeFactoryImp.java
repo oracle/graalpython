@@ -369,7 +369,7 @@ public class NodeFactoryImp implements NodeFactory {
     @Override
     public ArgumentsTy emptyArguments() {
         return new ArgumentsTy(EMPTY_ARG_ARRAY, EMPTY_ARG_ARRAY, null, EMPTY_ARG_ARRAY, EMPTY_EXPR_ARRAY,
-                null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0, 0, 0));
+                        null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0, 0, 0));
     }
 
     @Override

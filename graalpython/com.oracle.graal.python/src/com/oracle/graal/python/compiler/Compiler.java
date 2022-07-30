@@ -139,6 +139,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.pegparser.CopyWithContextVisitor;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.FExprParser;
@@ -2015,7 +2016,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AugAssign node) {
         SourceRange savedLocation = setLocation(node);
-        node.target.copyWithContext(ExprContextTy.Load).accept(this);
+        node.target.accept(new CopyWithContextVisitor(ExprContextTy.Load)).accept(this);
         setLocation(savedLocation);
         node.value.accept(this);
         setLocation(node);

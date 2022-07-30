@@ -646,7 +646,7 @@ abstract class AbstractParser {
      * doesn't really work with the pegen generator.
      */
     protected ExprTy setExprContext(ExprTy node, ExprContextTy context) {
-        return node.copyWithContext(context);
+        return node.accept(new CopyWithContextVisitor(context));
     }
 
     // debug methods
