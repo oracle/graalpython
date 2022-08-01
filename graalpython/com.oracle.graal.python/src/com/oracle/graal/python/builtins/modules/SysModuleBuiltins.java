@@ -537,8 +537,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
-        if (!context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-            sys.setAttribute(tsLiteral("settrace"), null);
+        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
         }
 
         TruffleString coreHome = context.getCoreHome();
@@ -969,7 +969,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
+    @Builtin(name = "_settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
                     "function call.  See the debugger chapter in the library manual.")
     @GenerateNodeFactory
     abstract static class SetTrace extends PythonBuiltinNode {
