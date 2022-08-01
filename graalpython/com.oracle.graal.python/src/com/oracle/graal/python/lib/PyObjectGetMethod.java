@@ -53,13 +53,15 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.ForeignMethod;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -78,25 +80,15 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent of _PyObject_GetMethod. Like CPython, the node uses {@link PyObjectGetAttr} for any
  * object that does not have the generic {@code object.__getattribute__}. For the generic {@code
  * object.__getattribute__} the node inlines the default logic but without binding methods, and
- * falls back to looking into the object dict. Returns something that can be handled by our
- * CallSpecial nodes.
+ * falls back to looking into the object dict. Returns something that can be handled by
+ * {@link CallNode} or one of the {@code CallNAryMethodNode} nodes, like
+ * {@link CallUnaryMethodNode}.
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
 
     public abstract Object execute(Frame frame, Object receiver, TruffleString name);
-
-    @ValueType
-    public static final class ForeignMethod {
-        public final Object receiver;
-        public final String methodName;
-
-        public ForeignMethod(Object receiver, String methodName) {
-            this.receiver = receiver;
-            this.methodName = methodName;
-        }
-    }
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
         Object getattributeSlot = null;
@@ -241,7 +233,7 @@ public abstract class PyObjectGetMethod extends Node {
             gil.acquire();
         }
         if (memberInvocable) {
-            return new ForeignMethod(receiver, jName);
+            return new BoundDescriptor(new ForeignMethod(receiver, jName));
         } else {
             return new BoundDescriptor(getAttr.execute(frame, receiver, name));
         }

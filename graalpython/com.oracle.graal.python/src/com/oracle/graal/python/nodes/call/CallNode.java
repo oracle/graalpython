@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.lib.PyObjectGetMethod.ForeignMethod;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -60,7 +59,6 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -186,7 +184,7 @@ public abstract class CallNode extends PNodeWithContext {
         }
         gil.release(true);
         try {
-            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length)));
+            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
             throw raise.raise(TypeError, e);
