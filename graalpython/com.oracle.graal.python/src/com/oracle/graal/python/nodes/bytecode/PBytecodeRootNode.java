@@ -2866,11 +2866,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PException localException = null;
         if (savedException instanceof PException) {
             localException = (PException) savedException;
+            PArguments.setException(arguments, localException);
+        } else if (savedException == null) {
+            PArguments.setException(arguments, outerException);
         }
-        if (savedException == null) {
-            savedException = outerException;
-        }
-        PArguments.setException(arguments, (PException) savedException);
         return localException;
     }
 
