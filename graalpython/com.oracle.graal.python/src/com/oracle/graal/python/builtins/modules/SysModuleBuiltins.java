@@ -537,6 +537,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
+        if (!context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            sys.setAttribute(tsLiteral("settrace"), null);
+        }
+
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
