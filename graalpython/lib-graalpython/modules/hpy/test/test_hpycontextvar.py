@@ -21,10 +21,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import pytest
 from .support import HPyTest
 
 
 class TestContextVar(HPyTest):
+    @pytest.mark.skip(reason="GR-40178")
     def test_ContextVar_basics(self):
         mod = self.make_module("""
             HPyDef_METH(create_ctxvar, "create_ctxvar", create_ctxvar_impl, HPyFunc_O)
