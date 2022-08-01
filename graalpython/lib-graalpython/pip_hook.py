@@ -36,8 +36,33 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+"""The purpose of this import hook is two-fold. We have patches for certain
+packages to make the work on GraalPy. These patches need to be applied when
+the relevant packages are unpacked. Additionally, we want certain packages to
+always prefer known versions if that agrees with the version spec the user of
+pip install or the package has specified in its requirements.
+
+The PipInstallLoader takes care of the latter - when packages are installed
+through the "install" or "wheel" commands, the argument version specs are
+parsed, we look up which patches we have for the package (if any). If we have
+only patches for a few specific versions for that packages, and one or more of
+these match the version-range that was requested, we narrow the version spec to
+request the best specific package version that we have a patch for. If we have a
+generic patch file for a package in addition to specific, versioned patches, we
+do not narrow. The assumption is that a generic patch file means we can work
+with any version of the package, and the specific ones just fix issues we have
+with specific versions.
+
+The PipUnpackLoader takes care of the former - once we are unpacking a package,
+we need to apply the most specific patch we have for it.
+"""
+
 import _frozen_importlib
 import sys
+
+
+NAME_VER_PATTERN = "([^-]+)-(\\d+)(.\\d+)?(.\\d+)?"
 
 
 class PipLoader:
@@ -51,6 +76,83 @@ class PipLoader:
     def create_module(self, spec):
         return self.real_spec.loader.create_module(self.real_spec)
 
+
+class PipInstallLoader(PipLoader):
+    def exec_module(self, module):
+        exec_module_result = self.real_spec.loader.exec_module(module)
+        cmd = getattr(module, 'InstallCommand', getattr(module, 'WheelCommand', None))
+        if cmd is None:
+            return exec_module_result
+
+        try:
+            from pip._vendor.packaging.requirements import Requirement
+        except:
+            return exec_module_result
+
+        infos_printed = set()
+
+        original_init = Requirement.__init__
+        def new_init(self, req_string, *args, **kwargs):
+            req_string = narrow_requirement_to_supported_version(req_string)
+            return original_init(self, req_string, *args, **kwargs)
+
+        def narrow_requirement_to_supported_version(req_string):
+            # we may find a patch directory and then we should prefer a
+            # version with a patch from that directory
+            import os
+            import re
+
+            Requirement.__init__ = original_init
+            try:
+                req = Requirement(req_string)
+            except:
+                pass
+            else:
+                patchfiles = []
+                for pbd in self._patches_base_dirs:
+                    for sfx in ["whl", "sdist"]:
+                        dir = os.path.join(pbd, req.name, sfx)
+                        if os.path.isdir(dir):
+                            for f in os.listdir(dir):
+                                if f == f"{req.name}.patch":
+                                    # generic patch available, don't care about
+                                    # the version
+                                    return req_string
+                                m = re.match(f"{NAME_VER_PATTERN}\\.patch", f)
+                                if m:
+                                    version = "".join([g for g in m.group(2, 3, 4) if g])
+                                    if version in req.specifier:
+                                        patchfiles.append(version)
+
+                if patchfiles:
+                    version = sorted(patchfiles)[-1]
+                    if req.name not in infos_printed:
+                        print(f"INFO: Choosing GraalPy tested version {version} for {req}")
+                        infos_printed.add(req.name)
+                    req.specifier = Requirement(f"{req.name}=={version}").specifier
+                    req_string = str(req)
+            finally:
+                Requirement.__init__ = new_init
+
+            return req_string
+
+        original_run = cmd.run
+
+        def run(self, options, args, *splat, **kwargs):
+            args = [narrow_requirement_to_supported_version(a) for a in args]
+
+            Requirement.__init__ = new_init
+            try:
+                return original_run(self, options=options, args=args, *splat, **kwargs)
+            finally:
+                Requirement.__init__ = original_init
+
+        cmd.run = run
+
+        return exec_module_result
+
+
+class PipUnpackLoader(PipLoader):
     def exec_module(self, module):
         exec_module_result = self.real_spec.loader.exec_module(module)
         if not hasattr(module, 'unpack_file'):
@@ -67,8 +169,7 @@ class PipLoader:
             # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
             # some packages may have only major.minor or just major version
             archive_name = os.path.basename(filename)
-            name_ver_pattern = "([^-]+)-(\\d+)(.\\d+)?(.\\d+)?"
-            name_ver_match = re.search("^{0}.*\\.(tar\\.gz|whl|zip)$".format(name_ver_pattern), archive_name)
+            name_ver_match = re.search("^{0}.*\\.(tar\\.gz|whl|zip)$".format(NAME_VER_PATTERN), archive_name)
             if not name_ver_match:
                 print("Warning: could not parse package name, version, or format from '{}'.\n"
                       "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
@@ -115,7 +216,7 @@ class PipLoader:
                     if patch_res.returncode != 0:
                         print("Applying GraalPy patch failed for %s. The package may still work." % package_name)
                 elif os.path.isdir(dir):
-                    patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(name_ver_pattern, suffix), f)]
+                    patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(NAME_VER_PATTERN, suffix), f)]
                     if patchfiles:
                         print("We have patches to make this package work on GraalVM for some version(s).")
                         print("If installing or running fails, consider using one of the versions that we have patches for:\n\t", "\n\t".join(patchfiles), sep="")
@@ -142,27 +243,22 @@ class PipLoader:
 
 class PipImportHook:
     @staticmethod
+    def _wrap_real_spec(wrapper, fullname, path, target=None):
+        for finder in sys.meta_path:
+            if finder is PipImportHook:
+                continue
+            real_spec = finder.find_spec(fullname, path, target=None)
+            if real_spec:
+                spec = _frozen_importlib.ModuleSpec(fullname, wrapper(real_spec), is_package=False, origin=real_spec.origin)
+                spec.has_location = real_spec.has_location
+                return spec
+
+    @staticmethod
     def find_spec(fullname, path, target=None):
-        # We are patching function 'unpack_file',
-        # which may be in a different module depending on the PIP version.
-        # Older versions have it pip._internal.utils.misc, newer versions
-        # still have module pip._internal.utils.misc, but they moved
-        # 'unpack_file' to pip._internal.utils.unpacking
-        is_unpacking = fullname == "pip._internal.utils.unpacking"
-        is_misc_or_unpacking = is_unpacking or fullname == "pip._internal.utils.misc"
-        if is_misc_or_unpacking:
-            for finder in sys.meta_path:
-                if finder is PipImportHook:
-                    continue
-                real_spec = finder.find_spec(fullname, path, target=None)
-                if real_spec:
-                    if is_unpacking:
-                        # We cannot remove ourselves if the module was pip._internal.utils.misc,
-                        # because we still need to watch out for pip._internal.utils.unpacking
-                        sys.meta_path.remove(PipImportHook)
-                    spec = _frozen_importlib.ModuleSpec(fullname, PipLoader(real_spec), is_package=False, origin=real_spec.origin)
-                    spec.has_location = real_spec.has_location
-                    return spec
+        if fullname in ["pip._internal.commands.install", "pip._internal.commands.wheel"]:
+            return PipImportHook._wrap_real_spec(PipInstallLoader, fullname, path, target=None)
+        elif fullname in ["pip._internal.utils.unpacking", "pip._internal.utils.misc"]:
+            return PipImportHook._wrap_real_spec(PipUnpackLoader, fullname, path, target=None)
 
 
 sys.meta_path.insert(0, PipImportHook)
