@@ -286,6 +286,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
     public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Forces AST sharing for inner contexts.") //
+    public static final OptionKey<Boolean> ForceSharingForInnerContexts = new OptionKey<>(true);
+
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
