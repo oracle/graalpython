@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -204,7 +204,7 @@ public class LeakTest extends AbstractLanguageLauncher {
         private MBeanServer doFullGC() {
             // do this a few times to dump a small heap if we can
             MBeanServer server = null;
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 20; i++) {
                 System.gc();
                 Runtime.getRuntime().freeMemory();
                 server = ManagementFactory.getPlatformMBeanServer();
@@ -215,7 +215,7 @@ public class LeakTest extends AbstractLanguageLauncher {
                     throw new RuntimeException(e);
                 }
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException e1) {
                     // do nothing
                 }
