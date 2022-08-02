@@ -1,5 +1,5 @@
 Module[0, 6]
     Compare[0, 6]
         LHS: Name[0, 1] Value: "x"
-        Op: IN
+        Op: In
         RHS: Name[5, 6] Value: "y"

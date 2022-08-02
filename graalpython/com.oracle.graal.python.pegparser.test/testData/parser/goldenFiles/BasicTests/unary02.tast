@@ -1,4 +1,4 @@
 Module[0, 2]
     UnaryOp[0, 2]
-        Op: SUB
+        Op: USub
         Value: Name[1, 2] Value: "u"

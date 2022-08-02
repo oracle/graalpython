@@ -1,17 +1,20 @@
 Module[0, 247]
     FunctionDef[0, 247]
         Name:b_func
+        ArgumentsTy[0, 0]
         ---- Function body of b_func ----
         Assign[16, 32]
             LHS: Name[16, 24] Value: "exec_gen" Store
             RHS: BOOLEAN[27, 32] Value: false
         FunctionDef[35, 187]
             Name:_inner_func
+            ArgumentsTy[0, 0]
             ---- Function body of _inner_func ----
             FunctionDef[58, 132]
                 Name:doit
+                ArgumentsTy[0, 0]
                 ---- Function body of doit ----
-                NonLocal[76, 93]: exec_gen 
+                Nonlocal[76, 93]: exec_gen 
                 Assign[100, 115]
                     LHS: Name[100, 108] Value: "exec_gen" Store
                     RHS: BOOLEAN[111, 115] Value: true

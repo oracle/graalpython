@@ -25,7 +25,7 @@ Module[0, 192]
                 Condition: 
                     Compare[119, 135]
                         LHS: Name[119, 123] Value: "curr"
-                        Op: ISNOT
+                        Op: IsNot
                         RHS: Name[131, 135] Value: "root"
                 Body:
                     Yield[149, 163]

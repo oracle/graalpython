@@ -38,7 +38,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -46,12 +45,14 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 public final class ComprehensionTy extends SSTNode {
     public final ExprTy target;
     public final ExprTy iter;
-    public final ExprTy[] ifs;
+    public final ExprTy[] ifs;   // nullable
     public final boolean isAsync;
 
     public ComprehensionTy(ExprTy target, ExprTy iter, ExprTy[] ifs, boolean isAsync, SourceRange sourceRange) {
         super(sourceRange);
+        assert target != null;
         this.target = target;
+        assert iter != null;
         this.iter = iter;
         this.ifs = ifs;
         this.isAsync = isAsync;

@@ -1,6 +1,7 @@
 Module[0, 33]
     FunctionDef[0, 33]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Call[10, 33]
             Target: 

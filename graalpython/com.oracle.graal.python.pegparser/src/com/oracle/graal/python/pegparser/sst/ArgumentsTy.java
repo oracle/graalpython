@@ -38,19 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class ArgumentsTy extends SSTNode {
-    public final ArgTy[] posOnlyArgs;
-    public final ArgTy[] args;
-    public final ArgTy varArg;
-    public final ArgTy[] kwOnlyArgs;
-    public final ExprTy[] kwDefaults;
-    public final ArgTy kwArg;
-    public final ExprTy[] defaults;
+    public final ArgTy[] posOnlyArgs;   // nullable
+    public final ArgTy[] args;   // nullable
+    public final ArgTy varArg;   // nullable
+    public final ArgTy[] kwOnlyArgs;   // nullable
+    public final ExprTy[] kwDefaults;   // nullable
+    public final ArgTy kwArg;   // nullable
+    public final ExprTy[] defaults;   // nullable
 
     public ArgumentsTy(ArgTy[] posOnlyArgs, ArgTy[] args, ArgTy varArg, ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults, ArgTy kwArg, ExprTy[] defaults, SourceRange sourceRange) {
         super(sourceRange);

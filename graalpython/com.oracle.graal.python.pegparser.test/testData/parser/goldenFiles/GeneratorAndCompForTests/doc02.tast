@@ -10,7 +10,7 @@ Module[0, 117]
             Test: 
                 Compare[50, 59]
                     LHS: Name[50, 51] Value: "f"
-                    Op: IS
+                    Op: Is
                     RHS: NONE[55, 59] Value: null
             Then:
                 Assign[69, 76]
@@ -22,7 +22,7 @@ Module[0, 117]
             Condition: 
                 Compare[87, 100]
                     LHS: Name[87, 88] Value: "f"
-                    Op: ISNOT
+                    Op: IsNot
                     RHS: NONE[96, 100] Value: null
             Body:
                 Yield[110, 117]

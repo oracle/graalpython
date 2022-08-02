@@ -1,6 +1,7 @@
 Module[0, 29]
     FunctionDef[0, 29]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Yield[12, 19]
             LONG[18, 19] Value: 1

@@ -7,7 +7,7 @@ Module[0, 80]
         ---- Function body of gen ----
         With[14, 41]
             Items:
-                Item[19, 20]
+                WithItemTy[19, 20]
                     ContextExpr: Name[19, 20] Value: "a"
             Body:
                 Call[26, 41]
@@ -18,7 +18,7 @@ Module[0, 80]
                         Name[38, 40] Value: "p3"
         With[44, 80]
             Items:
-                Item[49, 53]
+                WithItemTy[49, 53]
                     ContextExpr: 
                         Call[49, 53]
                             Target: Name[49, 51] Value: "fn"

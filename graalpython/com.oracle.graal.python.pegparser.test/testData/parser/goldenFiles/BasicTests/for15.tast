@@ -1,6 +1,7 @@
 Module[0, 87]
     FunctionDef[0, 87]
         Name:formatyear
+        ArgumentsTy[0, 0]
         ---- Function body of formatyear ----
         For[26, 69]
             Target: 

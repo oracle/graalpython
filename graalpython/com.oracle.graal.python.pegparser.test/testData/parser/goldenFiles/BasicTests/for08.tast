@@ -13,7 +13,7 @@ Module[0, 71]
                         LHS: 
                             Call[27, 35]
                                 Target: Name[27, 33] Value: "call01"
-                        Op: EQ
+                        Op: Eq
                         RHS: LONG[39, 40] Value: 0
                 Then:
                     Continue[50, 58]

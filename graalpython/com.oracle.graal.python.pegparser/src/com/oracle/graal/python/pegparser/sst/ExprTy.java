@@ -38,35 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public abstract class ExprTy extends SSTNode {
+
     ExprTy(SourceRange sourceRange) {
         super(sourceRange);
     }
 
-    public ExprTy copyWithContext(@SuppressWarnings("unused") ExprContext newContext) {
-        return this;
-    }
-
     public static final class BoolOp extends ExprTy {
-        public BoolOp(Type op, ExprTy[] values, SourceRange sourceRange) {
+        public final BoolOpTy op;
+        public final ExprTy[] values;   // nullable
+
+        public BoolOp(BoolOpTy op, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
+            assert op != null;
             this.op = op;
             this.values = values;
         }
-
-        public enum Type {
-            And,
-            Or
-        }
-
-        public final Type op;
-        public final ExprTy[] values;
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
@@ -80,7 +71,9 @@ public abstract class ExprTy extends SSTNode {
 
         public NamedExpr(ExprTy target, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
+            assert target != null;
             this.target = target;
+            assert value != null;
             this.value = value;
         }
 
@@ -91,30 +84,17 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BinOp extends ExprTy {
-        public enum Operator {
-            ADD,
-            SUB,
-            MULT,
-            MATMULT,
-            DIV,
-            MOD,
-            POW,
-            LSHIFT,
-            RSHIFT,
-            BITOR,
-            BITXOR,
-            BITAND,
-            FLOORDIV
-        }
-
         public final ExprTy left;
-        public final Operator op;
+        public final OperatorTy op;
         public final ExprTy right;
 
-        public BinOp(ExprTy left, Operator op, ExprTy right, SourceRange sourceRange) {
+        public BinOp(ExprTy left, OperatorTy op, ExprTy right, SourceRange sourceRange) {
             super(sourceRange);
+            assert left != null;
             this.left = left;
+            assert op != null;
             this.op = op;
+            assert right != null;
             this.right = right;
         }
 
@@ -125,19 +105,14 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class UnaryOp extends ExprTy {
-        public enum Operator {
-            INVERT,
-            NOT,
-            ADD,
-            SUB
-        }
-
-        public final Operator op;
+        public final UnaryOpTy op;
         public final ExprTy operand;
 
-        public UnaryOp(Operator op, ExprTy operand, SourceRange sourceRange) {
+        public UnaryOp(UnaryOpTy op, ExprTy operand, SourceRange sourceRange) {
             super(sourceRange);
+            assert op != null;
             this.op = op;
+            assert operand != null;
             this.operand = operand;
         }
 
@@ -153,7 +128,9 @@ public abstract class ExprTy extends SSTNode {
 
         public Lambda(ArgumentsTy args, ExprTy body, SourceRange sourceRange) {
             super(sourceRange);
+            assert args != null;
             this.args = args;
+            assert body != null;
             this.body = body;
         }
 
@@ -170,8 +147,11 @@ public abstract class ExprTy extends SSTNode {
 
         public IfExp(ExprTy test, ExprTy body, ExprTy orElse, SourceRange sourceRange) {
             super(sourceRange);
+            assert test != null;
             this.test = test;
+            assert body != null;
             this.body = body;
+            assert orElse != null;
             this.orElse = orElse;
         }
 
@@ -182,8 +162,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Dict extends ExprTy {
-        public final ExprTy[] keys;
-        public final ExprTy[] values;
+        public final ExprTy[] keys;   // nullable
+        public final ExprTy[] values;   // nullable
 
         public Dict(ExprTy[] keys, ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
@@ -198,7 +178,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Set extends ExprTy {
-        public final ExprTy[] elements;
+        public final ExprTy[] elements;   // nullable
 
         public Set(ExprTy[] elements, SourceRange sourceRange) {
             super(sourceRange);
@@ -213,10 +193,11 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class ListComp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public ListComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
+            assert element != null;
             this.element = element;
             this.generators = generators;
         }
@@ -229,10 +210,11 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class SetComp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public SetComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
+            assert element != null;
             this.element = element;
             this.generators = generators;
         }
@@ -246,11 +228,13 @@ public abstract class ExprTy extends SSTNode {
     public static final class DictComp extends ExprTy {
         public final ExprTy key;
         public final ExprTy value;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
+            assert key != null;
             this.key = key;
+            assert value != null;
             this.value = value;
             this.generators = generators;
         }
@@ -263,10 +247,11 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class GeneratorExp extends ExprTy {
         public final ExprTy element;
-        public final ComprehensionTy[] generators;
+        public final ComprehensionTy[] generators;   // nullable
 
         public GeneratorExp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
             super(sourceRange);
+            assert element != null;
             this.element = element;
             this.generators = generators;
         }
@@ -282,6 +267,7 @@ public abstract class ExprTy extends SSTNode {
 
         public Await(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
         }
 
@@ -292,7 +278,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Yield extends ExprTy {
-        public final ExprTy value;
+        public final ExprTy value;   // nullable
 
         public Yield(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -310,6 +296,7 @@ public abstract class ExprTy extends SSTNode {
 
         public YieldFrom(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
         }
 
@@ -320,25 +307,13 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Compare extends ExprTy {
-        public enum Operator {
-            EQ,
-            NOTEQ,
-            LT,
-            LTE,
-            GT,
-            GTE,
-            IS,
-            ISNOT,
-            IN,
-            NOTIN
-        }
-
         public final ExprTy left;
-        public final Operator[] ops;
-        public final ExprTy[] comparators;
+        public final CmpOpTy[] ops;   // nullable
+        public final ExprTy[] comparators;   // nullable
 
-        public Compare(ExprTy left, Operator[] ops, ExprTy[] comparators, SourceRange sourceRange) {
+        public Compare(ExprTy left, CmpOpTy[] ops, ExprTy[] comparators, SourceRange sourceRange) {
             super(sourceRange);
+            assert left != null;
             this.left = left;
             this.ops = ops;
             this.comparators = comparators;
@@ -352,11 +327,12 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Call extends ExprTy {
         public final ExprTy func;
-        public final ExprTy[] args;
-        public final KeywordTy[] keywords;
+        public final ExprTy[] args;   // nullable
+        public final KeywordTy[] keywords;   // nullable
 
         public Call(ExprTy func, ExprTy[] args, KeywordTy[] keywords, SourceRange sourceRange) {
             super(sourceRange);
+            assert func != null;
             this.func = func;
             this.args = args;
             this.keywords = keywords;
@@ -369,19 +345,13 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class FormattedValue extends ExprTy {
-        public enum ConversionType {
-            STR,
-            REPR,
-            ASCII,
-            NONE
-        }
-
         public final ExprTy value;
-        public final ConversionType conversion;
-        public final ExprTy formatSpec;
+        public final int conversion;
+        public final ExprTy formatSpec;   // nullable
 
-        public FormattedValue(ExprTy value, ConversionType conversion, ExprTy formatSpec, SourceRange sourceRange) {
+        public FormattedValue(ExprTy value, int conversion, ExprTy formatSpec, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
             this.conversion = conversion;
             this.formatSpec = formatSpec;
@@ -394,7 +364,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class JoinedStr extends ExprTy {
-        public final ExprTy[] values;
+        public final ExprTy[] values;   // nullable
 
         public JoinedStr(ExprTy[] values, SourceRange sourceRange) {
             super(sourceRange);
@@ -408,26 +378,14 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Constant extends ExprTy {
-        public enum Kind {
-            OBJECT,
-            NONE,
-            ELLIPSIS,
-            BOOLEAN,
-            LONG,
-            DOUBLE,
-            COMPLEX,
-            BIGINTEGER,
-            RAW,
-            BYTES
-        }
+        public final ConstantValue value;
+        public final String kind;   // nullable
 
-        public final Object value;
-        public final Kind kind;
-
-        public Constant(Object value, Kind kind, SourceRange sourceRange) {
+        public Constant(ConstantValue value, String kind, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
-            this.kind = kind == null ? Kind.OBJECT : kind;
+            this.kind = kind;
         }
 
         @Override
@@ -439,123 +397,106 @@ public abstract class ExprTy extends SSTNode {
     public static final class Attribute extends ExprTy {
         public final ExprTy value;
         public final String attr;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Attribute(ExprTy value, String attr, ExprContext context, SourceRange sourceRange) {
+        public Attribute(ExprTy value, String attr, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
+            assert attr != null;
             this.attr = attr;
+            assert context != null;
             this.context = context;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            return new Attribute(value, attr, ctx, sourceRange);
         }
     }
 
     public static final class Subscript extends ExprTy {
         public final ExprTy value;
         public final ExprTy slice;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Subscript(ExprTy value, ExprTy slice, ExprContext context, SourceRange sourceRange) {
+        public Subscript(ExprTy value, ExprTy slice, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
+            assert slice != null;
             this.slice = slice;
+            assert context != null;
             this.context = context;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            return new Subscript(value, slice, ctx, sourceRange);
         }
     }
 
     public static final class Starred extends ExprTy {
         public final ExprTy value;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Starred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+        public Starred(ExprTy value, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
+            assert value != null;
             this.value = value;
+            assert context != null;
             this.context = context;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            return new Starred(value.copyWithContext(ctx), ctx, sourceRange);
         }
     }
 
     public static final class Name extends ExprTy {
         public final String id;
-        public final ExprContext context;
+        public final ExprContextTy context;
 
-        public Name(String id, ExprContext context, SourceRange sourceRange) {
+        public Name(String id, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
+            assert id != null;
             this.id = id;
+            assert context != null;
             this.context = context;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            return new Name(id, ctx, sourceRange);
         }
     }
 
     public static final class List extends ExprTy {
-        public final ExprTy[] elements;
-        public final ExprContext context;
+        public final ExprTy[] elements;   // nullable
+        public final ExprContextTy context;
 
-        public List(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+        public List(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.elements = elements;
+            assert context != null;
             this.context = context;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            ExprTy[] newElements = new ExprTy[elements.length];
-            for (int i = 0; i < newElements.length; i++) {
-                newElements[i] = elements[i].copyWithContext(ctx);
-            }
-            return new List(newElements, ctx, sourceRange);
         }
     }
 
     public static final class Tuple extends ExprTy {
-        public final ExprTy[] elements;
-        public final ExprContext context;
+        public final ExprTy[] elements;   // nullable
+        public final ExprContextTy context;
 
-        public Tuple(ExprTy[] elements, ExprContext context, SourceRange sourceRange) {
+        public Tuple(ExprTy[] elements, ExprContextTy context, SourceRange sourceRange) {
             super(sourceRange);
             this.elements = elements;
+            assert context != null;
             this.context = context;
         }
 
@@ -563,21 +504,12 @@ public abstract class ExprTy extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
-
-        @Override
-        public ExprTy copyWithContext(ExprContext ctx) {
-            ExprTy[] newElements = new ExprTy[elements.length];
-            for (int i = 0; i < newElements.length; i++) {
-                newElements[i] = elements[i].copyWithContext(ctx);
-            }
-            return new Tuple(newElements, ctx, sourceRange);
-        }
     }
 
     public static final class Slice extends ExprTy {
-        public final ExprTy lower;
-        public final ExprTy upper;
-        public final ExprTy step;
+        public final ExprTy lower;   // nullable
+        public final ExprTy upper;   // nullable
+        public final ExprTy step;   // nullable
 
         public Slice(ExprTy lower, ExprTy upper, ExprTy step, SourceRange sourceRange) {
             super(sourceRange);

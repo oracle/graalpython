@@ -8,7 +8,7 @@ Module[0, 30]
         ---- Function body of foo ----
         Return[18, 30] 
             BinOp[25, 30]
-                Op: ADD
+                Op: Add
                 LHS: Name[25, 26] Value: "a"
                 RHS: Name[29, 30] Value: "b"
         ---- End of foo function ----

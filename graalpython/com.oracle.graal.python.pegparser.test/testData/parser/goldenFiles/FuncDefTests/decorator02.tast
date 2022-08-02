@@ -18,7 +18,7 @@ Module[0, 216]
                 ---- Function body of wrapped_f ----
                 Return[84, 108] 
                     BinOp[91, 108]
-                        Op: ADD
+                        Op: Add
                         LHS: 
                             Call[91, 100]
                                 Target: Name[91, 93] Value: "fn"
@@ -39,6 +39,7 @@ Module[0, 216]
             Target: Name[152, 163] Value: "mydecorator"
             Args:
                 LONG[164, 165] Value: 3
+        ArgumentsTy[0, 0]
         ---- Function body of getNumber ----
         Return[188, 196] LONG[195, 196] Value: 1
         ---- End of getNumber function ----

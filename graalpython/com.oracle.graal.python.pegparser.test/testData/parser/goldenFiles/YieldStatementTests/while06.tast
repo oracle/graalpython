@@ -12,7 +12,7 @@ Module[0, 110]
                     Test: 
                         Compare[32, 38]
                             LHS: Name[32, 33] Value: "x"
-                            Op: EQ
+                            Op: Eq
                             RHS: LONG[37, 38] Value: 1
                     Then:
                         Break[47, 52]
@@ -20,7 +20,7 @@ Module[0, 110]
                     Test: 
                         Compare[61, 67]
                             LHS: Name[61, 62] Value: "x"
-                            Op: EQ
+                            Op: Eq
                             RHS: LONG[66, 67] Value: 2
                     Then:
                         Continue[76, 84]
@@ -28,7 +28,7 @@ Module[0, 110]
                     LHS: Name[90, 91] Value: "x" Store
                     RHS: 
                         BinOp[94, 97]
-                            Op: SUB
+                            Op: Sub
                             LHS: Name[94, 95] Value: "x"
                             RHS: LONG[96, 97] Value: 1
                 Yield[103, 110]

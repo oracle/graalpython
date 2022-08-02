@@ -1,6 +1,7 @@
 Module[0, 244]
     FunctionDef[0, 244]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         ClassDef[14, 143] MyIter
             ---- Class body of MyIter ----
@@ -28,8 +29,9 @@ Module[0, 244]
             ---- End of MyIter class ----
         FunctionDef[148, 213]
             Name:gen
+            ArgumentsTy[0, 0]
             ---- Function body of gen ----
-            NonLocal[167, 179]: ret 
+            Nonlocal[167, 179]: ret 
             Assign[188, 213]
                 LHS: Name[188, 191] Value: "ret" Store
                 RHS: 

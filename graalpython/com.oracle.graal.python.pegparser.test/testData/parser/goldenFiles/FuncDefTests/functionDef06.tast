@@ -10,7 +10,7 @@ Module[0, 47]
         ---- Function body of foo ----
         Return[29, 47] 
             BinOp[36, 47]
-                Op: MULT
+                Op: Mult
                 LHS: Name[36, 40] Value: "par1"
                 RHS: Name[43, 47] Value: "par2"
         ---- End of foo function ----

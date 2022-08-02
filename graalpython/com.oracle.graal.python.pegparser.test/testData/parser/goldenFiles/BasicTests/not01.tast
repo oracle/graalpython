@@ -1,4 +1,4 @@
 Module[0, 5]
     UnaryOp[0, 5]
-        Op: NOT
+        Op: Not
         Value: Name[4, 5] Value: "a"

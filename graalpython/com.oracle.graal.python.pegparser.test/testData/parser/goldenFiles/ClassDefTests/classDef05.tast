@@ -1,6 +1,7 @@
 Module[0, 63]
     FunctionDef[0, 63]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         ClassDef[12, 63] DerivedClassName
             Bases:

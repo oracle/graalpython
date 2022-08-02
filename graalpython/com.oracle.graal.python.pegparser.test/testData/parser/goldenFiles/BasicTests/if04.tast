@@ -6,7 +6,7 @@ Module[0, 53]
                 Test: 
                     Compare[20, 36]
                         LHS: Name[20, 24] Value: "func"
-                        Op: ISNOT
+                        Op: IsNot
                         RHS: NONE[32, 36] Value: null
                 Then: Name[12, 16] Value: "func"
                 Else: 

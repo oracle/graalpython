@@ -1,12 +1,14 @@
 Module[0, 156]
     FunctionDef[0, 156]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Assign[14, 45]
             LHS: Name[14, 29] Value: "a_local_var_out" Store
             RHS: RAW[32, 45] Value: "a local var"
         FunctionDef[51, 156]
             Name:f
+            ArgumentsTy[0, 0]
             ---- Function body of f ----
             ClassDef[68, 126] C
                 Bases:

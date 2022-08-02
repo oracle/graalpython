@@ -1,5 +1,5 @@
 Module[0, 6]
     AugAssign[0, 6]
-        Op: SUB
+        Op: Sub
         LHS: Name[0, 1] Value: "a" Store
         RHS: Name[5, 6] Value: "b"

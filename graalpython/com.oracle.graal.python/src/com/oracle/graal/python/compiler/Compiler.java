@@ -139,9 +139,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.pegparser.CopyWithContextVisitor;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.ExprContext;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
@@ -155,12 +155,22 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
@@ -393,13 +403,13 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void checkForbiddenName(String id, ExprContext context) {
-        if (context == ExprContext.Store) {
+    private void checkForbiddenName(String id, ExprContextTy context) {
+        if (context == ExprContextTy.Store) {
             if (id.equals("__debug__")) {
                 errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "cannot assign to __debug__");
             }
         }
-        if (context == ExprContext.Delete) {
+        if (context == ExprContextTy.Del) {
             if (id.equals("__debug__")) {
                 errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "cannot delete __debug__");
             }
@@ -432,8 +442,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else if (stmt instanceof StmtTy.Try) {
             StmtTy.Try tryStmt = (StmtTy.Try) stmt;
             if (tryStmt.handlers != null) {
-                for (StmtTy.Try.ExceptHandler h : tryStmt.handlers) {
-                    if (containsAnnotations(h.body)) {
+                for (ExceptHandlerTy h : tryStmt.handlers) {
+                    if (containsAnnotations(((ExceptHandlerTy.ExceptHandler) h).body)) {
                         return true;
                     }
                 }
@@ -500,7 +510,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(code, arg);
     }
 
-    private void addDerefVariableOpcode(ExprContext ctx, int idx) {
+    private void addDerefVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
                 addOp(unit.scope.isClass() ? LOAD_CLASSDEREF : LOAD_DEREF, idx);
@@ -508,13 +518,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             case Store:
                 addOp(STORE_DEREF, idx);
                 break;
-            case Delete:
+            case Del:
                 addOp(DELETE_DEREF, idx);
                 break;
         }
     }
 
-    private void addFastVariableOpcode(ExprContext ctx, int idx) {
+    private void addFastVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
                 addOp(LOAD_FAST, idx);
@@ -522,13 +532,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             case Store:
                 addOp(STORE_FAST, idx);
                 break;
-            case Delete:
+            case Del:
                 addOp(DELETE_FAST, idx);
                 break;
         }
     }
 
-    private void addGlobalVariableOpcode(ExprContext ctx, int idx) {
+    private void addGlobalVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
                 addOp(LOAD_GLOBAL, idx);
@@ -536,13 +546,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             case Store:
                 addOp(STORE_GLOBAL, idx);
                 break;
-            case Delete:
+            case Del:
                 addOp(DELETE_GLOBAL, idx);
                 break;
         }
     }
 
-    private void addNameVariableOpcode(ExprContext ctx, int idx) {
+    private void addNameVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
                 addOp(LOAD_NAME, idx);
@@ -550,13 +560,13 @@ public class Compiler implements SSTreeVisitor<Void> {
             case Store:
                 addOp(STORE_NAME, idx);
                 break;
-            case Delete:
+            case Del:
                 addOp(DELETE_NAME, idx);
                 break;
         }
     }
 
-    private void addNameOp(String name, ExprContext ctx) {
+    private void addNameOp(String name, ExprContextTy ctx) {
         checkForbiddenName(name, ctx);
 
         String mangled = ScopeEnvironment.mangle(unit.privateName, name);
@@ -605,9 +615,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (stmt instanceof StmtTy.Expr) {
                 ExprTy expr = ((StmtTy.Expr) stmt).value;
                 if (expr instanceof ExprTy.Constant) {
-                    Object value = ((ExprTy.Constant) expr).value;
-                    if (value instanceof TruffleString) {
-                        return (TruffleString) value;
+                    ConstantValue value = ((ExprTy.Constant) expr).value;
+                    if (value.kind == ConstantValue.Kind.RAW) {
+                        return value.getRaw(TruffleString.class);
                     }
                 }
             }
@@ -766,7 +776,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void validateKeywords(KeywordTy[] keywords) {
         for (int i = 0; i < keywords.length; i++) {
             if (keywords[i].arg != null) {
-                checkForbiddenName(keywords[i].arg, ExprContext.Store);
+                checkForbiddenName(keywords[i].arg, ExprContextTy.Store);
                 for (int j = i + 1; j < keywords.length; j++) {
                     if (keywords[i].arg.equals(keywords[j].arg)) {
                         // TODO: cbasca 3.10 error message "keyword argument repeated: " +
@@ -863,7 +873,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             i++;
             StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
             stmt.value.accept(this);
-            addNameOp("__doc__", ExprContext.Store);
+            addNameOp("__doc__", ExprContextTy.Store);
         }
         for (; i < stmts.length; i++) {
             stmts[i].accept(this);
@@ -890,17 +900,17 @@ public class Compiler implements SSTreeVisitor<Void> {
                     addOp(ROT_TWO);
                     addOp(POP_TOP);
                 }
-                addNameOp(node.asName, ExprContext.Store);
+                addNameOp(node.asName, ExprContextTy.Store);
                 addOp(POP_TOP);
             } else {
-                addNameOp(node.asName, ExprContext.Store);
+                addNameOp(node.asName, ExprContextTy.Store);
             }
         } else {
             int dotIdx = node.name.indexOf('.');
             if (dotIdx >= 0) {
-                addNameOp(node.name.substring(0, dotIdx), ExprContext.Store);
+                addNameOp(node.name.substring(0, dotIdx), ExprContextTy.Store);
             } else {
-                addNameOp(node.name, ExprContext.Store);
+                addNameOp(node.name, ExprContextTy.Store);
             }
         }
         return null;
@@ -930,7 +940,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case Store:
                     checkForbiddenName(node.attr, node.context);
                     return addOpName(STORE_ATTR, unit.names, node.attr);
-                case Delete:
+                case Del:
                     return addOpName(DELETE_ATTR, unit.names, node.attr);
                 case Load:
                 default:
@@ -969,43 +979,43 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.left.accept(this);
             node.right.accept(this);
             switch (node.op) {
-                case ADD:
+                case Add:
                     addOp(BINARY_OP, BinaryOps.ADD.ordinal());
                     break;
-                case SUB:
+                case Sub:
                     addOp(BINARY_OP, BinaryOps.SUB.ordinal());
                     break;
-                case MULT:
+                case Mult:
                     addOp(BINARY_OP, BinaryOps.MUL.ordinal());
                     break;
-                case MATMULT:
+                case MatMult:
                     addOp(BINARY_OP, BinaryOps.MATMUL.ordinal());
                     break;
-                case DIV:
+                case Div:
                     addOp(BINARY_OP, BinaryOps.TRUEDIV.ordinal());
                     break;
-                case MOD:
+                case Mod:
                     addOp(BINARY_OP, BinaryOps.MOD.ordinal());
                     break;
-                case POW:
+                case Pow:
                     addOp(BINARY_OP, BinaryOps.POW.ordinal());
                     break;
-                case LSHIFT:
+                case LShift:
                     addOp(BINARY_OP, BinaryOps.LSHIFT.ordinal());
                     break;
-                case RSHIFT:
+                case RShift:
                     addOp(BINARY_OP, BinaryOps.RSHIFT.ordinal());
                     break;
-                case BITOR:
+                case BitOr:
                     addOp(BINARY_OP, BinaryOps.OR.ordinal());
                     break;
-                case BITXOR:
+                case BitXor:
                     addOp(BINARY_OP, BinaryOps.XOR.ordinal());
                     break;
-                case BITAND:
+                case BitAnd:
                     addOp(BINARY_OP, BinaryOps.AND.ordinal());
                     break;
-                case FLOORDIV:
+                case FloorDiv:
                     addOp(BINARY_OP, BinaryOps.FLOORDIV.ordinal());
                     break;
                 default:
@@ -1024,7 +1034,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             Block end = new Block();
             ExprTy[] values = node.values;
             OpCodes op;
-            if (node.op == ExprTy.BoolOp.Type.And) {
+            if (node.op == BoolOpTy.And) {
                 op = JUMP_IF_FALSE_OR_POP;
             } else {
                 op = JUMP_IF_TRUE_OR_POP;
@@ -1043,7 +1053,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private static boolean isAttributeLoad(ExprTy node) {
-        return node instanceof ExprTy.Attribute && ((ExprTy.Attribute) node).context == ExprContext.Load;
+        return node instanceof ExprTy.Attribute && ((ExprTy.Attribute) node).context == ExprContextTy.Load;
     }
 
     private static boolean hasOnlyPlainArgs(ExprTy[] args, KeywordTy[] keywords) {
@@ -1111,37 +1121,37 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void addCompareOp(ExprTy.Compare.Operator op) {
+    private void addCompareOp(CmpOpTy op) {
         switch (op) {
-            case EQ:
+            case Eq:
                 addOp(BINARY_OP, BinaryOps.EQ.ordinal());
                 break;
-            case NOTEQ:
+            case NotEq:
                 addOp(BINARY_OP, BinaryOps.NE.ordinal());
                 break;
-            case LT:
+            case Lt:
                 addOp(BINARY_OP, BinaryOps.LT.ordinal());
                 break;
-            case LTE:
+            case LtE:
                 addOp(BINARY_OP, BinaryOps.LE.ordinal());
                 break;
-            case GT:
+            case Gt:
                 addOp(BINARY_OP, BinaryOps.GT.ordinal());
                 break;
-            case GTE:
+            case GtE:
                 addOp(BINARY_OP, BinaryOps.GE.ordinal());
                 break;
-            case IS:
+            case Is:
                 addOp(BINARY_OP, BinaryOps.IS.ordinal());
                 break;
-            case ISNOT:
+            case IsNot:
                 addOp(BINARY_OP, BinaryOps.IS.ordinal());
                 addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 break;
-            case IN:
+            case In:
                 addOp(BINARY_OP, BinaryOps.IN.ordinal());
                 break;
-            case NOTIN:
+            case NotIn:
                 addOp(BINARY_OP, BinaryOps.IN.ordinal());
                 addOp(UNARY_OP, UnaryOps.NOT.ordinal());
                 break;
@@ -1187,30 +1197,30 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Constant node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            switch (node.kind) {
-                case OBJECT:
-                    return addOp(LOAD_CONST, addObject(unit.constants, node.value));
+            switch (node.value.kind) {
+                case ARBITRARY_PYTHON_OBJECT:
+                    // TODO GR-40165: the code object being compiled must not be shared
+                    return addOp(LOAD_CONST, addObject(unit.constants, node.value.getArbitraryPythonObject()));
                 case NONE:
                     return addOp(LOAD_NONE);
                 case ELLIPSIS:
                     return addOp(LOAD_ELLIPSIS);
                 case BOOLEAN:
-                    return addOp(node.value == Boolean.TRUE ? LOAD_TRUE : LOAD_FALSE);
+                    return addOp(node.value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
                 case LONG:
-                    return addLoadNumber((Long) node.value);
+                    return addLoadNumber(node.value.getLong());
                 case DOUBLE:
-                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits((Double) node.value)));
+                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(node.value.getDouble())));
                 case COMPLEX:
-                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value));
+                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value.getComplex()));
                 case BIGINTEGER:
-                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value));
+                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value.getBigInteger()));
                 case RAW:
-                    assert node.value instanceof TruffleString;
-                    return addOp(LOAD_STRING, addObject(unit.constants, node.value));
+                    return addOp(LOAD_STRING, addObject(unit.constants, node.value.getRaw(TruffleString.class)));
                 case BYTES:
-                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value));
+                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value.getBytes()));
                 default:
-                    throw new IllegalStateException("Unknown constant kind " + node.kind);
+                    throw new IllegalStateException("Unknown constant kind " + node.value.kind);
             }
         } finally {
             setLocation(savedLocation);
@@ -1250,19 +1260,20 @@ public class Compiler implements SSTreeVisitor<Void> {
             node.value.accept(this);
             int oparg;
             switch (node.conversion) {
-                case STR:
+                case 's':
                     oparg = FormatOptions.FVC_STR;
                     break;
-                case REPR:
+                case 'r':
                     oparg = FormatOptions.FVC_REPR;
                     break;
-                case ASCII:
+                case 'a':
                     oparg = FormatOptions.FVC_ASCII;
                     break;
-                case NONE:
+                case -1:
                     oparg = FormatOptions.FVC_NONE;
                     break;
                 default:
+                    // TODO GR-40162 raise SystemError
                     throw new IllegalStateException("Unknown format conversion");
             }
             if (node.formatSpec != null) {
@@ -1382,7 +1393,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                     collectIntoArray(node.elements, CollectionBits.KIND_LIST);
                     return null;
-                case Delete:
+                case Del:
                 default:
                     return visitSequence(node.elements);
             }
@@ -1556,7 +1567,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Starred node) {
         // Valid occurrences are handled by other visitors
-        if (node.context == ExprContext.Store) {
+        if (node.context == ExprContextTy.Store) {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "starred assignment target must be in a list or tuple");
         } else {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "can't use starred expression here");
@@ -1575,7 +1586,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     return addOp(BINARY_SUBSCR);
                 case Store:
                     return addOp(STORE_SUBSCR);
-                case Delete:
+                case Del:
                 default:
                     return addOp(DELETE_SUBSCR);
             }
@@ -1623,7 +1634,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                         addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KIND_TUPLE);
                     }
                     return null;
-                case Delete:
+                case Del:
                 default:
                     return visitSequence(node.elements);
             }
@@ -1647,24 +1658,24 @@ public class Compiler implements SSTreeVisitor<Void> {
         for (ExprTy e : elements) {
             if (e instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) e;
-                if (c.kind == ExprTy.Constant.Kind.BOOLEAN) {
+                if (c.value.kind == ConstantValue.Kind.BOOLEAN) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_BOOLEAN);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.LONG) {
-                    long val = (long) c.value;
+                    constants.add(c.value.getBoolean());
+                } else if (c.value.kind == ConstantValue.Kind.LONG) {
+                    long val = c.value.getLong();
                     if (val == (int) val) {
                         constantType = determineConstantType(constantType, CollectionBits.ELEMENT_INT);
                     } else {
                         constantType = determineConstantType(constantType, CollectionBits.ELEMENT_LONG);
                     }
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
+                    constants.add(val);
+                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_DOUBLE);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.RAW) {
+                    constants.add(c.value.getDouble());
+                } else if (c.value.kind == ConstantValue.Kind.RAW) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
-                    constants.add(c.value);
-                } else if (c.kind == ExprTy.Constant.Kind.NONE) {
+                    constants.add(c.value.getRaw(TruffleString.class));
+                } else if (c.value.kind == ConstantValue.Kind.NONE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
                     constants.add(PNone.NONE);
                 } else {
@@ -1731,30 +1742,30 @@ public class Compiler implements SSTreeVisitor<Void> {
         SourceRange savedLocation = setLocation(node);
         try {
             // Basic constant folding for unary negation
-            if (node.op == ExprTy.UnaryOp.Operator.SUB && node.operand instanceof ExprTy.Constant) {
+            if (node.op == UnaryOpTy.USub && node.operand instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) node.operand;
-                if (c.kind == ExprTy.Constant.Kind.LONG) {
-                    long v = (long) c.value;
+                if (c.value.kind == ConstantValue.Kind.LONG) {
+                    long v = c.value.getLong();
                     if (v != Long.MIN_VALUE) {
-                        return visit(new ExprTy.Constant(-v, c.kind, c.getSourceRange()));
+                        return visit(new ExprTy.Constant(ConstantValue.ofLong(-v), null, c.getSourceRange()));
                     } else {
-                        return visit(new ExprTy.Constant((BigInteger.valueOf(v)).negate(), ExprTy.Constant.Kind.BIGINTEGER, c.getSourceRange()));
+                        return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(BigInteger.valueOf(v).negate()), null, c.getSourceRange()));
                     }
-                } else if (c.kind == ExprTy.Constant.Kind.DOUBLE) {
-                    return visit(new ExprTy.Constant(-(double) c.value, c.kind, c.getSourceRange()));
-                } else if (c.kind == ExprTy.Constant.Kind.BIGINTEGER) {
-                    return visit(new ExprTy.Constant(((BigInteger) c.value).negate(), c.kind, c.getSourceRange()));
+                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
+                    return visit(new ExprTy.Constant(ConstantValue.ofDouble(-c.value.getDouble()), null, c.getSourceRange()));
+                } else if (c.value.kind == ConstantValue.Kind.BIGINTEGER) {
+                    return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(c.value.getBigInteger().negate()), null, c.getSourceRange()));
                 }
             }
             node.operand.accept(this);
             switch (node.op) {
-                case ADD:
+                case UAdd:
                     return addOp(UNARY_OP, UnaryOps.POSITIVE.ordinal());
-                case INVERT:
+                case Invert:
                     return addOp(UNARY_OP, UnaryOps.INVERT.ordinal());
-                case NOT:
+                case Not:
                     return addOp(UNARY_OP, UnaryOps.NOT.ordinal());
-                case SUB:
+                case USub:
                     return addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
                 default:
                     throw new IllegalStateException("Unknown unary operation " + node.op);
@@ -1861,7 +1872,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(ModTy.TypeIgnore node) {
+    public Void visit(TypeIgnoreTy.TypeIgnore node) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -1874,7 +1885,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         if (node.target instanceof ExprTy.Name) {
             String name = ((ExprTy.Name) node.target).id;
-            checkForbiddenName(name, ExprContext.Store);
+            checkForbiddenName(name, ExprContextTy.Store);
             /* If we have a simple name in a module or class, store annotation. */
             if (node.isSimple &&
                             (unit.scopeType == CompilationScope.Module || unit.scopeType == CompilationScope.Class)) {
@@ -1884,14 +1895,14 @@ public class Compiler implements SSTreeVisitor<Void> {
                 } else {
                     node.annotation.accept(this);
                 }
-                addNameOp("__annotations__", ExprContext.Load);
+                addNameOp("__annotations__", ExprContextTy.Load);
                 String mangled = ScopeEnvironment.mangle(unit.privateName, name);
                 addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
                 addOp(STORE_SUBSCR);
             }
         } else if (node.target instanceof ExprTy.Attribute) {
             ExprTy.Attribute attr = (ExprTy.Attribute) node.target;
-            checkForbiddenName(attr.attr, ExprContext.Store);
+            checkForbiddenName(attr.attr, ExprContextTy.Store);
             if (attr.value != null) {
                 checkAnnExpr(attr.value);
             }
@@ -1984,7 +1995,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     // TODO temporary helper so that stuff that's not implemented can compile into stubs
     private Void emitNotImplemented(String what) {
-        addGlobalVariableOpcode(ExprContext.Load, addObject(unit.names, "NotImplementedError"));
+        addGlobalVariableOpcode(ExprContextTy.Load, addObject(unit.names, "NotImplementedError"));
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(what)));
         addOp(CALL_FUNCTION, 1);
         addOp(RAISE_VARARGS, 1);
@@ -1993,7 +2004,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
-        return visitFunctionDef(node, true);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, true);
     }
 
     @Override
@@ -2005,48 +2016,48 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AugAssign node) {
         SourceRange savedLocation = setLocation(node);
-        node.target.copyWithContext(ExprContext.Load).accept(this);
+        node.target.accept(new CopyWithContextVisitor(ExprContextTy.Load)).accept(this);
         setLocation(savedLocation);
         node.value.accept(this);
         setLocation(node);
         switch (node.op) {
-            case ADD:
+            case Add:
                 addOp(BINARY_OP, BinaryOps.INPLACE_ADD.ordinal());
                 break;
-            case SUB:
+            case Sub:
                 addOp(BINARY_OP, BinaryOps.INPLACE_SUB.ordinal());
                 break;
-            case MULT:
+            case Mult:
                 addOp(BINARY_OP, BinaryOps.INPLACE_MUL.ordinal());
                 break;
-            case MATMULT:
+            case MatMult:
                 addOp(BINARY_OP, BinaryOps.INPLACE_MATMUL.ordinal());
                 break;
-            case DIV:
+            case Div:
                 addOp(BINARY_OP, BinaryOps.INPLACE_TRUEDIV.ordinal());
                 break;
-            case MOD:
+            case Mod:
                 addOp(BINARY_OP, BinaryOps.INPLACE_MOD.ordinal());
                 break;
-            case POW:
+            case Pow:
                 addOp(BINARY_OP, BinaryOps.INPLACE_POW.ordinal());
                 break;
-            case LSHIFT:
+            case LShift:
                 addOp(BINARY_OP, BinaryOps.INPLACE_LSHIFT.ordinal());
                 break;
-            case RSHIFT:
+            case RShift:
                 addOp(BINARY_OP, BinaryOps.INPLACE_RSHIFT.ordinal());
                 break;
-            case BITOR:
+            case BitOr:
                 addOp(BINARY_OP, BinaryOps.INPLACE_OR.ordinal());
                 break;
-            case BITXOR:
+            case BitXor:
                 addOp(BINARY_OP, BinaryOps.INPLACE_XOR.ordinal());
                 break;
-            case BITAND:
+            case BitAnd:
                 addOp(BINARY_OP, BinaryOps.INPLACE_AND.ordinal());
                 break;
-            case FLOORDIV:
+            case FloorDiv:
                 addOp(BINARY_OP, BinaryOps.INPLACE_FLOORDIV.ordinal());
                 break;
             default:
@@ -2061,10 +2072,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         visitSequence(node.decoratorList);
 
         enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false);
-        addNameOp("__name__", ExprContext.Load);
-        addNameOp("__module__", ExprContext.Store);
+        addNameOp("__name__", ExprContextTy.Load);
+        addNameOp("__module__", ExprContextTy.Store);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(unit.qualName)));
-        addNameOp("__qualname__", ExprContext.Store);
+        addNameOp("__qualname__", ExprContextTy.Store);
 
         visitBody(node.body);
 
@@ -2072,7 +2083,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             int idx = unit.cellvars.get("__class__");
             addOp(LOAD_CLOSURE, idx);
             addOp(DUP_TOP);
-            addNameOp("__classcell__", ExprContext.Store);
+            addNameOp("__classcell__", ExprContextTy.Store);
         } else {
             addOp(LOAD_NONE);
         }
@@ -2093,7 +2104,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             }
         }
 
-        addNameOp(node.name, ExprContext.Store);
+        addNameOp(node.name, ExprContextTy.Store);
 
         return null;
     }
@@ -2153,32 +2164,32 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
-        return visitFunctionDef(node, false);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, false);
     }
 
-    private Void visitFunctionDef(StmtTy.FunctionDef node, boolean isAsync) {
+    private Void visitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, boolean isAsync) {
         setLocation(node);
-        checkForbiddenArgs(node.args);
+        checkForbiddenArgs(args);
 
         // visit decorators
-        visitSequence(node.decoratorList);
+        visitSequence(decoratorList);
 
         // visit defaults outside the function scope
-        int makeFunctionFlags = collectDefaults(node.args);
+        int makeFunctionFlags = collectDefaults(args);
 
-        boolean hasAnnotations = visitAnnotations(node.args, node.returns);
+        boolean hasAnnotations = visitAnnotations(args, returns);
         if (hasAnnotations) {
             makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS;
         }
 
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
-        enterScope(node.name, scopeType, node, node.args);
+        enterScope(name, scopeType, node, args);
 
         CodeUnit code;
         try {
-            TruffleString docString = getDocstring(node.body);
+            TruffleString docString = getDocstring(body);
             addObject(unit.constants, docString == null ? PNone.NONE : docString);
-            visitSequence(node.body);
+            visitSequence(body);
             code = unit.assemble();
         } finally {
             exitScope();
@@ -2186,14 +2197,13 @@ public class Compiler implements SSTreeVisitor<Void> {
 
         makeClosure(code, makeFunctionFlags);
 
-        if (node.decoratorList != null) {
-            ExprTy[] decoratorList = node.decoratorList;
+        if (decoratorList != null) {
             for (int i = 0; i < decoratorList.length; i++) {
                 addOp(CALL_FUNCTION, 1);
             }
         }
 
-        addNameOp(node.name, ExprContext.Store);
+        addNameOp(name, ExprContextTy.Store);
         return null;
     }
 
@@ -2276,24 +2286,24 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (args != null) {
             if (args.posOnlyArgs != null) {
                 for (ArgTy arg : args.posOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
+                    checkForbiddenName(arg.arg, ExprContextTy.Store);
                 }
             }
             if (args.args != null) {
                 for (ArgTy arg : args.args) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
+                    checkForbiddenName(arg.arg, ExprContextTy.Store);
                 }
             }
             if (args.kwOnlyArgs != null) {
                 for (ArgTy arg : args.kwOnlyArgs) {
-                    checkForbiddenName(arg.arg, ExprContext.Store);
+                    checkForbiddenName(arg.arg, ExprContextTy.Store);
                 }
             }
             if (args.varArg != null) {
-                checkForbiddenName(args.varArg.arg, ExprContext.Store);
+                checkForbiddenName(args.varArg.arg, ExprContextTy.Store);
             }
             if (args.kwArg != null) {
-                checkForbiddenName(args.kwArg.arg, ExprContext.Store);
+                checkForbiddenName(args.kwArg.arg, ExprContextTy.Store);
             }
         }
     }
@@ -2359,7 +2369,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             for (AliasTy alias : node.names) {
                 addOpName(IMPORT_FROM, unit.names, alias.name);
                 String storeName = alias.asName != null ? alias.asName : alias.name;
-                addNameOp(storeName, ExprContext.Store);
+                addNameOp(storeName, ExprContextTy.Store);
 
             }
             addOp(POP_TOP);
@@ -2374,52 +2384,52 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Match.Case node) {
+    public Void visit(MatchCaseTy node) {
         return emitNotImplemented("case");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchAs node) {
+    public Void visit(PatternTy.MatchAs node) {
         return emitNotImplemented("match as");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchClass node) {
+    public Void visit(PatternTy.MatchClass node) {
         return emitNotImplemented("match class");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
+    public Void visit(PatternTy.MatchMapping node) {
         return emitNotImplemented("match mapping");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchOr node) {
+    public Void visit(PatternTy.MatchOr node) {
         return emitNotImplemented("match or");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
+    public Void visit(PatternTy.MatchSequence node) {
         return emitNotImplemented("match sequence");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
+    public Void visit(PatternTy.MatchSingleton node) {
         return emitNotImplemented("match singleton");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchStar node) {
+    public Void visit(PatternTy.MatchStar node) {
         return emitNotImplemented("match star");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchValue node) {
+    public Void visit(PatternTy.MatchValue node) {
         return emitNotImplemented("match value");
     }
 
     @Override
-    public Void visit(StmtTy.NonLocal node) {
+    public Void visit(StmtTy.Nonlocal node) {
         setLocation(node);
         return null;
     }
@@ -2526,7 +2536,8 @@ public class Compiler implements SSTreeVisitor<Void> {
              */
             commonCleanupHandler.unwindOffset = -1;
             for (int i = 0; i < node.handlers.length; i++) {
-                setLocation(node.handlers[i]);
+                ExceptHandlerTy.ExceptHandler handler = ((ExceptHandlerTy.ExceptHandler) node.handlers[i]);
+                setLocation(handler);
                 if (hasBareExcept) {
                     errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "default 'except:' must be last");
                 }
@@ -2544,13 +2555,13 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
 
                 Block bindingCleanerExcept = null;
-                String bindingName = node.handlers[i].name;
-                if (node.handlers[i].type != null) {
-                    node.handlers[i].type.accept(this);
+                String bindingName = handler.name;
+                if (handler.type != null) {
+                    handler.type.accept(this);
                     addConditionalJump(MATCH_EXC_OR_JUMP, nextHandler);
                     if (bindingName != null) {
                         addOp(UNWRAP_EXC);
-                        addNameOp(bindingName, ExprContext.Store);
+                        addNameOp(bindingName, ExprContextTy.Store);
                         Block handlerWithBinding = new Block();
                         bindingCleanerExcept = new Block();
                         unit.pushBlock(new BlockInfo.HandlerBindingCleanup(handlerWithBinding, bindingCleanerExcept, bindingName));
@@ -2562,21 +2573,21 @@ public class Compiler implements SSTreeVisitor<Void> {
                     hasBareExcept = true;
                     addOp(POP_TOP);
                 }
-                visitSequence(node.handlers[i].body);
+                visitSequence(handler.body);
                 if (bindingName != null) {
                     unit.popBlock();
                     unit.useNextBlock(new Block());
                     addOp(LOAD_NONE);
-                    addNameOp(bindingName, ExprContext.Store);
-                    addNameOp(bindingName, ExprContext.Delete);
+                    addNameOp(bindingName, ExprContextTy.Store);
+                    addNameOp(bindingName, ExprContextTy.Del);
                 }
                 addOp(POP_EXCEPT);
                 jumpToFinally(finallyBlockNormal, end);
                 if (bindingName != null) {
                     unit.useNextBlock(bindingCleanerExcept);
                     addOp(LOAD_NONE);
-                    addNameOp(bindingName, ExprContext.Store);
-                    addNameOp(bindingName, ExprContext.Delete);
+                    addNameOp(bindingName, ExprContextTy.Store);
+                    addNameOp(bindingName, ExprContextTy.Del);
                     cleanupOnExceptionInHandler(hasFinally, finallyBlockExcept);
                 }
             }
@@ -2641,7 +2652,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Try.ExceptHandler node) {
+    public Void visit(ExceptHandlerTy.ExceptHandler node) {
         throw new IllegalStateException("should not reach here");
     }
 
@@ -2682,7 +2693,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         Block body = new Block();
         Block handler = new Block();
 
-        StmtTy.With.Item item = node.items[itemIndex];
+        WithItemTy item = node.items[itemIndex];
         item.contextExpr.accept(this);
         addOp(SETUP_WITH);
         unit.pushBlock(new BlockInfo.With(body, handler, node));
@@ -2712,7 +2723,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.With.Item node) {
+    public Void visit(WithItemTy node) {
         throw new IllegalStateException("should not reach here");
     }
 
@@ -2772,8 +2783,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                     String bindingName = ((BlockInfo.HandlerBindingCleanup) info).bindingName;
                     if (bindingName != null) {
                         addOp(LOAD_NONE);
-                        addNameOp(bindingName, ExprContext.Store);
-                        addNameOp(bindingName, ExprContext.Delete);
+                        addNameOp(bindingName, ExprContextTy.Store);
+                        addNameOp(bindingName, ExprContextTy.Del);
                     }
                 } else if (info instanceof BlockInfo.FinallyHandler) {
                     if (type == UnwindType.RETURN_VALUE) {

@@ -1,6 +1,7 @@
 Module[0, 58]
     FunctionDef[0, 58]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         For[12, 58]
             Target: Name[16, 17] Value: "x" Store
@@ -14,7 +15,7 @@ Module[0, 58]
                     Test: 
                         Compare[39, 45]
                             LHS: Name[39, 40] Value: "x"
-                            Op: EQ
+                            Op: Eq
                             RHS: LONG[44, 45] Value: 1
                     Then:
                         Break[53, 58]

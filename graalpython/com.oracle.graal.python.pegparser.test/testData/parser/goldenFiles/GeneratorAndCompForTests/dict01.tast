@@ -2,7 +2,7 @@ Module[0, 26]
     DictComp[0, 26]
         Key: Name[1, 2] Value: "x"
         Value: BinOp[3, 6]
-            Op: MULT
+            Op: Mult
             LHS: Name[3, 4] Value: "x"
             RHS: Name[5, 6] Value: "x"
         ComprehensionTy[7, 25]

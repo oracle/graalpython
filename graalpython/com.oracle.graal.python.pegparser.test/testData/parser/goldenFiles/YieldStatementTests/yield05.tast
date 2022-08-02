@@ -1,6 +1,7 @@
 Module[0, 24]
     FunctionDef[0, 24]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         Assign[9, 24]
             LHS: 

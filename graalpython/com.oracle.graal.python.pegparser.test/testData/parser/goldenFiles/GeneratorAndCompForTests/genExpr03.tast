@@ -2,7 +2,7 @@ Module[0, 37]
     GeneratorExp[0, 37]
         Element: 
             BinOp[1, 4]
-                Op: ADD
+                Op: Add
                 LHS: Name[1, 2] Value: "e"
                 RHS: LONG[3, 4] Value: 1
         ComprehensionTy[5, 36]
@@ -11,7 +11,7 @@ Module[0, 37]
                 GeneratorExp[14, 36]
                     Element: 
                         BinOp[15, 18]
-                            Op: MULT
+                            Op: Mult
                             LHS: Name[15, 16] Value: "i"
                             RHS: LONG[17, 18] Value: 2
                     ComprehensionTy[19, 35]

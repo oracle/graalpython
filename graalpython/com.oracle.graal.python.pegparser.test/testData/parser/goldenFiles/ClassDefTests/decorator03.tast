@@ -7,6 +7,7 @@ Module[0, 59]
             Name:foo
             Decorators:
             Name[22, 34] Value: "staticmethod"
+            ArgumentsTy[0, 0]
             ---- Function body of foo ----
             Return[50, 59] LONG[57, 59] Value: 42
             ---- End of foo function ----

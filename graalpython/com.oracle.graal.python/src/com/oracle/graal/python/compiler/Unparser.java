@@ -50,12 +50,19 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -145,7 +152,7 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     private void appendFStringElement(ExprTy e, boolean isFormatSpec) {
         if (e instanceof ExprTy.Constant) {
-            appendFString((TruffleString) ((ExprTy.Constant) e).value);
+            appendFString(((ExprTy.Constant) e).value.getRaw(TruffleString.class));
         } else if (e instanceof ExprTy.JoinedStr) {
             appendJoinedStr((ExprTy.JoinedStr) e, isFormatSpec);
         } else if (e instanceof ExprTy.FormattedValue) {
@@ -297,7 +304,7 @@ public class Unparser implements SSTreeVisitor<Void> {
         /*
          * Special case: integers require a space for attribute access to be unambiguous.
          */
-        if (v instanceof ExprTy.Constant && (((ExprTy.Constant) v).kind == ExprTy.Constant.Kind.LONG || ((ExprTy.Constant) v).kind == ExprTy.Constant.Kind.BIGINTEGER)) {
+        if (v instanceof ExprTy.Constant && (((ExprTy.Constant) v).value.kind == ConstantValue.Kind.LONG || ((ExprTy.Constant) v).value.kind == ConstantValue.Kind.BIGINTEGER)) {
             period = " .";
         } else {
             period = ".";
@@ -323,55 +330,55 @@ public class Unparser implements SSTreeVisitor<Void> {
         String op;
         boolean rassoc = false;
         switch (node.op) {
-            case ADD:
+            case Add:
                 op = " + ";
                 pr = PR_ARITH;
                 break;
-            case SUB:
+            case Sub:
                 op = " - ";
                 pr = PR_ARITH;
                 break;
-            case MULT:
+            case Mult:
                 op = " * ";
                 pr = PR_TERM;
                 break;
-            case MATMULT:
+            case MatMult:
                 op = " @ ";
                 pr = PR_TERM;
                 break;
-            case DIV:
+            case Div:
                 op = " / ";
                 pr = PR_TERM;
                 break;
-            case MOD:
+            case Mod:
                 op = " % ";
                 pr = PR_TERM;
                 break;
-            case LSHIFT:
+            case LShift:
                 op = " << ";
                 pr = PR_SHIFT;
                 break;
-            case RSHIFT:
+            case RShift:
                 op = " >> ";
                 pr = PR_SHIFT;
                 break;
-            case BITOR:
+            case BitOr:
                 op = " | ";
                 pr = PR_BOR;
                 break;
-            case BITXOR:
+            case BitXor:
                 op = " ^ ";
                 pr = PR_BXOR;
                 break;
-            case BITAND:
+            case BitAnd:
                 op = " & ";
                 pr = PR_BAND;
                 break;
-            case FLOORDIV:
+            case FloorDiv:
                 op = " // ";
                 pr = PR_TERM;
                 break;
-            case POW:
+            case Pow:
                 op = " ** ";
                 pr = PR_POWER;
                 rassoc = true;
@@ -389,8 +396,8 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.BoolOp node) {
-        String op = node.op == ExprTy.BoolOp.Type.And ? " and " : " or ";
-        int pr = node.op == ExprTy.BoolOp.Type.And ? PR_AND : PR_OR;
+        String op = node.op == BoolOpTy.And ? " and " : " or ";
+        int pr = node.op == BoolOpTy.And ? PR_AND : PR_OR;
         appendStrIf(level > pr, "(");
         for (int i = 0; i < node.values.length; i++) {
             appendStrIf(i > 0, op);
@@ -451,34 +458,34 @@ public class Unparser implements SSTreeVisitor<Void> {
 
         for (int i = 0; i < comparatorCount; i++) {
             switch (node.ops[i]) {
-                case EQ:
+                case Eq:
                     op = " == ";
                     break;
-                case NOTEQ:
+                case NotEq:
                     op = " != ";
                     break;
-                case LT:
+                case Lt:
                     op = " < ";
                     break;
-                case LTE:
+                case LtE:
                     op = " <= ";
                     break;
-                case GT:
+                case Gt:
                     op = " > ";
                     break;
-                case GTE:
+                case GtE:
                     op = " >= ";
                     break;
-                case IS:
+                case Is:
                     op = " is ";
                     break;
-                case ISNOT:
+                case IsNot:
                     op = " is not ";
                     break;
-                case IN:
+                case In:
                     op = " in ";
                     break;
-                case NOTIN:
+                case NotIn:
                     op = " not in ";
                     break;
                 default:
@@ -495,35 +502,34 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        switch (node.kind) {
+        switch (node.value.kind) {
             case LONG:
-                builder.appendLongNumberUncached((Long) node.value);
+                builder.appendLongNumberUncached(node.value.getLong());
                 return null;
             case DOUBLE:
                 FloatFormatter f = new FloatFormatter(null, FloatBuiltins.StrNode.spec);
                 f.setMinFracDigits(1);
-                TruffleString result = f.format((Double) node.value).getResult();
+                TruffleString result = f.format(node.value.getDouble()).getResult();
                 appendStr(result);
                 return null;
             case BOOLEAN:
-                appendStr(((boolean) node.value) ? "True" : "False");
+                appendStr(node.value.getBoolean() ? "True" : "False");
                 return null;
             case RAW:
-                assert node.value instanceof TruffleString;
-                appendStr(StringNodes.StringReprNode.getUncached().execute((TruffleString) node.value));
+                appendStr(StringNodes.StringReprNode.getUncached().execute(node.value.getRaw(TruffleString.class)));
                 return null;
             case BIGINTEGER:
-                appendStr(node.value.toString());
+                appendStr(node.value.getBigInteger().toString());
                 return null;
             case NONE:
                 appendStr("None");
                 return null;
             case BYTES:
-                byte[] bytes = (byte[]) node.value;
+                byte[] bytes = node.value.getBytes();
                 BytesUtils.reprLoop(builder, bytes, bytes.length, TruffleStringBuilder.AppendCodePointNode.getUncached());
                 return null;
             case COMPLEX:
-                double[] num = (double[]) node.value;
+                double[] num = node.value.getComplex();
                 ComplexFormatter formatter = new ComplexFormatter(null, new Spec(-1, Spec.NONE));
                 formatter.format(num[0], num[1]);
                 appendStr(formatter.pad().getResult());
@@ -531,8 +537,8 @@ public class Unparser implements SSTreeVisitor<Void> {
             case ELLIPSIS:
                 appendStr("...");
                 return null;
-            case OBJECT:
-                // TODO what are these? I don't think we emit them
+            case ARBITRARY_PYTHON_OBJECT:
+                // TODO GR-40165: what are these? I don't think we emit them
                 throw new IllegalStateException("Object literals not supported when unparsing");
             default:
                 throw new IllegalStateException("unknown constant kind");
@@ -587,18 +593,19 @@ public class Unparser implements SSTreeVisitor<Void> {
         appendStr(outerBrace);
         appendStr(tempFvStr);
 
-        if (node.conversion != ExprTy.FormattedValue.ConversionType.NONE) {
+        if (node.conversion > 0) {
             switch (node.conversion) {
-                case ASCII:
+                case 'a':
                     conversion = "!a";
                     break;
-                case REPR:
+                case 'r':
                     conversion = "!r";
                     break;
-                case STR:
+                case 's':
                     conversion = "!s";
                     break;
                 default:
+                    // TODO GR-40162 raise SystemError
                     throw new IllegalStateException("unknown f-value conversion kind");
             }
             appendStr(conversion);
@@ -768,19 +775,19 @@ public class Unparser implements SSTreeVisitor<Void> {
         String op;
         int pr;
         switch (node.op) {
-            case INVERT:
+            case Invert:
                 op = "~";
                 pr = PR_FACTOR;
                 break;
-            case NOT:
+            case Not:
                 op = "not ";
                 pr = PR_NOT;
                 break;
-            case ADD:
+            case UAdd:
                 op = "+";
                 pr = PR_FACTOR;
                 break;
-            case SUB:
+            case USub:
                 op = "-";
                 pr = PR_FACTOR;
                 break;
@@ -849,7 +856,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(ModTy.TypeIgnore node) {
+    public Void visit(TypeIgnoreTy.TypeIgnore node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
@@ -939,52 +946,52 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Match.Case node) {
+    public Void visit(MatchCaseTy node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchAs node) {
+    public Void visit(PatternTy.MatchAs node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchClass node) {
+    public Void visit(PatternTy.MatchClass node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchMapping node) {
+    public Void visit(PatternTy.MatchMapping node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchOr node) {
+    public Void visit(PatternTy.MatchOr node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSequence node) {
+    public Void visit(PatternTy.MatchSequence node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchSingleton node) {
+    public Void visit(PatternTy.MatchSingleton node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchStar node) {
+    public Void visit(PatternTy.MatchStar node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.Match.Pattern.MatchValue node) {
+    public Void visit(PatternTy.MatchValue node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
     @Override
-    public Void visit(StmtTy.NonLocal node) {
+    public Void visit(StmtTy.Nonlocal node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
@@ -1004,7 +1011,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Try.ExceptHandler node) {
+    public Void visit(ExceptHandlerTy.ExceptHandler node) {
         throw new IllegalStateException("unknown expression kind");
     }
 
@@ -1019,7 +1026,7 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.With.Item node) {
+    public Void visit(WithItemTy node) {
         throw new IllegalStateException("unknown expression kind");
     }
 

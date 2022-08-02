@@ -52,12 +52,25 @@ import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef;
+import com.oracle.graal.python.pegparser.sst.StmtTy.FunctionDef;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_ARG_ARRAY;
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_EXPR_ARRAY;
 
 public class NodeFactoryImp implements NodeFactory {
     @Override
@@ -79,12 +92,12 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createAugAssignment(ExprTy lhs, ExprTy.BinOp.Operator operation, ExprTy rhs, SourceRange sourceRange) {
+    public StmtTy createAugAssignment(ExprTy lhs, OperatorTy operation, ExprTy rhs, SourceRange sourceRange) {
         return new StmtTy.AugAssign(lhs, operation, rhs, sourceRange);
     }
 
     @Override
-    public ExprTy createBinaryOp(ExprTy.BinOp.Operator op, ExprTy left, ExprTy right, SourceRange sourceRange) {
+    public ExprTy createBinaryOp(OperatorTy op, ExprTy left, ExprTy right, SourceRange sourceRange) {
         return new ExprTy.BinOp(left, op, right, sourceRange);
     }
 
@@ -105,21 +118,21 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createBooleanLiteral(boolean value, SourceRange sourceRange) {
-        return new ExprTy.Constant(value, ExprTy.Constant.Kind.BOOLEAN, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ofBoolean(value), null, sourceRange);
     }
 
     @Override
     public ExprTy createNone(SourceRange sourceRange) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.NONE, sourceRange);
+        return new ExprTy.Constant(ConstantValue.NONE, null, sourceRange);
     }
 
     @Override
     public ExprTy createEllipsis(SourceRange sourceRange) {
-        return new ExprTy.Constant(null, ExprTy.Constant.Kind.ELLIPSIS, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ELLIPSIS, null, sourceRange);
     }
 
     @Override
-    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createGetAttribute(ExprTy receiver, String name, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Attribute(receiver, name, context, sourceRange);
     }
 
@@ -135,7 +148,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createExpression(ExprTy expr) {
-        return new StmtTy.Expr(expr);
+        return new StmtTy.Expr(expr, expr.getSourceRange());
     }
 
     @Override
@@ -205,13 +218,9 @@ public class NodeFactoryImp implements NodeFactory {
 
         if (isComplex) {
             double imag = Double.parseDouble(number.substring(0, number.length() - 1));
-            return new ExprTy.Constant(new double[]{0.0, imag},
-                            ExprTy.Constant.Kind.COMPLEX,
-                            sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofComplex(0.0, imag), null, sourceRange);
         } else if (isFloat) {
-            return new ExprTy.Constant(Double.parseDouble(number),
-                            ExprTy.Constant.Kind.DOUBLE,
-                            sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofDouble(Double.parseDouble(number)), null, sourceRange);
         } else {
             final long max = Long.MAX_VALUE;
             final long moltmax = max / base;
@@ -241,12 +250,12 @@ public class NodeFactoryImp implements NodeFactory {
                         bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
                         i++;
                     }
-                    return new ExprTy.Constant(bigResult, ExprTy.Constant.Kind.BIGINTEGER, sourceRange);
+                    return new ExprTy.Constant(ConstantValue.ofBigInteger(bigResult), null, sourceRange);
                 }
                 result = next;
                 i++;
             }
-            return new ExprTy.Constant(result, ExprTy.Constant.Kind.LONG, sourceRange);
+            return new ExprTy.Constant(ConstantValue.ofLong(result), null, sourceRange);
         }
     }
 
@@ -256,17 +265,17 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createUnaryOp(ExprTy.UnaryOp.Operator op, ExprTy value, SourceRange sourceRange) {
+    public ExprTy createUnaryOp(UnaryOpTy op, ExprTy value, SourceRange sourceRange) {
         return new ExprTy.UnaryOp(op, value, sourceRange);
     }
 
     @Override
-    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContext context) {
+    public ExprTy.Name createVariable(String name, SourceRange sourceRange, ExprContextTy context) {
         return new ExprTy.Name(name, context, sourceRange);
     }
 
     @Override
-    public ExprTy createStarred(ExprTy value, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createStarred(ExprTy value, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Starred(value, context, sourceRange);
     }
 
@@ -294,7 +303,7 @@ public class NodeFactoryImp implements NodeFactory {
                 posOnlyArgs[i++] = p.name;
             }
         } else {
-            posOnlyArgs = new ArgTy[0];
+            posOnlyArgs = EMPTY_ARG_ARRAY;
         }
 
         ArgTy[] posArgs;
@@ -315,7 +324,7 @@ public class NodeFactoryImp implements NodeFactory {
         } else if (paramWithoutDefault != null) {
             posArgs = paramWithoutDefault;
         } else {
-            posArgs = new ArgTy[0];
+            posArgs = EMPTY_ARG_ARRAY;
         }
 
         ExprTy[] posDefaults;
@@ -349,8 +358,8 @@ public class NodeFactoryImp implements NodeFactory {
                 kwDefaults[j] = starEtc.kwOnlyArgs[j].def;
             }
         } else {
-            kwOnlyArgs = new ArgTy[0];
-            kwDefaults = AbstractParser.EMPTY_EXPR;
+            kwOnlyArgs = EMPTY_ARG_ARRAY;
+            kwDefaults = EMPTY_EXPR_ARRAY;
         }
 
         return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults,
@@ -358,8 +367,14 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
+    public ArgumentsTy emptyArguments() {
+        return new ArgumentsTy(EMPTY_ARG_ARRAY, EMPTY_ARG_ARRAY, null, EMPTY_ARG_ARRAY, EMPTY_EXPR_ARRAY,
+                        null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0, 0, 0));
+    }
+
+    @Override
     public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, SourceRange sourceRange) {
-        ExprTy.Compare.Operator[] ops = new ExprTy.Compare.Operator[pairs.length];
+        CmpOpTy[] ops = new CmpOpTy[pairs.length];
         ExprTy[] rights = new ExprTy[pairs.length];
         for (int i = 0; i < pairs.length; i++) {
             ops[i] = pairs[i].op;
@@ -369,18 +384,18 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContext context, SourceRange sourceRange) {
+    public ExprTy createSubscript(ExprTy receiver, ExprTy subscript, ExprContextTy context, SourceRange sourceRange) {
         return new ExprTy.Subscript(receiver, subscript, context, sourceRange);
     }
 
     @Override
-    public ExprTy createTuple(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
-        return new ExprTy.Tuple(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
+    public ExprTy createTuple(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
+        return new ExprTy.Tuple(values != null ? values : EMPTY_EXPR_ARRAY, context, sourceRange);
     }
 
     @Override
-    public ExprTy createList(ExprTy[] values, ExprContext context, SourceRange sourceRange) {
-        return new ExprTy.List(values != null ? values : AbstractParser.EMPTY_EXPR, context, sourceRange);
+    public ExprTy createList(ExprTy[] values, ExprContextTy context, SourceRange sourceRange) {
+        return new ExprTy.List(values != null ? values : EMPTY_EXPR_ARRAY, context, sourceRange);
     }
 
     @Override
@@ -425,7 +440,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators) {
-        return ((StmtTy.FunctionDef) funcDef).copyWithDecorators(decorators);
+        if (funcDef instanceof AsyncFunctionDef) {
+            StmtTy.AsyncFunctionDef f = (StmtTy.AsyncFunctionDef) funcDef;
+            return new AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+        }
+        StmtTy.FunctionDef f = (StmtTy.FunctionDef) funcDef;
+        return new FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
     }
 
     @Override
@@ -476,8 +496,8 @@ public class NodeFactoryImp implements NodeFactory {
     @Override
     public StmtTy createClassDef(ExprTy name, ExprTy call, StmtTy[] body, SourceRange sourceRange) {
         return new StmtTy.ClassDef(((ExprTy.Name) name).id,
-                        call == null ? AbstractParser.EMPTY_EXPR : ((ExprTy.Call) call).args,
-                        call == null ? AbstractParser.EMPTY_KWDS : ((ExprTy.Call) call).keywords,
+                        call == null ? EMPTY_EXPR_ARRAY : ((ExprTy.Call) call).args,
+                        call == null ? AbstractParser.EMPTY_KEYWORD_ARRAY : ((ExprTy.Call) call).keywords,
                         body, null, sourceRange);
     }
 
@@ -489,7 +509,7 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public StmtTy createNonLocal(String[] names, SourceRange sourceRange) {
-        return new StmtTy.NonLocal(names, sourceRange);
+        return new StmtTy.Nonlocal(names, sourceRange);
     }
 
     @Override
@@ -499,12 +519,12 @@ public class NodeFactoryImp implements NodeFactory {
 
     @Override
     public ExprTy createAnd(ExprTy[] values, SourceRange sourceRange) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.And, values, sourceRange);
+        return new ExprTy.BoolOp(BoolOpTy.And, values, sourceRange);
     }
 
     @Override
     public ExprTy createOr(ExprTy[] values, SourceRange sourceRange) {
-        return new ExprTy.BoolOp(ExprTy.BoolOp.Type.Or, values, sourceRange);
+        return new ExprTy.BoolOp(BoolOpTy.Or, values, sourceRange);
     }
 
     @Override
@@ -528,28 +548,28 @@ public class NodeFactoryImp implements NodeFactory {
     }
 
     @Override
-    public StmtTy createTry(StmtTy[] body, StmtTy.Try.ExceptHandler[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
+    public StmtTy createTry(StmtTy[] body, ExceptHandlerTy[] handlers, StmtTy[] orElse, StmtTy[] finalBody, SourceRange sourceRange) {
         return new StmtTy.Try(body, handlers, orElse, finalBody, sourceRange);
     }
 
     @Override
-    public StmtTy.Try.ExceptHandler createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
-        return new StmtTy.Try.ExceptHandler(type, name, body, sourceRange);
+    public ExceptHandlerTy createExceptHandler(ExprTy type, String name, StmtTy[] body, SourceRange sourceRange) {
+        return new ExceptHandlerTy.ExceptHandler(type, name, body, sourceRange);
     }
 
     @Override
-    public StmtTy.With.Item createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
+    public WithItemTy createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
         // TODO check if context expr is not null -> throw error
-        return new StmtTy.With.Item(contextExpr, optionalVars, sourceRange);
+        return new WithItemTy(contextExpr, optionalVars, sourceRange);
     }
 
     @Override
-    public StmtTy.With createWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+    public StmtTy.With createWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
         return new StmtTy.With(items, body, typeComment, sourceRange);
     }
 
     @Override
-    public StmtTy.AsyncWith createAsyncWith(StmtTy.With.Item[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+    public StmtTy.AsyncWith createAsyncWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
         return new StmtTy.AsyncWith(items, body, typeComment, sourceRange);
     }
 

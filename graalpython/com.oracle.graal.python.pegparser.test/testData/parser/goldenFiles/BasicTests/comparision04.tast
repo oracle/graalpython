@@ -1,9 +1,9 @@
 Module[0, 12]
     Compare[0, 12]
         LHS: Name[0, 1] Value: "x"
-        Op: LT
+        Op: Lt
         RHS: 
             Call[4, 7]
                 Target: Name[4, 5] Value: "y"
-        Op: LTE
+        Op: LtE
         RHS: Name[11, 12] Value: "z"

@@ -1,10 +1,11 @@
 Module[0, 36]
     FunctionDef[0, 36]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         With[12, 36]
             Items:
-                Item[17, 26]
+                WithItemTy[17, 26]
                     ContextExpr: 
                         Call[17, 26]
                             Target: Name[17, 21] Value: "open"

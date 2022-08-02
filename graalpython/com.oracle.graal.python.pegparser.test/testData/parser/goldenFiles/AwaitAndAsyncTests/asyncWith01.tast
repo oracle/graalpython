@@ -1,10 +1,11 @@
 Module[0, 34]
     AsyncFunctionDef[0, 34]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         AsyncWith[16, 34]
             Items:
-                Item[27, 28]
+                WithItemTy[27, 28]
                     ContextExpr: LONG[27, 28] Value: 1
             Body:
                 Pass[30, 34]

@@ -1,6 +1,7 @@
 Module[0, 30]
     AsyncFunctionDef[0, 30]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         Await[17, 29]
             Value: 

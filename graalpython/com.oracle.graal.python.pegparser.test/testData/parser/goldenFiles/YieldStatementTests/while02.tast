@@ -16,7 +16,7 @@ Module[0, 71]
                     LHS: Name[51, 52] Value: "x" Store
                     RHS: 
                         BinOp[55, 58]
-                            Op: SUB
+                            Op: Sub
                             LHS: Name[55, 56] Value: "x"
                             RHS: LONG[57, 58] Value: 1
                 Yield[64, 71]

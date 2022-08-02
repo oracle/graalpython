@@ -40,10 +40,6 @@
  */
 package com.oracle.graal.python.pegparser.sst;
 
-import java.math.BigInteger;
-
-import com.oracle.graal.python.pegparser.ExprContext;
-
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static final String INDENTATION = "    ";
@@ -254,32 +250,41 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Constant node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.kind).append("[").append(node.getSourceRange().startOffset);
+        sb.append(node.value.kind).append("[").append(node.getSourceRange().startOffset);
         sb.append(", ").append(node.getSourceRange().endOffset).append("]");
         sb.append(" Value: ");
-        switch (node.kind) {
+        appendConstantValue(sb, node.value);
+        return sb.toString();
+    }
+
+    private static void appendConstantValue(StringBuilder sb, ConstantValue value) {
+        switch (value.kind) {
+            case BIGINTEGER:
+                sb.append(value.getBigInteger());
+                break;
+            case BOOLEAN:
+                sb.append(value.getBoolean());
+                break;
             case LONG:
-                sb.append((long) node.value);
+                sb.append(value.getLong());
                 break;
             case DOUBLE:
-                sb.append((double) node.value);
+                sb.append(value.getDouble());
                 break;
             case COMPLEX:
-                double[] val = (double[]) node.value;
+                double[] val = value.getComplex();
                 sb.append(String.format("%g%+gj", val[0], val[1]));
                 break;
             case RAW:
-                String s = (String) node.value;
-                appendEscapedString(sb, s);
+                appendEscapedString(sb, value.getRaw(String.class));
+                break;
+            case ELLIPSIS:
+            case NONE:
+                sb.append((Object) null);
                 break;
             default:
-                if (node.value == null || node.value instanceof Boolean || node.value instanceof BigInteger || node.value instanceof String) {
-                    sb.append(node.value);
-                } else {
-                    sb.append("<unprintable value>");
-                }
+                sb.append("<unprintable value>");
         }
-        return sb.toString();
     }
 
     @Override
@@ -381,7 +386,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.List node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         if (node.elements != null) {
@@ -415,7 +420,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Name node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(" Value: \"").append(node.id).append('"');
-        if (node.context != ExprContext.Load) {
+        if (node.context != ExprContextTy.Load) {
             sb.append(' ').append(node.context);
         }
         return sb.toString();
@@ -504,7 +509,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Subscript node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         level++;
@@ -518,7 +523,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(ExprTy.Tuple node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
-        if (node.context != null && node.context != ExprContext.Load) {
+        if (node.context != null && node.context != ExprContextTy.Load) {
             sb.append(" Context: ").append(node.context);
         }
         if (node.elements != null) {
@@ -629,7 +634,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(ModTy.TypeIgnore node) {
+    public String visit(TypeIgnoreTy.TypeIgnore node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -689,17 +694,34 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(StmtTy.AsyncFor node) {
-        return visit((StmtTy.For) node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Target", node.target);
+        appendNode(sb, "Iter", node.iter);
+        appendNodes(sb, "Body", node.body);
+        appendNodes(sb, "Else", node.orElse);
+        level--;
+        return sb.toString();
     }
 
     @Override
     public String visit(StmtTy.AsyncFunctionDef node) {
-        return visit((StmtTy.FunctionDef) node);
+        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment);
     }
 
     @Override
     public String visit(StmtTy.AsyncWith node) {
-        return visit((StmtTy.With) node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Items", node.items);
+        appendNodes(sb, "Body", node.body);
+        if (node.typeComment != null) {
+            appendString(sb, "TypeComment", node.typeComment);
+        }
+        level--;
+        return sb.toString();
     }
 
     @Override
@@ -770,33 +792,37 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(StmtTy.FunctionDef node) {
+        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment);
+    }
+
+    private String visitFunctionOrAsyncFunction(SSTNode node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;
-        appendNewLineIndented(sb, "Name:").append(node.name);
-        if (node.decoratorList != null) {
+        appendNewLineIndented(sb, "Name:").append(name);
+        if (decoratorList != null) {
             appendNewLineIndented(sb, "Decorators:");
-            for (SSTNode n : node.decoratorList) {
+            for (SSTNode n : decoratorList) {
                 appendNewLineIndented(sb, n.accept(this));
             }
         }
-        if (node.args != null) {
-            appendNewLineIndented(sb, node.args.accept(this));
+        if (args != null) {
+            appendNewLineIndented(sb, args.accept(this));
         }
-        if (node.returns != null) {
-            appendNode(sb, "Result Annotation", node.returns);
+        if (returns != null) {
+            appendNode(sb, "Result Annotation", returns);
         }
-        if (node.typeComment != null) {
-            appendNewLineIndented(sb, "Type Comment: ").append(node.typeComment);
+        if (typeComment != null) {
+            appendNewLineIndented(sb, "Type Comment: ").append(typeComment);
         }
-        appendNewLineIndented(sb, "---- Function body of ").append(node.name).append(" ----");
-        for (SSTNode stm : node.body) {
+        appendNewLineIndented(sb, "---- Function body of ").append(name).append(" ----");
+        for (SSTNode stm : body) {
             appendNewLineIndented(sb, stm.accept(this));
         }
         if (sb.lastIndexOf("\n") != sb.length() - 1) {
             sb.append('\n');
         }
-        sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
+        sb.append(indent()).append("---- End of ").append(name).append(" function ----");
         level--;
 
         return sb.toString();
@@ -859,7 +885,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Case node) {
+    public String visit(MatchCaseTy node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -867,7 +893,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchAs node) {
+    public String visit(PatternTy.MatchAs node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -875,7 +901,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchClass node) {
+    public String visit(PatternTy.MatchClass node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -883,7 +909,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchMapping node) {
+    public String visit(PatternTy.MatchMapping node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -891,7 +917,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchOr node) {
+    public String visit(PatternTy.MatchOr node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -899,7 +925,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchSequence node) {
+    public String visit(PatternTy.MatchSequence node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -907,7 +933,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchSingleton node) {
+    public String visit(PatternTy.MatchSingleton node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -915,7 +941,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchStar node) {
+    public String visit(PatternTy.MatchStar node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -923,7 +949,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Match.Pattern.MatchValue node) {
+    public String visit(PatternTy.MatchValue node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
@@ -931,7 +957,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.NonLocal node) {
+    public String visit(StmtTy.Nonlocal node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(": ");
         for (String id : node.names) {
@@ -978,7 +1004,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     }
 
     @Override
-    public String visit(StmtTy.Try.ExceptHandler node) {
+    public String visit(ExceptHandlerTy.ExceptHandler node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;
@@ -1014,11 +1040,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         }
         level--;
         return sb.toString();
-
     }
 
     @Override
-    public String visit(StmtTy.With.Item node) {
+    public String visit(WithItemTy node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;

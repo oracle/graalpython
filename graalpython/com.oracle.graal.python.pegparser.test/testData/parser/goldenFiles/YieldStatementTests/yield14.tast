@@ -1,6 +1,7 @@
 Module[0, 26]
     FunctionDef[0, 26]
         Name:f
+        ArgumentsTy[0, 0]
         ---- Function body of f ----
         Yield[9, 16]
             LONG[15, 16] Value: 1

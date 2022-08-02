@@ -1,12 +1,14 @@
 Module[1, 146]
     FunctionDef[1, 137]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         Assign[19, 25]
             LHS: Name[19, 20] Value: "x" Store
             RHS: LONG[23, 25] Value: 10
         FunctionDef[30, 92]
             Name:inner
+            ArgumentsTy[0, 0]
             ---- Function body of inner ----
             Assign[51, 56]
                 LHS: Name[51, 52] Value: "x" Store

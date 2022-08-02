@@ -4,13 +4,14 @@ Module[0, 137]
         RHS: LONG[4, 5] Value: 0
     FunctionDef[25, 109]
         Name:add
+        ArgumentsTy[0, 0]
         ---- Function body of add ----
         Global[40, 48]: c 
         Assign[53, 62]
             LHS: Name[53, 54] Value: "c" Store
             RHS: 
                 BinOp[57, 62]
-                    Op: ADD
+                    Op: Add
                     LHS: Name[57, 58] Value: "c"
                     RHS: LONG[61, 62] Value: 2
         Call[84, 109]

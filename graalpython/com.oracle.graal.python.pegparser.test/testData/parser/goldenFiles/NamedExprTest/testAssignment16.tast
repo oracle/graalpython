@@ -7,10 +7,10 @@ Module[0, 64]
                     Target: Name[8, 9] Value: "c" Store
                     Value: Name[13, 14] Value: "a"
                 Value: BinOp[17, 44]
-                    Op: SUB
+                    Op: Sub
                     LHS: 
                         BinOp[17, 40]
-                            Op: ADD
+                            Op: Add
                             LHS: 
                                 NamedExpr[18, 24]
                                     Target: Name[18, 19] Value: "a" Store
@@ -20,7 +20,7 @@ Module[0, 64]
                                     Target: Name[29, 30] Value: "b" Store
                                     Value: 
                                         BinOp[34, 39]
-                                            Op: ADD
+                                            Op: Add
                                             LHS: Name[34, 35] Value: "a"
                                             RHS: Name[38, 39] Value: "c"
                     RHS: Name[43, 44] Value: "b"

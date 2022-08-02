@@ -1,6 +1,7 @@
 Module[0, 94]
     FunctionDef[0, 94]
         Name:outer
+        ArgumentsTy[0, 0]
         ---- Function body of outer ----
         FunctionDef[15, 74]
             Name:recursionInner
@@ -13,7 +14,7 @@ Module[0, 94]
                     Target: Name[51, 65] Value: "recursionInner"
                     Args:
                         BinOp[66, 73]
-                            Op: ADD
+                            Op: Add
                             LHS: Name[66, 69] Value: "arg"
                             RHS: LONG[72, 73] Value: 1
             ---- End of recursionInner function ----

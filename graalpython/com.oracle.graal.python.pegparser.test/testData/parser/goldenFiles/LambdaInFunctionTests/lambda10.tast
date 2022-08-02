@@ -1,6 +1,7 @@
 Module[0, 47]
     FunctionDef[0, 47]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Lambda[12, 47]
             ArgumentsTy[0, 0]
@@ -11,7 +12,7 @@ Module[0, 47]
                 Defaults:
                     Name[23, 26] Value: "bar"
                     BinOp[33, 39]
-                        Op: ADD
+                        Op: Add
                         LHS: Name[33, 37] Value: "blat"
                         RHS: LONG[38, 39] Value: 2
             Body: LONG[46, 47] Value: 0

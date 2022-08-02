@@ -38,18 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class ArgTy extends SSTNode {
     public final String arg;
-    public final ExprTy annotation;
-    public final String typeComment;
+    public final ExprTy annotation;   // nullable
+    public final String typeComment;   // nullable
 
     public ArgTy(String arg, ExprTy annotation, String typeComment, SourceRange sourceRange) {
         super(sourceRange);
+        assert arg != null;
         this.arg = arg;
         this.annotation = annotation;
         this.typeComment = typeComment;
@@ -59,5 +59,4 @@ public final class ArgTy extends SSTNode {
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

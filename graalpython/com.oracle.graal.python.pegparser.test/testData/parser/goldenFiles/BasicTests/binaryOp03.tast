@@ -1,5 +1,5 @@
 Module[0, 6]
     BinOp[0, 6]
-        Op: POW
+        Op: Pow
         LHS: LONG[0, 1] Value: 3
         RHS: LONG[5, 6] Value: 2

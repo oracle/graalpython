@@ -9,10 +9,10 @@ Module[0, 25]
         LHS: Name[12, 13] Value: "c" Store
         RHS: 
             BinOp[16, 25]
-                Op: ADD
+                Op: Add
                 LHS: 
                     BinOp[16, 21]
-                        Op: ADD
+                        Op: Add
                         LHS: Name[16, 17] Value: "a"
                         RHS: Name[20, 21] Value: "a"
                 RHS: Name[24, 25] Value: "b"

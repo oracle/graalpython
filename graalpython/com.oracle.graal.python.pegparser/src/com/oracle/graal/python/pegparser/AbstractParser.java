@@ -53,10 +53,12 @@ import java.util.Map;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
-import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
@@ -68,8 +70,9 @@ import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
  * the future.
  */
 abstract class AbstractParser {
-    protected static final ExprTy[] EMPTY_EXPR = new ExprTy[0];
-    protected static final KeywordTy[] EMPTY_KWDS = new KeywordTy[0];
+    static final ExprTy[] EMPTY_EXPR_ARRAY = new ExprTy[0];
+    static final KeywordTy[] EMPTY_KEYWORD_ARRAY = new KeywordTy[0];
+    static final ArgTy[] EMPTY_ARG_ARRAY = new ArgTy[0];
 
     /**
      * Corresponds to TARGET_TYPES in CPython
@@ -562,12 +565,11 @@ abstract class AbstractParser {
         }
         if (e instanceof ExprTy.Constant) {
             ExprTy.Constant constant = (ExprTy.Constant) e;
-            switch (constant.kind) {
+            switch (constant.value.kind) {
                 case NONE:
                     return "None";
                 case BOOLEAN:
-                    boolean value = (Boolean) constant.value;
-                    return value ? "True" : "False";
+                    return constant.value.getBoolean() ? "True" : "False";
                 case ELLIPSIS:
                     return "ellipsis";
             }
@@ -643,8 +645,8 @@ abstract class AbstractParser {
      * includes an attempt with a symbol and a scope stream synchronized to the token stream, but it
      * doesn't really work with the pegen generator.
      */
-    protected ExprTy setExprContext(ExprTy node, ExprContext context) {
-        return node.copyWithContext(context);
+    protected ExprTy setExprContext(ExprTy node, ExprContextTy context) {
+        return node.accept(new CopyWithContextVisitor(context));
     }
 
     // debug methods
@@ -665,10 +667,10 @@ abstract class AbstractParser {
     // data where we need it.
 
     public static final class CmpopExprPair {
-        final ExprTy.Compare.Operator op;
+        final CmpOpTy op;
         final ExprTy expr;
 
-        CmpopExprPair(ExprTy.Compare.Operator op, ExprTy expr) {
+        CmpopExprPair(CmpOpTy op, ExprTy expr) {
             this.op = op;
             this.expr = expr;
         }
@@ -705,9 +707,9 @@ abstract class AbstractParser {
 
     public static final class KeyPatternPair {
         final ExprTy key;
-        final StmtTy.Match.Pattern pattern;
+        final PatternTy pattern;
 
-        KeyPatternPair(ExprTy key, StmtTy.Match.Pattern pattern) {
+        KeyPatternPair(ExprTy key, PatternTy pattern) {
             this.key = key;
             this.pattern = pattern;
         }
@@ -800,7 +802,7 @@ abstract class AbstractParser {
      */
     final ExprTy collectCallSequences(ExprTy[] a, KeywordOrStarred[] b, SourceRange sourceRange) {
         if (b == null) {
-            return factory.createCall(dummyName(), a, EMPTY_KWDS, sourceRange);
+            return factory.createCall(dummyName(), a, EMPTY_KEYWORD_ARRAY, sourceRange);
         } else {
             ExprTy[] starred = extractStarredExpressions(b);
             ExprTy[] args;
@@ -847,7 +849,7 @@ abstract class AbstractParser {
         if (expr instanceof ExprTy.Compare) {
             if (type == TargetsType.FOR_TARGETS) {
                 ExprTy.Compare compare = (ExprTy.Compare) expr;
-                if (compare.ops[0] == ExprTy.Compare.Operator.IN) {
+                if (compare.ops[0] == CmpOpTy.In) {
                     return getInvalidTarget(compare.left, type);
                 }
                 return null;

@@ -1,6 +1,7 @@
 Module[0, 26]
     FunctionDef[0, 26]
         Name:fn
+        ArgumentsTy[0, 0]
         ---- Function body of fn ----
         Lambda[12, 26]
             ArgumentsTy[0, 0]

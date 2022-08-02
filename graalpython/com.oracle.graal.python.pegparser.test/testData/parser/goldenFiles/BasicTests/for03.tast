@@ -11,7 +11,7 @@ Module[0, 42]
                 Test: 
                     Compare[25, 31]
                         LHS: Name[25, 26] Value: "x"
-                        Op: EQ
+                        Op: Eq
                         RHS: LONG[30, 31] Value: 1
                 Then:
                     Break[37, 42]
