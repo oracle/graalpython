@@ -42,6 +42,7 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 public final class SourceRange {
+    public static final SourceRange ARTIFICIAL_RANGE = new SourceRange(0, 0, 1, 0, 1, 0);
 
     public final int startOffset;
     public final int endOffset;

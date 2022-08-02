@@ -34,6 +34,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -65,13 +66,20 @@ import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.NodeFactory;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -115,6 +123,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
@@ -445,10 +454,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false, null);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false, null);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
@@ -457,11 +466,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         PythonContext context = PythonContext.get(null);
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
-            if (!request.getArgumentNames().isEmpty()) {
-                throw new IllegalStateException("Not supported yet");
+            if (!request.getArgumentNames().isEmpty() && source.isInteractive()) {
+                throw new IllegalStateException("parse with arguments not allowed for interactive sources");
             }
             InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
-            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive());
+            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames());
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
@@ -493,36 +502,40 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize, false);
+                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize, false, null);
             }
         }
         for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
             if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false);
+                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false, null);
             }
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false, null);
         }
         if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false);
+            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false, null);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal) {
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
+            boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
+            if (hasArguments) {
+                mod = transformASTForExecutionWithArguments(argumentNames, mod);
+            }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble();
-            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(this, co, source, errorCb);
+            RootNode rootNode = new PBytecodeRootNode(this, co, source, errorCb);
             GilNode gil = GilNode.getUncached();
-            boolean wasAcquired = gil.acquire(context, bytecodeRootNode);
+            boolean wasAcquired = gil.acquire(context, rootNode);
             if (topLevel) {
                 try {
                     errorCb.triggerDeprecationWarnings();
@@ -530,9 +543,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     gil.release(context, wasAcquired);
                 }
             }
-            RootNode rootNode = bytecodeRootNode;
+            if (hasArguments) {
+                rootNode = new RootNodeWithArguments(this, rootNode);
+            }
             if (topLevel && context.isCoreInitialized()) {
-                rootNode = new TopLevelExceptionHandler(this, bytecodeRootNode, source);
+                rootNode = new TopLevelExceptionHandler(this, rootNode, source);
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);
         } catch (PException e) {
@@ -540,6 +555,56 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
             }
             throw e;
+        }
+    }
+
+    private ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {
+        NodeFactory nodeFactory = new NodeFactoryImp();
+        ArgTy[] astArgArray = new ArgTy[argumentNames.size()];
+        for (int i = 0; i < astArgArray.length; i++) {
+            astArgArray[i] = nodeFactory.createArgument(argumentNames.get(i), null, null, SourceRange.ARTIFICIAL_RANGE);
+        }
+        ArgumentsTy astArgs = nodeFactory.createArguments(null, null, astArgArray, null, null);
+        StmtTy[] body = ((ModTy.Module) mod).body;
+        if (body != null && body.length > 0) {
+            body = Arrays.copyOf(body, body.length);
+            StmtTy lastStmt = body[body.length - 1];
+            if (lastStmt instanceof StmtTy.Expr) {
+                body[body.length - 1] = nodeFactory.createReturn(((StmtTy.Expr) lastStmt).value, lastStmt.getSourceRange());
+            }
+        }
+        String fnName = "execute";
+        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, SourceRange.ARTIFICIAL_RANGE);
+        /*
+         * We cannot use a return in a module, but we piggy-back on the fact that we return the last
+         * expression in a module (see Compiler)
+         */
+        StmtTy astGetFunction = nodeFactory.createExpression(nodeFactory.createVariable(fnName, SourceRange.ARTIFICIAL_RANGE));
+        return nodeFactory.createModule(new StmtTy[]{astFunction, astGetFunction}, SourceRange.ARTIFICIAL_RANGE);
+    }
+
+    private static class RootNodeWithArguments extends RootNode {
+        private final RootNode innerRootNode;
+        @Child private DirectCallNode callModuleNode;
+        @Child private CallNode callFunctionNode;
+
+        public RootNodeWithArguments(PythonLanguage language, RootNode innerRootNode) {
+            super(language);
+            this.innerRootNode = innerRootNode;
+            callModuleNode = DirectCallNode.create(innerRootNode.getCallTarget());
+            callFunctionNode = CallNode.create();
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object function = callModuleNode.call(frame.getArguments());
+            Object[] arguments = PythonUtils.arrayCopyOfRange(frame.getArguments(), PArguments.USER_ARGUMENTS_OFFSET, frame.getArguments().length);
+            return callFunctionNode.execute(frame, function, arguments);
+        }
+
+        @Override
+        public SourceSection getSourceSection() {
+            return innerRootNode.getSourceSection();
         }
     }
 
@@ -991,5 +1056,4 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor;
         return callTarget;
     }
-
 }

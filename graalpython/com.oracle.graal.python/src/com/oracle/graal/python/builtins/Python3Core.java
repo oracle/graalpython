@@ -60,7 +60,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
@@ -1152,7 +1152,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
             if (getContext().getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0, false);
+                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0, false, null);
             }
             return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };
