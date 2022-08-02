@@ -4,7 +4,7 @@ Disassembly of <module>:
 000030         5 LOAD_NAME                         0    (f)
 000032         7 LOAD_BYTE_O                       1
 000030         9 CALL_FUNCTION                     1
-000030        11 RETURN_VALUE
+000000        11 RETURN_VALUE
 
 Disassembly of f:
 000015         0 LOAD_BUILD_CLASS
