@@ -452,7 +452,14 @@ def _download_with_curl_and_extract(dest_dir, url, quiet=False):
     return bare_name
 
 
-def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None, build_cmd=[]):
+def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_errors=False, env=None, version=None,
+                      pre_install_hook=None, build_cmd=None, debug_build=False):
+    if build_cmd is None:
+        build_cmd = []
+    if env is None:
+        env = {}
+    if extra_opts is None:
+        extra_opts = []
     tempdir = tempfile.mkdtemp()
 
     quiet = "-q" in extra_opts
@@ -497,7 +504,11 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     else:
         user_arg = []
     start = time.time()
-    status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
+    cmd = [sys.executable]
+    if debug_build:
+        cmd += ["-debug-java", "--python.ExposeInternalSources", "--python.WithJavaStacktrace=2"]
+    cmd += ["setup.py"] + build_cmd + ["install"] + user_arg + extra_opts
+    status = run_cmd(cmd, env=setup_env,
                      cwd=os.path.join(tempdir, bare_name), quiet=quiet)
     end = time.time()
     if status != 0 and not ignore_errors:
@@ -540,7 +551,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
-                      build_cmd=None):
+                      build_cmd=None, debug_build=False):
     if build_cmd is None:
         build_cmd = []
     if extra_opts is None:
@@ -590,7 +601,7 @@ def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=Tru
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
                           ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
-                          build_cmd=build_cmd)
+                          build_cmd=build_cmd, debug_build=debug_build)
     else:
         xit("Package not found: '{!s}'", package)
 
@@ -617,42 +628,24 @@ def main(argv):
     )
 
     install_parser = subparsers.add_parser(
-        "install",
-        help="install a known package",
+        "install", help="install a known package",
         description="Install a known package. Known packages are:\n" + "\n".join(sorted(KNOWN_PACKAGES.keys())),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    install_parser.add_argument(
-        "package",
-        help="comma-separated list"
-    )
-    install_parser.add_argument(
-        "--prefix",
-        help="user-site path prefix"
-    )
-    install_parser.add_argument(
-        "--user",
-        action='store_true',
-        help="install into user site",
-    )
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    install_parser.add_argument("package", help="comma-separated list")
+    install_parser.add_argument("--prefix", help="user-site path prefix")
+    install_parser.add_argument("--user", action='store_true', help="install into user site")
+    install_parser.add_argument("--debug-build", action="store_true", help="Enable debug options when building")
 
-    subparsers.add_parser(
-        "uninstall",
-        help="remove installation folder of a local package",
-    ).add_argument(
-        "package",
-        help="comma-separated list"
-    )
+    uninstall_parser = subparsers.add_parser(
+        "uninstall", help="remove installation folder of a local package", )
+    uninstall_parser.add_argument("package", help="comma-separated list")
 
-    subparsers.add_parser(
-        "pypi",
-        help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies "
-             "for you)",
-        description="Attempt to install a package from PyPI"
-    ).add_argument(
-        "package",
-        help="comma-separated list, can use `==` at the end of a package name to specify an exact version"
-    )
+    pypi_parser = subparsers.add_parser(
+        "pypi", help="attempt to install a package from PyPI (untested, likely won't work, and it won't install "
+                     "dependencies for you)",
+        description="Attempt to install a package from PyPI")
+    pypi_parser.add_argument("package", help="comma-separated list, can use `==` at the end of a package name to "
+                                             "specify an exact version")
 
     args = parser.parse_args(argv)
 
@@ -695,7 +688,7 @@ def main(argv):
                     extra_opts += ["--prefix", args.prefix]
                 if args.user:
                     extra_opts += ["--user"]
-                KNOWN_PACKAGES[pkg](extra_opts=extra_opts)
+                KNOWN_PACKAGES[pkg](extra_opts=extra_opts, debug_build=args.debug_build)
     elif args.command == "pypi":
         for pkg in args.package.split(","):
             install_from_pypi(pkg, extra_opts=quiet_flag, ignore_errors=False)
