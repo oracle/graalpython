@@ -229,7 +229,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                     continue;
                 }
 
-                String modName;
+                TruffleString modName;
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(filename);
                 String baseName = file.getName();
                 if (baseName != null) {
@@ -240,12 +240,12 @@ public class TraceModuleBuiltins extends PythonBuiltins {
 
                 RootCoverage[] rootCoverage = getRootCoverage(c);
                 for (RootCoverage r : rootCoverage) {
-                    String name = getRootName(r);
+                    TruffleString name = toTruffleStringUncached(getRootName(r));
                     if (name == null) {
                         continue;
                     }
                     if (countFuncs) {
-                        PTuple tp = factory().createTuple(new Object[]{filename, modName, name});
+                        PTuple tp = factory().createTuple(new Object[]{toTruffleStringUncached(filename), modName, name});
                         setItemNode.execute(frame, calledFuncs, tp, 1);
                     }
                     SectionCoverage[] sectionCoverage = getSectionCoverage(r);
@@ -256,7 +256,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                             if (cnt < 0) {
                                 cnt = 1;
                             }
-                            PTuple ctp = factory().createTuple(new Object[]{filename, startLine});
+                            PTuple ctp = factory().createTuple(new Object[]{toTruffleStringUncached(filename), startLine});
                             setItemNode.execute(frame, counts, ctp, cnt);
                         }
                     }
@@ -296,11 +296,11 @@ public class TraceModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String deriveModuleName(TruffleFile file, String baseName) {
+        private static TruffleString deriveModuleName(TruffleFile file, String baseName) {
             if (baseName.endsWith("__init__.py")) {
-                return file.getParent().getName();
+                return toTruffleStringUncached(file.getParent().getName());
             } else {
-                return baseName.replaceFirst("\\.py$", "");
+                return toTruffleStringUncached(baseName.replaceFirst("\\.py$", ""));
             }
         }
 
