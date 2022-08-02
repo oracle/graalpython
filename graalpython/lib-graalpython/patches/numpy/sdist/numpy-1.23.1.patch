@@ -144,13 +144,14 @@ index 4b802de82..269d4c4e7 100644
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
 diff --git a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/multiarray/_multiarray_tests.c.src
-index 0fcebedc7..42c1eade5 100644
+index 0fcebedc7..6b8b4559e 100644
 --- a/numpy/core/src/multiarray/_multiarray_tests.c.src
 +++ b/numpy/core/src/multiarray/_multiarray_tests.c.src
-@@ -2040,21 +2040,6 @@ get_fpu_mode(PyObject *NPY_UNUSED(self), PyObject *args)
+@@ -2039,22 +2039,7 @@ get_fpu_mode(PyObject *NPY_UNUSED(self), PyObject *args)
+     if (!PyArg_ParseTuple(args, "")) {
          return NULL;
      }
- 
+-
 -#if defined(_MSC_VER)
 -    {
 -        unsigned int result = 0;
@@ -164,7 +165,7 @@ index 0fcebedc7..42c1eade5 100644
 -        return PyLong_FromLongLong(cw);
 -    }
 -#else
--    Py_RETURN_NONE;
+     Py_RETURN_NONE;
 -#endif
  }
  
