@@ -38,10 +38,10 @@
 # SOFTWARE.
 
 """The purpose of this import hook is two-fold. We have patches for certain
-packages to make the work on GraalPy. These patches need to be applied when
-the relevant packages are unpacked. Additionally, we want certain packages to
-always prefer known versions if that agrees with the version spec the user of
-pip install or the package has specified in its requirements.
+packages to make them work on GraalPy. These patches need to be applied when the
+relevant packages are unpacked. Additionally, we want certain packages to always
+prefer known versions if that agrees with the version spec the user of pip
+install or the package has specified in its requirements.
 
 The PipInstallLoader takes care of the latter - when packages are installed
 through the "install" or "wheel" commands, the argument version specs are
@@ -63,7 +63,7 @@ import sys
 
 
 NAME_VER_PATTERN = "([^-]+)-(\\d+)(.\\d+)?(.\\d+)?"
-
+WARNED = False
 
 class PipLoader:
     def __init__(self, real_spec):
@@ -76,6 +76,15 @@ class PipLoader:
     def create_module(self, spec):
         return self.real_spec.loader.create_module(self.real_spec)
 
+    def print_version_warning(self):
+        global WARNED
+        if not WARNED:
+            print("WARNING: You are using an untested version of pip. GraalPy",
+                  "provides patches and workarounds for a number of packages when used with",
+                  "compatible pip versions. We recommend to stick with the pip version that",
+                  "ships with this version of GraalPy.")
+            WARNED = True
+
 
 class PipInstallLoader(PipLoader):
     def exec_module(self, module):
@@ -87,6 +96,7 @@ class PipInstallLoader(PipLoader):
         try:
             from pip._vendor.packaging.requirements import Requirement
         except:
+            self.print_version_warning()
             return exec_module_result
 
         infos_printed = set()
