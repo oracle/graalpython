@@ -53,7 +53,7 @@ import com.oracle.truffle.api.source.Source;
 public class ParseWithArgumentsTests extends ParserTestBase {
 
     @Test
-    public void testSimpple01() throws Exception {
+    public void testSimple01() throws Exception {
         Source source = createSource("arg1");
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
         assertEquals(66, target.call(66));
@@ -62,7 +62,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     }
 
     @Test
-    public void testSimpple02() throws Exception {
+    public void testSimple02() throws Exception {
         Source source = createSource("arg1 + arg2");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(11, target.call(5, 6));
@@ -94,7 +94,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     }
 
     @Test
-    public void testCompareWithAndWithouthArguments() throws Exception {
+    public void testCompareWithAndWithoutArguments() throws Exception {
         Source source = createSource("22");
         CallTarget targetWithout = context.getEnv().parsePublic(source);
         CallTarget targetWith = context.getEnv().parsePublic(source, "arg1");

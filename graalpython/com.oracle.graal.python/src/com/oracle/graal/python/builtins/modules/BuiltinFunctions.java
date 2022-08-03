@@ -1092,7 +1092,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                     if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, kwOptimize, false);
+                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, kwOptimize, false, null);
                     }
                     return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
                 }

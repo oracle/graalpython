@@ -154,23 +154,23 @@ import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.BoolOpTy;
-import com.oracle.graal.python.pegparser.sst.CmpOpTy;
-import com.oracle.graal.python.pegparser.sst.PatternTy;
-import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
-import com.oracle.graal.python.pegparser.sst.WithItemTy;
-import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
@@ -213,26 +213,8 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope("<module>", CompilationScope.Module, mod);
         mod.accept(this);
         CompilationUnit topUnit = unit;
-        Block lastBlock = unit.currentBlock;
-        if (!lastBlock.isReturn()) {
-            boolean addNone = !(mod instanceof ModTy.Expression);
-            if (lastBlock.instr.size() > 0 && lastBlock.instr.get(lastBlock.instr.size() - 1).opcode == POP_TOP) {
-                /*
-                 * To support interop eval we need to return the value of the last statement even if
-                 * we're in file mode.
-                 */
-                lastBlock.instr.remove(lastBlock.instr.size() - 1);
-                addNone = false;
-            }
-            if (addNone) {
-                // add a none return at the end
-                addOp(LOAD_NONE);
-            }
-            addOp(RETURN_VALUE);
-        }
         exitScope();
         return topUnit;
-        // return (!(mod instanceof ModTy.Expression));
     }
 
     private void parseFuture(StmtTy[] modBody) {
@@ -855,28 +837,49 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     // visiting
 
-    private void visitBody(StmtTy[] stmts) {
-        if (unit.scope.isModule() && stmts.length > 0) {
-            /*
-             * Set current line number to the line number of first statement. This way line number
-             * for SETUP_ANNOTATIONS will always coincide with the line number of first "real"
-             * statement in module. If body is empty, then lineno will be set later in assemble.
-             */
-            setLocation(stmts[0]);
+    private void visitBody(StmtTy[] stmts, boolean returnValue) {
+        if (stmts != null) {
+            if (unit.scope.isModule() && stmts.length > 0) {
+                /*
+                 * Set current line number to the line number of first statement. This way line
+                 * number for SETUP_ANNOTATIONS will always coincide with the line number of first
+                 * "real" statement in module. If body is empty, then lineno will be set later in
+                 * assemble.
+                 */
+                setLocation(stmts[0]);
+            }
+            if (containsAnnotations(stmts)) {
+                addOp(SETUP_ANNOTATIONS);
+            }
+            if (stmts.length > 0) {
+                int i = 0;
+                TruffleString docstring = getDocstring(stmts);
+                if (docstring != null) {
+                    i++;
+                    StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
+                    stmt.value.accept(this);
+                    addNameOp("__doc__", ExprContextTy.Store);
+                }
+                for (; i < stmts.length - 1; i++) {
+                    stmts[i].accept(this);
+                }
+                /*
+                 * To support interop eval we need to return the value of the last statement even if
+                 * we're in file mode. Also used when parsing with arguments.
+                 */
+                StmtTy lastStatement = stmts[stmts.length - 1];
+                if (returnValue && lastStatement instanceof StmtTy.Expr) {
+                    ((StmtTy.Expr) lastStatement).value.accept(this);
+                    addOp(RETURN_VALUE);
+                    return;
+                } else {
+                    lastStatement.accept(this);
+                }
+            }
         }
-        if (containsAnnotations(stmts)) {
-            addOp(SETUP_ANNOTATIONS);
-        }
-        int i = 0;
-        TruffleString docstring = getDocstring(stmts);
-        if (docstring != null) {
-            i++;
-            StmtTy.Expr stmt = (StmtTy.Expr) stmts[0];
-            stmt.value.accept(this);
-            addNameOp("__doc__", ExprContextTy.Store);
-        }
-        for (; i < stmts.length; i++) {
-            stmts[i].accept(this);
+        if (returnValue) {
+            addOp(LOAD_NONE);
+            addOp(RETURN_VALUE);
         }
     }
 
@@ -1846,7 +1849,9 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ModTy.Expression node) {
-        return node.body.accept(this);
+        node.body.accept(this);
+        addOp(RETURN_VALUE);
+        return null;
     }
 
     @Override
@@ -1860,14 +1865,15 @@ public class Compiler implements SSTreeVisitor<Void> {
             addOp(SETUP_ANNOTATIONS);
         }
         interactive = true;
-        return visitSequence(node.body);
+        visitSequence(node.body);
+        addOp(LOAD_NONE);
+        addOp(RETURN_VALUE);
+        return null;
     }
 
     @Override
     public Void visit(ModTy.Module node) {
-        if (node.body != null) {
-            visitBody(node.body);
-        }
+        visitBody(node.body, true);
         return null;
     }
 
@@ -2077,7 +2083,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(unit.qualName)));
         addNameOp("__qualname__", ExprContextTy.Store);
 
-        visitBody(node.body);
+        visitBody(node.body, false);
 
         if (unit.scope.needsClassClosure()) {
             int idx = unit.cellvars.get("__class__");
