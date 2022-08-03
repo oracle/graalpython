@@ -46,6 +46,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -72,6 +75,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -112,9 +116,49 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return null;
     }
 
+    public PythonUnaryBuiltinNode getBuiltin(UnaryBuiltinDescriptor descriptor) {
+        PythonUnaryBuiltinNode builtin = descriptor.createNode();
+        if (!callerExceedsMaxSize(builtin)) {
+            return builtin;
+        }
+        return null;
+    }
+
+    public PythonBinaryBuiltinNode getBuiltin(BinaryBuiltinDescriptor descriptor) {
+        PythonBinaryBuiltinNode builtin = descriptor.createNode();
+        if (!callerExceedsMaxSize(builtin)) {
+            return builtin;
+        }
+        return null;
+    }
+
+    public PythonTernaryBuiltinNode getBuiltin(TernaryBuiltinDescriptor descriptor) {
+        PythonTernaryBuiltinNode builtin = descriptor.createNode();
+        if (!callerExceedsMaxSize(builtin)) {
+            return builtin;
+        }
+        return null;
+    }
+
     private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
         CompilerAsserts.neverPartOfCompilation();
         if (isAdoptable() && !isMaxSizeExceeded()) {
+            // to avoid building up AST of recursive builtin calls we check that the same builtin
+            // isn't already our parent.
+            Class<? extends PythonBuiltinBaseNode> builtinClass = builtinNode.getClass();
+            Node parent = getParent();
+            int recursiveCalls = 0;
+            while (parent != null && !(parent instanceof RootNode)) {
+                if (parent.getClass() == builtinClass) {
+                    int recursionLimit = PythonLanguage.get(this).getEngineOption(PythonOptions.NodeRecursionLimit);
+                    if (recursiveCalls == recursionLimit) {
+                        return true;
+                    }
+                    recursiveCalls++;
+                }
+                parent = parent.getParent();
+            }
+
             RootNode root = getRootNode();
             int n = root instanceof PRootNode ? ((PRootNode) root).getNodeCount() : NodeUtil.countNodes(root);
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
