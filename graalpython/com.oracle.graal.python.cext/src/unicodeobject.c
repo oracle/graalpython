@@ -639,6 +639,71 @@ PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr,
     } while (0)
 
 
+static Py_UCS4*
+as_ucs4(PyObject *string, Py_UCS4 *target, Py_ssize_t targetsize,
+        int copy_null)
+{
+    int kind;
+    void *data;
+    Py_ssize_t len, targetlen;
+    if (PyUnicode_READY(string) == -1)
+        return NULL;
+    kind = PyUnicode_KIND(string);
+    data = PyUnicode_DATA(string);
+    len = PyUnicode_GET_LENGTH(string);
+    targetlen = len;
+    if (copy_null)
+        targetlen++;
+    if (!target) {
+        target = PyMem_New(Py_UCS4, targetlen);
+        if (!target) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+    else {
+        if (targetsize < targetlen) {
+            PyErr_Format(PyExc_SystemError,
+                         "string is longer than the buffer");
+            if (copy_null && 0 < targetsize)
+                target[0] = 0;
+            return NULL;
+        }
+    }
+    if (kind == PyUnicode_1BYTE_KIND) {
+        Py_UCS1 *start = (Py_UCS1 *) data;
+        _PyUnicode_CONVERT_BYTES(Py_UCS1, Py_UCS4, start, start + len, target);
+    }
+    else if (kind == PyUnicode_2BYTE_KIND) {
+        Py_UCS2 *start = (Py_UCS2 *) data;
+        _PyUnicode_CONVERT_BYTES(Py_UCS2, Py_UCS4, start, start + len, target);
+    }
+    else {
+        assert(kind == PyUnicode_4BYTE_KIND);
+        memcpy(target, data, len * sizeof(Py_UCS4));
+    }
+    if (copy_null)
+        target[len] = 0;
+    return target;
+}
+
+Py_UCS4*
+PyUnicode_AsUCS4(PyObject *string, Py_UCS4 *target, Py_ssize_t targetsize,
+                 int copy_null)
+{
+    if (target == NULL || targetsize < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return as_ucs4(string, target, targetsize, copy_null);
+}
+
+Py_UCS4*
+PyUnicode_AsUCS4Copy(PyObject *string)
+{
+    return as_ucs4(string, NULL, 0, 1);
+}
+
 /* used from Java only to decode a native unicode object */
 void* native_unicode_as_string(PyObject *string) {
 	Py_UCS4 *target = NULL;
