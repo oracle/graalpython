@@ -158,13 +158,13 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(v)")
-        static Object doit(PFrame self, @SuppressWarnings("unused") PNone v) {
+        static Object doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
             Object traceFun = self.getLocalTraceFun();
             return traceFun == null ? PNone.NONE : traceFun;
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        static Object doit(PFrame self, Object v) {
+        static Object doSet(PFrame self, Object v) {
             self.setLocalTraceFun(v == PNone.NONE ? null : v);
             return PNone.NONE;
         }
@@ -174,12 +174,12 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TraceLinesNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(v)")
-        static boolean doit(PFrame self, @SuppressWarnings("unused") PNone v) {
+        static boolean doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
             return self.getTraceLine();
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        static Object doit(PFrame self, boolean v) {
+        static Object doSet(PFrame self, boolean v) {
             self.setTraceLine(v);
             return PNone.NONE;
         }

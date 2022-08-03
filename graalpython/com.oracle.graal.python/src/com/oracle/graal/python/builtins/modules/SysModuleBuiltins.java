@@ -242,7 +242,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
-    private static final TruffleString T_SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is only implemented for the bytecode interpreter.");
     private static final String COMPILE_TIME;
     public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
@@ -977,7 +976,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object settrace(Object function) {
             PythonContext ctx = getContext();
             if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                throw raise(NotImplementedError, T_SETTRACE_NOT_IMPLEMENTED);
+                throw raise(NotImplementedError, ErrorMessages.SETTRACE_NOT_IMPLEMENTED);
             }
             PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
             if (function == PNone.NONE) {
