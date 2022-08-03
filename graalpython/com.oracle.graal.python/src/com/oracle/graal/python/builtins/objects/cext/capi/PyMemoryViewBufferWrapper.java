@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PY_BUFFER_TYPEID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -170,7 +171,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
                         @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
             // TODO GR-21120: Add support for PArray
             PSequence owner = (PSequence) object.getOwner();
-            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner));
+            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner), owner instanceof PBytesLike);
             if (nativeStorage == null) {
                 throw CompilerDirectives.shouldNotReachHere("cannot allocate native storage");
             }
