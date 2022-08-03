@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPython
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -237,8 +236,11 @@ public final class PythonContext extends Python3Core {
          */
         PThreadState nativeWrapper;
 
+        /* Assume that no trace function was ever set. */
+        public Assumption noTracingInThread = Assumption.create("noTracingInThread");
+
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
-        @CompilationFinal Object traceFun;
+        Object traceFun;
 
         /* Keep track of execution to avoid tracing code inside the tracing function. */
         boolean tracing;
@@ -343,12 +345,12 @@ public final class PythonContext extends Python3Core {
         }
 
         public Object getTraceFun() {
-            return traceFun;
+            return noTracingInThread.isValid() ? null : traceFun;
         }
 
         public void setTraceFun(Object traceFun) {
             if (this.traceFun != traceFun) {
-                transferToInterpreterAndInvalidate();
+                noTracingInThread.invalidate();
                 this.traceFun = traceFun;
             }
         }
