@@ -41,6 +41,7 @@
 def test_trace_module():
     import trace
     import sys
+    import platform
 
     tracer = trace.Trace(ignoredirs=[], trace=1, count=1, countfuncs=1, countcallers=1)
 

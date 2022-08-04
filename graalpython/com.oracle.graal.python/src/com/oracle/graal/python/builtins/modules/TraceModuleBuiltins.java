@@ -115,10 +115,9 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             SourceSectionFilter.Builder filter = SourceSectionFilter.newBuilder();
             filter.includeInternal(false).mimeTypeIs(PythonLanguage.MIME_TYPE);
             PythonContext context = getContext();
-            TruffleString stdLibHome = context.getStdlibHome();
             filter.sourceIs((src) -> {
                 String path = src.getPath();
-                return path != null && !path.contains(stdLibHome.toJavaStringUncached());
+                return path != null;
             });
 
             Object[] ignoreMods = toArray.execute(getStore.execute(ignoremods));
