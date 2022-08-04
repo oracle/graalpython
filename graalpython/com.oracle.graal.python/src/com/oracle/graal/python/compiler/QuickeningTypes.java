@@ -40,10 +40,43 @@
  */
 package com.oracle.graal.python.compiler;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.FrameSlotKind;
+
 public abstract class QuickeningTypes {
     public static final byte OBJECT = 1;
     public static final byte INT = 2;
     public static final byte LONG = 4;
     public static final byte DOUBLE = 8;
     public static final byte BOOLEAN = 16;
+
+    public static byte fromFrameSlotTag(byte tag) {
+        if (tag == FrameSlotKind.Object.tag) {
+            return OBJECT;
+        } else if (tag == FrameSlotKind.Int.tag) {
+            return INT;
+        } else if (tag == FrameSlotKind.Long.tag) {
+            return LONG;
+        } else if (tag == FrameSlotKind.Double.tag) {
+            return DOUBLE;
+        } else if (tag == FrameSlotKind.Boolean.tag) {
+            return BOOLEAN;
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("Unknown stack item type");
+        }
+    }
+
+    public static byte fromObjectType(Object object) {
+        if (object instanceof Integer) {
+            return INT;
+        } else if (object instanceof Long) {
+            return LONG;
+        } else if (object instanceof Double) {
+            return DOUBLE;
+        } else if (object instanceof Boolean) {
+            return BOOLEAN;
+        } else {
+            return OBJECT;
+        }
+    }
 }

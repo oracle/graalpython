@@ -1964,9 +1964,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @ExplodeLoop
     private void unboxVariables(Frame localFrame) {
         /*
-         * We keep some variables boxed in the interpreter, but unbox in the compiled code. After
-         * OSR we need to unbox existing variables for the compiled code. Should have no effect
-         * otherwise.
+         * We keep some variables boxed in the interpreter, but unbox in the compiled code. When OSR
+         * is entered, we need to unbox existing variables for the compiled code. Should have no
+         * effect otherwise.
          */
         for (int i = 0; i < variableTypes.length; i++) {
             if (variableTypes[i] != 0 && variableTypes[i] != QuickeningTypes.OBJECT && localFrame.isObject(i)) {
@@ -2495,12 +2495,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         byte itemType = stackType;
         boolean unboxInIntepreter = (variableShouldUnbox[index] & itemType) != 0;
         if (itemType == QuickeningTypes.OBJECT) {
-            itemType = objectTypeId(virtualFrame.getObject(stackTop));
+            itemType = QuickeningTypes.fromObjectType(virtualFrame.getObject(stackTop));
         }
-        if (variableTypes[index] == 0) {
-            variableTypes[index] = itemType;
-        } else if (variableTypes[index] != itemType) {
-            if (variableTypes[index] != QuickeningTypes.OBJECT) {
+        byte variableType = variableTypes[index];
+        if (variableType == 0) {
+            variableType = itemType;
+        } else if ((variableType & ~UNBOXED_IN_INTERPRETER) != itemType) {
+            if (variableType != QuickeningTypes.OBJECT) {
                 variableTypes[index] = QuickeningTypes.OBJECT;
                 generalizeVariableStores(index);
             }
@@ -2512,17 +2513,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             bytecodeStoreFastO(virtualFrame, localFrame, stackTop, index);
             return;
         }
-        assert variableTypes[index] == itemType;
         if (itemType == QuickeningTypes.INT) {
             if (unboxInIntepreter && stackType == QuickeningTypes.INT) {
                 localBC[bci] = OpCodesConstants.STORE_FAST_I;
-                variableTypes[index] |= UNBOXED_IN_INTERPRETER;
+                variableType |= UNBOXED_IN_INTERPRETER;
+                variableTypes[index] = variableType;
                 bytecodeStoreFastI(virtualFrame, localFrame, stackTop, bci, index);
             } else if (unboxInIntepreter) {
                 localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_I;
-                variableTypes[index] |= UNBOXED_IN_INTERPRETER;
+                variableType |= UNBOXED_IN_INTERPRETER;
+                variableTypes[index] = variableType;
                 bytecodeStoreFastUnboxI(virtualFrame, localFrame, stackTop, bci, index);
             } else {
+                variableTypes[index] = variableType;
                 if (stackType == QuickeningTypes.INT) {
                     virtualFrame.setObject(stackTop, virtualFrame.getInt(stackTop));
                     generalizeInputs(bci);
@@ -2534,13 +2537,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else if (itemType == QuickeningTypes.BOOLEAN) {
             if (unboxInIntepreter && stackType == QuickeningTypes.BOOLEAN) {
                 localBC[bci] = OpCodesConstants.STORE_FAST_B;
-                variableTypes[index] |= UNBOXED_IN_INTERPRETER;
+                variableType |= UNBOXED_IN_INTERPRETER;
+                variableTypes[index] = variableType;
                 bytecodeStoreFastB(virtualFrame, localFrame, stackTop, bci, index);
             } else if (unboxInIntepreter) {
                 localBC[bci] = OpCodesConstants.STORE_FAST_UNBOX_B;
-                variableTypes[index] |= UNBOXED_IN_INTERPRETER;
+                variableType |= UNBOXED_IN_INTERPRETER;
+                variableTypes[index] = variableType;
                 bytecodeStoreFastUnboxB(virtualFrame, localFrame, stackTop, bci, index);
             } else {
+                variableTypes[index] = variableType;
                 if (stackType == QuickeningTypes.BOOLEAN) {
                     virtualFrame.setObject(stackTop, virtualFrame.getBoolean(stackTop));
                     generalizeInputs(bci);
@@ -2550,11 +2556,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             return;
         } else if (itemType == QuickeningTypes.OBJECT) {
+            variableTypes[index] = variableType;
             localBC[bci] = OpCodesConstants.STORE_FAST_O;
             bytecodeStoreFastO(virtualFrame, localFrame, stackTop, index);
             return;
         }
         // TODO other types
+        variableTypes[index] = QuickeningTypes.OBJECT;
         generalizeInputs(bci);
         generalizeVariableStores(index);
         virtualFrame.setObject(stackTop, virtualFrame.getValue(stackTop));
@@ -2790,34 +2798,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, value);
     }
 
-    private byte stackSlotTypeToTypeId(VirtualFrame virtualFrame, int stackTop) {
-        if (virtualFrame.isObject(stackTop)) {
-            return QuickeningTypes.OBJECT;
-        } else if (virtualFrame.isInt(stackTop)) {
-            return QuickeningTypes.INT;
-        } else if (virtualFrame.isLong(stackTop)) {
-            return QuickeningTypes.LONG;
-        } else if (virtualFrame.isDouble(stackTop)) {
-            return QuickeningTypes.DOUBLE;
-        } else if (virtualFrame.isBoolean(stackTop)) {
-            return QuickeningTypes.BOOLEAN;
-        } else {
-            throw CompilerDirectives.shouldNotReachHere("Unknown stack item type");
-        }
-    }
-
-    private byte objectTypeId(Object object) {
-        if (object instanceof Integer) {
-            return QuickeningTypes.INT;
-        } else if (object instanceof Long) {
-            return QuickeningTypes.LONG;
-        } else if (object instanceof Double) {
-            return QuickeningTypes.DOUBLE;
-        } else if (object instanceof Boolean) {
-            return QuickeningTypes.BOOLEAN;
-        } else {
-            return QuickeningTypes.OBJECT;
-        }
+    private static byte stackSlotTypeToTypeId(VirtualFrame virtualFrame, int stackTop) {
+        return QuickeningTypes.fromFrameSlotTag(virtualFrame.getTag(stackTop));
     }
 
     private void generalizeInputs(int beginBci) {
