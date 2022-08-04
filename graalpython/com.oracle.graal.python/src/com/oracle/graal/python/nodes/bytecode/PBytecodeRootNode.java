@@ -50,6 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -659,9 +660,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.apply(argument);
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.apply(argument);
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -688,9 +695,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.apply(argument);
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.apply(argument);
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -705,9 +718,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.get();
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.get();
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")
