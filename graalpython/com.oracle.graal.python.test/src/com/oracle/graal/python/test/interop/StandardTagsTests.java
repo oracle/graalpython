@@ -45,6 +45,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Instrument;
+import org.graalvm.polyglot.Source;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.test.PythonTests;
@@ -59,13 +67,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.Instrument;
-import org.graalvm.polyglot.Source;
-import org.junit.Assert;
-import org.junit.Test;
-
 @SuppressWarnings("all")
 public class StandardTagsTests extends PythonTests {
 
@@ -73,6 +74,11 @@ public class StandardTagsTests extends PythonTests {
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+    }
+
+    @Before
+    public void before() {
+        PythonTests.skipOnBytecodeInterpreter();
     }
 
     @Test

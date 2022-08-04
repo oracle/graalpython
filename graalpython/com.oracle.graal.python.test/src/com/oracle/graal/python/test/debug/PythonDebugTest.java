@@ -83,6 +83,7 @@ public class PythonDebugTest {
         newBuilder.allowAllAccess(true);
         PythonTests.closeContext();
         tester = new DebuggerTester(newBuilder);
+        PythonTests.skipOnBytecodeInterpreter();
     }
 
     @After
