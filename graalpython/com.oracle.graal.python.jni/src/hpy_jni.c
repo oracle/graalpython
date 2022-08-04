@@ -98,7 +98,8 @@ ALL_FIELDS
     UPCALL(GlobalLoad, SIG_HPYGLOBAL, SIG_HPY) \
     UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
     UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
-    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T)
+    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
+    UPCALL(Type, SIG_HPY, SIG_HPY)
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -232,7 +233,7 @@ static const char* getBoxedPrimitiveName(uint64_t bits) {
     return "float";
 }
 
-int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
+static int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
@@ -246,7 +247,7 @@ int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) 
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
 }
 
-HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
+static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
@@ -257,6 +258,10 @@ HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     }
     jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+}
+
+static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Type, HPY_UP(obj));
 }
 
 //*************************
@@ -299,7 +304,7 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
-static HPy (*original_Type)(HPyContext *, HPy);
+static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     long bitsA = toBits(a);
@@ -647,14 +652,16 @@ void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_fi
     }
 }
 
-HPy augment_Type(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
+HPy augment_Type(HPyContext *ctx, HPy obj) {
+    long bits = toBits(obj);
     if (isBoxedInt(bits)) {
-        return ctx->h_LongType;
-    } else if (isBoxedDouble(bits)) {
-        return ctx->h_FloatType;
+        return augment_Dup(ctx, ctx->h_LongType);
+    } else if (isBoxedDouble(bits))
+        return augment_Dup(ctx, ctx->h_FloatType);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Type(ctx, obj);
     } else {
-        return original_Type(ctx, h);
+        return toPtr(bits);
     }
 }
 
@@ -779,6 +786,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
     context->ctx_SetItem_s = ctx_SetItem_s_jni;
     context->ctx_GetItem_s = ctx_GetItem_s_jni;
+    context->ctx_Type = ctx_Type_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);

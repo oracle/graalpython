@@ -31,6 +31,7 @@
     {"name":"ctxGlobalStore","parameterTypes":["long","long"] },
     {"name":"ctxFieldLoad","parameterTypes":["long","long"] },
     {"name":"ctxFieldStore","parameterTypes":["long","long","long"] },
+    {"name":"ctxType","parameterTypes":["long"] },
     {"name":"getHPyDebugContext","parameterTypes":[] }
   ],
   "fields":[
