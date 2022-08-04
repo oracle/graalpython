@@ -71,7 +71,7 @@ public final class ReferenceStack<T> implements Iterable<T> {
         if (0 <= idx && idx < nativeObjectWrapperList.length) {
             return (T) nativeObjectWrapperList[idx];
         } else {
-           assert false : "incorrect reference ID";
+            assert false : "incorrect reference ID";
         }
         return null;
     }
