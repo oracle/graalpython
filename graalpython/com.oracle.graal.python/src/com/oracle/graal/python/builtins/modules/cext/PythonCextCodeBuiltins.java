@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 
 import java.util.List;
 
@@ -126,8 +127,8 @@ public final class PythonCextCodeBuiltins extends PythonBuiltins {
         static PCode newEmpty(TruffleString filename, TruffleString funcname, int lineno,
                         @Cached CodeNodes.CreateCodeNode createCodeNode) {
             return createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
-                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
-                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY, EMPTY_TRUFFLESTRING_ARRAY,
+                            EMPTY_TRUFFLESTRING_ARRAY, filename, funcname, lineno, EMPTY_BYTE_ARRAY);
         }
     }
 }

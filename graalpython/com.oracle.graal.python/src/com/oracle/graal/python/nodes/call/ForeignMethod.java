@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,15 +38,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.interop.InteropLibrary;
 
-abstract class CallReversibleMethodNode extends AbstractCallMethodNode {
-    protected boolean isForReverseBinaryOperation(RootCallTarget ct) {
-        CompilerAsserts.neverPartOfCompilation();
-        return PBuiltinFunction.isReverseOperationSlot(ct);
+/**
+ * Wrapper for a result of method lookup on an interop object that returned true from
+ * {@link InteropLibrary#isMemberInvocable} for given method name. It is necessary to support
+ * languages where method calls have different semantics than executing a result of attribute
+ * lookup.
+ */
+@ValueType
+public final class ForeignMethod {
+    public final Object receiver;
+    public final String methodName;
+
+    public ForeignMethod(Object receiver, String methodName) {
+        this.receiver = receiver;
+        this.methodName = methodName;
     }
 }

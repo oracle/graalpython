@@ -40,17 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -58,7 +54,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -101,8 +96,8 @@ public abstract class CodeNodes {
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        byte[] codedata, Object[] constants, Object[] names,
-                        Object[] varnames, Object[] freevars, Object[] cellvars,
+                        byte[] codedata, Object[] constants, TruffleString[] names,
+                        TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                         TruffleString filename, TruffleString name, int firstlineno,
                         byte[] lnotab) {
 
@@ -122,8 +117,8 @@ public abstract class CodeNodes {
         private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        byte[] codedata, Object[] constants, Object[] names,
-                        Object[] varnames, Object[] freevars, Object[] cellvars,
+                        byte[] codedata, Object[] constants, TruffleString[] names,
+                        TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                         TruffleString filename, TruffleString name, int firstlineno,
                         byte[] lnotab) {
 
@@ -132,7 +127,7 @@ public abstract class CodeNodes {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
             } else {
                 if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                    ct = create().deserializeForBytecodeInterpreter(language, codedata);
+                    ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
                 } else {
                     RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
                     ct = PythonUtils.getOrCreateCallTarget(rootNode);
@@ -146,8 +141,17 @@ public abstract class CodeNodes {
                             firstlineno, lnotab);
         }
 
-        private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data) {
+        private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(data);
+            if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {
+                code = new CodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, code.stacksize, code.code,
+                                code.srcOffsetTable, code.flags, code.names, code.varnames,
+                                cellvars != null ? cellvars : code.cellvars, freevars != null ? freevars : code.freevars,
+                                code.cell2arg, code.constants, code.primitiveConstants, code.exceptionHandlerRanges, code.conditionProfileCount,
+                                code.startOffset, code.startLine,
+                                code.outputCanQuicken, code.variableShouldUnbox,
+                                code.generalizeInputsMap, code.generalizeVarsMap);
+            }
             RootNode rootNode = new PBytecodeRootNode(language, code, null, null);
             if (code.isGeneratorOrCoroutine()) {
                 rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
@@ -176,18 +180,15 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static String[] toStringArray(Object[] array) {
-            List<String> list = new ArrayList<>(array.length);
-            for (Object item : array) {
-                item = assertNoJavaString(item);
-                if (item instanceof TruffleString) {
-                    list.add(((TruffleString) item).toJavaStringUncached());
-                }
-                if (item instanceof PString) {
-                    list.add(CastToJavaStringNode.getUncached().execute(item));
-                }
+        private static String[] toStringArray(TruffleString[] array) {
+            if (array == null) {
+                return null;
             }
-            return list.toArray(new String[list.size()]);
+            String[] result = new String[array.length];
+            for (int i = 0; i < array.length; i++) {
+                result[i] = array[i].toJavaStringUncached();
+            }
+            return result;
         }
 
         public static CreateCodeNode create() {

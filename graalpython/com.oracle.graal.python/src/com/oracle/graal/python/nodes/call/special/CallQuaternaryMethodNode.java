@@ -44,8 +44,8 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,7 +56,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
+public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     public static CallQuaternaryMethodNode create() {
         return CallQuaternaryMethodNodeGen.create();
     }

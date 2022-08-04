@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,7 +79,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PythonOptions.class, PGuards.class})
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
-abstract class CallSpecialMethodNode extends PNodeWithContext {
+abstract class AbstractCallMethodNode extends PNodeWithContext {
 
     /**
      * for interpreter performance: cache if we exceeded the max caller size. We never allow

@@ -53,10 +53,15 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.ForeignMethod;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -65,6 +70,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -73,8 +80,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Equivalent of _PyObject_GetMethod. Like CPython, the node uses {@link PyObjectGetAttr} for any
  * object that does not have the generic {@code object.__getattribute__}. For the generic {@code
  * object.__getattribute__} the node inlines the default logic but without binding methods, and
- * falls back to looking into the object dict. Returns something that can be handled by our
- * CallSpecial nodes.
+ * falls back to looking into the object dict. Returns something that can be handled by
+ * {@link CallNode} or one of the {@code CallNAryMethodNode} nodes, like
+ * {@link CallUnaryMethodNode}.
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -97,16 +105,18 @@ public abstract class PyObjectGetMethod extends Node {
         return getattributeSlot == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && getattrSlot == PNone.NO_VALUE;
     }
 
-    @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")
+    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "!isObjectGetAttribute(lazyClass)"}, limit = "1")
     static Object getGenericAttr(Frame frame, Object receiver, TruffleString name,
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @SuppressWarnings("unused") @Bind("getClass.execute(receiver)") Object lazyClass,
                     @Cached PyObjectGetAttr getAttr) {
         return new BoundDescriptor(getAttr.execute(frame, receiver, name));
     }
 
-    @Specialization(guards = {"isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
+    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
@@ -163,8 +173,9 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     // No explicit branch profiling when we're looking up multiple things
-    @Specialization(guards = "isObjectGetAttribute(lazyClass)", replaces = "getFixedAttr", limit = "1")
+    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "isObjectGetAttribute(lazyClass)"}, replaces = "getFixedAttr", limit = "1")
     static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
                     @Cached LookupAttributeInMRONode.Dynamic lookupNode,
@@ -204,5 +215,27 @@ public abstract class PyObjectGetMethod extends Node {
             return new BoundDescriptor(descr);
         }
         throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+    }
+
+    @Specialization(guards = "isForeignObjectNode.execute(receiver)", limit = "3")
+    Object getForeignMethod(VirtualFrame frame, Object receiver, TruffleString name,
+                    @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaString,
+                    @CachedLibrary("receiver") InteropLibrary lib,
+                    @Cached PyObjectGetAttr getAttr,
+                    @Cached GilNode gil) {
+        String jName = toJavaString.execute(name);
+        boolean memberInvocable;
+        gil.release(true);
+        try {
+            memberInvocable = lib.isMemberInvocable(receiver, jName);
+        } finally {
+            gil.acquire();
+        }
+        if (memberInvocable) {
+            return new BoundDescriptor(new ForeignMethod(receiver, jName));
+        } else {
+            return new BoundDescriptor(getAttr.execute(frame, receiver, name));
+        }
     }
 }

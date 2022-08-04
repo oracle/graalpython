@@ -86,6 +86,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
@@ -2486,15 +2487,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple freevars, PTuple cellvars,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode) {
             byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
             byte[] lnotabBytes = bufferLib.getCopiedByteArray(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
-            Object[] namesArr = getObjectArrayNode.execute(names);
-            Object[] varnamesArr = getObjectArrayNode.execute(varnames);
-            Object[] freevarsArr = getObjectArrayNode.execute(freevars);
-            Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
+            TruffleString[] namesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(names), castToTruffleStringNode);
+            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(varnames), castToTruffleStringNode);
+            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(freevars), castToTruffleStringNode);
+            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(cellvars), castToTruffleStringNode);
 
             return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,

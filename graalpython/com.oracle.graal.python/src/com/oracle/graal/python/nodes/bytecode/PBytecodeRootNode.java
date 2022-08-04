@@ -177,6 +177,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -1864,7 +1865,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // prepare next loop
                 oparg = 0;
                 bci++;
-            } catch (PythonExitException e) {
+            } catch (PythonExitException | PythonThreadKillException e) {
                 throw e;
             } catch (Exception | StackOverflowError | AssertionError e) {
                 PException pe = null;
@@ -3235,7 +3236,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-        if (oparg < freeoffset) {
+        if (oparg < cellvars.length) {
             throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, cellvars[oparg]);
         } else {
             int varIdx = oparg - cellvars.length;

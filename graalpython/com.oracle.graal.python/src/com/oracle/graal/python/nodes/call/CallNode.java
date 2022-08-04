@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -57,10 +59,13 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -70,6 +75,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -149,7 +161,7 @@ public abstract class CallNode extends PNodeWithContext {
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
-    @Specialization(guards = "!isCallable(callableObject)", replaces = {"doType", "doPythonClass"})
+    @Specialization(guards = {"!isCallable(callableObject)", "!isForeignMethod(callableObject)"}, replaces = {"doType", "doPythonClass"})
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
@@ -158,9 +170,35 @@ public abstract class CallNode extends PNodeWithContext {
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
+    @Specialization
+    protected Object doForeignMethod(ForeignMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached PRaiseNode raise,
+                    @Cached PForeignToPTypeNode fromForeign,
+                    @Cached BranchProfile keywordsError,
+                    @Cached BranchProfile typeError,
+                    @Cached GilNode gil,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
+        if (keywords.length != 0) {
+            keywordsError.enter();
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        }
+        gil.release(true);
+        try {
+            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
+        } catch (ArityException | UnsupportedTypeException e) {
+            typeError.enter();
+            throw raise.raise(TypeError, e);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+            // PyObjectGetMethod is supposed to have checked isMemberInvocable
+            throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
+        } finally {
+            gil.acquire();
+        }
+    }
+
     private static Object callCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode, Object call) {
         if (call == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
+            throw raise.raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
         }
         return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
     }
@@ -215,7 +253,7 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"doObjectAndType", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
-                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"})
+                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"}, guards = "!isForeignMethod(callableObject)")
     @Megamorphic
     protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
@@ -245,5 +283,9 @@ public abstract class CallNode extends PNodeWithContext {
                             dispatch, createArgs, raise, callAttrGetterNode, getClassNode, callCallNode);
         }
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(getClassNode.execute(callableObject)));
+    }
+
+    protected static boolean isForeignMethod(Object object) {
+        return object instanceof ForeignMethod;
     }
 }

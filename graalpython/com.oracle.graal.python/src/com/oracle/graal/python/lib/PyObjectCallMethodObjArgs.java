@@ -42,12 +42,12 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,18 +63,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
-
-    /**
-     * Wrapper for bound descriptor cases, just to be able to distinguish them from unbound
-     * callables.
-     */
-    public static class BoundDescriptor {
-        public final Object descriptor;
-
-        public BoundDescriptor(Object descriptor) {
-            this.descriptor = descriptor;
-        }
-    }
 
     public abstract Object execute(Frame frame, Object descriptor, Object receiver, Object receiverType);
 
@@ -97,7 +86,7 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
         return descriptor;
     }
 
-    public static final boolean isMethodDescriptor(Object descriptor) {
+    public static boolean isMethodDescriptor(Object descriptor) {
         return descriptor instanceof BuiltinMethodDescriptor || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction;
     }
 

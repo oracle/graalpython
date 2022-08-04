@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CallTarget;
@@ -677,5 +678,16 @@ public final class PythonUtils {
         } else if (frameToSync.isByte(slot)) {
             target.setByte(slot, frameToSync.getByte(slot));
         }
+    }
+
+    public static TruffleString[] objectArrayToTruffleStringArray(Object[] array, CastToTruffleStringNode cast) {
+        if (array.length == 0) {
+            return EMPTY_TRUFFLESTRING_ARRAY;
+        }
+        TruffleString[] result = new TruffleString[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = cast.execute(array[i]);
+        }
+        return result;
     }
 }
