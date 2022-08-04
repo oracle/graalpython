@@ -222,8 +222,11 @@ class PipUnpackLoader(PipLoader):
                 filename = first_existing(package_name, name_ver_match, dir, suffix)
                 if filename:
                     print("Patching package " + package_name + " using " + filename)
-                    patch_res = subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", filename], cwd=wd)
-                    if patch_res.returncode != 0:
+                    try:
+                        subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", filename], cwd=wd, check=True)
+                    except FileNotFoundError:
+                        print("WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
+                    except subprocess.CalledProcessError:
                         print("Applying GraalPy patch failed for %s. The package may still work." % package_name)
                 elif os.path.isdir(dir):
                     patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(NAME_VER_PATTERN, suffix), f)]
