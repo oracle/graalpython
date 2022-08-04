@@ -1031,33 +1031,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          * cached or uncached nodes.
          */
         if (usingCachedNodes) {
-            return executeCached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop);
+            return executeCached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, false);
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             usingCachedNodes = true;
             Object result = executeUncached(virtualFrame, localFrame, osrNode, initialBci, initialStackTop);
             if (result instanceof InterpreterContinuation) {
                 InterpreterContinuation continuation = (InterpreterContinuation) result;
-                return executeCached(virtualFrame, localFrame, osrNode, continuation.bci, continuation.stackTop);
+                return executeCached(virtualFrame, localFrame, osrNode, continuation.bci, continuation.stackTop, true);
             }
             return result;
         }
     }
 
     @BytecodeInterpreterSwitch
-    private Object executeCached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
-        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, true);
+    private Object executeCached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, boolean fromOSR) {
+        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, true, fromOSR);
     }
 
     @BytecodeInterpreterSwitch
     private Object executeUncached(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop) {
-        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, false);
+        return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, false, false);
     }
 
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
-    private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, boolean useCachedNodes) {
+    private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, boolean useCachedNodes, boolean fromOSR) {
         boolean inCompiledCode = CompilerDirectives.inCompiledCode();
         Object[] arguments = virtualFrame.getArguments();
         Object globals = PArguments.getGlobals(arguments);
@@ -1098,7 +1098,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int pastLine = -1;
         if (threadState.getTraceFun() != null && !threadState.isTracing()) {
             pyFrame = ensurePyFrame(virtualFrame, null);
-            if (initialBci == 0 || isGeneratorOrCoroutine) {
+            // if we are simply continuing to run an OSR loop after the replacememnt, tracing an
+            // extra CALL event would be incorrect
+            if (!fromOSR) {
                 pyFrame.setLocalTraceFun(invokeTraceFunction(threadState.getTraceFun(), null, threadState, virtualFrame, pyFrame, PythonContext.TraceEvent.CALL,
                                 initialBci == 0 ? getFirstLineno() : (pastLine = bciToLine(initialBci))));
             }
@@ -2154,12 +2156,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     pyFrame = ensurePyFrame(virtualFrame, pyFrame);
                     if (pyFrame.getLocalTraceFun() != null) {
                         if (traceGetExceptionTracebackNode == null) {
-                            traceGetExceptionTracebackNode = GetExceptionTracebackNode.create();
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            traceGetExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
                         }
                         Object traceback = traceGetExceptionTracebackNode.execute(pe);
                         pyFrame.setLocalTraceFun(invokeTraceFunction(pyFrame.getLocalTraceFun(),
                                         factory.createTuple(new Object[]{pe.getClass(), pe.setCatchingFrameAndGetEscapedException(virtualFrame, this), traceback}), threadState, virtualFrame, pyFrame,
-                                        PythonContext.TraceEvent.EXCEPTION, -1));
+                                        PythonContext.TraceEvent.EXCEPTION, bciToLine(bci)));
                     }
                 }
 
@@ -2171,7 +2174,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     } else {
                         if (getCaughtExceptionNode == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getCaughtExceptionNode = ExceptionStateNodes.GetCaughtExceptionNode.create();
+                            getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
                         }
                         PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
                         if (exceptionState != null) {
@@ -2224,21 +2227,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private PFrame ensurePyFrame(VirtualFrame virtualFrame, PFrame pyFrame) {
         if (traceMaterializeFrameNode == null) {
-            traceMaterializeFrameNode = MaterializeFrameNode.create();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            traceMaterializeFrameNode = insert(MaterializeFrameNode.create());
         }
         if (pyFrame == null) {
             return traceMaterializeFrameNode.execute(virtualFrame, this, true, true);
         }
         return pyFrame;
     }
-    // TODO: trace with OSR in a generator will create extraneous call events
 
     private Object invokeTraceFunction(Object traceFn, Object arg, PythonContext.PythonThreadState threadState, VirtualFrame virtualFrame, PFrame tracing,
                     PythonContext.TraceEvent event, int line) {
         threadState.tracingStart(event);
         Object nonNullArg = arg == null ? PNone.NONE : arg;
         if (traceCallTernaryMethodNode == null) {
-            traceCallTernaryMethodNode = CallTernaryMethodNode.create();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            traceCallTernaryMethodNode = insert(CallTernaryMethodNode.create());
         }
         try {
             if (line != -1) {

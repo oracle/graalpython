@@ -237,7 +237,7 @@ public final class PythonContext extends Python3Core {
         PThreadState nativeWrapper;
 
         /* Assume that no trace function was ever set. */
-        public Assumption noTracingInThread = Assumption.create("noTracingInThread");
+        public final Assumption noTracingInThread = Assumption.create("noTracingInThread");
 
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
