@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +53,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -57,14 +62,18 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 @CoreFunctions(defineModule = AstModuleBuiltins.J__AST)
-public class AstModuleBuiltins extends PythonBuiltins {
+public final class AstModuleBuiltins extends PythonBuiltins {
 
     static final String J__AST = "_ast";
     static final TruffleString T__AST = tsLiteral(J__AST);
+    static final TruffleString T_AST = tsLiteral("ast");
+    static final TruffleString T__FIELDS = tsLiteral("_fields");
+    static final TruffleString T__ATTRIBUTES = tsLiteral("_attributes");
+
+    private static final int PyCF_ONLY_AST = 0x0400;
+    private static final int PyCF_TYPE_COMMENTS = 0x1000;
+    private static final int PyCF_ALLOW_TOP_LEVEL_AWAIT = 0x2000;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -74,7 +83,15 @@ public class AstModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant("PyCF_ONLY_AST", 0);
+        addBuiltinConstant("PyCF_ONLY_AST", PyCF_ONLY_AST);
+        addBuiltinConstant("PyCF_TYPE_COMMENTS", PyCF_TYPE_COMMENTS);
+        addBuiltinConstant("PyCF_ALLOW_TOP_LEVEL_AWAIT", PyCF_ALLOW_TOP_LEVEL_AWAIT);
+
+        PythonBuiltinClass clsAst = core.lookupType(PythonBuiltinClassType.AST);
+        PTuple emptyTuple = core.factory().createTuple(EMPTY_OBJECT_ARRAY);
+        clsAst.setAttribute(T__FIELDS, emptyTuple);
+        clsAst.setAttribute(T__ATTRIBUTES, emptyTuple);
+        // TODO clsAst.setAttribute('__match_args__', emptyTuple);
     }
 
     @Override

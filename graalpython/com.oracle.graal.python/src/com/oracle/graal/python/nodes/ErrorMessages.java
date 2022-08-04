@@ -828,6 +828,8 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = tsLiteral("type '%s' takes at least one argument");
     public static final TruffleString S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at least %d arguments (%d given)");
     public static final TruffleString S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at most %d arguments (%d given)");
+    public static final TruffleString S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S = tsLiteral("%p constructor takes at most %d positional argument%s");
+    public static final TruffleString P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S = tsLiteral("%p got multiple values for argument '%s'");
     public static final TruffleString RES_O_O_RANGE = tsLiteral("%s result out of range");
     public static final TruffleString FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = tsLiteral("float too large to pack with %s format");
     public static final TruffleString CANNOT_UNPACK_NON_ITERABLE = tsLiteral("cannot unpack non-iterable %p object");
