@@ -474,19 +474,9 @@ static int augment_Number_Check(HPyContext *ctx, HPy obj) {
 static int augment_TypeCheck(HPyContext *ctx, HPy obj, HPy type) {
     uint64_t bits = toBits(obj);
     if (isBoxedInt(bits)) {
-        if (toBits(type) == toBits(ctx->h_LongType)) {
-            return true;
-        }
-        if (toBits(type) == toBits(ctx->h_FloatType)) {
-            return false;
-        }
+        return toBits(type) == toBits(ctx->h_LongType) || toBits(type) == toBits(ctx->h_BaseObjectType);
     } else if (isBoxedDouble(bits)) {
-        if (toBits(type) == toBits(ctx->h_FloatType)) {
-            return true;
-        }
-        if (toBits(type) == toBits(ctx->h_LongType)) {
-            return false;
-        }
+        return toBits(type) == toBits(ctx->h_FloatType) || toBits(type) == toBits(ctx->h_BaseObjectType);
     }
     return original_TypeCheck(ctx, obj, type);
 }
