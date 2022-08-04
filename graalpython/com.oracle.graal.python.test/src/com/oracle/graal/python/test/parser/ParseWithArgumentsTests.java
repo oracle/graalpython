@@ -43,9 +43,6 @@ package com.oracle.graal.python.test.parser;
 import static com.oracle.graal.python.test.PythonTests.ts;
 import static org.junit.Assert.assertEquals;
 
-import com.oracle.graal.python.runtime.PythonOptions;
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -54,11 +51,6 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.source.Source;
 
 public class ParseWithArgumentsTests extends ParserTestBase {
-
-    @Before
-    public void ensureNoBytecodeInterpreter() {
-        Assume.assumeFalse(context.getOption(PythonOptions.EnableBytecodeInterpreter));
-    }
 
     @Test
     public void testSimple01() throws Exception {
