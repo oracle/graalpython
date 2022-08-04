@@ -1415,6 +1415,9 @@ def _python_checkpatchfiles():
             "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0"
         ]
         for line in content.split("\n"):
+            if os.stat(line).st_size == 0:
+                # empty files are just markers and do not need to be license checked
+                continue
             match = patchfile_pattern.search(line)
             if match:
                 package_name = match.group(1)

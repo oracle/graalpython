@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.3.0
+* Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy`, for better integration with other tools.
+* Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
+
 ## Version 22.2.0
 * Updated to HPy version 0.0.4, which adds support for the finished HPy port of Kiwi, and the in-progress ports of Matplotlib and NumPy.
 * Added support for aarch64 on both macOS and Linux.

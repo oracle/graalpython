@@ -1,0 +1,12 @@
+diff --git a/setup.py b/setup.py
+index ba88c733f..e4db40429 100644
+--- a/setup.py
++++ b/setup.py
+@@ -45,6 +45,7 @@
+ 
+ min_cython_ver = "0.28.2"
+ try:
++    raise ImportError
+     import Cython
+ 
+     ver = Cython.__version__
