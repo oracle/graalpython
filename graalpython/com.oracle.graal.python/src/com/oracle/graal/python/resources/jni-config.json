@@ -25,6 +25,8 @@
     {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] },
     {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] },
     {"name":"ctxTupleFromArray","parameterTypes":["long[]", "boolean"] },
+    {"name":"ctxSetItems","parameterTypes":["long", "java.lang.String", "long"] },
+    {"name":"ctxGetItems","parameterTypes":["long", "java.lang.String"] },
     {"name":"ctxGlobalLoad","parameterTypes":["long"] },
     {"name":"ctxGlobalStore","parameterTypes":["long","long"] },
     {"name":"ctxFieldLoad","parameterTypes":["long","long"] },

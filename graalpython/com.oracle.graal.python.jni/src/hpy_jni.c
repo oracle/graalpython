@@ -87,6 +87,8 @@ static JNIEnv* jniEnv;
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
+    UPCALL(SetItems, SIG_HPY SIG_STRING SIG_HPY, SIG_INT) \
+    UPCALL(GetItems, SIG_HPY SIG_STRING, SIG_HPY) \
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
     UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
@@ -539,6 +541,42 @@ void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_fi
     }
 }
 
+static const char* getBoxedPrimitiveName(uint64_t bits) {
+    assert(!isBoxedHandle(bits));
+    if (isBoxedInt(bits)) {
+        return "int";
+    }
+    assert(isBoxedDouble(bits));
+    return "float";
+}
+
+int augment_SetItem_s(HPyContext *ctx, HPy target, const char *name, HPy value) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object does not support item assignment", getBoxedPrimitiveName(bits));
+        HPyErr_SetString(ctx, ctx->h_TypeError, message);
+        return -1;
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
+}
+
+HPy augment_GetItem_s(HPyContext *ctx, HPy target, const char *name) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object is not subscriptable", getBoxedPrimitiveName(bits));
+        return HPyErr_SetString(ctx, ctx->h_TypeError, message);
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -596,6 +634,9 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Is);
 
 #undef AUGMENT
+
+    context->ctx_SetItem_s = augment_SetItem_s;
+    context->ctx_GetItem_s = augment_GetItem_s;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -672,6 +713,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_TRACKER "J"
 #define SIG_JCHARARRAY "[C"
 #define SIG_JLONGARRAY "[J"
+#define SIG_STRING "Ljava/lang/String;"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \

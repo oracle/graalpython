@@ -96,9 +96,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRichcmptFuncArgsCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySelfHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
@@ -228,6 +230,10 @@ public class GraalHPyNodes {
             execute(null, nativeContext, e);
         }
 
+        public static void executeUncached(GraalHPyContext nativeContext, PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(nativeContext, e);
+        }
+
         @Specialization
         static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
@@ -255,6 +261,10 @@ public class GraalHPyNodes {
 
         public final Object raiseWithoutFrame(GraalHPyContext nativeContext, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return execute(null, nativeContext, errorValue, errType, format, arguments);
+        }
+
+        public static int raiseIntUncached(GraalHPyContext nativeContext, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
+            return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(nativeContext, errorValue, errType, format, arguments);
         }
 
         public abstract Object execute(Frame frame, GraalHPyContext nativeContext, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);

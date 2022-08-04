@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
@@ -82,6 +83,11 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1650,6 +1656,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         UpcallDictNew,
         UpcallListNew,
         UpcallTupleFromArray,
+        UpcallGetItemS,
+        UpcallSetItemS,
         UpcallFieldLoad,
         UpcallFieldStore,
         UpcallGlobalLoad,
@@ -1734,6 +1742,48 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
         return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
+    }
+
+
+    // Note: assumes that receiverHandle is not a boxed primitive value
+    @SuppressWarnings("try")
+    public final int ctxSetItems(long receiverHandle, String name, long valueHandle) {
+        increment(Counter.UpcallSetItemS);
+        Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
+        Object value;
+        if (GraalHPyBoxing.isBoxedHandle(valueHandle)) {
+            value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(valueHandle));
+        } else if (GraalHPyBoxing.isBoxedInt(valueHandle)) {
+            value = GraalHPyBoxing.unboxInt(valueHandle);
+        } else if (GraalHPyBoxing.isBoxedDouble(valueHandle)) {
+            value = GraalHPyBoxing.unboxDouble(valueHandle);
+        } else {
+            HPyRaiseNode.raiseIntUncached(this, -1, SystemError, ErrorMessages.HPY_UNEXPECTED_HPY_NULL);
+            return -1;
+        }
+        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            PyObjectSetItem.getUncached().execute(null, receiver, name, value);
+            return 0;
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(this, e);
+            return -1;
+        }
+    }
+
+    // Note: assumes that receiverHandle is not a boxed primitive value
+    @SuppressWarnings("try")
+    public final long ctxGetItems(long receiverHandle, String name) {
+        increment(Counter.UpcallGetItemS);
+        Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
+        TruffleString tsName = toTruffleStringUncached(name);
+        Object result;
+        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            result = PyObjectGetItem.getUncached().execute(null, receiver, tsName);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(this, e);
+            return 0;
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
     }
 
     public long ctxNew(long typeHandle, long dataOutVar) {
@@ -2352,7 +2402,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         createTypeConstant(members, HPyContextMember.H_INDENTATIONERROR, context, PythonBuiltinClassType.IndentationError);
         createTypeConstant(members, HPyContextMember.H_TABERROR, context, PythonBuiltinClassType.TabError);
         createTypeConstant(members, HPyContextMember.H_REFERENCEERROR, context, PythonBuiltinClassType.ReferenceError);
-        createTypeConstant(members, HPyContextMember.H_SYSTEMERROR, context, PythonBuiltinClassType.SystemError);
+        createTypeConstant(members, HPyContextMember.H_SYSTEMERROR, context, SystemError);
         createTypeConstant(members, HPyContextMember.H_SYSTEMEXIT, context, PythonBuiltinClassType.SystemExit);
         createTypeConstant(members, HPyContextMember.H_TYPEERROR, context, PythonBuiltinClassType.TypeError);
         createTypeConstant(members, HPyContextMember.H_UNBOUNDLOCALERROR, context, PythonBuiltinClassType.UnboundLocalError);
