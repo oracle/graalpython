@@ -268,7 +268,21 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     if (bitsA == bitsB) {
         return 1;
     } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
-        return original_Is(ctx, a, b);
+        // This code assumes that objects pointed by a handle <= SINGLETON_HANDLES_MAX
+        // always get that same handle
+        long unboxedA = unboxHandle(bitsA);
+        long unboxedB = unboxHandle(bitsB);
+        if (unboxedA <= SINGLETON_HANDLES_MAX) {
+            return 0;
+        } else if (unboxedB <= SINGLETON_HANDLES_MAX) {
+            return 0;
+        }
+        // This code assumes that space[x] != NULL <=> objects pointed by x has native struct
+        void** space = (void**)ctx->_private;
+        if (space[unboxedA] == NULL && space[unboxedB] == NULL) {
+            return original_Is(ctx, a, b);
+        }
+        return space[unboxedA] == space[unboxedB];
     } else {
         return 0;
     }

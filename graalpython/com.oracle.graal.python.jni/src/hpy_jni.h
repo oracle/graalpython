@@ -62,6 +62,11 @@
 #define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
 #define IMMUTABLE_HANDLES (0x0000000000000100llu)
 
+// Some singleton Python objects are guaranteed to be always represented by
+// those handles, so that we do not have to upcall to unambiguously check if
+// a handle represents one of those
+#define SINGLETON_HANDLES_MAX (3)
+
 #define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
 #define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
 #define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
