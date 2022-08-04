@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import pytest
 from .support import HPyTest, SUPPORTS_SYS_EXECUTABLE, trampoline
 
 
@@ -169,6 +170,7 @@ class TestErr(HPyTest):
 
             assert err.value.errno == errno.EINVAL
 
+    @pytest.mark.skip(reason="GR-40178")
     def test_HPyErr_SetFromErrnoWithFilenameObjects(self):
         import pytest
         import errno
@@ -206,6 +208,7 @@ class TestErr(HPyTest):
         assert err.value.filename == file1
         assert err.value.filename2 == file2
 
+    @pytest.mark.skip(reason="GR-40178")
     def test_HPyErr_SetFromErrnoWithFilename(self):
         import pytest
         import errno

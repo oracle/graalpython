@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import pytest
 from .support import HPyTest
 
 class TestUnicode(HPyTest):
@@ -162,6 +163,7 @@ class TestUnicode(HPyTest):
         assert mod.g(b'A'.decode('utf-8')) == ord('A')
         assert mod.g(b'A\0'.decode('utf-8')) == ord('A')
 
+    @pytest.mark.skip(reason="GR-40178")
     def test_DecodeLatin1(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
