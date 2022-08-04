@@ -80,7 +80,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             if (arguments.length == 0 || keywords.length != 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new VarargsBuiltinDirectInvocationNotSupported();
+                throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
             }
             if (splitArgsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

@@ -40,12 +40,16 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -128,7 +132,15 @@ public class ErrorMessageFormatter {
 
     @TruffleBoundary
     private static String getMessage(Throwable exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
+        String message = exception.getClass().getSimpleName() + ": " + exception.getMessage();
+        if (PythonOptions.isWithJavaStacktrace(PythonLanguage.get(null))) {
+            StringWriter writer = new StringWriter();
+            try (PrintWriter pw = new PrintWriter(writer)) {
+                exception.printStackTrace(pw);
+            }
+            message += "\n\nJava stack trace:\n" + writer;
+        }
+        return message;
     }
 
     private static String getClassName(Object obj) {

@@ -212,7 +212,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 return socket(arguments[0]);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new VarargsBuiltinDirectInvocationNotSupported();
+            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
         }
     }
 

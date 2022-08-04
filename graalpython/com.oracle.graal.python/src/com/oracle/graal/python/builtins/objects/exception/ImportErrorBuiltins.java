@@ -118,7 +118,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new VarargsBuiltinDirectInvocationNotSupported();
+                throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
             }
             if (splitArgsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
