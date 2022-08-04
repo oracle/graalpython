@@ -47,11 +47,18 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.GetNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -149,11 +156,11 @@ public final class ObjectHashMap {
         indices[compactIndex] = indices[compactIndex] | COLLISION_MASK;
     }
 
-    private boolean isCollision(int index) {
+    private static boolean isCollision(int index) {
         return (index & COLLISION_MASK) != 0;
     }
 
-    private int unwrapIndex(int value) {
+    private static int unwrapIndex(int value) {
         return value & ~COLLISION_MASK;
     }
 
@@ -498,57 +505,75 @@ public final class ObjectHashMap {
         return size;
     }
 
-    public Object get(VirtualFrame frame, DictKey key, GetProfiles profiles) {
-        return get(frame, key.getValue(), key.getPythonHash(), profiles);
-    }
-
-    public Object get(VirtualFrame frame, Object key, long keyHash, GetProfiles profiles) {
-        assert checkInternalState();
-        int compactIndex = getIndex(keyHash);
-        int index = indices[compactIndex];
-        if (profiles.foundNullKey.profile(index == EMPTY_INDEX)) {
-            return null;
+    @GenerateUncached
+    public abstract static class GetNode extends Node {
+        public final Object get(ThreadState state, ObjectHashMap map, DictKey key) {
+            return execute(state, map, key.getValue(), key.getPythonHash());
         }
-        if (profiles.foundSameHashKey.profile(index != DUMMY_INDEX)) {
-            int unwrappedIndex = unwrapIndex(index);
-            Object foundValue = getValue(unwrappedIndex);
-            if (profiles.foundEqKey.profile(keysEqual(frame, unwrappedIndex, key, keyHash, profiles))) {
-                return foundValue;
-            } else if (!isCollision(index)) {
+
+        public final Object get(ThreadState state, ObjectHashMap map, Object key, long keyHash) {
+            return execute(state, map, key, keyHash);
+        }
+
+        abstract Object execute(ThreadState state, ObjectHashMap map, Object key, long keyHash);
+
+        // "public" for testing...
+        @Specialization
+        public static Object doGet(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+                            @Cached("createCountingProfile()") ConditionProfile foundNullKey,
+                            @Cached("createCountingProfile()") ConditionProfile foundSameHashKey,
+                            @Cached("createCountingProfile()") ConditionProfile foundEqKey,
+                            @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
+                            @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                            @Cached ConditionProfile hasState,
+                            @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            assert map.checkInternalState();
+            int compactIndex = map.getIndex(keyHash);
+            int index = map.indices[compactIndex];
+            if (foundNullKey.profile(index == EMPTY_INDEX)) {
                 return null;
             }
-        }
-
-        // collision: intentionally counted loop
-        long perturb = keyHash;
-        int searchLimit = getBucketsCount() + PERTURB_SHIFTS_COUT;
-        int i = 0;
-        try {
-            for (; i < searchLimit; i++) {
-                perturb >>>= PERTURB_SHIFT;
-                compactIndex = nextIndex(compactIndex, perturb);
-                index = indices[compactIndex];
-                if (profiles.collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                    return null;
-                }
-                if (index != DUMMY_INDEX) {
-                    int unwrappedIndex = unwrapIndex(index);
-                    Object foundValue = getValue(unwrappedIndex);
-                    if (profiles.collisionFoundEqKey.profile(keysEqual(frame, unwrappedIndex, key, keyHash, profiles))) {
-                        return foundValue;
-                    }
-                }
-                if (!isCollision(index)) {
+            if (foundSameHashKey.profile(index != DUMMY_INDEX)) {
+                int unwrappedIndex = unwrapIndex(index);
+                Object foundValue = map.getValue(unwrappedIndex);
+                if (foundEqKey.profile(map.keysEqual(state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                    return foundValue;
+                } else if (!isCollision(index)) {
                     return null;
                 }
             }
-        } finally {
-            LoopNode.reportLoopCount(profiles, i);
+
+            // collision: intentionally counted loop
+            long perturb = keyHash;
+            int searchLimit = map.getBucketsCount() + PERTURB_SHIFTS_COUT;
+            int i = 0;
+            try {
+                for (; i < searchLimit; i++) {
+                    perturb >>>= PERTURB_SHIFT;
+                    compactIndex = map.nextIndex(compactIndex, perturb);
+                    index = map.indices[compactIndex];
+                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
+                        return null;
+                    }
+                    if (index != DUMMY_INDEX) {
+                        int unwrappedIndex = unwrapIndex(index);
+                        Object foundValue = map.getValue(unwrappedIndex);
+                        if (collisionFoundEqKey.profile(map.keysEqual(state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                            return foundValue;
+                        }
+                    }
+                    if (!isCollision(index)) {
+                        return null;
+                    }
+                }
+            } finally {
+                LoopNode.reportLoopCount(eqNode, i);
+            }
+            // all values are dummies? Not possible, since we should have compacted the
+            // hashes/keysAndValues arrays in "remove". We always keep some head-room, so there must be
+            // at least few empty slots, and we must have hit one.
+            throw CompilerDirectives.shouldNotReachHere();
         }
-        // all values are dummies? Not possible, since we should have compacted the
-        // hashes/keysAndValues arrays in "remove". We always keep some head-room, so there must be
-        // at least few empty slots, and we must have hit one.
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     public void put(VirtualFrame frame, DictKey key, Object value, PutProfiles profiles) {
@@ -716,11 +741,16 @@ public final class ObjectHashMap {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    private boolean keysEqual(VirtualFrame frame, int index, Object key, long keyHash, GetProfiles profiles) {
+    private boolean keysEqual(Frame frame, int index, Object key, long keyHash, GetProfiles profiles) {
         return hashes[index] == keyHash && profiles.eqNode.execute(frame, getKey(index), key);
     }
 
-    private boolean keysEqual(VirtualFrame frame, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode) {
+    private boolean keysEqual(Frame frame, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode) {
+        return hashes[index] == keyHash && eqNode.execute(frame, getKey(index), key);
+    }
+
+    private boolean keysEqual(ThreadState state, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode, ConditionProfile hasState) {
+        VirtualFrame frame = hasState.profile(state == null) ? null : PArguments.frameForCall(state);
         return hashes[index] == keyHash && eqNode.execute(frame, getKey(index), key);
     }
 

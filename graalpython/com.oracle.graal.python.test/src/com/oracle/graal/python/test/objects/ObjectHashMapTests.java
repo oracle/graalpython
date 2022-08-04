@@ -55,6 +55,7 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -173,14 +174,14 @@ public class ObjectHashMapTests {
         assertEquals(map.size(), copy.size());
         for (Object key : oldKeys) {
             assertEquals(key.toString(), //
-                            map.get(null, key, getKeyHash(key), GET_PROFILES), //
-                            copy.get(null, key, getKeyHash(key), GET_PROFILES));
+                            get(map, key, getKeyHash(key)), //
+                            get(copy, key, getKeyHash(key)));
         }
 
         map.clear();
         assertEquals(0, map.size());
         for (Object key : oldKeys) {
-            assertNull(key.toString(), map.get(null, key, getKeyHash(key), GET_PROFILES));
+            assertNull(key.toString(), get(map, key, getKeyHash(key)));
         }
     }
 
@@ -214,7 +215,7 @@ public class ObjectHashMapTests {
         }
         for (Long key : keys) {
             map.remove(null, key, PyObjectHashNode.hash(key), RM_PROFILES);
-            assertNull(map.get(null, key, PyObjectHashNode.hash(key), GET_PROFILES));
+            assertNull(get(map, key, PyObjectHashNode.hash(key)));
         }
     }
 
@@ -276,7 +277,7 @@ public class ObjectHashMapTests {
             assertEquals(message + "; hash in DictKey: " + key, hash, it.getKey().getPythonHash());
 
             Object expectedVal = expected.get(key);
-            Object actualVal = actual.get(null, key, hash, GET_PROFILES);
+            Object actualVal = get(actual, key, hash);
             assertEquals(message + "; value under key: " + key, expectedVal, actualVal);
             assertEquals(message + "; value in DictKey: " + key, expectedVal, it.getValue());
 
@@ -316,5 +317,12 @@ public class ObjectHashMapTests {
 
     private static long getKeyHash(Object key) {
         return key instanceof Long ? PyObjectHashNode.hash((Long) key) : ((DictKey) key).hash;
+    }
+    
+    private static Object get(ObjectHashMap map, Object key, long hash) {
+        return ObjectHashMap.GetNode.doGet(null, map, key, hash,//
+                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),// 
+                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
+                new EqNodeStub());
     }
 }
