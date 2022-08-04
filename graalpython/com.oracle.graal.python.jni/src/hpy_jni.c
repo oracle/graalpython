@@ -260,6 +260,7 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+static HPy (*original_Type)(HPyContext *, HPy);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     long bitsA = toBits(a);
@@ -577,6 +578,17 @@ HPy augment_GetItem_s(HPyContext *ctx, HPy target, const char *name) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
 }
 
+HPy augment_Type(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return ctx->h_LongType;
+    } else if (isBoxedDouble(bits)) {
+        return ctx->h_FloatType;
+    } else {
+        return original_Type(ctx, h);
+    }
+}
+
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
@@ -632,6 +644,8 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Field_Store);
 
     AUGMENT(Is);
+
+    AUGMENT(Type);
 
 #undef AUGMENT
 
