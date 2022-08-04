@@ -47,7 +47,6 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.GetNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -520,13 +519,13 @@ public final class ObjectHashMap {
         // "public" for testing...
         @Specialization
         public static Object doGet(ThreadState state, ObjectHashMap map, Object key, long keyHash,
-                            @Cached("createCountingProfile()") ConditionProfile foundNullKey,
-                            @Cached("createCountingProfile()") ConditionProfile foundSameHashKey,
-                            @Cached("createCountingProfile()") ConditionProfile foundEqKey,
-                            @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
-                            @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
-                            @Cached ConditionProfile hasState,
-                            @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
+                        @Cached("createCountingProfile()") ConditionProfile foundSameHashKey,
+                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                        @Cached ConditionProfile hasState,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             assert map.checkInternalState();
             int compactIndex = map.getIndex(keyHash);
             int index = map.indices[compactIndex];
@@ -570,8 +569,78 @@ public final class ObjectHashMap {
                 LoopNode.reportLoopCount(eqNode, i);
             }
             // all values are dummies? Not possible, since we should have compacted the
-            // hashes/keysAndValues arrays in "remove". We always keep some head-room, so there must be
-            // at least few empty slots, and we must have hit one.
+            // hashes/keysAndValues arrays in "remove". We always keep some head-room, so there must
+            // be at least few empty slots, and we must have hit one.
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class PutNode extends Node {
+        public final void put(ThreadState state, ObjectHashMap map, DictKey key, Object value) {
+            execute(state, map, key.getValue(), key.getPythonHash(), value);
+        }
+
+        public final void put(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value) {
+            execute(state, map, key, keyHash, value);
+        }
+
+        abstract void execute(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value);
+
+        @Specialization
+        public static void doPut(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value,
+                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
+                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                        @Cached BranchProfile rehash1Profile,
+                        @Cached BranchProfile rehash2Profile,
+                        @Cached ConditionProfile hasState,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            assert map.checkInternalState();
+
+            int compactIndex = map.getIndex(keyHash);
+            int index = map.indices[compactIndex];
+            if (foundNullKey.profile(index == EMPTY_INDEX)) {
+                map.putInNewSlot(rehash1Profile, key, keyHash, value, compactIndex);
+                return;
+            }
+
+            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(state, unwrapIndex(index), key, keyHash, eqNode, hasState))) {
+                // we found the key, override the value, Python does not override the key though
+                map.setValue(unwrapIndex(index), value);
+                return;
+            }
+
+            // collision
+            map.markCollision(compactIndex);
+            long perturb = keyHash;
+            int searchLimit = map.getBucketsCount() + PERTURB_SHIFTS_COUT;
+            int i = 0;
+            try {
+                for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
+                    perturb >>>= PERTURB_SHIFT;
+                    compactIndex = map.nextIndex(compactIndex, perturb);
+                    index = map.indices[compactIndex];
+                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
+                        map.putInNewSlot(rehash2Profile, key, keyHash, value, compactIndex);
+                        return;
+                    }
+                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(state, unwrapIndex(index), key, keyHash, eqNode, hasState))) {
+                        // we found the key, override the value, Python does not override the key
+                        // though
+                        map.setValue(unwrapIndex(index), value);
+                        return;
+                    }
+                    map.markCollision(compactIndex);
+                }
+            } finally {
+                LoopNode.reportLoopCount(eqNode, i);
+            }
+            // all values are dummies? Not possible, since we should have compacted the
+            // hashes/keysAndValues arrays in "remove". Also, there must be an unused slot
+            // available, because we checked at the beginning that we have at least ~1/4 of space
+            // left
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
@@ -592,7 +661,7 @@ public final class ObjectHashMap {
         int compactIndex = getIndex(keyHash);
         int index = indices[compactIndex];
         if (profiles.foundNullKey.profile(index == EMPTY_INDEX)) {
-            putInNewSlot(canRehash, profiles.rehash1Profile, key, keyHash, value, compactIndex);
+            putInNewSlot(profiles.rehash1Profile, key, keyHash, value, compactIndex);
             return;
         }
 
@@ -613,7 +682,7 @@ public final class ObjectHashMap {
                 compactIndex = nextIndex(compactIndex, perturb);
                 index = indices[compactIndex];
                 if (profiles.collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                    putInNewSlot(canRehash, profiles.rehash2Profile, key, keyHash, value, compactIndex);
+                    putInNewSlot(profiles.rehash2Profile, key, keyHash, value, compactIndex);
                     return;
                 }
                 if (profiles.collisionFoundEqKey.profile(index != DUMMY_INDEX && keysEqual(frame, unwrapIndex(index), key, keyHash, eqNode))) {
@@ -662,13 +731,11 @@ public final class ObjectHashMap {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    private void putInNewSlot(boolean canRehash, BranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
-        if (canRehash) {
-            if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsResize())) {
-                rehashProfile.enter();
-                rehashAndPut(key, keyHash, value);
-                return;
-            }
+    private void putInNewSlot(BranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
+        if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsResize())) {
+            rehashProfile.enter();
+            rehashAndPut(key, keyHash, value);
+            return;
         }
         putInNewSlot(key, keyHash, value, compactIndex);
     }
