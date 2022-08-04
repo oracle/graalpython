@@ -978,11 +978,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
                 throw raise(NotImplementedError, ErrorMessages.SETTRACE_NOT_IMPLEMENTED);
             }
-            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+            PythonLanguage language = getLanguage();
+            PythonContext.PythonThreadState state = ctx.getThreadState(language);
             if (function == PNone.NONE) {
-                state.setTraceFun(null);
+                state.setTraceFun(null, language);
             } else {
-                state.setTraceFun(function);
+                state.setTraceFun(function, language);
             }
             return PNone.NONE;
         }

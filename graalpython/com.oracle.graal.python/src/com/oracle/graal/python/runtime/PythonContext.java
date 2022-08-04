@@ -236,9 +236,6 @@ public final class PythonContext extends Python3Core {
          */
         PThreadState nativeWrapper;
 
-        /* Assume that no trace function was ever set. */
-        public final Assumption noTracingInThread = Assumption.create("noTracingInThread");
-
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
 
@@ -345,12 +342,12 @@ public final class PythonContext extends Python3Core {
         }
 
         public Object getTraceFun() {
-            return noTracingInThread.isValid() ? null : traceFun;
+            return traceFun;
         }
 
-        public void setTraceFun(Object traceFun) {
+        public void setTraceFun(Object traceFun, PythonLanguage language) {
             if (this.traceFun != traceFun) {
-                noTracingInThread.invalidate();
+                language.noTracingAssumption.invalidate();
                 this.traceFun = traceFun;
             }
         }
