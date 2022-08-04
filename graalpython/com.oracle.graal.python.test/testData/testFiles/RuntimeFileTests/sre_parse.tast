@@ -114,8 +114,16 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                 GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [790,1066]`ESCAPES = {↵    r"\a...`
         Identifier: ESCAPES
-        FixedDictLiteralNodeGen SourceSection: [800,1066]`{↵    r"\a": (LITERA...`
+        DynamicDictLiteralNodeGen SourceSection: [800,1066]`{↵    r"\a": (LITERA...`
           PythonObjectFactoryNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [806,811]`r"\a"`
+          StringLiteralNode SourceSection: [839,844]`r"\b"`
+          StringLiteralNode SourceSection: [872,877]`r"\f"`
+          StringLiteralNode SourceSection: [905,910]`r"\n"`
+          StringLiteralNode SourceSection: [938,943]`r"\r"`
+          StringLiteralNode SourceSection: [971,976]`r"\t"`
+          StringLiteralNode SourceSection: [1004,1009]`r"\v"`
+          StringLiteralNode SourceSection: [1037,1042]`r"\\"`
           TupleLiteralNode SourceSection: [813,833]`(LITERAL, ord("\a"))...`
             ReadNameNodeGen SourceSection: [814,821]`LITERAL`
               Identifier: LITERAL
@@ -220,10 +228,28 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                   GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [1058,1062]`"\\"`
             PythonObjectFactoryNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1068,1544]`CATEGORIES = {↵    r...`
         Identifier: CATEGORIES
-        FixedDictLiteralNodeGen SourceSection: [1081,1544]`{↵    r"\A": (AT, AT...`
+        DynamicDictLiteralNodeGen SourceSection: [1081,1544]`{↵    r"\A": (AT, AT...`
           PythonObjectFactoryNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [1087,1092]`r"\A"`
+          StringLiteralNode SourceSection: [1143,1148]`r"\b"`
+          StringLiteralNode SourceSection: [1173,1178]`r"\B"`
+          StringLiteralNode SourceSection: [1207,1212]`r"\d"`
+          StringLiteralNode SourceSection: [1254,1259]`r"\D"`
+          StringLiteralNode SourceSection: [1305,1310]`r"\s"`
+          StringLiteralNode SourceSection: [1352,1357]`r"\S"`
+          StringLiteralNode SourceSection: [1403,1408]`r"\w"`
+          StringLiteralNode SourceSection: [1449,1454]`r"\W"`
+          StringLiteralNode SourceSection: [1499,1504]`r"\Z"`
           TupleLiteralNode SourceSection: [1094,1119]`(AT, AT_BEGINNING_ST...`
             ReadNameNodeGen SourceSection: [1095,1097]`AT`
               Identifier: AT
@@ -372,10 +398,28 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
               IsBuiltinClassProfile SourceSection: None
                 GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1546,1813]`FLAGS = {↵    # stan...`
         Identifier: FLAGS
-        FixedDictLiteralNodeGen SourceSection: [1554,1813]`{↵    # standard fla...`
+        DynamicDictLiteralNodeGen SourceSection: [1554,1813]`{↵    # standard fla...`
           PythonObjectFactoryNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [1581,1584]`"i"`
+          StringLiteralNode SourceSection: [1611,1614]`"L"`
+          StringLiteralNode SourceSection: [1637,1640]`"m"`
+          StringLiteralNode SourceSection: [1666,1669]`"s"`
+          StringLiteralNode SourceSection: [1692,1695]`"x"`
+          StringLiteralNode SourceSection: [1736,1739]`"a"`
+          StringLiteralNode SourceSection: [1761,1764]`"t"`
+          StringLiteralNode SourceSection: [1789,1792]`"u"`
           ReadNameNodeGen SourceSection: [1586,1605]`SRE_FLAG_IGNORECASE`
             Identifier: SRE_FLAG_IGNORECASE
             IsBuiltinClassProfile SourceSection: None
@@ -408,6 +452,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             Identifier: SRE_FLAG_UNICODE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1815,1879]`TYPE_FLAGS = SRE_FLA...`
         Identifier: TYPE_FLAGS
         BitOrNodeGen SourceSection: [1828,1879]`SRE_FLAG_ASCII | SRE...`

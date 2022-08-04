@@ -1,8 +1,0 @@
-Module[0, 15]
-    NamedExpr[1, 14]
-        Target: Name[1, 4] Value: "loc" Store
-        Value: 
-            Tuple[8, 14]
-                Values:
-                    LONG[9, 10] Value: 1
-                    LONG[12, 13] Value: 2

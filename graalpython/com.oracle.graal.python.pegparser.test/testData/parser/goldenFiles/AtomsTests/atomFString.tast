@@ -1,7 +1,0 @@
-Module[0, 9]
-    JoinedStr[0, 9]
-         Values:
-            RAW[2, 3] Value: "a"
-            FormattedValue[4, 7]
-                Value: Name[1, 2] Value: "b"
-                Conversion: 114

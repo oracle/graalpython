@@ -96,8 +96,13 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
       SideEffect:
         WriteNameNodeGen SourceSection: [0,48]`dict1 = {'a': 1, 'b'...`
           Identifier: dict1
-          FixedDictLiteralNodeGen SourceSection: [8,48]`{'a': 1, 'b': 2, 'c'...`
+          DynamicDictLiteralNodeGen SourceSection: [8,48]`{'a': 1, 'b': 2, 'c'...`
             PythonObjectFactoryNodeGen SourceSection: None
+            StringLiteralNode SourceSection: [9,12]`'a'`
+            StringLiteralNode SourceSection: [17,20]`'b'`
+            StringLiteralNode SourceSection: [25,28]`'c'`
+            StringLiteralNode SourceSection: [33,36]`'d'`
+            StringLiteralNode SourceSection: [41,44]`'e'`
             IntegerLiteralNode SourceSection: [14,15]`1`
               Value: 1
             IntegerLiteralNode SourceSection: [22,23]`2`
@@ -108,3 +113,8 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
               Value: 4
             IntegerLiteralNode SourceSection: [46,47]`5`
               Value: 5
+            CachedDispatchFirst SourceSection: None
+            CachedDispatchFirst SourceSection: None
+            CachedDispatchFirst SourceSection: None
+            CachedDispatchFirst SourceSection: None
+            CachedDispatchFirst SourceSection: None

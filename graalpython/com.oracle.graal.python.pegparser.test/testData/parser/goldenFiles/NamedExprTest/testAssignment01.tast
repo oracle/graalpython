@@ -1,4 +1,0 @@
-Module[0, 9]
-    NamedExpr[1, 8]
-        Target: Name[1, 2] Value: "a" Store
-        Value: LONG[6, 8] Value: 10
