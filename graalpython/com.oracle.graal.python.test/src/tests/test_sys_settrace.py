@@ -115,27 +115,28 @@ def gen(): # line -5
 
 
 def generator_example():
-    for i in gen():
-        str(i)
-    return i
+    x, m = gen(), {}
+    while m.setdefault('i', next(x, False)): # this prevents CPython from tracing a StopIteration once gen() ends
+        del m['i']
+    return m['i']
 
 generator_example.events = [((), [(0, 'generator_example', 'call', None),
                                   (1, 'generator_example', 'line', None),
+                                  (2, 'generator_example', 'line', None),
                                   (-5, 'gen', 'call', None),
                                   (-4, 'gen', 'line', None),
                                   (-4, 'gen', 'return', 1),
+                                  (3, 'generator_example', 'line', None),
                                   (2, 'generator_example', 'line', None),
-                                  (1, 'generator_example', 'line', None),
                                   (-4, 'gen', 'call', None),
                                   (-3, 'gen', 'line', None),
                                   (-3, 'gen', 'return', 2),
+                                  (3, 'generator_example', 'line', None),
                                   (2, 'generator_example', 'line', None),
-                                  (1, 'generator_example', 'line', None),
                                   (-3, 'gen', 'call', None),
                                   (-3, 'gen', 'return', None),
-                                  (1, 'generator_example', 'exception', StopIteration),
-                                  (3, 'generator_example', 'line', None),
-                                  (3, 'generator_example', 'return', 2)])]
+                                  (4, 'generator_example', 'line', None),
+                                  (4, 'generator_example', 'return', False)])]
 
 def make_test_method(fun, name):
     def test_case(self):
