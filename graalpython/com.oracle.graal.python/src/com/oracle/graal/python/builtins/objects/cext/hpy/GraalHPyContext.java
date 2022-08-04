@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransf
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
+import com.oracle.truffle.api.dsl.Fallback;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -296,7 +297,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
@@ -902,7 +902,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static final int IMMUTABLE_HANDLE_COUNT = 256;
 
-    private Object[] hpyHandleTable = new Object[]{GraalHPyHandle.NULL_HANDLE_DELEGATE};
+    private Object[] hpyHandleTable;
     private int nextHandle = 1;
 
     private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
@@ -932,6 +932,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private boolean debugMode;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
+
+    /**
+     * Few well known Python objects that are also HPyContext constants are guaranteed to always get
+     * the same handle.
+     */
+    static final int SINGLETON_HANDLE_NONE = 1;
+    static final int SINGLETON_HANDLE_NOT_IMPLEMENTED = 2;
+    static final int SINGLETON_HANDLE_ELIPSIS = 3;
 
     /** the native type ID of C struct 'HPyContext' */
     @CompilationFinal private Object hpyContextNativeTypeID;
@@ -972,20 +980,29 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         int traceJNISleepTime = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
         traceJNIUpcalls = traceJNISleepTime != 0;
         this.slowPathFactory = context.factory();
+        nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
+        hpyHandleTable = new Object[IMMUTABLE_HANDLE_COUNT * 2];
+        hpyHandleTable[0] = GraalHPyHandle.NULL_HANDLE_DELEGATE;
+        // createMembers already assigns numeric handles to "singletons"
         this.hpyContextMembers = createMembers(context, T_NAME, traceJNIUpcalls);
+        // This will assign handles to the remaining context constants
         for (Object member : hpyContextMembers) {
             if (member instanceof GraalHPyHandle) {
                 GraalHPyHandle handle = (GraalHPyHandle) member;
-                int id = handle.getId(this, ConditionProfile.getUncached());
+                int id = handle.getIdUncached(this);
                 assert id > 0 && id < IMMUTABLE_HANDLE_COUNT;
-
+                assert id > GraalHPyBoxing.SINGLETON_HANDLE_MAX ||
+                                getHPyHandleForObject(handle.getDelegate()) == id;
             }
         }
-        hpyHandleTable = Arrays.copyOf(hpyHandleTable, IMMUTABLE_HANDLE_COUNT * 2);
         nextHandle = IMMUTABLE_HANDLE_COUNT;
         if (traceJNIUpcalls) {
             startUpcallsDaemon(traceJNISleepTime);
         }
+
+        assert getHPyHandleForObject(PNone.NONE) == SINGLETON_HANDLE_NONE;
+        assert getHPyHandleForObject(PEllipsis.INSTANCE) == SINGLETON_HANDLE_ELIPSIS;
+        assert getHPyHandleForObject(PNotImplemented.NOT_IMPLEMENTED) == SINGLETON_HANDLE_NOT_IMPLEMENTED;
     }
 
     public PythonObjectSlowPathFactory getSlowPathFactory() {
@@ -1744,7 +1761,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
     }
 
-
     // Note: assumes that receiverHandle is not a boxed primitive value
     @SuppressWarnings("try")
     public final int ctxSetItems(long receiverHandle, String name, long valueHandle) {
@@ -2363,17 +2379,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return memberInvokeLib.execute(member, args);
     }
 
-    private static Object[] createMembers(PythonContext context, TruffleString name, boolean traceJNIUpcalls) {
+    private Object[] createMembers(PythonContext context, TruffleString name, boolean traceJNIUpcalls) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
-        createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
+        createSingletonConstant(members, HPyContextMember.H_NONE, PNone.NONE, SINGLETON_HANDLE_NONE);
         createConstant(members, HPyContextMember.H_TRUE, context.getTrue());
         createConstant(members, HPyContextMember.H_FALSE, context.getFalse());
-        createConstant(members, HPyContextMember.H_NOTIMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED);
-        createConstant(members, HPyContextMember.H_ELLIPSIS, PEllipsis.INSTANCE);
+        createSingletonConstant(members, HPyContextMember.H_NOTIMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED, SINGLETON_HANDLE_NOT_IMPLEMENTED);
+        createSingletonConstant(members, HPyContextMember.H_ELLIPSIS, PEllipsis.INSTANCE, SINGLETON_HANDLE_ELIPSIS);
 
         createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, context, PythonBuiltinClassType.PBaseException);
         createTypeConstant(members, HPyContextMember.H_EXCEPTION, context, PythonBuiltinClassType.Exception);
@@ -2731,6 +2747,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[member.ordinal()] = GraalHPyHandle.create(value);
     }
 
+    private void createSingletonConstant(Object[] members, HPyContextMember member, Object value, int handle) {
+        GraalHPyHandle graalHandle = GraalHPyHandle.createSingleton(value, handle);
+        members[member.ordinal()] = graalHandle;
+        hpyHandleTable[handle] = value;
+    }
+
     private static void createTypeConstant(Object[] members, HPyContextMember member, Python3Core core, PythonBuiltinClassType value) {
         members[member.ordinal()] = GraalHPyHandle.create(core.lookupType(value));
     }
@@ -2796,6 +2818,21 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public int getHPyHandleForObject(Object object) {
         assert !(object instanceof GraalHPyHandle);
+        int singletonHandle = getHPyHandleForSingleton(object);
+        if (singletonHandle != -1) {
+            return singletonHandle;
+        }
+        return getHPyHandleForNonSingleton(object);
+    }
+
+    public static int getHPyHandleForSingleton(Object object) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert !(object instanceof GraalHPyHandle);
+        return GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen.getUncached().execute(object);
+    }
+
+    public int getHPyHandleForNonSingleton(Object object) {
+        assert !(object instanceof GraalHPyHandle);
         // find free association
 
         int handle = freeStack.pop();
@@ -2819,6 +2856,32 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             LOGGER.finer(PythonUtils.formatJString("allocating HPy handle %d (object: %s)", handle, object));
         }
         return handle;
+    }
+
+    @GenerateUncached
+    public abstract static class GetHPyHandleForSingleton extends Node {
+        public abstract int execute(Object delegateObject);
+
+        @Specialization
+        static int doNone(PNone x) {
+            assert x == PNone.NONE;
+            return SINGLETON_HANDLE_NONE;
+        }
+
+        @Specialization
+        static int doElipsis(PEllipsis x) {
+            return SINGLETON_HANDLE_ELIPSIS;
+        }
+
+        @Specialization
+        static int doNotImplemented(PNotImplemented x) {
+            return SINGLETON_HANDLE_NOT_IMPLEMENTED;
+        }
+
+        @Fallback
+        static int doOthers(@SuppressWarnings("unused") Object delegate) {
+            return -1;
+        }
     }
 
     @TruffleBoundary
