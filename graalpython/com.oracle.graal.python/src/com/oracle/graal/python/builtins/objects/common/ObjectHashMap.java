@@ -702,63 +702,78 @@ public final class ObjectHashMap {
         return dummyCnt > quarterOfUsable;
     }
 
-    public void remove(VirtualFrame frame, Object key, long keyHash, RemoveProfiles profiles) {
-        assert checkInternalState();
-        if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsCompaction())) {
-            profiles.compactProfile.enter();
-            compact();
-        }
-        // Note: CPython is not shrinking the capacity of the hash table on delete, we do the same
-        int compactIndex = getIndex(keyHash);
-        int index = indices[compactIndex];
-        if (profiles.foundNullKey.profile(index == EMPTY_INDEX)) {
-            return; // not found
+
+    @GenerateUncached
+    public abstract static class RemoveNode extends Node {
+        public final void remove(ThreadState state, ObjectHashMap map, DictKey key) {
+            execute(state, map, key.getValue(), key.getPythonHash());
         }
 
-        int unwrappedIndex = unwrapIndex(index);
-        if (profiles.foundEqKey.profile(index != DUMMY_INDEX && keysEqual(frame, unwrappedIndex, key, keyHash, profiles))) {
-            indices[compactIndex] = DUMMY_INDEX;
-            setValue(unwrappedIndex, null);
-            setKey(unwrappedIndex, null);
-            size--;
-            return;
+        public final void remove(ThreadState state, ObjectHashMap map, Object key, long keyHash) {
+            execute(state, map, key, keyHash);
         }
 
-        // collision: intentionally counted loop
-        long perturb = keyHash;
-        int searchLimit = getBucketsCount() + PERTURB_SHIFTS_COUT;
-        int i = 0;
-        try {
-            for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
-                perturb >>>= PERTURB_SHIFT;
-                compactIndex = nextIndex(compactIndex, perturb);
-                index = indices[compactIndex];
-                if (profiles.collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                    return; // not found
-                }
-                unwrappedIndex = unwrapIndex(index);
-                if (profiles.collisionFoundEqKey.profile(index != DUMMY_INDEX && keysEqual(frame, unwrappedIndex, key, keyHash, profiles))) {
-                    indices[compactIndex] = DUMMY_INDEX;
-                    setValue(unwrappedIndex, null);
-                    setKey(unwrappedIndex, null);
-                    size--;
-                    return;
-                }
+        abstract void execute(ThreadState state, ObjectHashMap map, Object key, long keyHash);
+
+        // "public" for testing...
+        @Specialization
+        public static void doRemove(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+                                   @Cached("createCountingProfile()") ConditionProfile foundNullKey,
+                                   @Cached("createCountingProfile()") ConditionProfile foundEqKey,
+                                   @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
+                                   @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                                   @Cached BranchProfile compactProfile,
+                                   @Cached ConditionProfile hasState,
+                                   @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            assert map.checkInternalState();
+            if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, map.needsCompaction())) {
+                compactProfile.enter();
+                map.compact();
             }
-        } finally {
-            LoopNode.reportLoopCount(profiles, i);
+            // Note: CPython is not shrinking the capacity of the hash table on delete, we do the same
+            int compactIndex = map.getIndex(keyHash);
+            int index = map.indices[compactIndex];
+            if (foundNullKey.profile(index == EMPTY_INDEX)) {
+                return; // not found
+            }
+
+            int unwrappedIndex = unwrapIndex(index);
+            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                map.indices[compactIndex] = DUMMY_INDEX;
+                map.setValue(unwrappedIndex, null);
+                map.setKey(unwrappedIndex, null);
+                map.size--;
+                return;
+            }
+
+            // collision: intentionally counted loop
+            long perturb = keyHash;
+            int searchLimit = map.getBucketsCount() + PERTURB_SHIFTS_COUT;
+            int i = 0;
+            try {
+                for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
+                    perturb >>>= PERTURB_SHIFT;
+                    compactIndex = map.nextIndex(compactIndex, perturb);
+                    index = map.indices[compactIndex];
+                    if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
+                        return; // not found
+                    }
+                    unwrappedIndex = unwrapIndex(index);
+                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                        map.indices[compactIndex] = DUMMY_INDEX;
+                        map.setValue(unwrappedIndex, null);
+                        map.setKey(unwrappedIndex, null);
+                        map.size--;
+                        return;
+                    }
+                }
+            } finally {
+                LoopNode.reportLoopCount(eqNode, i);
+            }
+            // all values are dummies? Not possible, since we should have compacted the
+            // hashes/keysAndValues arrays at the top
+            throw CompilerDirectives.shouldNotReachHere();
         }
-        // all values are dummies? Not possible, since we should have compacted the
-        // hashes/keysAndValues arrays at the top
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    private boolean keysEqual(Frame frame, int index, Object key, long keyHash, GetProfiles profiles) {
-        return hashes[index] == keyHash && profiles.eqNode.execute(frame, getKey(index), key);
-    }
-
-    private boolean keysEqual(Frame frame, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode) {
-        return hashes[index] == keyHash && eqNode.execute(frame, getKey(index), key);
     }
 
     private boolean keysEqual(ThreadState state, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode, ConditionProfile hasState) {

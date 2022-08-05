@@ -93,10 +93,6 @@ public class ObjectHashMapTests {
         }
     }
 
-    private static final ObjectHashMap.PutProfiles PUT_PROFILES = new PutProfiles(false, new EqNodeStub());
-    private static final ObjectHashMap.GetProfiles GET_PROFILES = new GetProfiles(false, new EqNodeStub());
-    private static final ObjectHashMap.RemoveProfiles RM_PROFILES = new RemoveProfiles(false, new EqNodeStub());
-
     @Test
     public void testCollisionsByPuttingManyKeysWithSameHash() {
         ObjectHashMap map = new ObjectHashMap();
@@ -111,7 +107,7 @@ public class ObjectHashMapTests {
         for (int i = 0; i < 55; i++) {
             DictKey key = expected.keySet().stream().skip(22).findFirst().get();
             expected.remove(key);
-            map.remove(null, key, 42, RM_PROFILES);
+            remove(map, key, 42);
             assertEqual(i, expected, map);
         }
         for (int i = 0; i < 10; i++) {
@@ -134,7 +130,7 @@ public class ObjectHashMapTests {
             expected.put(key, value);
             assertEqual(i, expected, map);
 
-            map.remove(null, key, 42, RM_PROFILES);
+            remove(map, key, 42);
             expected.remove(key);
             assertEqual(i, expected, map);
         }
@@ -153,7 +149,7 @@ public class ObjectHashMapTests {
             assertEqual(i, expected, map);
 
             final DictKey toRemove = keys[(i + 1) % keys.length];
-            map.remove(null, toRemove, toRemove.hash, RM_PROFILES);
+            remove(map, toRemove, toRemove.hash);
             expected.remove(toRemove);
             assertEqual(i, expected, map);
         }
@@ -215,14 +211,14 @@ public class ObjectHashMapTests {
             keys.add((Long) key);
         }
         for (Long key : keys) {
-            map.remove(null, key, PyObjectHashNode.hash(key), RM_PROFILES);
+            remove(map, key, PyObjectHashNode.hash(key));
             assertNull(get(map, key, PyObjectHashNode.hash(key)));
         }
     }
 
     private static void removeAll(ObjectHashMap map, LinkedHashMap<Long, Object> expected) {
         for (Long key : expected.keySet().toArray(new Long[0])) {
-            map.remove(null, key, PyObjectHashNode.hash(key), RM_PROFILES);
+            remove(map, key, PyObjectHashNode.hash(key));
             expected.remove(key);
             assertEqual(Long.toString(key), expected, map);
         }
@@ -232,7 +228,7 @@ public class ObjectHashMapTests {
         for (int i = 0; i < count; i++) {
             int index = rand.nextInt(expected.size() - 1);
             long key = expected.keySet().stream().skip(index).findFirst().get();
-            map.remove(null, key, PyObjectHashNode.hash(key), RM_PROFILES);
+            remove(map, key, PyObjectHashNode.hash(key));
             expected.remove(key);
             assertEqual(i, expected, map);
         }
@@ -324,6 +320,13 @@ public class ObjectHashMapTests {
         return ObjectHashMap.GetNode.doGet(null, map, key, hash,//
                 ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),// 
                 ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
+                new EqNodeStub());
+    }
+
+    private static void remove(ObjectHashMap map, Object key, long hash) {
+        ObjectHashMap.RemoveNode.doRemove(null, map, key, hash,//
+                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
+                ConditionProfile.getUncached(), BranchProfile.getUncached(), ConditionProfile.getUncached(),//
                 new EqNodeStub());
     }
 

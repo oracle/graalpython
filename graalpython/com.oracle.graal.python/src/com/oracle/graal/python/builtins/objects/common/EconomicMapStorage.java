@@ -300,11 +300,11 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Cached ObjectHashMap.RemoveProfiles profiles,
+                    @Cached ObjectHashMap.RemoveNode removeNode,
                     @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
         VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-        map.remove(frame, key, hashNode.execute(frame, key), profiles);
+        removeNode.remove(state, map, key, hashNode.execute(frame, key));
         return this;
     }
 
