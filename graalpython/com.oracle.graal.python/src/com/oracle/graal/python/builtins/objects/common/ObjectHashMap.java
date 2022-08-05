@@ -51,13 +51,11 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -702,7 +700,6 @@ public final class ObjectHashMap {
         return dummyCnt > quarterOfUsable;
     }
 
-
     @GenerateUncached
     public abstract static class RemoveNode extends Node {
         public final void remove(ThreadState state, ObjectHashMap map, DictKey key) {
@@ -718,19 +715,20 @@ public final class ObjectHashMap {
         // "public" for testing...
         @Specialization
         public static void doRemove(ThreadState state, ObjectHashMap map, Object key, long keyHash,
-                                   @Cached("createCountingProfile()") ConditionProfile foundNullKey,
-                                   @Cached("createCountingProfile()") ConditionProfile foundEqKey,
-                                   @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
-                                   @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
-                                   @Cached BranchProfile compactProfile,
-                                   @Cached ConditionProfile hasState,
-                                   @Cached PyObjectRichCompareBool.EqNode eqNode) {
+                        @Cached("createCountingProfile()") ConditionProfile foundNullKey,
+                        @Cached("createCountingProfile()") ConditionProfile foundEqKey,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
+                        @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
+                        @Cached BranchProfile compactProfile,
+                        @Cached ConditionProfile hasState,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             assert map.checkInternalState();
             if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, map.needsCompaction())) {
                 compactProfile.enter();
                 map.compact();
             }
-            // Note: CPython is not shrinking the capacity of the hash table on delete, we do the same
+            // Note: CPython is not shrinking the capacity of the hash table on delete, we do the
+            // same
             int compactIndex = map.getIndex(keyHash);
             int index = map.indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {

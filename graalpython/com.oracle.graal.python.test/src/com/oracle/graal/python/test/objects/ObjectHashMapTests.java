@@ -55,21 +55,18 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.GetProfiles;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutProfiles;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.RemoveProfiles;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public class ObjectHashMapTests {
@@ -315,25 +312,25 @@ public class ObjectHashMapTests {
     private static long getKeyHash(Object key) {
         return key instanceof Long ? PyObjectHashNode.hash((Long) key) : ((DictKey) key).hash;
     }
-    
+
     private static Object get(ObjectHashMap map, Object key, long hash) {
-        return ObjectHashMap.GetNode.doGet(null, map, key, hash,//
-                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),// 
-                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
-                new EqNodeStub());
+        return ObjectHashMap.GetNode.doGet(null, map, key, hash,
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        new EqNodeStub());
     }
 
     private static void remove(ObjectHashMap map, Object key, long hash) {
-        ObjectHashMap.RemoveNode.doRemove(null, map, key, hash,//
-                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
-                ConditionProfile.getUncached(), BranchProfile.getUncached(), ConditionProfile.getUncached(),//
-                new EqNodeStub());
+        ObjectHashMap.RemoveNode.doRemove(null, map, key, hash,
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        ConditionProfile.getUncached(), BranchProfile.getUncached(), ConditionProfile.getUncached(),
+                        new EqNodeStub());
     }
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
-        ObjectHashMap.PutNode.doPut(null, map, key, hash, value,//
-                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
-                ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),//
-                ConditionProfile.getUncached(), new EqNodeStub());
+        ObjectHashMap.PutNode.doPut(null, map, key, hash, value,
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
+                        ConditionProfile.getUncached(), new EqNodeStub());
     }
 }

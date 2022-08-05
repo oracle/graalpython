@@ -122,7 +122,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
-                                         @Cached ObjectHashMap.PutNode putNode,
+                        @Cached ObjectHashMap.PutNode putNode,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached LoopConditionProfile loopProfile) {
             // We want to avoid calling __hash__() during map.put
