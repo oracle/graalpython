@@ -22,7 +22,8 @@
 extern "C" {
 #endif
 
-PyAPI_DATA(PyTypeObject) PyCapsule_Type;
+PyAPI_DATA(PyTypeObject*) PyCapsule_TypeReference;
+#define PyCapsule_Type (*PyCapsule_TypeReference)
 
 typedef void (*PyCapsule_Destructor)(PyObject *);
 

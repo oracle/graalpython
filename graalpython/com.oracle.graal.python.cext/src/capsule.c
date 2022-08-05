@@ -301,7 +301,8 @@ to other extension modules, so that extension modules can use the\n\
 Python import mechanism to link to one another.\n\
 ");
 
-PyTypeObject PyCapsule_Type = {
+
+PyTypeObject PyCapsule_Type_Impl = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "PyCapsule",                /*tp_name*/
     sizeof(PyCapsule),          /*tp_basicsize*/
@@ -326,4 +327,9 @@ PyTypeObject PyCapsule_Type = {
     PyCapsule_Type__doc__       /*tp_doc*/
 };
 
+PyTypeObject* PyCapsule_TypeReference = &PyCapsule_Type_Impl;
+
+PyTypeObject* getPyCapsuleTypeReference() {
+	return &PyCapsule_Type;
+}
 

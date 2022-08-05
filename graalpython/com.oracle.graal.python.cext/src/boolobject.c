@@ -56,13 +56,3 @@ PyObject *PyBool_FromLong(long ok) {
     Py_INCREF(result);
     return result;
 }
-
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
-
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};

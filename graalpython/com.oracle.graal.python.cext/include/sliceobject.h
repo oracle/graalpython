@@ -11,9 +11,10 @@ extern "C" {
 
 /* The unique ellipsis object "..." */
 
-PyAPI_DATA(PyObject) _Py_EllipsisObject; /* Don't use this directly */
+PyAPI_DATA(PyObject*) _Py_EllipsisObjectReference; /* Don't use this directly */
 
-#define Py_Ellipsis (&_Py_EllipsisObject)
+#define _Py_EllipsisObject (*_Py_EllipsisObjectReference)
+#define Py_Ellipsis (_Py_EllipsisObjectReference)
 
 /* Slice object interface */
 

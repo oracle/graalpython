@@ -562,8 +562,9 @@ where NULL (nil) is not suitable (since NULL often means 'error').
 
 Don't forget to apply Py_INCREF() when returning this value!!!
 */
-PyAPI_DATA(PyObject) _Py_NoneStruct; /* Don't use this directly */
-#define Py_None (&_Py_NoneStruct)
+PyAPI_DATA(PyObject*) _Py_NoneStructReference; /* Don't use this directly */
+#define _Py_NoneStruct (*_Py_NoneStructReference)
+#define Py_None (_Py_NoneStructReference)
 
 /* Macro for returning Py_None from a function */
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
@@ -572,8 +573,9 @@ PyAPI_DATA(PyObject) _Py_NoneStruct; /* Don't use this directly */
 Py_NotImplemented is a singleton used to signal that an operation is
 not implemented for a given type combination.
 */
-PyAPI_DATA(PyObject) _Py_NotImplementedStruct; /* Don't use this directly */
-#define Py_NotImplemented (&_Py_NotImplementedStruct)
+PyAPI_DATA(PyObject*) _Py_NotImplementedStructReference; /* Don't use this directly */
+#define _Py_NotImplementedStruct (*_Py_NotImplementedStructReference)
+#define Py_NotImplemented (_Py_NotImplementedStructReference)
 
 /* Macro for returning Py_NotImplemented from a function */
 #define Py_RETURN_NOTIMPLEMENTED \
