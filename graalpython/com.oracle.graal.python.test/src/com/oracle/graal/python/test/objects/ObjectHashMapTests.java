@@ -55,6 +55,7 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.junit.Assert;
 import org.junit.Test;
@@ -104,7 +105,7 @@ public class ObjectHashMapTests {
             DictKey key = new DictKey(42);
             Object value = newValue();
             expected.put(key, value);
-            map.put(null, key, 42, value, PUT_PROFILES);
+            put(map, key, 42, value);
             assertEqual(i, expected, map);
         }
         for (int i = 0; i < 55; i++) {
@@ -117,7 +118,7 @@ public class ObjectHashMapTests {
             DictKey key = expected.keySet().stream().skip(10 + i).findFirst().get();
             Object value = newValue();
             expected.put(key, value);
-            map.put(null, key, 42, value, PUT_PROFILES);
+            put(map, key, 42, value);
             assertEqual(i, expected, map);
         }
     }
@@ -129,7 +130,7 @@ public class ObjectHashMapTests {
         DictKey key = new DictKey(42);
         for (int i = 0; i < 100; i++) {
             Object value = newValue();
-            map.put(null, key, 42, value, PUT_PROFILES);
+            put(map, key, 42, value);
             expected.put(key, value);
             assertEqual(i, expected, map);
 
@@ -147,7 +148,7 @@ public class ObjectHashMapTests {
         for (int i = 0; i < 100; i++) {
             Object value = newValue();
             final DictKey toPut = keys[i % keys.length];
-            map.put(null, toPut, toPut.hash, value, PUT_PROFILES);
+            put(map, toPut, toPut.hash, value);
             expected.put(toPut, value);
             assertEqual(i, expected, map);
 
@@ -242,7 +243,7 @@ public class ObjectHashMapTests {
             Object value = newValue();
             int index = rand.nextInt(expected.size() - 1);
             long key = expected.keySet().stream().skip(index).findFirst().get();
-            map.put(null, key, PyObjectHashNode.hash(key), value, PUT_PROFILES);
+            put(map, key, PyObjectHashNode.hash(key), value);
             expected.put(key, value);
             assertEqual(i, expected, map);
         }
@@ -252,7 +253,7 @@ public class ObjectHashMapTests {
         for (int i = 0; i < count; i++) {
             Object value = newValue();
             long key = rand.nextLong();
-            map.put(null, key, PyObjectHashNode.hash(key), value, PUT_PROFILES);
+            put(map, key, PyObjectHashNode.hash(key), value);
             expected.put(key, value);
             assertEqual(i, expected, map);
         }
@@ -324,5 +325,12 @@ public class ObjectHashMapTests {
                 ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),// 
                 ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
                 new EqNodeStub());
+    }
+
+    private static void put(ObjectHashMap map, Object key, long hash, Object value) {
+        ObjectHashMap.PutNode.doPut(null, map, key, hash, value,//
+                ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),//
+                ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),//
+                ConditionProfile.getUncached(), new EqNodeStub());
     }
 }

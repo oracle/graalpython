@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.For
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutProfiles;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -71,7 +71,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LoopNode;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -163,7 +162,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static HashingStorage setItemTruffleString(EconomicMapStorage self, TruffleString key, Object value, ThreadState state,
                         @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
-                                                   @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             putNode.put(state, self.map, key, PyObjectHashNode.hash(key, hashCodeNode), assertNoJavaString(value));
@@ -174,7 +173,7 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
                         @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
-                                             @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
             final TruffleString k = stringMaterializeNode.execute(key);
@@ -184,7 +183,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)",
                         "maySideEffect(key, lookup) || maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, PythonObject value, ThreadState state,
-                                                                @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
@@ -195,7 +194,7 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile)", "maySideEffect(key, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, Object value, ThreadState state,
-                                                                @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
@@ -206,7 +205,7 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(value,builtinProfile)", "maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, Object key, PythonObject value, ThreadState state,
-                                                                @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
@@ -217,7 +216,7 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization(replaces = {"setItemPString", "setItemTruffleString"})
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
-                                             @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
@@ -260,23 +259,23 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage toSameTypeSideEffect(EconomicMapStorage self, EconomicMapStorage other,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("putProfiles") @Cached ObjectHashMap.PutProfiles profiles) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
             convertToSideEffectMap(other);
-            return toSameType(self, other, thisLib, loopProfile, profiles);
+            return toSameType(self, other, thisLib, loopProfile, putNode);
         }
 
         @Specialization(guards = "!hasSideEffect(self, other)")
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("putProfiles") @Cached ObjectHashMap.PutProfiles profiles) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
             final int size = self.map.size();
             loopProfile.profileCounted(size);
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.inject(advance(cursor))) {
-                other.map.put(null, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue(), profiles);
+                putNode.put(null, other.map, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue());
             }
             return other;
         }
@@ -522,7 +521,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
-                                           @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
@@ -544,7 +543,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
-                                          @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
                         @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
@@ -585,19 +584,20 @@ public class EconomicMapStorage extends HashingStorage {
         return map.reverseKeys();
     }
 
-    protected void setValueForAllKeys(VirtualFrame frame, Object value, ObjectHashMap.PutProfiles profiles, Node node, LoopConditionProfile loopProfile) {
+    protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {
         MapCursor cursor = map.getEntries();
         final int size = map.size();
         loopProfile.profileCounted(size);
-        LoopNode.reportLoopCount(node, size);
+        LoopNode.reportLoopCount(putNode, size);
+        ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
         while (loopProfile.inject(advance(cursor))) {
-            map.put(frame, getDictKey(cursor), value, profiles);
+            putNode.put(state, map, getDictKey(cursor), value);
         }
     }
 
     @TruffleBoundary
     public void putUncached(TruffleString key, Object value) {
-        map.put(null, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value, PutProfiles.getUncached());
+        ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     @Override

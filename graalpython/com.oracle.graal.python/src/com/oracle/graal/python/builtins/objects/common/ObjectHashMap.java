@@ -587,6 +587,7 @@ public final class ObjectHashMap {
 
         abstract void execute(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value);
 
+        // "public" for testing...
         @Specialization
         public static void doPut(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value,
                         @Cached("createCountingProfile()") ConditionProfile foundNullKey,
@@ -643,62 +644,6 @@ public final class ObjectHashMap {
             // left
             throw CompilerDirectives.shouldNotReachHere();
         }
-    }
-
-    public void put(VirtualFrame frame, DictKey key, Object value, PutProfiles profiles) {
-        assert checkInternalState();
-        put(frame, key.getValue(), key.getPythonHash(), value, profiles, profiles.eqNode, true);
-    }
-
-    public void put(VirtualFrame frame, Object key, long keyHash, Object value, PutProfiles profiles) {
-        assert checkInternalState();
-        put(frame, key, keyHash, value, profiles, profiles.eqNode, true);
-    }
-
-    public void put(VirtualFrame frame, Object key, long keyHash, Object value, PutProfiles profiles, PyObjectRichCompareBool.EqNode eqNode, boolean canRehash) {
-        CompilerAsserts.partialEvaluationConstant(canRehash);
-
-        int compactIndex = getIndex(keyHash);
-        int index = indices[compactIndex];
-        if (profiles.foundNullKey.profile(index == EMPTY_INDEX)) {
-            putInNewSlot(profiles.rehash1Profile, key, keyHash, value, compactIndex);
-            return;
-        }
-
-        if (profiles.foundEqKey.profile(index != DUMMY_INDEX && keysEqual(frame, unwrapIndex(index), key, keyHash, eqNode))) {
-            // we found the key, override the value, Python does not override the key though
-            setValue(unwrapIndex(index), value);
-            return;
-        }
-
-        // collision
-        markCollision(compactIndex);
-        long perturb = keyHash;
-        int searchLimit = getBucketsCount() + PERTURB_SHIFTS_COUT;
-        int i = 0;
-        try {
-            for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
-                perturb >>>= PERTURB_SHIFT;
-                compactIndex = nextIndex(compactIndex, perturb);
-                index = indices[compactIndex];
-                if (profiles.collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                    putInNewSlot(profiles.rehash2Profile, key, keyHash, value, compactIndex);
-                    return;
-                }
-                if (profiles.collisionFoundEqKey.profile(index != DUMMY_INDEX && keysEqual(frame, unwrapIndex(index), key, keyHash, eqNode))) {
-                    // we found the key, override the value, Python does not override the key though
-                    setValue(unwrapIndex(index), value);
-                    return;
-                }
-                markCollision(compactIndex);
-            }
-        } finally {
-            LoopNode.reportLoopCount(profiles, i);
-        }
-        // all values are dummies? Not possible, since we should have compacted the
-        // hashes/keysAndValues arrays in "remove". Also, there must be an unused slot available,
-        // because we checked at the beginning that we have at least ~1/4 of space left
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     // Internal helper: it is not profiling, never rehashes, and it assumes that the hash map never
