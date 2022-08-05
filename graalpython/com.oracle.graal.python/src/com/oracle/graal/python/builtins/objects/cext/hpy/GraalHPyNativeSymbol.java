@@ -106,6 +106,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_SET_FIELD_I("graal_hpy_set_field_i"),
     GRAAL_HPY_GET_GLOBAL_I("graal_hpy_get_global_i"),
     GRAAL_HPY_SET_GLOBAL_I("graal_hpy_set_global_i"),
+    GRAAL_HPY_STRDUP("graal_hpy_strdup"),
 
     /* C functions for reading native members by offset */
     GRAAL_HPY_READ_S("graal_hpy_read_s"),

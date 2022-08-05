@@ -44,6 +44,7 @@
 #include <truffle.h>
 
 #include <wchar.h>
+#include <string.h>
 
 #define SRC_CS "utf-8"
 #define UNWRAP(_h) ((_h)._i)
@@ -105,6 +106,10 @@ void* graal_hpy_calloc(size_t count, size_t eltsize) {
 
 void graal_hpy_free(void *ptr) {
 	free(ptr);
+}
+
+char* graal_hpy_strdup(const char *ptr) {
+    return strdup(ptr);
 }
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {

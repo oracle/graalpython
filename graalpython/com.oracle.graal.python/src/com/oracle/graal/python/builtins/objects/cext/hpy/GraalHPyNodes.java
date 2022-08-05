@@ -1943,15 +1943,14 @@ public class GraalHPyNodes {
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
-                        @Cached ReadAttributeFromObjectNode readHPyIsPureNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
-                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PRaiseNode raiseNode) {
 
             try {
                 // the name as given by the specification
-                TruffleString specName = castToTruffleStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(typeSpec, "name")));
+                Object tpName = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRDUP, ptrLib.readMember(typeSpec, "name"));
+                TruffleString specName = castToTruffleStringNode.execute(fromCharPointerNode.execute(tpName));
 
                 // extract module and type name
                 TruffleString[] names = splitName(specName, indexOfCodepointNode, substringNode, lengthNode);
@@ -2025,6 +2024,7 @@ public class GraalHPyNodes {
                 newType.basicSize = basicSize;
                 newType.flags = flags;
                 newType.itemSize = itemSize;
+                newType.tpName = tpName;
                 newType.makeStaticBase(dylib);
 
                 boolean seenNew = false;
