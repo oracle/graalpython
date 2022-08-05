@@ -496,7 +496,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (internal && !source.isInternal()) {
                 source = Source.newBuilder(source).internal(true).build();
             }
-            PBytecodeRootNode rootNode = new PBytecodeRootNode(this, code, source, null);
+            PBytecodeRootNode rootNode = PBytecodeRootNode.create(this, code, source);
             return PythonUtils.getOrCreateCallTarget(rootNode);
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
@@ -533,7 +533,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble();
-            RootNode rootNode = new PBytecodeRootNode(this, co, source, errorCb);
+            RootNode rootNode = PBytecodeRootNode.create(this, co, source, errorCb);
             GilNode gil = GilNode.getUncached();
             boolean wasAcquired = gil.acquire(context, rootNode);
             if (topLevel) {

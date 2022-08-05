@@ -614,7 +614,7 @@ public final class PCode extends PythonBuiltinObject {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         if (o instanceof CodeUnit) {
             CodeUnit code = ((CodeUnit) o);
-            PBytecodeRootNode bytecodeRootNode = new PBytecodeRootNode(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource(), null);
+            PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
             return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
         } else if (o instanceof BigInteger) {
             return factory.createInt((BigInteger) o);

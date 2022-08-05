@@ -493,10 +493,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal private boolean usingCachedNodes;
     @CompilationFinal(dimensions = 1) private int[] conditionProfiles;
 
-    private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
+    private static FrameDescriptor makeFrameDescriptor(CodeUnit co, FrameInfo info) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
-        newBuilder.info(new FrameInfo());
+        newBuilder.info(info);
         // locals
         for (int i = 0; i < co.varnames.length; i++) {
             TruffleString varname = co.varnames[i];
@@ -544,14 +544,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
-        this(language, makeFrameDescriptor(co), makeSignature(co), co, source, parserErrorCallback);
+    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source) {
+        return create(language, co, source, null);
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+        FrameInfo frameInfo = new FrameInfo();
+        FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserErrorCallback);
+        frameInfo.rootNode = rootNode;
+        return rootNode;
+    }
+
+    @TruffleBoundary
+    private PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
-        ((FrameInfo) fd.getInfo()).rootNode = this;
         this.celloffset = co.varnames.length;
         this.freeoffset = celloffset + co.cellvars.length;
         this.stackoffset = freeoffset + co.freevars.length;
