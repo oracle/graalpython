@@ -205,6 +205,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -1404,7 +1405,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private static long castLong(Object value) throws CannotCastException {
+    /**
+     * Expects an object that can be casted (without coercion) to a native pointer (i.e. a
+     * {@code void *}; represented as Java {@code long}). This will throw a
+     * {@link CannotCastException} if that is not possible
+     */
+    private static long expectPointer(Object value) throws CannotCastException {
         if (value instanceof Long) {
             return (long) value;
         }
@@ -1417,6 +1423,27 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
         throw CannotCastException.INSTANCE;
+    }
+
+    /**
+     * Coerces an object to a native pointer (i.e. a {@code void *}; represented as Java
+     * {@code long}). This is similar to {@link #expectPointer(Object)} but will send
+     * {@link InteropLibrary#toNative(Object)} if the object is not a pointer already. The method
+     * will throw a {@link CannotCastException} if coercion is not possible.
+     */
+    private static long coerceToPointer(Object value) throws CannotCastException {
+        if (value instanceof Long) {
+            return (long) value;
+        }
+        InteropLibrary interopLibrary = InteropLibrary.getUncached(value);
+        if (!interopLibrary.isPointer(value)) {
+            interopLibrary.toNative(value);
+        }
+        try {
+            return interopLibrary.asPointer(value);
+        } catch (UnsupportedMessageException e) {
+            throw CannotCastException.INSTANCE;
+        }
     }
 
     private static Object evalNFI(PythonContext context, String source, String name) {
@@ -1440,7 +1467,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             if (!getContext().getEnv().isNativeAccessAllowed()) {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            nativePointer = castLong(PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this)));
+            nativePointer = expectPointer(PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this)));
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
@@ -1678,7 +1705,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         UpcallFieldStore,
         UpcallGlobalLoad,
         UpcallGlobalStore,
-        UpcallType;
+        UpcallType,
+        UpcallTypeGetName;
 
         @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
@@ -1758,7 +1786,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         increment(Counter.UpcallCast);
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
         try {
-            return castLong(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+            return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
         } catch (CannotCastException e) {
             return 0;
         }
@@ -2266,15 +2294,27 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object clazz;
         if (GraalHPyBoxing.isBoxedHandle(bits)) {
             clazz = GetClassNode.getUncached().execute(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
-        } else if(GraalHPyBoxing.isBoxedInt(bits)) {
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
             clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxInt(bits));
-        } else if(GraalHPyBoxing.isBoxedDouble(bits)) {
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
             clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxDouble(bits));
         } else {
             assert false;
             clazz = null;
         }
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(clazz));
+    }
+
+    public long ctxTypeGetName(long bits) {
+        increment(Counter.UpcallTypeGetName);
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        Object clazz = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+        Object tpName = HPyTypeGetNameNodeGen.getUncached().execute(clazz);
+        try {
+            return coerceToPointer(tpName);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @ExportMessage

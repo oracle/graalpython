@@ -99,7 +99,8 @@ ALL_FIELDS
     UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
     UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
     UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
-    UPCALL(Type, SIG_HPY, SIG_HPY)
+    UPCALL(Type, SIG_HPY, SIG_HPY) \
+    UPCALL(TypeGetName, SIG_HPY, SIG_HPY)
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -262,6 +263,10 @@ static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
 
 static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Type, HPY_UP(obj));
+}
+
+static const char *ctx_TypeGetName_jni(HPyContext *ctx, HPy obj) {
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), TypeGetName, HPY_UP(obj));
 }
 
 //*************************
@@ -777,6 +782,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_SetItem_s = ctx_SetItem_s_jni;
     context->ctx_GetItem_s = ctx_GetItem_s_jni;
     context->ctx_Type = ctx_Type_jni;
+    context->ctx_Type_GetName = ctx_TypeGetName_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
