@@ -241,14 +241,14 @@ public final class ObjectHashMap {
 
     public Object forEachUntyped(ForEachNode<Object> node, Object argIn, LoopConditionProfile loopProfile) {
         Object arg = argIn;
-        for (int i = 0; loopProfile.profile(i < usedHashes); i++) {
+        loopProfile.profileCounted(usedHashes);
+        LoopNode.reportLoopCount(node, usedHashes);
+        for (int i = 0; loopProfile.inject(i < usedHashes); i++) {
             Object key = getKey(i);
             if (key != null) {
-                LoopNode.reportLoopCount(node, i);
                 arg = node.execute(key, arg);
             }
         }
-        LoopNode.reportLoopCount(node, usedHashes);
         return arg;
     }
 
