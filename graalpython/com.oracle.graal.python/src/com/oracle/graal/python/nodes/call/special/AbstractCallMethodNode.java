@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -160,13 +160,31 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             }
 
             RootNode root = getRootNode();
-            int n = root instanceof PRootNode ? ((PRootNode) root).getNodeCount() : NodeUtil.countNodes(root);
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
-            // ASTs will only we shared between contexts that have the same value for this option.
+            // ASTs will only be shared between contexts that have the same value for this option.
             int maxSize = PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
-            if (n >= maxSize || n + NodeUtil.countNodes(builtinNode) >= maxSize) {
-                setMaxSizeExceeded(true);
-                return true;
+            if (root instanceof PRootNode) {
+                PRootNode pRoot = (PRootNode) root;
+                int rootNodeCount = pRoot.getNodeCountForInlining();
+                if (rootNodeCount < maxSize) {
+                    NodeCounterWithLimit counter = new NodeCounterWithLimit(rootNodeCount, maxSize);
+                    builtinNode.accept(counter);
+                    if (counter.isOverLimit()) {
+                        setMaxSizeExceeded(true);
+                        return true;
+                    }
+                    pRoot.setNodeCountForInlining(counter.getCount());
+                }
+            } else {
+                NodeCounterWithLimit counter = new NodeCounterWithLimit(maxSize);
+                root.accept(counter);
+                if (!counter.isOverLimit()) {
+                    builtinNode.accept(counter);
+                }
+                if (counter.isOverLimit()) {
+                    setMaxSizeExceeded(true);
+                    return true;
+                }
             }
             return false;
         }

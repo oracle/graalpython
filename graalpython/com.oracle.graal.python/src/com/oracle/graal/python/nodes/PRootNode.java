@@ -42,13 +42,16 @@ package com.oracle.graal.python.nodes;
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -58,7 +61,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -97,13 +99,26 @@ public abstract class PRootNode extends RootNode {
         super(language, frameDescriptor);
     }
 
-    public final int getNodeCount() {
+    /**
+     * Imprecise node count used for inlining heuristics, saturated at
+     * {@link PythonOptions#BuiltinsInliningMaxCallerSize}.
+     */
+    public final int getNodeCountForInlining() {
         CompilerAsserts.neverPartOfCompilation();
         int n = nodeCount;
         if (n != -1) {
             return n;
         }
-        return nodeCount = NodeUtil.countNodes(this);
+        int maxSize = PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        NodeCounterWithLimit counter = new NodeCounterWithLimit(maxSize);
+        accept(counter);
+        return nodeCount = counter.getCount();
+    }
+
+    public final void setNodeCountForInlining(int newCount) {
+        // We accept the potential race in the callers of the getter and this setter
+        assert newCount > 0 && newCount <= PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        nodeCount = newCount;
     }
 
     public ConditionProfile getFrameEscapedProfile() {

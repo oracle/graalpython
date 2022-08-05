@@ -84,10 +84,10 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return executeObject(null, callable, receiver);
     }
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callUnarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") UnaryBuiltinDescriptor cachedInfo,
-                    @Cached("cachedInfo.createNode()") PythonUnaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonUnaryBuiltinNode node) {
         return node.execute(frame, receiver);
     }
 
@@ -95,20 +95,20 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return descr.minNumOfPositionalArgs() <= 1;
     }
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
-                    @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonBinaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         return node.execute(frame, receiver, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
-                    @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         return node.execute(frame, receiver, PNone.NO_VALUE, PNone.NO_VALUE);
     }
