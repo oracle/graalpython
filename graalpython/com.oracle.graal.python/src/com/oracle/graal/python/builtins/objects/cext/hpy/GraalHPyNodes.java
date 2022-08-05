@@ -56,10 +56,13 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -76,8 +79,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMembe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -121,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -186,6 +192,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class GraalHPyNodes {
@@ -2270,6 +2277,49 @@ public class GraalHPyNodes {
                 }
             }
             throw OverflowException.INSTANCE;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class HPyTypeGetNameNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(guards = "clazz.tpName != null")
+        static Object doPythonClass(PythonClass clazz) {
+            return clazz.tpName;
+        }
+
+        @Fallback
+        static Object doOther(Object type,
+                        @Cached GetNameNode getName,
+                        @Cached ReadAttributeFromObjectNode readHPyFlagsNode,
+                        @Cached ReadAttributeFromObjectNode readModuleNameNode,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleString baseName = getName.execute(type);
+            TruffleString name;
+            if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
+                // Types that originated from HPy: although they are ordinary managed
+                // PythonClasses, the name should have "cext semantics", i.e., contain the
+                // module if it was specified in the HPyType_Spec
+                Object moduleName = readModuleNameNode.execute(type, SpecialAttributeNames.T___MODULE__);
+                if (moduleName instanceof TruffleString) {
+                    TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                    appendNode.execute(sb, (TruffleString) moduleName);
+                    appendNode.execute(sb, T_DOT);
+                    appendNode.execute(sb, baseName);
+                    name = toStringNode.execute(sb);
+                } else {
+                    name = baseName;
+                }
+            } else {
+                name = baseName;
+            }
+            byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, T_STRICT);
+            return new CByteArrayWrapper(result);
         }
     }
 

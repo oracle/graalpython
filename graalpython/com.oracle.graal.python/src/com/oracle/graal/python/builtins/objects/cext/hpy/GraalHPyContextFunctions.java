@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNat
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTypeGetNameNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.RecursiveExceptionMatches;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
@@ -3104,36 +3105,11 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asType,
-                        @Cached GetNameNode getName,
-                        @Cached ReadAttributeFromObjectNode readHPyFlagsNode,
-                        @Cached ReadAttributeFromObjectNode readModuleNameNode,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) throws ArityException {
+                        @Cached HPyTypeGetNameNode getName) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object type = asType.execute(context, arguments[1]);
-            TruffleString baseName = getName.execute(type);
-            TruffleString name;
-            if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
-                // Types that originated from HPy: although they are ordinary managed
-                // PythonClasses, the name should have "cext semantics", i.e., contain the
-                // module if it was specified in the HPyType_Spec
-                Object moduleName = readModuleNameNode.execute(type, SpecialAttributeNames.T___MODULE__);
-                if (moduleName instanceof TruffleString) {
-                    TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-                    appendNode.execute(sb, (TruffleString) moduleName);
-                    appendNode.execute(sb, T_DOT);
-                    appendNode.execute(sb, baseName);
-                    name = toStringNode.execute(sb);
-                } else {
-                    name = baseName;
-                }
-            } else {
-                name = baseName;
-            }
-            byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, T_STRICT);
-            return new CByteArrayWrapper(result);
+            return getName.execute(type);
         }
     }
 
