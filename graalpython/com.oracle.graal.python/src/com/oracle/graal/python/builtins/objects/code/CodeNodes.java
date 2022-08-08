@@ -152,7 +152,7 @@ public abstract class CodeNodes {
                                 code.outputCanQuicken, code.variableShouldUnbox,
                                 code.generalizeInputsMap, code.generalizeVarsMap);
             }
-            RootNode rootNode = new PBytecodeRootNode(language, code, null, null);
+            RootNode rootNode = PBytecodeRootNode.create(language, code, null);
             if (code.isGeneratorOrCoroutine()) {
                 rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
             }

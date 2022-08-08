@@ -48,15 +48,16 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
+import org.junit.Assume;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.interop.JavaInteropTest;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonTests {
     static {
@@ -130,6 +132,10 @@ public class PythonTests {
             closeContext(context);
             context = null;
         }
+    }
+
+    public static void skipOnBytecodeInterpreter() {
+        Assume.assumeFalse(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {

@@ -50,6 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -492,10 +493,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal private boolean usingCachedNodes;
     @CompilationFinal(dimensions = 1) private int[] conditionProfiles;
 
-    private static FrameDescriptor makeFrameDescriptor(CodeUnit co) {
+    private static FrameDescriptor makeFrameDescriptor(CodeUnit co, FrameInfo info) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
-        newBuilder.info(new FrameInfo());
+        newBuilder.info(info);
         // locals
         for (int i = 0; i < co.varnames.length; i++) {
             TruffleString varname = co.varnames[i];
@@ -543,14 +544,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
-        this(language, makeFrameDescriptor(co), makeSignature(co), co, source, parserErrorCallback);
+    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source) {
+        return create(language, co, source, null);
     }
 
     @TruffleBoundary
-    public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+        FrameInfo frameInfo = new FrameInfo();
+        FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserErrorCallback);
+        frameInfo.rootNode = rootNode;
+        return rootNode;
+    }
+
+    @TruffleBoundary
+    private PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
-        ((FrameInfo) fd.getInfo()).rootNode = this;
         this.celloffset = co.varnames.length;
         this.freeoffset = celloffset + co.cellvars.length;
         this.stackoffset = freeoffset + co.freevars.length;
@@ -659,9 +668,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <A, T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeFunction<A, T> nodeSupplier, A argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.apply(argument);
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.apply(argument);
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -688,9 +703,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNodeInt(Node[] nodes, int nodeIndex, IntNodeFunction<T> nodeSupplier, int argument) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.apply(argument);
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.apply(argument);
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -705,9 +726,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("unchecked")
     private <T extends Node> T doInsertChildNode(Node[] nodes, int nodeIndex, NodeSupplier<T> nodeSupplier) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        T newNode = nodeSupplier.get();
-        nodes[nodeIndex] = insert(newNode);
-        return newNode;
+        Lock lock = getLock();
+        lock.lock();
+        try {
+            T newNode = nodeSupplier.get();
+            nodes[nodeIndex] = insert(newNode);
+            return newNode;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @SuppressWarnings("unchecked")

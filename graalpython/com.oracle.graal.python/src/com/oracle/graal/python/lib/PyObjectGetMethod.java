@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -105,18 +106,8 @@ public abstract class PyObjectGetMethod extends Node {
         return getattributeSlot == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && getattrSlot == PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "!isObjectGetAttribute(lazyClass)"}, limit = "1")
-    static Object getGenericAttr(Frame frame, Object receiver, TruffleString name,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
-                    @SuppressWarnings("unused") @Bind("getClass.execute(receiver)") Object lazyClass,
-                    @Cached PyObjectGetAttr getAttr) {
-        return new BoundDescriptor(getAttr.execute(frame, receiver, name));
-    }
-
-    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
+    @Specialization(guards = {"isObjectGetAttribute(lazyClass)" /* Implies not foreign */, "name == cachedName"}, limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") TruffleString name,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
@@ -173,9 +164,8 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     // No explicit branch profiling when we're looking up multiple things
-    @Specialization(guards = {"!isForeignObjectNode.execute(receiver)", "isObjectGetAttribute(lazyClass)"}, replaces = "getFixedAttr", limit = "1")
+    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
     static Object getDynamicAttr(Frame frame, Object receiver, TruffleString name,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
                     @Bind("getClass.execute(receiver)") Object lazyClass,
                     @Cached LookupAttributeInMRONode.Dynamic lookupNode,
@@ -217,7 +207,7 @@ public abstract class PyObjectGetMethod extends Node {
         throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
-    @Specialization(guards = "isForeignObjectNode.execute(receiver)", limit = "3")
+    @Specialization(guards = "isForeignObjectNode.execute(receiver)", limit = "1")
     Object getForeignMethod(VirtualFrame frame, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached TruffleString.ToJavaStringNode toJavaString,
@@ -237,5 +227,11 @@ public abstract class PyObjectGetMethod extends Node {
         } else {
             return new BoundDescriptor(getAttr.execute(frame, receiver, name));
         }
+    }
+
+    @Fallback
+    static Object getGenericAttr(Frame frame, Object receiver, TruffleString name,
+                    @Cached PyObjectGetAttr getAttr) {
+        return new BoundDescriptor(getAttr.execute(frame, receiver, name));
     }
 }

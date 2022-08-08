@@ -50,6 +50,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Instrument;
 import org.graalvm.polyglot.Source;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.nodes.PNode;
@@ -75,6 +76,11 @@ public class ReadAndWriteVariableTagsTests extends PythonTests {
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+    }
+
+    @Before
+    public void before() {
+        PythonTests.skipOnBytecodeInterpreter();
     }
 
     @Test
