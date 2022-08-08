@@ -114,6 +114,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
+import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -151,6 +152,8 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.compiler.Compiler;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
@@ -228,6 +231,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -854,7 +859,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(VirtualFrame frame, Object source) {
-            PCode code = getCompileNode().execute(frame, source, T_STRING_SOURCE, getMode(), 0, false, -1);
+            PCode code = getCompileNode().compile(frame, source, T_STRING_SOURCE, getMode(), -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -1021,10 +1026,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int PyCF_MASK_OBSOLETE = CO_NESTED;
 
         private static final int PyCF_DONT_IMPLY_DEDENT = 0x0200;
-        private static final int PyCF_ONLY_AST = 0x0400;
-        private static final int PyCF_TYPE_COMMENTS = 0x1000;
+        public static final int PyCF_ONLY_AST = 0x0400;
+        public static final int PyCF_TYPE_COMMENTS = 0x1000;
+        public static final int PyCF_ALLOW_TOP_LEVEL_AWAIT = 0x2000;
+        private static final int PyCF_ALLOW_INCOMPLETE_INPUT = 0x4000;
+        private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT;
 
         private static final TruffleString T_SINGLE = tsLiteral("single");
+        private static final TruffleString T_FUNC_EVAL = tsLiteral("func_eval");
 
         /**
          * Decides whether this node should attempt to map the filename to a URI for the benefit of
@@ -1043,12 +1052,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             this.lstrip = false;
         }
 
-        public abstract PCode execute(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwOptimize) {
+            return (PCode) executeInternal(frame, source, filename, mode, 0, false, kwOptimize);
+        }
+
+        protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        PCode compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
+        Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
             checkFlags(kwFlags);
             checkOptimize(kwOptimize, kwOptimize);
             checkSource(expression);
@@ -1071,14 +1084,47 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 pm = ParserMode.Eval;
             } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
                 pm = ParserMode.Statement;
+            } else if (mode.equalsUncached(T_FUNC_EVAL, TS_ENCODING)) {
+                if ((kwFlags & PyCF_ONLY_AST) == 0) {
+                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
+                }
+                pm = ParserMode.FuncType;
             } else {
-                throw raise(ValueError, ErrorMessages.COMPILE_MUST_BE);
+                if ((kwFlags & PyCF_ONLY_AST) != 0) {
+                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE_AST_ONLY);
+                } else {
+                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE);
+                }
             }
             if (lstrip && !code.isEmpty()) {
                 int c = code.codePointAtIndexUncached(0, TS_ENCODING);
                 if (c == ' ' || c == '\t') {
                     code = code.substringUncached(1, code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING, true);
                 }
+            }
+            if ((kwFlags & PyCF_ONLY_AST) != 0) {
+                InputType type;
+                switch (pm) {
+                    case File:
+                        type = InputType.FILE;
+                        break;
+                    case Eval:
+                        type = InputType.EVAL;
+                        break;
+                    case Statement:
+                        type = InputType.SINGLE;
+                        break;
+                    case FuncType:
+                        type = InputType.FUNCTION_TYPE;
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere();
+                }
+                Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
+                RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, false);
+                ModTy mod = (ModTy) parser.parse();
+                return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
             TruffleString finalCode = code;
@@ -1113,7 +1159,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+        Object generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToTruffleStringNode castStr,
@@ -1126,7 +1172,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (wSource instanceof PCode) {
-                return (PCode) wSource;
+                return wSource;
             }
             TruffleString filename;
             // TODO use PyUnicode_FSDecode
@@ -1186,7 +1232,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private void checkFlags(int flags) {
-            if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST | PyCF_TYPE_COMMENTS)) > 0) {
+            if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_COMPILE_MASK)) != 0) {
                 throw raise(ValueError, ErrorMessages.UNRECOGNIZED_FLAGS);
             }
         }

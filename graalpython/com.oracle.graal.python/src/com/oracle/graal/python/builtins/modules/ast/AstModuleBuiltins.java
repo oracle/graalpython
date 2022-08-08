@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
+import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ALLOW_TOP_LEVEL_AWAIT;
+import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ONLY_AST;
+import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -53,7 +56,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -68,10 +74,6 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     static final TruffleString T_AST = tsLiteral("ast");
     static final TruffleString T__FIELDS = tsLiteral("_fields");
     static final TruffleString T__ATTRIBUTES = tsLiteral("_attributes");
-
-    private static final int PyCF_ONLY_AST = 0x0400;
-    private static final int PyCF_TYPE_COMMENTS = 0x1000;
-    private static final int PyCF_ALLOW_TOP_LEVEL_AWAIT = 0x2000;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -100,5 +102,13 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
         astModule.setAttribute(AST_STATE_KEY, state);
+    }
+
+    private static AstState getAstState(PythonContext context) {
+        return (AstState) ReadAttributeFromObjectNode.getUncached().execute(context.lookupBuiltinModule(T__AST), AST_STATE_KEY);
+    }
+
+    public static Object sst2Obj(PythonContext context, ModTy mod) {
+        return mod.accept(new Sst2ObjVisitor(getAstState(context)));
     }
 }
