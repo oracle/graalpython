@@ -278,7 +278,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
 
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "<limit>", help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
-    public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
+    public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2500);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Disable weakref callback processing, signal handling, and other periodic async actions.") //
     public static final OptionKey<Boolean> NoAsyncActions = new OptionKey<>(false);

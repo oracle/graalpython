@@ -88,10 +88,10 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return executeObject(null, callable, arg1, arg2);
     }
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
-                    @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonBinaryBuiltinNode node) {
         if (cachedInfo.isReverseOperation()) {
             return node.execute(frame, arg2, arg1);
         } else {
@@ -103,11 +103,11 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return descr.minNumOfPositionalArgs() <= 2;
     }
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
-                    @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         if (cachedInfo.isReverseOperation()) {
             return node.execute(frame, arg2, arg1, PNone.NO_VALUE);

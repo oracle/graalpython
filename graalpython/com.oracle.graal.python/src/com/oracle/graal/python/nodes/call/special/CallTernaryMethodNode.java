@@ -73,10 +73,10 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
-    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"cachedInfo == info", "node != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
-                    @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+                    @Cached("getBuiltin(cachedInfo)") PythonTernaryBuiltinNode node) {
         return node.execute(frame, arg1, arg2, arg3);
     }
 

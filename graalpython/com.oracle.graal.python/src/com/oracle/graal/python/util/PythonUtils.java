@@ -60,6 +60,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -689,5 +691,31 @@ public final class PythonUtils {
             result[i] = cast.execute(array[i]);
         }
         return result;
+    }
+
+    public static final class NodeCounterWithLimit implements NodeVisitor {
+        private int count;
+        private final int limit;
+
+        public NodeCounterWithLimit(int counterStart, int limit) {
+            this.count = counterStart;
+            this.limit = limit;
+        }
+
+        public NodeCounterWithLimit(int limit) {
+            this.limit = limit;
+        }
+
+        public boolean visit(Node node) {
+            return ++count < limit;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        public boolean isOverLimit() {
+            return count >= limit;
+        }
     }
 }
