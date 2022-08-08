@@ -220,6 +220,42 @@ static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy
     field->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), FieldStore, HPY_UP(owner), field->_i, HPY_UP(value));
 }
 
+static const char* getBoxedPrimitiveName(uint64_t bits) {
+    assert(!isBoxedHandle(bits));
+    if (isBoxedInt(bits)) {
+        return "int";
+    }
+    assert(isBoxedDouble(bits));
+    return "float";
+}
+
+int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object does not support item assignment", getBoxedPrimitiveName(bits));
+        HPyErr_SetString(ctx, ctx->h_TypeError, message);
+        return -1;
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
+}
+
+HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object is not subscriptable", getBoxedPrimitiveName(bits));
+        return HPyErr_SetString(ctx, ctx->h_TypeError, message);
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+}
+
 //*************************
 // BOXING
 
@@ -556,42 +592,6 @@ void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_fi
     }
 }
 
-static const char* getBoxedPrimitiveName(uint64_t bits) {
-    assert(!isBoxedHandle(bits));
-    if (isBoxedInt(bits)) {
-        return "int";
-    }
-    assert(isBoxedDouble(bits));
-    return "float";
-}
-
-int augment_SetItem_s(HPyContext *ctx, HPy target, const char *name, HPy value) {
-    uint64_t bits = toBits(target);
-    if (!isBoxedHandle(bits)) {
-        const size_t buffer_size = 128;
-        char message[buffer_size];
-        snprintf(message, buffer_size,
-                 "'%s' object does not support item assignment", getBoxedPrimitiveName(bits));
-        HPyErr_SetString(ctx, ctx->h_TypeError, message);
-        return -1;
-    }
-    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
-}
-
-HPy augment_GetItem_s(HPyContext *ctx, HPy target, const char *name) {
-    uint64_t bits = toBits(target);
-    if (!isBoxedHandle(bits)) {
-        const size_t buffer_size = 128;
-        char message[buffer_size];
-        snprintf(message, buffer_size,
-                 "'%s' object is not subscriptable", getBoxedPrimitiveName(bits));
-        return HPyErr_SetString(ctx, ctx->h_TypeError, message);
-    }
-    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
-}
-
 HPy augment_Type(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
@@ -662,9 +662,6 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Type);
 
 #undef AUGMENT
-
-    context->ctx_SetItem_s = augment_SetItem_s;
-    context->ctx_GetItem_s = augment_GetItem_s;
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -724,6 +721,9 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Global_Store = ctx_Global_Store_jni;
     context->ctx_Field_Load = ctx_Field_Load_jni;
     context->ctx_Field_Store = ctx_Field_Store_jni;
+
+    context->ctx_SetItem_s = ctx_SetItem_s_jni;
+    context->ctx_GetItem_s = ctx_GetItem_s_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
