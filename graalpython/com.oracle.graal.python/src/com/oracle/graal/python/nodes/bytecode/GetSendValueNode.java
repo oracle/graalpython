@@ -38,45 +38,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.compiler;
+package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class QuickeningTypes {
-    public static final byte OBJECT = 1;
-    public static final byte INT = 2;
-    public static final byte LONG = 4;
-    public static final byte DOUBLE = 8;
-    public static final byte BOOLEAN = 16;
+@GenerateUncached
+public abstract class GetSendValueNode extends PNodeWithContext {
+    public abstract Object execute(Object specialArgument);
 
-    public static byte fromFrameSlotTag(byte tag) {
-        if (tag == FrameSlotKind.Object.tag) {
-            return OBJECT;
-        } else if (tag == FrameSlotKind.Int.tag) {
-            return INT;
-        } else if (tag == FrameSlotKind.Long.tag) {
-            return LONG;
-        } else if (tag == FrameSlotKind.Double.tag) {
-            return DOUBLE;
-        } else if (tag == FrameSlotKind.Boolean.tag) {
-            return BOOLEAN;
-        } else {
-            throw CompilerDirectives.shouldNotReachHere("Unknown stack item type");
-        }
+    @Specialization(guards = "specialArgument == null")
+    Object doNext(@SuppressWarnings("unused") Object specialArgument) {
+        return PNone.NONE;
     }
 
-    public static byte fromObjectType(Object object) {
-        if (object instanceof Integer) {
-            return INT;
-        } else if (object instanceof Long) {
-            return LONG;
-        } else if (object instanceof Double) {
-            return DOUBLE;
-        } else if (object instanceof Boolean) {
-            return BOOLEAN;
-        } else {
-            return OBJECT;
-        }
+    @Specialization
+    Object doThrow(ThrowData throwData) {
+        throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
+    }
+
+    @Fallback
+    Object doSend(Object obj) {
+        return obj;
+    }
+
+    public static GetSendValueNode create() {
+        return GetSendValueNodeGen.create();
+    }
+
+    public static GetSendValueNode getUncached() {
+        return GetSendValueNodeGen.getUncached();
     }
 }

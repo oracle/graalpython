@@ -206,6 +206,7 @@ public final class CompilationUnit {
         }
         int[] boxingMetric = new int[varCount];
         byte[] shouldUnboxVariable = new byte[varCount];
+        Arrays.fill(shouldUnboxVariable, (byte) 0xff);
 
         SortedSet<int[]> finishedExceptionHandlerRanges = new TreeSet<>(Comparator.comparingInt(a -> a[0]));
 
@@ -243,7 +244,6 @@ public final class CompilationUnit {
                 if (i.opcode == OpCodes.STORE_FAST) {
                     variableStores.get(i.arg).add(i);
                 } else if (i.opcode == OpCodes.LOAD_FAST) {
-                    shouldUnboxVariable[i.arg] |= i.quickenOutput;
                     boxingMetric[i.arg] += i.quickenOutput != 0 ? 1 : -1;
                 }
                 i.bci = buf.size();
@@ -296,14 +296,24 @@ public final class CompilationUnit {
                 }
             }
         }
-        for (int i = 0; i < varCount; i++) {
-            List<Instruction> stores = variableStores.get(i);
-            finishedGeneralizeVarsMap[i] = new int[stores.size()];
-            for (int j = 0; j < stores.size(); j++) {
-                finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
-            }
-            if (boxingMetric[i] <= 0) {
-                shouldUnboxVariable[i] = 0;
+        if (!scope.isGenerator()) {
+            /*
+             * We do an optimization in the interpreter that we don't unbox variables that would
+             * mostly get boxed again. This helps for interpreter performance, but for compiled code
+             * we have to unbox all variables otherwise the compiler is not always able to prove the
+             * variable was initialized. In generators, transferring the variables between the two
+             * modes of usage (boxed vs unboxed) would be too complex, so we skip the optimization
+             * there and unbox all variables.
+             */
+            for (int i = 0; i < varCount; i++) {
+                List<Instruction> stores = variableStores.get(i);
+                finishedGeneralizeVarsMap[i] = new int[stores.size()];
+                for (int j = 0; j < stores.size(); j++) {
+                    finishedGeneralizeVarsMap[i][j] = stores.get(j).bci;
+                }
+                if (boxingMetric[i] <= 0) {
+                    shouldUnboxVariable[i] = 0;
+                }
             }
         }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),

@@ -139,7 +139,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterStateObject) {
         OSRInterpreterState interpreterState = (OSRInterpreterState) interpreterStateObject;
         MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(osrFrame);
-        return rootNode.executeFromBci(osrFrame, generatorFrame, this, target, interpreterState.stackTop, interpreterState.loopEndBci);
+        return rootNode.executeFromBci(osrFrame, generatorFrame, this, target, interpreterState.stackTop);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
          */
         copyStackSlotsIntoVirtualFrame(generatorFrame, frame);
         try {
-            return rootNode.executeFromBci(frame, generatorFrame, this, resumeBci, resumeStackTop, Integer.MAX_VALUE);
+            return rootNode.executeFromBci(frame, generatorFrame, this, resumeBci, resumeStackTop);
         } finally {
             calleeContext.exit(frame, this);
         }
