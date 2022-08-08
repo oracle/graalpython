@@ -135,7 +135,7 @@ PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
 PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
     PyObject* newInstance = cls->tp_alloc(cls, 0);
     // TODO(fa): CPython does not do it here; verify if that's correct
-    Py_TYPE(newInstance) = cls;
+    Py_SET_TYPE(newInstance, cls);
     return newInstance;
 }
 
@@ -498,7 +498,7 @@ int PyType_Ready(PyTypeObject* cls) {
        not NULL (it's initialized to &PyType_Type).      But coverity doesn't
        know that. */
     if (Py_TYPE(cls) == NULL && base != NULL) {
-        Py_TYPE(cls) = Py_TYPE(base);
+        Py_SET_TYPE(cls, Py_TYPE(base));
     }
 
 

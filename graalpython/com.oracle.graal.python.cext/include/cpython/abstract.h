@@ -130,7 +130,7 @@ _PyObject_Vectorcall(PyObject *callable, PyObject *const *args,
         return _PyObject_MakeTpCall(callable, args, nargs, kwnames);
     }
     res = func(callable, args, nargsf, kwnames);
-    return _Py_CheckFunctionResult(callable, res, NULL);
+    return res; // _Py_CheckFunctionResult(callable, res, NULL);
 }
 
 /* Same as _PyObject_Vectorcall except that keyword arguments are passed as
@@ -197,8 +197,8 @@ PyAPI_FUNC(Py_ssize_t) PyObject_LengthHint(PyObject *o, Py_ssize_t);
 
 /* Return 1 if the getbuffer function is available, otherwise return 0. */
 #define PyObject_CheckBuffer(obj) \
-    (((obj)->ob_type->tp_as_buffer != NULL) &&  \
-     ((obj)->ob_type->tp_as_buffer->bf_getbuffer != NULL))
+    ((Py_TYPE(obj)->tp_as_buffer != NULL) &&  \
+     (Py_TYPE(obj)->tp_as_buffer->bf_getbuffer != NULL))
 
 /* This is a C-API version of the getbuffer function call.  It checks
    to make sure object has the required function pointer and issues the
@@ -266,14 +266,14 @@ PyAPI_FUNC(void) PyBuffer_Release(Py_buffer *view);
 /* ==== Iterators ================================================ */
 
 #define PyIter_Check(obj) \
-    ((obj)->ob_type->tp_iternext != NULL && \
-     (obj)->ob_type->tp_iternext != &_PyObject_NextNotImplemented)
+    (Py_TYPE(obj)->tp_iternext != NULL && \
+     Py_TYPE(obj)->tp_iternext != &_PyObject_NextNotImplemented)
 
 /* === Number Protocol ================================================== */
 
 #define PyIndex_Check(obj)                              \
-    ((obj)->ob_type->tp_as_number != NULL &&            \
-     (obj)->ob_type->tp_as_number->nb_index != NULL)
+    (Py_TYPE(obj)->tp_as_number != NULL &&            \
+     Py_TYPE(obj)->tp_as_number->nb_index != NULL)
 
 /* === Sequence protocol ================================================ */
 

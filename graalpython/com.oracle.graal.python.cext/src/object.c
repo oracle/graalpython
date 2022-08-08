@@ -131,6 +131,27 @@ PyObject _Py_NotImplementedStruct = {
     1, &_PyNotImplemented_Type
 };
 
+static inline Py_ssize_t _Py_REFCNT(PyObject *obj) {
+    return obj->ob_refcnt;
+}
+
+static inline void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+    obj->ob_refcnt = cnt;
+}
+
+static inline struct _typeobject* _Py_TYPE(PyObject *a) {
+    return obj->ob_type;
+}
+static inline Py_ssize_t _Py_SIZE(PyVarObject *a) {
+    return a->ob_size;
+}
+static inline void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
+    obj->ob_type = b;
+}
+static inline void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
+    a->ob_size = b;
+}
+
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
@@ -378,7 +399,7 @@ int PyObject_Print(PyObject *op, FILE *fp, int flags)
             else {
                 PyErr_Format(PyExc_TypeError,
                              "str() or repr() returned '%.100s'",
-                             s->ob_type->tp_name);
+                             Py_TYPE(s)->tp_name);
                 ret = -1;
             }
             Py_XDECREF(s);
@@ -474,7 +495,7 @@ int _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
     if (!PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError,
                      "attribute name must be string, not '%.200s'",
-                     name->ob_type->tp_name);
+					 Py_TYPE(name)->tp_name);
         *result = NULL;
         return -1;
     }
@@ -547,7 +568,7 @@ int PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value) {
     if (!PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError,
                      "attribute name must be string, not '%.200s'",
-                     name->ob_type->tp_name);
+					 Py_TYPE(name)->tp_name);
         return -1;
     }
 

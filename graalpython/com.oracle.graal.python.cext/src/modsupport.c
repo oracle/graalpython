@@ -958,7 +958,7 @@ void _PyArg_BadArgument(const char *fname, const char *displayname,
     PyErr_Format(PyExc_TypeError,
                  "%.200s() %.200s must be %.50s, not %.50s",
                  fname, displayname, expected,
-                 arg == Py_None ? "None" : arg->ob_type->tp_name);
+                 arg == Py_None ? "None" : Py_TYPE(arg)->tp_name);
 }
 
 #undef _PyArg_CheckPositional

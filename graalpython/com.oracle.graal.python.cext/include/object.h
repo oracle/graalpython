@@ -123,9 +123,22 @@ typedef struct {
 /* Cast argument to PyVarObject* type. */
 #define _PyVarObject_CAST(op) ((PyVarObject*)(op))
 
-#define Py_REFCNT(ob)           (_PyObject_CAST(ob)->ob_refcnt)
-#define Py_TYPE(ob)             (_PyObject_CAST(ob)->ob_type)
-#define Py_SIZE(ob)             (_PyVarObject_CAST(ob)->ob_size)
+PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(PyObject *);
+PyAPI_FUNC(void) _Py_SET_REFCNT(PyObject*, Py_ssize_t);
+PyAPI_FUNC(struct _typeobject*) _Py_TYPE(PyObject *);
+PyAPI_FUNC(void) _Py_SET_TYPE(PyObject *, struct _typeobject *);
+PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyVarObject *);
+PyAPI_FUNC(void) _Py_SET_SIZE(PyVarObject *, Py_ssize_t);
+
+#define Py_REFCNT(ob)           (_Py_REFCNT(_PyObject_CAST(ob)))
+#define Py_SET_REFCNT(ob, v)    (_Py_SET_REFCNT(_PyObject_CAST(ob), v))
+#define Py_TYPE(ob)             (_Py_TYPE(_PyObject_CAST(ob)))
+#define Py_SIZE(ob)             (_Py_SIZE(_PyVarObject_CAST(ob)))
+
+#define Py_SET_TYPE(ob, v)      (_Py_SET_TYPE(_PyObject_CAST(ob), (struct _typeobject *) v))
+#define Py_SET_SIZE(ob, v)      (_Py_SET_SIZE(_PyVarObject_CAST(ob), (Py_ssize_t) v))
+
+#define Py_IS_TYPE(ob, type) (Py_TYPE(ob) == (type))
 
 /*
 Type objects contain a string containing the type name (to help somewhat
@@ -445,7 +458,7 @@ static inline void _Py_NewReference(PyObject *op)
     }
     _Py_INC_TPALLOCS(op);
     _Py_INC_REFTOTAL;
-    Py_REFCNT(op) = 1;
+    Py_SET_REFCNT(op, 1);
 }
 
 static inline void _Py_ForgetReference(PyObject *op)

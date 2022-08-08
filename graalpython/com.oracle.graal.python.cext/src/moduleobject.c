@@ -50,8 +50,8 @@ PyObject*
 PyModuleDef_Init(struct PyModuleDef* def)
 {
     if (def->m_base.m_index == 0) {
-        Py_REFCNT(def) = 1;
-        Py_TYPE(def) = &PyModuleDef_Type;
+        Py_SET_REFCNT(def, 1);
+        Py_SET_TYPE(def, &PyModuleDef_Type);
         def->m_base.m_index = UPCALL_CEXT_L(_jls__PyModule_GetAndIncMaxModuleNumber);
     }
     return (PyObject*)def;

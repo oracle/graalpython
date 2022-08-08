@@ -173,7 +173,7 @@ class TestDescrObject(object):
                                 if (PyType_Ready(&B_Type) < 0)
                                     return NULL;
                                     
-                                Py_TYPE(&C_Type) = &B_Type; 
+                                Py_SET_TYPE(&C_Type, &B_Type); 
                                 C_Type.tp_base = &A_Type;''',
                             )
         
@@ -290,7 +290,7 @@ class TestDescrObject(object):
                                 if (PyType_Ready(&E_Type) < 0)
                                     return NULL;
                                     
-                                Py_TYPE(&F_Type) = &E_Type; 
+                                Py_SET_TYPE(&F_Type, &E_Type); 
                                 F_Type.tp_base = &D_Type;''',
                             )
         
