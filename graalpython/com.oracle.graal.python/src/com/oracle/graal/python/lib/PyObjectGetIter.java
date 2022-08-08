@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetIter extends Node {
+    @BytecodeInterpreterSwitch
     public abstract Object execute(Frame frame, Object receiver);
 
     @Specialization
