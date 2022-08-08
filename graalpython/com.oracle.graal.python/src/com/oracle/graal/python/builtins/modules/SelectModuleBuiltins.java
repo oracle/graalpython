@@ -86,6 +86,11 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @CoreFunctions(defineModule = "select")
 public class SelectModuleBuiltins extends PythonBuiltins {
 
+    /*
+     * ATTENTION: if we ever add "poll" support, update the code in
+     * MultiprocessingModuleBuilins#SelectNode to use it if available
+     */
+
     public SelectModuleBuiltins() {
         addBuiltinConstant("error", PythonErrorType.OSError);
     }
