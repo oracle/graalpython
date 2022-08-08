@@ -876,7 +876,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("foo.bar.baz", 7, 0),
         ),
         resultspec="O",
-        argspec='OOi',
+        argspec='OOn',
         arguments=["PyObject* string", "PyObject* sep", "Py_ssize_t maxsplit"],
         cmpfunc=unhandled_error_compare
     )
