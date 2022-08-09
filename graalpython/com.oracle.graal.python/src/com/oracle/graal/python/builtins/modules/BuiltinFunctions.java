@@ -1210,14 +1210,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (getCore().isCoreInitialized() && AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
                 // TODO _PyAST_Validate
-                // TODO fake source
-                Source source = Source.newBuilder(PythonLanguage.ID, "", "").build();
+                Source source = createFakeSource();
                 RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null);
                 return wrapRootCallTarget(rootCallTarget);
             }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
             checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
+        }
+
+        @TruffleBoundary
+        private Source createFakeSource() {
+            return Source.newBuilder(PythonLanguage.ID, "", "").build();
         }
 
         private PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {

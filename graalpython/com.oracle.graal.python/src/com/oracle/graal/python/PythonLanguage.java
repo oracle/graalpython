@@ -535,6 +535,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    @TruffleBoundary
     public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames) {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {

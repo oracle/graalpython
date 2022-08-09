@@ -47,8 +47,6 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_LINENO;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -143,21 +141,33 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
         if (seq == null || seq.length == 0) {
             return factory.createList();
         }
-        return factory.createList(Arrays.stream(seq).map(Sst2ObjVisitorBase::visitNullable).toArray());
+        Object[] objs = new Object[seq.length];
+        for (int i = 0; i < objs.length; ++i) {
+            objs[i] = visitNullable(seq[i]);
+        }
+        return factory.createList(objs);
     }
 
     final PList seq2List(CmpOpTy[] seq) {
         if (seq == null || seq.length == 0) {
             return factory.createList();
         }
-        return factory.createList(Arrays.stream(seq).map(this::visitNullable).toArray());
+        Object[] objs = new Object[seq.length];
+        for (int i = 0; i < objs.length; ++i) {
+            objs[i] = visitNullable(seq[i]);
+        }
+        return factory.createList(objs);
     }
 
     final PList seq2List(SSTNode[] seq) {
         if (seq == null || seq.length == 0) {
             return factory.createList();
         }
-        return factory.createList(Arrays.stream(seq).map(this::visitNullable).toArray());
+        Object[] objs = new Object[seq.length];
+        for (int i = 0; i < objs.length; ++i) {
+            objs[i] = visitNullable(seq[i]);
+        }
+        return factory.createList(objs);
     }
 
     final void fillSourceRangeAttributes(PythonObject o, SourceRange sourceRange) {
