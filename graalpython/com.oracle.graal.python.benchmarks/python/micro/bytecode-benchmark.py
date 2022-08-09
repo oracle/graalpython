@@ -43,6 +43,15 @@
 # 77 instructions on CPython 3.10.0
 # 75 instructions on CPython 2.7.18
 
+# useful IGV filters when focusing on the bytecode switch:
+#
+# Colorize by frequency
+# > colorizeGradientWithMode("relativeFrequency", 0, 7, "logarithmic");
+#
+# Remove low frequency bytecode branches (less than 0.4 relativeFrequency)
+# > remove("relativeFrequency", "^(0\\.(0|1|2|3).+|.+E-.+)$");
+
+
 def __benchmark__(num=10):
     size = 8191
     iter = 0
