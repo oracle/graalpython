@@ -71,7 +71,7 @@ def main():
 
     with open(args.output_file, "w") as file:
         gen = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file, debug=args.debug)
-        gen.generate(os.path.relpath(args.grammar_file, os.path.dirname(args.output_file)))
+        gen.generate(os.path.basename(args.grammar_file))
 
 
 if __name__ == '__main__':
