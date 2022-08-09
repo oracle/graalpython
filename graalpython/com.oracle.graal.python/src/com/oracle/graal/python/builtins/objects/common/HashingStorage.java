@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -50,12 +49,12 @@ import java.util.Iterator;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -658,7 +657,6 @@ public abstract class HashingStorage {
                     IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) throws PException {
         Object it = getIter.execute(frame, iterable);
         ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
-        boolean isStringKey = false;
         try {
             while (true) {
                 Object next = nextNode.execute(frame, it);
@@ -672,9 +670,6 @@ public abstract class HashingStorage {
                     throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                 }
 
-                // really check for Java String since PString can be subclassed
-                isStringKey = isStringKey || isJavaString(getItemNode.execute(frame, element, 0));
-
                 elements.add(element);
             }
         } catch (PException e) {
@@ -684,7 +679,7 @@ public abstract class HashingStorage {
                 e.expectStopIteration(errorProfile);
             }
         }
-        HashingStorage storage = storageSupplier.get(isStringKey, elements.size() + kwargs.length);
+        HashingStorage storage = storageSupplier.get(false, elements.size() + kwargs.length);
         for (int j = 0; j < elements.size(); j++) {
             PSequence element = elements.get(j);
             Object key = getItemNode.execute(frame, element, 0);

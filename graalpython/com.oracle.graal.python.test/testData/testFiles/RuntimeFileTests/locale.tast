@@ -233,8 +233,26 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                           FunctionBodyNode SourceSection: [1874,2547]`return {'grouping': ...`
                             FrameReturnNode SourceSection: [1874,2547]`return {'grouping': ...`
-                              FixedDictLiteralNodeGen SourceSection: [1881,2547]`{'grouping': [127],↵...`
+                              DynamicDictLiteralNodeGen SourceSection: [1881,2547]`{'grouping': [127],↵...`
                                 PythonObjectFactoryNodeGen SourceSection: None
+                                StringLiteralNode SourceSection: [1882,1892]`'grouping'`
+                                StringLiteralNode SourceSection: [1917,1934]`'currency_symbol'`
+                                StringLiteralNode SourceSection: [1956,1969]`'n_sign_posn'`
+                                StringLiteralNode SourceSection: [1992,2007]`'p_cs_precedes'`
+                                StringLiteralNode SourceSection: [2030,2045]`'n_cs_precedes'`
+                                StringLiteralNode SourceSection: [2068,2082]`'mon_grouping'`
+                                StringLiteralNode SourceSection: [2104,2120]`'n_sep_by_space'`
+                                StringLiteralNode SourceSection: [2143,2158]`'decimal_point'`
+                                StringLiteralNode SourceSection: [2181,2196]`'negative_sign'`
+                                StringLiteralNode SourceSection: [2218,2233]`'positive_sign'`
+                                StringLiteralNode SourceSection: [2255,2271]`'p_sep_by_space'`
+                                StringLiteralNode SourceSection: [2294,2311]`'int_curr_symbol'`
+                                StringLiteralNode SourceSection: [2333,2346]`'p_sign_posn'`
+                                StringLiteralNode SourceSection: [2369,2384]`'thousands_sep'`
+                                StringLiteralNode SourceSection: [2406,2425]`'mon_thousands_sep'`
+                                StringLiteralNode SourceSection: [2447,2460]`'frac_digits'`
+                                StringLiteralNode SourceSection: [2483,2502]`'mon_decimal_point'`
+                                StringLiteralNode SourceSection: [2524,2541]`'int_frac_digits'`
                                 ListLiteralNode SourceSection: [1894,1899]`[127]`
                                   IntegerLiteralNode SourceSection: [1895,1898]`127`
                                     Value: 127
@@ -265,6 +283,24 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 StringLiteralNode SourceSection: [2504,2506]`''`
                                 IntegerLiteralNode SourceSection: [2543,2546]`127`
                                   Value: 127
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                         Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,<return_val>,Object]
               WriteNameNodeGen SourceSection: [2553,2901]`def setlocale(catego...`
@@ -4190,8 +4226,52 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [22737,25081]`locale_encoding_alia...`
         Identifier: locale_encoding_alias
-        FixedDictLiteralNodeGen SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
+        DynamicDictLiteralNodeGen SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
           PythonObjectFactoryNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [22836,22841]`'437'`
+          StringLiteralNode SourceSection: [22877,22880]`'c'`
+          StringLiteralNode SourceSection: [22918,22922]`'en'`
+          StringLiteralNode SourceSection: [22967,22972]`'jis'`
+          StringLiteralNode SourceSection: [23011,23017]`'jis7'`
+          StringLiteralNode SourceSection: [23055,23061]`'ajec'`
+          StringLiteralNode SourceSection: [23100,23107]`'koi8c'`
+          StringLiteralNode SourceSection: [23146,23163]`'microsoftcp1251'`
+          StringLiteralNode SourceSection: [23192,23209]`'microsoftcp1255'`
+          StringLiteralNode SourceSection: [23238,23255]`'microsoftcp1256'`
+          StringLiteralNode SourceSection: [23284,23291]`'88591'`
+          StringLiteralNode SourceSection: [23333,23340]`'88592'`
+          StringLiteralNode SourceSection: [23382,23389]`'88595'`
+          StringLiteralNode SourceSection: [23431,23439]`'885915'`
+          StringLiteralNode SourceSection: [23545,23552]`'ascii'`
+          StringLiteralNode SourceSection: [23594,23603]`'latin_1'`
+          StringLiteralNode SourceSection: [23643,23654]`'iso8859_1'`
+          StringLiteralNode SourceSection: [23692,23704]`'iso8859_10'`
+          StringLiteralNode SourceSection: [23742,23754]`'iso8859_11'`
+          StringLiteralNode SourceSection: [23792,23804]`'iso8859_13'`
+          StringLiteralNode SourceSection: [23842,23854]`'iso8859_14'`
+          StringLiteralNode SourceSection: [23892,23904]`'iso8859_15'`
+          StringLiteralNode SourceSection: [23942,23954]`'iso8859_16'`
+          StringLiteralNode SourceSection: [23992,24003]`'iso8859_2'`
+          StringLiteralNode SourceSection: [24041,24052]`'iso8859_3'`
+          StringLiteralNode SourceSection: [24090,24101]`'iso8859_4'`
+          StringLiteralNode SourceSection: [24139,24150]`'iso8859_5'`
+          StringLiteralNode SourceSection: [24188,24199]`'iso8859_6'`
+          StringLiteralNode SourceSection: [24237,24248]`'iso8859_7'`
+          StringLiteralNode SourceSection: [24286,24297]`'iso8859_8'`
+          StringLiteralNode SourceSection: [24335,24346]`'iso8859_9'`
+          StringLiteralNode SourceSection: [24384,24396]`'iso2022_jp'`
+          StringLiteralNode SourceSection: [24428,24439]`'shift_jis'`
+          StringLiteralNode SourceSection: [24472,24480]`'tactis'`
+          StringLiteralNode SourceSection: [24518,24526]`'euc_jp'`
+          StringLiteralNode SourceSection: [24563,24571]`'euc_kr'`
+          StringLiteralNode SourceSection: [24608,24615]`'utf_8'`
+          StringLiteralNode SourceSection: [24653,24661]`'koi8_r'`
+          StringLiteralNode SourceSection: [24699,24707]`'koi8_t'`
+          StringLiteralNode SourceSection: [24745,24753]`'koi8_u'`
+          StringLiteralNode SourceSection: [24791,24799]`'kz1048'`
+          StringLiteralNode SourceSection: [24837,24845]`'cp1251'`
+          StringLiteralNode SourceSection: [24883,24891]`'cp1255'`
+          StringLiteralNode SourceSection: [24929,24937]`'cp1256'`
           StringLiteralNode SourceSection: [22868,22871]`'C'`
           StringLiteralNode SourceSection: [22909,22912]`'C'`
           StringLiteralNode SourceSection: [22950,22961]`'ISO8859-1'`
@@ -4236,6 +4316,50 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           StringLiteralNode SourceSection: [24869,24877]`'CP1251'`
           StringLiteralNode SourceSection: [24915,24923]`'CP1255'`
           StringLiteralNode SourceSection: [24961,24969]`'CP1256'`
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       ElseNode SourceSection: [25083,31240]`for k, v in sorted(l...`
         ForNode SourceSection: None
           ForRepeatingNode SourceSection: None

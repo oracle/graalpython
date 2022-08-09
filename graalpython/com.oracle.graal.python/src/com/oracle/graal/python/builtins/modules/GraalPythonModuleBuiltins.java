@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -602,8 +601,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             switch (name) {
                 case "empty":
                     return EmptyStorage.INSTANCE;
-                case "hashmap":
-                    return new HashMapStorage();
                 case "dynamicobject":
                     return new DynamicObjectStorage(lang);
                 case "economicmap":

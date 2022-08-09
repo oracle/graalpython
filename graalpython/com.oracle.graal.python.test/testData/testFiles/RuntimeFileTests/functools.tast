@@ -1249,8 +1249,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                   Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [6784,7281]`_convert = {↵    '__...`
         Identifier: _convert
-        FixedDictLiteralNodeGen SourceSection: [6795,7281]`{↵    '__lt__': [('_...`
+        DynamicDictLiteralNodeGen SourceSection: [6795,7281]`{↵    '__lt__': [('_...`
           PythonObjectFactoryNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [6801,6809]`'__lt__'`
+          StringLiteralNode SourceSection: [6922,6930]`'__le__'`
+          StringLiteralNode SourceSection: [7043,7051]`'__gt__'`
+          StringLiteralNode SourceSection: [7164,7172]`'__ge__'`
           ListLiteralNode SourceSection: [6811,6916]`[('__gt__', _gt_from...`
             TupleLiteralNode SourceSection: [6812,6835]`('__gt__', _gt_from_...`
               StringLiteralNode SourceSection: [6813,6821]`'__gt__'`
@@ -1343,6 +1347,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                   GetClassNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [7283,8082]`def total_ordering(c...`
         Identifier: total_ordering
         FunctionDefinitionNode Name: total_ordering SourceSection: None

@@ -3322,8 +3322,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                     WriteLocalVariableNodeGen SourceSection: [14359,14442]`namespace = {'_tuple...`
                       Identifier: namespace
                       Frame: [16,namespace,Illegal]
-                      FixedDictLiteralNodeGen SourceSection: [14371,14442]`{'_tuple_new': tuple...`
+                      DynamicDictLiteralNodeGen SourceSection: [14371,14442]`{'_tuple_new': tuple...`
                         PythonObjectFactoryNodeGen SourceSection: None
+                        StringLiteralNode SourceSection: [14372,14384]`'_tuple_new'`
+                        StringLiteralNode SourceSection: [14397,14407]`'__name__'`
                         ReadLocalCellNodeGen SourceSection: [14386,14395]`tuple_new`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [13,tuple_new,Illegal]
@@ -3333,6 +3335,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             StringLiteralNode SourceSection: [14409,14424]`'namedtuple_{}'`
                           ReadLocalVariableNodeGen SourceSection: [14432,14440]`typename`
                             Frame: [0,typename,Illegal]
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     ExpressionStatementNode SourceSection: [14515,14533]`exec(s, namespace)`
                       PythonCallBinary SourceSection: [14515,14533]`exec(s, namespace)`
                         CallBinaryMethodNodeGen SourceSection: None
@@ -3733,8 +3737,18 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                     WriteLocalVariableNodeGen SourceSection: [16169,16523]`class_namespace = {↵...`
                       Identifier: class_namespace
                       Frame: [24,class_namespace,Illegal]
-                      FixedDictLiteralNodeGen SourceSection: [16187,16523]`{↵        '__doc__':...`
+                      DynamicDictLiteralNodeGen SourceSection: [16187,16523]`{↵        '__doc__':...`
                         PythonObjectFactoryNodeGen SourceSection: None
+                        StringLiteralNode SourceSection: [16197,16206]`'__doc__'`
+                        StringLiteralNode SourceSection: [16243,16254]`'__slots__'`
+                        StringLiteralNode SourceSection: [16268,16277]`'_fields'`
+                        StringLiteralNode SourceSection: [16300,16318]`'_fields_defaults'`
+                        StringLiteralNode SourceSection: [16344,16353]`'__new__'`
+                        StringLiteralNode SourceSection: [16372,16379]`'_make'`
+                        StringLiteralNode SourceSection: [16396,16406]`'_replace'`
+                        StringLiteralNode SourceSection: [16426,16436]`'__repr__'`
+                        StringLiteralNode SourceSection: [16456,16465]`'_asdict'`
+                        StringLiteralNode SourceSection: [16484,16500]`'__getnewargs__'`
                         FormatStringLiteralNode SourceSection: [16208,16233]`f'{typename}({arg_li...`
                           Parts: 4
                         TupleLiteralNode SourceSection: [16256,16258]`()`
@@ -3756,6 +3770,16 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           Frame: [21,_asdict,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [16502,16516]`__getnewargs__`
                           Frame: [22,__getnewargs__,Illegal]
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16528,16551]`cache = _nt_itemgett...`
                       Identifier: cache
                       Frame: [25,cache,Illegal]

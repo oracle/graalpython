@@ -1,8 +1,0 @@
-Module[0, 16]
-    NamedExpr[1, 15]
-        Target: Name[1, 6] Value: "total" Store
-        Value: 
-            BinOp[10, 15]
-                Op: Add
-                LHS: LONG[10, 11] Value: 1
-                RHS: LONG[14, 15] Value: 2

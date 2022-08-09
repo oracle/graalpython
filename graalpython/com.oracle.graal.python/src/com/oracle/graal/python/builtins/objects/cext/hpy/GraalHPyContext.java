@@ -80,6 +80,8 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -204,7 +206,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -292,7 +293,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -1914,8 +1914,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                         dict.setDictStorage(dictStorage);
                     }
 
-                    if (dictStorage instanceof HashMapStorage) {
-                        ((HashMapStorage) dictStorage).put((TruffleString) key, value);
+                    if (dictStorage instanceof EconomicMapStorage) {
+                        ((EconomicMapStorage) dictStorage).putUncached((TruffleString) key, value);
                         return 0;
                     }
                     // fall through to generic case

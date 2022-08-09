@@ -33,7 +33,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -98,16 +97,19 @@ public class PDict extends PHashingCollection {
         storage = HashingStorageLibrary.getUncached().delItem(storage, key);
     }
 
-    public static HashingStorage createNewStorage(boolean isStringKey, int expectedSize) {
+    public static HashingStorage createNewStorage(int expectedSize) {
         HashingStorage newDictStorage;
         if (expectedSize == 0) {
             newDictStorage = EmptyStorage.INSTANCE;
-        } else if (isStringKey) {
-            newDictStorage = new HashMapStorage(expectedSize);
         } else {
             newDictStorage = EconomicMapStorage.create(expectedSize);
         }
         return newDictStorage;
+    }
+
+    public static HashingStorage createNewStorage(@SuppressWarnings("unused") boolean isStringKey, int expectedSize) {
+        // TODO: remove this overload with isStringKey
+        return createNewStorage(expectedSize);
     }
 
     public void update(PDict other) {

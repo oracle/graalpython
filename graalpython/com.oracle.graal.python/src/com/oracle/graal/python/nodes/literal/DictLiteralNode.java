@@ -26,50 +26,19 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory.DynamicDictLiteralNodeGen;
-import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory.FixedDictLiteralNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DictLiteralNode {
-
-    abstract static class FixedDictLiteralNode extends LiteralNode {
-
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-        @Children private final ExpressionNode[] values;
-
-        @CompilationFinal(dimensions = 1) private final TruffleString[] keys;
-
-        protected FixedDictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
-            this.keys = new TruffleString[keys.length];
-            for (int i = 0; i < keys.length; i++) {
-                this.keys[i] = ((StringLiteralNode) keys[i]).getValue();
-            }
-            this.values = values;
-        }
-
-        @Specialization
-        @ExplodeLoop
-        public PDict create(VirtualFrame frame) {
-            HashMapStorage dictStorage = new HashMapStorage(values.length);
-            for (int i = 0; i < values.length; i++) {
-                Object value = values[i].execute(frame);
-                dictStorage.put(keys[i], value);
-            }
-            return factory.createDict(dictStorage);
-        }
-    }
 
     abstract static class DynamicDictLiteralNode extends LiteralNode {
 
@@ -89,19 +58,11 @@ public abstract class DictLiteralNode {
 
         @ExplodeLoop
         private HashingStorage eval(VirtualFrame frame, ConditionProfile hasFrame) {
-            boolean allStrings = true;
-            Object[] evalKeys = new Object[this.keys.length];
-            Object[] evalValues = new Object[this.values.length];
+            HashingStorage storage = PDict.createNewStorage(false, values.length);
             for (int i = 0; i < values.length; i++) {
-                evalKeys[i] = keys[i].execute(frame);
-                evalValues[i] = values[i].execute(frame);
-                if (allStrings && !(evalKeys[i] instanceof String)) {
-                    allStrings = false;
-                }
-            }
-            HashingStorage storage = PDict.createNewStorage(allStrings, evalKeys.length);
-            for (int i = 0; i < values.length; i++) {
-                storage = libs[i].setItemWithFrame(storage, evalKeys[i], evalValues[i], hasFrame, frame);
+                Object key = keys[i].execute(frame);
+                Object value = values[i].execute(frame);
+                storage = libs[i].setItemWithFrame(storage, key, value, hasFrame, frame);
             }
             return storage;
         }
@@ -133,14 +94,6 @@ public abstract class DictLiteralNode {
         if (keys.length == 0) {
             return new EmptyDictLiteralNode();
         }
-        if (keys.length > HashMapStorage.SIZE_THRESHOLD) {
-            return DynamicDictLiteralNodeGen.create(keys, values);
-        }
-        for (ExpressionNode key : keys) {
-            if (!(key instanceof StringLiteralNode)) {
-                return DynamicDictLiteralNodeGen.create(keys, values);
-            }
-        }
-        return FixedDictLiteralNodeGen.create(keys, values);
+        return DynamicDictLiteralNodeGen.create(keys, values);
     }
 }

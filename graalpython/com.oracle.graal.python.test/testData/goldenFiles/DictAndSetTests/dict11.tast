@@ -8,10 +8,14 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
     DictConcatNodeGen SourceSection: [0,52]`{**{"a": "hello", "b...`
       EmptyDictLiteralNode SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      FixedDictLiteralNodeGen SourceSection: [3,31]`{"a": "hello", "b": ...`
+      DynamicDictLiteralNodeGen SourceSection: [3,31]`{"a": "hello", "b": ...`
         PythonObjectFactoryNodeGen SourceSection: None
+        StringLiteralNode SourceSection: [4,7]`"a"`
+        StringLiteralNode SourceSection: [18,21]`"b"`
         StringLiteralNode SourceSection: [9,16]`"hello"`
         StringLiteralNode SourceSection: [23,30]`"world"`
+        CachedDispatchFirst SourceSection: None
+        CachedDispatchFirst SourceSection: None
       DynamicDictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [33,34]`1`

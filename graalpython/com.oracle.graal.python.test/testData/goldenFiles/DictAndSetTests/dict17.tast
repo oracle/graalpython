@@ -5,8 +5,12 @@ ModuleRootNode Name: <module 'dict17'> SourceSection: [0,31]`{'a':'b','c':14,'d'
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,31]`{'a':'b','c':14,'d':...`
-    FixedDictLiteralNodeGen SourceSection: [0,31]`{'a':'b','c':14,'d':...`
+    DynamicDictLiteralNodeGen SourceSection: [0,31]`{'a':'b','c':14,'d':...`
       PythonObjectFactoryNodeGen SourceSection: None
+      StringLiteralNode SourceSection: [1,4]`'a'`
+      StringLiteralNode SourceSection: [9,12]`'c'`
+      StringLiteralNode SourceSection: [16,19]`'d'`
+      StringLiteralNode SourceSection: [25,28]`'g'`
       StringLiteralNode SourceSection: [5,8]`'b'`
       IntegerLiteralNode SourceSection: [13,15]`14`
         Value: 14
@@ -16,3 +20,7 @@ ModuleRootNode Name: <module 'dict17'> SourceSection: [0,31]`{'a':'b','c':14,'d'
         Identifier: h
         IsBuiltinClassProfile SourceSection: None
           GetClassNodeGen SourceSection: None
+      CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None
