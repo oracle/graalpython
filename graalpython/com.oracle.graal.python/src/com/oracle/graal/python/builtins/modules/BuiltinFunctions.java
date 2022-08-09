@@ -1148,14 +1148,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 ct = getCore().getLanguage().cacheCode(filename, createCode);
             }
-            RootCallTarget rootCallTarget = (RootCallTarget) ct;
-            RootNode rootNode = rootCallTarget.getRootNode();
-            if (rootNode instanceof PBytecodeRootNode) {
-                ((PBytecodeRootNode) rootNode).triggerDeferredDeprecationWarnings();
-            } else if (rootNode instanceof PRootNode) {
-                ((PRootNode) rootNode).triggerDeprecationWarnings();
-            }
-            return factory().createCode(rootCallTarget);
+            return wrapRootCallTarget((RootCallTarget) ct);
         }
 
         @Specialization(limit = "3")
@@ -1214,9 +1207,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
+            if (getCore().isCoreInitialized() && AstModuleBuiltins.isAst(getContext(), wSource)) {
+                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
+                // TODO _PyAST_Validate
+                // TODO fake source
+                Source source = Source.newBuilder(PythonLanguage.ID, "", "").build();
+                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null);
+                return wrapRootCallTarget(rootCallTarget);
+            }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
             checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
+        }
+
+        private PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
+            RootNode rootNode = rootCallTarget.getRootNode();
+            if (rootNode instanceof PBytecodeRootNode) {
+                ((PBytecodeRootNode) rootNode).triggerDeferredDeprecationWarnings();
+            } else if (rootNode instanceof PRootNode) {
+                ((PRootNode) rootNode).triggerDeprecationWarnings();
+            }
+            return factory().createCode(rootCallTarget);
         }
 
         private void checkSource(TruffleString source) throws PException {

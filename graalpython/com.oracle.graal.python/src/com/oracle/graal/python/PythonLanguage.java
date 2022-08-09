@@ -524,9 +524,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
-            Compiler compiler = new Compiler(errorCb);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
+            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames);
+        } catch (PException e) {
+            if (topLevel) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            }
+            throw e;
+        }
+    }
+
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames) {
+        RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        try {
+            Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
             if (hasArguments) {
                 mod = transformASTForExecutionWithArguments(argumentNames, mod);

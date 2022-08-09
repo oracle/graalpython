@@ -150,6 +150,11 @@ public final class ConstantValue {
         return new ConstantValue(o, Kind.RAW);
     }
 
+    public static ConstantValue ofArbitraryPythonObject(Object o) {
+        assert Kind.ARBITRARY_PYTHON_OBJECT.checkValueType(o);
+        return new ConstantValue(o, Kind.ARBITRARY_PYTHON_OBJECT);
+    }
+
     public enum Kind {
         ARBITRARY_PYTHON_OBJECT() {
             @Override

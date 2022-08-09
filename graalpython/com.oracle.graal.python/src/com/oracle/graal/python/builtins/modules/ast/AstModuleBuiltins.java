@@ -56,10 +56,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -92,12 +94,6 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         clsAst.setAttribute(T__FIELDS, emptyTuple);
         clsAst.setAttribute(T__ATTRIBUTES, emptyTuple);
         // TODO clsAst.setAttribute('__match_args__', emptyTuple);
-    }
-
-    @Override
-    @SuppressWarnings("unused")
-    public void postInitialize(Python3Core core) {
-        super.postInitialize(core);
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
@@ -108,7 +104,18 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         return (AstState) ReadAttributeFromObjectNode.getUncached().execute(context.lookupBuiltinModule(T__AST), AST_STATE_KEY);
     }
 
+    @TruffleBoundary
     public static Object sst2Obj(PythonContext context, ModTy mod) {
         return mod.accept(new Sst2ObjVisitor(getAstState(context)));
+    }
+
+    @TruffleBoundary
+    public static ModTy obj2sst(PythonContext context, Object obj) {
+        return new Obj2Sst(getAstState(context)).obj2ModTy(obj);
+    }
+
+    @TruffleBoundary
+    public static boolean isAst(PythonContext context, Object obj) {
+        return Obj2SstBase.isInstanceOf(obj, getAstState(context).clsAst);
     }
 }
