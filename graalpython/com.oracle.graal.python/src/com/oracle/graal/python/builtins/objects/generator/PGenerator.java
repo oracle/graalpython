@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.bytecode.GeneratorResult;
+import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
@@ -170,12 +170,8 @@ public final class PGenerator extends PythonBuiltinObject {
         this.generatorInfo = null;
     }
 
-    public void handleResult(PythonLanguage language, GeneratorResult result) {
+    public void handleResult(PythonLanguage language, GeneratorYieldResult result) {
         assert usesBytecode();
-        if (result.isReturn) {
-            markAsFinished();
-            return;
-        }
         currentCallTarget = result.resumeBci;
         if (callTargets[currentCallTarget] == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
