@@ -81,7 +81,7 @@ public final class PContextVar extends PythonBuiltinObject {
     }
 
     public Object get(Object defaultValue) {
-        Object result = value.get();
+        Object result = getValue();
         if (result != null) {
             return result;
         }
