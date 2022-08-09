@@ -246,6 +246,7 @@ graalpython/com.oracle.graal.python.pegparser.generator/pegen/testutil.py,python
 graalpython/com.oracle.graal.python.pegparser.generator/pegen/tokenizer.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/pegen/validator.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/pegjava/java_generator.py,python.copyright
+graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser/src/com/oracle/graal/python/pegparser/tokenizer/Tokenizer.java,python.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
