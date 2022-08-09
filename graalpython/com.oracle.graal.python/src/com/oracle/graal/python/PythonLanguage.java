@@ -526,7 +526,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
-            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames);
+            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCb);
         } catch (PException e) {
             if (topLevel) {
                 PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -536,8 +536,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames) {
-        RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+                    RaisePythonExceptionErrorCallback errorCallback) {
+        RaisePythonExceptionErrorCallback errorCb = errorCallback;
+        if (errorCb == null) {
+            errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        }
         try {
             Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
@@ -547,9 +551,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
             CodeUnit co = cu.assemble();
             RootNode rootNode = PBytecodeRootNode.create(this, co, source, errorCb);
-            GilNode gil = GilNode.getUncached();
-            boolean wasAcquired = gil.acquire(context, rootNode);
             if (topLevel) {
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, rootNode);
                 try {
                     errorCb.triggerDeprecationWarnings();
                 } finally {

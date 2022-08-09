@@ -1124,6 +1124,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
                 Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, false);
                 ModTy mod = (ModTy) parser.parse();
+                errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
@@ -1211,7 +1212,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
                 // TODO _PyAST_Validate
                 Source source = createFakeSource();
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null);
+                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null);
                 return wrapRootCallTarget(rootCallTarget);
             }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
