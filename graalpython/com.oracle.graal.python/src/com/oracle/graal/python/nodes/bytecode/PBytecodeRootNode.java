@@ -3696,14 +3696,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (FrameSlotTypeException e) {
             // This should only happen when quickened concurrently in multi-context
             // mode
-            generalizeVariableStores(index);
-            value = localFrame.getValue(index);
+            value = generalizeBytecodeLoadFastO(localFrame, index);
         }
         if (value == null) {
-            PRaiseNode raiseNode = insertChildNode(adoptedNodes, bci, PRaiseNodeGen.class, NODE_RAISE);
-            throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
+            throw raiseVarReferencedBeforeAssignment(bci, index);
         }
         virtualFrame.setObject(stackTop, value);
+    }
+
+    @InliningCutoff
+    private PException raiseVarReferencedBeforeAssignment(int bci, int index) {
+        PRaiseNode raiseNode = insertChildNode(adoptedNodes, bci, PRaiseNodeGen.class, NODE_RAISE);
+        throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
+    }
+
+    @InliningCutoff
+    private Object generalizeBytecodeLoadFastO(Frame localFrame, int index) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        generalizeVariableStores(index);
+        return localFrame.getValue(index);
     }
 
     private static byte stackSlotTypeToTypeId(VirtualFrame virtualFrame, int stackTop) {
