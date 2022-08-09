@@ -4387,6 +4387,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private PException bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
         RaiseNode raiseNode = insertChildNode(localNodes, bci, RaiseNodeGen.class, NODE_RAISENODE);
         Object cause;
@@ -4407,6 +4408,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         throw CompilerDirectives.shouldNotReachHere();
     }
 
+    @InliningCutoff
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
         if (oparg < cellvars.length) {
@@ -4417,6 +4419,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @InliningCutoff
     private int bytecodeImportName(VirtualFrame virtualFrame, Object globals, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         CastToJavaIntExactNode castNode = insertChildNode(localNodes, bci, UNCACHED_CAST_TO_JAVA_INT_EXACT, CastToJavaIntExactNodeGen.class, NODE_CAST_TO_JAVA_INT_EXACT, useCachedNodes);
         TruffleString modname = localNames[oparg];
@@ -4430,6 +4433,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private int bytecodeImportFrom(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         TruffleString importName = localNames[oparg];
@@ -4440,6 +4444,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private int bytecodeImportStar(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
         TruffleString importName = localNames[oparg];
