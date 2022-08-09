@@ -98,6 +98,11 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         clsAst.setAttribute(T__FIELDS, emptyTuple);
         clsAst.setAttribute(T__ATTRIBUTES, emptyTuple);
         // TODO clsAst.setAttribute('__match_args__', emptyTuple);
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
@@ -108,7 +113,8 @@ public final class AstModuleBuiltins extends PythonBuiltins {
 
     private void createBackwardCompatibilityClasses(Python3Core core, PythonModule astModule, AstState state) {
         // ast.py from cpython 3.10.5 defines classes for backwards compatibility
-        // As long as we are still using ast.py from 3.8.6, we need to provide these classes somehow.
+        // As long as we are still using ast.py from 3.8.6, we need to provide these classes
+        // somehow.
         PythonLanguage language = core.getLanguage();
         PythonObjectFactory factory = core.factory();
 
@@ -146,6 +152,9 @@ public final class AstModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     public static boolean isAst(PythonContext context, Object obj) {
-        return Obj2SstBase.isInstanceOf(obj, getAstState(context).clsAst);
+        // We need to look up the ast.AST class in the context and cannot rely on the cached value
+        // in AstState.clsAst because this method is called from compile() which may be called
+        // before postInitialize().
+        return Obj2SstBase.isInstanceOf(obj, context.lookupType(PythonBuiltinClassType.AST));
     }
 }

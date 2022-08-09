@@ -1207,7 +1207,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
-            if (getCore().isCoreInitialized() && AstModuleBuiltins.isAst(getContext(), wSource)) {
+            if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
                 // TODO _PyAST_Validate
                 Source source = createFakeSource();
