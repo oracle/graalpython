@@ -45,8 +45,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle.NULL_HANDLE_DELEGATE;
-
 public final class PContextVar extends PythonBuiltinObject {
     private static int nextId = 0;
     private final int hashForHamt = nextId++;
