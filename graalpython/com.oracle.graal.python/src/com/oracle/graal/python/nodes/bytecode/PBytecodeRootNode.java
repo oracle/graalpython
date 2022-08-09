@@ -105,6 +105,8 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDelItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetIterNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -175,8 +177,6 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
@@ -274,7 +274,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
     private static final NodeSupplier<PyObjectIsTrueNode> NODE_OBJECT_IS_TRUE = PyObjectIsTrueNode::create;
     private static final PyObjectIsTrueNode UNCACHED_OBJECT_IS_TRUE = PyObjectIsTrueNode.getUncached();
-    private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
+    private static final NodeSupplier<PyObjectGetItem> NODE_GET_ITEM = PyObjectGetItem::create;
     private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH = ExceptMatchNode.getUncached();
     private static final NodeSupplier<ExceptMatchNode> NODE_EXCEPT_MATCH = ExceptMatchNode::create;
     private static final SetupWithNode UNCACHED_SETUP_WITH_NODE = SetupWithNode.getUncached();
@@ -2266,7 +2266,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private int bytecodeBinarySubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
-        GetItemNode getItemNode = insertChildNode(localNodes, bci, GetItemNodeGen.class, NODE_GET_ITEM);
+        PyObjectGetItem getItemNode = insertChildNode(localNodes, bci, PyObjectGetItemNodeGen.class, NODE_GET_ITEM);
         Object slice = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop, getItemNode.execute(virtualFrame, virtualFrame.getObject(stackTop), slice));

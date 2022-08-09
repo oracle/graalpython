@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -93,6 +94,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         return getItemNode.execute(frame, object, key);
     }
 
+    @InliningCutoff // no point inlining the complex case
     @Specialization(replaces = {"doList", "doTuple", "doDict"})
     Object doGeneric(VirtualFrame frame, Object object, Object key,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
@@ -129,6 +131,10 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
             }
             return PNone.NO_VALUE;
         }
+    }
+
+    public static PyObjectGetItem create() {
+        return PyObjectGetItemNodeGen.create();
     }
 
     public static PyObjectGetItem getUncached() {
