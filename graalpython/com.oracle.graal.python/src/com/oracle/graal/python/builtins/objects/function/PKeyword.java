@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import com.oracle.truffle.api.strings.TruffleString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PKeyword {
 

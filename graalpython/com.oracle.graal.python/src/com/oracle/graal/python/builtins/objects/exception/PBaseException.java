@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.containsJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertContainsNoJavaString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -109,7 +109,7 @@ public final class PBaseException extends PythonObject {
 
     public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
         super(cls, instanceShape);
-        assert !containsJavaString(exceptionAttributes);
+        assertContainsNoJavaString(exceptionAttributes);
         this.exceptionAttributes = exceptionAttributes;
         this.args = null;
         this.hasMessageFormat = false;
@@ -137,7 +137,7 @@ public final class PBaseException extends PythonObject {
     }
 
     public void setExceptionAttributes(Object[] exceptionAttributes) {
-        assert !containsJavaString(exceptionAttributes);
+        assertContainsNoJavaString(exceptionAttributes);
         this.exceptionAttributes = exceptionAttributes;
     }
 

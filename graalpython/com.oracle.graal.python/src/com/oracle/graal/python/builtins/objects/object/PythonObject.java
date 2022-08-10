@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +66,7 @@ public class PythonObject extends PythonAbstractObject {
     public static final byte HAS_MATERIALIZED_DICT = 0b1000;
     /**
      * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
-     * 
+     *
      * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
      */
     public static final byte IS_STATIC_BASE = 0b10000;
