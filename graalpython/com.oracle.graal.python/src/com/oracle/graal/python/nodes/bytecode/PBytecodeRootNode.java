@@ -769,7 +769,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (!useCachedNodes) {
             return value;
         }
-        int index = Byte.toUnsignedInt(localBC[bci + 2]) & Byte.toUnsignedInt(localBC[bci + 3]) << 8;
+        int index = Byte.toUnsignedInt(localBC[bci + 2]) | Byte.toUnsignedInt(localBC[bci + 3]) << 8;
         int t = conditionProfiles[index];
         int f = conditionProfiles[index + 1];
         boolean val = value;
