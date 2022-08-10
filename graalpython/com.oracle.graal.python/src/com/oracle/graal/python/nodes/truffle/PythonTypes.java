@@ -37,12 +37,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @TypeSystem
 public abstract class PythonTypes {
 
-    // see comment in TruffleStringMigrationPythonTypes
-    @ImplicitCast
-    public static TruffleString fromJavaString(String value) {
-        return TruffleStringMigrationPythonTypes.fromJavaString(value);
-    }
-
     @ImplicitCast
     public static long intToLong(int value) {
         return value;

@@ -48,12 +48,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @TypeSystem
 public abstract class PythonArithmeticTypes {
 
-    // see comment in TruffleStringMigrationPythonTypes
-    @ImplicitCast
-    public static TruffleString fromJavaString(String value) {
-        return TruffleStringMigrationPythonTypes.fromJavaString(value);
-    }
-
     @ImplicitCast
     public static double PFloatToDouble(PFloat value) {
         // NOTE: That's correct because we just use it in arithmetic operations where CPython also
