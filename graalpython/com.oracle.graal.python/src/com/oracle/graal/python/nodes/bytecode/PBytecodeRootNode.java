@@ -2875,6 +2875,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return wrapJavaException(e, factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             PythonContext.get(this).reacquireGilAfterStackOverflow();
             return wrapJavaException(e, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
