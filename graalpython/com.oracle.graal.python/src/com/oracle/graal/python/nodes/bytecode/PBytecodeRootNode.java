@@ -1072,6 +1072,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] arguments = virtualFrame.getArguments();
         Object globals = PArguments.getGlobals(arguments);
         Object locals = PArguments.getSpecialArgument(arguments);
+
+        boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
+        if (inCompiledCode && !isGeneratorOrCoroutine) {
+            unboxVariables(localFrame);
+        }
+
         final PythonLanguage language;
         if (cachedLanguage == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2162,7 +2168,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                int targetIndex = findHandler(bci);
+                int targetIndex = findHandler(beginBci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (pe != null) {
                     if (mutableData.localException != null) {
