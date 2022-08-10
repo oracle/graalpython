@@ -62,7 +62,7 @@ class TestPyStructSequenceTypes(object):
                                 """,
                                           ready_code="""
                                /* our template initializes refcnt to 1; so reset */
-                               Py_REFCNT(&TestPyStructSequenceType) = 0;
+                               Py_SET_REFCNT(&TestPyStructSequenceType, 0);
                                if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
                                  return NULL;
                                }

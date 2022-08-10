@@ -121,29 +121,24 @@ PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS
 
 PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
-PyObject _Py_NotImplementedStruct = {
-    _PyObject_EXTRA_INIT
-    1, &_PyNotImplemented_Type
-};
-
-static inline Py_ssize_t _Py_REFCNT(PyObject *obj) {
+Py_ssize_t _Py_REFCNT(PyObject *obj) {
     return obj->ob_refcnt;
 }
 
-static inline void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
     obj->ob_refcnt = cnt;
 }
 
-static inline struct _typeobject* _Py_TYPE(PyObject *a) {
-    return obj->ob_type;
+struct _typeobject* _Py_TYPE(PyObject *a) {
+    return a->ob_type;
 }
-static inline Py_ssize_t _Py_SIZE(PyVarObject *a) {
+Py_ssize_t _Py_SIZE(PyVarObject *a) {
     return a->ob_size;
 }
-static inline void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
-    obj->ob_type = b;
+void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
+    a->ob_type = b;
 }
-static inline void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
+void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
     a->ob_size = b;
 }
 
@@ -717,7 +712,7 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     if (op == NULL) {
         return PyErr_NoMemory();
     }
-    Py_TYPE(op) = tp;
+    Py_SET_TYPE(op, tp);
     /* TOOD(fa): properly set HEAPTYPE flag */
     /*
     if (PyType_GetFlags(tp) & Py_TPFLAGS_HEAPTYPE) {
@@ -737,7 +732,7 @@ PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t siz
     }
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
-    Py_TYPE(op) = tp;
+    Py_SET_TYPE(op, tp);
     _Py_NewReference((PyObject *)op);
     return op;
 }

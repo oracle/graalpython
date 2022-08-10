@@ -4572,7 +4572,7 @@ static PyObject*
 check_pyobject_forbidden_bytes_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
 {
     /* Allocate an incomplete PyObject structure: truncate 'ob_type' field */
-    PyObject *op = (PyObject *)PyObject_Malloc(offsetof(PyObject, ob_type_internal));
+    PyObject *op = (PyObject *)PyObject_Malloc(offsetof(PyObject, ob_type));
     if (op == NULL) {
         return NULL;
     }
