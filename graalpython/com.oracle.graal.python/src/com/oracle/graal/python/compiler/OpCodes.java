@@ -52,7 +52,7 @@ import com.oracle.graal.python.runtime.exception.PException;
  * opcodes can have multiple bytes of immediate operands. The first operand can be variably extended
  * using {@link #EXTENDED_ARG} instruction.
  */
-@GenerateEnumConstants
+@GenerateEnumConstants(type = GenerateEnumConstants.Type.BYTE)
 public enum OpCodes {
     /** Pop a single item from the stack */
     POP_TOP(0, 1, 0),
@@ -737,7 +737,11 @@ public enum OpCodes {
         public static final int HAS_CLOSURE = 0x08;
     }
 
-    public static final OpCodes[] VALUES = new OpCodes[values().length];
+    private static final OpCodes[] VALUES = new OpCodes[values().length];
+
+    public static OpCodes fromOpCode(byte opcode) {
+        return VALUES[Byte.toUnsignedInt(opcode)];
+    }
 
     static {
         assert values().length < 256;

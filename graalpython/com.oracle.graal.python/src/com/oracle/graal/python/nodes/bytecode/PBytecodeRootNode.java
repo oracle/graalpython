@@ -1915,7 +1915,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.VALUES[bc]);
+                        throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.fromOpCode(bc));
                 }
                 // prepare next loop
                 oparg = 0;
@@ -2835,7 +2835,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (generalizeInputsMap[beginBci] != null) {
                 for (int i = 0; i < generalizeInputsMap[beginBci].length; i++) {
                     int generalizeBci = generalizeInputsMap[beginBci][i];
-                    OpCodes generalizeInstr = OpCodes.VALUES[bytecode[generalizeBci]];
+                    OpCodes generalizeInstr = OpCodes.fromOpCode(bytecode[generalizeBci]);
                     if (generalizeInstr.generalizesTo != null) {
                         bytecode[generalizeBci] = (byte) generalizeInstr.generalizesTo.ordinal();
                     }

@@ -45,4 +45,10 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 public @interface GenerateEnumConstants {
+    enum Type {
+        INT,
+        BYTE
+    }
+
+    Type type() default Type.INT;
 }

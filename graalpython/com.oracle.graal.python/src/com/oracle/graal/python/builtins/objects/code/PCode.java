@@ -330,7 +330,7 @@ public final class PCode extends PythonBuiltinObject {
             CodeUnit co = ((PBytecodeRootNode) rootNode).getCodeUnit();
             Set<Object> bytecodeConstants = new HashSet<>();
             for (int bci = 0; bci < co.code.length;) {
-                OpCodes op = OpCodes.VALUES[co.code[bci]];
+                OpCodes op = OpCodes.fromOpCode(co.code[bci]);
                 if (op.quickens != null) {
                     op = op.quickens;
                 }

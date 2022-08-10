@@ -143,10 +143,6 @@ public final class CodeUnit {
         this.generalizeVarsMap = generalizeVarsMap;
     }
 
-    OpCodes codeForBC(int bc) {
-        return OpCodes.VALUES[bc];
-    }
-
     public int bciToSrcOffset(int bci) {
         int diffIdx = 0;
         int currentOffset = startOffset;
@@ -156,7 +152,7 @@ public final class CodeUnit {
             if (bci <= i) {
                 break;
             } else {
-                OpCodes op = codeForBC(code[i]);
+                OpCodes op = OpCodes.fromOpCode(code[i]);
                 i += op.length();
                 bytecodeNumber++;
             }
@@ -248,8 +244,7 @@ public final class CodeUnit {
         int oparg = 0;
         while (bci < bytecode.length) {
             int bcBCI = bci;
-            int bc = Byte.toUnsignedInt(bytecode[bci++]);
-            OpCodes opcode = codeForBC(bc);
+            OpCodes opcode = OpCodes.fromOpCode(bytecode[bci++]);
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
 
