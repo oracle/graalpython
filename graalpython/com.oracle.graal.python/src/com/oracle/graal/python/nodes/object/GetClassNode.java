@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -156,12 +157,14 @@ public abstract class GetClassNode extends PNodeWithContext {
         return klass;
     }
 
+    @InliningCutoff
     @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "getPythonObjectConstantClass")
     static Object getPythonObject(PythonObject object,
                     @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(object, CLASS, object.getInitialPythonClass());
     }
 
+    @InliningCutoff
     @Specialization
     static Object getNativeObject(PythonAbstractNativeObject object,
                     @Cached CExtNodes.GetNativeClassNode getNativeClassNode) {

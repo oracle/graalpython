@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -76,6 +77,7 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return false;
     }
 
+    @InliningCutoff
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
                     @Cached GetClassNode getClassNode,
@@ -103,6 +105,7 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return false;
     }
 
+    @InliningCutoff
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,

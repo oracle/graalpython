@@ -87,6 +87,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         return getItemNode.execute(frame, object, key);
     }
 
+    @InliningCutoff // TODO: inline this probably?
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     Object doDict(VirtualFrame frame, PDict object, Object key,
                     @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,

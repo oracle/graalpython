@@ -123,6 +123,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -339,6 +340,13 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
+        @Specialization(guards = {"index >= 0", "index < self.getSequenceStorage().length()"})
+        protected Object doInBounds(PList self, int index,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            return getItemNode.execute(self.getSequenceStorage(), index);
+        }
+
+        @InliningCutoff
         @Specialization(guards = "indexCheckNode.execute(key) || isPSlice(key)", limit = "1")
         protected Object doScalar(VirtualFrame frame, PList self, Object key,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
@@ -346,6 +354,7 @@ public class ListBuiltins extends PythonBuiltins {
             return getItemNode.execute(frame, self.getSequenceStorage(), key);
         }
 
+        @InliningCutoff
         @SuppressWarnings("unused")
         @Fallback
         public Object doListError(VirtualFrame frame, Object self, Object key) {

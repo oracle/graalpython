@@ -100,6 +100,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -260,18 +261,27 @@ public class TupleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
+        @Specialization(guards = {"index >= 0", "index < tuple.getSequenceStorage().length()"})
+        protected Object doInBounds(PTuple tuple, int index,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            return getItemNode.execute(tuple.getSequenceStorage(), index);
+        }
+
+        @InliningCutoff
         @Specialization(guards = "!isPSlice(key)")
         Object doPTuple(VirtualFrame frame, PTuple tuple, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
+        @InliningCutoff
         @Specialization
         Object doPTuple(VirtualFrame frame, PTuple tuple, PSlice key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
+        @InliningCutoff
         @Specialization
         Object doNative(PythonNativeObject tuple, long key,
                         @Cached PCallCapiFunction callSetItem,

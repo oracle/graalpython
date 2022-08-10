@@ -156,6 +156,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -312,30 +313,37 @@ public abstract class SequenceStorageNodes {
             return lenNode.execute(left) == 0;
         }
 
+        @InliningCutoff
         protected static boolean isBoolean(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Boolean;
         }
 
+        @InliningCutoff
         protected static boolean isByte(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Byte;
         }
 
+        @InliningCutoff
         protected static boolean isByteLike(GetElementType getElementTypeNode, SequenceStorage s) {
             return isByte(getElementTypeNode, s) || isInt(getElementTypeNode, s) || isLong(getElementTypeNode, s);
         }
 
+        @InliningCutoff
         protected static boolean isInt(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Int;
         }
 
+        @InliningCutoff
         protected static boolean isLong(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Long;
         }
 
+        @InliningCutoff
         protected static boolean isDouble(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Double;
         }
 
+        @InliningCutoff
         protected static boolean isObject(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Generic;
         }
@@ -462,16 +470,19 @@ public abstract class SequenceStorageNodes {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization
         protected Object doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx) {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization(guards = "!isPSlice(idx)")
         protected Object doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx) {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization
         protected Object doSlice(VirtualFrame frame, SequenceStorage storage, PSlice slice,
                         @Cached LenNode lenNode,
@@ -682,6 +693,7 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
+        @InliningCutoff
         @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
@@ -700,6 +712,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
+        @InliningCutoff
         @Specialization(guards = "isByteStorage(storage)", limit = "1")
         protected static int doNativeByte(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
@@ -711,6 +724,7 @@ public abstract class SequenceStorageNodes {
             return (byte) result & 0xFF;
         }
 
+        @InliningCutoff
         @Specialization(guards = {"!isByteStorage(storage)", "!isObject(getElementType, storage)"}, limit = "1")
         protected static Object doNative(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
