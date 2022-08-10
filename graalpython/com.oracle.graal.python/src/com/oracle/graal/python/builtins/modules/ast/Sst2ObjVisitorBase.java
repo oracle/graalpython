@@ -70,7 +70,7 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
         factory = PythonObjectFactory.getUncached();
     }
 
-    static Object visitNullable(int i) {
+    static int visitNullable(int i) {
         return i;
     }
 
@@ -86,15 +86,15 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
         return node == null ? PNone.NONE : node.accept(this);
     }
 
-    static Object visitNonNull(boolean i) {
+    static int visitNonNull(boolean i) {
         return i ? 1 : 0;
     }
 
-    static Object visitNonNull(int i) {
+    static int visitNonNull(int i) {
         return i;
     }
 
-    static Object visitNonNull(String str) {
+    static TruffleString visitNonNull(String str) {
         return toTruffleStringUncached(str);
     }
 
