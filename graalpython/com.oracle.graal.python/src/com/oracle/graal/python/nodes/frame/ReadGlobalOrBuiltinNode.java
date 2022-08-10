@@ -49,6 +49,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -176,6 +177,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
+    @InliningCutoff
     @Specialization(replaces = "readGlobalCached")
     protected Object readGlobal(PythonModule globals,
                     @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode) {
@@ -193,6 +195,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
+    @InliningCutoff
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
                     "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
@@ -202,6 +205,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
+    @InliningCutoff
     @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
     protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals,
                     @Bind("globals.getDictStorage()") HashingStorage storage,
@@ -210,6 +214,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
+    @InliningCutoff
     @Specialization
     protected Object readGlobalDictGeneric(VirtualFrame frame, PDict globals,
                     @Cached GetItemNode getItemNode,
@@ -281,14 +286,20 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
         if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
             return builtin;
         } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+            throw raiseNameNotDefined();
         }
     }
 
+    @InliningCutoff
+    private PException raiseNameNotDefined() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+    }
+
+    @InliningCutoff
     @Specialization
     Object returnBuiltin() {
         PythonModule builtins = getBuiltins();
