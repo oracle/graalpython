@@ -43,24 +43,14 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 @ValueType
-public final class GeneratorResult {
+public final class GeneratorYieldResult {
     public final int resumeBci;
     public final int resumeStackTop;
-    public final boolean isReturn;
-    public final Object value;
+    public final Object yieldValue;
 
-    private GeneratorResult(int resumeBci, int resumeStackTop, boolean isReturn, Object value) {
+    public GeneratorYieldResult(int resumeBci, int resumeStackTop, Object yieldValue) {
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
-        this.isReturn = isReturn;
-        this.value = value;
-    }
-
-    public static GeneratorResult createYield(int resumeBci, int resumeStackTop, Object value) {
-        return new GeneratorResult(resumeBci, resumeStackTop, false, value);
-    }
-
-    public static GeneratorResult createReturn(Object value) {
-        return new GeneratorResult(-1, -1, true, value);
+        this.yieldValue = yieldValue;
     }
 }

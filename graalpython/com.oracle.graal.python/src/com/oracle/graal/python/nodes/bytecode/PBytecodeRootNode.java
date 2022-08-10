@@ -769,7 +769,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (!useCachedNodes) {
             return value;
         }
-        int index = Byte.toUnsignedInt(localBC[bci + 2]) & Byte.toUnsignedInt(localBC[bci + 3]) << 8;
+        int index = Byte.toUnsignedInt(localBC[bci + 2]) | Byte.toUnsignedInt(localBC[bci + 3]) << 8;
         int t = conditionProfiles[index];
         int f = conditionProfiles[index + 1];
         boolean val = value;
@@ -1427,7 +1427,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         Object value = virtualFrame.getObject(stackTop);
                         if (isGeneratorOrCoroutine) {
-                            return GeneratorResult.createReturn(value);
+                            throw new GeneratorReturnException(value);
                         } else {
                             return value;
                         }
@@ -1852,7 +1852,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             // Clear slots that were popped (if any)
                             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
                         }
-                        return GeneratorResult.createYield(bci + 1, stackTop, value);
+                        return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
                         mutableData.localException = PArguments.getException(PArguments.getGeneratorFrame(arguments));
