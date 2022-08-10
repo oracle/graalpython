@@ -11,7 +11,7 @@
 
 #define PY_SSIZE_T_CLEAN
 
-#include "Python.h"
+#include "capi.h"
 #include "structmember.h"
 #include <ctype.h>
 
@@ -2086,7 +2086,8 @@ PyTypeObject PyStructType = {
 /* ---- Standalone functions  ---- */
 
 #define MAXCACHE 100
-static PyObject *cache = NULL;
+#define STRUCT_CACHE _cpython_struct_cache
+static PyObject *STRUCT_CACHE = NULL;
 
 static int
 cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
@@ -2099,13 +2100,13 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
         return 1;
     }
 
-    if (cache == NULL) {
-        cache = PyDict_New();
-        if (cache == NULL)
+    if (STRUCT_CACHE == NULL) {
+        STRUCT_CACHE = PyDict_New();
+        if (STRUCT_CACHE == NULL)
             return 0;
     }
 
-    s_object = PyDict_GetItemWithError(cache, fmt);
+    s_object = PyDict_GetItemWithError(STRUCT_CACHE, fmt);
     if (s_object != NULL) {
         Py_INCREF(s_object);
         *ptr = (PyStructObject *)s_object;
@@ -2117,10 +2118,10 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
 
     s_object = PyObject_CallFunctionObjArgs((PyObject *)(&PyStructType), fmt, NULL);
     if (s_object != NULL) {
-        if (PyDict_GET_SIZE(cache) >= MAXCACHE)
-            PyDict_Clear(cache);
+        if (PyDict_GET_SIZE(STRUCT_CACHE) >= MAXCACHE)
+            PyDict_Clear(STRUCT_CACHE);
         /* Attempt to cache the result */
-        if (PyDict_SetItem(cache, fmt, s_object) == -1)
+        if (PyDict_SetItem(STRUCT_CACHE, fmt, s_object) == -1)
             PyErr_Clear();
         *ptr = (PyStructObject *)s_object;
         return Py_CLEANUP_SUPPORTED;
@@ -2138,7 +2139,7 @@ static PyObject *
 _clearcache_impl(PyObject *module)
 /*[clinic end generated code: output=ce4fb8a7bf7cb523 input=463eaae04bab3211]*/
 {
-    Py_CLEAR(cache);
+    Py_CLEAR(STRUCT_CACHE);
     Py_RETURN_NONE;
 }
 
