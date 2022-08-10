@@ -206,6 +206,7 @@ PyObject * PyNumber_Index(PyObject *o) {
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
+    item = native_pointer_to_java(item);
     Py_ssize_t result;
     PyObject *runerr;
     PyObject *value = PyNumber_Index(item);
@@ -288,6 +289,7 @@ int PySequence_Check(PyObject *s) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PySequence_Check()"
 int PyTruffle_PySequence_Check(PyObject *s) {
+    s = native_pointer_to_java(s);
     if (PyDict_Check(s))
         return 0;
     PySequenceMethods* seq = Py_TYPE(s)->tp_as_sequence;
@@ -302,6 +304,7 @@ Py_ssize_t PySequence_Size(PyObject *s) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
 Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
+    s = native_pointer_to_java(s);
     PySequenceMethods *seq;
     PyMappingMethods *m;
 
@@ -364,6 +367,7 @@ PyObject* PySequence_List(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
+    v = native_pointer_to_java(v);
     PyObject *res;
     if (v == NULL) {
         return null_error();
@@ -391,6 +395,7 @@ Py_ssize_t PyObject_Size(PyObject *o) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/PyObject_Size"
 Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
+    o = native_pointer_to_java(o);
     PySequenceMethods *m;
 
     if (o == NULL) {
@@ -439,6 +444,7 @@ int PyTruffle_PyMapping_Check(PyObject *o) {
 
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
+    obj = native_pointer_to_java(obj);
     PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
 
     if (pb == NULL || pb->bf_getbuffer == NULL) {
@@ -452,7 +458,7 @@ int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
 
 // taken from CPython "Objects/abstract.c"
 void PyBuffer_Release(Py_buffer *view) {
-    PyObject *obj = view->obj;
+    PyObject *obj = native_pointer_to_java(view->obj);
     PyBufferProcs *pb;
     if (obj == NULL)
         return;
@@ -592,6 +598,7 @@ Py_ssize_t PyMapping_Size(PyObject *s) {
 // PyMapping_Size downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
 Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
+    o = native_pointer_to_java(o);
     PyMappingMethods *m;
 
     if (o == NULL) {

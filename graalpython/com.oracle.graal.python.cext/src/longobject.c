@@ -298,6 +298,8 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
     unsigned char* p;           /* pointer to next byte in bytes */
     int pincr;                  /* direction to move p */
 
+    v = native_pointer_to_java(v);
+
     assert(v != NULL && PyLong_Check(v));
 
     if (Py_SIZE(v) < 0) {

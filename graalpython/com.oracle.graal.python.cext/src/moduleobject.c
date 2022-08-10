@@ -85,6 +85,7 @@ int PyModule_SetDocString(PyObject* m, const char* doc) {
 POLYGLOT_DECLARE_TYPE(PyModuleDef);
 UPCALL_ID(_PyModule_CreateInitialized_PyModule_New);
 PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
+	moduledef = native_pointer_to_java(moduledef);
     if (!PyModuleDef_Init(moduledef))
         return NULL;
     if (moduledef->m_slots) {
@@ -136,6 +137,7 @@ PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {
 }
 
 PyObject* PyModule_GetDict(PyObject* o) {
+	o = native_pointer_to_java(o);
     if (!PyModule_Check(o)) {
         PyErr_BadInternalCall();
         return NULL;
@@ -153,6 +155,7 @@ PyObject* PyModule_New(const char *name) {
 }
 
 PyModuleDef* PyModule_GetDef(PyObject* m) {
+	m = native_pointer_to_java(m);
     if (!PyModule_Check(m)) {
         PyErr_BadArgument();
         return NULL;
@@ -161,6 +164,7 @@ PyModuleDef* PyModule_GetDef(PyObject* m) {
 }
 
 void* PyModule_GetState(PyObject *m) {
+	m = native_pointer_to_java(m);
     if (!PyModule_Check(m)) {
         PyErr_BadArgument();
         return NULL;

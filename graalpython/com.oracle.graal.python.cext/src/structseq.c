@@ -48,6 +48,7 @@ char *PyStructSequence_UnnamedField = "unnamed field";
 static void
 structseq_dealloc(PyStructSequence *obj)
 {
+	obj = native_pointer_to_java(obj);
     Py_ssize_t i, size;
 
     size = REAL_SIZE(obj);

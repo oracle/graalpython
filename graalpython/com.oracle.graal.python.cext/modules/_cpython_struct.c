@@ -1285,6 +1285,7 @@ align(Py_ssize_t size, char c, const formatdef *e)
 static int
 prepare_s(PyStructObject *self)
 {
+	self = native_pointer_to_java(self);
     const formatdef *f;
     const formatdef *e;
     formatcode *codes;
@@ -1294,9 +1295,10 @@ prepare_s(PyStructObject *self)
     char c;
     Py_ssize_t size, len, num, itemsize;
     size_t ncodes;
+    PyObject* self_format = native_pointer_to_java(self->s_format);
 
-    fmt = PyBytes_AS_STRING(self->s_format);
-    if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self->s_format)) {
+    fmt = PyBytes_AS_STRING(self_format);
+    if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self_format)) {
         PyErr_SetString(StructError, "embedded null character");
         return -1;
     }
@@ -1611,7 +1613,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
                      buffer->len);
         return NULL;
     }
-    return s_unpack_internal(self, (char*)buffer->buf + offset);
+    return s_unpack_internal(self, (char*)native_pointer_to_java(buffer->buf) + offset);
 }
 
 
