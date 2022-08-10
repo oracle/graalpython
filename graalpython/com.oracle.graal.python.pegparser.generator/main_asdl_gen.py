@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,40 +38,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import argparse
-import os
-import sys
-import tokenize
+import pathlib
 
-from pegen.build import generate_token_definitions
-from pegen.grammar_parser import GeneratedParser as GrammarParser
-from pegen.tokenizer import Tokenizer
-from pegjava.java_generator import JavaParserGenerator
+from asdl.asdl_java import generate
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("grammar_file")
-    parser.add_argument("tokens_file")
-    parser.add_argument("output_file")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("input_file", type=pathlib.Path)
+    parser.add_argument("-S", "--sst-path", type=pathlib.Path, required=True)
+    parser.add_argument("-A", "--ast-path", type=pathlib.Path, required=True)
 
     args = parser.parse_args()
-
-    with open(args.grammar_file) as file:
-        tokenizer = Tokenizer(tokenize.generate_tokens(file.readline), verbose=args.verbose)
-        parser = GrammarParser(tokenizer, verbose=args.verbose)
-        grammar = parser.start()
-
-    if not grammar:
-        sys.exit("Failed to generate grammar")
-
-    with open(args.tokens_file, "r") as tok_file:
-        all_tokens, exact_tokens, non_exact_tokens = generate_token_definitions(tok_file)
-
-    with open(args.output_file, "w") as file:
-        gen = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file, debug=args.debug)
-        gen.generate(os.path.basename(args.grammar_file))
+    generate(args.input_file, args.sst_path, args.ast_path)
 
 
 if __name__ == '__main__':

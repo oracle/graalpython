@@ -750,7 +750,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = createCallTarget(source);
                 return factory().createCode((RootCallTarget) callTarget);
             } else {
-                return compileNode.execute(frame, codestr, path, mode, 0, false, 2);
+                return compileNode.compile(frame, codestr, path, mode, 2);
             }
         }
 

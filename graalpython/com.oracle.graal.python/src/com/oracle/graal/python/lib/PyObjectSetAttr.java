@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_NO_ATTRS_S_TO_ASSIGN;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_NO_ATTRS_S_TO_DELETE;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_ASSIGN;
@@ -128,6 +129,13 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         } else {
             setFixedAttr(frame, self, name, value, name, getClass, lookupSetattr, lookupGetattr, raise, callSetattr);
         }
+    }
+
+    @Specialization(guards = "!isString(name)")
+    @SuppressWarnings("unused")
+    static void nameMustBeString(Object self, Object name, Object value,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, ATTR_NAME_MUST_BE_STRING, name);
     }
 
     public static PyObjectSetAttr create() {

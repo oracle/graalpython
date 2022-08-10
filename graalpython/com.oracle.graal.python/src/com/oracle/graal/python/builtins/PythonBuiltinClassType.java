@@ -252,7 +252,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
-    AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
+    AST("AST", "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
 
     // _ctype
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),

@@ -224,7 +224,9 @@ public abstract class ErrorMessages {
     public static final TruffleString CLASSPATH_ARG_MUST_BE_STRING = tsLiteral("classpath argument %d must be string, not %p");
     public static final TruffleString CODE_OBJ_NO_FREE_VARIABLES = tsLiteral("code object passed to %s may not contain free variables");
     public static final TruffleString CODEC_SEARCH_MUST_RETURN_4 = tsLiteral("codec search functions must return 4-tuples");
-    public static final TruffleString COMPILE_MUST_BE = tsLiteral("compile() mode must be 'exec', 'eval' or 'single'");
+    public static final TruffleString COMPILE_MODE_MUST_BE = tsLiteral("compile() mode must be 'exec', 'eval' or 'single'");
+    public static final TruffleString COMPILE_MODE_MUST_BE_AST_ONLY = tsLiteral("compile() mode must be 'exec', 'eval', 'single' or 'func_type'");
+    public static final TruffleString COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST = tsLiteral("compile() mode 'func_type' requires flag PyCF_ONLY_AST");
     public static final TruffleString COMPLEX_ARG_IS_MALFORMED_STR = tsLiteral("complex() arg is a malformed string");
     public static final TruffleString COMPLEX_CANT_TAKE_ARG = tsLiteral("complex() can't take second arg if first is a string");
     public static final TruffleString COMPLEX_EXPONENTIATION = tsLiteral("complex exponentiation");
@@ -287,7 +289,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
     public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected %s after format specifier");
-
+    public static final TruffleString EXPECTED_SOME_SORT_OF_S_BUT_GOT_S = tsLiteral("expected some sort of %s, but got %s");
     public static final TruffleString EXPECTED_STR_OR_BYTES = tsLiteral("expected str or bytes, got '%p'");
     public static final TruffleString EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = tsLiteral("expected str, bytes or os.PathLike object, not %p");
     public static final TruffleString EXPECTED_STR_OR_BYTESLIKE_OBJ = tsLiteral("expected string or bytes-like object");
@@ -624,6 +626,7 @@ public abstract class ErrorMessages {
     public static final TruffleString REQUIRES_OBJ_THAT_IMPLEMENTS_S = tsLiteral(" %%r requires an object that implements %s");
     public static final TruffleString REQUIRES_STRING_AS_LEFT_OPERAND = tsLiteral("'in <string>' requires string as left operand, not %P");
     public static final TruffleString REQUIRES_STR_OBJECT_BUT_RECEIVED_P = tsLiteral("'%s' requires a 'str' object but received a '%p'");
+    public static final TruffleString REQUIRED_FIELD_S_MISSING_FROM_S = tsLiteral("required field \"%s\" missing from %s");
     public static final TruffleString RETURN_OUTSIDE_FUNC = tsLiteral("'return' outside function");
     public static final TruffleString S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = tsLiteral("%s returned base with unsuitable layout ('%p')");
     public static final TruffleString RETURNED_NON_FLOAT = tsLiteral("%p.%s returned non-float (type %p)");
@@ -644,6 +647,8 @@ public abstract class ErrorMessages {
     public static final TruffleString S = tsLiteral("%s");
     public static final TruffleString APOSTROPHE_S = tsLiteral("'%s'");
     public static final TruffleString S_EMBEDDED_NULL_CHARACTER_IN_S = tsLiteral("%sembedded null character in %s");
+    public static final TruffleString S_FIELD_S_CHANGED_SIZE_DURING_ITERATION = tsLiteral("%s field \"%s\" changed size during iteration");
+    public static final TruffleString S_FIELD_S_MUST_BE_A_LIST_NOT_P = tsLiteral("%s field \"%s\" must be a list, not a %p");
     public static final TruffleString SHOULD_BE_USED_ONLY_NEW_SETS = tsLiteral("Should be used only on newly allocated empty sets");
     public static final TruffleString S_MUST_BE_S = tsLiteral("%s must be %s");
     public static final TruffleString S_NOT_SUPPORTED = tsLiteral("%s not supported");
@@ -828,6 +833,8 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = tsLiteral("type '%s' takes at least one argument");
     public static final TruffleString S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at least %d arguments (%d given)");
     public static final TruffleString S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at most %d arguments (%d given)");
+    public static final TruffleString S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S = tsLiteral("%p constructor takes at most %d positional argument%s");
+    public static final TruffleString P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S = tsLiteral("%p got multiple values for argument '%s'");
     public static final TruffleString RES_O_O_RANGE = tsLiteral("%s result out of range");
     public static final TruffleString FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = tsLiteral("float too large to pack with %s format");
     public static final TruffleString CANNOT_UNPACK_NON_ITERABLE = tsLiteral("cannot unpack non-iterable %p object");

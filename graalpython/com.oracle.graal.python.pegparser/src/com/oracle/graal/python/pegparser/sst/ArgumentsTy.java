@@ -38,6 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+// Checkstyle: stop
+// JaCoCo Exclude
+//@formatter:off
+// Generated from Python.asdl by main_asdl_gen.py
 package com.oracle.graal.python.pegparser.sst;
 
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;

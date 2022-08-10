@@ -76,6 +76,10 @@ public interface PythonParser {
          */
         Eval,
         /**
+         * Parse the given input as required for Python's compile with mode='func_type'.
+         */
+        FuncType,
+        /**
          * Used for parsing expressions inside f-strings. Such expression should have the same scope
          * as the f-string itself.
          */

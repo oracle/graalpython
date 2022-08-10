@@ -54,6 +54,7 @@ language
 /org.eclipse.jdt.core.prefs
 Python3.g4.stamp
 python.gram.stamp
+Python.asdl.stamp
 *.orig
 /*.diff
 /testenv
