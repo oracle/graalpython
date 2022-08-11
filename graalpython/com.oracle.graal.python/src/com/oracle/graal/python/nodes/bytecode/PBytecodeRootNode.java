@@ -1062,8 +1062,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return bytecodeLoop(virtualFrame, localFrame, osrNode, initialBci, initialStackTop, false, false);
     }
 
-    @CompilationFinal private PythonLanguage cachedLanguage = null;
-
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
@@ -1078,13 +1076,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             unboxVariables(localFrame);
         }
 
-        final PythonLanguage language;
-        if (cachedLanguage == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            language = cachedLanguage = PythonLanguage.get(this);
-        } else {
-            language = cachedLanguage;
-        }
+        final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTrace = language.noTracingAssumption;
         final PythonContext pythonContext = PythonContext.get(this);
         final PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
@@ -2254,7 +2246,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
-            threadState.setTraceFun(null, cachedLanguage);
+            threadState.setTraceFun(null, PythonLanguage.get(this));
             throw e;
         } finally {
             if (line != -1) {
