@@ -53,6 +53,17 @@ public class TracingTests {
     }
 
     @Test
+    public void traceInExistingScopeWithOnlyReturn() {
+        String source = "import sys\n" +
+                        "def trace(fr, ev, arg): print(fr.f_lineno, ev); return trace\n" +
+                        "def fun():\n" +
+                        "  sys._getframe().f_trace = trace\n" +
+                        "  sys.settrace(lambda:None)\n" +
+                        "fun()";
+        PythonTests.assertPrints("5 return\n", source);
+    }
+
+    @Test
     public void traceCall() {
         String source = "import sys\n" +
                         "sys.settrace(lambda frame,ev,arg: ev == 'call' and print(ev))\n" +

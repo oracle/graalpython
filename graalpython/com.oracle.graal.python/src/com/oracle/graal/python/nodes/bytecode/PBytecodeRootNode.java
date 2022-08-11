@@ -1119,8 +1119,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             initialBci == 0 ? getFirstLineno() : (mutableData.pastLine = bciToLine(initialBci)), false);
         }
 
-        mutableData.returnLine = mutableData.pastLine;
-        mutableData.pastBci = initialBci;
+        mutableData.returnLine = -1;
 
         int oparg = 0;
         while (true) {
