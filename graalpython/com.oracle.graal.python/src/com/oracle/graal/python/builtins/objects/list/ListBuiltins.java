@@ -121,6 +121,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -133,6 +134,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -362,11 +364,6 @@ public class ListBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
-        @InliningCutoff
-        protected static boolean isIndexOrSlice(PyIndexCheckNode indexCheckNode, Object key) {
-            return indexCheckNode.execute(key) || PGuards.isPSlice(key);
-        }
-
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
             return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
         }
@@ -382,17 +379,35 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization(guards = "indexCheckNode.execute(key) || isPSlice(key)", limit = "1")
+        @Specialization(guards = {"index >= 0", "index < self.getSequenceStorage().length()"})
+        protected Object doInBounds(VirtualFrame frame, PList self, int index, Object value,
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
+                        @Shared("setItem") @Cached("createSetItem()") SequenceStorageNodes.SetItemNode fullSetItemNode,
+                        @Cached BranchProfile errorProfile) {
+            try {
+                setItemNode.execute(self.getSequenceStorage(), index, value);
+            } catch (SequenceStoreException e) {
+                errorProfile.enter();
+                doGeneric(frame, self, index, value, indexCheckNode, fullSetItemNode);
+            }
+            return PNone.NONE;
+        }
+
+        @InliningCutoff
+        @Specialization(guards = "isIndexOrSlice(indexCheckNode, key)", limit = "1")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared("setItem") @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
+        @InliningCutoff
         @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object key, Object value) {
+        @Specialization(guards = "!isIndexOrSlice(indexCheckNode, key)", limit = "1")
+        protected Object doError(Object self, Object key, Object value,
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 

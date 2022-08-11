@@ -1176,9 +1176,10 @@ public abstract class SequenceStorageNodes {
             storage.setByteItemNormalized(idx, value);
         }
 
+        @InliningCutoff
         @Specialization(replaces = "doByteSimple")
         protected static void doByte(ByteSequenceStorage storage, int idx, Object value,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Cached CastToByteNode castToByteNode) {
             // TODO: clean this up, we really might need a frame
             storage.setByteItemNormalized(idx, castToByteNode.execute(null, value));
         }
@@ -1193,6 +1194,7 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, PInt.intValueExact(value));
         }
 
+        @InliningCutoff
         @Specialization(replaces = "doIntL")
         protected static void doIntLOvf(IntSequenceStorage storage, int idx, long value) {
             try {
@@ -1202,6 +1204,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
+        @InliningCutoff
         @Specialization(guards = "!value.isNative()")
         protected static void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {
@@ -1221,6 +1224,7 @@ public abstract class SequenceStorageNodes {
             storage.setLongItemNormalized(idx, value);
         }
 
+        @InliningCutoff
         @Specialization(guards = "!value.isNative()")
         protected static void doLong(LongSequenceStorage storage, int idx, PInt value) {
             try {
@@ -1240,11 +1244,34 @@ public abstract class SequenceStorageNodes {
             storage.setItemNormalized(idx, value);
         }
 
+        @InliningCutoff
+        @Specialization
+        protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
+                        @Cached SetNativeItemScalarNode setItem) {
+            setItem.execute(storage, idx, value);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static void doError(SequenceStorage s, int idx, Object item) {
+            throw new SequenceStoreException(item);
+        }
+
+        public static SetItemScalarNode create() {
+            return SetItemScalarNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    protected abstract static class SetNativeItemScalarNode extends Node {
+        public abstract void execute(NativeSequenceStorage s, int idx, Object value);
+
         @Specialization(guards = "isByteStorage(storage)")
         protected static void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Cached CastToByteNode castToByteNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
@@ -1264,21 +1291,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static void doError(SequenceStorage s, int idx, Object item) {
-            throw new SequenceStoreException(item);
-        }
-
         private static Object verifyValue(NativeSequenceStorage storage, Object item, VerifyNativeItemNode verifyNativeItemNode) {
             if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
                 return item;
             }
             throw new SequenceStoreException(item);
-        }
-
-        public static SetItemScalarNode create() {
-            return SetItemScalarNodeGen.create();
         }
     }
 
