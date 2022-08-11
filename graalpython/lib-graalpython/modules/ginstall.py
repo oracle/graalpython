@@ -112,7 +112,7 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
         if result.stderr:
             xit_msg.append("stderr:")
             xit_msg.append(result.stderr.decode("utf-8"))
-        xit(os.linesep.join(xit_msg), status=result.returncode)
+        xit("{}", os.linesep.join(xit_msg))
     return result.returncode
 
 def known_packages():
@@ -407,8 +407,8 @@ def known_packages():
 KNOWN_PACKAGES = known_packages()
 
 
-def xit(msg, status=-1):
-    error(msg)
+def xit(fmt, *args, **kwargs):
+    error(fmt, *args, **kwargs)
     exit(-1)
 
 
@@ -443,7 +443,7 @@ def _download_with_curl_and_extract(dest_dir, url, quiet=False):
         run_cmd(["unzip", "-u", downloaded_path, "-d", dest_dir], msg="Error extracting zip", quiet=quiet)
         bare_name = name[:-len(".zip")]
     else:
-        xit("Unknown file type: %s" % name)
+        xit("Unknown file type: {!s}", name)
 
     return bare_name
 
@@ -497,7 +497,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
                      cwd=os.path.join(tempdir, bare_name), quiet=quiet)
     end = time.time()
     if status != 0 and not ignore_errors:
-        xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
+        xit("An error occurred trying to run `setup.py install {!s} {}'", user_arg, " ".join(extra_opts))
     elif quiet:
         info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
@@ -579,7 +579,7 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
                           ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
                           build_cmd=build_cmd)
     else:
-        xit("Package not found: '%s'" % package)
+        xit("Package not found: '{!s}'", package)
 
 def get_site_packages_path():
     if site.ENABLE_USER_SITE:
@@ -667,11 +667,11 @@ def main(argv):
             if deleted:
                 info("Deleted {}", p)
             else:
-                xit("Unknown package: '%s'" % pkg)
+                xit("Unknown package: '{!s}'", pkg)
     elif args.command == "install":
         for pkg in args.package.split(","):
             if pkg not in KNOWN_PACKAGES:
-                xit("Unknown package: '%s'" % pkg)
+                xit("Unknown package: '{!s}'", pkg)
             else:
                 extra_opts = [] + quiet_flag
                 if args.prefix:
