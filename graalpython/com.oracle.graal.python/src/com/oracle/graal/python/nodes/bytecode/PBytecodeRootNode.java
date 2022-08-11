@@ -1130,12 +1130,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(++stackTop, (int) localLongConsts[oparg]);
                         break;
                     }
-                    case OpCodesConstants.LOAD_LONG: {
+                    case OpCodesConstants.LOAD_LONG_L: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        virtualFrame.setLong(++stackTop, localLongConsts[oparg]);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_LONG_O: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         virtualFrame.setObject(++stackTop, localLongConsts[oparg]);
                         break;
                     }
-                    case OpCodesConstants.LOAD_DOUBLE: {
+                    case OpCodesConstants.LOAD_DOUBLE_D: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        virtualFrame.setDouble(++stackTop, Double.longBitsToDouble(localLongConsts[oparg]));
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_DOUBLE_O: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         virtualFrame.setObject(++stackTop, Double.longBitsToDouble(localLongConsts[oparg]));
                         break;
@@ -2220,7 +2230,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.GE:
                 case BinaryOpsConstants.LE:
                 case BinaryOpsConstants.LT:
-                case BinaryOpsConstants.IS:
                     if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_DD_B;
                         bytecodeBinaryOpDDB(virtualFrame, stackTop, bci, op);
@@ -2518,7 +2527,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         boolean result;
         switch (op) {
             case BinaryOpsConstants.EQ:
-            case BinaryOpsConstants.IS:
                 result = left == right;
                 break;
             case BinaryOpsConstants.NE:
