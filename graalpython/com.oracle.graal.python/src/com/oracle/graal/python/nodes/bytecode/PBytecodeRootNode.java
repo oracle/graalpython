@@ -1078,8 +1078,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTrace = language.noTracingAssumption;
-        final PythonContext pythonContext = PythonContext.get(this);
-        final PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
+        final PythonContext.PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
 
         /*
          * We use an object as a workaround for not being able to specify which local variables are
