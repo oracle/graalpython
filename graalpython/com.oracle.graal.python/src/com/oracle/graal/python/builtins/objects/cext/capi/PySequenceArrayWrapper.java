@@ -75,6 +75,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -397,7 +398,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
             PSequence sequence = (PSequence) lib.getDelegate(object);
-            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence));
+            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence), sequence instanceof PBytesLike);
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("could not allocate native storage");
@@ -423,22 +424,38 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @GenerateUncached
     abstract static class ToNativeStorageNode extends Node {
 
-        public abstract NativeSequenceStorage execute(SequenceStorage object);
+        public abstract NativeSequenceStorage execute(SequenceStorage object, boolean isBytesLike);
 
-        @Specialization(guards = "!isNative(s)")
-        static NativeSequenceStorage doManaged(SequenceStorage s,
+        public static boolean isEmptySequenceStorage(SequenceStorage s) {
+            return s instanceof EmptySequenceStorage;
+        }
+
+        @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)"})
+        static NativeSequenceStorage doManaged(SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
+                        @Cached ConditionProfile isObjectArrayProfile,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
-            return storageToNativeNode.execute(getInternalArrayNode.execute(s));
+            Object array = getInternalArrayNode.execute(s);
+            if (isBytesLike) {
+                assert array instanceof byte[];
+            } else if (!isObjectArrayProfile.profile(array instanceof Object[])) {
+                array = generalize(s);
+            }
+            return storageToNativeNode.execute(array);
+        }
+
+        @TruffleBoundary
+        private static Object generalize(SequenceStorage s) {
+            return s.getInternalArray();
         }
 
         @Specialization
-        static NativeSequenceStorage doNative(NativeSequenceStorage s) {
+        static NativeSequenceStorage doNative(NativeSequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike) {
             return s;
         }
 
         @Specialization
-        static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s,
+        static NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
             return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY);
