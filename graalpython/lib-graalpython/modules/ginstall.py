@@ -77,7 +77,41 @@ def get_module_name(package_name):
         'attrs': 'attr',
     }
     module_name = non_standard_packages.get(package_name, package_name)
-    return  module_name.replace('-', '_')
+    return module_name.replace('-', '_')
+
+
+def _prepare_blas_lapack(env=None):
+    def _find_path(pth):
+        if not pth:
+            return None
+        if os.path.exists(os.path.join(pth[:-1], 'include')) and \
+                os.path.exists(os.path.join(pth[:-1], 'lib')):
+            return os.path.join(pth[:-1])
+        else:
+            return _find_path(pth[:-1])
+
+    def _append_var(var, value):
+        env[var] = '{} {}'.format(env.get(var, ''), value)
+
+    if not env:
+        env = {}
+    lapack = os.environ.get('LAPACK', None)
+    if lapack:
+        lapack_base = _find_path(lapack)
+        if lapack_base:
+            info("found LAPACK: {}".format(lapack_base))
+            _append_var('LDFLAGS', '-L{}'.format(os.path.join(lapack_base, 'lib')))
+            _append_var('CPPFLAGS', '-L{}'.format(os.path.join(lapack_base, 'include')))
+            _append_var('PKG_CONFIG_PATH', '-L{}'.format(os.path.join(lapack_base, 'lib', 'pkgconfig')))
+            # https://github.com/scipy/scipy/issues/12935
+            _append_var('CFLAGS', '-Wno-error=implicit-function-declaration')
+            info("LDFLAGS = {}".format(env.get("LDFLAGS")))
+            info("CPPFLAGS = {}".format(env.get("CPPFLAGS")))
+            info("PKG_CONFIG_PATH = {}".format(env.get("PKG_CONFIG_PATH")))
+        else:
+            info("LAPACK env var not found")
+
+    return env
 
 
 def pip_package(name=None, try_import=False):
@@ -314,6 +348,11 @@ def known_packages():
         install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env, **kwargs)
 
     @pip_package()
+    def dateutil(**kwargs):
+        setuptools_scm(**kwargs)
+        install_from_pypi("python-dateutil==2.7.5", **kwargs)
+
+    @pip_package()
     def certifi(**kwargs):
         install_from_pypi("certifi==2020.11.8", **kwargs)
 
@@ -391,6 +430,7 @@ def known_packages():
                 xit("scikit-learn can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
             scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
+        scikit_learn_build_env = _prepare_blas_lapack(scikit_learn_build_env)
 
         # install dependencies
         numpy(**kwargs)
