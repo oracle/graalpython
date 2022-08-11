@@ -1343,6 +1343,8 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class NegNode extends PythonUnaryBuiltinNode {
+        public abstract Object execute(int value);
+
         @Specialization(rewriteOn = ArithmeticException.class)
         static int neg(int arg) {
             return Math.negateExact(arg);
@@ -1372,6 +1374,10 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static BigInteger negate(BigInteger value) {
             return value.negate();
+        }
+
+        public static NegNode create() {
+            return IntBuiltinsFactory.NegNodeFactory.create();
         }
     }
 
