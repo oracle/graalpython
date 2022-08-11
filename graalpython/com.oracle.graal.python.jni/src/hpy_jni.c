@@ -101,7 +101,8 @@ ALL_FIELDS
     UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
     UPCALL(Type, SIG_HPY, SIG_HPY) \
     UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
-    UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY)
+    UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
+    UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT)
 
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
@@ -129,6 +130,60 @@ static jmethodID jniMethod_hpy_debug_get_context;
 #define TRACKER_UP(_h) ((jlong)((_h)._i))
 
 #define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
+
+#define MAX_UNCLOSED_HANDLES 32
+static int32_t unclosedHandleTop = 0;
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
+
+static inline jsize get_handle_table_size(HPyContext *ctx) {
+    return HANDLE_TABLE_SIZE(ctx->_private);
+}
+
+static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject element, bool update_native_cache) {
+    /* TODO(fa): for now, we fall back to the upcall */
+    if (update_native_cache) {
+        return 0;
+    }
+
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
+    if (hpy_handles == NULL) {
+        LOGS("hpy handle table is NULL")
+        return 0;
+    }
+
+    /* try to reuse a closed handle from our native list */
+    jsize next_handle;
+    if (unclosedHandleTop > 0) {
+        uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
+        LOG("%llu", recycled)
+        assert(recycled < INT32_MAX);
+        next_handle = (jsize) recycled;
+    } else {
+        next_handle = (*jniEnv)->GetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle);
+        LOG("%d", next_handle)
+        jsize s = get_handle_table_size(ctx);
+        if (next_handle >= s) {
+            return 0;
+        }
+        (*jniEnv)->SetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle, next_handle+1);
+    }
+    (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
+    /* TODO(fa): update native data pointer cache here (if specified) */
+    return boxHandle(next_handle);
+}
+
+static jobject get_object_for_hpy_handle(HPyContext *ctx, uint64_t bits) {
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
+    if (hpy_handles == NULL) {
+        LOGS("hpy handle table is NULL")
+        return NULL;
+    }
+    jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_handles, (jsize)unboxHandle(bits));
+    if (element == NULL) {
+        LOGS("handle delegate is NULL")
+    }
+    return element;
+}
 
 
 static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h) {
@@ -282,6 +337,20 @@ static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result
     *result = r;
     return 0;
 }
+
+static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
+    uint64_t bitsA = toBits(a);
+    uint64_t bitsB = toBits(b);
+    if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
+        jobject objA = get_object_for_hpy_handle(ctx, bitsA);
+        jobject objB = get_object_for_hpy_handle(ctx, bitsB);
+        if (objA != NULL && objB != NULL) {
+            return (int) (*jniEnv)->IsSameObject(jniEnv, objA, objB);
+        }
+    }
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
+}
+
 
 //*************************
 // BOXING
@@ -447,10 +516,6 @@ static HPy augment_Long_FromUnsignedLongLong(HPyContext *ctx, unsigned long long
     }
 }
 
-#define MAX_UNCLOSED_HANDLES 32
-static int32_t unclosedHandleTop = 0;
-static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
-
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
@@ -570,43 +635,6 @@ static HPy augment_Tuple_FromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nite
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
-}
-
-static inline jsize get_handle_table_size(HPyContext *ctx) {
-    return HANDLE_TABLE_SIZE(ctx->_private);
-}
-
-static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject element, bool update_native_cache) {
-    /* TODO(fa): for now, we fall back to the upcall */
-    if (update_native_cache) {
-        return 0;
-    }
-
-    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
-    if (hpy_handles == NULL) {
-        LOGS("hpy handle table is NULL")
-        return 0;
-    }
-
-    /* try to reuse a closed handle from our native list */
-    jsize next_handle;
-    if (unclosedHandleTop > 0) {
-        uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
-        LOG("%llu", recycled)
-        assert(recycled < INT32_MAX);
-        next_handle = (jsize) recycled;
-    } else {
-        next_handle = (*jniEnv)->GetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle);
-        LOG("%d", next_handle)
-        jsize s = get_handle_table_size(ctx);
-        if (next_handle >= s) {
-            return 0;
-        }
-        (*jniEnv)->SetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle, next_handle+1);
-    }
-    (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
-    /* TODO(fa): update native data pointer cache here (if specified) */
-    return boxHandle(next_handle);
 }
 
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
@@ -799,6 +827,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Type_GetName = ctx_TypeGetName_jni;
 
     context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
+    context->ctx_Is = ctx_Is_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);

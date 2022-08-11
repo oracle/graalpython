@@ -34,6 +34,7 @@
     {"name":"ctxType","parameterTypes":["long"] },
     {"name":"ctxTypeGetName","parameterTypes":["long"] },
     {"name":"ctxContextVarGet","parameterTypes":["long", "long", "long"] },
+    {"name":"ctxIs","parameterTypes":["long", "long"] },
     {"name":"getHPyDebugContext","parameterTypes":[] }
   ],
   "fields":[

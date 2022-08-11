@@ -82,6 +82,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.object.IsNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -2335,6 +2336,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object def = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(defBits));
         Object res = GraalHPyContextVarGet.getObject((PContextVar) var, def);
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(res));
+    }
+
+    public int ctxIs(long aBits, long bBits) {
+        Object a = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
+        Object b = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bBits));
+        try {
+            return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return -1;
+        }
     }
 
     @ExportMessage
