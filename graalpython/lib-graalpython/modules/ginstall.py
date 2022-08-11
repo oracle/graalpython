@@ -105,7 +105,14 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **k
     print("+", cwd_log, ' '.join(args))
     result = subprocess.run(args, cwd=cwd, env=env, capture_output=quiet, **kwargs)
     if failOnError and result.returncode != 0:
-        xit(os.linesep.join((msg, str(result.stdout))), status=result.returncode)
+        xit_msg = [msg]
+        if result.stdout:
+            xit_msg.append("stdout:")
+            xit_msg.append(result.stdout.decode("utf-8"))
+        if result.stderr:
+            xit_msg.append("stderr:")
+            xit_msg.append(result.stderr.decode("utf-8"))
+        xit(os.linesep.join(xit_msg), status=result.returncode)
     return result.returncode
 
 def known_packages():
