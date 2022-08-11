@@ -587,6 +587,16 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
+    /**
+     * Tests if the class of this Python object is a builtin class. This method is supposed to be
+     * used for builtin types that do not support __class__ assignment at all, so we can safely
+     * read the initialPythonClass field and assume that is the current class as well.
+     */
+    public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
+        Object clazz = object.getInitialPythonClass();
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
     public static boolean isBuiltinDict(PDict dict) {
         /*
          * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
