@@ -347,7 +347,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheckNode.execute(key) || isPSlice(key)", limit = "1")
+        @Specialization(guards = "isIndexOrSlice(indexCheckNode, key)", limit = "1")
         protected Object doScalar(VirtualFrame frame, PList self, Object key,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
@@ -356,9 +356,15 @@ public class ListBuiltins extends PythonBuiltins {
 
         @InliningCutoff
         @SuppressWarnings("unused")
-        @Fallback
-        public Object doListError(VirtualFrame frame, Object self, Object key) {
+        @Specialization(guards = "!isIndexOrSlice(indexCheckNode, key)")
+        public Object doListError(VirtualFrame frame, Object self, Object key,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
+        }
+
+        @InliningCutoff
+        protected static boolean isIndexOrSlice(PyIndexCheckNode indexCheckNode, Object key) {
+            return indexCheckNode.execute(key) || PGuards.isPSlice(key);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {

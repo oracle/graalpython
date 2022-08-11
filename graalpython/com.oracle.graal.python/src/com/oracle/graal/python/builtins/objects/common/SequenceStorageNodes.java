@@ -279,6 +279,7 @@ public abstract class SequenceStorageNodes {
         protected static final int MAX_SEQUENCE_STORAGES = 9;
         protected static final int MAX_ARRAY_STORAGES = 7;
 
+        @InliningCutoff
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
         }
@@ -694,6 +695,18 @@ public abstract class SequenceStorageNodes {
         }
 
         @InliningCutoff
+        @Specialization
+        protected static Object doNative(NativeSequenceStorage storage, int idx,
+                        @Cached GetNativeItemScalarNode getItem) {
+            return getItem.execute(storage, idx);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    protected abstract static class GetNativeItemScalarNode extends Node {
+        public abstract Object execute(NativeSequenceStorage s, int idx);
+
         @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
@@ -712,7 +725,6 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @InliningCutoff
         @Specialization(guards = "isByteStorage(storage)", limit = "1")
         protected static int doNativeByte(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
@@ -724,7 +736,6 @@ public abstract class SequenceStorageNodes {
             return (byte) result & 0xFF;
         }
 
-        @InliningCutoff
         @Specialization(guards = {"!isByteStorage(storage)", "!isObject(getElementType, storage)"}, limit = "1")
         protected static Object doNative(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
