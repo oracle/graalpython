@@ -1163,8 +1163,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                         mutableData.pastLine, true);
                     }
                 }
-            }
-            if (!noTrace.isValid() && threadState.getTraceFun() != null) {
                 mutableData.pastBci = bci;
             }
 
