@@ -3422,23 +3422,27 @@ public abstract class GraalHPyContextFunctions {
                 if (!(var instanceof PContextVar)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
                 }
-                Object result = ((PContextVar) var).getValue();
-                if (result == null) {
-                    if (def == NULL_HANDLE_DELEGATE) {
-                        def = ((PContextVar) var).getDefault();
-                        if (def == PContextVar.NO_DEFAULT) {
-                            def = NULL_HANDLE_DELEGATE;
-                        }
-                    }
-                    result = def;
-                }
-
+                Object result = getObject((PContextVar) var, def);
                 callWriteHPyNode.call(context, GRAAL_HPY_WRITE_HPY, outPtr, 0L, asHandleNode.execute(context, result));
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return -1;
             }
+        }
+
+        static Object getObject(PContextVar var, Object def) {
+            Object result = var.getValue();
+            if (result == null) {
+                if (def == NULL_HANDLE_DELEGATE) {
+                    def = var.getDefault();
+                    if (def == PContextVar.NO_DEFAULT) {
+                        def = NULL_HANDLE_DELEGATE;
+                    }
+                }
+                result = def;
+            }
+            return result;
         }
     }
 

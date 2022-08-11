@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
@@ -212,6 +213,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -1706,7 +1708,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         UpcallGlobalLoad,
         UpcallGlobalStore,
         UpcallType,
-        UpcallTypeGetName;
+        UpcallTypeGetName,
+        UpcallContextVarGet;
 
         @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
@@ -2315,6 +2318,23 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
+    }
+
+    public long ctxContextVarGet(long varBits, long defBits, long errBits) {
+        increment(Counter.UpcallContextVarGet);
+        assert GraalHPyBoxing.isBoxedHandle(varBits);
+        Object var = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(varBits));
+        if (!(var instanceof PContextVar)) {
+            try {
+                throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            }
+            return errBits;
+        }
+        Object def = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(defBits));
+        Object res = GraalHPyContextVarGet.getObject((PContextVar) var, def);
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(res));
     }
 
     @ExportMessage

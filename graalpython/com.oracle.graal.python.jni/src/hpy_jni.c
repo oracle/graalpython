@@ -100,7 +100,9 @@ ALL_FIELDS
     UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
     UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
     UPCALL(Type, SIG_HPY, SIG_HPY) \
-    UPCALL(TypeGetName, SIG_HPY, SIG_HPY)
+    UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
+    UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY)
+
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -267,6 +269,18 @@ static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
 
 static const char *ctx_TypeGetName_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), TypeGetName, HPY_UP(obj));
+}
+
+static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result) {
+    /* This uses 'h_Ellipsis' as an error marker assuming that it is rather uncertain that this will be a valid return
+       value. If 'h_Ellipsis' is returned, this indicates an error and we explicitly check for an error then. */
+    HPy err_marker = ctx->h_Ellipsis;
+    HPy r = DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ContextVarGet, HPY_UP(var), HPY_UP(def), HPY_UP(err_marker));
+    if (toBits(r) == toBits(err_marker) && HPyErr_Occurred(ctx)) {
+        return -1;
+    }
+    *result = r;
+    return 0;
 }
 
 //*************************
@@ -783,6 +797,8 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_GetItem_s = ctx_GetItem_s_jni;
     context->ctx_Type = ctx_Type_jni;
     context->ctx_Type_GetName = ctx_TypeGetName_jni;
+
+    context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
