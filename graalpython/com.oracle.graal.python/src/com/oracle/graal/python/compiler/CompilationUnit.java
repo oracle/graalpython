@@ -447,6 +447,10 @@ public final class CompilationUnit {
             opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_BYTE_I : OpCodes.LOAD_BYTE_O;
         } else if (opcode == OpCodes.LOAD_INT) {
             opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_INT_I : OpCodes.LOAD_INT_O;
+        } else if (opcode == OpCodes.LOAD_LONG) {
+            opcode = (instr.quickenOutput & QuickeningTypes.LONG) != 0 ? OpCodes.LOAD_LONG_L : OpCodes.LOAD_LONG_O;
+        } else if (opcode == OpCodes.LOAD_DOUBLE) {
+            opcode = (instr.quickenOutput & QuickeningTypes.DOUBLE) != 0 ? OpCodes.LOAD_DOUBLE_D : OpCodes.LOAD_DOUBLE_O;
         } else if (opcode == OpCodes.LOAD_TRUE) {
             opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_TRUE_B : OpCodes.LOAD_TRUE_O;
         } else if (opcode == OpCodes.LOAD_FALSE) {

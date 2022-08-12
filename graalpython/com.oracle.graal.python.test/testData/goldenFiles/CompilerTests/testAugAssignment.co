@@ -1,6 +1,6 @@
 Disassembly of <module>:
 000000         0 LOAD_NAME                         0    (a)
-000005         2 LOAD_DOUBLE                       0    (12.0)
+000005         2 LOAD_DOUBLE_O                     0    (12.0)
 000000         4 BINARY_OP                         1    (INPLACE_ADD)
 000000         6 STORE_NAME                        0    (a)
 000000         8 LOAD_NONE

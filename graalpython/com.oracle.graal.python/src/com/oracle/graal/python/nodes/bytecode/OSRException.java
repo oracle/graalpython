@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.annotations;
+package com.oracle.graal.python.nodes.bytecode;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Target;
+import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 
-@Target(ElementType.TYPE)
-public @interface GenerateEnumConstants {
-    enum Type {
-        INT,
-        BYTE
+/*
+Container for for propagating exceptions from OSR without handling them twice.
+ */
+public class OSRException extends PythonControlFlowException {
+    private static final long serialVersionUID = 425126860491305807L;
+    public final AbstractTruffleException exception;
+
+    public OSRException(AbstractTruffleException exception) {
+        this.exception = exception;
     }
-
-    Type type() default Type.INT;
 }

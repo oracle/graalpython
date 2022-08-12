@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -220,6 +221,8 @@ public final class PFrame extends PythonBuiltinObject {
         if (line == -2) {
             if (location == null) {
                 line = -1;
+            } else if (location instanceof PBytecodeRootNode) {
+                return ((PBytecodeRootNode) location).bciToLine(lasti);
             } else {
                 SourceSection sourceSection = location.getEncapsulatingSourceSection();
                 if (sourceSection == null) {

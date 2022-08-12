@@ -52,7 +52,7 @@ import com.oracle.graal.python.runtime.exception.PException;
  * opcodes can have multiple bytes of immediate operands. The first operand can be variably extended
  * using {@link #EXTENDED_ARG} instruction.
  */
-@GenerateEnumConstants
+@GenerateEnumConstants(type = GenerateEnumConstants.Type.BYTE)
 public enum OpCodes {
     /** Pop a single item from the stack */
     POP_TOP(0, 1, 0),
@@ -674,27 +674,46 @@ public enum OpCodes {
     LOAD_BYTE_I(LOAD_BYTE, 0, QuickeningTypes.INT, LOAD_BYTE_O),
     LOAD_INT_O(LOAD_INT, 0, QuickeningTypes.OBJECT),
     LOAD_INT_I(LOAD_INT, 0, QuickeningTypes.INT, LOAD_INT_O),
+    LOAD_LONG_O(LOAD_LONG, 0, QuickeningTypes.OBJECT),
+    LOAD_LONG_L(LOAD_LONG, 0, QuickeningTypes.LONG, LOAD_LONG_O),
+    LOAD_DOUBLE_O(LOAD_DOUBLE, 0, QuickeningTypes.OBJECT),
+    LOAD_DOUBLE_D(LOAD_DOUBLE, 0, QuickeningTypes.DOUBLE, LOAD_DOUBLE_O),
     LOAD_FAST_O(LOAD_FAST, 0, QuickeningTypes.OBJECT),
     LOAD_FAST_I_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
     LOAD_FAST_I(LOAD_FAST, 0, QuickeningTypes.INT, LOAD_FAST_I_BOX),
+    LOAD_FAST_L_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_L(LOAD_FAST, 0, QuickeningTypes.LONG, LOAD_FAST_L_BOX),
+    LOAD_FAST_D_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
+    LOAD_FAST_D(LOAD_FAST, 0, QuickeningTypes.DOUBLE, LOAD_FAST_D_BOX),
     LOAD_FAST_B_BOX(LOAD_FAST, 0, QuickeningTypes.OBJECT),
     LOAD_FAST_B(LOAD_FAST, 0, QuickeningTypes.BOOLEAN, LOAD_FAST_B_BOX),
     STORE_FAST_O(STORE_FAST, QuickeningTypes.OBJECT, 0),
     STORE_FAST_UNBOX_I(STORE_FAST, QuickeningTypes.OBJECT, 0),
     STORE_FAST_BOXED_I(STORE_FAST, QuickeningTypes.OBJECT, 0),
     STORE_FAST_I(STORE_FAST, QuickeningTypes.INT, 0),
+    STORE_FAST_UNBOX_L(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_BOXED_L(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_L(STORE_FAST, QuickeningTypes.LONG, 0),
+    STORE_FAST_UNBOX_D(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_BOXED_D(STORE_FAST, QuickeningTypes.OBJECT, 0),
+    STORE_FAST_D(STORE_FAST, QuickeningTypes.DOUBLE, 0),
     STORE_FAST_UNBOX_B(STORE_FAST, QuickeningTypes.OBJECT, 0),
     STORE_FAST_BOXED_B(STORE_FAST, QuickeningTypes.OBJECT, 0),
     STORE_FAST_B(STORE_FAST, QuickeningTypes.BOOLEAN, 0),
     UNARY_OP_O_O(UNARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
     UNARY_OP_I_O(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
     UNARY_OP_I_I(UNARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, UNARY_OP_I_O),
+    UNARY_OP_D_O(UNARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.OBJECT),
+    UNARY_OP_D_D(UNARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.DOUBLE, UNARY_OP_D_O),
     UNARY_OP_B_O(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.OBJECT),
     UNARY_OP_B_B(UNARY_OP, QuickeningTypes.BOOLEAN, QuickeningTypes.BOOLEAN, UNARY_OP_I_O),
     BINARY_OP_OO_O(BINARY_OP, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
     BINARY_OP_II_O(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.OBJECT),
     BINARY_OP_II_I(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.INT, BINARY_OP_II_O),
     BINARY_OP_II_B(BINARY_OP, QuickeningTypes.INT, QuickeningTypes.BOOLEAN, BINARY_OP_II_O),
+    BINARY_OP_DD_O(BINARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.OBJECT),
+    BINARY_OP_DD_D(BINARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.DOUBLE, BINARY_OP_DD_O),
+    BINARY_OP_DD_B(BINARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.BOOLEAN, BINARY_OP_DD_O),
     FOR_ITER_O(FOR_ITER, 0, QuickeningTypes.OBJECT),
     FOR_ITER_I(FOR_ITER, 0, QuickeningTypes.INT, FOR_ITER_O),
     POP_AND_JUMP_IF_FALSE_O(POP_AND_JUMP_IF_FALSE, QuickeningTypes.OBJECT, 0),
@@ -737,7 +756,11 @@ public enum OpCodes {
         public static final int HAS_CLOSURE = 0x08;
     }
 
-    public static final OpCodes[] VALUES = new OpCodes[values().length];
+    private static final OpCodes[] VALUES = new OpCodes[values().length];
+
+    public static OpCodes fromOpCode(byte opcode) {
+        return VALUES[Byte.toUnsignedInt(opcode)];
+    }
 
     static {
         assert values().length < 256;
