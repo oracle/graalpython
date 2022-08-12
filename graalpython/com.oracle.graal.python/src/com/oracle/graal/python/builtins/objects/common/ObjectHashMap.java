@@ -417,87 +417,6 @@ public final class ObjectHashMap {
         return usedIndices + bucketsCntQuarter > getBucketsCount();
     }
 
-    public static class GetProfiles extends Node {
-        final ConditionProfile foundNullKey;
-        final ConditionProfile foundSameHashKey;
-        final ConditionProfile foundEqKey;
-        final ConditionProfile collisionFoundEqKey;
-        final ConditionProfile collisionFoundNoValue;
-        @Child PyObjectRichCompareBool.EqNode eqNode;
-
-        public GetProfiles(boolean cached, PyObjectRichCompareBool.EqNode eqNode) {
-            if (cached) {
-                foundNullKey = ConditionProfile.createCountingProfile();
-                foundSameHashKey = ConditionProfile.createCountingProfile();
-                foundEqKey = ConditionProfile.createCountingProfile();
-                collisionFoundEqKey = ConditionProfile.createCountingProfile();
-                collisionFoundNoValue = ConditionProfile.createCountingProfile();
-            } else {
-                foundNullKey = ConditionProfile.getUncached();
-                foundSameHashKey = ConditionProfile.getUncached();
-                foundEqKey = ConditionProfile.getUncached();
-                collisionFoundEqKey = ConditionProfile.getUncached();
-                collisionFoundNoValue = ConditionProfile.getUncached();
-            }
-            this.eqNode = eqNode;
-        }
-
-        public static GetProfiles create() {
-            return new GetProfiles(true, PyObjectRichCompareBool.EqNode.create());
-        }
-
-        private static final GetProfiles UNCACHED = new GetProfiles(false, PyObjectRichCompareBool.EqNode.getUncached());
-
-        public static GetProfiles getUncached() {
-            return UNCACHED;
-        }
-    }
-
-    public static final class PutProfiles extends GetProfiles {
-        final BranchProfile rehash1Profile;
-        final BranchProfile rehash2Profile;
-
-        public PutProfiles(boolean cached, PyObjectRichCompareBool.EqNode eqNode) {
-            super(cached, eqNode);
-            if (cached) {
-                rehash1Profile = BranchProfile.create();
-                rehash2Profile = BranchProfile.create();
-            } else {
-                rehash1Profile = BranchProfile.getUncached();
-                rehash2Profile = BranchProfile.getUncached();
-            }
-        }
-
-        public static PutProfiles create() {
-            return new PutProfiles(true, PyObjectRichCompareBool.EqNode.create());
-        }
-
-        private static final PutProfiles UNCACHED = new PutProfiles(false, PyObjectRichCompareBool.EqNode.getUncached());
-
-        public static PutProfiles getUncached() {
-            return UNCACHED;
-        }
-    }
-
-    public static final class RemoveProfiles extends GetProfiles {
-        final BranchProfile compactProfile;
-
-        public RemoveProfiles(boolean cached, PyObjectRichCompareBool.EqNode eqNode) {
-            super(cached, eqNode);
-            compactProfile = cached ? BranchProfile.create() : BranchProfile.getUncached();
-        }
-
-        public static RemoveProfiles create() {
-            return new RemoveProfiles(true, PyObjectRichCompareBool.EqNode.create());
-        }
-
-        private static final RemoveProfiles UNCACHED = new RemoveProfiles(false, PyObjectRichCompareBool.EqNode.getUncached());
-
-        public static RemoveProfiles getUncached() {
-            return UNCACHED;
-        }
-    }
-
     public int size() {
         return size;
     }
@@ -617,7 +536,7 @@ public final class ObjectHashMap {
             int searchLimit = map.getBucketsCount() + PERTURB_SHIFTS_COUT;
             int i = 0;
             try {
-                for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
+                for (; i < searchLimit; i++) {
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = map.nextIndex(compactIndex, perturb);
                     index = map.indices[compactIndex];
@@ -749,7 +668,7 @@ public final class ObjectHashMap {
             int searchLimit = map.getBucketsCount() + PERTURB_SHIFTS_COUT;
             int i = 0;
             try {
-                for (; CompilerDirectives.injectBranchProbability(0, i < searchLimit); i++) {
+                for (; i < searchLimit; i++) {
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = map.nextIndex(compactIndex, perturb);
                     index = map.indices[compactIndex];
