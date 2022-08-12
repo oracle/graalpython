@@ -2252,6 +2252,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpIIB(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         int right, left;
         if (virtualFrame.isInt(stackTop) && virtualFrame.isInt(stackTop - 1)) {
@@ -2289,6 +2290,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setBoolean(stackTop - 1, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpIIO(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op) {
         int right, left;
         if (virtualFrame.isInt(stackTop) && virtualFrame.isInt(stackTop - 1)) {
@@ -2379,6 +2381,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop - 1, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpIII(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
         int right, left, result;
         if (virtualFrame.isInt(stackTop) && virtualFrame.isInt(stackTop - 1)) {
@@ -2477,6 +2480,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setInt(stackTop - 1, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpDDD(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
         double right, left, result;
         if (virtualFrame.isDouble(stackTop) && virtualFrame.isDouble(stackTop - 1)) {
@@ -2514,6 +2518,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setDouble(stackTop - 1, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpDDB(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         double right, left;
         if (virtualFrame.isDouble(stackTop) && virtualFrame.isDouble(stackTop - 1)) {
@@ -2550,6 +2555,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setBoolean(stackTop - 1, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpDDO(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
         int right, left;
         if (virtualFrame.isInt(stackTop) && virtualFrame.isInt(stackTop - 1)) {
@@ -2616,6 +2622,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeBinaryOpOOO(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, int bciSlot) {
         setCurrentBci(virtualFrame, bciSlot, bci);
         BinaryOp opNode = (BinaryOp) insertChildNodeInt(localNodes, bci, BinaryOp.class, BINARY_OP_FACTORY, op);
@@ -2690,6 +2697,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         bytecodeUnaryOpOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpII(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         int value;
         if (virtualFrame.isInt(stackTop)) {
@@ -2720,6 +2728,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpIO(VirtualFrame virtualFrame, int stackTop, int bci, int op, Node[] localNodes) {
         int value;
         if (virtualFrame.isInt(stackTop)) {
@@ -2750,6 +2759,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpDD(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         double value;
         if (virtualFrame.isDouble(stackTop)) {
@@ -2770,6 +2780,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpDO(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         double value;
         if (virtualFrame.isDouble(stackTop)) {
@@ -2796,6 +2807,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpBB(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         boolean value;
         if (virtualFrame.isBoolean(stackTop)) {
@@ -2812,6 +2824,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpBO(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
         boolean value;
         if (virtualFrame.isBoolean(stackTop)) {
@@ -2835,6 +2848,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         bytecodeUnaryOpOO(virtualFrame, stackTop, bci, adoptedNodes, op, bcioffset);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeUnaryOpOO(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, int bciSlot) {
         setCurrentBci(virtualFrame, bciSlot, bci);
         UnaryOpNode opNode = insertChildNodeInt(localNodes, bci, UnaryOpNode.class, UNARY_OP_FACTORY, op);
