@@ -1058,6 +1058,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pastBci = 0;
                 pastLine = returnLine = -1;
             }
+
             private int pastBci;
             private int pastLine;
             private int returnLine;
@@ -1195,7 +1196,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
                     if (mutableData.getPyFrame().getTraceLine()) {
                         invokeTraceFunction(virtualFrame, null, threadState, mutableData, PythonContext.TraceEvent.LINE,
-                                mutableData.getPastLine(), true);
+                                        mutableData.getPastLine(), true);
                     }
                 }
                 mutableData.setPastBci(bci);
@@ -1656,7 +1657,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = virtualFrame.getObject(stackTop);
                         if (!noTrace.isValid() && threadState.getTraceFun() != null) {
                             invokeTraceFunction(virtualFrame, value, threadState, mutableData, PythonContext.TraceEvent.RETURN,
-                                    mutableData.getReturnLine(), true);
+                                            mutableData.getReturnLine(), true);
                         }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
@@ -2098,7 +2099,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         if (!noTrace.isValid() && threadState.getTraceFun() != null) {
                             invokeTraceFunction(virtualFrame, value, threadState, mutableData, PythonContext.TraceEvent.RETURN,
-                                    mutableData.getReturnLine(), true);
+                                            mutableData.getReturnLine(), true);
                         }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
@@ -2230,7 +2231,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     if (!noTrace.isValid() && threadState.getTraceFun() != null) {
                         invokeTraceFunction(virtualFrame, PNone.NONE, threadState, mutableData, PythonContext.TraceEvent.RETURN,
-                                mutableData.getReturnLine(), true);
+                                        mutableData.getReturnLine(), true);
                     }
                     if (e == pe) {
                         throw pe;
