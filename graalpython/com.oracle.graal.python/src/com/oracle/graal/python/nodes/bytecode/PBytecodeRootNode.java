@@ -1769,7 +1769,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                  * variables) or it will get mixed up. To retain such state, put it
                                  * into the frame instead.
                                  */
-                                Object osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
+                                Object osrResult;
+                                try {
+                                    osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
+                                } catch (AbstractTruffleException e) {
+                                    /*
+                                     * If the OSR execution throws a python exception, it means it
+                                     * has already been processed by the bytecode exception handler
+                                     * therein. We wrap it in order to make sure it doesn't get
+                                     * processed again, which would overwrite the traceback entry
+                                     * with the location of this jump instruction.
+                                     */
+                                    throw new OSRException(e);
+                                }
                                 if (osrResult != null) {
                                     if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
                                         LoopNode.reportLoopCount(this, mutableData.loopCount);
@@ -2039,6 +2051,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 bci++;
             } catch (PythonExitException | PythonThreadKillException e) {
                 throw e;
+            } catch (OSRException e) {
+                // Exception from OSR was already handled in the OSR code
+                throw e.exception;
             } catch (Exception | StackOverflowError | AssertionError e) {
                 PException pe = null;
                 boolean isInteropException = false;
