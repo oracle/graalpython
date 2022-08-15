@@ -205,6 +205,37 @@ PyObject* PyObject_GenericGetDict(PyObject* obj, void* context) {
     return d;
 }
 
+int PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
+{
+    PyObject **dictptr = _PyObject_GetDictPtr(obj);
+    if (dictptr == NULL) {
+//        if (_PyType_HasFeature(Py_TYPE(obj), Py_TPFLAGS_MANAGED_DICT) &&
+//            _PyDictOrValues_IsValues(*_PyObject_DictOrValuesPointer(obj)))
+//        {
+//            /* Was unable to convert to dict */
+//            PyErr_NoMemory();
+//        }
+//        else {
+//            PyErr_SetString(PyExc_AttributeError,
+//                            "This object has no __dict__");
+//        }
+        return -1;
+    }
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "cannot delete __dict__");
+        return -1;
+    }
+    if (!PyDict_Check(value)) {
+        PyErr_Format(PyExc_TypeError,
+                     "__dict__ must be set to a dictionary, "
+                     "not a '%.200s'", Py_TYPE(value)->tp_name);
+        return -1;
+    }
+    Py_INCREF(value);
+    Py_XSETREF(*dictptr, value);
+    return 0;
+}
+
 PyObject** _PyObject_GetDictPtr(PyObject* obj) {
 	obj = native_pointer_to_java(obj);
     Py_ssize_t dictoffset;
