@@ -1097,33 +1097,50 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (globalTraceFn != null && !threadState.isTracing()) {
             MaterializeFrameNode fr = insertChildNode(localNodes, bci, MaterializeFrameNode.getUncached(), MaterializeFrameNodeGen.class, MaterializeFrameNode::create, useCachedNodes);
             pyFrame = fr.execute(virtualFrame, this, true, true);
-            if(initialBci == 0) {
+            if (initialBci == 0) {
                 pyFrame.setLineLock(getFirstLineno());
-                pyFrame.setLocalTraceFun(invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
-                pyFrame.lineUnlock();
+                try {
+                    pyFrame.setLocalTraceFun(invokeTraceFunction(context, globalTraceFn, null, threadState, virtualFrame, pyFrame, 0, localNodes, PythonContext.TraceEvent.CALL, useCachedNodes));
+                } catch (Throwable e) {
+                    threadState.setTraceFun(null);
+                    throw e;
+                } finally {
+                    pyFrame.lineUnlock();
+                }
             }
         } else {
             pyFrame = null;
         }
 
-        int pastLine = globalTraceFn == null?0:getFirstLineno();
+        int pastLine = -1;
+        int returnLine = pastLine;
+        int pastBci = initialBci;
 
         int oparg = 0;
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
-
-            if(globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun() != null && pyFrame.getTraceLine() && bciToLine(bci) != pastLine) {
+            if (globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun() != null && pyFrame.getTraceLine()) {
+                boolean onANewLine = bciToLine(bci) != pastLine;
                 pastLine = bciToLine(bci);
-                pyFrame.setLineLock(pastLine);
-                try {
-                    pyFrame.setLocalTraceFun(invokeTraceFunction(context, pyFrame.getLocalTraceFun(), null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.LINE, useCachedNodes));
-                } catch(Throwable e) {
-                    pyFrame.setLocalTraceFun(null);
-                    throw e;
-                } finally {
-                    pyFrame.lineUnlock();
+                OpCodes c = OpCodes.fromOpCode(localBC[pastBci]);
+                if (pastBci > bci || (onANewLine && (!OpCodes.fromOpCode(localBC[pastBci]).isJump() || pastBci + c.length() >= bci || bciToLine(bci - 1) != bciToLine(bci)))) {
+                    returnLine = pastLine;
+                    pyFrame.setLineLock(pastLine);
+                    try {
+                        pyFrame.setLocalTraceFun(
+                                        invokeTraceFunction(context, pyFrame.getLocalTraceFun(), null, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.LINE,
+                                                        useCachedNodes));
+                    } catch (Throwable e) {
+                        pyFrame.setLocalTraceFun(null);
+                        throw e;
+                    } finally {
+                        pyFrame.lineUnlock();
+                    }
                 }
+            }
+            if (globalTraceFn != null) {
+                pastBci = bci;
             }
 
             CompilerAsserts.partialEvaluationConstant(bc);
@@ -1579,11 +1596,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
-                        if (globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun()!= null ) {
-                            pyFrame.setLineLock(bciToLine(bci));
+                        if (globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun() != null) {
+                            pyFrame.setLineLock(pyFrame.getTraceLine() ? returnLine : bciToLine(bci));
                             try {
                                 invokeTraceFunction(context, pyFrame.getLocalTraceFun(), value, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
-                            } catch(Throwable e) {
+                            } catch (Throwable e) {
                                 pyFrame.setLocalTraceFun(null);
                                 throw e;
                             } finally {
@@ -2115,7 +2132,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                int targetIndex = findHandler(beginBci);
+                if (globalTraceFn != null && !threadState.isTracing() && pyFrame.getLocalTraceFun() != null && pyFrame != null) {
+                    try {
+                        pyFrame.setLocalTraceFun(invokeTraceFunction(context, pyFrame.getLocalTraceFun(), PNone.NONE, threadState, virtualFrame, pyFrame, bci, localNodes,
+                                        PythonContext.TraceEvent.EXCEPTION, useCachedNodes));
+                    } catch (Throwable exc) {
+                        pyFrame.setLocalTraceFun(null);
+                        throw exc;
+                    }
+                }
+
+                int targetIndex = findHandler(bci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
                 if (pe != null) {
                     if (mutableData.localException != null) {
@@ -2142,6 +2169,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
                         LoopNode.reportLoopCount(this, mutableData.loopCount);
+                    }
+                    if (globalTraceFn != null && pyFrame.getLocalTraceFun() != null && pyFrame != null) {
+                        pyFrame.setLineLock(pyFrame.getTraceLine() ? returnLine : bciToLine(bci));
+                        try {
+                            invokeTraceFunction(context, pyFrame.getLocalTraceFun(), PNone.NONE, threadState, virtualFrame, pyFrame, bci, localNodes, PythonContext.TraceEvent.RETURN, useCachedNodes);
+                        } catch (Throwable exc) {
+                            pyFrame.setLocalTraceFun(null);
+                            throw exc;
+                        } finally {
+                            pyFrame.lineUnlock();
+                        }
                     }
                     if (e == pe) {
                         throw pe;

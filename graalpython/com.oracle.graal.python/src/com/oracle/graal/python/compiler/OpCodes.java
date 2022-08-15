@@ -826,6 +826,28 @@ public enum OpCodes {
         int stackEffect(int oparg, byte[] followingArgs, boolean withJump);
     }
 
+    public boolean isJump() {
+        switch (this) {
+            case JUMP_BACKWARD:
+            case JUMP_FORWARD:
+            case JUMP_IF_FALSE_OR_POP:
+            case JUMP_IF_TRUE_OR_POP:
+            case POP_AND_JUMP_IF_TRUE:
+            case POP_AND_JUMP_IF_TRUE_O:
+            case POP_AND_JUMP_IF_TRUE_B:
+            case POP_AND_JUMP_IF_FALSE:
+            case POP_AND_JUMP_IF_FALSE_O:
+            case POP_AND_JUMP_IF_FALSE_B:
+            case FOR_ITER:
+            case FOR_ITER_O:
+            case FOR_ITER_I:
+            case MATCH_EXC_OR_JUMP:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public boolean hasArg() {
         return argLength > 0;
     }
