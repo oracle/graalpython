@@ -102,7 +102,9 @@ ALL_FIELDS
     UPCALL(Type, SIG_HPY, SIG_HPY) \
     UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
     UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
-    UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT)
+    UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT) \
+    UPCALL(CapsuleNew, SIG_PTR SIG_PTR SIG_PTR, SIG_HPY) \
+    UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR)
 
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
@@ -124,6 +126,7 @@ static jmethodID jniMethod_hpy_debug_get_context;
 
 #define HPY_UP(_h) ((jlong)((_h)._i))
 #define PTR_UP jlong
+#define INT_UP jint
 #define LONG_UP jlong
 #define DOUBLE_UP jdouble
 #define SIZE_T_UP jlong
@@ -349,6 +352,14 @@ static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
         }
     }
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
+}
+
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), CapsuleNew, (PTR_UP)pointer, (PTR_UP)name, (PTR_UP)destructor);
+}
+
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name) {
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), CapsuleGet, HPY_UP(capsule), (INT_UP)key, (PTR_UP)name);
 }
 
 
@@ -828,6 +839,8 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
     context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
     context->ctx_Is = ctx_Is_jni;
+    context->ctx_Capsule_New = ctx_Capsule_New_jni;
+    context->ctx_Capsule_Get = ctx_Capsule_Get_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
@@ -914,6 +927,13 @@ HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
     }
     return dctx;
 }
+
+// helper functions
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_strcmp(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
+    return (jint) strcmp((const char *)s1, (const char *)s2);
+}
+
 // helper functions for fast HPy downcalls:
 
 JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executePrimitive1(JNIEnv *env, jclass clazz, jlong target, jlong arg1) {

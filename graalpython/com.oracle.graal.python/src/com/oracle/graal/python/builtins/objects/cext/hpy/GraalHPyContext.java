@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
@@ -82,6 +83,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.nodes.object.IsNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -92,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -99,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBinaryArithmetic;
@@ -1435,6 +1439,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * will throw a {@link CannotCastException} if coercion is not possible.
      */
     private static long coerceToPointer(Object value) throws CannotCastException {
+        if (value == null) {
+            return 0;
+        }
         if (value instanceof Long) {
             return (long) value;
         }
@@ -1542,6 +1549,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
     }
+
+    /* HPy universal mode: JNI helper functions */
+
+    @TruffleBoundary
+    public static native int strcmp(long s1, long s2);
 
     /* HPy universal mode: JNI trampoline declarations */
 
@@ -2346,6 +2358,70 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             return -1;
+        }
+    }
+
+    public long ctxCapsuleNew(long pointer, long name, long destructor) {
+        PyCapsule result = new PyCapsule();
+        if (pointer == 0) {
+            return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleNew.NULL_PTR_ERROR);
+        }
+        result.setPointer(pointer);
+        if (name != 0) {
+            result.setName(name);
+        }
+        if (destructor != 0) {
+            result.setDestructor(destructor);
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
+    }
+
+    static boolean capsuleNameMatches(long name1, long name2) {
+        // additional shortcut (compared to CPython) to avoid a unnecessary downcalls
+        if (name1 == name2) {
+            return true;
+        }
+        /*
+         * If one of them is NULL, then both need to be NULL. However, at this point we have
+         * invariant 'name1 != name2' because of the above shortcut.
+         */
+        if (name1 == 0 || name2 == 0) {
+            return false;
+        }
+        return strcmp(name1, name2) == 0;
+    }
+
+    public long ctxCapsuleGet(long capsuleBits, int key, long namePtr) {
+        Object capsule = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(capsuleBits));
+        try {
+            if (!(capsule instanceof PyCapsule) || ((PyCapsule) capsule).getPointer() == null) {
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleGet.getErrorMessage(key));
+            }
+            GraalHPyCapsuleGet.isLegalCapsule(capsule, key, PRaiseNode.getUncached());
+            PyCapsule pyCapsule = (PyCapsule) capsule;
+            Object result;
+            switch (key) {
+                case CapsuleKey.Pointer:
+                    if (!capsuleNameMatches(namePtr, coerceToPointer(pyCapsule.getName()))) {
+                        return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleGet.INCORRECT_NAME);
+                    }
+                    result = pyCapsule.getPointer();
+                    break;
+                case CapsuleKey.Context:
+                    result = pyCapsule.getContext();
+                    break;
+                case CapsuleKey.Name:
+                    result = pyCapsule.getName();
+                    break;
+                case CapsuleKey.Destructor:
+                    result = pyCapsule.getDestructor();
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid key");
+            }
+            return coerceToPointer(result);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

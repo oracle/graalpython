@@ -3154,17 +3154,17 @@ public abstract class GraalHPyContextFunctions {
 
     // see _HPyCapsule_key in the HPy API
     static final class CapsuleKey {
-        private static final byte Pointer = 0;
-        private static final byte Name = 1;
-        private static final byte Context = 2;
-        private static final byte Destructor = 3;
+        static final byte Pointer = 0;
+        static final byte Name = 1;
+        static final byte Context = 2;
+        static final byte Destructor = 3;
     }
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
         static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
-        protected static Object argument2(Object[] arguments) {
+        static Object argument2(Object[] arguments) {
             return arguments[2];
         }
 
@@ -3267,7 +3267,7 @@ public abstract class GraalHPyContextFunctions {
         }
 
         @TruffleBoundary
-        private static TruffleString getErrorMessage(int key) {
+        static TruffleString getErrorMessage(int key) {
             switch (key) {
                 case CapsuleKey.Pointer:
                     return ErrorMessages.CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE;
