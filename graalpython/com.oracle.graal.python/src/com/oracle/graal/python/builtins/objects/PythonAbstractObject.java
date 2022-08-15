@@ -52,10 +52,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRUCT_TIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -1346,7 +1346,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @GenerateUncached
     public abstract static class PInteropSubscriptAssignNode extends Node {
 
-        public abstract void execute(Object primary, Object key, Object value) throws UnsupportedMessageException;
+        public abstract void execute(PythonAbstractObject primary, Object key, Object value) throws UnsupportedMessageException;
 
         @Specialization
         static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
