@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -1729,6 +1730,22 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         private static final char[] sPzUZXO = "sPzUZXO".toCharArray();
 
         abstract Object execute(Object ptr, Object src, Object ctype);
+
+        @Specialization
+        static Object cast(PythonNativeVoidPtr ptr, PythonNativeVoidPtr src, Object ctype,
+                           @Cached PyTypeCheck pyTypeCheck,
+                           @Cached CallNode callNode,
+                           @Cached PRaiseNode raiseNode,
+                           @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                           @Cached IsTypeNode isTypeNode,
+                           @Cached GetClassNode getClassNode,
+                           @Cached GetNameNode getNameNode,
+                           @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
+            CDataObject result = (CDataObject) callNode.execute(ctype);
+            result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
+            return result;
+        }
 
         @Specialization
         static Object cast(CDataObject ptr, CDataObject src, Object ctype,
