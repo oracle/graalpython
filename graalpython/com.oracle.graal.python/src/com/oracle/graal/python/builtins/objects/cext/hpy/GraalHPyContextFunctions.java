@@ -63,7 +63,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_APPEND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ASCII_UPPERCASE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -240,7 +239,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @SuppressWarnings("static-method")
 public abstract class GraalHPyContextFunctions {
@@ -3174,10 +3172,8 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @CachedLibrary("argument2(arguments)") InteropLibrary nameLib,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                        @Cached CastToTruffleStringNode castStr,
                         @Cached HPyRaiseNode raiseNode) throws ArityException {
             checkArity(arguments, 4);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -3186,12 +3182,8 @@ public abstract class GraalHPyContextFunctions {
                 return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, ValueError, NULL_PTR_ERROR);
             }
             result.setPointer(arguments[1]);
-            try {
-                if (!nameLib.isPointer(arguments[2]) || nameLib.asPointer(arguments[2]) != 0) {
-                    result.setName(castStr.execute(fromCharPointerNode.execute(arguments[2])));
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            if (!nameLib.isNull(arguments[2])) {
+                result.setName(arguments[2]);
             }
             result.setDestructor(arguments[3]);
             return asHandleNode.execute(context, result);
@@ -3264,7 +3256,8 @@ public abstract class GraalHPyContextFunctions {
             }
 
             TruffleString name = castStr.execute(fromCharPointerNode.execute(namePtr));
-            return equalNode.execute(capsule.getName(), name, TS_ENCODING);
+            TruffleString capsuleName = castStr.execute(fromCharPointerNode.execute(capsule.getName()));
+            return equalNode.execute(capsuleName, name, TS_ENCODING);
         }
 
         static void isLegalCapsule(Object object, int key, PRaiseNode raiseNode) {
