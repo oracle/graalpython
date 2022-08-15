@@ -126,6 +126,10 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodesFactory;
+import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.ListFromStackNode;
+import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromStackNode;
+import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
+import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.TupleFromStackNodeGen;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -3490,14 +3494,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object res = null;
         switch (type) {
             case CollectionBits.KIND_LIST: {
-                Object[] store = new Object[count];
-                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
-                res = factory.createList(store);
+                ListFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, ListFromStackNodeGen.class, (int length) -> ListFromStackNodeGen.create(length), count);
+                SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
+                res = factory.createList(store, storageFromStackNode);
                 break;
             }
             case CollectionBits.KIND_TUPLE: {
-                Object[] store = new Object[count];
-                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, store);
+                TupleFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, TupleFromStackNodeGen.class, (int length) -> TupleFromStackNodeGen.create(length), count);
+                SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
                 res = factory.createTuple(store);
                 break;
             }

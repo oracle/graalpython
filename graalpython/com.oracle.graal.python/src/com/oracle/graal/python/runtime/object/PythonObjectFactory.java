@@ -137,6 +137,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
@@ -191,7 +192,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
@@ -690,7 +690,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PList(cls, instanceShape, storage));
     }
 
-    public final PList createList(SequenceStorage storage, ListLiteralNode origin) {
+    public final PList createList(SequenceStorage storage, ListOrigin origin) {
         return trace(new PList(PythonBuiltinClassType.PList, PythonBuiltinClassType.PList.getInstanceShape(getLanguage()), storage, origin));
     }
 
