@@ -359,7 +359,7 @@ def known_packages():
         # install dependencies
         numpy(**kwargs)
 
-        install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
+        install_from_pypi("scipy==1.4.1", env=scipy_build_env, **kwargs)
 
     @pip_package()
     def cycler(**kwargs):
