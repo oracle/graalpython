@@ -528,3 +528,17 @@ def test_inplace_ops_mutate():
         exec(f"a {op}= b", v)
         assert v['a'] is s1
         assert s1 == eval(f"a {op} b", {'a': {1, 2}, 'b': {1, 3}})
+
+
+def test_graal_4816():
+    from copy import copy
+
+    def do_something(numbers):
+        assert len(numbers)
+
+    foo = set([1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    for _ in copy(foo):
+        foo.pop()
+        if foo:
+            do_something(foo)

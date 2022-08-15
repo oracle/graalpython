@@ -138,9 +138,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
 
-        @Specialization
-        PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self) {
-            return factory().createSet(self.getDictStorage());
+        @Specialization(limit = "1")
+        PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(lib.copy(self.getDictStorage()));
         }
     }
 
