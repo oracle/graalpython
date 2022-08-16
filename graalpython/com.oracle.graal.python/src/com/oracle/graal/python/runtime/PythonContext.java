@@ -185,6 +185,22 @@ public final class PythonContext extends Python3Core {
     public static final String J_PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
 
     /**
+     * An enum of events which can currently be traced using python's tracing
+     */
+    public enum TraceEvent {
+        CALL("call"),
+        EXCEPTION("exception"),
+        LINE("line"),
+        RETURN("return");
+
+        public final TruffleString pythonName;
+
+        TraceEvent(String pythonName) {
+            this.pythonName = tsLiteral(pythonName);
+        }
+    }
+
+    /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
      */
     public static final class PythonThreadState {
@@ -219,6 +235,15 @@ public final class PythonContext extends Python3Core {
          * owning thread (or the whole context) is disposed.
          */
         PThreadState nativeWrapper;
+
+        /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
+        Object traceFun;
+
+        /* Keep track of execution to avoid tracing code inside the tracing function. */
+        boolean tracing;
+
+        /* The event currently being traced, only useful if tracing is true. */
+        TraceEvent tracingWhat;
 
         /*
          * The constructor needs to have this particular signature such that we can use it for
@@ -314,6 +339,39 @@ public final class PythonContext extends Python3Core {
                 releaseHandleNode.execute(nativeWrapper);
                 nativeWrapper = null;
             }
+        }
+
+        public Object getTraceFun() {
+            return traceFun;
+        }
+
+        public void setTraceFun(Object traceFun, PythonLanguage language) {
+            if (this.traceFun != traceFun) {
+                language.noTracingAssumption.invalidate();
+                this.traceFun = traceFun;
+            }
+        }
+
+        public boolean isTracing() {
+            return tracing;
+        }
+
+        public void tracingStart(TraceEvent tracingWhat) {
+            assert !this.tracing : "Attempt made to trace a call while inside a trace function. Did you forget to check isTracing before calling invokeTraceFunction?";
+            this.tracing = true;
+            setTracingWhat(tracingWhat);
+        }
+
+        public void tracingStop() {
+            this.tracing = false;
+        }
+
+        public TraceEvent getTracingWhat() {
+            return tracingWhat;
+        }
+
+        public void setTracingWhat(TraceEvent tracingWhat) {
+            this.tracingWhat = tracingWhat;
         }
     }
 

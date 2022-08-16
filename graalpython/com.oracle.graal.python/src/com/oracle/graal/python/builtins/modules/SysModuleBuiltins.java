@@ -45,6 +45,7 @@ import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -535,6 +536,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
+        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
+        }
+
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
@@ -963,12 +968,37 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
+                    "function call.  See the debugger chapter in the library manual.")
+    @GenerateNodeFactory
+    abstract static class SetTrace extends PythonBuiltinNode {
+        @Specialization
+        Object settrace(Object function) {
+            PythonContext ctx = getContext();
+            if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                throw raise(NotImplementedError, ErrorMessages.SETTRACE_NOT_IMPLEMENTED);
+            }
+            PythonLanguage language = getLanguage();
+            PythonContext.PythonThreadState state = ctx.getThreadState(language);
+            if (function == PNone.NONE) {
+                state.setTraceFun(null, language);
+            } else {
+                state.setTraceFun(function, language);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "gettrace")
     @GenerateNodeFactory
     abstract static class GetTrace extends PythonBuiltinNode {
         @Specialization
-        static Object gettrace() {
-            return PNone.NONE;
+        Object gettrace() {
+            PythonContext ctx = getContext();
+            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+            Object trace = state.getTraceFun();
+            return trace == null ? PNone.NONE : trace;
+
         }
     }
 

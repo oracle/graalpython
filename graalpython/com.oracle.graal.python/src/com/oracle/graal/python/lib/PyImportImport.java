@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,12 +78,13 @@ public abstract class PyImportImport extends PNodeWithState {
                     @Cached PyObjectGetAttr getAttrNode,
                     @Cached CallNode callNode,
                     @Cached AbstractImportNode.PyImportImportModuleLevelObject importModuleLevelObject,
-                    @Cached PyEvalGetGlobals getGlobals) {
+                    @Cached PyEvalGetGlobals getGlobals,
+                    @Cached GetDictFromGlobalsNode getDictFromGlobals) {
         // Get the builtins from current globals
         Object globals = getGlobals.execute(frame);
         Object builtins;
         if (noGlobalsProfile.profile(globals != null)) {
-            builtins = getItemNode.execute(frame, globals, T___BUILTINS__);
+            builtins = getItemNode.execute(frame, getDictFromGlobals.execute(globals), T___BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
             builtins = importModuleLevelObject.execute(frame, getContext(), T_BUILTINS, null, null, 0);

@@ -68,7 +68,33 @@ public final class PFrame extends PythonBuiltinObject {
     private int line = -2;
     private int lasti = -1;
 
+    /*
+     * when emitting trace events, the line number will not be correct by default, so it has be
+     * manually managed
+     */
+    private boolean lockLine = false;
+
+    private Object localTraceFun = null;
+
+    private boolean traceLine = true;
+
     private PFrame.Reference backref = null;
+
+    public Object getLocalTraceFun() {
+        return localTraceFun;
+    }
+
+    public void setLocalTraceFun(Object localTraceFun) {
+        this.localTraceFun = localTraceFun;
+    }
+
+    public boolean getTraceLine() {
+        return traceLine;
+    }
+
+    public void setTraceLine(boolean traceLine) {
+        this.traceLine = traceLine;
+    }
 
     // TODO: frames: this is a large object, think about how to make this
     // smaller
@@ -213,7 +239,19 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setLine(int line) {
+        if (lockLine) {
+            return;
+        }
         this.line = line;
+    }
+
+    public void setLineLock(int line) {
+        this.line = line;
+        this.lockLine = true;
+    }
+
+    public void lineUnlock() {
+        this.lockLine = false;
     }
 
     @TruffleBoundary

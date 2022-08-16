@@ -112,7 +112,12 @@ public class PythonTests {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable", executable).build();
+        Context.Builder builder = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable",
+                        executable);
+        if (usingBytecodeCompiler()) {
+            builder.option("python.EnableBytecodeInterpreter", "true").option("python.DisableFrozenModules", "true");
+        }
+        context = builder.build();
         context.initialize("python");
         assert prevContext == null;
         context.enter();

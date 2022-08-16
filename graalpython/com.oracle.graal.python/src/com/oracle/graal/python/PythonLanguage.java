@@ -216,6 +216,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
+    /**
+     * This assumption will be valid if no context set a trace function at any point. Calling
+     * sys.settrace(None) will not invalidate it
+     */
+    public final Assumption noTracingAssumption = Assumption.create("No tracing function was set");
+
     @CompilationFinal private boolean singleContext = true;
 
     public boolean isSingleContext() {

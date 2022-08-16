@@ -43,6 +43,8 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -51,6 +53,8 @@ import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -154,13 +158,37 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
-        @Specialization
-        Object get(@SuppressWarnings("unused") PFrame self) {
-            // TODO: frames: This must return the traceback if there is a
-            // handled exception here
+        @Specialization(guards = "isNoValue(v)")
+        static Object doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
+            Object traceFun = self.getLocalTraceFun();
+            return traceFun == null ? PNone.NONE : traceFun;
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doSet(PFrame self, Object v) {
+            self.setLocalTraceFun(v == PNone.NONE ? null : v);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "f_trace_lines", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isSetter = true, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class TraceLinesNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(v)")
+        static boolean doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
+            return self.getTraceLine();
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doSet(PFrame self, Object v, @Cached PRaiseNode raise, @Cached CastToJavaBooleanNode cast) {
+            try {
+                self.setTraceLine(cast.execute(v));
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
+            }
             return PNone.NONE;
         }
     }

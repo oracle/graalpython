@@ -149,10 +149,10 @@ public final class CodeUnit {
 
         int bytecodeNumber = 0;
         for (int i = 0; i < code.length;) {
-            if (bci <= i) {
+            OpCodes op = OpCodes.fromOpCode(code[i]);
+            if (bci <= i + op.argLength) {
                 break;
             } else {
-                OpCodes op = OpCodes.fromOpCode(code[i]);
                 i += op.length();
                 bytecodeNumber++;
             }
