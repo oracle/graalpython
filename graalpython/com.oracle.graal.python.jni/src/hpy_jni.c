@@ -87,6 +87,8 @@ static JNIEnv* jniEnv;
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
+    UPCALL(SetItems, SIG_HPY SIG_STRING SIG_HPY, SIG_INT) \
+    UPCALL(GetItems, SIG_HPY SIG_STRING, SIG_HPY) \
     UPCALL(DictNew, , SIG_HPY) \
     UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
     UPCALL(TupleFromArray, SIG_JLONGARRAY SIG_BOOL, SIG_HPY) \
@@ -218,6 +220,42 @@ static void ctx_Field_Store_jni(HPyContext *ctx, HPy owner, HPyField *field, HPy
     field->_i = DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), FieldStore, HPY_UP(owner), field->_i, HPY_UP(value));
 }
 
+static const char* getBoxedPrimitiveName(uint64_t bits) {
+    assert(!isBoxedHandle(bits));
+    if (isBoxedInt(bits)) {
+        return "int";
+    }
+    assert(isBoxedDouble(bits));
+    return "float";
+}
+
+int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object does not support item assignment", getBoxedPrimitiveName(bits));
+        HPyErr_SetString(ctx, ctx->h_TypeError, message);
+        return -1;
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
+}
+
+HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
+    uint64_t bits = toBits(target);
+    if (!isBoxedHandle(bits)) {
+        const size_t buffer_size = 128;
+        char message[buffer_size];
+        snprintf(message, buffer_size,
+                 "'%s' object is not subscriptable", getBoxedPrimitiveName(bits));
+        return HPyErr_SetString(ctx, ctx->h_TypeError, message);
+    }
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+}
+
 //*************************
 // BOXING
 
@@ -258,6 +296,7 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
+static HPy (*original_Type)(HPyContext *, HPy);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     long bitsA = toBits(a);
@@ -265,7 +304,21 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     if (bitsA == bitsB) {
         return 1;
     } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
-        return original_Is(ctx, a, b);
+        // This code assumes that objects pointed by a handle <= SINGLETON_HANDLES_MAX
+        // always get that same handle
+        long unboxedA = unboxHandle(bitsA);
+        long unboxedB = unboxHandle(bitsB);
+        if (unboxedA <= SINGLETON_HANDLES_MAX) {
+            return 0;
+        } else if (unboxedB <= SINGLETON_HANDLES_MAX) {
+            return 0;
+        }
+        // This code assumes that space[x] != NULL <=> objects pointed by x has native struct
+        void** space = (void**)ctx->_private;
+        if (space[unboxedA] == NULL && space[unboxedB] == NULL) {
+            return original_Is(ctx, a, b);
+        }
+        return space[unboxedA] == space[unboxedB];
     } else {
         return 0;
     }
@@ -504,7 +557,7 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
 }
 
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
-    long bits = toBits(global);
+    uint64_t bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
         return original_Global_Load(ctx, global);
     } else {
@@ -513,7 +566,7 @@ HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
 }
 
 void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
-    long bits = toBits(h);
+    uint64_t bits = toBits(h);
     if (bits && isBoxedHandle(bits)) {
         original_Global_Store(ctx, global, h);
     } else {
@@ -522,7 +575,7 @@ void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
 }
 
 HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
-    long bits = toBits(source_field);
+    uint64_t bits = toBits(source_field);
     if (bits && isBoxedHandle(bits)) {
         return original_Field_Load(ctx, source_object, source_field);
     } else {
@@ -531,11 +584,22 @@ HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field
 }
 
 void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
-    long bits = toBits(h);
+    uint64_t bits = toBits(h);
     if (bits && isBoxedHandle(bits)) {
         original_Field_Store(ctx, target_object, target_field, h);
     } else {
         target_field->_i = h._i;
+    }
+}
+
+HPy augment_Type(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return ctx->h_LongType;
+    } else if (isBoxedDouble(bits)) {
+        return ctx->h_FloatType;
+    } else {
+        return original_Type(ctx, h);
     }
 }
 
@@ -594,6 +658,8 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Field_Store);
 
     AUGMENT(Is);
+
+    AUGMENT(Type);
 
 #undef AUGMENT
 }
@@ -656,6 +722,9 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Field_Load = ctx_Field_Load_jni;
     context->ctx_Field_Store = ctx_Field_Store_jni;
 
+    context->ctx_SetItem_s = ctx_SetItem_s_jni;
+    context->ctx_GetItem_s = ctx_GetItem_s_jni;
+
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
 
@@ -672,6 +741,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_TRACKER "J"
 #define SIG_JCHARARRAY "[C"
 #define SIG_JLONGARRAY "[J"
+#define SIG_STRING "Ljava/lang/String;"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \

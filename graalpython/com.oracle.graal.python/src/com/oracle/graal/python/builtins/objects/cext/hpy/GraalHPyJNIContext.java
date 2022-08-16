@@ -44,9 +44,11 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GetHPyHandleForSingleton;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -440,6 +442,7 @@ final class GraalHPyJNIContext implements TruffleObject {
 
             @Child private InteropLibrary interopLibrary;
             @CompilationFinal private ConditionProfile profile;
+            @Child GetHPyHandleForSingleton getHPyHandleForSingleton;
 
             @Override
             public long execute(Object[] arguments, int i) {
@@ -458,7 +461,7 @@ final class GraalHPyJNIContext implements TruffleObject {
                         assert delegate instanceof Double;
                         return GraalHPyBoxing.boxDouble((Double) delegate);
                     } else {
-                        return handle.getId(getHPyContext(arguments), ensureProfile());
+                        return handle.getId(getHPyContext(arguments), ensureProfile(), ensureHandleForSingletonNode());
                     }
                 } else if (value instanceof Long) {
                     return (long) value;
@@ -485,6 +488,14 @@ final class GraalHPyJNIContext implements TruffleObject {
                 }
                 return profile;
             }
+
+            private GetHPyHandleForSingleton ensureHandleForSingletonNode() {
+                if (getHPyHandleForSingleton == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getHPyHandleForSingleton = insert(GetHPyHandleForSingletonNodeGen.create());
+                }
+                return getHPyHandleForSingleton;
+            }
         }
 
         static final class GraalHPyJNIConvertArgUncachedNode extends GraalHPyJNIConvertArgNode {
@@ -502,7 +513,7 @@ final class GraalHPyJNIContext implements TruffleObject {
                         assert delegate instanceof Double;
                         return GraalHPyBoxing.boxDouble((Double) delegate);
                     } else {
-                        return handle.getId(getHPyContext(arguments), ConditionProfile.getUncached());
+                        return handle.getIdUncached(getHPyContext(arguments));
                     }
                 } else if (value instanceof Long) {
                     return (long) value;

@@ -698,7 +698,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -760,13 +760,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
                 mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
-                       nonZeroIsFatal=False, env=env, cwd=cwd, out=out, err=err)
+                       nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         if lock:
             lock.release()
-        return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env, cwd=cwd, out=out, err=err)
+        return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
 
 
 def is_bash_launcher(launcher_path):
@@ -800,20 +800,21 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         threads = []
         lock = threading.RLock()
 
-        class RaisingThread(threading.Thread):
+        class HPyUnitTestsThread(threading.Thread):
             def __init__(self, **tkwargs):
-                capture = mx.LinesOutputCapture()
-                tkwargs["kwargs"]["out"] = capture
-                tkwargs["kwargs"]["err"] = capture
                 super().__init__(**tkwargs)
-                self.out = capture
-                self.exc = None
+                self.out = mx.LinesOutputCapture()
+                self.result = None
 
             def run(self):
+                # Note: for some reason catching BaseException is not enough to catch mx.abort,
+                # so we use nonZeroIsFatal=False instead.
                 try:
-                    super().run()
-                except Exception as e: # pylint: disable=broad-except;
-                    self.exc = e
+                    self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
+                                                  env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
+                                                  out=self.out, err=self.out)
+                except BaseException as e: # pylint: disable=broad-except;
+                    self.result = e
 
         abi_list = ['cpython', 'universal']
         if include_native:
@@ -822,9 +823,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         for abi in abi_list:
             tenv = env.copy()
             tenv["TEST_HPY_ABI"] = abi
-            thread = RaisingThread(name=abi, target=run_python_unittests, args=(python_binary, ), kwargs={
-                "args": args, "paths": [_hpy_test_root()], "env": tenv, "use_pytest": True, "lock": lock,
-            })
+            thread = HPyUnitTestsThread(name=abi)
             threads.append(thread)
             thread.start()
 
@@ -835,8 +834,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
                 mx.logv("## Progress (last 5 lines) of thread %r:\n%s\n" % (t.name, os.linesep.join(t.out.lines[-5:])))
                 alive[i] = t.is_alive()
 
-        thread_exceptions = [t.exc for t in threads]
-        if any(thread_exceptions):
+        thread_errors = [t.result for t in threads if t.result != 0]
+        if any(thread_errors):
             for t in threads:
                 mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
             mx.abort("At least one HPy testing thread failed.")

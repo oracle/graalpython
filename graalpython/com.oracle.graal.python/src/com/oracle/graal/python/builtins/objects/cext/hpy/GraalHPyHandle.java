@@ -42,13 +42,15 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GetHPyHandleForSingleton;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -64,8 +66,8 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
@@ -107,6 +109,11 @@ public final class GraalHPyHandle implements TruffleObject {
         this.id = id;
     }
 
+    public static GraalHPyHandle createSingleton(Object delegate, int handle) {
+        assert handle <= GraalHPyBoxing.SINGLETON_HANDLE_MAX;
+        return new GraalHPyHandle(delegate, handle);
+    }
+
     public static GraalHPyHandle create(Object delegate) {
         return new GraalHPyHandle(delegate);
     }
@@ -120,33 +127,34 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     /**
-     * This is basically like {@link #toNative(ConditionProfile, InteropLibrary)} but also returns
-     * the ID.
+     * This is basically like {@code toNative} but also returns the ID.
      */
-    public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
+    public int getIdUncached(GraalHPyContext context) {
+        return getId(context, ConditionProfile.getUncached(), GetHPyHandleForSingletonNodeGen.getUncached());
+    }
+
+    public int getId(GraalHPyContext context, ConditionProfile hasIdProfile, GetHPyHandleForSingleton getSingletonNode) {
         int result = id;
         if (!isPointer(hasIdProfile)) {
             assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
-            result = context.getHPyHandleForObject(delegate);
+            result = getSingletonNode.execute(this.delegate);
+            if (result == -1) {
+                // profiled by the node
+                result = context.getHPyHandleForNonSingleton(this.delegate);
+            }
             id = result;
         }
+        assert isValidId(this.delegate, result);
         return result;
     }
 
-    public int getIdDebug(GraalHPyContext context) {
-        int result = id;
-        if (id == UNINITIALIZED) {
-            result = context.getHPyHandleForObject(delegate);
-            id = result;
+    public boolean isValidId(Object obj, int id) {
+        if (delegate == PNone.NO_VALUE) {
+            // special case of HPy_NULL internally represented as NO_VALUE
+            return id == 0;
         }
-        return result;
-    }
-
-    int getDebugId() {
-        if (id >= 0) {
-            return id;
-        }
-        return -id;
+        int singletonId = GraalHPyContext.getHPyHandleForSingleton(obj);
+        return singletonId == -1 || singletonId == id;
     }
 
     @ExportMessage
@@ -179,11 +187,9 @@ public final class GraalHPyHandle implements TruffleObject {
      */
     @ExportMessage
     void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
+                    @Cached GetHPyHandleForSingleton getSingletonNode,
                     @CachedLibrary("this") InteropLibrary lib) {
-        if (!isPointer(isNativeProfile)) {
-            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
-            id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(delegate);
-        }
+        getId(PythonContext.get(lib).getHPyContext(), isNativeProfile, getSingletonNode);
     }
 
     @ExportMessage

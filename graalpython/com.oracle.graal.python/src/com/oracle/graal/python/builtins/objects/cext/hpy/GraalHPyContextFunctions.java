@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemE
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
@@ -168,6 +167,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
@@ -2006,9 +2006,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PInteropSubscriptAssignNode setItemNode,
+                        @Cached PyObjectSetItem setItemNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached HPyRaiseNode raiseNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
@@ -2033,12 +2032,10 @@ public abstract class GraalHPyContextFunctions {
                 }
                 Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
                 try {
-                    setItemNode.execute(receiver, key, value);
+                    setItemNode.execute(null, receiver, key, value);
                     return 0;
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                } catch (UnsupportedMessageException e) {
-                    raiseNativeNode.raiseIntWithoutFrame(context, -1, TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPRT_IEM_ASSIGMENT, receiver);
                 }
                 return -1;
             } finally {

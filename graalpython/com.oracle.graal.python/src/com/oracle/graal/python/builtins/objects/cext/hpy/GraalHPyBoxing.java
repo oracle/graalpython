@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 public class GraalHPyBoxing {
 
-    // see the corresponding implementation in hpy_native.c
+    // see the corresponding implementation in hpy_jni.c
 
     /*-
      * This NaN boxing mechanism puts all non-double values into the range
@@ -66,6 +66,10 @@ public class GraalHPyBoxing {
 
     private static final long NAN_BOXING_INT_MASK = 0x00000000FFFFFFFFL;
     private static final long NAN_BOXING_MAX_HANDLE = Integer.MAX_VALUE;
+
+    // First N constants in the HPyContext are guaranteed to always get the same handle assigned.
+    // Note that 0 is HPy_NULL, so in this case we are counting from 1.
+    public static final int SINGLETON_HANDLE_MAX = 3;
 
     public static boolean isBoxedDouble(long value) {
         return Long.compareUnsigned(value, NAN_BOXING_BASE) >= 0;
