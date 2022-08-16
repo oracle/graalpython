@@ -124,6 +124,7 @@ import static com.oracle.graal.python.compiler.OpCodes.STORE_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.STORE_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.THROW;
+import static com.oracle.graal.python.compiler.OpCodes.TUPLE_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.UNARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
@@ -1632,9 +1633,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                         collectIntoArray(node.elements, CollectionBits.KIND_TUPLE);
                     } else {
                         collectIntoArray(node.elements, CollectionBits.KIND_LIST);
-                        // FIXME this operation copies the underlying storage, we should make a
-                        // separate instruction for shallow conversion
-                        addOp(COLLECTION_FROM_COLLECTION, CollectionBits.KIND_TUPLE);
+                        addOp(TUPLE_FROM_LIST);
                     }
                     return null;
                 case Del:

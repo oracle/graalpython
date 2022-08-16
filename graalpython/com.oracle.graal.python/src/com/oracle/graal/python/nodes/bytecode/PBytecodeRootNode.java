@@ -1239,6 +1239,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeAddToCollection(virtualFrame, stackTop, beginBci, localNodes, depth, type, useCachedNodes);
                         break;
                     }
+                    case OpCodesConstants.TUPLE_FROM_LIST: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        bytecodeTupleFromList(virtualFrame, stackTop);
+                        break;
+                    }
                     case OpCodesConstants.KWARGS_DICT_MERGE: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         KwargsMergeNode mergeNode = insertChildNode(localNodes, bci, UNCACHED_KWARGS_MERGE, KwargsMergeNodeGen.class, NODE_KWARGS_MERGE, useCachedNodes);
@@ -4236,6 +4241,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         virtualFrame.setObject(stackTop--, null);
         return stackTop;
+    }
+
+    private void bytecodeTupleFromList(VirtualFrame virtualFrame, int stackTop) {
+        PList list = (PList) virtualFrame.getObject(stackTop);
+        Object result = factory.createTuple(list.getSequenceStorage());
+        virtualFrame.setObject(stackTop, result);
     }
 
     private int bytecodeUnpackSequence(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int count, boolean useCachedNodes) {
