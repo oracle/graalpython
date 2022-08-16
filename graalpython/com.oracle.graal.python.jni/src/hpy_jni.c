@@ -162,21 +162,21 @@ static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, j
         assert(recycled < INT32_MAX);
         next_handle = (jsize) recycled;
     } else {
-        next_handle = (*jniEnv)->GetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle);
+        next_handle = (*jniEnv)->GetIntField(jniEnv, hpyContext, jniField_nextHandle);
         LOG("%d", next_handle)
         jsize s = get_handle_table_size(ctx);
         if (next_handle >= s) {
             return 0;
         }
-        (*jniEnv)->SetIntField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_nextHandle, next_handle+1);
+        (*jniEnv)->SetIntField(jniEnv, hpyContext, jniField_nextHandle, next_handle+1);
     }
     (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
     /* TODO(fa): update native data pointer cache here (if specified) */
     return boxHandle(next_handle);
 }
 
-static jobject get_object_for_hpy_handle(HPyContext *ctx, uint64_t bits) {
-    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
+static jobject get_object_for_hpy_handle(jobject hpyContext, uint64_t bits) {
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
     if (hpy_handles == NULL) {
         LOGS("hpy handle table is NULL")
         return NULL;
@@ -374,14 +374,15 @@ static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result
 static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
     uint64_t bitsA = toBits(a);
     uint64_t bitsB = toBits(b);
+    jobject hpyContext = CONTEXT_INSTANCE(ctx);
     if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
-        jobject objA = get_object_for_hpy_handle(ctx, bitsA);
-        jobject objB = get_object_for_hpy_handle(ctx, bitsB);
+        jobject objA = get_object_for_hpy_handle(hpyContext, bitsA);
+        jobject objB = get_object_for_hpy_handle(hpyContext, bitsB);
         if (objA != NULL && objB != NULL) {
             return (int) (*jniEnv)->IsSameObject(jniEnv, objA, objB);
         }
     }
-    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
+    return DO_UPCALL_INT(hpyContext, Is, bitsA, bitsB);
 }
 
 static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
