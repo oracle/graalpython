@@ -378,6 +378,10 @@ HPyAPI_FUNC int HPy_TypeCheck(HPyContext *ctx, HPy obj, HPy type) {
      return ctx->ctx_TypeCheck ( ctx, obj, type ); 
 }
 
+HPyAPI_FUNC int HPy_TypeCheck_g(HPyContext *ctx, HPy obj, HPyGlobal type) {
+     return ctx->ctx_TypeCheck_g ( ctx, obj, type ); 
+}
+
 HPyAPI_FUNC int HPy_SetType(HPyContext *ctx, HPy obj, HPy type) {
      return ctx->ctx_SetType ( ctx, obj, type ); 
 }
@@ -392,6 +396,10 @@ HPyAPI_FUNC const char *HPyType_GetName(HPyContext *ctx, HPy type) {
 
 HPyAPI_FUNC int HPy_Is(HPyContext *ctx, HPy obj, HPy other) {
      return ctx->ctx_Is ( ctx, obj, other ); 
+}
+
+HPyAPI_FUNC int HPy_Is_g(HPyContext *ctx, HPy obj, HPyGlobal other) {
+     return ctx->ctx_Is_g ( ctx, obj, other ); 
 }
 
 HPyAPI_FUNC void *HPy_AsStruct(HPyContext *ctx, HPy h) {

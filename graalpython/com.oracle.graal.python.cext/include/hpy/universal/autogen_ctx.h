@@ -268,4 +268,6 @@ struct _HPyContext_s {
     const char *(*ctx_Type_GetName)(HPyContext *ctx, HPy type);
     HPy (*ctx_SeqIter_New)(HPyContext *ctx, HPy seq);
     int (*ctx_Type_CheckSlot)(HPyContext *ctx, HPy type, HPyDef *value);
+    int (*ctx_TypeCheck_g)(HPyContext *ctx, HPy obj, HPyGlobal type);
+    int (*ctx_Is_g)(HPyContext *ctx, HPy obj, HPyGlobal other);
 };

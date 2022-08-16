@@ -183,7 +183,7 @@ class TestLegacyType(_TestType):
                 int meta_member;
                 char some_more[64];
             } DummyMeta;
-            
+
             typedef struct {
                 PyObject_HEAD
                 int member;
@@ -198,7 +198,7 @@ class TestLegacyType(_TestType):
                 {Py_tp_members, members},
                 {0, NULL},
             };
-            
+
             static HPyType_Spec Dummy_spec = {
                 .name = "mytest.Dummy",
                 .basicsize = sizeof(DummyData),
@@ -206,15 +206,15 @@ class TestLegacyType(_TestType):
                 .legacy = true,
                 .legacy_slots = DummySlots,
             };
-            
+
             // Defined by each test:
             bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta);
-            
+
             void setup_types(HPyContext *ctx, HPy module) {
                 HPy h_DummyMeta;
                 if (!setup_metatype(ctx, module, &h_DummyMeta))
                     return;
-            
+
                 HPyType_SpecParam param[] = {
                     { HPyType_SpecParam_Metaclass, h_DummyMeta },
                     { 0 }
@@ -224,11 +224,11 @@ class TestLegacyType(_TestType):
                     HPy_SetAttr_s(ctx, module, "Dummy", h_Dummy);
                     HPy_SetAttr_s(ctx, module, "DummyMeta", h_DummyMeta);
                 }
-                
+
                 HPy_Close(ctx, h_Dummy);
                 HPy_Close(ctx, h_DummyMeta);
             }
-        
+
             HPyDef_METH(set_meta_data, "set_meta_data", set_meta_data_impl, HPyFunc_O)
             static HPy set_meta_data_impl(HPyContext *ctx, HPy self, HPy arg)
             {
@@ -286,7 +286,7 @@ class TestLegacyType(_TestType):
                 .tp_basicsize = sizeof(DummyMeta),
                 .tp_flags = Py_TPFLAGS_DEFAULT,
             };
-        
+
             bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta) {
                 if (PyType_Ready(&DummyMetaType))
                     return false;
@@ -306,16 +306,16 @@ class TestLegacyType(_TestType):
                 .flags = HPy_TPFLAGS_DEFAULT,
                 .legacy = true,
             };
-            
+
             bool setup_metatype(HPyContext *ctx, HPy module, HPy *h_DummyMeta)
             {
-                HPy h_py_type = HPy_FromPyObject(ctx, (PyObject*) &PyType_Type);                                
+                HPy h_py_type = HPy_FromPyObject(ctx, (PyObject*) &PyType_Type);
                 HPyType_SpecParam meta_param[] = {
                     { HPyType_SpecParam_Base, h_py_type },
                     { 0 }
                 };
                 *h_DummyMeta = HPyType_FromSpec(ctx, &DummyMeta_spec, meta_param);
-                HPy_Close(ctx, h_py_type);                
+                HPy_Close(ctx, h_py_type);
                 return !HPy_IsNull(*h_DummyMeta);
             }
         """)

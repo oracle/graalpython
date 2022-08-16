@@ -40,6 +40,17 @@ ctx_TypeCheck(HPyContext *ctx, HPy h_obj, HPy h_type)
 }
 
 _HPy_HIDDEN int
+ctx_TypeCheck_g(HPyContext *ctx, HPy h_obj, HPyGlobal g_type)
+{
+    PyObject *type = _hg2py(g_type);
+    assert(type != NULL);
+    if (!PyType_Check(type)) {
+        Py_FatalError("HPy_TypeCheck arg 2 must be a type");
+    }
+    return PyObject_TypeCheck(_h2py(h_obj), (PyTypeObject*)type);
+}
+
+_HPy_HIDDEN int
 ctx_Type_IsSubtype(HPyContext *ctx, HPy h_sub, HPy h_type)
 {
     PyObject *type = _h2py(h_type);
@@ -59,6 +70,12 @@ _HPy_HIDDEN int
 ctx_Is(HPyContext *ctx, HPy h_obj, HPy h_other)
 {
     return _h2py(h_obj) == _h2py(h_other);
+}
+
+_HPy_HIDDEN int
+ctx_Is_g(HPyContext *ctx, HPy h_obj, HPyGlobal g_other)
+{
+    return _h2py(h_obj) == _hg2py(g_other);
 }
 
 _HPy_HIDDEN HPy
