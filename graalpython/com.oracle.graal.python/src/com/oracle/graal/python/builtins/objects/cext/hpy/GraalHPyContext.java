@@ -657,11 +657,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_NEW(tsLiteral("ctx_New"), signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE(tsLiteral("ctx_Type")),
         CTX_TYPECHECK(tsLiteral("ctx_TypeCheck"), signature(Long, HPy, HPy)),
+        CTX_TYPECHECK_G(tsLiteral("ctx_TypeCheck_g"), signature(Long, HPy, HPyGlobal)),
         CTX_SETTYPE(tsLiteral("ctx_SetType")),
         CTX_TYPE_ISSUBTYPE(tsLiteral("ctx_Type_IsSubtype")),
         CTX_TYPE_GETNAME(tsLiteral("ctx_Type_GetName")),
         CTX_TYPE_CHECKSLOT(tsLiteral("ctx_Type_CheckSlot")),
         CTX_IS(tsLiteral("ctx_Is")),
+        CTX_IS_G(tsLiteral("ctx_Is_g"), signature(Long, HPy, HPyGlobal)),
         CTX_TYPE_GENERIC_NEW(tsLiteral("ctx_Type_GenericNew"), signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE(tsLiteral("ctx_Float_FromDouble"), signature(HPy, Double)),
         CTX_FLOAT_ASDOUBLE(tsLiteral("ctx_Float_AsDouble"), signature(Double, HPy)),
@@ -2133,8 +2135,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public int ctxTypeCheck(long handle, long typeHandle) {
-        increment(Counter.UpcallTypeCheck);
+    private int typeCheck(long handle, Object type) {
         Object receiver;
         if (GraalHPyBoxing.isBoxedDouble(handle)) {
             receiver = PythonBuiltinClassType.PFloat;
@@ -2143,7 +2144,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             receiver = GetClassNode.getUncached().execute(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
         }
-        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
 
         if (receiver == type) {
             return 1;
@@ -2174,6 +2174,18 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             return 0;
         }
+    }
+
+    public int ctxTypeCheck(long bits, long typeBits) {
+        increment(Counter.UpcallTypeCheck);
+        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeBits));
+        return typeCheck(bits, type);
+    }
+
+    public int ctxTypeCheckG(long bits, long typeGlobalBits) {
+        increment(Counter.UpcallTypeCheck);
+        Object type = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(typeGlobalBits));
+        return typeCheck(bits, type);
     }
 
     public long ctxLength(long handle) {
@@ -2353,6 +2365,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public int ctxIs(long aBits, long bBits) {
         Object a = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
         Object b = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bBits));
+        try {
+            return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return -1;
+        }
+    }
+
+    public int ctxIsG(long aBits, long bBits) {
+        Object a = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
+        Object b = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bBits));
         try {
             return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
         } catch (PException e) {
@@ -2649,7 +2672,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
+        members[HPyContextMember.CTX_TYPECHECK_G.ordinal()] = new GraalHPyTypeCheck(true);
         members[HPyContextMember.CTX_IS.ordinal()] = new GraalHPyIs();
+        members[HPyContextMember.CTX_IS_G.ordinal()] = new GraalHPyIs(true);
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         GraalHPyCast graalHPyCast = new GraalHPyCast();
         members[HPyContextMember.CTX_AS_STRUCT.ordinal()] = graalHPyCast;

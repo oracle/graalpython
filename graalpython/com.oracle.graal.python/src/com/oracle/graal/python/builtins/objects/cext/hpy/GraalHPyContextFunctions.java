@@ -2641,6 +2641,16 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyTypeCheck extends GraalHPyContextFunction {
 
+        private final boolean withGlobal;
+
+        public GraalHPyTypeCheck() {
+            this.withGlobal = false;
+        }
+
+        public GraalHPyTypeCheck(boolean withGlobal) {
+            this.withGlobal = withGlobal;
+        }
+
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
@@ -2650,7 +2660,12 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 3);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            Object expectedType = asPythonObjectNode.execute(context, arguments[2]);
+            Object expectedType;
+            if (withGlobal) {
+                throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+            } else {
+                expectedType = asPythonObjectNode.execute(context, arguments[2]);
+            }
             return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
         }
     }
@@ -2753,6 +2768,16 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyIs extends GraalHPyContextFunction {
 
+        private final boolean withGlobal;
+
+        public GraalHPyIs() {
+            this.withGlobal = false;
+        }
+
+        public GraalHPyIs(boolean withGlobal) {
+            this.withGlobal = withGlobal;
+        }
+
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
@@ -2762,7 +2787,12 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 3);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object left = asPythonObjectNode.execute(context, arguments[1]);
-            Object right = asPythonObjectNode.execute(context, arguments[2]);
+            Object right;
+            if (withGlobal) {
+                throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+            } else {
+                right = asPythonObjectNode.execute(context, arguments[2]);
+            }
             try {
                 return PInt.intValue(isNode.execute(left, right));
             } catch (PException e) {

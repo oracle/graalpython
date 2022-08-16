@@ -86,6 +86,7 @@ ALL_FIELDS
     UPCALL(SetItem, SIG_HPY SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
     UPCALL(TypeCheck, SIG_HPY SIG_HPY, SIG_INT) \
+    UPCALL(TypeCheckG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
     UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
@@ -103,6 +104,7 @@ ALL_FIELDS
     UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
     UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
     UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT) \
+    UPCALL(IsG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
     UPCALL(CapsuleNew, SIG_PTR SIG_PTR SIG_PTR, SIG_HPY) \
     UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR)
 
@@ -259,6 +261,10 @@ static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheck, HPY_UP(obj), HPY_UP(type));
 }
 
+static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheckG, HPY_UP(obj), HPY_UP(type));
+}
+
 static int ctx_ListCheck_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ListCheck, HPY_UP(obj));
 }
@@ -372,17 +378,11 @@ static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result
 }
 
 static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
-    uint64_t bitsA = toBits(a);
-    uint64_t bitsB = toBits(b);
-    jobject hpyContext = CONTEXT_INSTANCE(ctx);
-    if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
-        jobject objA = get_object_for_hpy_handle(hpyContext, bitsA);
-        jobject objB = get_object_for_hpy_handle(hpyContext, bitsB);
-        if (objA != NULL && objB != NULL) {
-            return (int) (*jniEnv)->IsSameObject(jniEnv, objA, objB);
-        }
-    }
-    return DO_UPCALL_INT(hpyContext, Is, bitsA, bitsB);
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
+}
+
+static int ctx_Is_g_jni(HPyContext *ctx, HPy a, HPyGlobal b) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), IsG, HPY_UP(a), HPY_UP(b));
 }
 
 static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
@@ -817,6 +817,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Dup = ctx_Dup_jni;
     context->ctx_Number_Check = ctx_NumberCheck_jni;
     context->ctx_TypeCheck = ctx_TypeCheck_jni;
+    context->ctx_TypeCheck_g = ctx_TypeCheck_g_jni;
     context->ctx_List_Check = ctx_ListCheck_jni;
 
     context->ctx_Length = ctx_Length_jni;
@@ -854,6 +855,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
     context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
     context->ctx_Is = ctx_Is_jni;
+    context->ctx_Is_g = ctx_Is_g_jni;
     context->ctx_Capsule_New = ctx_Capsule_New_jni;
     context->ctx_Capsule_Get = ctx_Capsule_Get_jni;
 

@@ -21,6 +21,7 @@
     {"name":"ctxNew","parameterTypes":["long","long"] },
     {"name":"ctxNumberCheck","parameterTypes":["long"] },
     {"name":"ctxTypeCheck","parameterTypes":["long", "long"] },
+    {"name":"ctxTypeCheckG","parameterTypes":["long", "long"] },
     {"name":"ctxTypeGenericNew","parameterTypes":["long"] },
     {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] },
     {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] },
@@ -35,6 +36,7 @@
     {"name":"ctxTypeGetName","parameterTypes":["long"] },
     {"name":"ctxContextVarGet","parameterTypes":["long", "long", "long"] },
     {"name":"ctxIs","parameterTypes":["long", "long"] },
+    {"name":"ctxIsG","parameterTypes":["long", "long"] },
     {"name":"ctxCapsuleNew","parameterTypes":["long", "long", "long"] },
     {"name":"ctxCapsuleGet","parameterTypes":["long", "int", "long"] },
     {"name":"getHPyDebugContext","parameterTypes":[] }
