@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,10 +30,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -51,7 +51,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PList extends PSequence {
-    private final ListLiteralNode origin;
+    private final ListOrigin origin;
     private SequenceStorage store;
 
     public PList(Object cls, Shape instanceShape, SequenceStorage store) {
@@ -60,7 +60,7 @@ public final class PList extends PSequence {
         this.store = store;
     }
 
-    public PList(Object cls, Shape instanceShape, SequenceStorage store, ListLiteralNode origin) {
+    public PList(Object cls, Shape instanceShape, SequenceStorage store, ListOrigin origin) {
         super(cls, instanceShape);
         this.origin = origin;
         this.store = store;
@@ -117,7 +117,7 @@ public final class PList extends PSequence {
         return super.hashCode();
     }
 
-    public ListLiteralNode getOrigin() {
+    public ListOrigin getOrigin() {
         return origin;
     }
 
@@ -125,7 +125,7 @@ public final class PList extends PSequence {
     public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            ListLiteralNode node = getOrigin();
+            ListOrigin node = getOrigin();
             SourceSection result = null;
             if (node != null) {
                 result = node.getSourceSection();
@@ -228,5 +228,39 @@ public final class PList extends PSequence {
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    public interface ListOrigin {
+
+        /**
+         * This class serves the purpose of updating the size estimate for the lists constructed
+         * here over time. The estimate is updated slowly, it takes {@link #NUM_DIGITS_POW2} lists
+         * to reach a size one larger than the current estimate to increase the estimate for new
+         * lists.
+         */
+        @CompilerDirectives.ValueType
+        public static final class SizeEstimate {
+            private static final int NUM_DIGITS = 3;
+            private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
+
+            @CompilerDirectives.CompilationFinal private int shiftedStorageSizeEstimate;
+
+            public SizeEstimate(int storageSizeEstimate) {
+                shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
+            }
+
+            public int estimate() {
+                return shiftedStorageSizeEstimate >> NUM_DIGITS;
+            }
+
+            public int updateFrom(int newSizeEstimate) {
+                shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+                return shiftedStorageSizeEstimate;
+            }
+        }
+
+        void reportUpdatedCapacity(BasicSequenceStorage newStore);
+
+        SourceSection getSourceSection();
     }
 }

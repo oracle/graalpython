@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LIST;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNode
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -289,7 +288,7 @@ public abstract class ListNodes {
      * interpreter, it will use a different {@link AppendNode} than in the compiled code, so the
      * specializations for the compiler are different. This is useful, because in the interpreter we
      * will report back type and size changes to the origin of the list via {@link PList#getOrigin}
-     * and {@link ListLiteralNode#reportUpdatedCapacity}. Thus, there's a chance that the compiled
+     * and {@link PList.ListOrigin#reportUpdatedCapacity}. Thus, there's a chance that the compiled
      * code will only see lists of the correct size and storage type.
      */
     @GenerateUncached
