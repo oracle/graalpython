@@ -486,6 +486,11 @@ int debug_ctx_TypeCheck(HPyContext *dctx, DHPy obj, DHPy type)
     return HPy_TypeCheck(get_info(dctx)->uctx, DHPy_unwrap(dctx, obj), DHPy_unwrap(dctx, type));
 }
 
+int debug_ctx_TypeCheck_g(HPyContext *dctx, DHPy obj, HPyGlobal type)
+{
+    return HPy_TypeCheck_g(get_info(dctx)->uctx, DHPy_unwrap(dctx, obj), type);
+}
+
 int debug_ctx_SetType(HPyContext *dctx, DHPy obj, DHPy type)
 {
     return HPy_SetType(get_info(dctx)->uctx, DHPy_unwrap(dctx, obj), DHPy_unwrap(dctx, type));
@@ -504,6 +509,11 @@ const char *debug_ctx_Type_GetName(HPyContext *dctx, DHPy type)
 int debug_ctx_Is(HPyContext *dctx, DHPy obj, DHPy other)
 {
     return HPy_Is(get_info(dctx)->uctx, DHPy_unwrap(dctx, obj), DHPy_unwrap(dctx, other));
+}
+
+int debug_ctx_Is_g(HPyContext *dctx, DHPy obj, HPyGlobal other)
+{
+    return HPy_Is_g(get_info(dctx)->uctx, DHPy_unwrap(dctx, obj), other);
 }
 
 void *debug_ctx_AsStruct(HPyContext *dctx, DHPy h)
