@@ -142,13 +142,13 @@ static inline jsize get_handle_table_size(HPyContext *ctx) {
     return HANDLE_TABLE_SIZE(ctx->_private);
 }
 
-static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject element, bool update_native_cache) {
+static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, jobject element, bool update_native_cache) {
     /* TODO(fa): for now, we fall back to the upcall */
     if (update_native_cache) {
         return 0;
     }
 
-    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyHandleTable);
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
     if (hpy_handles == NULL) {
         LOGS("hpy handle table is NULL")
         return 0;
@@ -184,6 +184,20 @@ static jobject get_object_for_hpy_handle(HPyContext *ctx, uint64_t bits) {
     jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_handles, (jsize)unboxHandle(bits));
     if (element == NULL) {
         LOGS("handle delegate is NULL")
+    }
+    return element;
+}
+
+static jobject get_object_for_hpy_global(jobject hpyContext, uint64_t bits) {
+    jobject hpy_globals = (*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyGlobalsTable);
+    if (hpy_globals == NULL) {
+        LOGS("hpy globals is NULL")
+        return NULL;
+    }
+    jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_globals, (jsize)unboxHandle(bits));
+    if (element == NULL) {
+        LOGS("globals element is NULL")
+        return NULL;
     }
     return element;
 }
@@ -269,8 +283,24 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
-static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal h) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GlobalLoad, HPY_UP(h));
+static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
+    long bits = toBits(global);
+    if (bits && isBoxedHandle(bits)) {
+        jobject hpyContext = CONTEXT_INSTANCE(ctx);
+        jobject element = get_object_for_hpy_global(hpyContext, bits);
+        if (element == NULL) {
+            return HPy_NULL;
+        }
+
+        uint64_t new_handle = get_hpy_handle_for_object(ctx, hpyContext, element, false);
+        if (new_handle) {
+            load_global_native_data_pointer(ctx, bits, new_handle);
+            return toPtr(new_handle);
+        }
+        return DO_UPCALL_HPY(hpyContext, GlobalLoad, bits);
+    } else {
+        return toPtr(bits);
+    }
 }
 
 static void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *h, HPy v) {
@@ -651,22 +681,6 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
 HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
     uint64_t bits = toBits(global);
     if (bits && isBoxedHandle(bits)) {
-        jobject hpy_globals = (*jniEnv)->GetObjectField(jniEnv, CONTEXT_INSTANCE(ctx), jniField_hpyGlobalsTable);
-        if (hpy_globals == NULL) {
-            LOGS("hpy globals is NULL")
-            return HPy_NULL;
-        }
-        jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_globals, (jsize)unboxHandle(bits));
-        if (element == NULL) {
-            LOGS("globals element is NULL")
-            return HPy_NULL;
-        }
-
-        uint64_t new_handle = get_hpy_handle_for_object(ctx, element, false);
-        if (new_handle) {
-            load_global_native_data_pointer(ctx, bits, new_handle);
-            return toPtr(new_handle);
-        }
         return original_Global_Load(ctx, global);
     } else {
         return toPtr(bits);
