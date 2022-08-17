@@ -548,6 +548,14 @@ public enum OpCodes {
      */
     COLLECTION_FROM_COLLECTION(1, 1, 1),
     /**
+     * Converts list to tuple by reusing the underlying storage.
+     *
+     * Pops: list
+     *
+     * Pushes: tuple
+     */
+    TUPLE_FROM_LIST(0, 1, 1),
+    /**
      * Adds an item to a collection that is multiple items deep under the top of the stack,
      * determined by the immediate argument.
      * 

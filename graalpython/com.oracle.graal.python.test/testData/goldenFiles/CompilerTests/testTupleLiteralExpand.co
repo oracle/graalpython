@@ -7,5 +7,5 @@ Disassembly of <module>:
 000000        10 COLLECTION_ADD_COLLECTION         0    (list)
 000014        12 LOAD_BYTE_O                       5
 000000        14 COLLECTION_ADD_STACK              1    (list)
-000000        16 COLLECTION_FROM_COLLECTION        0    (tuple)
-000000        18 RETURN_VALUE
+000000        16 TUPLE_FROM_LIST
+000000        17 RETURN_VALUE
