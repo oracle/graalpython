@@ -434,6 +434,7 @@ static HPy (*original_Long)(HPyContext *ctx, HPy h);
 static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
 static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
+static long long (*original_Long_AsLongLong)(HPyContext *ctx, HPy h);
 static unsigned long (*original_Long_AsUnsignedLong)(HPyContext *ctx, HPy h);
 static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
 static HPy (*original_Long_FromLong)(HPyContext *ctx, long l);
@@ -521,6 +522,15 @@ static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
         return unboxInt(bits);
     } else {
         return original_Long_AsLong(ctx, h);
+    }
+}
+
+static long long augment_Long_AsLongLong(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return (long long) unboxInt(bits);
+    } else {
+        return original_Long_AsLongLong(ctx, h);
     }
 }
 
@@ -761,6 +771,8 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Float_AsDouble);
 
     AUGMENT(Long_AsLong);
+
+    AUGMENT(Long_AsLongLong);
 
     AUGMENT(Long_AsUnsignedLong);
 
