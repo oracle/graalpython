@@ -452,11 +452,12 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
             return 0;
         }
         // This code assumes that space[x] != NULL <=> objects pointed by x has native struct
-        void** space = (void**)ctx->_private;
-        if (space[unboxedA] == NULL && space[unboxedB] == NULL) {
+        void *dataA = get_handle_native_data_pointer(ctx, unboxedA);
+        void *dataB = get_handle_native_data_pointer(ctx, unboxedB);
+        if (dataA == NULL && dataB == NULL) {
             return original_Is(ctx, a, b);
         }
-        return space[unboxedA] == space[unboxedB];
+        return dataA == dataB;
     } else {
         return 0;
     }
