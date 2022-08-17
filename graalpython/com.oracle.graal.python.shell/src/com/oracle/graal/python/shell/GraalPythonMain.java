@@ -104,6 +104,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     boolean useASTInterpreter = false;
 
+    private String toolInstrumentWarning = null;
+
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
             GraalPythonMain.startupNanoTime = System.nanoTime();
@@ -124,7 +126,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
-        boolean toolInstrumentWarning = true;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
             if (arg.startsWith("-")) {
@@ -203,10 +204,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             if (argStartsWith(arg, "--agentscript", "--coverage", "--cpusampler", "--cputracer", "--dap",
                                             "--heap.", "--heapmonitor", "--insight", "--inspect", "--lsp", "--memtracer", "--sandbox.")) {
                                 useASTInterpreter = true;
-                                if (toolInstrumentWarning) {
-                                    toolInstrumentWarning = false;
-                                    System.out.println("WARNING: Switching to AST interpreter due to instruments option " + arg);
-                                }
+                                toolInstrumentWarning = "WARNING: Switching to AST interpreter due to instruments option " + arg;
                             } else if (arg.startsWith("--llvm.") ||
                                             matchesPythonOption(arg, "CoreHome") ||
                                             matchesPythonOption(arg, "StdLibHome") ||
@@ -620,6 +618,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PyCachePrefix", "/dev/null");
             contextBuilder.option("python.EnableBytecodeInterpreter", "false");
             contextBuilder.option("python.DisableFrozenModules", "true");
+            if (toolInstrumentWarning != null) {
+                System.out.println(toolInstrumentWarning);
+                toolInstrumentWarning = null;
+            }
         } else {
             contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
             if (cachePrefix != null) {
