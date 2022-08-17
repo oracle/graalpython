@@ -97,4 +97,14 @@ load_global_native_data_pointer(HPyContext *ctx, uint64_t g_bits, uint64_t h_bit
     space[HANDLE_DATAPTR_INDEX(h_bits)] = g_data_ptr;
 }
 
+/*
+ * Duplicates the native data pointer of an handle in the native cache.
+ */
+static inline void
+dup_data_pointer(HPyContext *ctx, uint64_t h_from, uint64_t h_to) {
+    void** space = (void**)ctx->_private;
+    space[HANDLE_DATAPTR_INDEX(h_to)] = space[HANDLE_DATAPTR_INDEX(h_from)];
+    LOG("%llu %llu %p", h_from, h_to, space[HANDLE_DATAPTR_INDEX(h_from)])
+}
+
 #endif /* SRC_HPY_NATIVE_CACHE_H_ */

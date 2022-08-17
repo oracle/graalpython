@@ -250,7 +250,24 @@ static void ctx_Close_jni(HPyContext *ctx, HPy h) {
 }
 
 static HPy ctx_Dup_jni(HPyContext *ctx, HPy h) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Dup, HPY_UP(h));
+    jobject hpyContext = CONTEXT_INSTANCE(ctx);
+    if (unclosedHandleTop > 0) {
+        jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
+        if (hpy_handles == NULL) {
+            LOGS("hpy handle table is NULL")
+            return HPy_NULL;
+        }
+
+        uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
+        assert(recycled < INT32_MAX);
+        uint64_t h_bits = toBits(h);
+        assert(h_bits < INT32_MAX);
+        jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, hpy_handles, (jsize)h_bits);
+        (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, (jsize)recycled, element);
+        dup_data_pointer(ctx, h_bits, recycled);
+        return toPtr(boxHandle(recycled));
+    }
+    return DO_UPCALL_HPY(hpyContext, Dup, HPY_UP(h));
 }
 
 static int ctx_NumberCheck_jni(HPyContext *ctx, HPy obj) {
