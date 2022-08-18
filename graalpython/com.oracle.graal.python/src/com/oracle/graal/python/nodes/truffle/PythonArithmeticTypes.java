@@ -33,7 +33,6 @@ import com.oracle.truffle.api.dsl.ImplicitCast;
 import com.oracle.truffle.api.dsl.TypeCast;
 import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This type system is supposed to be used in builtin nodes to reduce the number of specializations
