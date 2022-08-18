@@ -96,6 +96,16 @@ public class CompilerTests extends PythonTests {
     }
 
     @Test
+    public void testAugAssignmentAttr() {
+        doTest("a.b += 12.0");
+    }
+
+    @Test
+    public void testAugAssignmentSubscr() {
+        doTest("a[b] += 12.0");
+    }
+
+    @Test
     public void testAnnAssignment() {
         doTest("a: int = 12");
     }
