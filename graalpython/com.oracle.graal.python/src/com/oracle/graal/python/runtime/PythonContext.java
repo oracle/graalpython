@@ -1165,11 +1165,6 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean isInitialized() {
-        if (PythonUtils.ASSERTIONS_ENABLED && isInitializedNonCompilationFinal != isInitialized) {
-            // We cannot use normal assertion, because those are removed in compilation
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere(String.format("%b != %b", isInitializedNonCompilationFinal, isInitialized));
-        }
         return isInitialized;
     }
 

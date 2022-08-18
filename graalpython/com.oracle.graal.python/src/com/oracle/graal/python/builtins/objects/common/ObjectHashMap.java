@@ -768,7 +768,7 @@ public final class ObjectHashMap {
                 if (collision) {
                     markCollision(i);
                 }
-            } else if (PythonUtils.ASSERTIONS_ENABLED && index == DUMMY_INDEX) {
+            } else if (index == DUMMY_INDEX) {
                 dummyCount--;
             }
         }
