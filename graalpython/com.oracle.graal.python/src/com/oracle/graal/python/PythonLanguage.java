@@ -205,7 +205,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
     static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
-    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
