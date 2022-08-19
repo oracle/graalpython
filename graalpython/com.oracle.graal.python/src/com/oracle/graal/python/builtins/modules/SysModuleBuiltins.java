@@ -104,7 +104,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.REC_LIMIT_GREATER_THAN_1;
 import static com.oracle.graal.python.nodes.ErrorMessages.SWITCH_INTERVAL_MUST_BE_POSITIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.WARN_CANNOT_RUN_PDB_YET;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_CHECKINTERVAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___;
@@ -1557,7 +1556,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SubstringNode substringNode) {
             TruffleString hookName = getEnvVar(frame, importNode, getAttr, callMethodObjArgs, castToStringNode);
             if (hookName == null || hookName.isEmpty()) {
-                warnNode.warnFormat(frame, RuntimeWarning, WARN_CANNOT_RUN_PDB_YET);
                 hookName = T_VAL_PDB_SETTRACE;
             }
 
