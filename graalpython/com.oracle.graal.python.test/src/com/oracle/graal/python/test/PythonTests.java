@@ -112,12 +112,14 @@ public class PythonTests {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        Context.Builder builder = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable",
-                        executable);
-        if (usingBytecodeCompiler()) {
-            builder.option("python.EnableBytecodeInterpreter", "true").option("python.DisableFrozenModules", "true");
-        }
-        context = builder.build();
+        context = Context.newBuilder() //
+                        .engine(engine) //
+                        .allowExperimentalOptions(true) //
+                        .allowAllAccess(true) //
+                        .options(options) //
+                        .arguments("python", args) //
+                        .option("python.Executable", executable) //
+                        .build();
         context.initialize("python");
         assert prevContext == null;
         context.enter();
@@ -141,6 +143,10 @@ public class PythonTests {
 
     public static void skipOnBytecodeInterpreter() {
         Assume.assumeFalse(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
+    }
+
+    public static void skipOnLegacyASTInterpreter() {
+        Assume.assumeTrue(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
@@ -345,23 +351,12 @@ public class PythonTests {
         }
     }
 
-    public static boolean usingBytecodeCompiler() {
-        return System.getProperty("useBytecodeCompiler") != null;
-    }
-
-    private static org.graalvm.polyglot.Source.Builder configureBuilder(org.graalvm.polyglot.Source.Builder builder) {
-        if (usingBytecodeCompiler()) {
-            return builder.mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE);
-        }
-        return builder;
-    }
-
     public static org.graalvm.polyglot.Source createSource(String source) {
-        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", source, "Unnamed")).buildLiteral();
+        return org.graalvm.polyglot.Source.newBuilder("python", source, "Unnamed").buildLiteral();
     }
 
     public static org.graalvm.polyglot.Source createSource(File path) throws IOException {
-        return configureBuilder(org.graalvm.polyglot.Source.newBuilder("python", path)).build();
+        return org.graalvm.polyglot.Source.newBuilder("python", path).build();
     }
 
     public static Value runScript(String[] args, File path, OutputStream out, OutputStream err) {
