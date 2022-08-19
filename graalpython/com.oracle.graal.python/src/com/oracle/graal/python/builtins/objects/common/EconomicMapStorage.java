@@ -71,6 +71,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -219,6 +220,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
+            convertToSideEffectMap(self);
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             putNode.put(state, self.map, key, hashNode.execute(frame, key), assertNoJavaString(value));
             return self;
@@ -401,14 +403,12 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
                         @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
-                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode) {
             int size = self.map.size();
             int size2 = other.map.size();
             if (size > size2) {
                 return 1;
             }
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             MapCursor cursor = self.map.getEntries();
             int counter = 0;
             try {
@@ -477,17 +477,22 @@ public class EconomicMapStorage extends HashingStorage {
                         @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            ObjectHashMap resultMap = result.map;
+            ObjectHashMap otherMap = other.map;
+            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
+                setSideEffectFlag.enter();
+                resultMap.setSideEffectingKeysFlag();
+            }
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
             final int size = self.map.size();
             loopProfile.profileCounted(size);
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.inject(advance(cursor))) {
-                if (getNode.get(state, other.map, getDictKey(cursor)) != null) {
-                    putNode.put(state, result.map, getDictKey(cursor), getValue(cursor));
+                if (getNode.get(state, otherMap, getDictKey(cursor)) != null) {
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -498,10 +503,10 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            ObjectHashMap resultMap = result.map;
+            resultMap.setSideEffectingKeysFlag();
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
             final int size = self.map.size();
@@ -509,7 +514,7 @@ public class EconomicMapStorage extends HashingStorage {
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.inject(advance(cursor))) {
                 if (hlib.hasKey(other, getKey(cursor))) {
-                    putNode.put(state, result.map, getDictKey(cursor), getValue(cursor));
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -524,17 +529,22 @@ public class EconomicMapStorage extends HashingStorage {
                         @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            ObjectHashMap resultMap = result.map;
+            ObjectHashMap otherMap = other.map;
+            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
+                setSideEffectFlag.enter();
+                resultMap.setSideEffectingKeysFlag();
+            }
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
             final int size = self.map.size();
             loopProfile.profileCounted(size);
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.inject(advance(cursor))) {
-                if (getNode.get(state, other.map, getDictKey(cursor)) == null) {
-                    putNode.put(state, result.map, getDictKey(cursor), getValue(cursor));
+                if (getNode.get(state, otherMap, getDictKey(cursor)) == null) {
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -545,10 +555,10 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            ObjectHashMap resultMap = result.map;
+            resultMap.setSideEffectingKeysFlag();
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
             final int size = self.map.size();
@@ -556,7 +566,7 @@ public class EconomicMapStorage extends HashingStorage {
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.profile(advance(cursor))) {
                 if (!hlib.hasKey(other, getKey(cursor))) {
-                    putNode.put(state, result.map, getDictKey(cursor), getValue(cursor));
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
