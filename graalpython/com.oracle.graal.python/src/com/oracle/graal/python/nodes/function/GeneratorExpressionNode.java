@@ -45,7 +45,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     private final TruffleString name;
     private final TruffleString qualname;
-    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
+    @CompilationFinal(dimensions = 1) private volatile RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
 
