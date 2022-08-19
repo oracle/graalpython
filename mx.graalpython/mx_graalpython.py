@@ -70,7 +70,7 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_BYTECODE, CONFIGURATION_INTERPRETER_BYTECODE
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_AST, CONFIGURATION_INTERPRETER_AST
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -1692,15 +1692,14 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_BYTECODE, extra_polyglot_args=[
-        '--experimental-options', '--python.EnableBytecodeInterpreter', '--python.DisableFrozenModules',
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_AST, extra_polyglot_args=[
+        '--experimental-options', '--use-ast-interpreter',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
         '--experimental-options', '--engine.Compilation=false'
     ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_BYTECODE, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--python.EnableBytecodeInterpreter',
-        '--python.DisableFrozenModules',
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_AST, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false', '--use-ast-interpreter',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
