@@ -6,6 +6,8 @@ import json
 import subprocess
 import sys
 
+from mx_graalpython_benchmark import python_vm_registry
+
 from os.path import join, abspath
 
 
@@ -181,7 +183,7 @@ class GraalPyVm(mx_benchmark.GuestVm):
         self._options = options
 
     def name(self):
-        return "GraalPy"
+        return "graalpython"
 
     def config_name(self):
         return self._config_name
@@ -198,7 +200,7 @@ class GraalPyVm(mx_benchmark.GuestVm):
 
 class PyPyVm(mx_benchmark.Vm):
     def config_name(self):
-        return "default"
+        return "launcher"
 
     def name(self):
         return "pypy"
@@ -218,9 +220,9 @@ class PyPyVm(mx_benchmark.Vm):
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
 
-class CPythonVm(mx_benchmark.Vm):
+class Python3Vm(mx_benchmark.Vm):
     def config_name(self):
-        return "default"
+        return "launcher"
 
     def name(self):
         return "cpython"
@@ -268,7 +270,7 @@ class PyPerformanceSuite(
         return []
 
     def get_vm_registry(self):
-        return py_vm_registry
+        return python_vm_registry
 
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
@@ -327,7 +329,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         return []
 
     def get_vm_registry(self):
-        return py_vm_registry
+        return python_vm_registry
 
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
@@ -393,7 +395,7 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
         return []
 
     def get_vm_registry(self):
-        return py_vm_registry
+        return python_vm_registry
 
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
@@ -462,17 +464,11 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
             return retcode, ""
 
 
-py_vm_registry = mx_benchmark.VmRegistry(
-    "Py", "py", known_host_registries=[mx_benchmark.java_vm_registry]
-)
-
-
 def register_python_benchmarks():
-    py_vm_registry.add_vm(PyPyVm())
-    py_vm_registry.add_vm(CPythonVm())
+    python_vm_registry.add_vm(PyPyVm())
+    python_vm_registry.add_vm(Python3Vm())
     for config_name, options, priority in [
-        ("default", [], 10),
-        ("jvm", ["--jvm"], 20),
+        ("launcher", [], 10),
         (
             "bytecode",
             [
@@ -492,11 +488,7 @@ def register_python_benchmarks():
             100,
         ),
     ]:
-        # if mx.suite("py-benchmarks", fatalIfMissing=False):
-        #     import mx_py_benchmarks
-
-        #     mx_py_benchmarks.add_vm(GraalPyVm(config_name, options), _suite, priority)
-        py_vm_registry.add_vm(
+        python_vm_registry.add_vm(
             GraalPyVm(config_name, options), mx.suite("graalpython"), priority
         )
 
