@@ -1342,6 +1342,8 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = tsLiteral("Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"");
     public static final TruffleString WARN_DEPRECTATED_SYS_CHECKINTERVAL = tsLiteral("sys.getcheckinterval() and sys.setcheckinterval() " +
                     "are deprecated.  Use sys.getswitchinterval() instead.");
+    public static final TruffleString WARN_CURRENT_FRAMES_MULTITHREADED = tsLiteral(
+                    "GraalPy doesn't support obtaining frames of other threads. That means python debuggers can only see the currently stopped thread");
 
     // error messages from parsing
     public static final TruffleString ERROR_MESSAGE_EMPTY_EXPRESSION = tsLiteral("f-string: empty expression not allowed");
