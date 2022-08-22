@@ -5,7 +5,7 @@ import json
 import subprocess
 import sys
 
-from os.path import join
+from os.path import join, abspath
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -236,9 +236,20 @@ class CPythonVm(mx_benchmark.Vm):
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
 
+class WildcardList():
+    """It is not easy to track for external suites which benchmarks are
+    available, so we just return a wildcard list and assume the caller knows
+    what they want to run"""
+
+    def __contains__(self, x):
+        return True
+
+
 class PyPerformanceSuite(
     mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite
 ):
+    VERSION = "1.0.5"
+
     def name(self):
         return "pyperformance"
 
@@ -249,7 +260,7 @@ class PyPerformanceSuite(
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        raise
+        return WildcardList()
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [PyPerfJsonRule(output, self.name())]
@@ -261,17 +272,19 @@ class PyPerformanceSuite(
         return py_vm_registry
 
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
+        workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
         json_file = f"{vm_venv}.json"
 
-        env = {
-            "GRAAL_PYTHON_ARGS": "--experimental-options --DisableFrozenModules"
-        }  # temporary workaround
         vm.run(workdir, ["-m", "venv", vm_venv])
         mx.run(
-            [join(vm_venv, "bin", "pip"), "install", "pyperformance==1.0.2"],
+            [join(vm_venv, "bin", "pip"), "install", f"pyperformance=={VERSION}"],
             cwd=workdir,
         )
+        if benchmarks:
+            bms = ["-b", ",".join(benchmarks)]
+        else:
+            bms = []
         retcode = mx.run(
             [
                 join(vm_venv, "bin", "pyperformance"),
@@ -279,8 +292,65 @@ class PyPerformanceSuite(
                 "-m",
                 "-o",
                 json_file,
-                "-b",
-                "bm_ai,deltablue",
+                *bms,
+            ],
+            cwd=workdir,
+        )
+        return retcode, json_file
+
+
+class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+    def name(self):
+        return "pypy"
+
+    def group(self):
+        return "Graal"
+
+    def subgroup(self):
+        return "graalpython"
+
+    def benchmarkList(self, bmSuiteArgs):
+        return WildcardList()
+
+    def rules(self, output, benchmarks, bmSuiteArgs):
+        return [PypyJsonRule(output, self.name())]
+
+    def createVmCommandLineArgs(self, benchmarks, runArgs):
+        return []
+
+    def get_vm_registry(self):
+        return py_vm_registry
+
+    def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
+        workdir = abspath(workdir)
+        mx.run(
+            ["hg", "clone", "https://foss.heptapod.net/pypy/benchmarks"], cwd=workdir
+        )
+        mx.run(["hg", "up", "-C", "0324a252cf1a"], cwd=join(workdir, "benchmarks"))
+
+        # temporary workaround
+        with open(join(workdir, "benchmarks", "nullpython.py")) as f:
+            content = f.read()
+        content = content.replace("/usr/bin/python", "/usr/bin/env python")
+        with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
+            f.write(content)
+
+        vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+        json_file = f"{vm_venv}.json"
+
+        vm.run(workdir, ["-m", "venv", vm_venv])
+        if benchmarks:
+            bms = ["-b", ",".join(benchmarks)]
+        else:
+            bms = []
+        retcode = mx.run(
+            [
+                sys.executable,
+                join(workdir, "benchmarks", "run_local.py"),
+                f"{vm_venv}/bin/python",
+                "-o",
+                join(workdir, json_file),
+                *bms
             ],
             cwd=workdir,
         )
@@ -326,3 +396,4 @@ def register_python_benchmarks():
         )
 
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
+    mx_benchmark.add_bm_suite(PyPySuite())
