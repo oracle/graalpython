@@ -694,8 +694,15 @@ public final class ObjectHashMap {
     }
 
     private boolean keysEqual(ThreadState state, int index, Object key, long keyHash, PyObjectRichCompareBool.EqNode eqNode, ConditionProfile hasState) {
+        if (keyHash != hashes[index]) {
+            return false;
+        }
+        Object originalKey = getKey(index);
+        if (originalKey == key) {
+            return true;
+        }
         VirtualFrame frame = hasState.profile(state == null) ? null : PArguments.frameForCall(state);
-        return hashes[index] == keyHash && eqNode.execute(frame, getKey(index), key);
+        return eqNode.execute(frame, originalKey, key);
     }
 
     /**
