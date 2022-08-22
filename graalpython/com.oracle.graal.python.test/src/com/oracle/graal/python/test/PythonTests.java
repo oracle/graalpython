@@ -112,14 +112,7 @@ public class PythonTests {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder() //
-                        .engine(engine) //
-                        .allowExperimentalOptions(true) //
-                        .allowAllAccess(true) //
-                        .options(options) //
-                        .arguments("python", args) //
-                        .option("python.Executable", executable) //
-                        .build();
+        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable", executable).build();
         context.initialize("python");
         assert prevContext == null;
         context.enter();
