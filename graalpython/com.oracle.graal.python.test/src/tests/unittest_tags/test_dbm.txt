@@ -1,0 +1,12 @@
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_access
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_creation
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_creation_n_file_exists_with_invalid_contents
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_keys
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_modification
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_not_existing
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_anydbm_read
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_empty_value
+*graalpython.lib-python.3.test.test_dbm.TestCase-dbm.dumb.test_error
+*graalpython.lib-python.3.test.test_dbm.WhichDBTestCase.test_keys
+*graalpython.lib-python.3.test.test_dbm.WhichDBTestCase.test_whichdb
+*graalpython.lib-python.3.test.test_dbm.WhichDBTestCase.test_whichdb_ndbm
