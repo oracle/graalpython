@@ -55,6 +55,8 @@ import mx_unittest
 import mx_sdk
 import mx_subst
 import mx_graalpython_bisect
+import mx_graalpython_python_benchmarks
+
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
     JAVA_DRIVER_BENCHMARKS
@@ -1763,6 +1765,8 @@ def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
     _register_vms(namespace)
     _register_bench_suites(namespace)
+    mx_graalpython_python_benchmarks.register_python_benchmarks()
+
     for dist in mx.suite('graalpython').dists:
         if hasattr(dist, 'set_archiveparticipant'):
             dist.set_archiveparticipant(CharsetFilteringPariticpant())
