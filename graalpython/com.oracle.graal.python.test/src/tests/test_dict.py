@@ -1046,3 +1046,127 @@ def test_hashcode_str_subclass():
     s = "\x96\0\x13\x1d\x18\x03"
     assert {42: 4, s: 1}[subclass(s)] == 1
     assert {42: 4, subclass(s): 1}[s] == 1
+
+def test_append_in_eq_during_lookup():
+    class Key:
+        def __init__(self, d, hash):
+            self.d = d
+            self.done = False
+            self.hash = hash
+        def __hash__(self):
+            return self.hash
+        def __eq__(self, other):
+            if not self.done:
+                self.done = True
+                d[self.hash] = 'expected value ' + str(self.hash)
+            return other is self
+
+    d = dict()
+    for i in range(256):
+        k = Key(d, i)
+        d[k] = 'other value ' + str(i)
+        # 1 should have the same hash as Key, the __eq__ should insert actual 1.
+        # What may happen:
+        # 1. the insertion does not cause rehashing, no side effect is detected and lookup
+        # is not restarted, but it still finds the item, because now it is in a collision chain
+        # 2. the insertion causes rehashing, the indices array is relocated, the side effect
+        # is detected and we restart the lookup
+        assert d[i] == 'expected value ' + str(i)
+
+def test_delete_in_eq_during_lookup():
+    class Key:
+        def __init__(self, d):
+            self.d = d
+            self.done = False
+        def __hash__(self):
+            return 1
+        def __eq__(self, other):
+            if not self.done:
+                self.done = True
+                del d[self]
+            return isinstance(other, Key)
+
+    d = dict()
+    # repeat few times to trigger re-hashing
+    for i in range(256):
+        d[Key(d)] = 'some value'
+        # Here CPython detects the side effect and restarts the lookup
+        assert d.get(Key(d), None) is None
+
+def test_delete_in_eq_during_insert():
+    class Key:
+        def __init__(self, d):
+            self.d = d
+            self.done = False
+        def __hash__(self):
+            return 1
+        def __eq__(self, other):
+            if not self.done:
+                self.done = True
+                del d[self]
+            return isinstance(other, Key)
+
+    d = dict()
+    # repeat few times to trigger compaction in delete
+    for i in range(256):
+        d[Key(d)] = 'some value'
+        # Here CPython detects the side effects and restarts the insertion
+        d[1] = 'other value'
+        assert d == {1: 'other value'}
+        del d[1]
+
+def test_override_inserted_value_in_eq():
+    class Key:
+        def __init__(self, d):
+            self.d = d
+            self.done = False
+        def __hash__(self):
+            return 1
+        def __eq__(self, other):
+            if not self.done:
+                self.done = True
+                d[self] = 'override value'
+            return isinstance(other, Key)
+
+    d = dict()
+    # repeat few times to trigger compaction and rehashing
+    for i in range(256):
+        d[Key(d)] = 'some value'
+        # Here CPython detects the side effect and restarts the lookup
+        val = d[Key(d)]
+        assert val == 'override value', val
+        del d[Key(d)]
+
+def test_check_ref_identity_before_eq():
+    eq_calls = 0
+    class Key:
+        def __hash__(self):
+            return 1
+        def __eq__(self, other):
+            nonlocal eq_calls
+            eq_calls += 1
+            return self is other
+
+    # check that our __eq__ works
+    k = Key()
+    assert k == k
+    assert eq_calls == 1
+
+    d = dict()
+    d[k] = 'some value'
+    assert d[k] == 'some value'
+    assert eq_calls == 1
+
+# TODO: GR-40680
+# def test_iteration_and_del():
+#     def test_iter(get_iterable):
+#         try:
+#             d = {'a': 1, 'b': 2}
+#             for k in get_iterable(d):
+#                 d['b'] = 42
+#         except RuntimeError as e:
+#             return
+#         assert False
+#     test_iter(lambda d: d.keys())
+#     test_iter(lambda d: d.values())
+#     test_iter(lambda d: d.items())
