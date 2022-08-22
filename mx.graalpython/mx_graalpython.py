@@ -54,7 +54,6 @@ import mx_gate
 import mx_unittest
 import mx_sdk
 import mx_subst
-import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
@@ -1404,7 +1403,9 @@ def _python_checkpatchfiles():
     with open(listfilename, "w") as listfile:
         mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
     try:
-        pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        # TODO our mirror doesn't handle the json API
+        # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        pypi_base_url = "https://pypi.org/"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
