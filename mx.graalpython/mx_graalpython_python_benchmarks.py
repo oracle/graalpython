@@ -1,6 +1,7 @@
 import mx
 import mx_benchmark
 
+import glob
 import json
 import subprocess
 import sys
@@ -138,7 +139,7 @@ class AsvJsonRule(mx_benchmark.Rule):
         return r
 
 
-class PypyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
+class PyPyJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by the Unladen Swallow or PyPy benchmark harness and creates a measurement result."""
 
     def __init__(self, filename: str, suiteName: str):
@@ -160,7 +161,7 @@ class PypyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
                         {
                             "bench-suite": self.suiteName,
                             "benchmark": name,
-                            "metric.name": "warmup",
+                            "metric.name": "time",
                             "metric.unit": "s",
                             "metric.score-function": "id",
                             "metric.better": "lower",
@@ -169,8 +170,6 @@ class PypyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
                             "metric.value": value,
                         }
                     )
-
-        self.addAverageAcrossLatestResults(r)
 
         return r
 
@@ -236,7 +235,7 @@ class CPythonVm(mx_benchmark.Vm):
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
 
-class WildcardList():
+class WildcardList:
     """It is not easy to track for external suites which benchmarks are
     available, so we just return a wildcard list and assume the caller knows
     what they want to run"""
@@ -274,13 +273,20 @@ class PyPerformanceSuite(
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
-        json_file = f"{vm_venv}.json"
 
-        vm.run(workdir, ["-m", "venv", vm_venv])
-        mx.run(
-            [join(vm_venv, "bin", "pip"), "install", f"pyperformance=={VERSION}"],
-            cwd=workdir,
-        )
+        if not hasattr(self, "prepared"):
+            self.prepared = True
+            vm.run(workdir, ["-m", "venv", vm_venv])
+            mx.run(
+                [
+                    join(vm_venv, "bin", "pip"),
+                    "install",
+                    f"pyperformance=={self.VERSION}",
+                ],
+                cwd=workdir,
+            )
+
+        json_file = f"{vm_venv}.json"
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
@@ -300,6 +306,8 @@ class PyPerformanceSuite(
 
 
 class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+    VERSION = "0324a252cf1a"
+
     def name(self):
         return "pypy"
 
@@ -313,7 +321,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         return WildcardList()
 
     def rules(self, output, benchmarks, bmSuiteArgs):
-        return [PypyJsonRule(output, self.name())]
+        return [PyPyJsonRule(output, self.name())]
 
     def createVmCommandLineArgs(self, benchmarks, runArgs):
         return []
@@ -323,22 +331,26 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
 
     def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
         workdir = abspath(workdir)
-        mx.run(
-            ["hg", "clone", "https://foss.heptapod.net/pypy/benchmarks"], cwd=workdir
-        )
-        mx.run(["hg", "up", "-C", "0324a252cf1a"], cwd=join(workdir, "benchmarks"))
-
-        # temporary workaround
-        with open(join(workdir, "benchmarks", "nullpython.py")) as f:
-            content = f.read()
-        content = content.replace("/usr/bin/python", "/usr/bin/env python")
-        with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
-            f.write(content)
-
         vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
-        json_file = f"{vm_venv}.json"
 
-        vm.run(workdir, ["-m", "venv", vm_venv])
+        if not hasattr(self, "prepared"):
+            self.prepared = True
+            mx.run(
+                ["hg", "clone", "https://foss.heptapod.net/pypy/benchmarks"],
+                cwd=workdir,
+            )
+            mx.run(["hg", "up", "-C", self.VERSION], cwd=join(workdir, "benchmarks"))
+
+            # workaround for pypy's benchmarks script issue
+            with open(join(workdir, "benchmarks", "nullpython.py")) as f:
+                content = f.read()
+            content = content.replace("/usr/bin/python", "/usr/bin/env python")
+            with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
+                f.write(content)
+
+            vm.run(workdir, ["-m", "venv", vm_venv])
+
+        json_file = f"{vm_venv}.json"
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
@@ -350,11 +362,104 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
                 f"{vm_venv}/bin/python",
                 "-o",
                 join(workdir, json_file),
-                *bms
+                *bms,
             ],
             cwd=workdir,
         )
         return retcode, json_file
+
+
+class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+    VERSION = "v1.16.4"
+    ASV = "0.5.1"
+    VIRTUALENV = "20.16.3"
+
+    def name(self):
+        return "numpy"
+
+    def group(self):
+        return "Graal"
+
+    def subgroup(self):
+        return "graalpython"
+
+    def benchmarkList(self, bmSuiteArgs):
+        return WildcardList()
+
+    def rules(self, output, benchmarks, bmSuiteArgs):
+        return [AsvJsonRule(output, self.name())]
+
+    def createVmCommandLineArgs(self, benchmarks, runArgs):
+        return []
+
+    def get_vm_registry(self):
+        return py_vm_registry
+
+    def _vmRun(self, vm, workdir, command, benchmarks, bmSuiteArgs):
+        workdir = abspath(workdir)
+        benchdir = join(workdir, "numpy", "benchmarks")
+        vm_venv = f"{self.name()}-{vm.name()}-{vm.config_name()}"
+
+        if not hasattr(self, "prepared"):
+            self.prepared = True
+            mx.run(
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "https://github.com/numpy/numpy.git",
+                    "--branch",
+                    self.VERSION,
+                    "--single-branch",
+                ],
+                cwd=workdir,
+            )
+            mx.run(
+                ["git", "branch", "main"], cwd=join(workdir, "numpy")
+            )  # workaround for asv, which expects a main branch
+            mx.run(
+                ["git", "branch", "master"], cwd=join(workdir, "numpy")
+            )  # workaround for asv, which expects some branches
+
+            vm.run(workdir, ["-m", "venv", vm_venv])
+            mx.run(
+                [
+                    join(workdir, vm_venv, "bin", "pip"),
+                    "install",
+                    f"asv=={self.ASV}",
+                    f"virtualenv=={self.VIRTUALENV}",
+                    f"numpy=={self.VERSION}",
+                ],
+                cwd=workdir,
+            )
+            mx.run(
+                [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
+            )
+
+        if benchmarks:
+            bms = ["-b", "|".join(benchmarks)]
+        else:
+            bms = []
+        retcode = mx.run(
+            [
+                join(workdir, vm_venv, "bin", "asv"),
+                "run",
+                "--record-samples",
+                "-e",
+                "--python=same",
+                "--set-commit-hash",
+                self.VERSION,
+                *bms,
+            ],
+            cwd=benchdir,
+        )
+
+        json_file = glob.glob(join(benchdir, "results", "*", "*numpy*.json"))
+        if json_file:
+            return retcode, json_file[0]
+        else:
+            return retcode, ""
 
 
 py_vm_registry = mx_benchmark.VmRegistry(
@@ -397,3 +502,4 @@ def register_python_benchmarks():
 
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
     mx_benchmark.add_bm_suite(PyPySuite())
+    mx_benchmark.add_bm_suite(NumPySuite())
