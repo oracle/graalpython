@@ -2021,7 +2021,8 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         env = env.copy() if env else os.environ.copy()
         env.update(self.subject.getBuildEnv())
         args.insert(0, '--PosixModuleBackend=java')
-        rc = do_run_python(args, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
+        jdk = mx.get_jdk()  # Don't get JVMCI, it might not have finished building by this point
+        rc = do_run_python(args, jdk=jdk, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
         shutil.rmtree(cwd) # remove the temporary build files
         # if we're just running style tests, this is allowed to fail
