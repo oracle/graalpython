@@ -3,12 +3,16 @@ import mx_benchmark
 
 import glob
 import json
+import shutil
 import subprocess
 import sys
 
 from mx_graalpython_benchmark import python_vm_registry
 
 from os.path import join, abspath
+
+
+SUITE = mx.suite("graalpython")
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -304,6 +308,7 @@ class PyPerformanceSuite(
             ],
             cwd=workdir,
         )
+        shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
         return retcode, json_file
 
 
@@ -368,6 +373,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
             ],
             cwd=workdir,
         )
+        shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
         return retcode, json_file
 
 
@@ -459,7 +465,9 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
 
         json_file = glob.glob(join(benchdir, "results", "*", "*numpy*.json"))
         if json_file:
-            return retcode, json_file[0]
+            json_file = json_file[0]
+            shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
+            return retcode, json_file
         else:
             return retcode, ""
 
@@ -488,9 +496,7 @@ def register_python_benchmarks():
             100,
         ),
     ]:
-        python_vm_registry.add_vm(
-            GraalPyVm(config_name, options), mx.suite("graalpython"), priority
-        )
+        python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
     mx_benchmark.add_bm_suite(PyPerformanceSuite())
     mx_benchmark.add_bm_suite(PyPySuite())
