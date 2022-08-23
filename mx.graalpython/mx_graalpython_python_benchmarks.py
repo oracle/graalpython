@@ -238,6 +238,10 @@ class Python3Vm(mx_benchmark.Vm):
             return sys.executable
         if exists(exe := join(home, "bin", "python3")):
             return exe
+        elif exists(exe := join(home, "python3")):
+            return exe
+        elif exists(exe := join(home, "python")):
+            return exe
         return join(home, "bin", "python")
 
     def run(self, cwd, args):
