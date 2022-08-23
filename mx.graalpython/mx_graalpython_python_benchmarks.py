@@ -344,11 +344,17 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
 
         if not hasattr(self, "prepared"):
             self.prepared = True
-            mx.run(
-                ["hg", "clone", "https://foss.heptapod.net/pypy/benchmarks"],
-                cwd=workdir,
-            )
-            mx.run(["hg", "up", "-C", self.VERSION], cwd=join(workdir, "benchmarks"))
+            if artifact := os.environ.get("PYPY_BENCHMARKS_DIR"):
+                shutil.copytree(artifact, join(workdir, "benchmarks"))
+            else:
+                mx.warn("PYPY_BENCHMARKS_DIR is not set, cloning repository")
+                mx.run(
+                    ["hg", "clone", "https://foss.heptapod.net/pypy/benchmarks"],
+                    cwd=workdir,
+                )
+                mx.run(
+                    ["hg", "up", "-C", self.VERSION], cwd=join(workdir, "benchmarks")
+                )
 
             # workaround for pypy's benchmarks script issue
             with open(join(workdir, "benchmarks", "nullpython.py")) as f:
@@ -412,25 +418,28 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
 
         if not hasattr(self, "prepared"):
             self.prepared = True
-            mx.run(
-                [
-                    "git",
-                    "clone",
-                    "--depth",
-                    "1",
-                    "https://github.com/numpy/numpy.git",
-                    "--branch",
-                    self.VERSION,
-                    "--single-branch",
-                ],
-                cwd=workdir,
-            )
-            mx.run(
-                ["git", "branch", "main"], cwd=join(workdir, "numpy")
-            )  # workaround for asv, which expects a main branch
-            mx.run(
-                ["git", "branch", "master"], cwd=join(workdir, "numpy")
-            )  # workaround for asv, which expects some branches
+            npdir = join(workdir, "numpy")
+            if artifact := os.environ.get("NUMPY_BENCHMARKS_DIR"):
+                shutil.copytree(artifact, npdir)
+                mx.run(["git", "init", "."], cwd=npdir, nonZeroIsFatal=False)
+                mx.run(["git", "branch", self.VERSION], cwd=npdir, nonZeroIsFatal=False)
+            else:
+                mx.warn("NUMPY_BENCHMARKS_DIR is not set, cloning numpy repository")
+                mx.run(
+                    [
+                        "git",
+                        "clone",
+                        "--depth",
+                        "1",
+                        "https://github.com/numpy/numpy.git",
+                        "--branch",
+                        self.VERSION,
+                        "--single-branch",
+                    ],
+                    cwd=workdir,
+                )
+            mx.run(["git", "branch", "main"], cwd=npdir, nonZeroIsFatal=False)
+            mx.run(["git", "branch", "master"], cwd=npdir, nonZeroIsFatal=False)
 
             vm.run(workdir, ["-m", "venv", vm_venv])
             mx.run(
