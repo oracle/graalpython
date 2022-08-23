@@ -494,11 +494,11 @@ class TestCommandLine(unittest.TestCase):
         with open(filename, 'w', encoding='utf-8') as fd:
             self.addCleanup(unlink, filename)
             fd.write("a = 1\n")
-            status, stdout, stderr = assert_python_ok('-m', 'trace', '-l', filename,
-                                                      PYTHONIOENCODING='utf-8')
-            self.assertIn(b'functions called:', stdout)
-            expected = f'filename: {filename}, modulename: {modulename}, funcname: <module>'
-            self.assertIn(expected.encode(), stdout)
+        status, stdout, stderr = assert_python_ok('-m', 'trace', '-l', filename,
+                                                  PYTHONIOENCODING='utf-8')
+        self.assertIn(b'functions called:', stdout)
+        expected = f'filename: {filename}, modulename: {modulename}, funcname: <module>'
+        self.assertIn(expected.encode(), stdout)
 
     def test_sys_argv_list(self):
         with open(TESTFN, 'w', encoding='utf-8') as fd:
