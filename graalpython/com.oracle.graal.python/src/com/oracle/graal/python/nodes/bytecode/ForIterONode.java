@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Obtains the next value of an iterator. When the iterator is exhausted it returns {@code null}. It
@@ -68,7 +68,11 @@ public abstract class ForIterONode extends PNodeWithContext {
 
     @Specialization
     boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator, int stackTop,
-                    @Cached("createCountingProfile()") LoopConditionProfile conditionProfile) {
+                    /*
+                     * Not using LoopConditionProfile because when OSR-compiled, we might never
+                     * register the condition being false
+                     */
+                    @Cached("createCountingProfile()") ConditionProfile conditionProfile) {
         if (conditionProfile.profile(iterator.hasNextInt())) {
             frame.setObject(stackTop, iterator.nextInt());
             return true;
