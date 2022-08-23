@@ -9,7 +9,7 @@ import sys
 
 from mx_graalpython_benchmark import python_vm_registry
 
-from os.path import join, abspath
+from os.path import join, abspath, exists
 
 
 SUITE = mx.suite("graalpython")
@@ -235,7 +235,9 @@ class Python3Vm(mx_benchmark.Vm):
         home = mx.get_env("PYTHON3_HOME")
         if not home:
             return sys.executable
-        return join(home, "bin", "python3")
+        if exists(exe := join(home, "bin", "python3")):
+            return exe
+        return join(home, "bin", "python")
 
     def run(self, cwd, args):
         return mx.run([self.interpreter()] + args, cwd=cwd)
