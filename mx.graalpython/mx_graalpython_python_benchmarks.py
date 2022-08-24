@@ -316,9 +316,11 @@ class PyPerformanceSuite(
                 *bms,
             ],
             cwd=workdir,
+            nonZeroIsFatal=False,
         )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
-        return retcode, join(workdir, json_file)
+        mx.log(f"Return code of benchmark harness: {retcode}")
+        return 0, join(workdir, json_file)
 
 
 class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
@@ -387,9 +389,11 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
                 *bms,
             ],
             cwd=workdir,
+            nonZeroIsFatal=False,
         )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
-        return retcode, join(workdir, json_file)
+        mx.log(f"Return code of benchmark harness: {retcode}")
+        return 0, join(workdir, json_file)
 
 
 class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
@@ -479,15 +483,17 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
                 *bms,
             ],
             cwd=benchdir,
+            nonZeroIsFatal=False,
         )
 
         json_file = glob.glob(join(benchdir, "results", "*", "*numpy*.json"))
+        mx.log(f"Return code of benchmark harness: {retcode}")
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return retcode, json_file
+            return 0, json_file
         else:
-            return retcode, ""
+            return -1, ""
 
 
 def register_python_benchmarks():
