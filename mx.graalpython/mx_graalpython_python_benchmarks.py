@@ -317,8 +317,8 @@ class PyPerformanceSuite(
             ],
             cwd=workdir,
         )
-        shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-        return retcode, json_file
+        shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
+        return retcode, join(workdir, json_file)
 
 
 class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
@@ -388,8 +388,8 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
             ],
             cwd=workdir,
         )
-        shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-        return retcode, json_file
+        shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
+        return retcode, join(workdir, json_file)
 
 
 class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
