@@ -308,6 +308,8 @@ class PyPerformanceSuite(
             [
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
+                "--inherit-environ",
+                "http_proxy,https_proxy,ftp_proxy,PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH",
                 "-m",
                 "-o",
                 json_file,
