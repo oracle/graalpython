@@ -136,6 +136,8 @@ import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromSta
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.TupleFromStackNodeGen;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
+import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationRoot;
+import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationSupport;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -214,6 +216,7 @@ import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.InstrumentableNode.WrapperNode;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -515,6 +518,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal private boolean usingCachedNodes;
     @CompilationFinal(dimensions = 1) private int[] conditionProfiles;
 
+    @Child private InstrumentationRoot instrumentationRoot = InstrumentationRoot.create();
+
     private static FrameDescriptor makeFrameDescriptor(CodeUnit co, FrameInfo info) {
         int capacity = co.varnames.length + co.cellvars.length + co.freevars.length + co.stacksize + 1;
         FrameDescriptor.Builder newBuilder = FrameDescriptor.newBuilder(capacity);
@@ -661,6 +666,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public CodeUnit getCodeUnit() {
         return co;
+    }
+
+    public Source getSource() {
+        return source;
     }
 
     public byte[] getBytecode() {
@@ -1142,6 +1151,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
+        final InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
+        if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
+            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+            wrapper.getProbeNode().onEnter(virtualFrame);
+        }
 
         /*
          * We use an object as a workaround for not being able to specify which local variables are
@@ -1183,6 +1197,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 traceLine(virtualFrame, mutableData, localBC, bci);
             }
             profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
+            if (instrumentation != null) {
+                int line = bciToLine(bci);
+                int pastLine = mutableData.getPastLine();
+                instrumentation.notifyStatement(virtualFrame, pastLine, line);
+                mutableData.setPastLine(line);
+                mutableData.setPastBci(bci);
+            }
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
@@ -1637,6 +1658,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = virtualFrame.getObject(stackTop);
                         traceOrProfileReturn(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
 
+                        if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
+                            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+                            wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+                        }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
                         } else {
@@ -2052,6 +2077,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
                         }
                         traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
+                        if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
+                            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+                            wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+                        }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
