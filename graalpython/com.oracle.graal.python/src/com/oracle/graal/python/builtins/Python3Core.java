@@ -60,6 +60,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -559,6 +560,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
                         new ContextVarBuiltins(),
+                        new ContextBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),

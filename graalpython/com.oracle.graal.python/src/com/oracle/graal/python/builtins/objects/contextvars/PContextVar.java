@@ -46,6 +46,8 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PContextVar extends PythonBuiltinObject {
+    private static int nextId = 0;
+    private final int hashForHamt = nextId++;
     private final TruffleString name;
     private final Object def;
     private final ThreadLocal<Object> value;
@@ -57,6 +59,10 @@ public final class PContextVar extends PythonBuiltinObject {
         this.name = name;
         this.def = def;
         this.value = new ThreadLocal<>();
+    }
+
+    public int getHash() {
+        return hashForHamt * (hashForHamt + 3);
     }
 
     public TruffleString getName() {

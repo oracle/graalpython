@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.contextvars.PContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
@@ -1444,5 +1445,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PContextVar createContextVar(TruffleString name, Object def) {
         return trace(new PContextVar(PythonBuiltinClassType.ContextVar, getShape(PythonBuiltinClassType.ContextVar), name, def));
+    }
+
+    public final PContext createContextVarsContext() {
+        return trace(new PContext(PythonBuiltinClassType.ContextVarsContext, getShape(PythonBuiltinClassType.ContextVarsContext)));
     }
 }

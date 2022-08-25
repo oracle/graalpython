@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -87,6 +88,15 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(def)")
         protected Object constructDef(VirtualFrame frame, Object cls, TruffleString name, Object def) {
             return factory().createContextVar(name, def);
+        }
+    }
+
+    @Builtin(name = "Context", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsContext)
+    @GenerateNodeFactory
+    public abstract static class ContextNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object construct(VirtualFrame frame, Object cls) {
+            return factory().createContextVarsContext();
         }
     }
 
