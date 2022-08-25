@@ -62,6 +62,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.debug.Breakpoint;
 import com.oracle.truffle.api.debug.DebugScope;
@@ -170,14 +171,28 @@ public class PythonDebugTest {
             });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
-                assertEquals(8, frame.getSourceSection().getStartLine());
+                if (PythonOptions.EnableBytecodeInterpreter.getDefaultValue()) {
+                    /*
+                     * Bytecode interpreter doesn't have expression stepping, so it cannot step back
+                     * to the same statement.
+                     */
+                    assertEquals(9, frame.getSourceSection().getStartLine());
+                } else {
+                    assertEquals(8, frame.getSourceSection().getStartLine());
+                }
                 event.prepareStepOut(1);
             });
-            expectSuspended((SuspendedEvent event) -> {
-                DebugStackFrame frame = event.getTopStackFrame();
-                assertEquals(18, frame.getSourceSection().getStartLine());
-                event.prepareStepOver(1);
-            });
+            /*
+             * Bytecode interpreter doesn't have expression stepping, so it cannot step back to the
+             * same statement.
+             */
+            if (!PythonOptions.EnableBytecodeInterpreter.getDefaultValue()) {
+                expectSuspended((SuspendedEvent event) -> {
+                    DebugStackFrame frame = event.getTopStackFrame();
+                    assertEquals(18, frame.getSourceSection().getStartLine());
+                    event.prepareStepOver(1);
+                });
+            }
             assertEquals("1", tester.expectDone());
         }
     }
