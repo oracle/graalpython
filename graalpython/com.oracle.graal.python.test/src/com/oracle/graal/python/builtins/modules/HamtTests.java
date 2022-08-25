@@ -11,8 +11,6 @@ import org.junit.Test;
 import com.oracle.graal.python.builtins.objects.contextvars.Hamt;
 import com.oracle.graal.python.test.PythonTests;
 
-import junit.framework.TestCase;
-
 public class HamtTests {
     @Before
     public void enter() {
@@ -132,7 +130,7 @@ public class HamtTests {
     public void measureTimeForSmallHamtAcceses() {
         Hamt hamt = new Hamt().withEntry(new Hamt.Entry(1, 0, 1)).withEntry(new Hamt.Entry(2, 31, 2));
         long start = System.nanoTime();
-        for(int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < 1000000; ++i) {
             Hamt requestContext = hamt.withEntry(new Hamt.Entry(2, 31, 1));
             requestContext.lookup(2, 31);
             requestContext.lookup(1, 0);
