@@ -41,19 +41,23 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -101,18 +105,29 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         @Specialization
         Object set(VirtualFrame frame, PContextVar self, Object value) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            Object oldValue = self.getValue(threadState);
             self.setValue(threadState, value);
-            return PNone.NONE;
+            return factory().createContextVarsToken(self, oldValue);
         }
     }
 
     @Builtin(name = "reset", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        static Object reset(PContextVar self, Object token) {
+        Object reset(PContextVar self, PToken token, @Cached PRaiseNode raise) {
+            if (self == token.getVar()) {
+                PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+                self.setValue(threadState, token.getOldValue());
+            } else {
+                throw raise.raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
+            }
             return PNone.NONE;
+        }
+
+        @Specialization
+        Object doError(PContextVar self, Object token, @Cached PRaiseNode raise) {
+            throw raise.raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }
     }
 

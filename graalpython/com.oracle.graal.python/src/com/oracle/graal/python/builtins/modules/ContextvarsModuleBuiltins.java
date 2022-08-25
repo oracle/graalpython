@@ -51,11 +51,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.contextvars.PContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -105,4 +108,12 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "Token", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.ContextVarsToken)
+    @GenerateNodeFactory
+    public abstract static class TokenNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object construct(VirtualFrame frame, Object cls, @Cached PRaiseNode raise) {
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
+        }
+    }
 }

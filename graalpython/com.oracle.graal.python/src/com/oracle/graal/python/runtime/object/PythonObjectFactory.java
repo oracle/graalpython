@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.contextvars.PContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.builtins.objects.contextvars.PToken;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
@@ -1449,5 +1450,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PContext createContextVarsContext() {
         return trace(new PContext(PythonBuiltinClassType.ContextVarsContext, getShape(PythonBuiltinClassType.ContextVarsContext)));
+    }
+
+    public final PToken createContextVarsToken(PContextVar var, Object oldValue) {
+        return trace(new PToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
     }
 }
