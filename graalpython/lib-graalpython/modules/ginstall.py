@@ -189,7 +189,11 @@ def known_packages():
     def Cython(extra_opts=None, **kwargs):
         if extra_opts is None:
             extra_opts = []
-        install_from_pypi("Cython==0.29.30", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
+        install_from_pypi("Cython==0.29.32", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
+
+    @pip_package()
+    def pybind11(**kwargs):
+        install_from_pypi("pybind11==2.10.0", **kwargs)
 
     @pip_package()
     def setuptools(**kwargs):
@@ -355,11 +359,13 @@ def known_packages():
                 xit("SciPy can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
             scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
+            scipy_build_env["SCIPY_USE_PYTHRAN"] = "0"
 
         # install dependencies
         numpy(**kwargs)
+        pybind11(**kwargs)
 
-        install_from_pypi("scipy==1.4.1", env=scipy_build_env, **kwargs)
+        install_from_pypi("scipy==1.8.1", env=scipy_build_env, **kwargs)
 
     @pip_package()
     def cycler(**kwargs):
