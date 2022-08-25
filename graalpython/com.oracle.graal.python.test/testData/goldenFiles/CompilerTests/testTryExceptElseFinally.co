@@ -68,4 +68,4 @@ Disassembly of <module>:
 000171       112 LOAD_NAME                         0    (print)
 000177       114 LOAD_STRING                       6    ('after')
 000171       116 CALL_FUNCTION                     1
-000154       118 RETURN_VALUE
+000171       118 RETURN_VALUE

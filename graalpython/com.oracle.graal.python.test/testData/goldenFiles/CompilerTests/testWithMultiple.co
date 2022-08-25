@@ -25,4 +25,4 @@ Disassembly of <module>:
 000080        37 LOAD_NAME                         0    (print)
 000086        39 LOAD_STRING                       4    ('after')
 000080        41 CALL_FUNCTION                     1
-000016        43 RETURN_VALUE
+000080        43 RETURN_VALUE
