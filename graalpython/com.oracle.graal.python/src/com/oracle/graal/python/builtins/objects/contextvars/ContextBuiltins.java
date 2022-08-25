@@ -6,14 +6,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsContext)
 public class ContextBuiltins extends PythonBuiltins {
@@ -38,6 +44,21 @@ public class ContextBuiltins extends PythonBuiltins {
                 }
             } else {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
+            }
+        }
+    }
+
+    @Builtin(name = "run", takesVarArgs = true, takesVarKeywordArgs = true, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class Run extends PythonBuiltinNode {
+        @Specialization
+        Object get(VirtualFrame frame, PContext self, Object fun, Object[] args, PKeyword[] keywords, @Cached CallNode call) {
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            self.enter(threadState);
+            try {
+                return call.execute(frame, fun, args, keywords);
+            } finally {
+                self.leave(threadState);
             }
         }
     }

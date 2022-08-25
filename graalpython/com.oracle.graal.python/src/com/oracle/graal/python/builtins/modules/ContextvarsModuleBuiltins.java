@@ -49,11 +49,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.contextvars.PContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -73,7 +75,10 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         protected Object copyCtx() {
-            throw raise(PythonBuiltinClassType.NotImplementedError);
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            PContext ret = factory().createContextVarsContext();
+            ret.contextVarValues = threadState.getContext().contextVarValues;
+            return ret;
         }
     }
 
