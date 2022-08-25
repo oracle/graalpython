@@ -6,6 +6,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -35,17 +36,7 @@ public class ContextBuiltins extends PythonBuiltins {
     public abstract static class GetContextVar extends PythonBinaryBuiltinNode {
         @Specialization
         Object get(PContext self, Object key, @Cached PRaiseNode raise) {
-            if (key instanceof PContextVar) {
-                PContextVar ctxVar = (PContextVar) key;
-                Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
-                if (value == null) {
-                    throw raise.raise(PythonBuiltinClassType.KeyError, ErrorMessages.S, key);
-                } else {
-                    return value;
-                }
-            } else {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
-            }
+            return getContextVar(self, key, null, raise);
         }
     }
 
@@ -72,6 +63,39 @@ public class ContextBuiltins extends PythonBuiltins {
             PContext ret = factory().createContextVarsContext();
             ret.contextVarValues = self.contextVarValues;
             return ret;
+        }
+    }
+
+    @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class GetMethod extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(def)")
+        Object doGet(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+            return doGetDefault(self, key, PNone.NONE, raise);
+        }
+
+        @Specialization(guards = "!isNoValue(def)")
+        Object doGetDefault(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+            return getContextVar(self, key, def, raise);
+        }
+
+    }
+
+    private static Object getContextVar(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+        if (key instanceof PContextVar) {
+            PContextVar ctxVar = (PContextVar) key;
+            Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
+            if (value == null) {
+                if (def == null) {
+                    throw raise.raise(PythonBuiltinClassType.KeyError, ErrorMessages.S, key);
+                } else {
+                    return def;
+                }
+            } else {
+                return value;
+            }
+        } else {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
         }
     }
 }
