@@ -526,6 +526,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
+        String cachePrefix = null;
+
         // prevent the use of System.out/err - they are PrintStreams which suppresses exceptions
         contextBuilder.out(new FileOutputStream(FileDescriptor.out));
         contextBuilder.err(new FileOutputStream(FileDescriptor.err));
@@ -553,10 +555,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     warnOptions = envWarnOptions + "," + warnOptions;
                 }
             }
-            String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
-            if (cachePrefix != null) {
-                contextBuilder.option("python.PyCachePrefix", cachePrefix);
-            }
+            cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
 
             String encoding = System.getenv("PYTHONIOENCODING");
             if (encoding != null) {
@@ -614,10 +613,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PyCachePrefix", "/dev/null");
             contextBuilder.option("python.EnableBytecodeInterpreter", "false");
             contextBuilder.option("python.DisableFrozenModules", "true");
-            if (toolInstrumentWarning != null) {
-                System.out.println(toolInstrumentWarning);
-                toolInstrumentWarning = null;
-            }
         } else {
             contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
             if (cachePrefix != null) {
