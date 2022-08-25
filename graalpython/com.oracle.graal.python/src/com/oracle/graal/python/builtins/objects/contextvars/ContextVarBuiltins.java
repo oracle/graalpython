@@ -131,4 +131,12 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key) {
+            return cls; // TODO: use a GenericAlias
+        }
+    }
 }
