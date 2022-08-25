@@ -50,8 +50,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -71,14 +73,15 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isNoValue(def)")
         Object get(VirtualFrame frame, PContextVar self, PNone def) {
             return get(frame, self, PContextVar.NO_DEFAULT);
         }
 
-        @Specialization(guards = "!isPNone(def)")
+        @Specialization(guards = "!isNoValue(def)")
         Object get(VirtualFrame frame, PContextVar self, Object def) {
-            Object value = self.getValue();
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            Object value = self.getValue(threadState);
             if (value != null) {
                 return value;
             }
@@ -88,7 +91,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             if (self.getDefault() != PContextVar.NO_DEFAULT) {
                 return self.getDefault();
             }
-            throw raise(LookupError);
+            throw raise(LookupError, ErrorMessages.S, self);
         }
     }
 
@@ -96,8 +99,9 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object get(VirtualFrame frame, PContextVar self, Object value) {
-            self.setValue(value);
+        Object set(VirtualFrame frame, PContextVar self, Object value) {
+            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            self.setValue(threadState, value);
             return PNone.NONE;
         }
     }

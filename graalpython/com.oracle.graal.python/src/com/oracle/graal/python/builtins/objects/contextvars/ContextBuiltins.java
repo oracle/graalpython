@@ -14,6 +14,7 @@ import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -48,7 +49,7 @@ public class ContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "run", takesVarArgs = true, takesVarKeywordArgs = true, minNumOfPositionalArgs = 2)
+    @Builtin(name = "run", takesVarArgs = true, takesVarKeywordArgs = true, minNumOfPositionalArgs = 2, parameterNames = {"$self", "..."})
     @GenerateNodeFactory
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
@@ -60,6 +61,17 @@ public class ContextBuiltins extends PythonBuiltins {
             } finally {
                 self.leave(threadState);
             }
+        }
+    }
+
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class Copy extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doCopy(PContext self) {
+            PContext ret = factory().createContextVarsContext();
+            ret.contextVarValues = self.contextVarValues;
+            return ret;
         }
     }
 }

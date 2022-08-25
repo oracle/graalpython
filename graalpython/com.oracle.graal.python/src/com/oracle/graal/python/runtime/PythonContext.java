@@ -87,6 +87,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -246,6 +247,8 @@ public final class PythonContext extends Python3Core {
         /* The event currently being traced, only useful if tracing is true. */
         TraceEvent tracingWhat;
 
+        boolean contextInitialized = false;
+
         PContext context;
 
         /*
@@ -331,7 +334,11 @@ public final class PythonContext extends Python3Core {
             this.nativeWrapper = nativeWrapper;
         }
 
-        public PContext getContext() {
+        public PContext getContext(PythonObjectFactory factory) {
+            if (!contextInitialized) {
+                context = factory.createContextVarsContext();
+                contextInitialized = true;
+            }
             return context;
         }
 
