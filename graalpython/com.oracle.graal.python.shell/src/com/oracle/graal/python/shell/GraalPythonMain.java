@@ -104,8 +104,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     boolean useASTInterpreter = false;
 
-    private String toolInstrumentWarning = null;
-
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
             GraalPythonMain.startupNanoTime = System.nanoTime();
@@ -201,11 +199,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             useASTInterpreter = true;
                             continue;
                         default:
-                            if (argStartsWith(arg, "--agentscript", "--coverage", "--cpusampler", "--cputracer", "--dap",
-                                            "--heap.", "--heapmonitor", "--insight", "--inspect", "--lsp", "--memtracer", "--sandbox.")) {
-                                useASTInterpreter = true;
-                                toolInstrumentWarning = "WARNING: Switching to AST interpreter due to instruments option " + arg;
-                            } else if (arg.startsWith("--llvm.") ||
+                            if (arg.startsWith("--llvm.") ||
                                             matchesPythonOption(arg, "CoreHome") ||
                                             matchesPythonOption(arg, "StdLibHome") ||
                                             matchesPythonOption(arg, "CAPI") ||
@@ -532,8 +526,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
-        String cachePrefix = null;
-
         // prevent the use of System.out/err - they are PrintStreams which suppresses exceptions
         contextBuilder.out(new FileOutputStream(FileDescriptor.out));
         contextBuilder.err(new FileOutputStream(FileDescriptor.err));
@@ -561,7 +553,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     warnOptions = envWarnOptions + "," + warnOptions;
                 }
             }
-            cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
+            String cachePrefix = System.getenv("PYTHONPYCACHEPREFIX");
+            if (cachePrefix != null) {
+                contextBuilder.option("python.PyCachePrefix", cachePrefix);
+            }
 
             String encoding = System.getenv("PYTHONIOENCODING");
             if (encoding != null) {
@@ -588,6 +583,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         contextBuilder.option("python.WarnOptions", warnOptions);
+        contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }
@@ -679,15 +675,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static boolean matchesPythonOption(String arg, String key) {
         assert !key.startsWith("python.");
         return arg.startsWith("--python." + key) || arg.startsWith("--" + key);
-    }
-
-    private static boolean argStartsWith(String arg, String... tools) {
-        for (String t : tools) {
-            if (arg.startsWith(t)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String getContextOptionIfSetViaCommandLine(String key) {
