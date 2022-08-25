@@ -429,6 +429,9 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
             if artifact := os.environ.get("NUMPY_BENCHMARKS_DIR"):
                 shutil.copytree(artifact, npdir)
                 mx.run(["git", "init", "."], cwd=npdir, nonZeroIsFatal=False)
+                mx.run(["git", "config", "user.email", "you@example.com"])
+                mx.run(["git", "config", "user.name", "YourName"])
+                mx.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=npdir, nonZeroIsFatal=False)
                 mx.run(["git", "branch", self.VERSION], cwd=npdir, nonZeroIsFatal=False)
             else:
                 mx.warn("NUMPY_BENCHMARKS_DIR is not set, cloning numpy repository")
