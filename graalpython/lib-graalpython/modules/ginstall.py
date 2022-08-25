@@ -186,6 +186,10 @@ def known_packages():
         install_from_pypi("six==1.16.0", **kwargs)
 
     @pip_package()
+    def threadpoolctl(**kwargs):
+        install_with_pip("threadpoolctl==3.1.0", **kwargs)
+
+    @pip_package()
     def Cython(extra_opts=None, **kwargs):
         if extra_opts is None:
             extra_opts = []
@@ -554,6 +558,10 @@ def read_first_existing(pkg_name, versions, dir, suffix):
             return f.read()
 
 # end of code duplicated in pip_hook.py
+
+
+def install_with_pip(package, **kwargs):
+    run_cmd(["pip", "install", package], **kwargs)
 
 
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
