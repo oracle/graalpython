@@ -31,10 +31,6 @@ class PyPerfJsonRule(mx_benchmark.Rule):
             js = json.load(fp)
             benchmarks = js["benchmarks"]
             for benchmark in benchmarks:
-                unit = {
-                    "second": "s",
-                    "millisecond": "ms",
-                }.get(unit := js["metadata"]["unit"], unit)
                 name = benchmark.get("metadata", js["metadata"])["name"]
                 for run in benchmark["runs"]:
                     if values := run.get("values", None):
@@ -45,7 +41,7 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "bench-suite": self.suiteName,
                                     "benchmark": name,
                                     "metric.name": "warmup",
-                                    "metric.unit": unit,
+                                    "metric.unit": "ms",
                                     "metric.score-function": "id",
                                     "metric.better": "lower",
                                     "metric.type": "numeric",
@@ -59,7 +55,7 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "bench-suite": self.suiteName,
                                     "benchmark": name,
                                     "metric.name": "time",
-                                    "metric.unit": unit,
+                                    "metric.unit": "ms",
                                     "metric.score-function": "id",
                                     "metric.better": "lower",
                                     "metric.type": "numeric",
@@ -75,7 +71,7 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "bench-suite": self.suiteName,
                                     "benchmark": name,
                                     "metric.name": "max-rss",
-                                    "metric.unit": unit,
+                                    "metric.unit": "B",
                                     "metric.score-function": "id",
                                     "metric.better": "lower",
                                     "metric.type": "numeric",
