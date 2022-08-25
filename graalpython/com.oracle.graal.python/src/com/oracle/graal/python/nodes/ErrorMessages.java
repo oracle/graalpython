@@ -1442,6 +1442,8 @@ public abstract class ErrorMessages {
     public static final TruffleString INSTANCE_OF_CONTEXTVAR_EXPECTED = tsLiteral("an instance of ContextVar was expected");
 
     public static final TruffleString CONTEXTVAR_KEY_EXPECTED = tsLiteral("A ContextVar key was expected, got %s");
+
+    public static final TruffleString CANNOT_ENTER_CONTEXT_ALREADY_ENTERED = tsLiteral(" cannot enter context: %s is already entered");
     public static final TruffleString CAPSULE_SETPOINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
     public static final TruffleString CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetPointer called with invalid PyCapsule object");
     public static final TruffleString CAPSULE_GETCONTEXT_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetContext called with invalid PyCapsule object");
