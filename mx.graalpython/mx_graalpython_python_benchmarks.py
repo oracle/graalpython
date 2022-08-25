@@ -285,7 +285,7 @@ class PyPerformanceSuite(
 
         if not hasattr(self, "prepared"):
             self.prepared = True
-            vm.run(workdir, ["-m", "venv", vm_venv])
+            vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             mx.run(
                 [
                     join(vm_venv, "bin", "pip"),
@@ -368,7 +368,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
             with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
                 f.write(content)
 
-            vm.run(workdir, ["-m", "venv", vm_venv])
+            vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
 
         json_file = f"{vm_venv}.json"
         if benchmarks:
@@ -428,11 +428,6 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
             npdir = join(workdir, "numpy")
             if artifact := os.environ.get("NUMPY_BENCHMARKS_DIR"):
                 shutil.copytree(artifact, npdir)
-                mx.run(["git", "init", "."], cwd=npdir, nonZeroIsFatal=False)
-                mx.run(["git", "config", "user.email", "you@example.com"])
-                mx.run(["git", "config", "user.name", "YourName"])
-                mx.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=npdir, nonZeroIsFatal=False)
-                mx.run(["git", "branch", self.VERSION], cwd=npdir, nonZeroIsFatal=False)
             else:
                 mx.warn("NUMPY_BENCHMARKS_DIR is not set, cloning numpy repository")
                 mx.run(
@@ -448,10 +443,16 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
                     ],
                     cwd=workdir,
                 )
+                shutil.rmtree(join(npdir, ".git"))
+            mx.run(["git", "init", "."], cwd=npdir)
+            mx.run(["git", "config", "user.email", "you@example.com"], cwd=npdir)
+            mx.run(["git", "config", "user.name", "YourName"], cwd=npdir)
+            mx.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=npdir)
+            mx.run(["git", "branch", self.VERSION], cwd=npdir)
             mx.run(["git", "branch", "main"], cwd=npdir, nonZeroIsFatal=False)
             mx.run(["git", "branch", "master"], cwd=npdir, nonZeroIsFatal=False)
 
-            vm.run(workdir, ["-m", "venv", vm_venv])
+            vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             mx.run(
                 [
                     join(workdir, vm_venv, "bin", "pip"),
