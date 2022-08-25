@@ -183,7 +183,7 @@ def known_packages():
 
     @pip_package()
     def six(**kwargs):
-        install_from_pypi("six==1.12.0", **kwargs)
+        install_from_pypi("six==1.16.0", **kwargs)
 
     @pip_package()
     def Cython(extra_opts=None, **kwargs):
@@ -370,7 +370,7 @@ def known_packages():
     @pip_package()
     def cycler(**kwargs):
         six(**kwargs)
-        install_from_pypi("cycler==0.10.0", **kwargs)
+        install_from_pypi("cycler==0.11.0", **kwargs)
 
     @pip_package()
     def cppy(**kwargs):
