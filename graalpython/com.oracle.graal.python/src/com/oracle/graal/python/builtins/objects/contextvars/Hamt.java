@@ -215,6 +215,7 @@ public final class Hamt {
         return lookupKeyInPart(root, key, hash, 0);
     }
 
+    @SuppressWarnings("fallthrough")
     private static TreePart bitmapWithoutKey(BitmapNode existing, Object key, int hash, int hashShift) {
         int position = hashIdx(hash, hashShift);
         int sparseIdx = bitmapToIdx(existing.bitmap, position);
