@@ -360,7 +360,7 @@ def known_packages():
         numpy(**kwargs)
 
         # download pandas-0.25.0
-        install_from_pypi("pandas==0.25.0", **kwargs)
+        install_from_pypi("pandas==1.4.3", **kwargs)
 
     @pip_package()
     def scipy(**kwargs):
