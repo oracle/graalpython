@@ -314,11 +314,6 @@ def known_packages():
         install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env, **kwargs)
 
     @pip_package()
-    def dateutil(**kwargs):
-        setuptools_scm(**kwargs)
-        install_from_pypi("python-dateutil==2.7.5", **kwargs)
-
-    @pip_package()
     def certifi(**kwargs):
         install_from_pypi("certifi==2020.11.8", **kwargs)
 
@@ -415,7 +410,7 @@ def known_packages():
         cycler(**kwargs)
         cassowary(**kwargs)
         pyparsing(**kwargs)
-        dateutil(**kwargs)
+        python_dateutil(**kwargs)
         numpy(**kwargs)
         Pillow(**kwargs)
 
