@@ -54,7 +54,6 @@ import mx_gate
 import mx_unittest
 import mx_sdk
 import mx_subst
-import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
@@ -1404,7 +1403,9 @@ def _python_checkpatchfiles():
     with open(listfilename, "w") as listfile:
         mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
     try:
-        pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        # TODO our mirror doesn't handle the json API
+        # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        pypi_base_url = "https://pypi.org/"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
@@ -2021,7 +2022,8 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         env = env.copy() if env else os.environ.copy()
         env.update(self.subject.getBuildEnv())
         args.insert(0, '--PosixModuleBackend=java')
-        rc = do_run_python(args, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
+        jdk = mx.get_jdk()  # Don't get JVMCI, it might not have finished building by this point
+        rc = do_run_python(args, jdk=jdk, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
         shutil.rmtree(cwd) # remove the temporary build files
         # if we're just running style tests, this is allowed to fail
