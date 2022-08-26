@@ -115,10 +115,15 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object reset(PContextVar self, PToken token, @Cached PRaiseNode raise) {
+        Object reset(PContextVar self, PContextVarsToken token, @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-                self.setValue(threadState, token.getOldValue());
+                if (token.getOldValue() == PContextVarsToken.MISSING) {
+                    PContextVarsContext context = threadState.getContextVarsContext();
+                    context.contextVarValues = context.contextVarValues.without(self, self.getHash());
+                } else {
+                    self.setValue(threadState, token.getOldValue());
+                }
             } else {
                 throw raise.raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
             }

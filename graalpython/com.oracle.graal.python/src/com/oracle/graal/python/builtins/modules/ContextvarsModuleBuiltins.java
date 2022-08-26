@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.contextvars.PContext;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -79,8 +79,8 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected Object copyCtx() {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            PContext ret = factory().createContextVarsContext();
-            ret.contextVarValues = threadState.getContext(factory()).contextVarValues;
+            PContextVarsContext ret = factory().createContextVarsContext();
+            ret.contextVarValues = threadState.getContextVarsContext().contextVarValues;
             return ret;
         }
     }

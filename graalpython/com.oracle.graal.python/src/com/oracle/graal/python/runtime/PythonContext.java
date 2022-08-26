@@ -87,6 +87,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -108,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.contextvars.PContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -249,7 +249,7 @@ public final class PythonContext extends Python3Core {
 
         boolean contextInitialized = false;
 
-        PContext context;
+        PContextVarsContext context;
 
         /*
          * The constructor needs to have this particular signature such that we can use it for
@@ -334,15 +334,15 @@ public final class PythonContext extends Python3Core {
             this.nativeWrapper = nativeWrapper;
         }
 
-        public PContext getContext(PythonObjectFactory factory) {
+        public PContextVarsContext getContextVarsContext() {
             if (!contextInitialized) {
-                context = factory.createContextVarsContext();
+                context = PythonObjectFactory.getUncached().createContextVarsContext();
                 contextInitialized = true;
             }
             return context;
         }
 
-        public void setContext(PContext context) {
+        public void setContext(PContextVarsContext context) {
             this.context = context;
         }
 

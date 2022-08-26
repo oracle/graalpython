@@ -64,7 +64,7 @@ public class TokenBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class VarAttr extends PythonBuiltinNode {
         @Specialization
-        public Object doVar(PToken self) {
+        public Object doVar(PContextVarsToken self) {
             return self.getVar();
         }
     }
@@ -73,7 +73,7 @@ public class TokenBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OldValueAttr extends PythonBuiltinNode {
         @Specialization
-        public Object doOld(PToken self) {
+        public Object doOld(PContextVarsToken self) {
             return self.getOldValue();
         }
     }

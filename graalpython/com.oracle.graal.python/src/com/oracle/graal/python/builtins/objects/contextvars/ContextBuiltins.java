@@ -74,7 +74,7 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetContextVar extends PythonBinaryBuiltinNode {
         @Specialization
-        Object get(PContext self, Object key, @Cached PRaiseNode raise) {
+        Object get(PContextVarsContext self, Object key, @Cached PRaiseNode raise) {
             return getContextVar(self, key, null, raise);
         }
     }
@@ -83,7 +83,7 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PContext self, Object fun, Object[] args, PKeyword[] keywords, @Cached CallNode call) {
+        Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords, @Cached CallNode call) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             self.enter(threadState);
             try {
@@ -98,8 +98,8 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Copy extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doCopy(PContext self) {
-            PContext ret = factory().createContextVarsContext();
+        Object doCopy(PContextVarsContext self) {
+            PContextVarsContext ret = factory().createContextVarsContext();
             ret.contextVarValues = self.contextVarValues;
             return ret;
         }
@@ -109,18 +109,18 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMethod extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(def)")
-        Object doGet(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+        Object doGet(PContextVarsContext self, Object key, Object def, @Cached PRaiseNode raise) {
             return doGetDefault(self, key, PNone.NONE, raise);
         }
 
         @Specialization(guards = "!isNoValue(def)")
-        Object doGetDefault(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+        Object doGetDefault(PContextVarsContext self, Object key, Object def, @Cached PRaiseNode raise) {
             return getContextVar(self, key, def, raise);
         }
 
     }
 
-    private static Object getContextVar(PContext self, Object key, Object def, @Cached PRaiseNode raise) {
+    private static Object getContextVar(PContextVarsContext self, Object key, Object def, @Cached PRaiseNode raise) {
         if (key instanceof PContextVar) {
             PContextVar ctxVar = (PContextVar) key;
             Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
