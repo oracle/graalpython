@@ -31,7 +31,6 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -539,10 +538,6 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary
     public static BigInteger abs(BigInteger value) {
         return value.abs();
-    }
-
-    public boolean isNative() {
-        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
     @TruffleBoundary

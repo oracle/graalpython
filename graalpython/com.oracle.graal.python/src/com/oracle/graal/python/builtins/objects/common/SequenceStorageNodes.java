@@ -1159,7 +1159,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
+    @ImportStatic({SequenceStorageBaseNode.class, PGuards.class})
     public abstract static class SetItemScalarNode extends Node {
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
@@ -1205,7 +1205,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @InliningCutoff
-        @Specialization(guards = "!value.isNative()")
+        @Specialization(guards = "!isNativeWrapper(value)")
         protected static void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setIntItemNormalized(idx, value.intValueExact());
@@ -1225,7 +1225,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @InliningCutoff
-        @Specialization(guards = "!value.isNative()")
+        @Specialization(guards = "!isNativeWrapper(value)")
         protected static void doLong(LongSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setLongItemNormalized(idx, value.longValueExact());
