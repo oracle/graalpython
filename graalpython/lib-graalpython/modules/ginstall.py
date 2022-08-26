@@ -401,7 +401,7 @@ def known_packages():
             build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
         else:
             info("If Pillow installation fails due to missing zlib, try to set environment variable ZLIB_ROOT.")
-        install_from_pypi("Pillow==6.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
+        install_from_pypi("Pillow==9.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
 
     @pip_package()
     def matplotlib(**kwargs):
