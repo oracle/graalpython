@@ -190,6 +190,18 @@ def known_packages():
         install_with_pip("threadpoolctl==3.1.0", **kwargs)
 
     @pip_package()
+    def joblib(**kwargs):
+        install_with_pip("joblib==1.1.0", **kwargs)
+
+    @pip_package()
+    def kiwisolver(**kwargs):
+        install_with_pip("kiwisolver==1.4.4", **kwargs)
+
+    @pip_package()
+    def python_dateutil(**kwargs):
+        install_with_pip("python_dateutil==2.8.2", **kwargs)
+
+    @pip_package()
     def Cython(extra_opts=None, **kwargs):
         if extra_opts is None:
             extra_opts = []
@@ -338,7 +350,7 @@ def known_packages():
 
     @pip_package()
     def pytz(**kwargs):
-        install_from_pypi("pytz==2018.7", **kwargs)
+        install_from_pypi("pytz==2022.2.1", **kwargs)
 
     @pip_package()
     def pandas(**kwargs):
@@ -560,8 +572,8 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 # end of code duplicated in pip_hook.py
 
 
-def install_with_pip(package, **kwargs):
-    run_cmd(["pip", "install", package], **kwargs)
+def install_with_pip(package, msg="", failOnError=False, **kwargs):
+    run_cmd(["pip", "install", package], msg=msg, failOnError=failOnError, **kwargs)
 
 
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
@@ -695,7 +707,8 @@ def main(argv):
     elif args.command == "install":
         for pkg in args.package.split(","):
             if pkg not in KNOWN_PACKAGES:
-                xit("Unknown package: '{!s}'", pkg)
+                warn("package: '%s' not found in known packages, installing with pip" % pkg)
+                install_with_pip(pkg, msg="Unknown package: '{!s}'".format(pkg), failOnError=True)
             else:
                 extra_opts = [] + quiet_flag
                 if args.prefix:
