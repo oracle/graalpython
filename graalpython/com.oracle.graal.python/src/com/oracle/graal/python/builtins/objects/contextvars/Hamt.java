@@ -115,14 +115,14 @@ public final class Hamt {
         }
     }
 
-    private static BitmapNode bitmapNodesForPair(TreePart one, int hashOne, TreePart two, int hashTwo, int hashShift) {
+    private static BitmapPart bitmapNodesForPair(TreePart one, int hashOne, TreePart two, int hashTwo, int hashShift) {
         assert hashOne != hashTwo : "bitmapNodesForPair cannot work with colliding nodes";
         int oneIdx = hashIdx(hashOne, hashShift);
         int twoIdx = hashIdx(hashTwo, hashShift);
         if (oneIdx == twoIdx) {
-            return new BitmapNode(new TreePart[]{bitmapNodesForPair(one, hashOne, two, hashTwo, hashShift + 5)}, idxToBit(twoIdx));
+            return new BitmapPart(new TreePart[]{bitmapNodesForPair(one, hashOne, two, hashTwo, hashShift + 5)}, idxToBit(twoIdx));
         }
-        return new BitmapNode(oneIdx > twoIdx ? new TreePart[]{one, two} : new TreePart[]{two, one}, idxToBit(twoIdx) | idxToBit(oneIdx));
+        return new BitmapPart(oneIdx > twoIdx ? new TreePart[]{one, two} : new TreePart[]{two, one}, idxToBit(twoIdx) | idxToBit(oneIdx));
     }
 
     private static TreePart nodeWithEntry(TreePart original, Entry newEntry, int hashShift) {
@@ -136,13 +136,13 @@ public final class Hamt {
                 if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, newEntry.key, existing.key)) {
                     return newEntry;
                 } else {
-                    return new CollisionNode(existing.hash, existing, newEntry);
+                    return new CollisionPart(existing.hash, existing, newEntry);
                 }
             }
             return bitmapNodesForPair(newEntry, newEntry.hash, existing, existing.hash, hashShift);
         }
-        if (original instanceof BitmapNode) {
-            BitmapNode existing = (BitmapNode) original;
+        if (original instanceof BitmapPart) {
+            BitmapPart existing = (BitmapPart) original;
             int position = hashIdx(newEntry.hash, hashShift);
             int sparseIdx = bitmapToIdx(existing.bitmap, position);
             if (sparseIdx < 0) {
@@ -156,7 +156,7 @@ public final class Hamt {
                             newElems[i] = existing.elems[elemsI--];
                         }
                     }
-                    return new ArrayNode(newElems);
+                    return new ArrayPart(newElems);
                 } else {
                     int newBitmap = existing.bitmap | idxToBit(position);
                     TreePart[] newElems = new TreePart[existing.elems.length + 1];
@@ -170,33 +170,33 @@ public final class Hamt {
                             newElems[i] = existing.elems[oldI++];
                         }
                     }
-                    return new BitmapNode(newElems, newBitmap);
+                    return new BitmapPart(newElems, newBitmap);
                 }
             } else {
                 TreePart[] toReplaceIn = existing.elems.clone();
                 TreePart toReplace = toReplaceIn[sparseIdx];
                 TreePart newPart = nodeWithEntry(toReplace, newEntry, hashShift + 5);
                 toReplaceIn[sparseIdx] = newPart;
-                return new BitmapNode(toReplaceIn, existing.bitmap);
+                return new BitmapPart(toReplaceIn, existing.bitmap);
             }
         }
-        if (original instanceof ArrayNode) {
-            ArrayNode existing = (ArrayNode) original;
+        if (original instanceof ArrayPart) {
+            ArrayPart existing = (ArrayPart) original;
             int position = hashIdx(newEntry.hash, hashShift);
             TreePart[] toReplaceIn = existing.elems.clone();
             TreePart toReplace = toReplaceIn[position];
             TreePart newPart = nodeWithEntry(toReplace, newEntry, hashShift + 5);
             toReplaceIn[position] = newPart;
-            return new ArrayNode(toReplaceIn);
+            return new ArrayPart(toReplaceIn);
         }
-        if (original instanceof CollisionNode) {
-            CollisionNode existing = (CollisionNode) original;
+        if (original instanceof CollisionPart) {
+            CollisionPart existing = (CollisionPart) original;
             if (existing.hash == newEntry.hash) {
                 int originalLength = existing.elems.length;
                 Entry[] newElems = new Entry[originalLength + 1];
                 newElems[originalLength] = newEntry;
                 System.arraycopy(existing.elems, 0, newElems, 0, originalLength);
-                return new CollisionNode(existing.hash, newElems);
+                return new CollisionPart(existing.hash, newElems);
             } else {
                 return bitmapNodesForPair(existing, existing.hash, newEntry, newEntry.hash, hashShift);
             }
@@ -221,8 +221,8 @@ public final class Hamt {
             }
             return null;
         }
-        if (part instanceof BitmapNode) {
-            BitmapNode existing = (BitmapNode) part;
+        if (part instanceof BitmapPart) {
+            BitmapPart existing = (BitmapPart) part;
             int position = hashIdx(hash, hashShift);
             int sparseIdx = bitmapToIdx(existing.bitmap, position);
             if (sparseIdx < 0) {
@@ -231,13 +231,13 @@ public final class Hamt {
             TreePart deeper = existing.elems[sparseIdx];
             return lookupKeyInPart(deeper, key, hash, hashShift + 5);
         }
-        if (part instanceof ArrayNode) {
-            ArrayNode existing = (ArrayNode) part;
+        if (part instanceof ArrayPart) {
+            ArrayPart existing = (ArrayPart) part;
             int position = hashIdx(hash, hashShift);
             return lookupKeyInPart(existing.elems[position], key, hash, hashShift + 5);
         }
-        if (part instanceof CollisionNode) {
-            CollisionNode existing = (CollisionNode) part;
+        if (part instanceof CollisionPart) {
+            CollisionPart existing = (CollisionPart) part;
             if (existing.hash != hash) {
                 return null;
             }
@@ -256,7 +256,7 @@ public final class Hamt {
     }
 
     @SuppressWarnings("fallthrough")
-    private static TreePart bitmapWithoutKey(BitmapNode existing, Object key, int hash, int hashShift) {
+    private static TreePart bitmapWithoutKey(BitmapPart existing, Object key, int hash, int hashShift) {
         int position = hashIdx(hash, hashShift);
         int sparseIdx = bitmapToIdx(existing.bitmap, position);
         if (sparseIdx < 0) {
@@ -268,7 +268,7 @@ public final class Hamt {
                 if (replacement == null) {
                     // if we have no elements, we can simply delete the BitmapPart entirely
                     return null;
-                } else if (replacement instanceof Entry || replacement instanceof CollisionNode) {
+                } else if (replacement instanceof Entry || replacement instanceof CollisionPart) {
                     // if the only element is an entry, we can simply skip the BitmapPart
                     // we cannot do the same for the other TreeParts, since those rely on
                     // depth to find which part of the hash is relevant to them.
@@ -283,7 +283,7 @@ public final class Hamt {
                     // return that element, otherwise, run the normal removal logic
                     int otherIdx = sparseIdx == 0 ? 1 : 0;
                     TreePart otherElem = existing.elems[otherIdx];
-                    if (otherElem instanceof Entry || otherElem instanceof CollisionNode) {
+                    if (otherElem instanceof Entry || otherElem instanceof CollisionPart) {
                         return otherElem;
                     }
                 }
@@ -300,11 +300,11 @@ public final class Hamt {
                         }
                     }
                     assert newI == newElems.length;
-                    return new BitmapNode(newElems, newBitmap);
+                    return new BitmapPart(newElems, newBitmap);
                 }
                 TreePart[] newElems = existing.elems.clone();
                 newElems[sparseIdx] = replacement;
-                return new BitmapNode(newElems, existing.bitmap);
+                return new BitmapPart(newElems, existing.bitmap);
             }
         }
 
@@ -321,12 +321,12 @@ public final class Hamt {
             }
             return root;
         }
-        if (root instanceof BitmapNode) {
-            BitmapNode existing = (BitmapNode) root;
+        if (root instanceof BitmapPart) {
+            BitmapPart existing = (BitmapPart) root;
             return bitmapWithoutKey(existing, key, hash, hashShift);
         }
-        if (root instanceof ArrayNode) {
-            ArrayNode existing = (ArrayNode) root;
+        if (root instanceof ArrayPart) {
+            ArrayPart existing = (ArrayPart) root;
             int position = hashIdx(hash, hashShift);
             TreePart replacement = partWithoutKey(existing.elems[position], key, hash, hashShift + 5);
             if (replacement == null) {
@@ -348,16 +348,16 @@ public final class Hamt {
                         }
                     }
                     assert newElemsI == 0;
-                    return new BitmapNode(newElems, bitmap);
+                    return new BitmapPart(newElems, bitmap);
                 }
                 // fall through to normal logic
             }
             TreePart[] newElems = existing.elems.clone();
             newElems[position] = replacement;
-            return new ArrayNode(newElems);
+            return new ArrayPart(newElems);
         }
-        if (root instanceof CollisionNode) {
-            CollisionNode existing = (CollisionNode) root;
+        if (root instanceof CollisionPart) {
+            CollisionPart existing = (CollisionPart) root;
             if (existing.hash == hash) {
                 for (int i = 0; i < existing.elems.length; ++i) {
                     if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, existing.elems[i].key, key)) {
@@ -374,7 +374,7 @@ public final class Hamt {
                         if (newElems.length == 1) {
                             return newElems[0];
                         }
-                        return new CollisionNode(hash, newElems);
+                        return new CollisionPart(hash, newElems);
                     }
                 }
             }
@@ -387,11 +387,11 @@ public final class Hamt {
         return new Hamt(partWithoutKey(root, key, hash, 0));
     }
 
-    private final static class BitmapNode implements TreePart {
+    private final static class BitmapPart implements TreePart {
         final int bitmap;
         final TreePart[] elems;
 
-        public BitmapNode(TreePart[] elems, int bitmap) {
+        public BitmapPart(TreePart[] elems, int bitmap) {
             for (TreePart e : elems) {
                 assert e != null;
             }
@@ -413,10 +413,10 @@ public final class Hamt {
         }
     }
 
-    private final static class ArrayNode implements TreePart {
+    private final static class ArrayPart implements TreePart {
         final TreePart[] elems;
 
-        public ArrayNode(TreePart[] elems) {
+        public ArrayPart(TreePart[] elems) {
             assert elems.length == 32;
             this.elems = elems;
         }
@@ -433,11 +433,11 @@ public final class Hamt {
         }
     }
 
-    private final static class CollisionNode implements TreePart {
+    private final static class CollisionPart implements TreePart {
         final int hash;
         final Entry[] elems;
 
-        public CollisionNode(int hash, Entry... elems) {
+        public CollisionPart(int hash, Entry... elems) {
             this.hash = hash;
             this.elems = elems;
         }
