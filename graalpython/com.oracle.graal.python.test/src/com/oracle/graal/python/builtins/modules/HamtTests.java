@@ -64,7 +64,8 @@ public class HamtTests {
 
     @Test
     public void testHamtConstructed() {
-        new Hamt();
+        Hamt hamt = new Hamt();
+        assertEquals("null\n", hamt.dump());
     }
 
     @Test
