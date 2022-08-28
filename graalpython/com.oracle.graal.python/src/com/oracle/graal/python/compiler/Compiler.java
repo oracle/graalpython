@@ -140,7 +140,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.pegparser.CopyWithContextVisitor;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.FExprParser;
@@ -2020,11 +2019,30 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AugAssign node) {
-        SourceRange savedLocation = setLocation(node);
-        node.target.accept(new CopyWithContextVisitor(ExprContextTy.Load)).accept(this);
-        setLocation(savedLocation);
-        node.value.accept(this);
+        ExprTy target = node.target;
+        SourceRange savedLocation = setLocation(target);
+        if (target instanceof ExprTy.Attribute) {
+            ExprTy.Attribute attr = (ExprTy.Attribute) target;
+            attr.value.accept(this);
+            addOp(DUP_TOP);
+            addOpName(LOAD_ATTR, unit.names, attr.attr);
+        } else if (target instanceof ExprTy.Subscript) {
+            ExprTy.Subscript subscript = (ExprTy.Subscript) target;
+            subscript.value.accept(this);
+            addOp(DUP_TOP);
+            subscript.slice.accept(this);
+            addOp(DUP_TOP);
+            addOp(ROT_THREE);
+            addOp(BINARY_SUBSCR);
+        } else if (target instanceof ExprTy.Name) {
+            ExprTy.Name name = (ExprTy.Name) target;
+            addNameOp(name.id, ExprContextTy.Load);
+        } else {
+            // TODO this raises SystemError under CPython
+            throw new IllegalArgumentException("invalid node type for augmented assignment");
+        }
         setLocation(node);
+        node.value.accept(this);
         switch (node.op) {
             case Add:
                 addOp(BINARY_OP, BinaryOps.INPLACE_ADD.ordinal());
@@ -2068,7 +2086,20 @@ public class Compiler implements SSTreeVisitor<Void> {
             default:
                 throw new IllegalStateException("Unknown binary inplace operation " + node.op);
         }
-        return node.target.accept(this);
+        setLocation(target);
+        if (target instanceof ExprTy.Attribute) {
+            ExprTy.Attribute attr = (ExprTy.Attribute) target;
+            addOp(ROT_TWO);
+            addOpName(STORE_ATTR, unit.names, attr.attr);
+        } else if (target instanceof ExprTy.Subscript) {
+            addOp(ROT_THREE);
+            addOp(STORE_SUBSCR);
+        } else {
+            ExprTy.Name name = (ExprTy.Name) target;
+            addNameOp(name.id, ExprContextTy.Store);
+        }
+        setLocation(savedLocation);
+        return null;
     }
 
     @Override
