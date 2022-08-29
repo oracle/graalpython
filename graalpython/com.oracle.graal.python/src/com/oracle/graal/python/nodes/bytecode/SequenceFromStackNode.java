@@ -44,7 +44,6 @@ import java.lang.reflect.Array;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
-import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin.SizeEstimate;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -60,6 +59,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -69,8 +69,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.source.SourceSection;
 
 abstract class SequenceFromStackNode extends PNodeWithContext {
-    @CompilerDirectives.CompilationFinal protected final int length;
-    @CompilerDirectives.CompilationFinal protected SequenceStorage.ListStorageType type = SequenceStorage.ListStorageType.Uninitialized;
+    @CompilationFinal protected final int length;
+    @CompilationFinal protected SequenceStorage.ListStorageType type = SequenceStorage.ListStorageType.Uninitialized;
 
     SequenceFromStackNode(int length) {
         this.length = length;
@@ -199,7 +199,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
             elements[j] = frame.getObject(i);
             frame.setObject(i, null);
         }
-        return new ObjectSequenceStorage(elements, elements.length);
+        return new ObjectSequenceStorage(elements, length);
     }
 
     private static int castInt(Object o) throws UnexpectedResultException {
