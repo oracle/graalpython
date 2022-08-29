@@ -3,17 +3,13 @@ import mx_benchmark
 
 import glob
 import json
+import math
 import os
 import shutil
 import subprocess
 import sys
 
-from mx_graalpython_benchmark import python_vm_registry
-
 from os.path import join, abspath, exists
-
-
-SUITE = mx.suite("graalpython")
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -108,6 +104,9 @@ class AsvJsonRule(mx_benchmark.Rule):
             for benchmark, result in js["results"].items():
                 param_combinations = itertools.product(*result[param_idx])
                 for run_idx, params in enumerate(param_combinations):
+                    value = result[peak_idx][run_idx]
+                    if math.isnan(value):
+                        continue
                     r.append(
                         {
                             "bench-suite": self.suiteName,
@@ -118,7 +117,7 @@ class AsvJsonRule(mx_benchmark.Rule):
                             "metric.better": "lower",
                             "metric.type": "numeric",
                             "metric.iteration": 0,
-                            "metric.value": result[peak_idx][run_idx],
+                            "metric.value": value,
                             "config.run-flags": " ".join(params),
                         }
                     )
@@ -251,6 +250,12 @@ class WildcardList:
 
     def __contains__(self, x):
         return True
+
+    def __iter__(self):
+        mx.abort(
+            "Cannot iterate over benchmark names in foreign benchmark suites. "
+            + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
+        )
 
 
 class PyPerformanceSuite(
@@ -497,6 +502,12 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
 
 
 def register_python_benchmarks():
+    global python_vm_registry, SUITE
+
+    from mx_graalpython_benchmark import python_vm_registry
+
+    SUITE = mx.suite("graalpython")
+
     python_vm_registry.add_vm(PyPyVm())
     python_vm_registry.add_vm(Python3Vm())
     for config_name, options, priority in [
