@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -65,10 +66,14 @@ import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
@@ -615,6 +620,34 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    private ExecutableNode parseForBytecodeInterpreter(InlineParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        RootCallTarget callTarget = parseForBytecodeInterpreter(context, request.getSource(), InputType.EVAL, false, 0, false, null);
+        return new ExecutableNode(this) {
+            @Child private GilNode gilNode = GilNode.create();
+            @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
+            @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
+            @Child private ReadLocalsNode readLocalsNode = ReadLocalsNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                Object[] arguments = PArguments.create();
+                // escape?
+                PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
+                Object locals = readLocalsNode.execute(frame, pFrame);
+                PArguments.setCustomLocals(arguments, locals);
+                PArguments.setSpecialArgument(arguments, locals);
+                PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    return invokeNode.execute(callTarget, arguments);
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
+            }
+        };
+    }
+
     private RootNode doParse(PythonContext context, Source source, int optimize) {
         ParserMode mode;
         if (source.isInteractive()) {
@@ -695,6 +728,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
+        RootNode rootNode = request.getLocation().getRootNode();
+        if (rootNode instanceof PBytecodeGeneratorRootNode) {
+            rootNode = ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
+        }
+        if (rootNode instanceof PBytecodeRootNode) {
+            return parseForBytecodeInterpreter(request);
+        }
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
