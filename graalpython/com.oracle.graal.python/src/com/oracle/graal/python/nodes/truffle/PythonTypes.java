@@ -32,16 +32,9 @@ import com.oracle.truffle.api.dsl.ImplicitCast;
 import com.oracle.truffle.api.dsl.TypeCast;
 import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystem
 public abstract class PythonTypes {
-
-    // see comment in TruffleStringMigrationPythonTypes
-    @ImplicitCast
-    public static TruffleString fromJavaString(String value) {
-        return TruffleStringMigrationPythonTypes.fromJavaString(value);
-    }
 
     @ImplicitCast
     public static long intToLong(int value) {

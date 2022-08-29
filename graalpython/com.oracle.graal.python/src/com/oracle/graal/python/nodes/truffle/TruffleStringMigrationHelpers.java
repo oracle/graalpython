@@ -40,27 +40,15 @@
  */
 package com.oracle.graal.python.nodes.truffle;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.truffle.api.dsl.ImplicitCast;
-import com.oracle.truffle.api.dsl.TypeSystem;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Temporary {@link TypeSystem} used during migration of j.l.String -> TruffleString. Once the
- * migration is complete, this type system can be deleted.
- *
- * The same implicit cast is also in {@link PythonTypes} and {@link PythonArithmeticTypes}
+ * Temporary helpers used during migration of j.l.String -> TruffleString. Once the migration is
+ * complete, these can probably be deleted.
  */
-@TypeSystem
-public abstract class TruffleStringMigrationPythonTypes {
-
-    @ImplicitCast
-    public static TruffleString fromJavaString(String value) {
-        assert false;
-        return TruffleString.fromJavaStringUncached(value, TS_ENCODING);
-    }
+public abstract class TruffleStringMigrationHelpers {
 
     /**
      * Used in places where we don't expect a {@link String}.
@@ -86,7 +74,11 @@ public abstract class TruffleStringMigrationPythonTypes {
         return false;
     }
 
-    public static boolean containsJavaString(Object[] elements) {
+    public static void assertContainsNoJavaString(Object[] elements) {
+        assert !containsJavaString(elements);
+    }
+
+    private static boolean containsJavaString(Object[] elements) {
         if (elements == null) {
             return false;
         }

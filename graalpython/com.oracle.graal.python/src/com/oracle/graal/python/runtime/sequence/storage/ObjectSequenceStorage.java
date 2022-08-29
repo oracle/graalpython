@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.assertNoJavaString;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.containsJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertContainsNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.Arrays;
 
@@ -40,14 +40,14 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
-        assert !containsJavaString(elements);
+        assertContainsNoJavaString(elements);
     }
 
     public ObjectSequenceStorage(Object[] elements, int length) {
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
-        assert !containsJavaString(elements);
+        assertContainsNoJavaString(elements);
     }
 
     public ObjectSequenceStorage(int capacity) {
@@ -176,7 +176,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (Object[]) arrayObject;
-        assert !containsJavaString(values);
+        assertContainsNoJavaString(values);
     }
 
     @Override

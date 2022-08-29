@@ -52,7 +52,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructT
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
