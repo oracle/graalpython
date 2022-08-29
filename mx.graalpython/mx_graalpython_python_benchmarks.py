@@ -51,6 +51,10 @@ import sys
 from os.path import join, abspath, exists
 
 
+SUITE = None
+python_vm_registry = None
+
+
 class PyPerfJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by PyPerf and creates a measurement result."""
 
@@ -59,8 +63,6 @@ class PyPerfJsonRule(mx_benchmark.Rule):
         self.suiteName = suiteName
 
     def parse(self, text: str) -> dict:
-        import statistics
-
         r = []
         with open(self._prepend_working_dir(self.filename)) as fp:
             js = json.load(fp)
@@ -188,8 +190,6 @@ class PyPyJsonRule(mx_benchmark.Rule):
         self.suiteName = suiteName
 
     def parse(self, text: str) -> dict:
-        import statistics
-
         r = []
         with open(self._prepend_working_dir(self.filename)) as fp:
             js = json.load(fp)
@@ -543,7 +543,8 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
 def register_python_benchmarks():
     global python_vm_registry, SUITE
 
-    from mx_graalpython_benchmark import python_vm_registry
+    from mx_graalpython_benchmark import python_vm_registry as vm_registry
+    python_vm_registry = vm_registry
 
     SUITE = mx.suite("graalpython")
 

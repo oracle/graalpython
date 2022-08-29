@@ -1366,6 +1366,7 @@ def update_import_cmd(args):
 
 def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
+    python_run_mx_filetests(args)
     python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
@@ -1397,6 +1398,13 @@ def python_checkcopyrights(args):
         os.unlink(listfilename)
 
     _python_checkpatchfiles()
+
+
+def python_run_mx_filetests(args):
+    for test in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
+        if not test.endswith("data.py"):
+            mx.log(test)
+            mx.run([sys.executable, test, "-v"])
 
 
 def _python_checkpatchfiles():
