@@ -303,7 +303,7 @@ class PyPerformanceSuite(
     VERSION = "1.0.5"
 
     def name(self):
-        return "pyperformance"
+        return "pyperformance-suite"
 
     def group(self):
         return "Graal"
@@ -367,7 +367,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
     VERSION = "0324a252cf1a"
 
     def name(self):
-        return "pypy"
+        return "pypy-suite"
 
     def group(self):
         return "Graal"
@@ -442,7 +442,7 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
     VIRTUALENV = "20.16.3"
 
     def name(self):
-        return "numpy"
+        return "numpy-suite"
 
     def group(self):
         return "Graal"
