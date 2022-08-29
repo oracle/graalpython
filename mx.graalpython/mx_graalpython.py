@@ -507,11 +507,12 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
-GINSTALL_GATE_PACKAGES = [
-    "numpy",
-    "scipy",
-    "scikit_learn",
-]
+GINSTALL_GATE_PACKAGES = {
+    "numpy": "numpy",
+    "scipy": "scipy",
+    "scikit_learn": "sklearn",
+}
+
 
 class GraalPythonTags(object):
     junit = 'python-junit'
@@ -811,7 +812,10 @@ def run_ginstall(python_binary):
     env_dir = os.path.realpath(tempfile.mkdtemp())
     mx.log("using graalpython venv: {}".format(env_dir))
     mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
-    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES.keys())], nonZeroIsFatal=True,
+           env=get_venv_env(env_dir))
+    import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
+    mx.run(["graalpy", "-c", import_packages], nonZeroIsFatal=True, env=get_venv_env(env_dir))
 
 
 def is_bash_launcher(launcher_path):
