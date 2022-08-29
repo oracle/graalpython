@@ -50,6 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -217,6 +218,7 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode.WrapperNode;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -1984,7 +1986,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         int flags = Byte.toUnsignedInt(localBC[++bci]);
                         CodeUnit codeUnit = (CodeUnit) localConsts[oparg];
-                        MakeFunctionNode makeFunctionNode = insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(PythonLanguage.get(this), codeUnit, source));
+                        MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(localNodes, beginBci, codeUnit);
                         stackTop = makeFunctionNode.execute(virtualFrame, globals, stackTop, flags);
                         break;
                     }
@@ -2188,6 +2190,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     oparg = 0;
                 }
             }
+        }
+    }
+
+    private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, CodeUnit codeUnit) {
+        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(PythonLanguage.get(this), codeUnit, source));
+    }
+
+    public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
+        int oparg = 0;
+        for (int bci = 0; bci < bytecode.length;) {
+            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+            if (op == OpCodes.EXTENDED_ARG) {
+                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                oparg <<= 8;
+            } else if (op == OpCodes.MAKE_FUNCTION) {
+                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                CodeUnit codeUnit = (CodeUnit) consts[oparg];
+                MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(adoptedNodes, bci, codeUnit);
+                RootNode rootNode = makeFunctionNode.getCallTarget().getRootNode();
+                if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+                    rootNode = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
+                }
+                ((PBytecodeRootNode) rootNode).instrumentationRoot.materializeInstrumentableNodes(materializedTags);
+            } else {
+                oparg = 0;
+            }
+            bci += op.length();
         }
     }
 
@@ -4825,8 +4854,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createUnavailableSection();
             return sourceSection;
         } else {
-            // TODO report the whole range, not just the first line
-            sourceSection = source.createSection(co.startLine);
+            // TODO this is horribly inefficient
+            int lastLine = co.startLine;
+            for (int bci = 0; bci < co.code.length;) {
+                lastLine = Math.max(lastLine, bciToLine(bci));
+                bci += OpCodes.fromOpCode(co.code[bci]).length();
+            }
+            sourceSection = source.createSection(co.startLine, 1, lastLine, 1);
             return sourceSection;
         }
     }

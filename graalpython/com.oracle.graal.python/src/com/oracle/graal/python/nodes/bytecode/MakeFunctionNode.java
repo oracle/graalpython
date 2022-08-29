@@ -161,4 +161,8 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         }
         return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode, doc);
     }
+
+    public RootCallTarget getCallTarget() {
+        return callTarget;
+    }
 }
