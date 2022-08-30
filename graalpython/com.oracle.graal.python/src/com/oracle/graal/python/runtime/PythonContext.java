@@ -87,7 +87,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -109,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -247,9 +247,13 @@ public final class PythonContext extends Python3Core {
         /* The event currently being traced, only useful if tracing is true. */
         TraceEvent tracingWhat;
 
-        boolean contextInitialized = false;
+        /*
+         * tracks whether a contextVarsContext was ever set. This is useful to make bugs where
+         * contextVarsContext gets set to null noticable.
+         */
+        boolean contextVarsContextInitialized = false;
 
-        PContextVarsContext context;
+        PContextVarsContext contextVarsContext;
 
         /*
          * The constructor needs to have this particular signature such that we can use it for
@@ -335,15 +339,16 @@ public final class PythonContext extends Python3Core {
         }
 
         public PContextVarsContext getContextVarsContext() {
-            if (!contextInitialized) {
-                context = PythonObjectFactory.getUncached().createContextVarsContext();
-                contextInitialized = true;
+            if (!contextVarsContextInitialized) {
+                contextVarsContext = PythonObjectFactory.getUncached().createContextVarsContext();
+                contextVarsContextInitialized = true;
             }
-            return context;
+            return contextVarsContext;
         }
 
-        public void setContext(PContextVarsContext context) {
-            this.context = context;
+        public void setContextVarsContext(PContextVarsContext contextVarsContext) {
+            this.contextVarsContext = contextVarsContext;
+            this.contextVarsContextInitialized = true;
         }
 
         public void dispose() {

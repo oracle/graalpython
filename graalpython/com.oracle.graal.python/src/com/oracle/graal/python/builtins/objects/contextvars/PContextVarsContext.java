@@ -57,13 +57,13 @@ public class PContextVarsContext extends PythonBuiltinObject {
         }
         previousContext = threadState.getContextVarsContext();
         assert previousContext != null : "ThreadState had null Context. This should not happen";
-        threadState.setContext(this);
+        threadState.setContextVarsContext(this);
     }
 
     public void leave(PythonContext.PythonThreadState threadState) {
         assert threadState.getContextVarsContext() == this : "leaving a context which is not currently entered";
         assert previousContext != null : "entered context has no previous context";
-        threadState.setContext(previousContext);
+        threadState.setContextVarsContext(previousContext);
         previousContext = null;
     }
 
