@@ -59,7 +59,7 @@ public final class Hamt {
     }
 
     @CompilerDirectives.ValueType
-    public final static class Entry implements TreePart {
+    public static final class Entry implements TreePart {
         final Object key;
         final int hash;
         final Object value;
@@ -115,12 +115,12 @@ public final class Hamt {
         }
     }
 
-    private static BitmapPart bitmapNodesForPair(TreePart one, int hashOne, TreePart two, int hashTwo, int hashShift) {
-        assert hashOne != hashTwo : "bitmapNodesForPair cannot work with colliding nodes";
+    private static BitmapPart bitmapPartsForPair(TreePart one, int hashOne, TreePart two, int hashTwo, int hashShift) {
+        assert hashOne != hashTwo : "cannot work with colliding nodes";
         int oneIdx = hashIdx(hashOne, hashShift);
         int twoIdx = hashIdx(hashTwo, hashShift);
         if (oneIdx == twoIdx) {
-            return new BitmapPart(new TreePart[]{bitmapNodesForPair(one, hashOne, two, hashTwo, hashShift + 5)}, idxToBit(twoIdx));
+            return new BitmapPart(new TreePart[]{bitmapPartsForPair(one, hashOne, two, hashTwo, hashShift + 5)}, idxToBit(twoIdx));
         }
         return new BitmapPart(oneIdx > twoIdx ? new TreePart[]{one, two} : new TreePart[]{two, one}, idxToBit(twoIdx) | idxToBit(oneIdx));
     }
@@ -139,7 +139,7 @@ public final class Hamt {
                     return new CollisionPart(existing.hash, existing, newEntry);
                 }
             }
-            return bitmapNodesForPair(newEntry, newEntry.hash, existing, existing.hash, hashShift);
+            return bitmapPartsForPair(newEntry, newEntry.hash, existing, existing.hash, hashShift);
         }
         if (original instanceof BitmapPart) {
             BitmapPart existing = (BitmapPart) original;
@@ -198,7 +198,7 @@ public final class Hamt {
                 System.arraycopy(existing.elems, 0, newElems, 0, originalLength);
                 return new CollisionPart(existing.hash, newElems);
             } else {
-                return bitmapNodesForPair(existing, existing.hash, newEntry, newEntry.hash, hashShift);
+                return bitmapPartsForPair(existing, existing.hash, newEntry, newEntry.hash, hashShift);
             }
         }
         throw CompilerDirectives.shouldNotReachHere("TreePart type is not handled");
@@ -255,7 +255,6 @@ public final class Hamt {
         return lookupKeyInPart(root, key, hash, 0);
     }
 
-    @SuppressWarnings("fallthrough")
     private static TreePart bitmapWithoutKey(BitmapPart existing, Object key, int hash, int hashShift) {
         int position = hashIdx(hash, hashShift);
         int sparseIdx = bitmapToIdx(existing.bitmap, position);
@@ -263,51 +262,46 @@ public final class Hamt {
             return existing;
         }
         TreePart replacement = partWithoutKey(existing.elems[sparseIdx], key, hash, hashShift + 5);
-        switch (existing.elems.length) {
-            case 1: {
-                if (replacement == null) {
-                    // if we have no elements, we can simply delete the BitmapPart entirely
-                    return null;
-                } else if (replacement instanceof Entry || replacement instanceof CollisionPart) {
-                    // if the only element is an entry, we can simply skip the BitmapPart
-                    // we cannot do the same for the other TreeParts, since those rely on
-                    // depth to find which part of the hash is relevant to them.
-                    return replacement;
-                }
-                // fall through to default
+        int currentLen = existing.elems.length;
+        if (currentLen == 1) {
+            if (replacement == null) {
+                // if we have no elements, we can simply delete the BitmapPart entirely
+                return null;
+            } else if (replacement instanceof Entry || replacement instanceof CollisionPart) {
+                // if the only element is an entry, we can simply skip the BitmapPart
+                // we cannot do the same for the other TreeParts, since those rely on
+                // depth to find which part of the hash is relevant to them.
+                return replacement;
             }
-            case 2: {
-                if (replacement == null) {
-                    // we have one element left, if it is an element which doesn't rely on its
-                    // depth,
-                    // return that element, otherwise, run the normal removal logic
-                    int otherIdx = sparseIdx == 0 ? 1 : 0;
-                    TreePart otherElem = existing.elems[otherIdx];
-                    if (otherElem instanceof Entry || otherElem instanceof CollisionPart) {
-                        return otherElem;
-                    }
-                }
-                // fall through
+            // fall through to default
+        }
+        if (currentLen == 2 && replacement == null) {
+            // we have one element left, if it is an element which doesn't rely on its
+            // depth,
+            // return that element, otherwise, run the normal removal logic
+            int otherIdx = sparseIdx == 0 ? 1 : 0;
+            TreePart otherElem = existing.elems[otherIdx];
+            if (otherElem instanceof Entry || otherElem instanceof CollisionPart) {
+                return otherElem;
             }
-            default: {
-                if (replacement == null) {
-                    int newBitmap = existing.bitmap & ~idxToBit(position);
-                    TreePart[] newElems = new TreePart[existing.elems.length - 1];
-                    int newI = 0;
-                    for (int i = 0; i < existing.elems.length; ++i) {
-                        if (i != sparseIdx) {
-                            newElems[newI++] = existing.elems[i];
-                        }
-                    }
-                    assert newI == newElems.length;
-                    return new BitmapPart(newElems, newBitmap);
-                }
-                TreePart[] newElems = existing.elems.clone();
-                newElems[sparseIdx] = replacement;
-                return new BitmapPart(newElems, existing.bitmap);
-            }
+            // fall through
         }
 
+        if (replacement == null) {
+            int newBitmap = existing.bitmap & ~idxToBit(position);
+            TreePart[] newElems = new TreePart[existing.elems.length - 1];
+            int newI = 0;
+            for (int i = 0; i < existing.elems.length; ++i) {
+                if (i != sparseIdx) {
+                    newElems[newI++] = existing.elems[i];
+                }
+            }
+            assert newI == newElems.length;
+            return new BitmapPart(newElems, newBitmap);
+        }
+        TreePart[] newElems = existing.elems.clone();
+        newElems[sparseIdx] = replacement;
+        return new BitmapPart(newElems, existing.bitmap);
     }
 
     private static TreePart partWithoutKey(TreePart root, Object key, int hash, int hashShift) {
@@ -326,7 +320,7 @@ public final class Hamt {
             return bitmapWithoutKey(existing, key, hash, hashShift);
         }
         if (root instanceof ArrayPart) {
-            ArrayPart existing = (ArrayPart) root;
+                ArrayPart existing = (ArrayPart) root;
             int position = hashIdx(hash, hashShift);
             TreePart replacement = partWithoutKey(existing.elems[position], key, hash, hashShift + 5);
             if (replacement == null) {
@@ -387,7 +381,7 @@ public final class Hamt {
         return new Hamt(partWithoutKey(root, key, hash, 0));
     }
 
-    private final static class BitmapPart implements TreePart {
+    private static final class BitmapPart implements TreePart {
         final int bitmap;
         final TreePart[] elems;
 
@@ -413,7 +407,7 @@ public final class Hamt {
         }
     }
 
-    private final static class ArrayPart implements TreePart {
+    private static final class ArrayPart implements TreePart {
         final TreePart[] elems;
 
         public ArrayPart(TreePart[] elems) {
@@ -433,7 +427,7 @@ public final class Hamt {
         }
     }
 
-    private final static class CollisionPart implements TreePart {
+    private static final class CollisionPart implements TreePart {
         final int hash;
         final Entry[] elems;
 
