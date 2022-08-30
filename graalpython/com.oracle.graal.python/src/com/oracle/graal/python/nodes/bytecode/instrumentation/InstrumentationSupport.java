@@ -93,4 +93,11 @@ public final class InstrumentationSupport extends Node {
             }
         }
     }
+
+    public void notifyException(VirtualFrame frame, int line, Throwable exception) {
+        InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
+        if (wrapper != null) {
+            wrapper.getProbeNode().onReturnExceptionalOrUnwind(frame, exception, false);
+        }
+    }
 }

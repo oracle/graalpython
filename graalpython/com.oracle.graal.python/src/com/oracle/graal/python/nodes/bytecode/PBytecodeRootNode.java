@@ -2170,6 +2170,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (tracingEnabled && pe != null && !mutableData.getThreadState(this).isTracing()) {
                     traceException(virtualFrame, mutableData, bci, pe);
                 }
+                if (instrumentation != null) {
+                    instrumentation.notifyException(virtualFrame, bciToLine(beginBci), e);
+                    if (instrumentationRoot instanceof WrapperNode) {
+                        WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+                        wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
+                    }
+                }
 
                 int targetIndex = findHandler(beginBci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);

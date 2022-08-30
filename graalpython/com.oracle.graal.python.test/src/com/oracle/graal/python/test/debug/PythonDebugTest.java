@@ -198,6 +198,29 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testException() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "try:\n" +
+                        "  1 / 0\n" +
+                        "except BaseException as e:\n" +
+                        "  str(e)\n" +
+                        "1", "test_exception.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newExceptionBuilder(true, true).build());
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(2, frame.getSourceSection().getStartLine());
+                assertNotNull(event.getException());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
+        }
+    }
+
+    @Test
     public void testInlineEvaluation() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "y = 4\n" +

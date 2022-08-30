@@ -40,16 +40,22 @@
  */
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
+import com.oracle.graal.python.runtime.interop.PythonScopes;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.interop.NodeLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateWrapper
+@ExportLibrary(NodeLibrary.class)
 public abstract class InstrumentationRoot extends Node implements InstrumentableNode {
     public static InstrumentationRoot create() {
         return new InstrumentationRootImpl();
@@ -75,4 +81,14 @@ public abstract class InstrumentationRoot extends Node implements Instrumentable
     }
 
     public abstract InstrumentationSupport getInstrumentation();
+
+    @ExportMessage
+    boolean hasScope(@SuppressWarnings("unused") Frame frame) {
+        return true;
+    }
+
+    @ExportMessage
+    Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) {
+        return PythonScopes.create(this, frame != null ? frame.materialize() : null);
+    }
 }
