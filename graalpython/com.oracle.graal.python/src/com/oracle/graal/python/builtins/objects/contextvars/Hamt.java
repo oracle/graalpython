@@ -43,6 +43,20 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.CompilerDirectives;
 
+/**
+ * Implements a Hamt following a similar internal structure to the one in cpython <a href=
+ * "https://github.com/python/cpython/blob/main/Python/hamt.c#L9-L251">https://github.com/python/cpython/blob/main/Python/hamt.c#L9-L251</a>
+ * There is a lot of room for optimization, but since most HAMTs which will occur in a python
+ * program are quite small, as they are used exclusively for contextvars, it is probably not worth
+ * spending extra effort on until we can benchmark sync web frameworks, and later async frameworks.
+ *
+ * It may make sense to use a sealed interface here eventually, rather than dispatching manually
+ * with instanceof.
+ *
+ * Care must be taken when using right shift (>>), as it sign-extends, It is generally needed to use
+ * bitmasking, unlike in the cpython implementation/original paper
+ */
+
 public final class Hamt {
 
     @CompilerDirectives.TruffleBoundary
@@ -116,7 +130,7 @@ public final class Hamt {
     }
 
     private static BitmapPart bitmapPartsForPair(TreePart one, int hashOne, TreePart two, int hashTwo, int hashShift) {
-        assert hashOne != hashTwo : "cannot work with colliding nodes";
+        assert hashOne != hashTwo : "cannot work with colliding parts";
         int oneIdx = hashIdx(hashOne, hashShift);
         int twoIdx = hashIdx(hashTwo, hashShift);
         if (oneIdx == twoIdx) {
@@ -125,7 +139,7 @@ public final class Hamt {
         return new BitmapPart(oneIdx > twoIdx ? new TreePart[]{one, two} : new TreePart[]{two, one}, idxToBit(twoIdx) | idxToBit(oneIdx));
     }
 
-    private static TreePart nodeWithEntry(TreePart original, Entry newEntry, int hashShift) {
+    private static TreePart partWithEntry(TreePart original, Entry newEntry, int hashShift) {
         assert hashShift <= 25;
         if (original == null) {
             return newEntry;
@@ -175,7 +189,7 @@ public final class Hamt {
             } else {
                 TreePart[] toReplaceIn = existing.elems.clone();
                 TreePart toReplace = toReplaceIn[sparseIdx];
-                TreePart newPart = nodeWithEntry(toReplace, newEntry, hashShift + 5);
+                TreePart newPart = partWithEntry(toReplace, newEntry, hashShift + 5);
                 toReplaceIn[sparseIdx] = newPart;
                 return new BitmapPart(toReplaceIn, existing.bitmap);
             }
@@ -185,7 +199,7 @@ public final class Hamt {
             int position = hashIdx(newEntry.hash, hashShift);
             TreePart[] toReplaceIn = existing.elems.clone();
             TreePart toReplace = toReplaceIn[position];
-            TreePart newPart = nodeWithEntry(toReplace, newEntry, hashShift + 5);
+            TreePart newPart = partWithEntry(toReplace, newEntry, hashShift + 5);
             toReplaceIn[position] = newPart;
             return new ArrayPart(toReplaceIn);
         }
@@ -205,7 +219,7 @@ public final class Hamt {
     }
 
     public Hamt withEntry(Entry newEntry) {
-        TreePart root = nodeWithEntry(this.root, newEntry, 0);
+        TreePart root = partWithEntry(this.root, newEntry, 0);
         return new Hamt(root);
     }
 
@@ -320,7 +334,7 @@ public final class Hamt {
             return bitmapWithoutKey(existing, key, hash, hashShift);
         }
         if (root instanceof ArrayPart) {
-                ArrayPart existing = (ArrayPart) root;
+            ArrayPart existing = (ArrayPart) root;
             int position = hashIdx(hash, hashShift);
             TreePart replacement = partWithoutKey(existing.elems[position], key, hash, hashShift + 5);
             if (replacement == null) {
