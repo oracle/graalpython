@@ -95,7 +95,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             if (self.getDefault() != PContextVar.NO_DEFAULT) {
                 return self.getDefault();
             }
-            throw raise(LookupError, ErrorMessages.S, self);
+            throw raise(LookupError, new Object[]{self});
         }
     }
 
@@ -115,7 +115,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object reset(PContextVar self, PContextVarsToken token, @Cached PRaiseNode raise) {
+        Object reset(PContextVar self, PContextVarsToken token,
+                        @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
                 if (token.getOldValue() == PContextVarsToken.MISSING) {
@@ -131,7 +132,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doError(PContextVar self, Object token, @Cached PRaiseNode raise) {
+        Object doError(PContextVar self, Object token,
+                        @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }
     }
