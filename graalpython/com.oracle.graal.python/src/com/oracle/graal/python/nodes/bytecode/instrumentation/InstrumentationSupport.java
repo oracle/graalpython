@@ -41,6 +41,8 @@
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
@@ -48,7 +50,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class InstrumentationSupport extends Node {
     private final PBytecodeRootNode rootNode;
-    @Children InstrumentableNode[] lineToNode;
+    @Children InstrumentedBytecodeStatement[] lineToNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
         this.rootNode = rootNode;
@@ -58,22 +60,37 @@ public final class InstrumentationSupport extends Node {
         for (int bci = 0; bci < code.code.length; bci++) {
             maxLine = Math.max(maxLine, rootNode.bciToLine(bci));
         }
-        lineToNode = new InstrumentableNode[maxLine + 1];
-        for (int bci = 0; bci < code.code.length; bci++) {
+        lineToNode = new InstrumentedBytecodeStatement[maxLine + 1];
+        boolean[] loadedBreakpoint = new boolean[1];
+        code.iterateBytecode((bci, op, oparg, followingArgs) -> {
+            boolean setBreakpoint = false;
+            if ((op == OpCodes.LOAD_NAME || op == OpCodes.LOAD_GLOBAL) && BuiltinNames.T_BREAKPOINT.equals(code.names[oparg])) {
+                loadedBreakpoint[0] = true;
+            } else {
+                if (op == OpCodes.CALL_FUNCTION && loadedBreakpoint[0]) {
+                    setBreakpoint = true;
+                }
+                loadedBreakpoint[0] = false;
+            }
             // TODO optimize bciToLine
             int line = rootNode.bciToLine(bci);
             if (line >= 0) {
                 if (lineToNode[line] == null) {
-                    lineToNode[line] = new InstrumentedBytecodeStatementImpl(rootNode, line);
+                    lineToNode[line] = InstrumentedBytecodeStatement.create(rootNode, line);
+                }
+                if (setBreakpoint) {
+                    lineToNode[line].setContainsBreakpoint();
                 }
             }
-        }
+        });
     }
 
     private InstrumentableNode.WrapperNode getWrapperAtLine(int line) {
-        InstrumentableNode node = lineToNode[line];
-        if (node instanceof InstrumentableNode.WrapperNode) {
-            return (InstrumentableNode.WrapperNode) node;
+        if (line >= 0 && line < lineToNode.length) {
+            InstrumentableNode node = lineToNode[line];
+            if (node instanceof InstrumentableNode.WrapperNode) {
+                return (InstrumentableNode.WrapperNode) node;
+            }
         }
         return null;
     }

@@ -41,11 +41,15 @@
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.truffle.api.debug.DebuggerTags;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.source.SourceSection;
 
 class InstrumentedBytecodeStatementImpl extends InstrumentedBytecodeStatement {
     private final PBytecodeRootNode rootNode;
     private final int line;
+    private boolean containsBreakpoint;
 
     public InstrumentedBytecodeStatementImpl(PBytecodeRootNode rootNode, int line) {
         this.rootNode = rootNode;
@@ -55,5 +59,15 @@ class InstrumentedBytecodeStatementImpl extends InstrumentedBytecodeStatement {
     @Override
     public SourceSection getSourceSection() {
         return rootNode.getSource().createSection(line);
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return tag == StandardTags.StatementTag.class || tag == DebuggerTags.AlwaysHalt.class && containsBreakpoint;
+    }
+
+    @Override
+    public void setContainsBreakpoint() {
+        containsBreakpoint = true;
     }
 }

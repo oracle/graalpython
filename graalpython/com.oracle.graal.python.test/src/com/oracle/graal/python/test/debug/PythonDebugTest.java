@@ -254,6 +254,27 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testBreakpointBuiltin() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "def foo():\n" +
+                        "  a = 1\n" +
+                        "  breakpoint()\n" +
+                        "  return 1\n" +
+                        "foo()\n", "test_breakpoint_builtin.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(3, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
+        }
+    }
+
+    @Test
     public void testConditionalBreakpointInFunction() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "def fun():\n" +

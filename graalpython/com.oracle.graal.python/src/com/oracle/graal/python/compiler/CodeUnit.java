@@ -524,4 +524,36 @@ public final class CodeUnit {
         }
         throw new IllegalStateException("Unknown type");
     }
+
+    @FunctionalInterface
+    public interface BytecodeAction {
+        void run(int bci, OpCodes op, int oparg, byte[] followingArgs);
+    }
+
+    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+        int oparg = 0;
+        for (int bci = 0; bci < bytecode.length;) {
+            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+            if (op == OpCodes.EXTENDED_ARG) {
+                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                oparg <<= 8;
+            } else {
+                byte[] followingArgs = null;
+                if (op.argLength > 0) {
+                    oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                    if (op.argLength > 1) {
+                        followingArgs = new byte[op.argLength - 1];
+                        System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
+                    }
+                }
+                action.run(bci, op, oparg, followingArgs);
+                oparg = 0;
+            }
+            bci += op.length();
+        }
+    }
+
+    public void iterateBytecode(BytecodeAction action) {
+        iterateBytecode(code, action);
+    }
 }

@@ -2205,14 +2205,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
-        int oparg = 0;
-        for (int bci = 0; bci < bytecode.length;) {
-            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
-            if (op == OpCodes.EXTENDED_ARG) {
-                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
-                oparg <<= 8;
-            } else if (op == OpCodes.MAKE_FUNCTION) {
-                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+        CodeUnit.iterateBytecode(bytecode, (bci, op, oparg, followingArgs) -> {
+            if (op == OpCodes.MAKE_FUNCTION) {
                 CodeUnit codeUnit = (CodeUnit) consts[oparg];
                 MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(adoptedNodes, bci, codeUnit);
                 RootNode rootNode = makeFunctionNode.getCallTarget().getRootNode();
@@ -2220,11 +2214,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     rootNode = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
                 }
                 ((PBytecodeRootNode) rootNode).instrumentationRoot.materializeInstrumentableNodes(materializedTags);
-            } else {
-                oparg = 0;
             }
-            bci += op.length();
-        }
+        });
     }
 
     @InliningCutoff // Used only to print expressions in interactive mode

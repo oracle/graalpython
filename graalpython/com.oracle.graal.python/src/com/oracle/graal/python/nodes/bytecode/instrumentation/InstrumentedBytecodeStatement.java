@@ -48,8 +48,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.NodeLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -57,7 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateWrapper
 @ExportLibrary(NodeLibrary.class)
-public class InstrumentedBytecodeStatement extends Node implements InstrumentableNode {
+public abstract class InstrumentedBytecodeStatement extends Node implements InstrumentableNode {
     public static InstrumentedBytecodeStatement create(PBytecodeRootNode rootNode, int line) {
         return new InstrumentedBytecodeStatementImpl(rootNode, line);
     }
@@ -76,11 +74,6 @@ public class InstrumentedBytecodeStatement extends Node implements Instrumentabl
         return new InstrumentedBytecodeStatementWrapper(this, probe);
     }
 
-    @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return tag == StandardTags.StatementTag.class;
-    }
-
     @ExportMessage
     boolean hasScope(@SuppressWarnings("unused") Frame frame) {
         return true;
@@ -90,4 +83,6 @@ public class InstrumentedBytecodeStatement extends Node implements Instrumentabl
     Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) {
         return PythonScopes.create(this, frame != null ? frame.materialize() : null);
     }
+
+    public abstract void setContainsBreakpoint();
 }
