@@ -148,7 +148,7 @@ public class ParserTestBase {
         assertTrue("Expected Error.", errorCallback.hasErrors());
         TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
         assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
-        assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
+        assertEquals(expectedMessage, error.getMessage());
     }
 
     public void checkDeprecationWarning(String source, String expectedMessage) {
@@ -177,7 +177,7 @@ public class ParserTestBase {
         assertTrue("Expected Error.", errorCallback.hasErrors());
         TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
         assertSame("Expected IndentationError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Indentation);
-        assertEquals("The expected message:\n\"" + expectedMessage + "\"\n was not found. The message is: \n\"" + error.getMessage() + "\"", error.getMessage(), expectedMessage);
+        assertEquals(expectedMessage, error.getMessage());
     }
 
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {

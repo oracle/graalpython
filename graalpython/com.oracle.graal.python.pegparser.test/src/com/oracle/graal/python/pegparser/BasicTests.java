@@ -1033,6 +1033,11 @@ public class BasicTests extends ParserTestBase {
         checkSyntaxErrorMessage("a = 1\nb = 1", "multiple statements found while compiling a single statement", InputType.SINGLE);
     }
 
+    @Test
+    public void lineContinuationInIndent() {
+        checkIndentationErrorMessage("\n \\\n (\\\n \\ ", "unexpected indent");
+    }
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, false);

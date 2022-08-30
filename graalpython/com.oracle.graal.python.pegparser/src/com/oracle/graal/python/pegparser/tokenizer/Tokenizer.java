@@ -558,6 +558,22 @@ public class Tokenizer {
         return c;
     }
 
+    private int continuationLine() {
+        int c = nextChar();
+        if (c != '\n') {
+            done = StatusCode.LINE_CONTINUATION_ERROR;
+            return -1;
+        }
+        c = nextChar();
+        if (c == EOF) {
+            done = StatusCode.EOF;
+            return -1;
+        } else {
+            oneBack();
+        }
+        return c;
+    }
+
     private static final int LABEL_NEXTLINE = 0;
     private static final int LABEL_AGAIN = 1;
     private static final int LABEL_LETTER_QUOTE = 2;
@@ -585,6 +601,7 @@ public class Tokenizer {
                         int col = 0;
                         int altcol = 0;
                         atBeginningOfLine = false;
+                        int contLineCol = 0;
                         OUTER: while (true) {
                             c = nextChar();
                             switch (c) {
@@ -599,17 +616,26 @@ public class Tokenizer {
                                 case '\014':
                                     col = altcol = 0;
                                     break;
+                                case '\\':
+                                    // Indentation cannot be split over multiple physical lines
+                                    // using backslashes. This means that if we found a backslash
+                                    // preceded by whitespace, **the first one we find** determines
+                                    // the level of indentation of whatever comes next.
+                                    contLineCol = contLineCol != 0 ? contLineCol : col;
+                                    if ((c = continuationLine()) == -1) {
+                                        return createToken(Token.Kind.ERRORTOKEN);
+                                    }
                                 default:
                                     break OUTER;
                             }
                         }
                         oneBack();
-                        if (c == '#' || c == '\n' || c == '\\') {
+                        if (c == '#' || c == '\n') {
                             /*
-                             * Lines with only whitespace and/or comments and/or a line continuation
-                             * character shouldn't affect the indentation and are not passed to the
-                             * parser as NEWLINE tokens, except *totally* empty lines in interactive
-                             * mode, which signal the end of a command group.
+                             * Lines with only whitespace and/or comments shouldn't affect the
+                             * indentation and are not passed to the parser as NEWLINE tokens,
+                             * except *totally* empty lines in interactive mode, which signal the
+                             * end of a command group.
                              */
                             if (col == 0 && c == '\n' && interactive) {
                                 blankline = false; /* Let it through */
@@ -629,6 +655,8 @@ public class Tokenizer {
                              */
                         }
                         if (!blankline && parensNestingLevel == 0) {
+                            col = contLineCol != 0 ? contLineCol : col;
+                            altcol = contLineCol != 0 ? contLineCol : altcol;
                             if (col == indentationStack[currentIndentIndex]) {
                                 /* No change */
                                 if (altcol != altIndentationStack[currentIndentIndex]) {
@@ -1164,17 +1192,8 @@ public class Tokenizer {
 
                     /* Line continuation */
                     if (c == '\\') {
-                        c = nextChar();
-                        if (c != '\n') {
-                            done = StatusCode.LINE_CONTINUATION_ERROR;
+                        if ((c = continuationLine()) == -1) {
                             return createToken(Token.Kind.ERRORTOKEN);
-                        }
-                        c = nextChar();
-                        if (c == EOF) {
-                            done = StatusCode.EOF;
-                            return createToken(Token.Kind.ERRORTOKEN);
-                        } else {
-                            oneBack();
                         }
                         inContinuationLine = true;
                         target = LABEL_AGAIN;
