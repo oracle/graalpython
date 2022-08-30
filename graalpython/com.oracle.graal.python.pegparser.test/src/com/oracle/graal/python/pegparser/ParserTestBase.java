@@ -188,11 +188,7 @@ public class ParserTestBase {
         File goldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
                         : getGoldenFile(GOLDEN_FILE_EXT);
-        if (REGENERATE_TREE || !goldenFile.exists()) {
-            try (FileWriter fw = new FileWriter(goldenFile)) {
-                fw.write(tree);
-            }
-        }
+        writeGoldenFileIfMissing(goldenFile, tree);
         assertDescriptionMatches(tree, goldenFile);
     }
 
@@ -204,11 +200,7 @@ public class ParserTestBase {
         File goldenScopeFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                         : getGoldenFile(SCOPE_FILE_EXT);
-        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
-            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-                fw.write(env.toString());
-            }
-        }
+        writeGoldenFileIfMissing(goldenScopeFile, env.toString());
         assertDescriptionMatches(env.toString(), goldenScopeFile);
     }
 
@@ -216,12 +208,7 @@ public class ParserTestBase {
         SSTNode resultNew = parse(source, getFileName(), inputType/* , frame */);
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
-        if (REGENERATE_TREE || !goldenFile.exists()) {
-            try (FileWriter fw = new FileWriter(goldenFile)) {
-                fw.write(tree);
-            }
-
-        }
+        writeGoldenFileIfMissing(goldenFile, tree);
         assertDescriptionMatches(tree, goldenFile);
     }
 
@@ -261,12 +248,20 @@ public class ParserTestBase {
         ModTy mod = parse(source, "<module>", inputType);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
         ScopeEnvironment env = ScopeEnvironment.analyze(mod, errorCallback, EMPTY_FUTURE);
-        if (REGENERATE_TREE || !goldenScopeFile.exists()) {
-            try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-                fw.write(env.toString());
+        writeGoldenFileIfMissing(goldenScopeFile, env.toString());
+        assertDescriptionMatches(env.toString(), goldenScopeFile);
+    }
+
+    private static void writeGoldenFileIfMissing(File goldenFile, String contents) throws IOException {
+        if (REGENERATE_TREE || !goldenFile.exists()) {
+            if (System.getenv("CI") != null) {
+                fail("Missing golden file " + goldenFile);
+            } else {
+                try (FileWriter fw = new FileWriter(goldenFile)) {
+                    fw.write(contents);
+                }
             }
         }
-        assertDescriptionMatches(env.toString(), goldenScopeFile);
     }
 
 // public void checkSSTNodeOffsets(SSTNode node) {
@@ -281,17 +276,7 @@ public class ParserTestBase {
     }
 
     protected void assertDescriptionMatches(String actual, File goldenFile) throws Exception {
-        if (!goldenFile.exists()) {
-            if (!goldenFile.createNewFile()) {
-                fail("Cannot create file " + goldenFile.getAbsolutePath());
-            }
-            try (FileWriter fw = new FileWriter(goldenFile)) {
-                fw.write(actual);
-            }
-            fail("Created generated golden file " + goldenFile.getAbsolutePath() + "\nPlease re-run the test.");
-        }
         String expected = readFile(goldenFile);
-
         assertDescriptionMatches(actual, expected, goldenFile.getName());
     }
 
