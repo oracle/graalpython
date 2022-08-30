@@ -84,30 +84,38 @@ def _prepare_blas_lapack(env=None):
     def _append_var(var, value):
         env[var] = '{} {}'.format(env.get(var, ''), value)
 
+    def _add_lib(lib_env_var):
+        value = os.environ.get(lib_env_var, None)
+        if isinstance(value, str) and value.lower() == 'none':
+            value = None
+        info("{} env var: {}".format(lib_env_var, value))
+        if value:
+            lib_path = os.path.split(value)[0]
+            info("found {}: {}".format(lib_env_var, lib_path))
+            _append_var('LDFLAGS', '-L{}'.format(lib_path))
+            par_dir = os.path.split(lib_path)[0]
+            inc_path = os.path.join(par_dir, 'include')
+            pkgconf_path = os.path.join(par_dir, 'lib', 'pkgconfig')
+            if os.path.exists(inc_path):
+                _append_var('CPPFLAGS', '-L{}'.format(inc_path))
+            if os.path.exists(pkgconf_path):
+                _append_var('PKG_CONFIG_PATH', '-L{}'.format(pkgconf_path))
+            return True
+        else:
+            info("{} env var not set".format(lib_env_var))
+        return False
+
     if not env:
         env = {}
-    lapack = os.environ.get('LAPACK', None)
-    if isinstance(lapack, str) and lapack.lower() == 'none':
-        lapack = None
-    info("LAPACK env var: {}".format(lapack))
-    if lapack:
-        lapack_lib_path = os.path.split(lapack)[0]
-        info("found LAPACK: {}".format(lapack_lib_path))
-        _append_var('LDFLAGS', '-L{}'.format(lapack_lib_path))
-        lapack_par_dir = os.path.split(lapack_lib_path)[0]
-        lapack_include = os.path.join(lapack_par_dir, 'include')
-        lapack_pkgconf = os.path.join(lapack_par_dir, 'lib', 'pkgconfig')
-        if os.path.exists(lapack_include):
-            _append_var('CPPFLAGS', '-L{}'.format(lapack_include))
-        if os.path.exists(lapack_pkgconf):
-            _append_var('PKG_CONFIG_PATH', '-L{}'.format(lapack_pkgconf))
+
+    have_blas = _add_lib('BLAS')
+    have_lapack = _add_lib('LAPACK')
+    if have_lapack:
         # https://github.com/scipy/scipy/issues/12935
         _append_var('CFLAGS', '-Wno-error=implicit-function-declaration')
-        info("LDFLAGS = {}".format(env.get("LDFLAGS")))
-        info("CPPFLAGS = {}".format(env.get("CPPFLAGS")))
-        info("PKG_CONFIG_PATH = {}".format(env.get("PKG_CONFIG_PATH")))
-    else:
-        info("LAPACK env var not set")
+    info("LDFLAGS = {}".format(env.get("LDFLAGS")))
+    info("CPPFLAGS = {}".format(env.get("CPPFLAGS")))
+    info("PKG_CONFIG_PATH = {}".format(env.get("PKG_CONFIG_PATH")))
 
     return env
 
