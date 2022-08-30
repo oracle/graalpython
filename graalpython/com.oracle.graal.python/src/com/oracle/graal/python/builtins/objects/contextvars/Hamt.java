@@ -52,9 +52,6 @@ import com.oracle.truffle.api.CompilerDirectives;
  *
  * It may make sense to use a sealed interface here eventually, rather than dispatching manually
  * with instanceof.
- *
- * Care must be taken when using right shift (>>), as it sign-extends, It is generally needed to use
- * bitmasking, unlike in the cpython implementation/original paper
  */
 
 public final class Hamt {
@@ -102,8 +99,7 @@ public final class Hamt {
     }
 
     private static int hashIdx(int hash, int hashShift) {
-        // since we never access the bits the shift adds here, it is fine that it is adding ones to
-        // the start
+        // Since we mask off the high 2 bits of the hash, it is always positive
         return hashTail(hash >> hashShift);
     }
 
@@ -121,9 +117,9 @@ public final class Hamt {
     }
 
     private static int bitmapToIdx(int bitmap, int position) {
-        if ((bitmap & (1 << position)) != 0) {
-            // java cannot do unsigned shifts, so we need to mask off the low bits instead
-            return popcount(bitmap & (-1 << position)) - 1;
+        int shiftedBitmap = bitmap >>> position;
+        if ((shiftedBitmap & 1) == 1) {
+            return popcount(shiftedBitmap) - 1;
         } else {
             return -1;
         }
@@ -166,7 +162,7 @@ public final class Hamt {
                     newElems[position] = newEntry;
                     int elemsI = originalLength - 1;
                     for (int i = 0; i < 32; ++i) {
-                        if (((existing.bitmap) & (1 << i)) != 0) {
+                        if (((existing.bitmap >>> i) & 1) == 1) {
                             newElems[i] = existing.elems[elemsI--];
                         }
                     }
