@@ -344,6 +344,8 @@ public class PythonDebugTest {
 
     @Test
     public void testReenterArgumentsAndValues() throws Throwable {
+        // GR-40742
+        PythonTests.skipOnBytecodeInterpreter();
         // Test that after a re-enter, arguments are kept and variables are cleared.
         final Source source = Source.newBuilder("python", "" +
                         "def main():\n" +

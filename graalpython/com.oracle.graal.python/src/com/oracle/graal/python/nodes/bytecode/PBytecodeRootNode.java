@@ -218,6 +218,7 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode.WrapperNode;
+import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -2196,6 +2197,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
                 }
+            } catch (ThreadDeath e) {
+                // Need to handle instrumentation frame unwind
+                if (instrumentationRoot instanceof WrapperNode) {
+                    WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+                    Object ret = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
+                    if (ret == ProbeNode.UNWIND_ACTION_REENTER) {
+                        if (isGeneratorOrCoroutine) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw new UnsupportedOperationException("Frame restarting is not possible in generators");
+                        }
+                        copyArgs(virtualFrame.getArguments(), localFrame);
+                        bci = 0;
+                        stackTop = getInitialStackTop();
+                        oparg = 0;
+                        continue;
+                    }
+                }
+                throw e;
             }
         }
     }
@@ -2205,6 +2224,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
+        usingCachedNodes = true;
         CodeUnit.iterateBytecode(bytecode, (bci, op, oparg, followingArgs) -> {
             if (op == OpCodes.MAKE_FUNCTION) {
                 CodeUnit codeUnit = (CodeUnit) consts[oparg];
