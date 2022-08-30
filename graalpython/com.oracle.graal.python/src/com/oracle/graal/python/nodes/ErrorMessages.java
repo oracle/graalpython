@@ -85,6 +85,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARRAY_ASSIGN_OUT_OF_BOUNDS = tsLiteral("array assignment index out of range");
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
     public static final TruffleString ARRAY_SIZE_TOO_LARGE = tsLiteral("array size too large");
+    public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMPTING_WRITE_OFFSET_D = tsLiteral("Attempting to write to offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMP_TO_RELEASE_RECURSIVE_LOCK = tsLiteral("attempt to release recursive lock not owned by thread");
@@ -399,6 +400,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_INDEX_S = tsLiteral("invalid index %s");
     public static final TruffleString INVALID_INPUT_ELEM_TYPE = tsLiteral("Invalid input element type '%p'");
     public static final TruffleString INVALID_INSTANTIATION_OF_FOREIGN_OBJ = tsLiteral("invalid instantiation of foreign object");
+    public static final TruffleString INVALID_INTEGER_VALUE = tsLiteral("invalid integer value: %s");
     public static final TruffleString INVALID_ITEM_FOR_ASSIGMENT = tsLiteral("invalid item for assignment");
     public static final TruffleString INVALID_ITEM_RETURNED_FROM_NATIVE_SEQ = tsLiteral("Invalid item type %s returned from native sequence storage (expected: %s)");
     public static final TruffleString INVALID_LITERAL_FOR_INT_WITH_BASE = tsLiteral("invalid literal for int() with base %s: %s");
@@ -1452,4 +1454,25 @@ public abstract class ErrorMessages {
     public static final TruffleString SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is only implemented for the bytecode interpreter.");
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
     public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
+
+    // AST Validator
+    public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");
+    public static final TruffleString BOOL_OP_WITH_LESS_THAN_2_VALUES = tsLiteral("BoolOp with less than 2 values");
+    public static final TruffleString COMPARE_HAS_A_DIFFERENT_NUMBER_OF_COMPARATORS_AND_OPERANDS = tsLiteral("Compare has a different number of comparators and operands");
+    public static final TruffleString COMPARE_WITH_NO_COMPARATORS = tsLiteral("Compare with no comparators");
+    public static final TruffleString COMPREHENSION_WITH_NO_GENERATORS = tsLiteral("comprehension with no generators");
+    public static final TruffleString DICT_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYS_AS_VALUES = tsLiteral("Dict doesn't have the same number of keys as values");
+    public static final TruffleString EMPTY_S_ON_S = tsLiteral("empty %s on %s");
+    public static final TruffleString EXPRESSION_MUST_HAVE_S_CONTEXT_BUT_HAS_S_INSTEAD = tsLiteral("expression must have %s context but has %s instead");
+    public static final TruffleString EXPRESSION_WHICH_CANT_BE_ASSIGNED_TO_IN_S_CONTEXT = tsLiteral("expression which can't be assigned to in %s context");
+    public static final TruffleString FIELD_S_IS_REQUIRED_FOR_S = tsLiteral("field '%s' is required for %s");
+    public static final TruffleString IDENTIFIER_FIELD_CANT_REPRESENT_S_CONSTANT = tsLiteral("identifier field can't represent '%s' constant");
+    public static final TruffleString LENGTH_OF_KWONLYARGS_IS_NOT_THE_SAME_AS_KW_DEFAULTS_ON_ARGUMENTS = tsLiteral("length of kwonlyargs is not the same as kw_defaults on arguments");
+    public static final TruffleString MORE_POSITIONAL_DEFAULTS_THAN_ARGS_ON_ARGUMENTS = tsLiteral("more positional defaults than args on arguments");
+    public static final TruffleString NEGATIVE_IMPORT_FROM_LEVEL = tsLiteral("Negative ImportFrom level");
+    public static final TruffleString NONE_DISALLOWED_IN_EXPRESSION_LIST = tsLiteral("None disallowed in expression list");
+    public static final TruffleString NONE_DISALLOWED_IN_STATEMENT_LIST = tsLiteral("None disallowed in statement list");
+    public static final TruffleString RAISE_WITH_CAUSE_BUT_NO_EXCEPTION = tsLiteral("Raise with cause but no exception");
+    public static final TruffleString TRY_HAS_NEITHER_EXCEPT_HANDLERS_NOR_FINALBODY = tsLiteral("Try has neither except handlers nor finalbody");
+    public static final TruffleString TRY_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS = tsLiteral("Try has orelse but no except handlers");
 }

@@ -98,4 +98,8 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
     public static PyLongCheckNode create() {
         return PyLongCheckNodeGen.create();
     }
+
+    public static PyLongCheckNode getUncached() {
+        return PyLongCheckNodeGen.getUncached();
+    }
 }
