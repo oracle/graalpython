@@ -239,25 +239,39 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Cached CastToTruffleStringNode cast,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            Object input = inputStringOrBytes;
+            TruffleString input;
+            Object buffer = null;
             try {
-                // This would materialize the string if it was native
-                input = cast.execute(inputStringOrBytes);
-            } catch (CannotCastException e) {
-                // It's bytes or other buffer object
-            }
-            Object state = IndirectCallContext.enter(frame, language, context, this);
-            try {
-                return interop.execute(callable, input, fromIndex);
-            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                typeError.enter();
-                throw raise(TypeError, ErrorMessages.M, e);
+                try {
+                    // This would materialize the string if it was native
+                    input = cast.execute(inputStringOrBytes);
+                } catch (CannotCastException e1) {
+                    // It's bytes or other buffer object
+                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, this);
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int bytesLen = bufferLib.getBufferLength(buffer);
+                    input = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
+                }
+                Object state = IndirectCallContext.enter(frame, language, context, this);
+                try {
+                    return interop.execute(callable, input, fromIndex);
+                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
+                    typeError.enter();
+                    throw raise(TypeError, ErrorMessages.M, e);
+                } finally {
+                    IndirectCallContext.exit(frame, language, context, state);
+                }
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                if (buffer != null) {
+                    bufferLib.release(buffer, frame, this);
+                }
             }
         }
     }
