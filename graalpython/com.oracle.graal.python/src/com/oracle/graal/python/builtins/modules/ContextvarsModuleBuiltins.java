@@ -78,9 +78,7 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected Object copyCtx() {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            PContextVarsContext ret = factory().createContextVarsContext();
-            ret.contextVarValues = threadState.getContextVarsContext().contextVarValues;
-            return ret;
+            return factory().copyContextVarsContext(threadState.getContextVarsContext());
         }
     }
 

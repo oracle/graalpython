@@ -1452,6 +1452,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PContextVarsContext(PythonBuiltinClassType.ContextVarsContext, getShape(PythonBuiltinClassType.ContextVarsContext)));
     }
 
+    public final PContextVarsContext copyContextVarsContext(PContextVarsContext original) {
+        return trace(new PContextVarsContext(original, PythonBuiltinClassType.ContextVarsContext, getShape(PythonBuiltinClassType.ContextVarsContext)));
+    }
+
     public final PContextVarsToken createContextVarsToken(PContextVar var, Object oldValue) {
         return trace(new PContextVarsToken(var, oldValue == null ? PContextVarsToken.MISSING : oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
     }

@@ -48,7 +48,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
 
 public class PContextVarsContext extends PythonBuiltinObject {
-    public Hamt contextVarValues = new Hamt();
+    Hamt contextVarValues;
     private PContextVarsContext previousContext = null;
 
     public void enter(PythonContext.PythonThreadState threadState) {
@@ -68,6 +68,16 @@ public class PContextVarsContext extends PythonBuiltinObject {
     }
 
     public PContextVarsContext(Object cls, Shape instanceShape) {
+        this(new Hamt(), cls, instanceShape);
+    }
+
+    public PContextVarsContext(PContextVarsContext original, Object cls, Shape instanceShape) {
+        this(original.contextVarValues, cls, instanceShape);
+    }
+
+    private PContextVarsContext(Hamt contextVarValues, Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+        this.contextVarValues = contextVarValues;
+
     }
 }
