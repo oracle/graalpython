@@ -74,6 +74,7 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -120,6 +121,7 @@ public class AsyncHandler {
 
         @Override
         public final void execute(PythonContext context) {
+            Debugger debugger = null;
             do {
                 Object callable = callable();
                 if (callable != null) {
@@ -131,6 +133,10 @@ public class AsyncHandler {
                     // Avoid pointless stack walks in random places
                     PArguments.setException(args, PException.NO_EXCEPTION);
 
+                    if (debugger == null) {
+                        debugger = Debugger.find(context.getEnv());
+                    }
+                    debugger.disableStepping();
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
                     } catch (RuntimeException e) {
@@ -140,6 +146,8 @@ public class AsyncHandler {
                         // Just print a Python-like stack trace; CPython does the same (see
                         // 'weakrefobject.c: handle_callback')
                         ExceptionUtils.printPythonLikeStackTrace(e);
+                    } finally {
+                        debugger.restoreStepping();
                     }
                 }
             } while (proceed());
