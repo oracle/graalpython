@@ -40,6 +40,7 @@
 import unittest
 import difflib
 import sys
+import signal
 
 import builtins
 
@@ -198,3 +199,21 @@ class TraceTests(unittest.TestCase):
                   (12, 'fun1', 'line', None)]
         if self.events != events:
             self.fail('\n'+'\n'.join(difflib.ndiff([str(x) for x in events], [str(x) for x in self.events])))
+
+    def simpler_trace(self, fr, ev, arg):
+        self.events.append(fr.f_code.co_name)
+
+    @unittest.skipIf(not hasattr(signal, 'SIGUSR1'), "User defined signal not present")
+    def test_07_async_actions_not_traced(self):
+        def handler(*_): handler.called = 1
+
+        def helper(): return 1
+        signal.signal(signal.SIGUSR1, handler)
+        self.events = []
+        sys.settrace(self.simpler_trace)
+        signal.raise_signal(signal.SIGUSR1)
+        for i in range(1000): helper()
+        sys.settrace(None)
+        # handler.called is not checked, since it could cause a transient
+        for name in self.events:
+            self.assertEqual(name, 'helper')
