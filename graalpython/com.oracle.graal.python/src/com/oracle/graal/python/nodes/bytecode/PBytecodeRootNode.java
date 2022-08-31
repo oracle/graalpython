@@ -4878,7 +4878,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 lastLine = Math.max(lastLine, bciToLine(bci));
                 bci += OpCodes.fromOpCode(co.code[bci]).length();
             }
-            sourceSection = source.createSection(co.startLine, 1, lastLine, 1);
+            sourceSection = source.createSection(co.startLine, 1, lastLine, source.getLineLength(lastLine));
             return sourceSection;
         }
     }
