@@ -56,35 +56,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public final class Hamt {
 
-    @CompilerDirectives.TruffleBoundary
     public String dump() {
         return dumpPart(this.root, 0);
     }
 
     private static String dumpPart(TreePart i, int indent) {
         return i == null ? " ".repeat(indent) + "null\n" : i.dump(indent);
-    }
-
-    private interface TreePart {
-        String dump(int indent);
-    }
-
-    @CompilerDirectives.ValueType
-    public static final class Entry implements TreePart {
-        final Object key;
-        final int hash;
-        final Object value;
-
-        public Entry(Object key, int hash, Object value) {
-            this.key = key;
-            this.hash = hash & 0x3FFFFFFF; // 30 bits
-            this.value = value;
-        }
-
-        @Override
-        public String dump(int indent) {
-            return " ".repeat(indent) + String.format("%s : %s (%d)\n", key, value, hash);
-        }
     }
 
     // TODO: track size on the Hamt.
@@ -135,6 +112,7 @@ public final class Hamt {
         return new BitmapPart(oneIdx > twoIdx ? new TreePart[]{one, two} : new TreePart[]{two, one}, idxToBit(twoIdx) | idxToBit(oneIdx));
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static TreePart partWithEntry(TreePart original, Entry newEntry, int hashShift) {
         assert hashShift <= 25;
         if (original == null) {
@@ -219,6 +197,7 @@ public final class Hamt {
         return new Hamt(root);
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static Object lookupKeyInPart(TreePart part, Object key, int hash, int hashShift) {
         assert hashShift <= 25;
         if (part == null) {
@@ -314,6 +293,7 @@ public final class Hamt {
         return new BitmapPart(newElems, existing.bitmap);
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static TreePart partWithoutKey(TreePart root, Object key, int hash, int hashShift) {
         if (root == null) {
             return null;
@@ -391,6 +371,10 @@ public final class Hamt {
         return new Hamt(partWithoutKey(root, key, hash, 0));
     }
 
+    private interface TreePart {
+        String dump(int indent);
+    }
+
     private static final class BitmapPart implements TreePart {
         final int bitmap;
         final TreePart[] elems;
@@ -457,6 +441,24 @@ public final class Hamt {
                 result.append(dumpPart(i, indent + 2));
             }
             return result.toString();
+        }
+    }
+
+    @CompilerDirectives.ValueType
+    public static final class Entry implements TreePart {
+        final Object key;
+        final int hash;
+        final Object value;
+
+        public Entry(Object key, int hash, Object value) {
+            this.key = key;
+            this.hash = hash & 0x3FFFFFFF; // 30 bits
+            this.value = value;
+        }
+
+        @Override
+        public String dump(int indent) {
+            return " ".repeat(indent) + String.format("%s : %s (%d)\n", key, value, hash);
         }
     }
 }

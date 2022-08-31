@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.contextvars;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -72,12 +71,10 @@ public final class PContextVar extends PythonBuiltinObject {
         return def;
     }
 
-    @TruffleBoundary
     public Object getValue(PythonContext.PythonThreadState state) {
         return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
     }
 
-    @TruffleBoundary
     public void setValue(PythonContext.PythonThreadState state, Object value) {
         PContextVarsContext current = state.getContextVarsContext();
         current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
