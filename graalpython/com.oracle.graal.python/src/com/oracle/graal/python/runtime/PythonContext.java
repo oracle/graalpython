@@ -248,11 +248,8 @@ public final class PythonContext extends Python3Core {
         TraceEvent tracingWhat;
 
         /*
-         * tracks whether a contextVarsContext was ever set. This is useful to make bugs where
-         * contextVarsContext gets set to null noticable.
+         * the current contextvars.Context for the thread.
          */
-        boolean contextVarsContextInitialized = false;
-
         PContextVarsContext contextVarsContext;
 
         /*
@@ -339,16 +336,15 @@ public final class PythonContext extends Python3Core {
         }
 
         public PContextVarsContext getContextVarsContext() {
-            if (!contextVarsContextInitialized) {
+            if (contextVarsContext == null) {
                 contextVarsContext = PythonObjectFactory.getUncached().createContextVarsContext();
-                contextVarsContextInitialized = true;
             }
             return contextVarsContext;
         }
 
         public void setContextVarsContext(PContextVarsContext contextVarsContext) {
+            assert contextVarsContext != null;
             this.contextVarsContext = contextVarsContext;
-            this.contextVarsContextInitialized = true;
         }
 
         public void dispose() {
