@@ -167,7 +167,7 @@ public class HamtTests {
         assertEquals("null\n", hamt.dump());
     }
 
-    @Test
+// @Test
     public void measureTimeForSmallHamtAcceses() {
         Hamt hamt = new Hamt().withEntry(new Hamt.Entry(1, 0, 1)).withEntry(new Hamt.Entry(2, 31, 2));
         long start = System.nanoTime();
