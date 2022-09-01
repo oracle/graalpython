@@ -187,38 +187,12 @@ class EnvBuilder:
 
     def _install_compilers(self, context):
         """Puts the Graal LLVM compiler tools on the path"""
-
-        # Table of well-known LLVM tools that must be queried by a variable name.
-        llvm_tools = {
-            "AR": ("ar",),
-            "RANLIB": ("ranlib",),
-            "NM": ("nm",),
-            "LD": ("ld.lld", "ld", "lld"),
-            "CC": ("clang", "cc"),
-            "CXX": ("clang++", "c++"),
-        }
-        # Table of additional LLVM tools to use if they are available.
-        _llvm_bins = {
-            "llvm-as": ("as",),
-            "clang-cl": ("cl",),
-            "clang-cpp": ("cpp",),
-        }
         bin_dir = os.path.join(context.env_dir, context.bin_name)
-        def create_symlinks(table, resolver):
-            for tool_var in table:
-                tool_path = resolver(tool_var)
-                if os.path.exists(tool_path):
-                    for name in table[tool_var]:
-                        dest = os.path.join(bin_dir, name)
-                        if not os.path.exists(dest):
-                            os.symlink(tool_path, dest)
-
-        create_symlinks(llvm_tools, __graalpython__.get_toolchain_tool_path)
-        # NOTE: function 'get_toolcahin_paths' returns a tuple
-        llvm_path = __graalpython__.get_toolchain_paths("PATH")
-        if llvm_path and llvm_path[0]:
-            create_symlinks(_llvm_bins, lambda binary_name: os.path.join(llvm_path[0], binary_name))
-
+        for (tool_path, names) in __graalpython__.get_toolchain_tools_for_venv().items():
+            for name in names:
+                dest = os.path.join(bin_dir, name)
+                if not os.path.exists(dest):
+                    os.symlink(tool_path, dest)
 
     def _patch_shebang(self, context):
         # Truffle change: we need to patch the pip/pip3 (and maybe other)

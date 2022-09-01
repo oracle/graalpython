@@ -1551,20 +1551,22 @@ public final class PythonContext extends Python3Core {
                         "\n\tCAPI: {5}" +
                         "\n\tJNI library: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome));
 
-        String envHome = null;
-        try {
-            envHome = System.getenv("GRAAL_PYTHONHOME");
-        } catch (SecurityException e) {
+        String pythonHome = newEnv.getOptions().get(PythonOptions.PythonHome);
+        if (pythonHome.isEmpty()) {
+            try {
+                pythonHome = System.getenv("GRAAL_PYTHONHOME");
+            } catch (SecurityException e) {
+            }
         }
 
         final TruffleFile home;
-        if (languageHome != null && envHome == null) {
+        if (languageHome != null && pythonHome == null) {
             home = newEnv.getInternalTruffleFile(languageHome);
-        } else if (envHome != null) {
+        } else if (pythonHome != null) {
             boolean envHomeIsDirectory = false;
             TruffleFile envHomeFile = null;
             try {
-                envHomeFile = newEnv.getInternalTruffleFile(envHome);
+                envHomeFile = newEnv.getInternalTruffleFile(pythonHome);
                 envHomeIsDirectory = envHomeFile.isDirectory();
             } catch (SecurityException e) {
             }
