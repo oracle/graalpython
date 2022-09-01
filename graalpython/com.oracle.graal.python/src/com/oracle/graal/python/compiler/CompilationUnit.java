@@ -183,15 +183,7 @@ public final class CompilationUnit {
         addImplicitReturn();
         calculateJumpInstructionArguments();
 
-        // Just a list of bytes with deltas of src offsets from bytecode to bytecode. The range is
-        // -127 to 127. -128 (0x80) is reserved for larger deltas. The calculation is to take the
-        // -128 and keep adding any following -128 values. Once we reach a value that is in the
-        // range -127 to 127, we know if the preceding values are supposed to be a positive or
-        // negative delta, so we adjust the sign of the collected value and then add the final
-        // value. If the resulting value is negative, we add 1. So 128 is encoded as (0x80 0x00),
-        // 129 is (0x80 0x01), -128 is ((0x80, 0xff) = -128 + -1 + 1), -129 is ((0x80, 0xfe) = -128
-        // + -2 + 1) and so on.
-        ByteArrayOutputStream srcOffsets = new ByteArrayOutputStream();
+        SourceMap.Builder sourceMapBuilder = new SourceMap.Builder(startLocation.startLine, startLocation.startColumn);
 
         // The actual bytecodes
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
@@ -212,7 +204,6 @@ public final class CompilationUnit {
 
         Block b = startBlock;
         HashMap<Block, List<Block>> handlerBlocks = new HashMap<>();
-        int lastSrcOffset = startLocation.startOffset;
         while (b != null) {
             b.startBci = buf.size();
             BlockInfo.AbstractExceptionHandler handler = b.findExceptionHandler();
@@ -248,8 +239,7 @@ public final class CompilationUnit {
                 }
                 i.bci = buf.size();
                 emitBytecode(i, buf);
-                insertSrcOffsetTable(i.location.startOffset, lastSrcOffset, srcOffsets);
-                lastSrcOffset = i.location.startOffset;
+                sourceMapBuilder.appendLocation(i.location.startLine, i.location.startColumn, i.location.endLine, i.location.endColumn);
             }
             b.endBci = buf.size();
             b = b.next;
@@ -318,7 +308,7 @@ public final class CompilationUnit {
         }
         return new CodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, maxStackSize,
-                        buf.toByteArray(), srcOffsets.toByteArray(), flags,
+                        buf.toByteArray(), sourceMapBuilder.build(), flags,
                         orderedKeys(names, new TruffleString[0], PythonUtils::toTruffleStringUncached),
                         orderedKeys(varnames, new TruffleString[0], PythonUtils::toTruffleStringUncached),
                         orderedKeys(cellvars, new TruffleString[0], PythonUtils::toTruffleStringUncached),
@@ -328,8 +318,7 @@ public final class CompilationUnit {
                         orderedLong(primitiveConstants),
                         exceptionHandlerRanges,
                         conditionProfileCount,
-                        startLocation.startOffset,
-                        startLocation.startLine,
+                        startLocation.startLine, startLocation.startColumn, startLocation.endLine, startLocation.endColumn,
                         finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
@@ -425,19 +414,6 @@ public final class CompilationUnit {
                 block = block.next;
             }
         } while (repeat);
-    }
-
-    private void insertSrcOffsetTable(int srcOffset, int lastSrcOffset, ByteArrayOutputStream srcOffsets) {
-        int srcDelta = srcOffset - lastSrcOffset;
-        while (srcDelta > 127) {
-            srcOffsets.write((byte) 128);
-            srcDelta -= 127;
-        }
-        while (srcDelta < -127) {
-            srcOffsets.write((byte) 128);
-            srcDelta += 127;
-        }
-        srcOffsets.write((byte) srcDelta);
     }
 
     private void emitBytecode(Instruction instr, ByteArrayOutputStream buf) throws IllegalStateException {

@@ -88,8 +88,13 @@ public final class CodeUnit {
 
     public final int conditionProfileCount;
 
-    public final int startOffset;
     public final int startLine;
+    public final int startColumn;
+    public final int endLine;
+    public final int endColumn;
+
+    /* Lazily initialized source map */
+    SourceMap sourceMap;
 
     /* Quickening data. See docs in PBytecodeRootNode */
     public final byte[] outputCanQuicken;
@@ -103,7 +108,7 @@ public final class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     int[] exceptionHandlerRanges, int conditionProfileCount,
-                    int startOffset, int startLine,
+                    int startLine, int startColumn, int endLine, int endColumn,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         int[] arg2cell;
         this.name = name;
@@ -135,46 +140,35 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.conditionProfileCount = conditionProfileCount;
-        this.startOffset = startOffset;
         this.startLine = startLine;
+        this.startColumn = startColumn;
+        this.endLine = endLine;
+        this.endColumn = endColumn;
         this.outputCanQuicken = outputCanQuicken;
         this.variableShouldUnbox = variableShouldUnbox;
         this.generalizeInputsMap = generalizeInputsMap;
         this.generalizeVarsMap = generalizeVarsMap;
     }
 
-    public int bciToSrcOffset(int bci) {
-        int diffIdx = 0;
-        int currentOffset = startOffset;
-
-        int bytecodeNumber = 0;
-        for (int i = 0; i < code.length;) {
-            OpCodes op = OpCodes.fromOpCode(code[i]);
-            if (bci <= i + op.argLength) {
-                break;
-            } else {
-                i += op.length();
-                bytecodeNumber++;
-            }
+    private SourceMap getSourceMap() {
+        if (sourceMap == null) {
+            sourceMap = new SourceMap(code, srcOffsetTable, startLine, startColumn);
         }
+        return sourceMap;
+    }
 
-        for (int i = 0; i < srcOffsetTable.length; i++) {
-            byte diff = srcOffsetTable[i];
-            int overflow = 0;
-            while (diff == (byte) 128) {
-                overflow += 127;
-                diff = srcOffsetTable[++i];
-            }
-            if (diff < 0) {
-                overflow = -overflow;
-            }
-            currentOffset += overflow + diff;
-            if (diffIdx == bytecodeNumber) {
-                break;
-            }
-            diffIdx++;
+    public int bciToLine(int bci) {
+        if (bci < 0 || bci >= code.length) {
+            return -1;
         }
-        return currentOffset;
+        return getSourceMap().startLineMap[bci];
+    }
+
+    public int bciToColumn(int bci) {
+        if (bci < 0 || bci >= code.length) {
+            return -1;
+        }
+        return getSourceMap().startColumnMap[bci];
     }
 
     public boolean takesVarKeywordArgs() {
@@ -242,14 +236,13 @@ public final class CodeUnit {
 
         int bci = 0;
         int oparg = 0;
+        SourceMap map = getSourceMap();
         while (bci < bytecode.length) {
             int bcBCI = bci;
             OpCodes opcode = OpCodes.fromOpCode(bytecode[bci++]);
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
-
-            int offset = bciToSrcOffset(bcBCI);
-            line[0] = String.format("%06d", offset);
+            line[0] = String.format("%3d:%-3d - %3d:%-3d", map.startLineMap[bcBCI], map.startColumnMap[bcBCI], map.endLineMap[bcBCI], map.endColumnMap[bcBCI]);
             if (line[1] == null) {
                 line[1] = "";
             }

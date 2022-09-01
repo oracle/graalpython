@@ -4843,14 +4843,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @TruffleBoundary
     public int bciToLine(int bci) {
-        if (source != null && source.hasCharacters() && bci >= 0) {
-            /*
-             * TODO We only store source offsets, which makes it impossible to reconstruct linenos
-             * without the text source. We should store lines and columns separately like CPython.
-             */
-            return source.createSection(co.bciToSrcOffset(bci), 0).getStartLine();
-        }
-        return -1;
+        return co.bciToLine(bci);
     }
 
     @TruffleBoundary
@@ -4872,13 +4865,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createUnavailableSection();
             return sourceSection;
         } else {
-            // TODO this is horribly inefficient
-            int lastLine = co.startLine;
-            for (int bci = 0; bci < co.code.length;) {
-                lastLine = Math.max(lastLine, bciToLine(bci));
-                bci += OpCodes.fromOpCode(co.code[bci]).length();
-            }
-            sourceSection = source.createSection(co.startLine, 1, lastLine, source.getLineLength(lastLine));
+            /* Truffle columns are 1-based and it doesn't consider the newline a part of the line */
+            int endColumn = Math.min(co.endColumn + 1, source.getLineLength(co.endLine));
+            sourceSection = source.createSection(co.startLine, co.startColumn + 1, co.endLine, endColumn);
             return sourceSection;
         }
     }

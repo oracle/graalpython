@@ -55,12 +55,7 @@ public final class InstrumentationSupport extends Node {
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
         this.rootNode = rootNode;
         CodeUnit code = rootNode.getCodeUnit();
-        // TODO precompute max line
-        int maxLine = 0;
-        for (int bci = 0; bci < code.code.length; bci++) {
-            maxLine = Math.max(maxLine, rootNode.bciToLine(bci));
-        }
-        lineToNode = new InstrumentedBytecodeStatement[maxLine + 1];
+        lineToNode = new InstrumentedBytecodeStatement[code.endLine + 1];
         boolean[] loadedBreakpoint = new boolean[1];
         code.iterateBytecode((bci, op, oparg, followingArgs) -> {
             boolean setBreakpoint = false;
@@ -72,8 +67,7 @@ public final class InstrumentationSupport extends Node {
                 }
                 loadedBreakpoint[0] = false;
             }
-            // TODO optimize bciToLine
-            int line = rootNode.bciToLine(bci);
+            int line = code.bciToLine(bci);
             if (line >= 0) {
                 if (lineToNode[line] == null) {
                     lineToNode[line] = InstrumentedBytecodeStatement.create(rootNode, line);
