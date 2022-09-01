@@ -29,6 +29,13 @@ and interop with other languages, you can use the bundled releases from
 git clone https://github.com/graalvm/mx.git
 export PATH=$PWD/mx:$PATH
 ```
+* LabsJDK
+
+The following command will download and install JDKs to built GraalVM upon. If successfull, it will print the path to set into your JAVA_HOME. 
+```shell
+mx fetch-jdk
+```
+ 
 
 #### Building
 
