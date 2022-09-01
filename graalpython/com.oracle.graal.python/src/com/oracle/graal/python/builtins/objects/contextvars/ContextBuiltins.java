@@ -137,8 +137,7 @@ public class ContextBuiltins extends PythonBuiltins {
         }
     }
 
-    private static Object getContextVar(PContextVarsContext self, Object key, Object def,
-                    @Cached PRaiseNode raise) {
+    private static Object getContextVar(PContextVarsContext self, Object key, Object def, PRaiseNode raise) {
         if (key instanceof PContextVar) {
             PContextVar ctxVar = (PContextVar) key;
             Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
