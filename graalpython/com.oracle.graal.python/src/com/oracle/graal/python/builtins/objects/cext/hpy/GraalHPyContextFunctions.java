@@ -3756,7 +3756,7 @@ public abstract class GraalHPyContextFunctions {
                     if (!(var instanceof PContextVar)) {
                         throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
                     }
-                    PythonContext.PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(null));
+                    PythonContext.PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(asContextNode));
                     Object result = ((PContextVar) var).getValue(threadState);
                     if (result == null) {
                         if (def == NULL_HANDLE_DELEGATE) {
@@ -3802,7 +3802,7 @@ public abstract class GraalHPyContextFunctions {
                     if (!(var instanceof PContextVar)) {
                         throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
                     }
-                    PythonContext.PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(null));
+                    PythonContext.PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(asContextNode));
                     ((PContextVar) var).setValue(threadState, val);
                     return asHandleNode.execute(context, PNone.NONE);
                 } catch (PException e) {
