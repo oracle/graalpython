@@ -118,8 +118,9 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         Object reset(PContextVar self, PContextVarsToken token,
                         @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
+                token.use(raise);
                 PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-                if (token.getOldValue() == PContextVarsToken.MISSING) {
+                if (token.getOldValue() == null) {
                     PContextVarsContext context = threadState.getContextVarsContext();
                     context.contextVarValues = context.contextVarValues.without(self, self.getHash());
                 } else {

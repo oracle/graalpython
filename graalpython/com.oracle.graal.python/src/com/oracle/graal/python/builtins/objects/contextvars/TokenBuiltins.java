@@ -40,17 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNodeGen;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsToken)
 public class TokenBuiltins extends PythonBuiltins {
@@ -74,7 +80,17 @@ public class TokenBuiltins extends PythonBuiltins {
     public abstract static class OldValueAttr extends PythonBuiltinNode {
         @Specialization
         public Object doOld(PContextVarsToken self) {
-            return self.getOldValue();
+            Object oldValue = self.getOldValue();
+            return oldValue == null ? PContextVarsToken.MISSING : oldValue;
         }
+    }
+
+    private static final TruffleString MISSING_NAME = tsLiteral("MISSING");
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        WriteAttributeToBuiltinTypeNode addMissing = WriteAttributeToBuiltinTypeNodeGen.getUncached();
+        addMissing.execute(PythonBuiltinClassType.ContextVarsToken, MISSING_NAME, PContextVarsToken.MISSING);
     }
 }

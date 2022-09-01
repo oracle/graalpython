@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.object.Shape;
 
 public class PContextVarsToken extends PythonBuiltinObject {
@@ -48,10 +51,19 @@ public class PContextVarsToken extends PythonBuiltinObject {
     private final PContextVar var;
     private final Object oldValue;
 
+    private boolean used = false;
+
     public PContextVarsToken(PContextVar var, Object oldValue, Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.var = var;
         this.oldValue = oldValue;
+    }
+
+    public void use(PRaiseNode raise) {
+        if (used) {
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+        }
+        used = true;
     }
 
     public PContextVar getVar() {
