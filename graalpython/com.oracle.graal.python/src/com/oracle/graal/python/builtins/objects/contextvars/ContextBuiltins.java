@@ -85,9 +85,10 @@ public class ContextBuiltins extends PythonBuiltins {
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords,
-                        @Cached CallNode call) {
+                        @Cached CallNode call,
+                        @Cached PRaiseNode raise) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            self.enter(threadState);
+            self.enter(threadState, raise);
             try {
                 return call.execute(frame, fun, args, keywords);
             } finally {

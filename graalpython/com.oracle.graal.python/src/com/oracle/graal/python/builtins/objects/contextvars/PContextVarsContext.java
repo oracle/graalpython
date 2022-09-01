@@ -51,9 +51,9 @@ public class PContextVarsContext extends PythonBuiltinObject {
     Hamt contextVarValues;
     private PContextVarsContext previousContext = null;
 
-    public void enter(PythonContext.PythonThreadState threadState) {
+    public void enter(PythonContext.PythonThreadState threadState, PRaiseNode raise) {
         if (previousContext != null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
         }
         previousContext = threadState.getContextVarsContext();
         assert previousContext != null : "ThreadState had null Context. This should not happen";
