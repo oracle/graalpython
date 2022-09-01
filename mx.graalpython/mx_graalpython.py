@@ -87,6 +87,7 @@ SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--l
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
 
+
 def _get_core_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-graalpython")
 
@@ -230,12 +231,12 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
-    '''
+    """
     Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
 
     Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
     in the arguments array, then we append filter that includes all GraalPython junit tests.
-    '''
+    """
     args = []
     skip_leak_tests = False
     if "--regex" not in ars:
@@ -254,14 +255,15 @@ def punittest(ars):
                        "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
                        "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
 
-        if not all([# test leaks with Python code only
-                run_leak_launcher(common_args + ["--code", "pass", ]),
-                # test leaks when some C module code is involved
-                run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
-                # test leaks with shared engine Python code only
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-                # test leaks with shared engine when some C module code is involved
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+        if not all([
+            # test leaks with Python code only
+            run_leak_launcher(common_args + ["--code", "pass", ]),
+            # test leaks when some C module code is involved
+            run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+            # test leaks with shared engine Python code only
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+            # test leaks with shared engine when some C module code is involved
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
 
@@ -412,7 +414,8 @@ def _fetch_tags_for_platform(parsed_args, platform):
             out = mx.OutputCapture()
             mx.run(['file', tarfile], out=out)
             if 'HTML' in out.data:
-                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) to continue.' % (url, d), default='y'):
+                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) '
+                                     'to continue.' % (url, d), default='y'):
                     sys.exit(1)
             os.mkdir(platform)
             mx.run(['tar', 'xf', tarfile, '-C', platform])
@@ -560,12 +563,16 @@ def python_gate(args):
     return mx.command_function("gate")(args)
 
 
-python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
+python_gate.__doc__ = 'Custom gates are %s' % ", ".join([
+    getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")
+])
 
 
 def find_eclipse():
     pardir = os.path.abspath(os.path.join(SUITE.dir, ".."))
-    for f in [os.path.join(SUITE.dir, f) for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f) for f in os.listdir(pardir)]:
+    for f in [os.path.join(SUITE.dir, f)
+              for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f)
+                                                 for f in os.listdir(pardir)]:
         if os.path.basename(f) == "eclipse" and os.path.isdir(f):
             mx.log("Automatically choosing %s for Eclipse" % f)
             eclipse_exe = os.path.join(f, "eclipse")
@@ -576,7 +583,7 @@ def find_eclipse():
 
 @contextlib.contextmanager
 def set_env(**environ):
-    "Temporarily set the process environment variables"
+    """Temporarily set the process environment variables"""
     old_environ = dict(os.environ)
     os.environ.update(environ)
     try:
