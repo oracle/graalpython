@@ -129,12 +129,13 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Contains extends PythonBuiltinNode {
         @Specialization
-        boolean doIn(PContextVarsContext self, Object key) {
+        boolean doIn(PContextVarsContext self, Object key,
+                        @Cached PRaiseNode raise) {
             if (key instanceof PContextVar) {
                 PContextVar var = (PContextVar) key;
                 return self.contextVarValues.lookup(var, var.getHash()) != null;
             }
-            return false;
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
         }
     }
 
