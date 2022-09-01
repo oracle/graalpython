@@ -1,25 +1,25 @@
 Disassembly of <module>:
-000004         0 LOAD_BYTE_O                       0
-000000         2 STORE_NAME                        0    (i)
-000012   >>    4 LOAD_NAME                         0    (i)
-000016         6 LOAD_BYTE_O                       10
-000012         8 BINARY_OP                         14   (LT)                              can quicken
-000006        10 POP_AND_JUMP_IF_FALSE             30   (to 40)                           generalizes: 8
-000025        14 LOAD_NAME                         0    (i)
-000030        16 LOAD_BYTE_O                       3
-000025        18 BINARY_OP                         12   (EQ)                              can quicken
-000022        20 POP_AND_JUMP_IF_FALSE             8    (to 28)                           generalizes: 18
-000037        24 JUMP_FORWARD                      23   (to 47)
-000037        26 JUMP_FORWARD                      12   (to 38)
-000055   >>   28 LOAD_NAME                         0    (i)
-000060        30 LOAD_BYTE_O                       1
-000055        32 BINARY_OP                         1    (INPLACE_ADD)
-000055        34 STORE_NAME                        0    (i)
-000066        36 JUMP_BACKWARD                     32   (to 4)
-000066   >>   38 JUMP_BACKWARD                     34   (to 4)
-000083   >>   40 LOAD_NAME                         1    (print)
-000089        42 LOAD_STRING                       0    ('else')
-000083        44 CALL_FUNCTION                     1
-000083        46 POP_TOP
-000083   >>   47 LOAD_NONE
-000083        48 RETURN_VALUE
+  1:4   -   1:5         0 LOAD_BYTE_O                       0
+  1:0   -   1:1         2 STORE_NAME                        0    (i)
+  2:6   -   2:7   >>    4 LOAD_NAME                         0    (i)
+  2:10  -   2:12        6 LOAD_BYTE_O                       10
+  2:6   -   2:12        8 BINARY_OP                         14   (LT)                              can quicken
+  2:0   -   9:15       10 POP_AND_JUMP_IF_FALSE             30   (to 40)                           generalizes: 8
+  3:5   -   3:6        14 LOAD_NAME                         0    (i)
+  3:10  -   3:11       16 LOAD_BYTE_O                       3
+  3:5   -   3:11       18 BINARY_OP                         12   (EQ)                              can quicken
+  3:2   -   7:12       20 POP_AND_JUMP_IF_FALSE             8    (to 28)                           generalizes: 18
+  4:4   -   4:9        24 JUMP_FORWARD                      23   (to 47)
+  4:4   -   4:9        26 JUMP_FORWARD                      12   (to 38)
+  6:4   -   6:5   >>   28 LOAD_NAME                         0    (i)
+  6:9   -   6:10       30 LOAD_BYTE_O                       1
+  6:4   -   6:10       32 BINARY_OP                         1    (INPLACE_ADD)
+  6:4   -   6:5        34 STORE_NAME                        0    (i)
+  7:4   -   7:12       36 JUMP_BACKWARD                     32   (to 4)
+  7:4   -   7:12  >>   38 JUMP_BACKWARD                     34   (to 4)
+  9:2   -   9:7   >>   40 LOAD_NAME                         1    (print)
+  9:8   -   9:14       42 LOAD_STRING                       0    ('else')
+  9:2   -   9:15       44 CALL_FUNCTION                     1
+  9:2   -   9:15       46 POP_TOP
+  9:2   -   9:15  >>   47 LOAD_NONE
+  9:2   -   9:15       48 RETURN_VALUE

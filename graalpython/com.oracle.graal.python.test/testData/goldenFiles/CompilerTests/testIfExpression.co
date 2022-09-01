@@ -1,7 +1,7 @@
 Disassembly of <module>:
-000005         0 LOAD_NAME                         0    (cond)
-000000         2 POP_AND_JUMP_IF_FALSE             8    (to 10)
-000000         6 LOAD_NAME                         1    (t)
-000000         8 JUMP_FORWARD                      4    (to 12)
-000015   >>   10 LOAD_NAME                         2    (f)
-000000   >>   12 RETURN_VALUE
+  1:5   -   1:9         0 LOAD_NAME                         0    (cond)
+  1:0   -   1:16        2 POP_AND_JUMP_IF_FALSE             8    (to 10)
+  1:0   -   1:1         6 LOAD_NAME                         1    (t)
+  1:0   -   1:16        8 JUMP_FORWARD                      4    (to 12)
+  1:15  -   1:16  >>   10 LOAD_NAME                         2    (f)
+  1:0   -   1:16  >>   12 RETURN_VALUE

@@ -1,33 +1,33 @@
 Disassembly of <module>:
-000000         0 MAKE_FUNCTION                     0    (<listcomp>)
-000032         3 LOAD_NAME                         0    (range)
-000038         5 LOAD_BYTE_O                       3
-000032         7 CALL_FUNCTION                     1
-000000         9 GET_ITER
-000000        10 CALL_FUNCTION                     1
-000000        12 RETURN_VALUE
+  1:0   -   1:41        0 MAKE_FUNCTION                     0    (<listcomp>)
+  1:32  -   1:37        3 LOAD_NAME                         0    (range)
+  1:38  -   1:39        5 LOAD_BYTE_O                       3
+  1:32  -   1:40        7 CALL_FUNCTION                     1
+  1:0   -   1:41        9 GET_ITER
+  1:0   -   1:41       10 CALL_FUNCTION                     1
+  1:0   -   1:41       12 RETURN_VALUE
 
 Disassembly of <listcomp>:
-000000         0 COLLECTION_FROM_STACK             0    (list)
-000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          20   (to 24)                           can quicken
-000027         6 STORE_FAST                        1    (y)                               generalizes: 4
-000001         8 MAKE_FUNCTION                     0    (<listcomp>.<listcomp>)
-000013        11 LOAD_GLOBAL                       0    (range)
-000019        13 LOAD_BYTE_O                       5
-000013        15 CALL_FUNCTION                     1
-000001        17 GET_ITER
-000001        18 CALL_FUNCTION                     1
-000000        20 ADD_TO_COLLECTION                 2    (list)
-000000        22 JUMP_BACKWARD                     18   (to 4)
-000000   >>   24 RETURN_VALUE
+  1:0   -   1:41        0 COLLECTION_FROM_STACK             0    (list)
+  1:0   -   1:41        2 LOAD_FAST                         0    (.0)
+  1:0   -   1:41  >>    4 FOR_ITER                          20   (to 24)                           can quicken
+  1:27  -   1:28        6 STORE_FAST                        1    (y)                               generalizes: 4
+  1:1   -   1:22        8 MAKE_FUNCTION                     0    (<listcomp>.<listcomp>)
+  1:13  -   1:18       11 LOAD_GLOBAL                       0    (range)
+  1:19  -   1:20       13 LOAD_BYTE_O                       5
+  1:13  -   1:21       15 CALL_FUNCTION                     1
+  1:1   -   1:22       17 GET_ITER
+  1:1   -   1:22       18 CALL_FUNCTION                     1
+  1:0   -   1:41       20 ADD_TO_COLLECTION                 2    (list)
+  1:0   -   1:41       22 JUMP_BACKWARD                     18   (to 4)
+  1:0   -   1:41  >>   24 RETURN_VALUE
 
 Disassembly of <listcomp>.<listcomp>:
-000001         0 COLLECTION_FROM_STACK             0    (list)
-000001         2 LOAD_FAST                         0    (.0)
-000001   >>    4 FOR_ITER                          10   (to 14)                           can quicken
-000008         6 STORE_FAST                        1    (x)                               generalizes: 4
-000002         8 LOAD_FAST                         1    (x)
-000001        10 ADD_TO_COLLECTION                 2    (list)
-000001        12 JUMP_BACKWARD                     8    (to 4)
-000001   >>   14 RETURN_VALUE
+  1:1   -   1:22        0 COLLECTION_FROM_STACK             0    (list)
+  1:1   -   1:22        2 LOAD_FAST                         0    (.0)
+  1:1   -   1:22  >>    4 FOR_ITER                          10   (to 14)                           can quicken
+  1:8   -   1:9         6 STORE_FAST                        1    (x)                               generalizes: 4
+  1:2   -   1:3         8 LOAD_FAST                         1    (x)
+  1:1   -   1:22       10 ADD_TO_COLLECTION                 2    (list)
+  1:1   -   1:22       12 JUMP_BACKWARD                     8    (to 4)
+  1:1   -   1:22  >>   14 RETURN_VALUE

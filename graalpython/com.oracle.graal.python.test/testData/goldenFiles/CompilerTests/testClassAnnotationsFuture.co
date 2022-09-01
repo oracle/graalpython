@@ -1,28 +1,28 @@
 Disassembly of <module>:
-000000         0 LOAD_BYTE_O                       0
-000000         2 LOAD_CONST                        0    ([annotations])
-000000         4 IMPORT_NAME                       0    (__future__)
-000000         6 IMPORT_FROM                       1    (annotations)
-000000         8 STORE_NAME                        1    (annotations)
-000000        10 POP_TOP
-000035        11 LOAD_BUILD_CLASS
-000035        12 MAKE_FUNCTION                     0    (Foo)
-000035        15 LOAD_STRING                       1    ('Foo')
-000035        17 COLLECTION_FROM_STACK             2    (Object[])
-000035        19 CALL_FUNCTION_VARARGS
-000035        20 STORE_NAME                        2    (Foo)
-000035        22 LOAD_NONE
-000035        23 RETURN_VALUE
+  1:0   -   1:34        0 LOAD_BYTE_O                       0
+  1:0   -   1:34        2 LOAD_CONST                        0    ([annotations])
+  1:0   -   1:34        4 IMPORT_NAME                       0    (__future__)
+  1:0   -   1:34        6 IMPORT_FROM                       1    (annotations)
+  1:0   -   1:34        8 STORE_NAME                        1    (annotations)
+  1:0   -   1:34       10 POP_TOP
+  2:0   -   3:14       11 LOAD_BUILD_CLASS
+  2:0   -   3:14       12 MAKE_FUNCTION                     0    (Foo)
+  2:0   -   3:14       15 LOAD_STRING                       1    ('Foo')
+  2:0   -   3:14       17 COLLECTION_FROM_STACK             2    (Object[])
+  2:0   -   3:14       19 CALL_FUNCTION_VARARGS
+  2:0   -   3:14       20 STORE_NAME                        2    (Foo)
+  2:0   -   3:14       22 LOAD_NONE
+  2:0   -   3:14       23 RETURN_VALUE
 
 Disassembly of Foo:
-000035         0 LOAD_NAME                         0    (__name__)
-000035         2 STORE_NAME                        1    (__module__)
-000035         4 LOAD_STRING                       0    ('Foo')
-000035         6 STORE_NAME                        2    (__qualname__)
-000035         8 SETUP_ANNOTATIONS
-000048         9 LOAD_STRING                       1    ('a[str]')
-000048        11 LOAD_NAME                         3    (__annotations__)
-000048        13 LOAD_STRING                       2    ('attr')
-000048        15 STORE_SUBSCR
-000048        16 LOAD_NONE
-000048        17 RETURN_VALUE
+  2:0   -   3:14        0 LOAD_NAME                         0    (__name__)
+  2:0   -   3:14        2 STORE_NAME                        1    (__module__)
+  2:0   -   3:14        4 LOAD_STRING                       0    ('Foo')
+  2:0   -   3:14        6 STORE_NAME                        2    (__qualname__)
+  2:0   -   3:14        8 SETUP_ANNOTATIONS
+  3:2   -   3:14        9 LOAD_STRING                       1    ('a[str]')
+  3:2   -   3:14       11 LOAD_NAME                         3    (__annotations__)
+  3:2   -   3:14       13 LOAD_STRING                       2    ('attr')
+  3:2   -   3:14       15 STORE_SUBSCR
+  3:2   -   3:14       16 LOAD_NONE
+  3:2   -   3:14       17 RETURN_VALUE

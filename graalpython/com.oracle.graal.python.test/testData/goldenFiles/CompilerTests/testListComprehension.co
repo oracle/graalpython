@@ -1,29 +1,29 @@
 Disassembly of <module>:
-000000         0 MAKE_FUNCTION                     0    (<listcomp>)
-000018         3 LOAD_CONST_COLLECTION             2    ([1, 2, 3] type int into list)
-000029         6 LOAD_CONST_COLLECTION             3    ([4, 5, 6] type int into list)
-000017         9 COLLECTION_FROM_STACK             2    (list)
-000000        11 GET_ITER
-000000        12 CALL_FUNCTION                     1
-000000        14 RETURN_VALUE
+  1:0   -   1:60        0 MAKE_FUNCTION                     0    (<listcomp>)
+  1:18  -   1:27        3 LOAD_CONST_COLLECTION             2    ([1, 2, 3] type int into list)
+  1:29  -   1:38        6 LOAD_CONST_COLLECTION             3    ([4, 5, 6] type int into list)
+  1:17  -   1:39        9 COLLECTION_FROM_STACK             2    (list)
+  1:0   -   1:60       11 GET_ITER
+  1:0   -   1:60       12 CALL_FUNCTION                     1
+  1:0   -   1:60       14 RETURN_VALUE
 
 Disassembly of <listcomp>:
-000000         0 COLLECTION_FROM_STACK             0    (list)
-000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          33   (to 37)                           can quicken
-000012         6 STORE_FAST                        1    (y)                               generalizes: 4
-000049         8 LOAD_FAST                         1    (y)
-000000        10 GET_ITER
-000000   >>   11 FOR_ITER                          24   (to 35)                           can quicken
-000044        13 STORE_FAST                        2    (x)                               generalizes: 11
-000054        15 LOAD_FAST                         2    (x)                               can quicken
-000058        17 LOAD_BYTE_I                       5                                      can quicken
-000054        19 BINARY_OP                         14   (LT)                              can quicken, generalizes: 17, 15
-000000        21 POP_AND_JUMP_IF_FALSE             12   (to 33)                           generalizes: 19
-000001        25 LOAD_GLOBAL                       0    (str)
-000005        27 LOAD_FAST                         2    (x)
-000001        29 CALL_FUNCTION                     1
-000000        31 ADD_TO_COLLECTION                 3    (list)
-000000   >>   33 JUMP_BACKWARD                     22   (to 11)
-000000   >>   35 JUMP_BACKWARD                     31   (to 4)
-000000   >>   37 RETURN_VALUE
+  1:0   -   1:60        0 COLLECTION_FROM_STACK             0    (list)
+  1:0   -   1:60        2 LOAD_FAST                         0    (.0)
+  1:0   -   1:60  >>    4 FOR_ITER                          33   (to 37)                           can quicken
+  1:12  -   1:13        6 STORE_FAST                        1    (y)                               generalizes: 4
+  1:49  -   1:50        8 LOAD_FAST                         1    (y)
+  1:0   -   1:60       10 GET_ITER
+  1:0   -   1:60  >>   11 FOR_ITER                          24   (to 35)                           can quicken
+  1:44  -   1:45       13 STORE_FAST                        2    (x)                               generalizes: 11
+  1:54  -   1:55       15 LOAD_FAST                         2    (x)                               can quicken
+  1:58  -   1:59       17 LOAD_BYTE_I                       5                                      can quicken
+  1:54  -   1:59       19 BINARY_OP                         14   (LT)                              can quicken, generalizes: 17, 15
+  1:0   -   1:60       21 POP_AND_JUMP_IF_FALSE             12   (to 33)                           generalizes: 19
+  1:1   -   1:4        25 LOAD_GLOBAL                       0    (str)
+  1:5   -   1:6        27 LOAD_FAST                         2    (x)
+  1:1   -   1:7        29 CALL_FUNCTION                     1
+  1:0   -   1:60       31 ADD_TO_COLLECTION                 3    (list)
+  1:0   -   1:60  >>   33 JUMP_BACKWARD                     22   (to 11)
+  1:0   -   1:60  >>   35 JUMP_BACKWARD                     31   (to 4)
+  1:0   -   1:60  >>   37 RETURN_VALUE

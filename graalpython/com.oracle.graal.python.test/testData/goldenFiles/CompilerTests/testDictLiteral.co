@@ -1,7 +1,7 @@
 Disassembly of <module>:
-000001         0 LOAD_STRING                       0    ('a')
-000006         2 LOAD_STRING                       1    ('b')
-000011         4 LOAD_BYTE_O                       1
-000014         6 LOAD_BYTE_O                       2
-000000         8 COLLECTION_FROM_STACK             4    (dict)
-000000        10 RETURN_VALUE
+  1:1   -   1:4         0 LOAD_STRING                       0    ('a')
+  1:6   -   1:9         2 LOAD_STRING                       1    ('b')
+  1:11  -   1:12        4 LOAD_BYTE_O                       1
+  1:14  -   1:15        6 LOAD_BYTE_O                       2
+  1:0   -   1:16        8 COLLECTION_FROM_STACK             4    (dict)
+  1:0   -   1:16       10 RETURN_VALUE

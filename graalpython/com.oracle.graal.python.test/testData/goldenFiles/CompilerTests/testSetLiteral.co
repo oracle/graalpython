@@ -1,6 +1,6 @@
 Disassembly of <module>:
-000001         0 LOAD_BYTE_O                       1
-000004         2 LOAD_BYTE_O                       2
-000007         4 LOAD_BYTE_O                       3
-000000         6 COLLECTION_FROM_STACK             3    (set)
-000000         8 RETURN_VALUE
+  1:1   -   1:2         0 LOAD_BYTE_O                       1
+  1:4   -   1:5         2 LOAD_BYTE_O                       2
+  1:7   -   1:8         4 LOAD_BYTE_O                       3
+  1:0   -   1:9         6 COLLECTION_FROM_STACK             3    (set)
+  1:0   -   1:9         8 RETURN_VALUE

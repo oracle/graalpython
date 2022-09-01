@@ -1,9 +1,9 @@
 Disassembly of <module>:
-000000         0 LOAD_NAME                         0    (print)
-000006         2 LOAD_STRING                       0    ('test')
-000000         4 COLLECTION_FROM_STACK             1    (Object[])
-000018         6 LOAD_STRING                       1    (';')
-000014         8 MAKE_KEYWORD                      2    ('end')
-000014        10 COLLECTION_FROM_STACK             1    (PKeyword[])
-000014        12 CALL_FUNCTION_KW
-000000        13 RETURN_VALUE
+  1:0   -   1:5         0 LOAD_NAME                         0    (print)
+  1:6   -   1:12        2 LOAD_STRING                       0    ('test')
+  1:0   -   1:22        4 COLLECTION_FROM_STACK             1    (Object[])
+  1:18  -   1:21        6 LOAD_STRING                       1    (';')
+  1:14  -   1:21        8 MAKE_KEYWORD                      2    ('end')
+  1:14  -   1:21       10 COLLECTION_FROM_STACK             1    (PKeyword[])
+  1:14  -   1:21       12 CALL_FUNCTION_KW
+  1:0   -   1:22       13 RETURN_VALUE
