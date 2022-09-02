@@ -40,34 +40,47 @@
  */
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.truffle.api.debug.DebuggerTags;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.graal.python.runtime.interop.PythonScopes;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.InstrumentableNode;
+import com.oracle.truffle.api.interop.NodeLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
-class InstrumentedBytecodeStatementImpl extends InstrumentedBytecodeStatement {
-    private final PBytecodeRootNode rootNode;
-    private final int line;
-    private boolean containsBreakpoint;
+@ExportLibrary(NodeLibrary.class)
+public abstract class InstrumentedBytecodeNode extends Node implements InstrumentableNode {
+    @CompilationFinal private SourceSection sourceSection;
 
-    public InstrumentedBytecodeStatementImpl(PBytecodeRootNode rootNode, int line) {
-        this.rootNode = rootNode;
-        this.line = line;
+    public void execute(@SuppressWarnings("unused") VirtualFrame frame) {
+        throw CompilerDirectives.shouldNotReachHere("Instrumentation node not executable");
     }
 
     @Override
     public SourceSection getSourceSection() {
-        return rootNode.getSource().createSection(line);
+        return this.sourceSection;
+    }
+
+    public void setSourceSection(SourceSection source) {
+        this.sourceSection = source;
     }
 
     @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return tag == StandardTags.StatementTag.class || tag == DebuggerTags.AlwaysHalt.class && containsBreakpoint;
+    public boolean isInstrumentable() {
+        return true;
     }
 
-    @Override
-    public void setContainsBreakpoint() {
-        containsBreakpoint = true;
+    @ExportMessage
+    boolean hasScope(@SuppressWarnings("unused") Frame frame) {
+        return true;
+    }
+
+    @ExportMessage
+    Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) {
+        return PythonScopes.create(this, frame != null ? frame.materialize() : null);
     }
 }

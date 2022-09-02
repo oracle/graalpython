@@ -49,11 +49,9 @@ import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class InstrumentationSupport extends Node {
-    private final PBytecodeRootNode rootNode;
     @Children InstrumentedBytecodeStatement[] lineToNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
-        this.rootNode = rootNode;
         CodeUnit code = rootNode.getCodeUnit();
         lineToNode = new InstrumentedBytecodeStatement[code.endLine + 1];
         boolean[] loadedBreakpoint = new boolean[1];
@@ -70,7 +68,9 @@ public final class InstrumentationSupport extends Node {
             int line = code.bciToLine(bci);
             if (line >= 0) {
                 if (lineToNode[line] == null) {
-                    lineToNode[line] = InstrumentedBytecodeStatement.create(rootNode, line);
+                    InstrumentedBytecodeStatement statement = new InstrumentedBytecodeStatement();
+                    statement.setSourceSection(rootNode.getSource().createSection(line));
+                    lineToNode[line] = statement;
                 }
                 if (setBreakpoint) {
                     lineToNode[line].setContainsBreakpoint();

@@ -40,49 +40,28 @@
  */
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.runtime.interop.PythonScopes;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
-import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.interop.NodeLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 
 @GenerateWrapper
-@ExportLibrary(NodeLibrary.class)
-public abstract class InstrumentedBytecodeStatement extends Node implements InstrumentableNode {
-    public static InstrumentedBytecodeStatement create(PBytecodeRootNode rootNode, int line) {
-        return new InstrumentedBytecodeStatementImpl(rootNode, line);
-    }
-
-    public void execute(@SuppressWarnings("unused") VirtualFrame frame) {
-        throw CompilerDirectives.shouldNotReachHere("Instrumentation node not executable");
-    }
-
-    @Override
-    public boolean isInstrumentable() {
-        return true;
-    }
+public class InstrumentedBytecodeStatement extends InstrumentedBytecodeNode {
+    @CompilationFinal private boolean containsBreakpoint;
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
         return new InstrumentedBytecodeStatementWrapper(this, probe);
     }
 
-    @ExportMessage
-    boolean hasScope(@SuppressWarnings("unused") Frame frame) {
-        return true;
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return tag == StandardTags.StatementTag.class || tag == DebuggerTags.AlwaysHalt.class && containsBreakpoint;
     }
 
-    @ExportMessage
-    Object getScope(Frame frame, @SuppressWarnings("unused") boolean nodeEnter) {
-        return PythonScopes.create(this, frame != null ? frame.materialize() : null);
+    public void setContainsBreakpoint() {
+        containsBreakpoint = true;
     }
-
-    public abstract void setContainsBreakpoint();
 }
