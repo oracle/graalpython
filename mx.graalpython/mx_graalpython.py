@@ -635,6 +635,7 @@ def python_managed_gvm(_=None):
     mx.log(launcher)
     return launcher
 
+
 def python_enterprise_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
     launcher = _join_bin(home, "graalpy")
@@ -815,14 +816,30 @@ def get_venv_env(env_dir):
     return env
 
 
-def run_ginstall(python_binary):
-    env_dir = os.path.realpath(tempfile.mkdtemp())
+def prepare_graalpy_venv(python_binary, packages=None, env_path=None):
+    if packages is None:
+        packages = []
+    if isinstance(packages, dict):
+        packages = list(packages.keys())
+    assert isinstance(packages, (tuple, set, list)), "packages arg must be a tuple, set or list"
+    env_dir = os.path.realpath(env_path if env_path else tempfile.mkdtemp())
     mx.log("using graalpython venv: {}".format(env_dir))
     mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
-    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(GINSTALL_GATE_PACKAGES.keys())], nonZeroIsFatal=True,
-           env=get_venv_env(env_dir))
+    mx.log("installing the following packages: {}".format(", ".join(packages)))
+    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(packages)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    return env_dir
+
+
+def run_with_venv(cmd, env_dir, **kwargs):
+    assert isinstance(cmd, list), "cmd argument must be a list"
+    kwargs['env'] = get_venv_env(env_dir)
+    mx.run(cmd, **kwargs)
+
+
+def run_ginstall(python_binary):
+    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES)
     import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
-    mx.run(["graalpy", "-c", import_packages], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    run_with_venv(["graalpy", "-c", import_packages], env_dir, nonZeroIsFatal=True)
 
 
 def is_bash_launcher(launcher_path):

@@ -61,11 +61,13 @@ def info(msg, *args, **kwargs):
 
 
 def error(msg, *args, **kwargs):
-    print(FAIL + msg.format(*args, **kwargs) + ENDC)
+    message = msg.format(*args, **kwargs) if args or kwargs else msg
+    print(FAIL + message + ENDC)
 
 
 def warn(msg, *args, **kwargs):
-    print(WARNING + msg.format(*args, **kwargs) + ENDC)
+    message = msg.format(*args, **kwargs) if args or kwargs else msg
+    print(WARNING + message + ENDC)
 
 
 def get_module_name(package_name):
@@ -97,9 +99,13 @@ def _prepare_blas_lapack(env=None):
             inc_path = os.path.join(par_dir, 'include')
             pkgconf_path = os.path.join(par_dir, 'lib', 'pkgconfig')
             if os.path.exists(inc_path):
-                _append_var('CPPFLAGS', '-L{}'.format(inc_path))
+                _append_var('CPPFLAGS', '-I{}'.format(inc_path))
+            else:
+                info("include path for {} not found in {}".format(lib_env_var, inc_path))
             if os.path.exists(pkgconf_path):
-                _append_var('PKG_CONFIG_PATH', '-L{}'.format(pkgconf_path))
+                _append_var('PKG_CONFIG_PATH', '{}'.format(pkgconf_path))
+            else:
+                info("pkgconfig path for {} not found in {}".format(lib_env_var, pkgconf_path))
             return True
         else:
             info("{} env var not set".format(lib_env_var))
