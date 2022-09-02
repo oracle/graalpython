@@ -4865,9 +4865,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             sourceSection = source.createUnavailableSection();
             return sourceSection;
         } else {
-            /* Truffle columns are 1-based and it doesn't consider the newline a part of the line */
-            int endColumn = Math.min(co.endColumn + 1, source.getLineLength(co.endLine));
-            sourceSection = source.createSection(co.startLine, co.startColumn + 1, co.endLine, endColumn);
+            sourceSection = co.getSourceSection(source);
             return sourceSection;
         }
     }

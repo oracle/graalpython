@@ -44,6 +44,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
+
 /**
  * Helper for encapsulating the encoding and decoding of source line and column information for
  * bytecode.
@@ -82,7 +85,7 @@ public class SourceMap {
         }
     }
 
-    private void readLineAndColumn(ByteArrayInputStream stream, int[] pair) {
+    private static void readLineAndColumn(ByteArrayInputStream stream, int[] pair) {
         stream.mark(1);
         byte value = (byte) stream.read();
         if (value == NEXT_LINE) {
@@ -100,7 +103,9 @@ public class SourceMap {
     private static int readNum(ByteArrayInputStream offsets) {
         int extensions = 0;
         while (true) {
-            byte value = (byte) offsets.read();
+            int intValue = offsets.read();
+            assert intValue != -1;
+            byte value = (byte) intValue;
             if (value == EXTENDED_NUM) {
                 extensions++;
             } else if (value < 0) {
@@ -109,6 +114,17 @@ public class SourceMap {
                 return extensions * MULTIPLIER_POSITIVE + value;
             }
         }
+    }
+
+    public static SourceSection getSourceSection(Source source, int startLine, int startColumn, int endLine, int endColumn) {
+        /* Truffle columns are 1-based and it doesn't consider the newline a part of the line */
+        startColumn++;
+        endColumn = Math.min(endColumn + 1, source.getLineLength(endLine));
+        return source.createSection(startLine, startColumn, endLine, endColumn);
+    }
+
+    public SourceSection getSourceSection(Source source, int bci) {
+        return getSourceSection(source, startLineMap[bci], startColumnMap[bci], endLineMap[bci], endColumnMap[bci]);
     }
 
     /**
@@ -156,8 +172,7 @@ public class SourceMap {
         }
 
         public void appendLocation(int startLine, int startColumn, int endLine, int endColumn) {
-            // assert startLine >= 0 && startColumn >= 0 && endLine >= startLine && endColumn >=
-            // startColumn;
+            assert startLine >= 0 && startColumn >= 0 && endLine >= startLine && (startLine != endLine || endColumn >= startColumn);
             int lineDelta = startLine - lastLine;
             int lineSpan = endLine - startLine;
             writeDeltas(lastColumn, startColumn, lineDelta);

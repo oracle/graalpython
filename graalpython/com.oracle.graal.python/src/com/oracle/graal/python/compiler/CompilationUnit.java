@@ -238,8 +238,7 @@ public final class CompilationUnit {
                     boxingMetric[i.arg] += i.quickenOutput != 0 ? 1 : -1;
                 }
                 i.bci = buf.size();
-                emitBytecode(i, buf);
-                sourceMapBuilder.appendLocation(i.location.startLine, i.location.startColumn, i.location.endLine, i.location.endColumn);
+                emitBytecode(i, buf, sourceMapBuilder);
             }
             b.endBci = buf.size();
             b = b.next;
@@ -416,7 +415,7 @@ public final class CompilationUnit {
         } while (repeat);
     }
 
-    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf) throws IllegalStateException {
+    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf, SourceMap.Builder sourceMapBuilder) throws IllegalStateException {
         OpCodes opcode = instr.opcode;
         // Pre-quicken constant loads
         if (opcode == OpCodes.LOAD_BYTE) {
@@ -433,6 +432,8 @@ public final class CompilationUnit {
             opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_FALSE_B : OpCodes.LOAD_FALSE_O;
         }
         assert opcode.ordinal() < 256;
+        SourceRange location = instr.location;
+        sourceMapBuilder.appendLocation(location.startLine, location.startColumn, location.endLine, location.endColumn);
         if (!opcode.hasArg()) {
             buf.write(opcode.ordinal());
         } else {
@@ -440,6 +441,7 @@ public final class CompilationUnit {
             for (int i = instr.extensions(); i >= 1; i--) {
                 buf.write(OpCodes.EXTENDED_ARG.ordinal());
                 buf.write((oparg >> (i * 8)) & 0xFF);
+                sourceMapBuilder.appendLocation(location.startLine, location.startColumn, location.endLine, location.endColumn);
             }
             buf.write(opcode.ordinal());
             buf.write(oparg & 0xFF);

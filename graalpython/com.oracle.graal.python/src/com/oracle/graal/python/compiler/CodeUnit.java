@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -150,7 +152,7 @@ public final class CodeUnit {
         this.generalizeVarsMap = generalizeVarsMap;
     }
 
-    private SourceMap getSourceMap() {
+    public SourceMap getSourceMap() {
         if (sourceMap == null) {
             sourceMap = new SourceMap(code, srcOffsetTable, startLine, startColumn);
         }
@@ -169,6 +171,10 @@ public final class CodeUnit {
             return -1;
         }
         return getSourceMap().startColumnMap[bci];
+    }
+
+    public SourceSection getSourceSection(Source source) {
+        return SourceMap.getSourceSection(source, startLine, startColumn, endLine, endColumn);
     }
 
     public boolean takesVarKeywordArgs() {
