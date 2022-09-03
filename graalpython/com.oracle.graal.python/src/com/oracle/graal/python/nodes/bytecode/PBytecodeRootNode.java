@@ -4290,13 +4290,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object res = null;
         switch (type) {
             case CollectionBits.KIND_LIST: {
-                ListFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, ListFromStackNodeGen.class, (int length) -> ListFromStackNodeGen.create(length), count);
+                ListFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, ListFromStackNodeGen.class, ListFromStackNodeGen::create, count);
                 SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
                 res = factory.createList(store, storageFromStackNode);
                 break;
             }
             case CollectionBits.KIND_TUPLE: {
-                TupleFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, TupleFromStackNodeGen.class, (int length) -> TupleFromStackNodeGen.create(length), count);
+                TupleFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, TupleFromStackNodeGen.class, TupleFromStackNodeGen::create, count);
                 SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
                 res = factory.createTuple(store);
                 break;

@@ -27,10 +27,10 @@ package com.oracle.graal.python.test.grammar;
 
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
-import static com.oracle.graal.python.test.PythonTests.usingBytecodeCompiler;
 
-import org.junit.Assume;
 import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class ArgumentsTests {
 
@@ -146,7 +146,7 @@ public class ArgumentsTests {
     @Test
     public void kwargsMerge() {
         // TODO AST interpreter doesn't maintain the order correctly
-        Assume.assumeTrue(usingBytecodeCompiler());
+        PythonTests.skipOnLegacyASTInterpreter();
         assertPrints("{'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n", "\n" +
                         "def foo(**kwargs):\n" +
                         "  print(kwargs)\n" +
