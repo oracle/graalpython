@@ -156,7 +156,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     @TruffleBoundary
     private void checkInitialized() {
         Python3Core core = getContext();
-        if (core.isCoreInitialized() && (PythonLanguage.MIME_TYPE.equals(source.getMimeType()) || PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType()))) {
+        if (core.isCoreInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
             getContext().initializeMainModule(toTruffleStringUncached(source.getPath()));
         }
     }

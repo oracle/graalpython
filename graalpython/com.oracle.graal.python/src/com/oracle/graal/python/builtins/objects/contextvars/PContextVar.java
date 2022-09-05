@@ -41,14 +41,15 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PContextVar extends PythonBuiltinObject {
+    private static int nextId = 0;
+    private final int hashForHamt = nextId++;
     private final TruffleString name;
     private final Object def;
-    private final ThreadLocal<Object> value;
 
     public static final Object NO_DEFAULT = new Object();
 
@@ -56,7 +57,10 @@ public final class PContextVar extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.name = name;
         this.def = def;
-        this.value = new ThreadLocal<>();
+    }
+
+    public int getHash() {
+        return hashForHamt * (hashForHamt + 3);
     }
 
     public TruffleString getName() {
@@ -67,13 +71,12 @@ public final class PContextVar extends PythonBuiltinObject {
         return def;
     }
 
-    @TruffleBoundary
-    public Object getValue() {
-        return value.get();
+    public Object getValue(PythonContext.PythonThreadState state) {
+        return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
     }
 
-    @TruffleBoundary
-    public void setValue(Object value) {
-        this.value.set(value);
+    public void setValue(PythonContext.PythonThreadState state, Object value) {
+        PContextVarsContext current = state.getContextVarsContext();
+        current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
     }
 }

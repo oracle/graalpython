@@ -63,7 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
-    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
+    @CompilationFinal(dimensions = 1) private volatile RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
     private final ExecutionCellSlots cellSlots;

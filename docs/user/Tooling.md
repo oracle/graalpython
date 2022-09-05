@@ -5,25 +5,18 @@ link_title: Tooling Support for Python
 permalink: /reference-manual/python/Tooling/
 ---
 # Tooling Support for Python
-
-GraalVM's Python runtime is incomplete and cannot launch the standard Python debugger `pdb`.
-However, it can run the tools that GraalVM provides.
-The `graalpy --help:tools` command will give you more information about tools currently supported on Python.
+GraalVM Python runtime can run many standard Python tools as well as tools from the GraalVM ecosystem.
+The `graalpy --help:tools` command will give you more information about GraalVM tools currently supported on Python.
 
 ## Debugger
+The built-in `breakpoint()` function will use `pdb` by default.
 
-To enable debugging, pass the `--inspect` option to the `graalpy` launcher.
-For example:
-```shell
-graalpy --inspect -c "breakpoint(); import os; os.exit()"
-Debugger listening on port 9229.
-To start debugging, open the following URL in Chrome:
-    chrome-devtools://devtools/bundled/js_app.html?ws=127.0.1.1:9229/76fcb6dd-35267eb09c3
-```
+### PDB
+The standard python debugger `pdb` is supported on GraalVM. Refer to the offical [PDB documentation](https://docs.python.org/3/library/pdb.html) for usage.
 
-The standard Python built-in `breakpoint()` will work using the [GraalVM's Chrome Inspector](https://github.com/oracle/graal/blob/master/docs/tools/chrome-debugger.md) implementation.
-You can inspect variables, set watch expressions, interactively evaluate code snippets, etc.
-However, this only works if you pass `--inspect` or some other inspect option. Otherwise, `pdb` is triggered as on CPython (and does not currently work).
+### Chrome Inspector
+To enable [GraalVM's Chrome Inspector](https://github.com/oracle/graal/blob/master/docs/tools/chrome-debugger.md) debugger, pass the `--inspect` option to the `graalpy` launcher.
+The built-in `breakpoint()` function will work using the Chrome Inspector implementation when `--inspect` is passed.
 
 ## Code Coverage
 

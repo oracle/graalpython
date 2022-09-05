@@ -1,0 +1,13 @@
+diff --git a/pyperformance/_pythoninfo.py b/pyperformance/_pythoninfo.py
+index 977b336..0e61573 100644
+--- a/pyperformance/_pythoninfo.py
++++ b/pyperformance/_pythoninfo.py
+@@ -96,7 +96,7 @@ def _get_current_info():
+         'executable (sys;realpath)': os.path.realpath(sys.executable),
+         'prefix (sys)': sys.prefix,
+         'exec_prefix (sys)': sys.exec_prefix,
+-        'stdlib_dir': os.path.dirname(os.__file__),
++        'stdlib_dir': os.path.dirname(json.__file__),
+         'stdlib_dir (sys)': getattr(sys, '_stdlib_dir', None),
+         'stdlib_dir (sysconfig)': (sysconfig.get_path('stdlib')
+                                    if 'stdlib' in sysconfig.get_path_names()

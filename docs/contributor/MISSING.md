@@ -36,7 +36,6 @@ This is just a snapshot as of 2021-07-29.
 
 #### These we should re-implement
  * **_codecs_cn, _codecs_hk, _codecs_iso2022, _codecs_jp, _codecs_kr, _codecs_tw, _multibytecodec**:  We can just use our own codecs
- * **_ctypes, _ctypes_test**:  Work in progress
  * **_string**: Empty right now, but its only two methods that we can re-implement
  * **_tracemalloc**:  Memory allocation tracing, we should substitute with the Truffle instrument.
  * **_uuid**: Can be implemented ourselves, is just 1 function
@@ -47,25 +46,20 @@ This is just a snapshot as of 2021-07-29.
  * **parser**:  We need to implement this for our parser
 
 ### Incompleteness on our part:
- * **_ast**: Used in various places, including the help system. Would be nice to support, ours is an empty shell
- * **_contextvars**: Very incomplete
- * **_multiprocessing**:  Work in progress
+ * **_contextvars**: Work in progress
  * **_signal**: Work in progress
  * **mmap**:  We use this as a mixture from the C module, Python, and Java code. Needs major optimizations.
  * **resource**:  This is about resources, there should be Truffle APIs for this (there are issues open)
  * **unicodedata**: A bit incomplete, but not difficult. Maybe should use a Java ICU library
 
 ### Basically complete or easy to make so
- * **_collections**: We've mostly implemented this in Python (a lot is taken from PyPy), but should intrinsify the module in Java for better performance
  * **_md5**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **_random**
  * **_sha1**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **_sha256**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **_sha512**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **binascii**: Just missing a few methods
- * **codecs**
  * **functools**: Missing a few functions, we mostly implemented it in Python, but should intrinsify the module in Java for better performance
  * **itertools**: We mostly just implement all this in Python (a lot is taken from PyPy), but should intrinsify the module in Java for better performance
  * **locale**: Partially Truffle APIs, should probably use more to play nice for embedders
  * **readline**: We re-implemented this in terms of JLine used in our launcher
- * **zipimport**: We have reimplemented this, but Python 3.8 is moving to a pure-Python impl that we can use

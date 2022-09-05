@@ -314,22 +314,22 @@ public class ObjectHashMapTests {
     }
 
     private static Object get(ObjectHashMap map, Object key, long hash) {
-        return ObjectHashMap.GetNode.doGet(null, map, key, hash,
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+        return ObjectHashMap.GetNode.doGetWithRestart(null, map, key, hash,
+                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         new EqNodeStub());
     }
 
     private static void remove(ObjectHashMap map, Object key, long hash) {
-        ObjectHashMap.RemoveNode.doRemove(null, map, key, hash,
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+        ObjectHashMap.RemoveNode.doRemoveWithRestart(null, map, key, hash,
+                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         ConditionProfile.getUncached(), BranchProfile.getUncached(), ConditionProfile.getUncached(),
                         new EqNodeStub());
     }
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
-        ObjectHashMap.PutNode.doPut(null, map, key, hash, value,
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+        ObjectHashMap.PutNode.doPutWithRestart(null, map, key, hash, value,
+                        BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
                         ConditionProfile.getUncached(), new EqNodeStub());
     }

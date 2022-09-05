@@ -68,7 +68,6 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -79,9 +78,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -103,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -113,14 +109,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -133,7 +127,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -650,10 +643,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "dis", minNumOfPositionalArgs = 1, parameterNames = {"obj", "quickened"}, doc = "Helper to disassemble code objects if running with the bytecode interpreter")
+    @Builtin(name = "dis", minNumOfPositionalArgs = 1, parameterNames = {"obj", "quickened"}, doc = "Helper to disassemble code objects")
     @ArgumentClinic(name = "quickened", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class BCIDisNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class DisNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object doMethod(PMethod method, boolean quickened) {
             final Object function = method.getFunction();
@@ -682,7 +675,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return GraalPythonModuleBuiltinsClinicProviders.BCIDisNodeClinicProviderGen.INSTANCE;
+            return GraalPythonModuleBuiltinsClinicProviders.DisNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -717,62 +710,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             PythonUtils.dumpHeap(tempFile.getPath());
             return fromJavaStringNode.execute(tempFile.getPath(), TS_ENCODING);
-        }
-    }
-
-    @Builtin(name = "compile", parameterNames = {"codestr", "path", "mode"})
-    @GenerateNodeFactory
-    abstract static class CompileNode extends PythonTernaryBuiltinNode {
-        private static final TruffleString T_PYC = tsLiteral("pyc");
-
-        @Specialization
-        PCode compile(VirtualFrame frame, Object codestr, TruffleString path, TruffleString mode,
-                        @Cached PRaiseNode raise,
-                        @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached("create(false)") BuiltinFunctions.CompileNode compileNode) {
-            if (equalNode.execute(mode, T_PYC, TS_ENCODING)) {
-                Source source;
-                if (codestr instanceof PBytesLike) {
-                    try {
-                        source = getSource(path, toBytes.execute((PBytesLike) codestr));
-                    } catch (SecurityException | IOException ex) {
-                        throw raise.raise(SystemError, ex);
-                    }
-                } else {
-                    try {
-                        source = getSource(path, castStr.execute(codestr));
-                    } catch (CannotCastException e) {
-                        throw raise.raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTES, codestr);
-                    }
-                }
-                CallTarget callTarget = createCallTarget(source);
-                return factory().createCode((RootCallTarget) callTarget);
-            } else {
-                return compileNode.compile(frame, codestr, path, mode, 2);
-            }
-        }
-
-        @TruffleBoundary
-        private CallTarget createCallTarget(Source source) {
-            return getContext().getEnv().parsePublic(source);
-        }
-
-        @TruffleBoundary
-        private Source getSource(TruffleString path, TruffleString code) {
-            return PythonLanguage.newSource(getContext(), code, path, true, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE);
-        }
-
-        @TruffleBoundary
-        private Source getSource(TruffleString path, byte[] code) throws IOException {
-            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
-            if (truffleFile.exists() && code.length == truffleFile.size()) {
-                return Source.newBuilder(PythonLanguage.ID, truffleFile).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
-            } else {
-                ByteSequence bs = ByteSequence.create(code);
-                return Source.newBuilder(PythonLanguage.ID, bs, path.toJavaStringUncached()).mimeType(PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE).build();
-            }
         }
     }
 }

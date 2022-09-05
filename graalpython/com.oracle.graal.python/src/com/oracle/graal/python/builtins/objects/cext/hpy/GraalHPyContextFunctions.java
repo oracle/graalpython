@@ -208,6 +208,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -3445,7 +3446,8 @@ public abstract class GraalHPyContextFunctions {
                 if (!(var instanceof PContextVar)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
                 }
-                Object result = getObject((PContextVar) var, def);
+                PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(asContextNode));
+                Object result = getObject(threadState, (PContextVar) var, def);
                 callWriteHPyNode.call(context, GRAAL_HPY_WRITE_HPY, outPtr, 0L, asHandleNode.execute(context, result));
                 return 0;
             } catch (PException e) {
@@ -3454,8 +3456,8 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        static Object getObject(PContextVar var, Object def) {
-            Object result = var.getValue();
+        static Object getObject(PythonThreadState threadState, PContextVar var, Object def) {
+            Object result = var.getValue(threadState);
             if (result == null) {
                 if (def == NULL_HANDLE_DELEGATE) {
                     def = var.getDefault();
@@ -3488,7 +3490,8 @@ public abstract class GraalHPyContextFunctions {
                 if (!(var instanceof PContextVar)) {
                     throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
                 }
-                ((PContextVar) var).setValue(val);
+                PythonThreadState threadState = context.getContext().getThreadState(PythonLanguage.get(asContextNode));
+                ((PContextVar) var).setValue(threadState, val);
                 return asHandleNode.execute(context, PNone.NONE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);

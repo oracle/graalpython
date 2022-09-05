@@ -54,8 +54,9 @@ import mx_gate
 import mx_unittest
 import mx_sdk
 import mx_subst
-import mx_urlrewrites
 import mx_graalpython_bisect
+import mx_graalpython_python_benchmarks
+
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
     JAVA_DRIVER_BENCHMARKS
@@ -69,7 +70,7 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_BYTECODE, CONFIGURATION_INTERPRETER_BYTECODE
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_AST, CONFIGURATION_INTERPRETER_AST
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -451,10 +452,6 @@ def update_unittest_tags(args):
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialCSubclass.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPy.test_recursive_pickle'),
         ('test_functools.txt', '*graalpython.lib-python.3.test.test_functools.TestPartialPySubclass.test_recursive_pickle'),
-        # TODO temporary. Tests for async that just happen to pass when AST interpreter completely ignores the async keyword
-        ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_for_tuple'),
-        ('test_coroutines.txt', '*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_comp_7'),
-        ('test_asyncio.txt', '*test.test_asyncio.test_base_events.BaseEventLoopTests.test_run_forever_keyboard_interrupt'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -1365,6 +1362,7 @@ def update_import_cmd(args):
 
 def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
+    python_run_mx_filetests(args)
     python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
@@ -1398,13 +1396,22 @@ def python_checkcopyrights(args):
     _python_checkpatchfiles()
 
 
+def python_run_mx_filetests(args):
+    for test in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
+        if not test.endswith("data.py"):
+            mx.log(test)
+            mx.run([sys.executable, test, "-v"])
+
+
 def _python_checkpatchfiles():
     listfilename = tempfile.mktemp()
     # additionally, we want to check if the packages we are patching all have a permissive license
     with open(listfilename, "w") as listfile:
         mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
     try:
-        pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        # TODO our mirror doesn't handle the json API
+        # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        pypi_base_url = "https://pypi.org/"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
@@ -1681,15 +1688,14 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_BYTECODE, extra_polyglot_args=[
-        '--experimental-options', '--python.EnableBytecodeInterpreter', '--python.DisableFrozenModules',
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_AST, extra_polyglot_args=[
+        '--experimental-options', '--use-ast-interpreter',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
         '--experimental-options', '--engine.Compilation=false'
     ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_BYTECODE, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--python.EnableBytecodeInterpreter',
-        '--python.DisableFrozenModules',
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_AST, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false', '--use-ast-interpreter',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
@@ -1762,6 +1768,8 @@ def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
     _register_vms(namespace)
     _register_bench_suites(namespace)
+    mx_graalpython_python_benchmarks.register_python_benchmarks()
+
     for dist in mx.suite('graalpython').dists:
         if hasattr(dist, 'set_archiveparticipant'):
             dist.set_archiveparticipant(CharsetFilteringPariticpant())
@@ -2021,7 +2029,8 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
         env = env.copy() if env else os.environ.copy()
         env.update(self.subject.getBuildEnv())
         args.insert(0, '--PosixModuleBackend=java')
-        rc = do_run_python(args, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
+        jdk = mx.get_jdk()  # Don't get JVMCI, it might not have finished building by this point
+        rc = do_run_python(args, jdk=jdk, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
         shutil.rmtree(cwd) # remove the temporary build files
         # if we're just running style tests, this is allowed to fail

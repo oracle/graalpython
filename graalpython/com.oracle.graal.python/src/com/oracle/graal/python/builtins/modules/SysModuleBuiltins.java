@@ -104,7 +104,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.REC_LIMIT_GREATER_THAN_1;
 import static com.oracle.graal.python.nodes.ErrorMessages.SWITCH_INTERVAL_MUST_BE_POSITIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.WARN_CANNOT_RUN_PDB_YET;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_CHECKINTERVAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___;
@@ -161,6 +160,7 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -234,6 +234,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -786,6 +787,26 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         private PException raiseCallStackDepth() {
             return raise(ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
+        }
+    }
+
+    @Builtin(name = "_current_frames")
+    @GenerateNodeFactory
+    abstract static class CurrentFrames extends PythonBuiltinNode {
+        @Specialization
+        Object currentFrames(VirtualFrame frame,
+                        @Cached AuditNode auditNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+            auditNode.audit("sys._current_frames");
+            if (!getLanguage().singleThreadedAssumption.isValid()) {
+                warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
+            }
+            PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
+            PDict result = factory().createDict();
+            result.setDictStorage(hlib.setItem(result.getDictStorage(), Thread.currentThread().getId(), currentFrame));
+            return result;
         }
     }
 
@@ -1535,7 +1556,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SubstringNode substringNode) {
             TruffleString hookName = getEnvVar(frame, importNode, getAttr, callMethodObjArgs, castToStringNode);
             if (hookName == null || hookName.isEmpty()) {
-                warnNode.warnFormat(frame, RuntimeWarning, WARN_CANNOT_RUN_PDB_YET);
                 hookName = T_VAL_PDB_SETTRACE;
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,63 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.truffle;
+package com.oracle.graal.python.builtins.objects.contextvars;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.object.Shape;
 
-import com.oracle.truffle.api.dsl.ImplicitCast;
-import com.oracle.truffle.api.dsl.TypeSystem;
-import com.oracle.truffle.api.strings.TruffleString;
+public class PContextVarsContext extends PythonBuiltinObject {
+    Hamt contextVarValues;
+    private PContextVarsContext previousContext = null;
 
-/**
- * Temporary {@link TypeSystem} used during migration of j.l.String -> TruffleString. Once the
- * migration is complete, this type system can be deleted.
- *
- * The same implicit cast is also in {@link PythonTypes} and {@link PythonArithmeticTypes}
- */
-@TypeSystem
-public abstract class TruffleStringMigrationPythonTypes {
-
-    @ImplicitCast
-    public static TruffleString fromJavaString(String value) {
-        assert false;
-        return TruffleString.fromJavaStringUncached(value, TS_ENCODING);
-    }
-
-    /**
-     * Used in places where we don't expect a {@link String}.
-     */
-    public static Object assertNoJavaString(Object o) {
-        assert !(o instanceof String);
-        return o;
-    }
-
-    /**
-     * Used in places where we accept a {@link String}, but we want it silently converted to a
-     * {@link TruffleString}.
-     */
-    public static Object ensureNoJavaString(Object o) {
-        if (o instanceof String) {
-            return toTruffleStringUncached((String) o);
+    public void enter(PythonContext.PythonThreadState threadState, PRaiseNode raise) {
+        if (previousContext != null) {
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
         }
-        return o;
+        previousContext = threadState.getContextVarsContext();
+        assert previousContext != null : "ThreadState had null Context. This should not happen";
+        threadState.setContextVarsContext(this);
     }
 
-    public static boolean isJavaString(Object o) {
-        assert !(o instanceof String);
-        return false;
+    public void leave(PythonContext.PythonThreadState threadState) {
+        assert threadState.getContextVarsContext() == this : "leaving a context which is not currently entered";
+        assert previousContext != null : "entered context has no previous context";
+        threadState.setContextVarsContext(previousContext);
+        previousContext = null;
     }
 
-    public static boolean containsJavaString(Object[] elements) {
-        if (elements == null) {
-            return false;
-        }
-        for (Object o : elements) {
-            if (o instanceof String) {
-                return true;
-            }
-        }
-        return false;
+    public PContextVarsContext(Object cls, Shape instanceShape) {
+        this(new Hamt(), cls, instanceShape);
+    }
+
+    public PContextVarsContext(PContextVarsContext original, Object cls, Shape instanceShape) {
+        this(original.contextVarValues, cls, instanceShape);
+    }
+
+    private PContextVarsContext(Hamt contextVarValues, Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+        this.contextVarValues = contextVarValues;
+
     }
 }

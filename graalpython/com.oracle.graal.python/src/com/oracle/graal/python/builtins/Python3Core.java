@@ -217,7 +217,9 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextVarBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.TokenBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
@@ -559,6 +561,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
                         new ContextVarBuiltins(),
+                        new ContextBuiltins(),
+                        new TokenBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),

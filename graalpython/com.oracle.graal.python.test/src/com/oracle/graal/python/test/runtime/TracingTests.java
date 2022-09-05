@@ -40,16 +40,16 @@
  */
 package com.oracle.graal.python.test.runtime;
 
-import com.oracle.graal.python.test.PythonTests;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class TracingTests {
 
     @Before
     public void ensureBytecode() {
-        Assume.assumeTrue(PythonTests.usingBytecodeCompiler());
+        PythonTests.skipOnLegacyASTInterpreter();
     }
 
     @Test

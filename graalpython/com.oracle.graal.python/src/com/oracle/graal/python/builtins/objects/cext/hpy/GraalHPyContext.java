@@ -83,8 +83,6 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
-import com.oracle.graal.python.nodes.object.IsNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -257,6 +255,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -2357,8 +2356,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
             return errBits;
         }
+        PythonContext ctx = getContext();
+        PythonLanguage lang = ctx.getLanguage();
         Object def = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(defBits));
-        Object res = GraalHPyContextVarGet.getObject((PContextVar) var, def);
+        Object res = GraalHPyContextVarGet.getObject(ctx.getThreadState(lang), (PContextVar) var, def);
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(res));
     }
 

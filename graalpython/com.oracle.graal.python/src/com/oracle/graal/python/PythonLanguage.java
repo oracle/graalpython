@@ -27,7 +27,7 @@ package com.oracle.graal.python;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationPythonTypes.isJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -132,8 +132,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
                                 PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
-                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2,
-                                PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE, PythonLanguage.MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE}, //
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
                 byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
@@ -206,9 +205,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
     static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
     public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
-    // XXX Temporary mime type to force bytecode compiler
-    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE = "application/x-python-source-for-bytecode";
-    public static final String MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE = "application/x-python-source-for-bytecode-compile";
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
@@ -459,12 +455,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
         }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false, null);
-        }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false, null);
-        }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
@@ -516,12 +506,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 assert !source.isInteractive();
                 return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false, null);
             }
-        }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, true, 0, false, null);
-        }
-        if (MIME_TYPE_SOURCE_FOR_BYTECODE_COMPILE.equals(source.getMimeType())) {
-            return parseForBytecodeInterpreter(context, source, InputType.FILE, false, 0, false, null);
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }

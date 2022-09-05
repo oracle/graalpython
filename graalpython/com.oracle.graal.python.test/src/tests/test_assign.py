@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 
 import unittest
 
@@ -103,6 +104,77 @@ def test_destructuring():
     b = -1
     *s, c, d = tuple(range(10))
     assert a == -1 and b == -1 and s == [0, 1, 2, 3, 4, 5, 6, 7] and c == 8 and d == 9
+
+
+def test_augassign_evaluation_subsc():
+    if sys.implementation.name == 'graalpy' and not __graalpython__.uses_bytecode_interpreter:
+        # FIXME AST interpreter fails this test
+        return
+    calls = []
+
+    class C(list):
+        def __getitem__(self, item):
+            calls.append("get")
+            return super().__getitem__(item)
+
+        def __setitem__(self, key, value):
+            calls.append("set")
+            super().__setitem__(key, value)
+
+    class I:
+        def __iadd__(self, other):
+            calls.append("iadd")
+            return 3
+
+    def index():
+        calls.append("index")
+        return 0
+
+    def value():
+        calls.append("value")
+        return 1
+
+    x = C([I()])
+
+    def container():
+        calls.append("container")
+        return x
+
+    container()[index()] += value()
+    assert calls == ["container", "index", "get", "value", "iadd", "set"]
+
+
+def test_augassign_evaluation_attr():
+    if sys.implementation.name == 'graalpy' and not __graalpython__.uses_bytecode_interpreter:
+        # FIXME AST interpreter fails this test
+        return
+    calls = []
+
+    class C(list):
+        def __getattr__(self, item):
+            calls.append("get")
+            return I()
+
+        def __setattr__(self, key, value):
+            calls.append("set")
+
+    class I:
+        def __iadd__(self, other):
+            calls.append("iadd")
+            return 3
+
+    def value():
+        calls.append("value")
+        return 1
+
+    x = C()
+
+    def container():
+        calls.append("container")
+        return x
+
+    container().attr += value()
+    assert calls == ["container", "get", "value", "iadd", "set"]
 
 
 def test_assigning_hidden_keys():

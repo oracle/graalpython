@@ -307,8 +307,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Disables using frozen modules.") //
     public static final OptionKey<Boolean> DisableFrozenModules = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "Enables using experimental bytecode interpreter instead of AST interpreter.") //
-    public static final OptionKey<Boolean> EnableBytecodeInterpreter = new OptionKey<>(false);
+    @Option(category = OptionCategory.EXPERT, help = "Enables using bytecode interpreter instead of legacy AST interpreter.") //
+    public static final OptionKey<Boolean> EnableBytecodeInterpreter = new OptionKey<>(true);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 

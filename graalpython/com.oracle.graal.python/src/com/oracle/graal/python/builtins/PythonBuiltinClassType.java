@@ -62,7 +62,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -732,7 +731,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         Empty.base = Exception;
 
-        HashSet<String> set = PythonUtils.ASSERTIONS_ENABLED ? new HashSet<>() : null;
+        boolean assertionsEnabled = false;
+        assert (assertionsEnabled = true) == true;
+        HashSet<String> set = assertionsEnabled ? new HashSet<>() : null;
         for (PythonBuiltinClassType type : VALUES) {
             // check uniqueness
             assert set.add("" + type.moduleName + "." + type.name) : type.name();

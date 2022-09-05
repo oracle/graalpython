@@ -41,11 +41,9 @@
 
 # TODO -----------------------------------------------------------------------------------------------------------------
 # TODO: REMOVEME, temporary patch for coroutines
-async def _c(): pass
-_c = _c()
-ctype = type(_c)
-if not hasattr(ctype, "close"):
-    def _coro_close():
-        pass
-    ctype.close = _coro_close
+# AST interpreter returns None from coroutines
+ctype = type(None)
+def _coro_close():
+    pass
+ctype.close = _coro_close
 # TODO -----------------------------------------------------------------------------------------------------------------
