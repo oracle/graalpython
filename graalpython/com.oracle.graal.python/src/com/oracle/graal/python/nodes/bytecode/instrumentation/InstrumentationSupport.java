@@ -44,16 +44,20 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class InstrumentationSupport extends Node {
+    final CodeUnit code;
     @Children InstrumentedBytecodeStatement[] lineToNode;
+    @CompilationFinal(dimensions = 1) public Node[] bciToHelperNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
-        CodeUnit code = rootNode.getCodeUnit();
+        code = rootNode.getCodeUnit();
         lineToNode = new InstrumentedBytecodeStatement[code.endLine + 1];
+        bciToHelperNode = new Node[code.code.length];
         boolean[] loadedBreakpoint = new boolean[1];
         code.iterateBytecode((bci, op, oparg, followingArgs) -> {
             boolean setBreakpoint = false;
@@ -68,10 +72,11 @@ public final class InstrumentationSupport extends Node {
             int line = code.bciToLine(bci);
             if (line >= 0) {
                 if (lineToNode[line] == null) {
-                    InstrumentedBytecodeStatement statement = new InstrumentedBytecodeStatement();
+                    InstrumentedBytecodeStatement statement = InstrumentedBytecodeStatement.create();
                     statement.setSourceSection(rootNode.getSource().createSection(line));
                     lineToNode[line] = statement;
                 }
+                lineToNode[line].coversBci(bci, op.length());
                 if (setBreakpoint) {
                     lineToNode[line].setContainsBreakpoint();
                 }
@@ -110,5 +115,11 @@ public final class InstrumentationSupport extends Node {
         if (wrapper != null) {
             wrapper.getProbeNode().onReturnExceptionalOrUnwind(frame, exception, false);
         }
+    }
+
+    public void insertHelperNode(Node node, int bci) {
+        int line = code.bciToLine(bci);
+        lineToNode[line].insertHelperNode(node, bci);
+        bciToHelperNode[bci] = node;
     }
 }

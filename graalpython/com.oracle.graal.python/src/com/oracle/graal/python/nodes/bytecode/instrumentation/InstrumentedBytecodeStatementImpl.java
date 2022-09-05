@@ -40,24 +40,43 @@
  */
 package com.oracle.graal.python.nodes.bytecode.instrumentation;
 
-import com.oracle.truffle.api.instrumentation.GenerateWrapper;
-import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.debug.DebuggerTags;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateWrapper
-public abstract class InstrumentedBytecodeStatement extends InstrumentedBytecodeNode {
-    public static InstrumentedBytecodeStatement create() {
-        return new InstrumentedBytecodeStatementImpl();
+class InstrumentedBytecodeStatementImpl extends InstrumentedBytecodeStatement {
+    @CompilationFinal private boolean containsBreakpoint;
+    @CompilationFinal private int minBci = Integer.MAX_VALUE;
+    @CompilationFinal private int maxBci = Integer.MIN_VALUE;
+
+    @Children Node[] children;
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return tag == StandardTags.StatementTag.class || tag == DebuggerTags.AlwaysHalt.class && containsBreakpoint;
     }
 
     @Override
-    public WrapperNode createWrapper(ProbeNode probe) {
-        return new InstrumentedBytecodeStatementWrapper(this, probe);
+    public void setContainsBreakpoint() {
+        containsBreakpoint = true;
     }
 
-    public abstract void insertHelperNode(Node node, int bci);
+    @Override
+    public void insertHelperNode(Node node, int bci) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert minBci != Integer.MAX_VALUE && maxBci != Integer.MIN_VALUE;
+        if (children == null) {
+            children = new Node[maxBci - minBci + 1];
+        }
+        children[bci - minBci] = insert(node);
+    }
 
-    abstract void setContainsBreakpoint();
-
-    abstract void coversBci(int bci, int length);
+    @Override
+    void coversBci(int bci, int length) {
+        minBci = Math.min(minBci, bci);
+        maxBci = Math.max(maxBci, bci + length);
+    }
 }
