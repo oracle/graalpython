@@ -53,7 +53,7 @@ try:
     import mx
 except ImportError:
     if mx_exe := shutil.which("mx"):
-        sys.path.append(os.path.dirname(mx_exe))
+        sys.path.append(os.path.dirname(os.path.realpath(mx_exe)))
 
 
 class TestJsonBenchmarkParsers(unittest.TestCase):
