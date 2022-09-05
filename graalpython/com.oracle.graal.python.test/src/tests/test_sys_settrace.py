@@ -156,7 +156,6 @@ def make_test_method(fun, name):
     return test_case
 
 @unittest.skipIf(skip, 'sys.settrace only works in the bytecode interpreter')
-@unittest.skipIf(True, 'Disabled due to GR-40754')
 class TraceTests(unittest.TestCase):
     def trace(self, frame, event, arg):
         code = frame.f_code
