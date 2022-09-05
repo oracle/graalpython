@@ -40,43 +40,44 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PContextVar extends PythonBuiltinObject {
-    private static int nextId = 0;
-    private final int hashForHamt = nextId++;
-    private final TruffleString name;
-    private final Object def;
+public class PContextVarsContext extends PythonBuiltinObject {
+    Hamt contextVarValues;
+    private PContextVarsContext previousContext = null;
 
-    public static final Object NO_DEFAULT = new Object();
+    public void enter(PythonContext.PythonThreadState threadState, PRaiseNode raise) {
+        if (previousContext != null) {
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_ENTER_CONTEXT_ALREADY_ENTERED, this);
+        }
+        previousContext = threadState.getContextVarsContext();
+        assert previousContext != null : "ThreadState had null Context. This should not happen";
+        threadState.setContextVarsContext(this);
+    }
 
-    public PContextVar(Object cls, Shape instanceShape, TruffleString name, Object def) {
+    public void leave(PythonContext.PythonThreadState threadState) {
+        assert threadState.getContextVarsContext() == this : "leaving a context which is not currently entered";
+        assert previousContext != null : "entered context has no previous context";
+        threadState.setContextVarsContext(previousContext);
+        previousContext = null;
+    }
+
+    public PContextVarsContext(Object cls, Shape instanceShape) {
+        this(new Hamt(), cls, instanceShape);
+    }
+
+    public PContextVarsContext(PContextVarsContext original, Object cls, Shape instanceShape) {
+        this(original.contextVarValues, cls, instanceShape);
+    }
+
+    private PContextVarsContext(Hamt contextVarValues, Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.name = name;
-        this.def = def;
-    }
+        this.contextVarValues = contextVarValues;
 
-    public int getHash() {
-        return hashForHamt * (hashForHamt + 3);
-    }
-
-    public TruffleString getName() {
-        return name;
-    }
-
-    public Object getDefault() {
-        return def;
-    }
-
-    public Object getValue(PythonContext.PythonThreadState state) {
-        return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
-    }
-
-    public void setValue(PythonContext.PythonThreadState state, Object value) {
-        PContextVarsContext current = state.getContextVarsContext();
-        current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
     }
 }

@@ -1441,6 +1441,12 @@ public abstract class ErrorMessages {
     public static final TruffleString ATTEMPTING_SETTER_NO_NATIVE_SPACE = tsLiteral("Attempting to setter function but object has no associated native space.");
 
     public static final TruffleString INSTANCE_OF_CONTEXTVAR_EXPECTED = tsLiteral("an instance of ContextVar was expected");
+    public static final TruffleString INSTANCE_OF_TOKEN_EXPECTED = tsLiteral("expected an instance of Token, got %s");
+    public static final TruffleString CONTEXTVAR_KEY_EXPECTED = tsLiteral("A ContextVar key was expected, got %s");
+    public static final TruffleString CANNOT_ENTER_CONTEXT_ALREADY_ENTERED = tsLiteral("cannot enter context: %s is already entered");
+    public static final TruffleString TOKEN_ONLY_BY_CONTEXTVAR = tsLiteral("Tokens can only be created by ContextVars");
+    public static final TruffleString TOKEN_FOR_DIFFERENT_CONTEXTVAR = tsLiteral("%s was created by a different ContextVar");
+
     public static final TruffleString CAPSULE_SETPOINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
     public static final TruffleString CAPSULE_GETPOINTER_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetPointer called with invalid PyCapsule object");
     public static final TruffleString CAPSULE_GETCONTEXT_WITH_INVALID_CAPSULE = tsLiteral("HPyCapsule_GetContext called with invalid PyCapsule object");
@@ -1453,4 +1459,5 @@ public abstract class ErrorMessages {
     public static final TruffleString SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is only implemented for the bytecode interpreter.");
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
     public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
+    public static final TruffleString TOKEN_ALREADY_USED = tsLiteral("%s has already been used once");
 }

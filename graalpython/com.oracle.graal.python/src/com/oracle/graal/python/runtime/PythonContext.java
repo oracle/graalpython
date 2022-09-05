@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -133,6 +134,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
@@ -246,6 +248,11 @@ public final class PythonContext extends Python3Core {
         TraceEvent tracingWhat;
 
         /*
+         * the current contextvars.Context for the thread.
+         */
+        PContextVarsContext contextVarsContext;
+
+        /*
          * The constructor needs to have this particular signature such that we can use it for
          * ContextThreadLocal.
          */
@@ -326,6 +333,18 @@ public final class PythonContext extends Python3Core {
 
         public void setNativeWrapper(PThreadState nativeWrapper) {
             this.nativeWrapper = nativeWrapper;
+        }
+
+        public PContextVarsContext getContextVarsContext() {
+            if (contextVarsContext == null) {
+                contextVarsContext = PythonObjectFactory.getUncached().createContextVarsContext();
+            }
+            return contextVarsContext;
+        }
+
+        public void setContextVarsContext(PContextVarsContext contextVarsContext) {
+            assert contextVarsContext != null;
+            this.contextVarsContext = contextVarsContext;
         }
 
         public void dispose() {

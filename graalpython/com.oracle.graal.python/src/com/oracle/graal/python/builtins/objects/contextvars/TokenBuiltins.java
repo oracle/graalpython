@@ -40,43 +40,57 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.object.Shape;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNodeGen;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PContextVar extends PythonBuiltinObject {
-    private static int nextId = 0;
-    private final int hashForHamt = nextId++;
-    private final TruffleString name;
-    private final Object def;
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVarsToken)
+public class TokenBuiltins extends PythonBuiltins {
 
-    public static final Object NO_DEFAULT = new Object();
-
-    public PContextVar(Object cls, Shape instanceShape, TruffleString name, Object def) {
-        super(cls, instanceShape);
-        this.name = name;
-        this.def = def;
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return TokenBuiltinsFactory.getFactories();
     }
 
-    public int getHash() {
-        return hashForHamt * (hashForHamt + 3);
+    @Builtin(name = "var", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class VarAttr extends PythonBuiltinNode {
+        @Specialization
+        public Object doVar(PContextVarsToken self) {
+            return self.getVar();
+        }
     }
 
-    public TruffleString getName() {
-        return name;
+    @Builtin(name = "old_value", isGetter = true, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class OldValueAttr extends PythonBuiltinNode {
+        @Specialization
+        public Object doOld(PContextVarsToken self) {
+            Object oldValue = self.getOldValue();
+            return oldValue == null ? PContextVarsToken.MISSING : oldValue;
+        }
     }
 
-    public Object getDefault() {
-        return def;
-    }
+    private static final TruffleString MISSING_NAME = tsLiteral("MISSING");
 
-    public Object getValue(PythonContext.PythonThreadState state) {
-        return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
-    }
-
-    public void setValue(PythonContext.PythonThreadState state, Object value) {
-        PContextVarsContext current = state.getContextVarsContext();
-        current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        WriteAttributeToBuiltinTypeNode addMissing = WriteAttributeToBuiltinTypeNodeGen.getUncached();
+        addMissing.execute(PythonBuiltinClassType.ContextVarsToken, MISSING_NAME, PContextVarsToken.MISSING);
     }
 }

@@ -40,43 +40,37 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
 
-public final class PContextVar extends PythonBuiltinObject {
-    private static int nextId = 0;
-    private final int hashForHamt = nextId++;
-    private final TruffleString name;
-    private final Object def;
+public class PContextVarsToken extends PythonBuiltinObject {
+    public static final Object MISSING = new Object();
+    private final PContextVar var;
+    private final Object oldValue;
 
-    public static final Object NO_DEFAULT = new Object();
+    private boolean used = false;
 
-    public PContextVar(Object cls, Shape instanceShape, TruffleString name, Object def) {
+    public PContextVarsToken(PContextVar var, Object oldValue, Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.name = name;
-        this.def = def;
+        this.var = var;
+        this.oldValue = oldValue;
     }
 
-    public int getHash() {
-        return hashForHamt * (hashForHamt + 3);
+    public void use(PRaiseNode raise) {
+        if (used) {
+            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+        }
+        used = true;
     }
 
-    public TruffleString getName() {
-        return name;
+    public PContextVar getVar() {
+        return var;
     }
 
-    public Object getDefault() {
-        return def;
-    }
-
-    public Object getValue(PythonContext.PythonThreadState state) {
-        return state.getContextVarsContext().contextVarValues.lookup(this, getHash());
-    }
-
-    public void setValue(PythonContext.PythonThreadState state, Object value) {
-        PContextVarsContext current = state.getContextVarsContext();
-        current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
+    public Object getOldValue() {
+        return oldValue;
     }
 }
