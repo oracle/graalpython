@@ -689,3 +689,14 @@ UPCALL_ID(PyUnicode_Split)
 PyObject* PyUnicode_Split(PyObject *s, PyObject *sep, Py_ssize_t maxsplit) {
     return UPCALL_CEXT_O(_jls_PyUnicode_Split, native_to_java(s), native_to_java(sep), maxsplit);
 }
+
+// taken from CPython "Objects/unicodeobject.c"
+PyObject *
+PyUnicode_DecodeLatin1(const char *s,
+                       Py_ssize_t size,
+                       const char *errors)
+{
+    /* Latin-1 is equivalent to the first 256 ordinals in Unicode. */
+    return _PyUnicode_FromUCS1((const unsigned char*)s, size);
+}
+
