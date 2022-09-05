@@ -213,6 +213,16 @@ PyObject* PyErr_SetFromErrno(PyObject* exc) {
 }
 
 // taken from CPython "Python/errors.c"
+PyObject *
+PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
+{
+    PyObject *name = filename ? PyUnicode_DecodeFSDefault(filename) : NULL;
+    PyObject *result = PyErr_SetFromErrnoWithFilenameObjects(exc, name, NULL);
+    Py_XDECREF(name);
+    return result;
+}
+
+// taken from CPython "Python/errors.c"
 PyObject* PyErr_SetFromErrnoWithFilenameObject(PyObject* exc, PyObject* filenameObject) {
     return PyErr_SetFromErrnoWithFilenameObjects(exc, filenameObject, NULL);
 }
