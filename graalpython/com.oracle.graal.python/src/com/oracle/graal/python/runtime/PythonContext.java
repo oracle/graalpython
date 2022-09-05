@@ -203,6 +203,25 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
+     * An enum of events used by python's source code profiler
+     *
+     * 'call', 'return', 'c_call', 'c_return', or 'c_exception'
+     */
+    public enum ProfileEvent {
+        CALL("call"),
+        C_CALL("c_call"),
+        C_EXCEPTION("c_exception"),
+        C_RETURN("c_return"),
+        RETURN("return");
+
+        public final TruffleString name;
+
+        ProfileEvent(String name) {
+            this.name = tsLiteral(name);
+        }
+    }
+
+    /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
      */
     public static final class PythonThreadState {
@@ -244,8 +263,14 @@ public final class PythonContext extends Python3Core {
         /* Keep track of execution to avoid tracing code inside the tracing function. */
         boolean tracing;
 
+        /* Keep track of execution to avoid profiling code inside the profile function. */
+        boolean profiling;
+
         /* The event currently being traced, only useful if tracing is true. */
         TraceEvent tracingWhat;
+
+        /* The global profiling function, set by sys.setprofile and returned by sys.getprofile. */
+        Object profileFun;
 
         /*
          * the current contextvars.Context for the thread.
@@ -366,7 +391,7 @@ public final class PythonContext extends Python3Core {
 
         public void setTraceFun(Object traceFun, PythonLanguage language) {
             if (this.traceFun != traceFun) {
-                language.noTracingAssumption.invalidate();
+                language.noTracingOrProfilingAssumption.invalidate();
                 this.traceFun = traceFun;
             }
         }
@@ -391,6 +416,30 @@ public final class PythonContext extends Python3Core {
 
         public void setTracingWhat(TraceEvent tracingWhat) {
             this.tracingWhat = tracingWhat;
+        }
+
+        public void setProfileFun(Object profileFun, PythonLanguage language) {
+            if (this.profileFun != profileFun) {
+                language.noTracingOrProfilingAssumption.invalidate();
+                this.profileFun = profileFun;
+            }
+        }
+
+        public Object getProfileFun() {
+            return profileFun;
+        }
+
+        public boolean isProfiling() {
+            return profiling;
+        }
+
+        public void profilingStart() {
+            assert !this.profiling : "Attempt made to trace a call while inside a profile function. Did you forget to check isProfiling before calling invokeTraceFunction?";
+            this.profiling = true;
+        }
+
+        public void profilingStop() {
+            this.profiling = false;
         }
     }
 

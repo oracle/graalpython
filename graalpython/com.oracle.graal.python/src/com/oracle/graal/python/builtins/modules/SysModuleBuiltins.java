@@ -539,6 +539,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
             sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
+            sys.setAttribute(tsLiteral("setprofile"), sys.getAttribute(tsLiteral("_setprofile")));
         }
 
         TruffleString coreHome = context.getCoreHome();
@@ -1010,6 +1011,27 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_setprofile", minNumOfPositionalArgs = 1, parameterNames = {
+                    "function"}, doc = "Set the profiling function.  It will be called on each function call\nand return.  See the profiler chapter in the library manual.")
+    @GenerateNodeFactory
+    abstract static class SetProfile extends PythonBuiltinNode {
+        @Specialization
+        Object settrace(Object function) {
+            PythonContext ctx = getContext();
+            if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                throw raise(NotImplementedError, ErrorMessages.SETPROFILE_NOT_IMPLEMENTED);
+            }
+            PythonLanguage language = getLanguage();
+            PythonContext.PythonThreadState state = ctx.getThreadState(language);
+            if (function == PNone.NONE) {
+                state.setProfileFun(null, language);
+            } else {
+                state.setProfileFun(function, language);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "gettrace")
     @GenerateNodeFactory
     abstract static class GetTrace extends PythonBuiltinNode {
@@ -1020,6 +1042,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
             Object trace = state.getTraceFun();
             return trace == null ? PNone.NONE : trace;
 
+        }
+    }
+
+    @Builtin(name = "getprofile")
+    @GenerateNodeFactory
+    abstract static class GetProfile extends PythonBuiltinNode {
+        @Specialization
+        Object getProfile() {
+            PythonContext ctx = getContext();
+            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+            Object trace = state.getProfileFun();
+            return trace == null ? PNone.NONE : trace;
         }
     }
 

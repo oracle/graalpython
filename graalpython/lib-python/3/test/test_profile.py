@@ -13,6 +13,9 @@ import profile
 from test.profilee import testfunc, timer
 from test.support.script_helper import assert_python_failure, assert_python_ok
 
+import builtins
+
+skip = not getattr(getattr(builtins, '__graalpython__', None), 'uses_bytecode_interpreter', True)
 
 class ProfileTest(unittest.TestCase):
 
@@ -48,6 +51,7 @@ class ProfileTest(unittest.TestCase):
             results.append('\n'.join(output))
         return results
 
+    @unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
     def test_cprofile(self):
         results = self.do_profiling()
         expected = self.get_expected_output()
@@ -65,6 +69,7 @@ class ProfileTest(unittest.TestCase):
         if fail:
             self.fail("\n".join(fail))
 
+    @unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
     def test_calling_conventions(self):
         # Issue #5330: profile and cProfile wouldn't report C functions called
         # with keyword arguments. We test all calling conventions.
@@ -86,12 +91,14 @@ class ProfileTest(unittest.TestCase):
             self.assertIn(self.expected_max_output, res,
                 "Profiling {0!r} didn't report max:\n{1}".format(stmt, res))
 
+    @unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
     def test_run(self):
         with silent():
             self.profilermodule.run("int('1')")
         self.profilermodule.run("int('1')", filename=TESTFN)
         self.assertTrue(os.path.exists(TESTFN))
 
+    @unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
     def test_runctx(self):
         with silent():
             self.profilermodule.runctx("testfunc()", globals(), locals())
@@ -99,6 +106,7 @@ class ProfileTest(unittest.TestCase):
                                   filename=TESTFN)
         self.assertTrue(os.path.exists(TESTFN))
 
+    @unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
     def test_run_profile_as_module(self):
         # Test that -m switch needs an argument
         assert_python_failure('-m', self.profilermodule.__name__, '-m')
@@ -141,6 +149,7 @@ def silent():
     finally:
         sys.stdout = stdout
 
+@unittest.skipIf(skip, 'sys.setprofile only works in the bytecode interpreter')
 def test_main():
     run_unittest(ProfileTest)
 

@@ -1457,6 +1457,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HPY_DEBUG_MODE_NOT_AVAILABLE = tsLiteral("HPy debug mode is not available");
 
     public static final TruffleString SETTRACE_NOT_IMPLEMENTED = tsLiteral("sys.settrace is only implemented for the bytecode interpreter.");
+    public static final TruffleString SETPROFILE_NOT_IMPLEMENTED = tsLiteral("sys.setprofile is only implemented for the bytecode interpreter.");
     public static final TruffleString ATTRIBUTE_VALUE_MUST_BE_BOOL = tsLiteral("attribute value type must be bool");
     public static final TruffleString HPY_UNEXPECTED_HPY_NULL = tsLiteral("unexpected HPy_NULL");
     public static final TruffleString TOKEN_ALREADY_USED = tsLiteral("%s has already been used once");
