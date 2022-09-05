@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -106,7 +108,8 @@ public final class PythonCextContextVarBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                return self.get(def);
+                PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+                return self.get(threadState, def);
             } finally {
                 gil.release(mustRelease);
             }
@@ -121,7 +124,8 @@ public final class PythonCextContextVarBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                self.setValue(value);
+                PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+                self.setValue(threadState, value);
                 return PNone.NONE;
             } finally {
                 gil.release(mustRelease);
