@@ -487,7 +487,7 @@ PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
 
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 	// CPython assumes latin1 when decoding an UCS1 array
-	return polyglot_from_string((const char *) u, "ISO-8859-1");
+	return to_sulong(polyglot_from_string((const char *) u, "ISO-8859-1"));
 }
 
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
