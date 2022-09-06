@@ -3232,7 +3232,6 @@ public abstract class GraalHPyContextFunctions {
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached PRaiseNode raiseNode,
@@ -3257,7 +3256,7 @@ public abstract class GraalHPyContextFunctions {
                         result = pyCapsule.getContext();
                         break;
                     case CapsuleKey.Name:
-                        result = new CByteArrayWrapper(encodeNativeStringNode.execute(StandardCharsets.UTF_8, pyCapsule.getName(), T_STRICT));
+                        result = pyCapsule.getName();
                         break;
                     case CapsuleKey.Destructor:
                         result = pyCapsule.getDestructor();
