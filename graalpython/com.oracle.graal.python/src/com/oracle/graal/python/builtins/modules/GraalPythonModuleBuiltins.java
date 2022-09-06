@@ -712,4 +712,15 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return fromJavaStringNode.execute(tempFile.getPath(), TS_ENCODING);
         }
     }
+
+    @Builtin(name = "java_assert", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class JavaAssertNode extends PythonBuiltinNode {
+        @Specialization
+        Object doit() {
+            boolean assertOn = false;
+            assert assertOn = true;
+            return assertOn;
+        }
+    }
 }

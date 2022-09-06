@@ -311,7 +311,7 @@ def run_cpython_test(args):
     env = os.environ.copy()
     delete_bad_env_keys(env)
     with _dev_pythonhome_context():
-        mx.run([python_gvm_with_assertions()] + interp_args + [
+        mx.run([python_gvm()] + ['--vm.ea'] + interp_args + [
             os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
         ] + test_args + testfiles, env=env)
 
@@ -342,7 +342,9 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
-    vm = python_svm() if not parsed_args.jvm else python_gvm_with_assertions()
+    vm = python_svm() if not parsed_args.jvm else python_gvm()
+    if parsed_args.jvm:
+        args += ['-ea']
     mx.run([vm] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
@@ -590,18 +592,6 @@ def python_enterprise_gvm(_=None):
     mx.log(launcher)
     return launcher
 
-def python_gvm_with_assertions():
-    launcher = python_gvm()
-    patch_batch_launcher(launcher, '-ea')
-    return launcher
-
-
-def python_managed_gvm_with_assertions():
-    launcher = python_managed_gvm()
-    patch_batch_launcher(launcher, '-ea')
-    return launcher
-
-
 def python_svm(_=None):
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
@@ -695,7 +685,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -759,6 +749,9 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
                 mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
                        nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
+        if javaAsserts:
+            args += ['-ea']
+
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         if lock:
@@ -838,7 +831,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
             mx.abort("At least one HPy testing thread failed.")
 
 
-def run_tagged_unittests(python_binary, env=None, cwd=None):
+def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False):
     if env is None:
         env = os.environ
     sub_env = env.copy()
@@ -852,7 +845,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None):
         args=["-v"],
         paths=["test_tagged_unittests.py"],
         env=sub_env,
-        cwd=cwd
+        cwd=cwd,
+        javaAsserts=javaAsserts
     )
 
 
@@ -877,19 +871,19 @@ def graalpython_gate_runner(args, tasks):
                 test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
                 mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
-            run_python_unittests(python_gvm_with_assertions())
+            run_python_unittests(python_gvm(), javaAsserts=True)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_managed_gvm_with_assertions())
+            run_python_unittests(python_managed_gvm(), javaAsserts=True)
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm_with_assertions(), args=["-multi-context"])
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True)
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
-            run_python_unittests(python_gvm_with_assertions(), args=["--python.EmulateJython"], paths=["test_interop.py"])
+            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True)
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -901,8 +895,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
-            run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"], javaAsserts=True)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -1813,7 +1807,7 @@ def python_coverage(args):
             'coverage-upload',
         ])
     if args.truffle:
-        executable = python_gvm_with_assertions()
+        executable = python_gvm()
         variants = [
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
@@ -1843,9 +1837,9 @@ def python_coverage(args):
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env)
+                    run_tagged_unittests(executable, env=env, javaAsserts=True)
                 else:
-                    run_python_unittests(executable, env=env, **kwds)
+                    run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
