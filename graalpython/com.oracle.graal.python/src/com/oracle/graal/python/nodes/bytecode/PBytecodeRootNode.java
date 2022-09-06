@@ -2234,7 +2234,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, CodeUnit codeUnit) {
-        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(PythonLanguage.get(this), codeUnit, source));
+        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(getLanguage(PythonLanguage.class), codeUnit, source));
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
