@@ -203,6 +203,7 @@ class TraceTests(unittest.TestCase):
         self.events.append(fr.f_code.co_name)
 
     @unittest.skipIf(not hasattr(signal, 'SIGUSR1'), "User defined signal not present")
+    @unittest.skipIf(not hasattr(builtins, '__graalpython__'), "async actions do get traced in CPython")
     def test_07_async_actions_not_traced(self):
         def handler(*_): handler.called = 1
 
