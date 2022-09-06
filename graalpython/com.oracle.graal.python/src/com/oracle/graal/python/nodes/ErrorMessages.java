@@ -644,7 +644,6 @@ public abstract class ErrorMessages {
     public static final TruffleString RETURNED_NULL_WO_SETTING_ERROR = tsLiteral("%s returned NULL without setting an error");
     public static final TruffleString RETURNED_RESULT_WITH_ERROR_SET = tsLiteral("%s returned a result with an error set");
     public static final TruffleString RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = tsLiteral("%s returned an unexpected return code; expected 'int' but was %s");
-    public static final TruffleString REGULAR_EXPRESSION_NOT_SUPPORTED = tsLiteral("regular expression not supported, no fallback engine present");
     public static final TruffleString EMBEDDED_NULL_CHARACTER = tsLiteral("embedded null character");
     public static final TruffleString S = tsLiteral("%s");
     public static final TruffleString APOSTROPHE_S = tsLiteral("'%s'");

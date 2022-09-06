@@ -54,14 +54,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -103,13 +101,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
+        addBuiltinConstant("_with_sre", core.getContext().getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback));
         super.initialize(core);
     }
 
     abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
 
         private static final TruffleString T_STR_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonStr,Encoding=UTF-32");
-        private static final TruffleString T_BYTES_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonBytes,Encoding=BYTES");
+        private static final TruffleString T_BYTES_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonBytes,Encoding=LATIN-1");
 
         public abstract Source execute(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options);
 
@@ -173,20 +172,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_compile_internal", minNumOfPositionalArgs = 4)
+    @Builtin(name = "tregex_compile_internal", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallCompile extends PythonQuaternaryBuiltinNode {
+    abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object call(VirtualFrame frame, Object pattern, Object flags, Object options, PFunction fallbackCompiler,
+        Object call(VirtualFrame frame, Object pattern, Object flags, Object options,
                         @Cached BranchProfile potentialSyntaxError,
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile unsupportedRegexError,
                         @Cached CastToTruffleStringNode flagsToStringNode,
                         @Cached CastToTruffleStringNode optionsToStringNode,
                         @Cached ToRegexSourceNode toRegexSourceNode,
-                        @Cached CallNode callFallbackCompilerNode,
                         @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
                         @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -197,11 +195,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 Object compiledRegex = getContext().getEnv().parseInternal(regexSource).call();
                 if (compiledRegexLib.isNull(compiledRegex)) {
                     unsupportedRegexError.enter();
-                    if (getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
-                        return callFallbackCompilerNode.execute(frame, fallbackCompiler, pattern, flags);
-                    } else {
-                        throw raise(ValueError, ErrorMessages.REGULAR_EXPRESSION_NOT_SUPPORTED);
-                    }
+                    return PNone.NONE;
                 } else {
                     return compiledRegex;
                 }

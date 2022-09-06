@@ -66,72 +66,80 @@ def _normalize_bounds(string, pos, endpos):
     return substring, pos, endpos
 
 
-class _NamedCaptureGroups:
+class _SRE_NamedCaptureGroupMap:
     def __init__(self, groupindex):
-        self._groupindex = groupindex
+        self.__groupindex = groupindex
 
     def __dir__(self):
-        return self._groupindex.keys()
+        return self.__groupindex.keys()
 
-    def __getitem__(self, item):
-        return self._groupindex[item]
+    def __getattr__(self, item):
+        return self.__groupindex[item]
 
-class _RegexResult:
+class _SRE_RegexResult:
     def __init__(self, pattern_input, isMatch, start, end):
         self.input = pattern_input
         self.isMatch = isMatch
-        self._start = start
-        self._end = end
+        self.__start = start
+        self.__end = end
 
     def getStart(self, grpidx):
-        return self._start[grpidx]
+        return self.__start[grpidx]
 
     def getEnd(self, grpidx):
-        return self._end[grpidx]
+        return self.__end[grpidx]
 
-class _ExecutablePattern:
-    def __init__(self, compiled_pattern, flags, sticky):
-        self.__compiled_pattern__ = compiled_pattern
-        self.__sticky__ = sticky
-        self.pattern = compiled_pattern.pattern
-        self.flags = {name: bool(flags & flag) for flag, name in FLAG_NAMES}
-        self.groupCount = 1 + compiled_pattern.groups
-        self.groups = _NamedCaptureGroups(compiled_pattern.groupindex)
+class _SRE_RegexObject:
+    def __init__(self, compiled_regex, method, must_advance):
+        self.__compiled_regex = compiled_regex
+        self.__method = method
+        self.__must_advance = must_advance
+        self.pattern = self.__compiled_regex.pattern
+        self.flags = {name: bool(self.__compiled_regex.flags & flag) for flag, name in FLAG_NAMES}
+        self.groupCount = 1 + self.__compiled_regex.groups
+        self.groups = _SRE_NamedCaptureGroupMap(self.__compiled_regex.groupindex)
 
     def exec(self, pattern_input, from_index):
-        if self.__sticky__:
-            result = self.__compiled_pattern__.match(pattern_input, from_index)
+        # TODO: self.__must_advance__ cannot be passed to the SRE C implementation, we need
+        # to fall back on SRE for the entire findall/finditer/subn/split/Scanner... method
+        if self.__method == "search":
+            result = self.__compiled_regex.search(pattern_input, from_index)
+        elif self.__method == "match":
+            result = self.__compiled_regex.match(pattern_input, from_index)
         else:
-            result = self.__compiled_pattern__.search(pattern_input, from_index)
+            assert self.__method == "fullmatch"
+            result = self.__compiled_regex.fullmatch(pattern_input, from_index)
         is_match = result is not None
-        return _RegexResult(
+        return _SRE_RegexResult(
             pattern_input = pattern_input,
             isMatch = is_match,
             start = [result.start(i) for i in range(self.groupCount)] if is_match else [],
             end = [result.end(i) for i in range(self.groupCount)] if is_match else []
         )
 
-def fallback_compiler(pattern, flags):
+def _sre_compile_internal(pattern, flags):
     """
     :param pattern: a str or bytes with the regexp's pattern
     :param flags: string representation of the regexp's flags
-    :return: an object implementing the RegexObject interface
     """
-    sticky = False
     bit_flags = 0
     for flag in flags:
-        # Handle internal stick(y) flag used to signal matching only at the start of input.
-        if flag == "y":
-            sticky = True
-        else:
-            bit_flags = bit_flags | FLAGS[flag]
+        bit_flags = bit_flags | FLAGS[flag]
+    return _sre_compile(pattern, bit_flags)
 
-    compiled_pattern = _sre_compile(pattern, bit_flags)
+class _TRegex_RegexObject:
+    def __init__(self, compiled_regex):
+        self.__compiled_regex = compiled_regex
+        self.pattern = self.__compiled_regex.pattern
+        self.flags = self.__compiled_regex.flags
+        self.groupCount = self.__compiled_regex.groupCount
+        self.groups = self.__compiled_regex.groups
 
-    return _ExecutablePattern(compiled_pattern, bit_flags, sticky)
+    def exec(self, pattern_input, from_index):
+        return tregex_call_exec(self.__compiled_regex.exec, pattern_input, from_index)
 
 def _new_compile(p, flags=0):
-    if _with_tregex and isinstance(p, (str, bytes)):
+    if _with_tregex and isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
         return _t_compile(p, flags)
     else:
         return _sre_compile(p, flags)
@@ -302,7 +310,7 @@ def _is_bytes_like(object):
 
 class Pattern():
     def __init__(self, pattern, flags):
-        self.__binary = isinstance(pattern, bytes)
+        self.__binary = _is_bytes_like(pattern)
         self.pattern = pattern
         self.__input_flags = flags
         flags_str = []
@@ -311,6 +319,7 @@ class Pattern():
                 flags_str.append(char)
         self.__flags_str = "".join(flags_str)
         self.__compiled_regexes = {}
+        self.__compiled_fallback = None
         self.__cached_flags = None
         compiled_regex = self.__tregex_compile()
         self.groups = compiled_regex.groupCount - 1
@@ -320,18 +329,12 @@ class Pattern():
             self.__indexgroup = {}
         else:
             group_names = dir(groups)
-            if isinstance(groups, __graalpython__.ForeignType):
-                # tregex groups object
-                self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
-                self.__indexgroup = {getattr(groups, name): name for name in group_names}
-            else:
-                # _sre._NamedCaptureGroups
-                self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
-                self.__indexgroup = {groups[name]: name for name in group_names}
+            self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+            self.__indexgroup = {getattr(groups, name): name for name in group_names}
 
     @property
     def flags(self):
-        # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
+        # Flags can be specified both in the flag argument or inline in the regex. Extract them back from the regex
         if self.__cached_flags != None:
             return self.__cached_flags
         flags = self.__input_flags
@@ -357,7 +360,17 @@ class Pattern():
         if (method, must_advance) not in self.__compiled_regexes:
             try:
                 extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}"
-                self.__compiled_regexes[(method, must_advance)] = tregex_compile_internal(self.pattern, self.__flags_str, extra_options, fallback_compiler)
+                compiled_regex = tregex_compile_internal(self.pattern, self.__flags_str, extra_options)
+                if compiled_regex is None:
+                    if _with_sre:
+                        if self.__compiled_fallback is None:
+                            self.__compiled_fallback = _sre_compile_internal(self.pattern, self.__flags_str)
+                        compiled_regex = _SRE_RegexObject(self.__compiled_fallback, method, must_advance)
+                    else:
+                        raise ValueError("regular expression not supported, no fallback engine present") from None
+                else:
+                    compiled_regex = _TRegex_RegexObject(compiled_regex)
+                self.__compiled_regexes[(method, must_advance)] = compiled_regex
             except ValueError as e:
                 if len(e.args) == 2:
                     msg = e.args[0]
@@ -413,7 +426,7 @@ class Pattern():
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         compiled_regex = self.__tregex_compile(method=method, must_advance=must_advance)
-        result = tregex_call_exec(compiled_regex.exec, substring, pos)
+        result = compiled_regex.exec(substring, pos)
         if result.isMatch:
             return Match(self, pos, endpos, result, string, self.__indexgroup)
         else:
@@ -448,7 +461,7 @@ class Pattern():
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            result = compiled_regex.exec(substring, pos)
             if not result.isMatch:
                 break
             else:
@@ -466,7 +479,7 @@ class Pattern():
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            result = compiled_regex.exec(substring, pos)
             if not result.isMatch:
                 break
             elif group_count == 1:
@@ -503,7 +516,7 @@ class Pattern():
 
         while (count == 0 or n < count) and pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, pos)
+            match_result = compiled_regex.exec(string, pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -533,7 +546,7 @@ class Pattern():
         must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
+            match_result = compiled_regex.exec(string, search_pos)
             if not match_result.isMatch:
                 break
             n += 1
