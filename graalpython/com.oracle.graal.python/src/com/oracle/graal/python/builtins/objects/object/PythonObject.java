@@ -185,7 +185,7 @@ public class PythonObject extends PythonAbstractObject {
 
     public final void setHPyNativeSpace(Object dataPtr) {
         if (hpyFields == null) {
-            hpyFields = new Object[] { dataPtr };
+            hpyFields = new Object[]{dataPtr};
         } else {
             hpyFields[0] = dataPtr;
         }
