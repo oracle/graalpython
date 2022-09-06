@@ -172,7 +172,14 @@ public class SourceMap {
         }
 
         public void appendLocation(int startLine, int startColumn, int endLine, int endColumn) {
-            assert startLine >= 0 && startColumn >= 0 && endLine >= startLine && (startLine != endLine || endColumn >= startColumn);
+            // ENDMARKER tokens produce negative columns
+            if (startColumn < 0) {
+                startColumn = 0;
+            }
+            if (endColumn < 0) {
+                endColumn = 0;
+            }
+            assert startLine >= 0 && endLine >= startLine && (startLine != endLine || endColumn >= startColumn);
             int lineDelta = startLine - lastLine;
             int lineSpan = endLine - startLine;
             writeDeltas(lastColumn, startColumn, lineDelta);
