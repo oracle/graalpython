@@ -5,7 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 22.3.0
 * Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy`, for better integration with other tools.
-* New interpreter backend based on interpreting bytecode. This change should bring better startup performance and memory footprint while retaining good JIT-compiled performance. There is no support for GraalVM instrumentation tools on the bytecode backend yet, so using one of the instrumentation options (e.g. `--inspect`) falls back on the AST backend.
+* New interpreter backend based on interpreting bytecode. This change should bring better startup performance and memory footprint while retaining good JIT-compiled performance.
 * New parser generated from CPython's new PEG grammar definition. It brings better compatibility and enables us to implement the `ast` module.
 * Added support for tracing API (`sys.settrace`) which makes `pdb` and related tools work on GraalPy.
 * Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
