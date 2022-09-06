@@ -86,36 +86,39 @@ def _prepare_blas_lapack(env=None):
     def _append_var(var, value):
         env[var] = '{} {}'.format(env.get(var, ''), value)
 
-    def _add_lib(lib_env_var):
+    def _add_lib(lib_env_var, include_env_var=None):
         value = os.environ.get(lib_env_var, None)
         if isinstance(value, str) and value.lower() == 'none':
             value = None
-        info("{} env var: {}".format(lib_env_var, value))
         if value:
             lib_path = os.path.split(value)[0]
             info("found {}: {}".format(lib_env_var, lib_path))
             _append_var('LDFLAGS', '-L{}'.format(lib_path))
             par_dir = os.path.split(lib_path)[0]
-            inc_path = os.path.join(par_dir, 'include')
-            pkgconf_path = os.path.join(par_dir, 'lib', 'pkgconfig')
+
+            inc_path = os.environ.get(include_env_var, None) if include_env_var else None
+            if not inc_path or not os.path.exists(inc_path):
+                inc_path = os.path.join(par_dir, 'include')
             if os.path.exists(inc_path):
                 _append_var('CPPFLAGS', '-I{}'.format(inc_path))
             else:
-                info("include path for {} not found in {}".format(lib_env_var, inc_path))
+                warn("include path for {} not found in {}".format(lib_env_var, inc_path))
+
+            pkgconf_path = os.path.join(par_dir, 'lib', 'pkgconfig')
             if os.path.exists(pkgconf_path):
                 _append_var('PKG_CONFIG_PATH', '{}'.format(pkgconf_path))
             else:
-                info("pkgconfig path for {} not found in {}".format(lib_env_var, pkgconf_path))
+                warn("pkgconfig path for {} not found in {}".format(lib_env_var, pkgconf_path))
             return True
         else:
-            info("{} env var not set".format(lib_env_var))
+            warn("{} env var not set".format(lib_env_var))
         return False
 
     if not env:
         env = {}
 
-    have_blas = _add_lib('BLAS')
-    have_lapack = _add_lib('LAPACK')
+    _add_lib('BLAS', 'BLAS_INCLUDE')
+    have_lapack = _add_lib('LAPACK', 'LAPACK_INCLUDE')
     if have_lapack:
         # https://github.com/scipy/scipy/issues/12935
         _append_var('CFLAGS', '-Wno-error=implicit-function-declaration')
