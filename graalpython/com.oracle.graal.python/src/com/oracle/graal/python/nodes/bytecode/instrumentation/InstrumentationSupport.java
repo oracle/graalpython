@@ -44,9 +44,11 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
+import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class InstrumentationSupport extends Node {
@@ -95,18 +97,36 @@ public final class InstrumentationSupport extends Node {
     }
 
     public void notifyStatement(VirtualFrame frame, int prevLine, int line) {
-        // TODO exception handling?
         if (line != prevLine) {
             if (prevLine >= 0) {
                 InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(prevLine);
                 if (wrapper != null) {
-                    wrapper.getProbeNode().onReturnValue(frame, null);
+                    try {
+                        wrapper.getProbeNode().onReturnValue(frame, null);
+                    } catch (Throwable t) {
+                        handleException(frame, wrapper, t, true);
+                        throw t;
+                    }
                 }
             }
             InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
             if (wrapper != null) {
-                wrapper.getProbeNode().onEnter(frame);
+                try {
+                    wrapper.getProbeNode().onEnter(frame);
+                } catch (Throwable t) {
+                    handleException(frame, wrapper, t, false);
+                    throw t;
+                }
             }
+        }
+    }
+
+    private static void handleException(VirtualFrame frame, InstrumentableNode.WrapperNode wrapper, Throwable t, boolean isReturnCalled) {
+        Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(frame, t, isReturnCalled);
+        if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+            throw CompilerDirectives.shouldNotReachHere("Unwind not supported on statement level");
+        } else if (result != null) {
+            throw CompilerDirectives.shouldNotReachHere("Cannot replace a return of a statement");
         }
     }
 

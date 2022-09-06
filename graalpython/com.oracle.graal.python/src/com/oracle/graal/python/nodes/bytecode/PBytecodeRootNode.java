@@ -1169,9 +1169,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
         final InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
-        if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
-            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-            wrapper.getProbeNode().onEnter(virtualFrame);
+        boolean returnCalled = false;
+        if (instrumentation != null) {
+            Object result = enterRoot(virtualFrame);
+            if (result != null) {
+                return result;
+            }
         }
 
         /*
@@ -1214,19 +1217,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 traceLine(virtualFrame, mutableData, localBC, bci);
             }
             profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
-            if (instrumentation != null) {
-                int line = bciToLine(bci);
-                int pastLine = mutableData.getPastLine();
-                instrumentation.notifyStatement(virtualFrame, pastLine, line);
-                mutableData.setPastLine(line);
-                mutableData.setPastBci(bci);
-            }
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(stackTop);
 
             try {
+                if (instrumentation != null) {
+                    int line = bciToLine(bci);
+                    int pastLine = mutableData.getPastLine();
+                    instrumentation.notifyStatement(virtualFrame, pastLine, line);
+                    mutableData.setPastLine(line);
+                    mutableData.setPastBci(bci);
+                }
+
                 switch (bc) {
                     case OpCodesConstants.LOAD_NONE:
                         virtualFrame.setObject(++stackTop, PNone.NONE);
@@ -1676,6 +1680,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         traceOrProfileReturn(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
 
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
+                            returnCalled = true;
                             WrapperNode wrapper = (WrapperNode) instrumentationRoot;
                             wrapper.getProbeNode().onReturnValue(virtualFrame, value);
                         }
@@ -2095,6 +2100,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
+                            returnCalled = true;
                             WrapperNode wrapper = (WrapperNode) instrumentationRoot;
                             wrapper.getProbeNode().onReturnValue(virtualFrame, value);
                         }
@@ -2188,8 +2194,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (instrumentation != null) {
                     instrumentation.notifyException(virtualFrame, bciToLine(beginBci), e);
                     if (instrumentationRoot instanceof WrapperNode) {
+                        returnCalled = true;
                         WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                        wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
+                        Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
+                        if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                            throw CompilerDirectives.shouldNotReachHere("Reenter shouldn't occur at this point");
+                        } else if (result != null) {
+                            if (isGeneratorOrCoroutine) {
+                                throw CompilerDirectives.shouldNotReachHere("Cannot replace return value of generators");
+                            }
+                            return result;
+                        }
                     }
                 }
 
@@ -2215,7 +2230,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // Need to handle instrumentation frame unwind
                 if (instrumentationRoot instanceof WrapperNode) {
                     WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                    Object ret = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
+                    Object ret = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, returnCalled);
                     if (ret == ProbeNode.UNWIND_ACTION_REENTER) {
                         if (isGeneratorOrCoroutine) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2226,11 +2241,35 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = getInitialStackTop();
                         oparg = 0;
                         continue;
+                    } else if (ret != null) {
+                        return ret;
                     }
                 }
                 throw e;
             }
         }
+    }
+
+    @InliningCutoff
+    private Object enterRoot(VirtualFrame virtualFrame) {
+        if (instrumentationRoot instanceof WrapperNode) {
+            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+            try {
+                wrapper.getProbeNode().onEnter(virtualFrame);
+            } catch (Throwable t) {
+                Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, t, false);
+                if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                    // We're at the beginning, reenter means just continue
+                    return null;
+                } else if (result != null) {
+                    if (co.isGeneratorOrCoroutine()) {
+                        throw CompilerDirectives.shouldNotReachHere("Cannot replace return value of generators");
+                    }
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, CodeUnit codeUnit) {
