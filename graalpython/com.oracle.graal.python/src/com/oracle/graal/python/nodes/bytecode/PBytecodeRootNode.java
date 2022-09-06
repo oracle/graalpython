@@ -1224,11 +1224,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
             try {
                 if (instrumentation != null) {
-                    int line = bciToLine(bci);
-                    int pastLine = mutableData.getPastLine();
-                    instrumentation.notifyStatement(virtualFrame, pastLine, line);
-                    mutableData.setPastLine(line);
-                    mutableData.setPastBci(bci);
+                    notifyStatement(virtualFrame, instrumentation, mutableData, bci);
                 }
 
                 switch (bc) {
@@ -1681,8 +1677,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
                             returnCalled = true;
-                            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                            wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+                            notifyRootReturn(virtualFrame, value);
                         }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
@@ -2101,8 +2096,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
                             returnCalled = true;
-                            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                            wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+                            notifyRootReturn(virtualFrame, value);
                         }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
@@ -2192,19 +2186,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     traceException(virtualFrame, mutableData, bci, pe);
                 }
                 if (instrumentation != null) {
-                    instrumentation.notifyException(virtualFrame, bciToLine(beginBci), e);
-                    if (instrumentationRoot instanceof WrapperNode) {
-                        returnCalled = true;
-                        WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                        Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, false);
-                        if (result == ProbeNode.UNWIND_ACTION_REENTER) {
-                            throw CompilerDirectives.shouldNotReachHere("Reenter shouldn't occur at this point");
-                        } else if (result != null) {
-                            if (isGeneratorOrCoroutine) {
-                                throw CompilerDirectives.shouldNotReachHere("Cannot replace return value of generators");
-                            }
-                            return result;
-                        }
+                    Object result = notifyException(virtualFrame, instrumentation, returnCalled, beginBci, e);
+                    if (result != null) {
+                        return result;
                     }
                 }
 
@@ -2226,28 +2210,70 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
                 }
-            } catch (ThreadDeath e) {
+            } catch (ThreadDeath t) {
                 // Need to handle instrumentation frame unwind
-                if (instrumentationRoot instanceof WrapperNode) {
-                    WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-                    Object ret = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, returnCalled);
-                    if (ret == ProbeNode.UNWIND_ACTION_REENTER) {
-                        if (isGeneratorOrCoroutine) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw new UnsupportedOperationException("Frame restarting is not possible in generators");
-                        }
-                        copyArgs(virtualFrame.getArguments(), localFrame);
-                        bci = 0;
-                        stackTop = getInitialStackTop();
-                        oparg = 0;
-                        continue;
-                    } else if (ret != null) {
-                        return ret;
-                    }
+                Object result = handlePossibleReenter(virtualFrame, t, returnCalled);
+                if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                    bci = 0;
+                    stackTop = getInitialStackTop();
+                    oparg = 0;
+                    continue;
+                } else if (result != null) {
+                    return result;
                 }
-                throw e;
+                throw t;
             }
         }
+    }
+
+    @InliningCutoff
+    private Object notifyException(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, boolean returnCalled, int bci, Throwable e) {
+        instrumentation.notifyException(virtualFrame, bciToLine(bci), e);
+        if (instrumentationRoot instanceof WrapperNode) {
+            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+            Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, returnCalled);
+            if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                throw CompilerDirectives.shouldNotReachHere("Reenter shouldn't occur at this point");
+            } else if (result != null) {
+                if (co.isGeneratorOrCoroutine()) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot replace return value of generators");
+                }
+            }
+            return result;
+        }
+        return null;
+    }
+
+    @InliningCutoff
+    private void notifyRootReturn(VirtualFrame virtualFrame, Object value) {
+        WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+        wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+    }
+
+    @InliningCutoff
+    private void notifyStatement(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, MutableLoopData mutableData, int bci) {
+        int line = bciToLine(bci);
+        int pastLine = mutableData.getPastLine();
+        instrumentation.notifyStatement(virtualFrame, pastLine, line);
+        mutableData.setPastLine(line);
+        mutableData.setPastBci(bci);
+    }
+
+    @InliningCutoff
+    private Object handlePossibleReenter(VirtualFrame virtualFrame, ThreadDeath t, boolean returnCalled) {
+        if (instrumentationRoot instanceof WrapperNode) {
+            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+            Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, t, returnCalled);
+            if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                if (co.isGeneratorOrCoroutine()) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new UnsupportedOperationException("Frame restarting is not possible in generators");
+                }
+                copyArgs(virtualFrame.getArguments(), virtualFrame);
+            }
+            return result;
+        }
+        return null;
     }
 
     @InliningCutoff
