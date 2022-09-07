@@ -73,8 +73,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static final String LANGUAGE_ID = "python";
 
-    // provided by GraalVM bash launchers, ignored in native image mode
-    protected static final String J_BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    // provided by GraalVM thin launcher
+    protected static final String J_BASH_LAUNCHER_EXEC_PROPERTY_NAME = "org.graalvm.launcher.executablename";
 
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
@@ -101,6 +101,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
+    private String execName;
 
     boolean useASTInterpreter = false;
 
@@ -404,18 +405,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.err.println(string);
     }
 
-    private static String getLauncherExecName() {
-        if (ImageInfo.inImageCode()) {
-            String binPathName = null;
-            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
-                binPathName = calculateProgramFullPath(ProcessProperties.getArgumentVectorProgramName());
-            }
-            if (binPathName != null) {
-                return binPathName;
-            }
-            return ProcessProperties.getExecutableName();
+    protected String getLauncherExecName() {
+        if (execName != null) {
+            return execName;
         }
-        return GraalPythonMain.J_BASH_LAUNCHER_EXEC_NAME;
+        execName = getProgramName();
+        if (execName == null) {
+            return null;
+        }
+        execName = calculateProgramFullPath(execName);
+        return execName;
     }
 
     /**

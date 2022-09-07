@@ -499,6 +499,21 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /*
+     * Internal check used in tests only to check that we are running through managed launcher.
+     */
+    @Builtin(name = "is_managed_launcher")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class IsManagedLauncher extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected boolean isManaged() {
+            // The best approximation for now
+            return !getContext().getEnv().isNativeAccessAllowed() && getContext().getOption(PythonOptions.RunViaLauncher);
+        }
+    }
+
     @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
