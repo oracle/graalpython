@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.capsule;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule implements TruffleObject {
@@ -92,7 +93,7 @@ public final class PyCapsule implements TruffleObject {
         String quote, n;
         if (name != null) {
             quote = "\"";
-            n = "<unknown>";
+            n = CastToTruffleStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name)).toJavaStringUncached();
         } else {
             quote = "";
             n = "NULL";
