@@ -239,6 +239,7 @@ public class PythonDebugTest {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testBreakpointBuiltin() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "def foo():\n" +
