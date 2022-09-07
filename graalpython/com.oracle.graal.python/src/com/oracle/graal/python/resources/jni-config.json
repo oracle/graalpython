@@ -39,6 +39,7 @@
     {"name":"ctxIsG","parameterTypes":["long", "long"] },
     {"name":"ctxCapsuleNew","parameterTypes":["long", "long", "long"] },
     {"name":"ctxCapsuleGet","parameterTypes":["long", "int", "long"] },
+    {"name":"ctxGetAttrs","parameterTypes":["long", "java.lang.String"] },
     {"name":"getHPyDebugContext","parameterTypes":[] }
   ],
   "fields":[

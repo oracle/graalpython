@@ -83,6 +83,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1723,7 +1724,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         UpcallGlobalStore,
         UpcallType,
         UpcallTypeGetName,
-        UpcallContextVarGet;
+        UpcallContextVarGet,
+        UpcallGetAttrS;
 
         @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
@@ -1811,17 +1813,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     // Note: assumes that receiverHandle is not a boxed primitive value
     @SuppressWarnings("try")
-    public final int ctxSetItems(long receiverHandle, String name, long valueHandle) {
+    public int ctxSetItems(long receiverHandle, String name, long valueHandle) {
         increment(Counter.UpcallSetItemS);
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
-        Object value;
-        if (GraalHPyBoxing.isBoxedHandle(valueHandle)) {
-            value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(valueHandle));
-        } else if (GraalHPyBoxing.isBoxedInt(valueHandle)) {
-            value = GraalHPyBoxing.unboxInt(valueHandle);
-        } else if (GraalHPyBoxing.isBoxedDouble(valueHandle)) {
-            value = GraalHPyBoxing.unboxDouble(valueHandle);
-        } else {
+        Object value = bitsAsPythonObject(valueHandle);
+        if (value == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
             HPyRaiseNode.raiseIntUncached(this, -1, SystemError, ErrorMessages.HPY_UNEXPECTED_HPY_NULL);
             return -1;
         }
@@ -2447,6 +2443,32 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
+    }
+
+    public long ctxGetAttrs(long receiverHandle, String name) {
+        increment(Counter.UpcallGetAttrS);
+        Object receiver = bitsAsPythonObject(receiverHandle);
+        TruffleString tsName = toTruffleStringUncached(name);
+        Object result;
+        try {
+            result = PyObjectGetAttr.getUncached().execute(null, receiver, tsName);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(this, e);
+            return 0;
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
+    }
+
+    private Object bitsAsPythonObject(long bits) {
+        if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+            return GraalHPyBoxing.unboxInt(bits);
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
     }
 
     @ExportMessage

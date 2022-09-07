@@ -106,7 +106,8 @@ ALL_FIELDS
     UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(IsG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
     UPCALL(CapsuleNew, SIG_PTR SIG_PTR SIG_PTR, SIG_HPY) \
-    UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR)
+    UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR) \
+    UPCALL(GetAttrs, SIG_HPY SIG_STRING, SIG_HPY)
 
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
@@ -372,6 +373,11 @@ static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     }
     jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
+}
+
+static HPy ctx_GetAttr_s_jni(HPyContext *ctx, HPy target, const char *name) {
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetAttrs, target, jname);
 }
 
 static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
@@ -888,6 +894,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Is_g = ctx_Is_g_jni;
     context->ctx_Capsule_New = ctx_Capsule_New_jni;
     context->ctx_Capsule_Get = ctx_Capsule_Get_jni;
+    context->ctx_GetAttr_s = ctx_GetAttr_s_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
