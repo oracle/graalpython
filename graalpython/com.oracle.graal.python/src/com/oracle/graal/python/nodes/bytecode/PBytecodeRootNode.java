@@ -2172,6 +2172,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // Need to handle instrumentation frame unwind
                     Object result = notifyException(virtualFrame, instrumentation, returnCalled, bci, e);
                     if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                        copyArgs(virtualFrame.getArguments(), virtualFrame);
                         bci = 0;
                         stackTop = getInitialStackTop();
                         oparg = 0;
@@ -2269,19 +2270,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private Object notifyException(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, boolean returnCalled, int bci, Throwable e) {
-        instrumentation.notifyException(virtualFrame, bciToLine(bci), e);
+        try {
+            instrumentation.notifyException(virtualFrame, bciToLine(bci), e);
+        } catch (Throwable t) {
+            e = t;
+        }
         if (instrumentationRoot instanceof WrapperNode) {
             WrapperNode wrapper = (WrapperNode) instrumentationRoot;
             Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, returnCalled);
-            if (result != null) {
-                if (co.isGeneratorOrCoroutine()) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(result == ProbeNode.UNWIND_ACTION_REENTER ? "Frame restarting is not possible in generators" : "Cannot replace return value of generators");
-                }
-            }
+            checkOnReturnExceptionalOrUnwindResult(result);
             return result;
         }
         return null;
+    }
+
+    private void checkOnReturnExceptionalOrUnwindResult(Object result) {
+        if (result != null) {
+            if (co.isGeneratorOrCoroutine()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(result == ProbeNode.UNWIND_ACTION_REENTER ? "Frame restarting is not possible in generators" : "Cannot replace return value of generators");
+            }
+        }
     }
 
     @InliningCutoff
@@ -2307,13 +2316,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 wrapper.getProbeNode().onEnter(virtualFrame);
             } catch (Throwable t) {
                 Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, t, false);
+                checkOnReturnExceptionalOrUnwindResult(result);
                 if (result == ProbeNode.UNWIND_ACTION_REENTER) {
-                    // We're at the beginning, reenter means just continue
+                    // We're at the beginning, reenter means just restore args and continue
+                    copyArgs(virtualFrame.getArguments(), virtualFrame);
                     return null;
                 } else if (result != null) {
-                    if (co.isGeneratorOrCoroutine()) {
-                        throw CompilerDirectives.shouldNotReachHere("Cannot replace return value of generators");
-                    }
                     return result;
                 }
             }
