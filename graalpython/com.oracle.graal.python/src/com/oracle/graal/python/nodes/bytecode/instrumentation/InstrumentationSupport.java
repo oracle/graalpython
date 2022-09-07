@@ -57,6 +57,7 @@ public final class InstrumentationSupport extends Node {
     @CompilationFinal(dimensions = 1) public Node[] bciToHelperNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
+        assert rootNode.getSource() != null && rootNode.getSource().hasCharacters();
         code = rootNode.getCodeUnit();
         lineToNode = new InstrumentedBytecodeStatement[code.endLine + 1];
         bciToHelperNode = new Node[code.code.length];

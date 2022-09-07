@@ -117,6 +117,9 @@ public class SourceMap {
     }
 
     public static SourceSection getSourceSection(Source source, int startLine, int startColumn, int endLine, int endColumn) {
+        if (source == null || !source.hasCharacters()) {
+            return null;
+        }
         /* Truffle columns are 1-based and it doesn't consider the newline a part of the line */
         startColumn = Math.max(startColumn + 1, 1);
         endColumn = Math.max(Math.min(endColumn + 1, source.getLineLength(endLine)), 1);

@@ -57,9 +57,11 @@ class InstrumentationRootImpl extends InstrumentationRoot {
         if (materializedTags.contains(StandardTags.StatementTag.class)) {
             if (instrumentationSupport == null) {
                 PBytecodeRootNode rootNode = (PBytecodeRootNode) getParent();
-                instrumentationSupport = insert(new InstrumentationSupport(rootNode));
-                rootNode.materializeContainedFunctionsForInstrumentation(materializedTags);
-                notifyInserted(instrumentationSupport);
+                if (rootNode.getSource() != null && rootNode.getSource().hasCharacters()) {
+                    instrumentationSupport = insert(new InstrumentationSupport(rootNode));
+                    rootNode.materializeContainedFunctionsForInstrumentation(materializedTags);
+                    notifyInserted(instrumentationSupport);
+                }
             }
         }
         return this;
