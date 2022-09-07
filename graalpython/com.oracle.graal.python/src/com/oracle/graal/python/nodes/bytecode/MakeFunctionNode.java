@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -70,19 +71,18 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     private final RootCallTarget callTarget;
     private final CodeUnit code;
     private final Signature signature;
-    private final PCode cachedCode;
     private final TruffleString doc;
+    @CompilationFinal private PCode cachedCode;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, PCode cachedCode, TruffleString doc) {
+    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, TruffleString doc) {
         this.callTarget = callTarget;
         this.code = code;
         this.signature = signature;
-        this.cachedCode = cachedCode;
         this.doc = doc;
     }
 
@@ -94,8 +94,17 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
         PCode codeObj = cachedCode;
         if (codeObj == null) {
-            // Multi-context mode
-            codeObj = factory.createCode(callTarget, signature, code);
+            if (PythonLanguage.get(this).isSingleContext()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                /*
+                 * We cannot initialize the cached code in create, because that may be called
+                 * without langauge context when materializing nodes for instrumentation
+                 */
+                cachedCode = codeObj = factory.createCode(callTarget, signature, code);
+            } else {
+                // In multi-context mode we have to create the code for every execution
+                codeObj = factory.createCode(callTarget, signature, code);
+            }
         }
 
         PCell[] closure = null;
@@ -151,15 +160,11 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         } else {
             callTarget = bytecodeRootNode.getCallTarget();
         }
-        PCode cachedCode = null;
-        if (language.isSingleContext()) {
-            cachedCode = PythonObjectFactory.getUncached().createCode(callTarget, bytecodeRootNode.getSignature(), code);
-        }
         TruffleString doc = null;
         if (code.constants.length > 0 && code.constants[0] instanceof TruffleString) {
             doc = (TruffleString) code.constants[0];
         }
-        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), cachedCode, doc);
+        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), doc);
     }
 
     public RootCallTarget getCallTarget() {
