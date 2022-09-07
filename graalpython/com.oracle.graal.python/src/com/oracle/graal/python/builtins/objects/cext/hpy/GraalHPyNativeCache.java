@@ -46,6 +46,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 
 import sun.misc.Unsafe;
 
+/**
+ * HPy native cache implementation. For documentation of the layout, see {@code hpy_native_cache.h}.
+ */
 public abstract class GraalHPyNativeCache {
 
     private static final Unsafe UNSAFE = CArrayWrappers.UNSAFE;
