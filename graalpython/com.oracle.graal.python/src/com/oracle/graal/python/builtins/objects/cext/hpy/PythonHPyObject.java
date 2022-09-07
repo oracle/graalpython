@@ -48,7 +48,7 @@ public final class PythonHPyObject extends PythonObject {
     public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
         super(pythonClass, instanceShape);
         if (hpyNativeSpace != null) {
-            this.setHpyFields(new Object[]{hpyNativeSpace});
+            this.setHPyData(new Object[]{hpyNativeSpace});
         }
     }
 }

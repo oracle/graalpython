@@ -2293,7 +2293,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         // HPyField index is always non-zero because zero means: uninitialized
         assert idx > 0;
-        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx];
+        Object referent = ((PythonObject) owner).getHPyData()[(int) idx];
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(referent));
     }
 

@@ -73,7 +73,7 @@ public class PythonObject extends PythonAbstractObject {
 
     private final Object initialPythonClass;
 
-    private Object[] hpyFields;
+    private Object[] hpyData;
 
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
@@ -175,23 +175,23 @@ public class PythonObject extends PythonAbstractObject {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
 
-    public final Object[] getHpyFields() {
-        return hpyFields;
+    public final Object[] getHPyData() {
+        return hpyData;
     }
 
-    public final void setHpyFields(Object[] hpyFields) {
-        this.hpyFields = hpyFields;
+    public final void setHPyData(Object[] hpyFields) {
+        this.hpyData = hpyFields;
     }
 
     public final void setHPyNativeSpace(Object dataPtr) {
-        if (hpyFields == null) {
-            hpyFields = new Object[]{dataPtr};
+        if (hpyData == null) {
+            hpyData = new Object[]{dataPtr};
         } else {
-            hpyFields[0] = dataPtr;
+            hpyData[0] = dataPtr;
         }
     }
 
     public final Object getHPyNativeSpace() {
-        return hpyFields != null ? hpyFields[0] : 0L;
+        return hpyData != null ? hpyData[0] : 0L;
     }
 }

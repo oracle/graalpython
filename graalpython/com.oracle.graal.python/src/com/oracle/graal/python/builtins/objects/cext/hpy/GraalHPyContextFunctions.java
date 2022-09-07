@@ -2885,7 +2885,7 @@ public abstract class GraalHPyContextFunctions {
         }
 
         static int assign(PythonObject owner, Object referent, int location) {
-            Object[] hpyFields = owner.getHpyFields();
+            Object[] hpyFields = owner.getHPyData();
             if (location != 0) {
                 assert hpyFields != null;
                 hpyFields[location] = referent;
@@ -2900,7 +2900,7 @@ public abstract class GraalHPyContextFunctions {
                     hpyFields = PythonUtils.arrayCopyOf(hpyFields, newLocation + 1);
                     hpyFields[newLocation] = referent;
                 }
-                owner.setHpyFields(hpyFields);
+                owner.setHPyData(hpyFields);
                 return newLocation;
             }
         }
@@ -2948,7 +2948,7 @@ public abstract class GraalHPyContextFunctions {
                 }
                 Object owner = asPythonObjectNode.execute(context, arguments[1]);
                 if (owner instanceof PythonObject) {
-                    referent = ((PythonObject) owner).getHpyFields()[idx];
+                    referent = ((PythonObject) owner).getHPyData()[idx];
                 } else {
                     throw CompilerDirectives.shouldNotReachHere("HPyField owner is not a PythonObject!");
                 }
