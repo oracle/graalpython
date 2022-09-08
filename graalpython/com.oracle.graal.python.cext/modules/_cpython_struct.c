@@ -2086,6 +2086,8 @@ PyTypeObject PyStructType = {
 /* ---- Standalone functions  ---- */
 
 #define MAXCACHE 100
+/* Please note: the name of the cache needs to be prefixed because this file
+   includes 'capi.h' which defines a global variable with name 'cache'. */
 #define STRUCT_CACHE _cpython_struct_cache
 static PyObject *STRUCT_CACHE = NULL;
 
