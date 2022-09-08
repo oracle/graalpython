@@ -117,13 +117,25 @@ public class SourceMap {
     }
 
     public static SourceSection getSourceSection(Source source, int startLine, int startColumn, int endLine, int endColumn) {
-        if (source == null || !source.hasCharacters()) {
+        if (source == null) {
             return null;
+        } else if (!source.hasCharacters()) {
+            return source.createUnavailableSection();
         }
-        /* Truffle columns are 1-based and it doesn't consider the newline a part of the line */
-        startColumn = Math.max(startColumn + 1, 1);
-        endColumn = Math.max(Math.min(endColumn + 1, source.getLineLength(endLine)), 1);
-        return source.createSection(startLine, startColumn, endLine, endColumn);
+        try {
+            /* Truffle columns are 1-based */
+            startColumn = Math.max(startColumn + 1, 1);
+            endColumn = Math.max(endColumn + 1, 1);
+            /* Truffle doesn't consider the newline a part of the line */
+            if (endColumn == source.getLineLength(endLine) + 1) {
+                endColumn--;
+            }
+            return source.createSection(startLine, startColumn, endLine, endColumn);
+        } catch (IllegalArgumentException e) {
+            // TODO GR-40896 we don't track source ranges of f-strings correctly
+            // Also consider sources created from ast module
+            return source.createUnavailableSection();
+        }
     }
 
     public SourceSection getSourceSection(Source source, int bci) {
