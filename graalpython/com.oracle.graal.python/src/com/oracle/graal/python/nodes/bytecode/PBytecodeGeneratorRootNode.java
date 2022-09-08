@@ -58,7 +58,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSRNode {
-    @Child private PBytecodeRootNode rootNode;
+    private final PBytecodeRootNode rootNode;
     private final int resumeBci;
     private final int resumeStackTop;
 
@@ -71,6 +71,7 @@ public class PBytecodeGeneratorRootNode extends PRootNode implements BytecodeOSR
     public PBytecodeGeneratorRootNode(PythonLanguage language, PBytecodeRootNode rootNode, int resumeBci, int resumeStackTop) {
         super(language, rootNode.getFrameDescriptor());
         this.rootNode = rootNode;
+        rootNode.adoptChildren();
         this.resumeBci = resumeBci;
         this.resumeStackTop = resumeStackTop;
         frameSlotTypes = new byte[resumeStackTop - rootNode.stackoffset + 1];
