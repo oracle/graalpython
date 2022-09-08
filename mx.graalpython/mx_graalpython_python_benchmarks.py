@@ -551,7 +551,7 @@ def register_python_benchmarks():
     python_vm_registry.add_vm(PyPyVm())
     python_vm_registry.add_vm(Python3Vm())
     for config_name, options, priority in [
-        ("launcher", [], 100),
+        ("launcher", [], 5),
     ]:
         python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
