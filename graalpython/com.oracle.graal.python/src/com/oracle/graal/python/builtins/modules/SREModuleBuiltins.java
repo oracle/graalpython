@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -235,7 +236,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
             PythonContext context = getContext();
@@ -249,9 +250,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 } catch (CannotCastException e1) {
                     // It's bytes or other buffer object
                     buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, this);
-                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                    int bytesLen = bufferLib.getBufferLength(buffer);
-                    input = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
+                    input = bufferToTruffleStringNode.execute(buffer, 0);
                 }
                 Object state = IndirectCallContext.enter(frame, language, context, this);
                 try {
