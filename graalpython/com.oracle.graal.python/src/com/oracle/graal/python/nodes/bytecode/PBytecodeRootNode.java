@@ -50,6 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
@@ -208,7 +209,6 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -219,6 +219,7 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode.WrapperNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -575,21 +576,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source) {
+    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source) {
         return create(language, co, source, null);
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(TruffleLanguage<?> language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         FrameInfo frameInfo = new FrameInfo();
         FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
         PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserErrorCallback);
+        PythonContext context = PythonContext.get(rootNode);
+        if (context != null && context.getOption(PythonOptions.EagerlyMaterializeInstrumentationNodes)) {
+            rootNode.adoptChildren();
+            rootNode.instrumentationRoot.materializeInstrumentableNodes(Collections.singleton(StandardTags.StatementTag.class));
+        }
         frameInfo.rootNode = rootNode;
         return rootNode;
     }
 
     @TruffleBoundary
-    private PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
         this.celloffset = co.varnames.length;
         this.freeoffset = celloffset + co.cellvars.length;
