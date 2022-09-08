@@ -44,6 +44,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -97,27 +98,37 @@ public final class InstrumentationSupport extends Node {
         return null;
     }
 
-    public void notifyStatement(VirtualFrame frame, int prevLine, int line) {
-        if (line != prevLine) {
+    public void notifyStatement(VirtualFrame frame, int prevLine, int nextLine) {
+        if (nextLine != prevLine) {
             if (prevLine >= 0) {
-                InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(prevLine);
-                if (wrapper != null) {
-                    try {
-                        wrapper.getProbeNode().onReturnValue(frame, null);
-                    } catch (Throwable t) {
-                        handleException(frame, wrapper, t, true);
-                        throw t;
-                    }
-                }
+                notifyStatementExit(frame, prevLine);
             }
-            InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
-            if (wrapper != null) {
-                try {
-                    wrapper.getProbeNode().onEnter(frame);
-                } catch (Throwable t) {
-                    handleException(frame, wrapper, t, false);
-                    throw t;
-                }
+            notifyStatementEnter(frame, nextLine);
+        }
+    }
+
+    public void notifyStatementEnter(VirtualFrame frame, int line) {
+        CompilerAsserts.partialEvaluationConstant(line);
+        InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
+        if (wrapper != null) {
+            try {
+                wrapper.getProbeNode().onEnter(frame);
+            } catch (Throwable t) {
+                handleException(frame, wrapper, t, false);
+                throw t;
+            }
+        }
+    }
+
+    public void notifyStatementExit(VirtualFrame frame, int line) {
+        CompilerAsserts.partialEvaluationConstant(line);
+        InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
+        if (wrapper != null) {
+            try {
+                wrapper.getProbeNode().onReturnValue(frame, null);
+            } catch (Throwable t) {
+                handleException(frame, wrapper, t, true);
+                throw t;
             }
         }
     }
@@ -132,6 +143,7 @@ public final class InstrumentationSupport extends Node {
     }
 
     public void notifyException(VirtualFrame frame, int line, Throwable exception) {
+        CompilerAsserts.partialEvaluationConstant(line);
         InstrumentableNode.WrapperNode wrapper = getWrapperAtLine(line);
         if (wrapper != null) {
             handleException(frame, wrapper, exception, false);

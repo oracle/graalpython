@@ -1184,8 +1184,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
         final InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
-        if (instrumentation != null) {
-            Object result = enterRoot(virtualFrame);
+        if (instrumentation != null && !fromOSR) {
+            Object result = notifyEnter(virtualFrame, instrumentation, initialBci);
             if (result != null) {
                 return result;
             }
@@ -1237,10 +1237,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             CompilerAsserts.partialEvaluationConstant(stackTop);
 
             try {
-                if (instrumentation != null) {
-                    notifyStatement(virtualFrame, instrumentation, mutableData, bci);
-                }
-
                 switch (bc) {
                     case OpCodesConstants.LOAD_NONE:
                         virtualFrame.setObject(++stackTop, PNone.NONE);
@@ -1689,8 +1685,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = virtualFrame.getObject(stackTop);
                         traceOrProfileReturn(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
 
-                        if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
-                            notifyRootReturn(virtualFrame, mutableData, value);
+                        if (instrumentation != null) {
+                            notifyReturn(virtualFrame, mutableData, instrumentation, beginBci, value);
                         }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
@@ -1790,6 +1786,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci += oparg;
                         oparg = 0;
+                        if (instrumentation != null) {
+                            notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                        }
                         continue;
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE: {
                         bytecodePopAndJumpIfFalse(virtualFrame, bci, stackTop);
@@ -1805,6 +1804,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             bci += 3;
@@ -1817,6 +1819,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             bci += 3;
@@ -1832,6 +1837,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             bci += 3;
@@ -1847,6 +1855,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             bci += 3;
@@ -1861,6 +1872,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             virtualFrame.setObject(stackTop--, null);
@@ -1876,6 +1890,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             virtualFrame.setObject(stackTop--, null);
@@ -1886,6 +1903,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.JUMP_BACKWARD: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci -= oparg;
+                        if (instrumentation != null) {
+                            notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                        }
                         if (CompilerDirectives.hasNextTier()) {
                             mutableData.loopCount++;
                         }
@@ -1951,6 +1971,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         }
                         break;
@@ -1972,6 +1995,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         }
                         break;
@@ -2042,6 +2068,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         } else {
                             bci += 3;
@@ -2108,7 +2137,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
-                            notifyRootReturn(virtualFrame, mutableData, value);
+                            notifyReturn(virtualFrame, mutableData, instrumentation, beginBci, value);
                         }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
@@ -2135,6 +2164,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         }
                     }
@@ -2155,6 +2187,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                             bci += oparg;
                             oparg = 0;
+                            if (instrumentation != null) {
+                                notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                            }
                             continue;
                         }
                     }
@@ -2174,6 +2209,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // prepare next loop
                 oparg = 0;
                 bci++;
+                if (instrumentation != null) {
+                    notifyStatement(virtualFrame, instrumentation, beginBci, bci);
+                }
             } catch (PythonExitException | PythonThreadKillException e) {
                 throw e;
             } catch (OSRException e) {
@@ -2182,13 +2220,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (Throwable e) {
                 if (instrumentation != null) {
                     // Need to handle instrumentation frame unwind
-                    Object result = notifyException(virtualFrame, instrumentation, mutableData, bci, e);
+                    Object result = notifyException(virtualFrame, instrumentation, mutableData, beginBci, e);
                     if (result == ProbeNode.UNWIND_ACTION_REENTER) {
                         CompilerDirectives.transferToInterpreter();
                         copyArgs(virtualFrame.getArguments(), virtualFrame);
                         bci = 0;
                         stackTop = getInitialStackTop();
                         oparg = 0;
+                        notifyStatementAfterException(virtualFrame, instrumentation, beginBci);
                         continue;
                     } else if (result != null) {
                         return result;
@@ -2197,7 +2236,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (e instanceof ThreadDeath) {
                     throw e;
                 }
-                int targetIndex = handleException(virtualFrame, localFrame, isGeneratorOrCoroutine, noTraceOrProfile, mutableData, bciSlot, initialStackTop, beginBci, stackTop, e);
+                int targetIndex = handleException(virtualFrame, localFrame, isGeneratorOrCoroutine, noTraceOrProfile, instrumentation, mutableData, bciSlot, initialStackTop, beginBci, stackTop, e);
                 if (targetIndex == -1) {
                     throw e;
                 }
@@ -2209,7 +2248,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private int handleException(VirtualFrame virtualFrame, Frame localFrame, boolean isGeneratorOrCoroutine, Assumption noTraceOrProfile, MutableLoopData mutableData, int bciSlot, int initialStackTop,
+    private int handleException(VirtualFrame virtualFrame, Frame localFrame, boolean isGeneratorOrCoroutine, Assumption noTraceOrProfile, InstrumentationSupport instrumentation,
+                    MutableLoopData mutableData, int bciSlot, int initialStackTop,
                     int beginBci, int stackTop, Throwable e) {
         PException pe = null;
         boolean isInteropException = false;
@@ -2278,7 +2318,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          * replaced with the exception
          */
         virtualFrame.setObject(targetStackTop, isInteropException ? e : pe);
+
+        if (instrumentation != null) {
+            int bci = exceptionHandlerRanges[targetIndex];
+            notifyStatementAfterException(virtualFrame, instrumentation, bci);
+        }
         return targetIndex;
+    }
+
+    @InliningCutoff
+    private void notifyStatementAfterException(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, int bci) {
+        instrumentation.notifyStatementEnter(virtualFrame, bciToLine(bci));
     }
 
     @InliningCutoff
@@ -2307,23 +2357,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void notifyRootReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value) {
+    private void notifyReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, InstrumentationSupport instrumentation, int bci, Object value) {
+        instrumentation.notifyStatementExit(virtualFrame, bciToLine(bci));
         mutableData.setReturnCalled(true);
-        WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-        wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+        if (instrumentationRoot instanceof WrapperNode) {
+            WrapperNode wrapper = (WrapperNode) instrumentationRoot;
+            wrapper.getProbeNode().onReturnValue(virtualFrame, value);
+        }
     }
 
     @InliningCutoff
-    private void notifyStatement(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, MutableLoopData mutableData, int bci) {
-        int line = bciToLine(bci);
-        int pastLine = mutableData.getPastLine();
-        instrumentation.notifyStatement(virtualFrame, pastLine, line);
-        mutableData.setPastLine(line);
-        mutableData.setPastBci(bci);
+    private void notifyStatement(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, int prevBci, int nextBci) {
+        instrumentation.notifyStatement(virtualFrame, bciToLine(prevBci), bciToLine(nextBci));
     }
 
     @InliningCutoff
-    private Object enterRoot(VirtualFrame virtualFrame) {
+    private Object notifyEnter(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, int initialBci) {
         if (instrumentationRoot instanceof WrapperNode) {
             WrapperNode wrapper = (WrapperNode) instrumentationRoot;
             try {
@@ -2339,6 +2388,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     return result;
                 }
             }
+        }
+        int line = bciToLine(initialBci);
+        try {
+            instrumentation.notifyStatementEnter(virtualFrame, line);
+        } catch (Throwable t) {
+            instrumentation.notifyException(virtualFrame, line, t);
+            throw t;
         }
         return null;
     }
@@ -4921,12 +4977,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    @TruffleBoundary
     public int bciToLine(int bci) {
         return co.bciToLine(bci);
     }
 
-    @TruffleBoundary
     public int getFirstLineno() {
         return co.startLine;
     }
