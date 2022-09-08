@@ -1074,6 +1074,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return this.getTraceData().returnLine = returnLine;
         }
 
+        public boolean isReturnCalled() {
+            return this.getTraceData().returnCalled;
+        }
+
+        public void setReturnCalled(boolean value) {
+            this.getTraceData().returnCalled = value;
+        }
+
         public PFrame getPyFrame() {
             return getTraceData().pyFrame;
         }
@@ -1082,11 +1090,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return this.getTraceData().pyFrame = pyFrame;
         }
 
-        private TraceData getTraceData() {
-            if (traceData == null) {
-                traceData = new TraceData();
+        private InstrumentationData getTraceData() {
+            if (instrumentationData == null) {
+                instrumentationData = new InstrumentationData();
             }
-            return traceData;
+            return instrumentationData;
         }
 
         public PythonContext.PythonThreadState getThreadState(Node node) {
@@ -1097,10 +1105,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         /*
-         * data for tracing
+         * Data for tracing, profiling and instrumentation
          */
-        private static final class TraceData {
-            TraceData() {
+        private static final class InstrumentationData {
+            InstrumentationData() {
                 pastBci = 0;
                 pastLine = returnLine = -1;
             }
@@ -1109,11 +1117,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             private int pastLine;
             private int returnLine;
             private PFrame pyFrame = null;
+            private boolean returnCalled;
 
             private PythonContext.PythonThreadState threadState = null;
         }
 
-        private TraceData traceData = null;
+        private InstrumentationData instrumentationData = null;
 
         int loopCount;
         /*
@@ -1175,7 +1184,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         final PythonLanguage language = PythonLanguage.get(this);
         final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
         final InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
-        boolean returnCalled = false;
         if (instrumentation != null) {
             Object result = enterRoot(virtualFrame);
             if (result != null) {
@@ -1682,8 +1690,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         traceOrProfileReturn(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
 
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
-                            returnCalled = true;
-                            notifyRootReturn(virtualFrame, value);
+                            notifyRootReturn(virtualFrame, mutableData, value);
                         }
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
@@ -2101,8 +2108,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
                         if (instrumentation != null && instrumentationRoot instanceof WrapperNode) {
-                            returnCalled = true;
-                            notifyRootReturn(virtualFrame, value);
+                            notifyRootReturn(virtualFrame, mutableData, value);
                         }
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
@@ -2176,7 +2182,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (Throwable e) {
                 if (instrumentation != null) {
                     // Need to handle instrumentation frame unwind
-                    Object result = notifyException(virtualFrame, instrumentation, returnCalled, bci, e);
+                    Object result = notifyException(virtualFrame, instrumentation, mutableData, bci, e);
                     if (result == ProbeNode.UNWIND_ACTION_REENTER) {
                         copyArgs(virtualFrame.getArguments(), virtualFrame);
                         bci = 0;
@@ -2275,7 +2281,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private Object notifyException(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, boolean returnCalled, int bci, Throwable e) {
+    private Object notifyException(VirtualFrame virtualFrame, InstrumentationSupport instrumentation, MutableLoopData mutableData, int bci, Throwable e) {
         try {
             instrumentation.notifyException(virtualFrame, bciToLine(bci), e);
         } catch (Throwable t) {
@@ -2283,7 +2289,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         if (instrumentationRoot instanceof WrapperNode) {
             WrapperNode wrapper = (WrapperNode) instrumentationRoot;
-            Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, returnCalled);
+            Object result = wrapper.getProbeNode().onReturnExceptionalOrUnwind(virtualFrame, e, mutableData.isReturnCalled());
             checkOnReturnExceptionalOrUnwindResult(result);
             return result;
         }
@@ -2300,7 +2306,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void notifyRootReturn(VirtualFrame virtualFrame, Object value) {
+    private void notifyRootReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value) {
+        mutableData.setReturnCalled(true);
         WrapperNode wrapper = (WrapperNode) instrumentationRoot;
         wrapper.getProbeNode().onReturnValue(virtualFrame, value);
     }
