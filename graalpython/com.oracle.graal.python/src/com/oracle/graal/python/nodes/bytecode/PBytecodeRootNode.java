@@ -2184,6 +2184,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // Need to handle instrumentation frame unwind
                     Object result = notifyException(virtualFrame, instrumentation, mutableData, bci, e);
                     if (result == ProbeNode.UNWIND_ACTION_REENTER) {
+                        CompilerDirectives.transferToInterpreter();
                         copyArgs(virtualFrame.getArguments(), virtualFrame);
                         bci = 0;
                         stackTop = getInitialStackTop();

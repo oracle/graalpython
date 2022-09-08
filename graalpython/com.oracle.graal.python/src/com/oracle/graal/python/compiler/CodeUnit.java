@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -72,21 +74,21 @@ public final class CodeUnit {
 
     public final int stacksize;
 
-    public final byte[] code;
-    public final byte[] srcOffsetTable;
+    @CompilationFinal(dimensions = 1) public final byte[] code;
+    @CompilationFinal(dimensions = 1) public final byte[] srcOffsetTable;
     public final int flags;
 
-    public final TruffleString[] names;
-    public final TruffleString[] varnames;
-    public final TruffleString[] cellvars;
-    public final TruffleString[] freevars;
-    public final int[] cell2arg;
-    public final int[] arg2cell;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] names;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] varnames;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] cellvars;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] freevars;
+    @CompilationFinal(dimensions = 1) public final int[] cell2arg;
+    @CompilationFinal(dimensions = 1) public final int[] arg2cell;
 
-    public final Object[] constants;
-    public final long[] primitiveConstants;
+    @CompilationFinal(dimensions = 1) public final Object[] constants;
+    @CompilationFinal(dimensions = 1) public final long[] primitiveConstants;
 
-    public final int[] exceptionHandlerRanges;
+    @CompilationFinal(dimensions = 1) public final int[] exceptionHandlerRanges;
 
     public final int conditionProfileCount;
 
@@ -96,13 +98,13 @@ public final class CodeUnit {
     public final int endColumn;
 
     /* Lazily initialized source map */
-    SourceMap sourceMap;
+    @CompilationFinal SourceMap sourceMap;
 
     /* Quickening data. See docs in PBytecodeRootNode */
-    public final byte[] outputCanQuicken;
-    public final byte[] variableShouldUnbox;
-    public final int[][] generalizeInputsMap;
-    public final int[][] generalizeVarsMap;
+    @CompilationFinal(dimensions = 1) public final byte[] outputCanQuicken;
+    @CompilationFinal(dimensions = 1) public final byte[] variableShouldUnbox;
+    @CompilationFinal(dimensions = 1) public final int[][] generalizeInputsMap;
+    @CompilationFinal(dimensions = 1) public final int[][] generalizeVarsMap;
 
     public CodeUnit(TruffleString name, TruffleString qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
@@ -154,6 +156,7 @@ public final class CodeUnit {
 
     public SourceMap getSourceMap() {
         if (sourceMap == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             sourceMap = new SourceMap(code, srcOffsetTable, startLine, startColumn);
         }
         return sourceMap;

@@ -44,6 +44,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -52,10 +54,10 @@ import com.oracle.truffle.api.source.SourceSection;
  * bytecode.
  */
 public class SourceMap {
-    public final int[] startLineMap;
-    public final int[] endLineMap;
-    public final int[] startColumnMap;
-    public final int[] endColumnMap;
+    @CompilationFinal(dimensions = 1) public final int[] startLineMap;
+    @CompilationFinal(dimensions = 1) public final int[] endLineMap;
+    @CompilationFinal(dimensions = 1) public final int[] startColumnMap;
+    @CompilationFinal(dimensions = 1) public final int[] endColumnMap;
 
     private static final byte EXTENDED_NUM = -128;
     private static final byte NEXT_LINE = -127;
@@ -66,6 +68,7 @@ public class SourceMap {
     private static final byte MULTIPLIER_POSITIVE = MAX_NUM;
 
     public SourceMap(byte[] code, byte[] srcTable, int startLine, int startColumn) {
+        CompilerAsserts.neverPartOfCompilation();
         startLineMap = new int[code.length];
         endLineMap = new int[code.length];
         startColumnMap = new int[code.length];
