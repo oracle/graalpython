@@ -2227,7 +2227,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci = 0;
                         stackTop = getInitialStackTop();
                         oparg = 0;
-                        notifyStatementAfterException(virtualFrame, instrumentation, beginBci);
+                        notifyStatementAfterException(virtualFrame, instrumentation, bci);
                         continue;
                     } else if (result != null) {
                         return result;
@@ -2236,94 +2236,51 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (e instanceof ThreadDeath) {
                     throw e;
                 }
-                int targetIndex = handleException(virtualFrame, localFrame, isGeneratorOrCoroutine, noTraceOrProfile, instrumentation, mutableData, bciSlot, initialStackTop, beginBci, stackTop, e);
+                PException pe = null;
+                boolean isInteropException = false;
+                if (e instanceof PException) {
+                    pe = (PException) e;
+                } else if (e instanceof AbstractTruffleException) {
+                    isInteropException = true;
+                } else {
+                    pe = wrapJavaExceptionIfApplicable(e);
+                    if (pe == null) {
+                        throw e;
+                    }
+                }
+
+                tracingEnabled = isTracingEnabled(noTraceOrProfile, mutableData);
+                profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
+                if (tracingEnabled && pe != null && !mutableData.getThreadState(this).isTracing()) {
+                    traceException(virtualFrame, mutableData, beginBci, pe);
+                }
+
+                int targetIndex = findHandler(beginBci);
+                CompilerAsserts.partialEvaluationConstant(targetIndex);
+                chainPythonExceptions(virtualFrame, mutableData, pe);
                 if (targetIndex == -1) {
+                    reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, e, pe, tracingEnabled, profilingEnabled);
                     throw e;
                 }
-                stackTop = stackoffset + exceptionHandlerRanges[targetIndex + 1];
+                if (pe != null) {
+                    pe.setCatchingFrameReference(virtualFrame, this, beginBci);
+                }
+                int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
+                int targetStackTop = stackSizeOnEntry + stackoffset;
+                stackTop = unwindBlock(virtualFrame, stackTop, targetStackTop);
+                /*
+                 * Handler range encodes the stack size, not the top of stack. so the stackTop is to
+                 * be replaced with the exception
+                 */
+                virtualFrame.setObject(stackTop, isInteropException ? e : pe);
                 bci = exceptionHandlerRanges[targetIndex];
                 oparg = 0;
-            }
-        }
-    }
 
-    @InliningCutoff
-    private int handleException(VirtualFrame virtualFrame, Frame localFrame, boolean isGeneratorOrCoroutine, Assumption noTraceOrProfile, InstrumentationSupport instrumentation,
-                    MutableLoopData mutableData, int bciSlot, int initialStackTop,
-                    int beginBci, int stackTop, Throwable e) {
-        PException pe = null;
-        boolean isInteropException = false;
-        if (e instanceof PException) {
-            pe = (PException) e;
-        } else if (e instanceof AbstractTruffleException) {
-            isInteropException = true;
-        } else {
-            pe = wrapJavaExceptionIfApplicable(e);
-            if (pe == null) {
-                return -1;
-            }
-        }
-
-        boolean tracingEnabled = isTracingEnabled(noTraceOrProfile, mutableData);
-        boolean profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
-        if (tracingEnabled && pe != null && !mutableData.getThreadState(this).isTracing()) {
-            traceException(virtualFrame, mutableData, beginBci, pe);
-        }
-
-        int targetIndex = findHandler(beginBci);
-        CompilerAsserts.partialEvaluationConstant(targetIndex);
-        if (pe != null) {
-            if (mutableData.localException != null) {
-                ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
-            } else {
-                if (getCaughtExceptionNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
-                }
-                PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
-                if (exceptionState != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                if (instrumentation != null) {
+                    notifyStatementAfterException(virtualFrame, instrumentation, bci);
                 }
             }
         }
-        if (targetIndex == -1) {
-            // For tracebacks
-            setCurrentBci(virtualFrame, bciSlot, beginBci);
-            if (isGeneratorOrCoroutine) {
-                if (localFrame != virtualFrame) {
-                    // Unwind the generator frame stack
-                    clearFrameSlots(localFrame, stackoffset, initialStackTop);
-                }
-            }
-            if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
-                LoopNode.reportLoopCount(this, mutableData.loopCount);
-            }
-            traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
-            if (e == pe) {
-                throw pe;
-            } else if (pe != null) {
-                throw pe.getExceptionForReraise();
-            } else {
-                return -1;
-            }
-        }
-        if (pe != null) {
-            pe.setCatchingFrameReference(virtualFrame, this, beginBci);
-        }
-        int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
-        int targetStackTop = stackSizeOnEntry + stackoffset;
-        unwindBlock(virtualFrame, stackTop, targetStackTop);
-        /*
-         * Handler range encodes the stack size, not the top of stack. so the stackTop is to be
-         * replaced with the exception
-         */
-        virtualFrame.setObject(targetStackTop, isInteropException ? e : pe);
-
-        if (instrumentation != null) {
-            int bci = exceptionHandlerRanges[targetIndex];
-            notifyStatementAfterException(virtualFrame, instrumentation, bci);
-        }
-        return targetIndex;
     }
 
     @InliningCutoff
@@ -2634,6 +2591,46 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     } else if (variableTypes[i] == QuickeningTypes.BOOLEAN) {
                         localFrame.setBoolean(i, (boolean) value);
                     }
+                }
+            }
+        }
+    }
+
+    @InliningCutoff
+    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot, int beginBci,
+                    Throwable e, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
+        // For tracebacks
+        setCurrentBci(virtualFrame, bciSlot, beginBci);
+        if (isGeneratorOrCoroutine) {
+            if (localFrame != virtualFrame) {
+                // Unwind the generator frame stack
+                clearFrameSlots(localFrame, stackoffset, initialStackTop);
+            }
+        }
+        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+            LoopNode.reportLoopCount(this, mutableData.loopCount);
+        }
+        traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
+        if (e == pe) {
+            throw pe;
+        } else if (pe != null) {
+            throw pe.getExceptionForReraise();
+        }
+    }
+
+    @InliningCutoff
+    private void chainPythonExceptions(VirtualFrame virtualFrame, MutableLoopData mutableData, PException pe) {
+        if (pe != null) {
+            if (mutableData.localException != null) {
+                ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
+            } else {
+                if (getCaughtExceptionNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
+                }
+                PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
+                if (exceptionState != null) {
+                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
             }
         }
@@ -4943,12 +4940,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     @ExplodeLoop
-    private static void unwindBlock(VirtualFrame virtualFrame, int stackTop, int stackTopBeforeBlock) {
+    private static int unwindBlock(VirtualFrame virtualFrame, int stackTop, int stackTopBeforeBlock) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
         for (int i = stackTop; i > stackTopBeforeBlock; i--) {
             virtualFrame.setObject(i, null);
         }
+        return stackTopBeforeBlock;
     }
 
     public PCell readClassCell(VirtualFrame virtualFrame) {
