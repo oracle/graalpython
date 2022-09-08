@@ -2007,7 +2007,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
+    @Builtin(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs",
+                    "closure"}, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
         private static final TruffleString T_LAMBDA = tsLiteral("<lambda>");
@@ -2036,6 +2037,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory().createFunction(name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+        }
+
+        @Specialization
+        public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
+                        @SuppressWarnings("unused") PNone closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(code.getName(), code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
         }
 
         @Specialization
