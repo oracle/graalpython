@@ -597,6 +597,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @TruffleBoundary
     private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
         super(language, fd);
+        assert source != null;
         this.celloffset = co.varnames.length;
         this.freeoffset = celloffset + co.cellvars.length;
         this.stackoffset = freeoffset + co.freevars.length;
@@ -4987,8 +4988,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public SourceSection getSourceSection() {
         if (sourceSection != null) {
             return sourceSection;
-        } else if (source == null) {
-            return null;
         } else if (!source.hasCharacters()) {
             /*
              * TODO We could still expose the disassembled bytecode for a debugger to have something

@@ -120,9 +120,7 @@ public class SourceMap {
     }
 
     public static SourceSection getSourceSection(Source source, int startLine, int startColumn, int endLine, int endColumn) {
-        if (source == null) {
-            return null;
-        } else if (!source.hasCharacters()) {
+        if (!source.hasCharacters()) {
             return source.createUnavailableSection();
         }
         try {

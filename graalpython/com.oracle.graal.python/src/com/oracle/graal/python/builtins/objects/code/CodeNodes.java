@@ -152,7 +152,7 @@ public abstract class CodeNodes {
                                 code.outputCanQuicken, code.variableShouldUnbox,
                                 code.generalizeInputsMap, code.generalizeVarsMap);
             }
-            RootNode rootNode = PBytecodeRootNode.create(language, code, null);
+            RootNode rootNode = PBytecodeRootNode.create(language, code, PythonUtils.createFakeSource());
             if (code.isGeneratorOrCoroutine()) {
                 rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
             }
