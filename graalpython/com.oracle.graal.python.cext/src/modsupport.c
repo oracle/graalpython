@@ -374,12 +374,12 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
         case 'O':
         case 'S':
         case 'N':
-            void_arg = va_arg(va, void*);
+            void_arg = native_pointer_to_java(va_arg(va, void*));
             if (c == 'O') {
                 if (format[format_idx + 1] == '&') {
                 	/* case: "O&" expects: Py_BuildValue(fmt, "O&", converter, arg_for_conversion) */
                     converter = void_arg;
-                    void_arg = va_arg(va, void*);
+                    void_arg = native_pointer_to_java(va_arg(va, void*));
                 }
             }
 
@@ -761,6 +761,8 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
     PyObject *current_arg;
     PyObject * const *kwstack = NULL;
 
+    kwnames = native_pointer_to_java(kwnames);
+
     assert(kwargs == NULL || PyDict_Check(kwargs));
     assert(kwargs == NULL || kwnames == NULL);
 
@@ -782,7 +784,7 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
         return NULL;
     }
 
-    kwtuple = parser->kwtuple;
+    kwtuple = native_pointer_to_java(parser->kwtuple);
     posonly = parser->pos;
     minposonly = Py_MIN(posonly, minpos);
     maxargs = posonly + (int)PyTuple_GET_SIZE(kwtuple);
@@ -854,7 +856,7 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
     /* copy keyword args using kwtuple to drive process */
     for (i = Py_MAX((int)nargs, posonly); i < maxargs; i++) {
         if (nkwargs) {
-            keyword = PyTuple_GET_ITEM(kwtuple, i - posonly);
+            keyword = native_pointer_to_java(PyTuple_GET_ITEM(kwtuple, i - posonly));
             if (kwargs != NULL) {
                 current_arg = PyDict_GetItemWithError(kwargs, keyword);
                 if (!current_arg && PyErr_Occurred()) {
@@ -958,7 +960,7 @@ void _PyArg_BadArgument(const char *fname, const char *displayname,
     PyErr_Format(PyExc_TypeError,
                  "%.200s() %.200s must be %.50s, not %.50s",
                  fname, displayname, expected,
-                 arg == Py_None ? "None" : arg->ob_type->tp_name);
+                 arg == Py_None ? "None" : Py_TYPE(arg)->tp_name);
 }
 
 #undef _PyArg_CheckPositional

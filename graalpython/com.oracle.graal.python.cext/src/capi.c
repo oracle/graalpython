@@ -289,28 +289,28 @@ REGISTER_POINTER_TYPE(float_t, float_ptr_t);
 REGISTER_POINTER_TYPE(double_t, double_ptr_t);
 REGISTER_POINTER_TYPE(Py_ssize_t, Py_ssize_ptr_t);
 
+struct _longobject* _Py_FalseStructReference;
+struct _longobject* _Py_TrueStructReference;
+PyObject* _Py_EllipsisObjectReference;
+PyObject* _Py_NoneStructReference;
+PyObject* _Py_NotImplementedStructReference;
 
 static void initialize_globals() {
     // register native NULL
     wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
 
     // None
-    PyObject* jnone = UPCALL_CEXT_O(polyglot_from_string("Py_None", SRC_CS));
-    truffle_assign_managed(&_Py_NoneStruct, jnone);
+    _Py_NoneStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_None", SRC_CS));
 
     // NotImplemented
-    void *jnotimpl = UPCALL_CEXT_O(polyglot_from_string("Py_NotImplemented", SRC_CS));
-    truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
+    _Py_NotImplementedStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_NotImplemented", SRC_CS));
 
     // Ellipsis
-    void *jellipsis = UPCALL_CEXT_O(polyglot_from_string("Py_Ellipsis", SRC_CS));
-    truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
+    _Py_EllipsisObjectReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_Ellipsis", SRC_CS));
 
     // True, False
-    void *jtrue = UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
-    truffle_assign_managed(&_Py_TrueStruct, jtrue);
-    void *jfalse = UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
-    truffle_assign_managed(&_Py_FalseStruct, jfalse);
+    _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
+    _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
 
     // long zero, long one
     _PyLong_Zero = (PyObject *)&_Py_FalseStruct;

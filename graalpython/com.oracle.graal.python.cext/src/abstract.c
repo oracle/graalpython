@@ -206,6 +206,7 @@ PyObject * PyNumber_Index(PyObject *o) {
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
+    item = native_pointer_to_java(item);
     Py_ssize_t result;
     PyObject *runerr;
     PyObject *value = PyNumber_Index(item);
@@ -288,9 +289,11 @@ int PySequence_Check(PyObject *s) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PySequence_Check()"
 int PyTruffle_PySequence_Check(PyObject *s) {
+    s = native_pointer_to_java(s);
     if (PyDict_Check(s))
         return 0;
-    return s->ob_type->tp_as_sequence && s->ob_type->tp_as_sequence->sq_item != NULL;
+    PySequenceMethods* seq = Py_TYPE(s)->tp_as_sequence;
+    return seq && seq->sq_item != NULL;
 }
 
 UPCALL_ID(PySequence_Size);
@@ -301,21 +304,24 @@ Py_ssize_t PySequence_Size(PyObject *s) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/Py_Sequence_Size"
 Py_ssize_t PyTruffle_PySequence_Size(PyObject *s) {
-    PySequenceMethods *m;
+    s = native_pointer_to_java(s);
+    PySequenceMethods *seq;
+    PyMappingMethods *m;
 
     if (s == NULL) {
         null_error();
         return -1;
     }
 
-    m = s->ob_type->tp_as_sequence;
-    if (m && m->sq_length) {
-        Py_ssize_t len = m->sq_length(s);
+    seq = Py_TYPE(s)->tp_as_sequence;
+    if (seq && seq->sq_length) {
+        Py_ssize_t len = seq->sq_length(s);
         assert(len >= 0 || PyErr_Occurred());
         return len;
     }
 
-    if (s->ob_type->tp_as_mapping && s->ob_type->tp_as_mapping->mp_length) {
+    m = Py_TYPE(s)->tp_as_mapping;
+    if (m && m->mp_length) {
         PyErr_Format(PyExc_TypeError, "PyTruffle_PySequence_Size(): object of type '%s' is not a sequence", Py_TYPE(s)->tp_name);
         return -1;
     }
@@ -361,6 +367,7 @@ PyObject* PySequence_List(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
+    v = native_pointer_to_java(v);
     PyObject *res;
     if (v == NULL) {
         return null_error();
@@ -388,6 +395,7 @@ Py_ssize_t PyObject_Size(PyObject *o) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c/PyObject_Size"
 Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
+    o = native_pointer_to_java(o);
     PySequenceMethods *m;
 
     if (o == NULL) {
@@ -395,7 +403,7 @@ Py_ssize_t PyTruffle_PyObject_Size(PyObject *o) {
         return -1;
     }
 
-    m = o->ob_type->tp_as_sequence;
+    m = Py_TYPE(o)->tp_as_sequence;
     if (m && m->sq_length) {
         Py_ssize_t len = m->sq_length(o);
         assert(len >= 0 || PyErr_Occurred());
@@ -431,12 +439,13 @@ int PyMapping_Check(PyObject *o) {
 // downcall for native python objects
 // taken from CPython "Objects/abstract.c PyMapping_Check"
 int PyTruffle_PyMapping_Check(PyObject *o) {
-    return o && o->ob_type->tp_as_mapping && o->ob_type->tp_as_mapping->mp_subscript;
+    return o && Py_TYPE(o)->tp_as_mapping && Py_TYPE(o)->tp_as_mapping->mp_subscript;
 }
 
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
-    PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
+    obj = native_pointer_to_java(obj);
+    PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
 
     if (pb == NULL || pb->bf_getbuffer == NULL) {
         PyErr_Format(PyExc_TypeError,
@@ -449,7 +458,7 @@ int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
 
 // taken from CPython "Objects/abstract.c"
 void PyBuffer_Release(Py_buffer *view) {
-    PyObject *obj = view->obj;
+    PyObject *obj = native_pointer_to_java(view->obj);
     PyBufferProcs *pb;
     if (obj == NULL)
         return;
@@ -589,6 +598,7 @@ Py_ssize_t PyMapping_Size(PyObject *s) {
 // PyMapping_Size downcall for native python objects
 // partially taken from CPython "Objects/abstract.c/Py_Mapping_Size"
 Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
+    o = native_pointer_to_java(o);
     PyMappingMethods *m;
 
     if (o == NULL) {
@@ -596,7 +606,7 @@ Py_ssize_t PyTruffle_PyMapping_Size(PyObject *o) {
         return -1;
     }
 
-    m = o->ob_type->tp_as_mapping;
+    m = Py_TYPE(o)->tp_as_mapping;
     if (m && m->mp_length) {
         Py_ssize_t len = m->mp_length(o);
         assert(len >= 0 || PyErr_Occurred());

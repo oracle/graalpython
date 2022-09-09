@@ -138,6 +138,7 @@ static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t s
 POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
 
 PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
+	unicode = native_pointer_to_java(unicode);
     PyObject *self;
     Py_ssize_t length, char_size;
     int share_wstr, share_utf8;

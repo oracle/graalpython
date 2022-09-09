@@ -71,6 +71,7 @@ typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(PyMethodDef* methodDef,
                                                     void* primary);
 UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
+	method = native_pointer_to_java(method);
     int flags = method->ml_flags;
     return _jls_PyDescr_NewClassMethod(method,
                     polyglot_from_string(method->ml_name, SRC_CS),

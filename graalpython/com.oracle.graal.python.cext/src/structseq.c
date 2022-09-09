@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ char *PyStructSequence_UnnamedField = "unnamed field";
 static void
 structseq_dealloc(PyStructSequence *obj)
 {
+	obj = native_pointer_to_java(obj);
     Py_ssize_t i, size;
 
     size = REAL_SIZE(obj);

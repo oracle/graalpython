@@ -406,6 +406,7 @@ class NativeBuiltinModule:
         libs += kwargs.pop("libs", [])
         library_dirs += kwargs.pop("library_dirs", [])
         include_dirs += kwargs.pop("include_dirs", [])
+        include_dirs.append(os.path.join(__dir__, "src"))
         extra_compile_args = cflags_warnings + kwargs.pop("extra_compile_args", [])
 
         return Extension(

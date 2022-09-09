@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,7 +62,7 @@ class TestPyStructSequenceTypes(object):
                                 """,
                                           ready_code="""
                                /* our template initializes refcnt to 1; so reset */
-                               Py_REFCNT(&TestPyStructSequenceType) = 0;
+                               Py_SET_REFCNT(&TestPyStructSequenceType, 0);
                                if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
                                  return NULL;
                                }

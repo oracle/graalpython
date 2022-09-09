@@ -1,12 +1,1452 @@
-diff --git a/setup.py b/setup.py
-index ba88c733f..e4db40429 100644
---- a/setup.py
-+++ b/setup.py
-@@ -45,6 +45,7 @@
- 
- min_cython_ver = "0.28.2"
- try:
-+    raise ImportError
-     import Cython
- 
-     ver = Cython.__version__
+diff --git a/pandas/_libs/algos.c b/pandas/_libs/algos.c
+index 54b2cee..cea933f 100644
+--- a/pandas/_libs/algos.c
++++ b/pandas/_libs/algos.c
+@@ -154107,9 +154107,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -154402,9 +154402,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -154644,9 +154644,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/groupby.c b/pandas/_libs/groupby.c
+index 9540f8f..875e654 100644
+--- a/pandas/_libs/groupby.c
++++ b/pandas/_libs/groupby.c
+@@ -71932,9 +71932,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -72227,9 +72227,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -72469,9 +72469,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/hashing.c b/pandas/_libs/hashing.c
+index d6e7248..9b5e384 100644
+--- a/pandas/_libs/hashing.c
++++ b/pandas/_libs/hashing.c
+@@ -20171,9 +20171,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -20466,9 +20466,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -20708,9 +20708,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/hashtable.c b/pandas/_libs/hashtable.c
+index 294692f..3c29887 100644
+--- a/pandas/_libs/hashtable.c
++++ b/pandas/_libs/hashtable.c
+@@ -55456,9 +55456,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_UInt64HashTable(PyObject
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_15UInt64HashTable_5__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   __pyx_tp_dealloc_6pandas_5_libs_9hashtable_HashTable(o);
+@@ -55584,9 +55584,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_Int64HashTable(PyObject *
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_14Int64HashTable_5__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   __pyx_tp_dealloc_6pandas_5_libs_9hashtable_HashTable(o);
+@@ -55712,9 +55712,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_Float64HashTable(PyObject
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_16Float64HashTable_5__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   __pyx_tp_dealloc_6pandas_5_libs_9hashtable_HashTable(o);
+@@ -55836,9 +55836,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_PyObjectHashTable(PyObjec
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_17PyObjectHashTable_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   __pyx_tp_dealloc_6pandas_5_libs_9hashtable_HashTable(o);
+@@ -55958,9 +55958,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_StringHashTable(PyObject
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_15StringHashTable_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   __pyx_tp_dealloc_6pandas_5_libs_9hashtable_HashTable(o);
+@@ -56074,9 +56074,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_Int64Vector(PyObject *o)
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_11Int64Vector_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->ao);
+@@ -56219,9 +56219,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_Float64Vector(PyObject *o
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_13Float64Vector_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->ao);
+@@ -56364,9 +56364,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_UInt64Vector(PyObject *o)
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_12UInt64Vector_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->ao);
+@@ -56506,9 +56506,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_StringVector(PyObject *o)
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9hashtable_12StringVector_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   (*Py_TYPE(o)->tp_free)(o);
+@@ -57106,9 +57106,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -57401,9 +57401,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -57643,9 +57643,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/index.c b/pandas/_libs/index.c
+index 9f7748f..e286d6f 100644
+--- a/pandas/_libs/index.c
++++ b/pandas/_libs/index.c
+@@ -55106,9 +55106,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -55401,9 +55401,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -55643,9 +55643,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+@@ -56755,7 +56755,8 @@ static int __Pyx_modinit_type_init_code(void) {
+   #if CYTHON_COMPILING_IN_CPYTHON
+   {
+     PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_6pandas_5_libs_5index_BaseMultiIndexCodesEngine, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 569, __pyx_L1_error)
+-    if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
++    /* TRUFFLE CHANGE: not supported */
++    if (0 && Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
+       __pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
+       __pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__.doc = __pyx_doc_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__;
+       ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__;
+diff --git a/pandas/_libs/internals.c b/pandas/_libs/internals.c
+index ccb340e..3720558 100644
+--- a/pandas/_libs/internals.c
++++ b/pandas/_libs/internals.c
+@@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "pythread.h"
+ #include "numpy/arrayobject.h"
+ #include "numpy/ufuncobject.h"
++#include "numpy/npy_common.h"
+ #include "compat_helper.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+@@ -25890,9 +25891,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -26185,9 +26186,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -26427,9 +26428,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/interval.c b/pandas/_libs/interval.c
+index d396c56..53a2c18 100644
+--- a/pandas/_libs/interval.c
++++ b/pandas/_libs/interval.c
+@@ -169345,9 +169345,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -169640,9 +169640,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -169882,9 +169882,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+@@ -171656,7 +171656,8 @@ static int __Pyx_modinit_type_init_code(void) {
+   #if CYTHON_COMPILING_IN_CPYTHON
+   {
+     PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_6pandas_5_libs_8interval_IntervalTree, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(1, 20, __pyx_L1_error)
+-    if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
++    /* TRUFFLE CHANGE: not supported */
++    if (0 && Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
+       __pyx_wrapperbase_6pandas_5_libs_8interval_12IntervalTree___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
+       __pyx_wrapperbase_6pandas_5_libs_8interval_12IntervalTree___init__.doc = __pyx_doc_6pandas_5_libs_8interval_12IntervalTree___init__;
+       ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_8interval_12IntervalTree___init__;
+diff --git a/pandas/_libs/join.c b/pandas/_libs/join.c
+index 7f40c2c..1dd2b84 100644
+--- a/pandas/_libs/join.c
++++ b/pandas/_libs/join.c
+@@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/arrayobject.h"
+ #include "numpy/ufuncobject.h"
+ #include "pythread.h"
++#include "numpy/npy_common.h"
+ #include "khash_python.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+@@ -185734,9 +185735,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -186029,9 +186030,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -186271,9 +186272,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/lib.c b/pandas/_libs/lib.c
+index 262f970..c6cedfc 100644
+--- a/pandas/_libs/lib.c
++++ b/pandas/_libs/lib.c
+@@ -50592,9 +50592,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -50887,9 +50887,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -51129,9 +51129,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/ops.c b/pandas/_libs/ops.c
+index 83fe3e9..8489486 100644
+--- a/pandas/_libs/ops.c
++++ b/pandas/_libs/ops.c
+@@ -22576,9 +22576,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -22871,9 +22871,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -23113,9 +23113,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/parsers.c b/pandas/_libs/parsers.c
+index 49d1856..75288ab 100644
+--- a/pandas/_libs/parsers.c
++++ b/pandas/_libs/parsers.c
+@@ -45694,9 +45694,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_7parsers_TextReader(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_7parsers_10TextReader_5__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->file_handle);
+@@ -46597,9 +46597,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -46892,9 +46892,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -47134,9 +47134,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/reduction.c b/pandas/_libs/reduction.c
+index c6cd9cb..4430369 100644
+--- a/pandas/_libs/reduction.c
++++ b/pandas/_libs/reduction.c
+@@ -35714,9 +35714,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9reduction_BlockSlider(PyObject *o)
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_5_libs_9reduction_11BlockSlider_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->frame);
+@@ -35957,9 +35957,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -36252,9 +36252,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -36494,9 +36494,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/reshape.c b/pandas/_libs/reshape.c
+index 779ff94..82b1d3b 100644
+--- a/pandas/_libs/reshape.c
++++ b/pandas/_libs/reshape.c
+@@ -629,6 +629,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/arrayobject.h"
+ #include "numpy/ufuncobject.h"
+ #include "pythread.h"
++#include "numpy/npy_common.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+ #ifdef _OPENMP
+@@ -23058,9 +23059,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -23353,9 +23354,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -23595,9 +23596,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/sparse.c b/pandas/_libs/sparse.c
+index b488af5..cd81a97 100644
+--- a/pandas/_libs/sparse.c
++++ b/pandas/_libs/sparse.c
+@@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/arrayobject.h"
+ #include "numpy/ufuncobject.h"
+ #include "pythread.h"
++#include "numpy/npy_common.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+ #ifdef _OPENMP
+@@ -91495,9 +91496,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -91790,9 +91791,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -92032,9 +92033,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslib.c b/pandas/_libs/tslib.c
+index 333bad8..779df3e 100644
+--- a/pandas/_libs/tslib.c
++++ b/pandas/_libs/tslib.c
+@@ -29775,9 +29775,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -30070,9 +30070,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -30312,9 +30312,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/c_timestamp.c b/pandas/_libs/tslibs/c_timestamp.c
+index f87f89f..c23322d 100644
+--- a/pandas/_libs/tslibs/c_timestamp.c
++++ b/pandas/_libs/tslibs/c_timestamp.c
+@@ -26287,9 +26287,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -26582,9 +26582,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -26824,9 +26824,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/conversion.c b/pandas/_libs/tslibs/conversion.c
+index c579f51..e94e52f 100644
+--- a/pandas/_libs/tslibs/conversion.c
++++ b/pandas/_libs/tslibs/conversion.c
+@@ -27461,9 +27461,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -27756,9 +27756,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -27998,9 +27998,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/fields.c b/pandas/_libs/tslibs/fields.c
+index aa94723..2885313 100644
+--- a/pandas/_libs/tslibs/fields.c
++++ b/pandas/_libs/tslibs/fields.c
+@@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/ndarraytypes.h"
+ #include "numpy/arrayscalars.h"
+ #include "src/datetime/np_datetime.h"
++#include "numpy/npy_common.h"
+ #include "pythread.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+@@ -27702,9 +27703,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -27997,9 +27998,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -28239,9 +28240,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/offsets.c b/pandas/_libs/tslibs/offsets.c
+index e02487f..e566def 100644
+--- a/pandas/_libs/tslibs/offsets.c
++++ b/pandas/_libs/tslibs/offsets.c
+@@ -34102,9 +34102,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -34397,9 +34397,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -34639,9 +34639,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/parsing.c b/pandas/_libs/tslibs/parsing.c
+index a8cd8d9..5d0f422 100644
+--- a/pandas/_libs/tslibs/parsing.c
++++ b/pandas/_libs/tslibs/parsing.c
+@@ -33784,9 +33784,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -34079,9 +34079,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -34321,9 +34321,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/period.c b/pandas/_libs/tslibs/period.c
+index 20b1e3d..0f82477 100644
+--- a/pandas/_libs/tslibs/period.c
++++ b/pandas/_libs/tslibs/period.c
+@@ -42016,9 +42016,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -42311,9 +42311,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -42553,9 +42553,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+@@ -43808,7 +43808,8 @@ static int __Pyx_modinit_type_init_code(void) {
+   #if CYTHON_COMPILING_IN_CPYTHON
+   {
+     PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_6pandas_5_libs_6tslibs_6period__Period, "__str__"); if (unlikely(!wrapper)) __PYX_ERR(0, 1559, __pyx_L1_error)
+-    if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
++    /* TRUFFLE CHANGE: not supported */
++    if (0 && Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
+       __pyx_wrapperbase_6pandas_5_libs_6tslibs_6period_7_Period_24__str__ = *((PyWrapperDescrObject *)wrapper)->d_base;
+       __pyx_wrapperbase_6pandas_5_libs_6tslibs_6period_7_Period_24__str__.doc = __pyx_doc_6pandas_5_libs_6tslibs_6period_7_Period_24__str__;
+       ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_6tslibs_6period_7_Period_24__str__;
+diff --git a/pandas/_libs/tslibs/resolution.c b/pandas/_libs/tslibs/resolution.c
+index a63c202..9fb9b87 100644
+--- a/pandas/_libs/tslibs/resolution.c
++++ b/pandas/_libs/tslibs/resolution.c
+@@ -23527,9 +23527,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -23822,9 +23822,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -24064,9 +24064,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/strptime.c b/pandas/_libs/tslibs/strptime.c
+index 211a8e4..46c6e39 100644
+--- a/pandas/_libs/tslibs/strptime.c
++++ b/pandas/_libs/tslibs/strptime.c
+@@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/ndarraytypes.h"
+ #include "numpy/arrayscalars.h"
+ #include "src/datetime/np_datetime.h"
++#include "numpy/npy_common.h"
+ #include "pythread.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+@@ -30118,9 +30119,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -30413,9 +30414,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -30655,9 +30656,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/timedeltas.c b/pandas/_libs/tslibs/timedeltas.c
+index 557f23b..2ac41e1 100644
+--- a/pandas/_libs/tslibs/timedeltas.c
++++ b/pandas/_libs/tslibs/timedeltas.c
+@@ -39931,9 +39931,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -40226,9 +40226,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -40468,9 +40468,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/timezones.c b/pandas/_libs/tslibs/timezones.c
+index 072b14a..cd3e6c8 100644
+--- a/pandas/_libs/tslibs/timezones.c
++++ b/pandas/_libs/tslibs/timezones.c
+@@ -22493,9 +22493,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -22788,9 +22788,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -23030,9 +23030,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/tzconversion.c b/pandas/_libs/tslibs/tzconversion.c
+index d6fcfeb..f2bbddd 100644
+--- a/pandas/_libs/tslibs/tzconversion.c
++++ b/pandas/_libs/tslibs/tzconversion.c
+@@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "numpy/ndarraytypes.h"
+ #include "numpy/arrayscalars.h"
+ #include "src/datetime/np_datetime.h"
++#include "numpy/npy_common.h"
+ #include "pythread.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+@@ -25287,9 +25288,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -25582,9 +25583,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -25824,9 +25825,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/window.cpp b/pandas/_libs/window.cpp
+index d527af6..10cf643 100644
+--- a/pandas/_libs/window.cpp
++++ b/pandas/_libs/window.cpp
+@@ -64946,9 +64946,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -65241,9 +65241,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -65483,9 +65483,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/writers.c b/pandas/_libs/writers.c
+index 9cbdce1..699ed7c 100644
+--- a/pandas/_libs/writers.c
++++ b/pandas/_libs/writers.c
+@@ -629,6 +629,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include "pythread.h"
+ #include "numpy/arrayobject.h"
+ #include "numpy/ufuncobject.h"
++#include "numpy/npy_common.h"
+ #include <stdlib.h>
+ #include "pystate.h"
+ #ifdef _OPENMP
+@@ -20583,9 +20584,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -20878,9 +20879,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -21120,9 +21121,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);
+diff --git a/pandas/io/msgpack/_packer.cpp b/pandas/io/msgpack/_packer.cpp
+index f793920..49fb240 100644
+--- a/pandas/io/msgpack/_packer.cpp
++++ b/pandas/io/msgpack/_packer.cpp
+@@ -646,6 +646,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include <string.h>
+ #include <stdio.h>
+ #include "pythread.h"
++#include "numpy/npy_common.h"
+ #include <stdlib.h>
+ #include "../../src/msgpack/pack.h"
+ #ifdef _OPENMP
+@@ -5079,9 +5080,9 @@ static void __pyx_tp_dealloc_6pandas_2io_7msgpack_7_packer_Packer(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_2io_7msgpack_7_packer_6Packer_5__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->_default);
+@@ -5465,7 +5466,8 @@ static int __Pyx_modinit_type_init_code(void) {
+   #if CYTHON_COMPILING_IN_CPYTHON
+   {
+     PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_6pandas_2io_7msgpack_7_packer_Packer, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 47, __pyx_L1_error)
+-    if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
++    /* TRUFFLE CHANGE: not supported */
++    if (0 && Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
+       __pyx_wrapperbase_6pandas_2io_7msgpack_7_packer_6Packer_2__init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
+       __pyx_wrapperbase_6pandas_2io_7msgpack_7_packer_6Packer_2__init__.doc = __pyx_doc_6pandas_2io_7msgpack_7_packer_6Packer_2__init__;
+       ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_2io_7msgpack_7_packer_6Packer_2__init__;
+diff --git a/pandas/io/msgpack/_unpacker.cpp b/pandas/io/msgpack/_unpacker.cpp
+index d6c871c..0528a1d 100644
+--- a/pandas/io/msgpack/_unpacker.cpp
++++ b/pandas/io/msgpack/_unpacker.cpp
+@@ -647,6 +647,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include <string.h>
+ #include <stdio.h>
+ #include "pythread.h"
++#include "numpy/npy_common.h"
+ #include <stdlib.h>
+ #include <limits.h>
+ #include "../../src/msgpack/unpack.h"
+@@ -6237,9 +6238,9 @@ static void __pyx_tp_dealloc_6pandas_2io_7msgpack_9_unpacker_Unpacker(PyObject *
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_pw_6pandas_2io_7msgpack_9_unpacker_8Unpacker_3__dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->file_like);
+diff --git a/pandas/io/sas/sas.c b/pandas/io/sas/sas.c
+index 03efa58..17dd919 100644
+--- a/pandas/io/sas/sas.c
++++ b/pandas/io/sas/sas.c
+@@ -625,6 +625,7 @@ static CYTHON_INLINE float __PYX_NAN() {
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include "pystate.h"
++#include "numpy/npy_common.h"
+ #ifdef _OPENMP
+ #include <omp.h>
+ #endif /* _OPENMP */
+@@ -19766,9 +19767,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_array___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->mode);
+@@ -20061,9 +20062,9 @@ static void __pyx_tp_dealloc_memoryview(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryview___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->obj);
+@@ -20303,9 +20304,9 @@ static void __pyx_tp_dealloc__memoryviewslice(PyObject *o) {
+   {
+     PyObject *etype, *eval, *etb;
+     PyErr_Fetch(&etype, &eval, &etb);
+-    ++Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)+1);
+     __pyx_memoryviewslice___dealloc__(o);
+-    --Py_REFCNT(o);
++    Py_SET_REFCNT(o, Py_REFCNT(o)-1);
+     PyErr_Restore(etype, eval, etb);
+   }
+   Py_CLEAR(p->from_object);

@@ -135,7 +135,7 @@ PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
 PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
     PyObject* newInstance = cls->tp_alloc(cls, 0);
     // TODO(fa): CPython does not do it here; verify if that's correct
-    Py_TYPE(newInstance) = cls;
+    Py_SET_TYPE(newInstance, cls);
     return newInstance;
 }
 
@@ -498,7 +498,7 @@ int PyType_Ready(PyTypeObject* cls) {
        not NULL (it's initialized to &PyType_Type).      But coverity doesn't
        know that. */
     if (Py_TYPE(cls) == NULL && base != NULL) {
-        Py_TYPE(cls) = Py_TYPE(base);
+        Py_SET_TYPE(cls, Py_TYPE(base));
     }
 
 
@@ -557,7 +557,7 @@ int PyType_Ready(PyTypeObject* cls) {
         inherit_special(cls, cls->tp_base);
 
     /* Initialize tp_dict properly */
-    bases = cls->tp_mro;
+    bases = native_pointer_to_java(cls->tp_mro);
     assert(bases != NULL);
     assert(PyTuple_Check(bases));
     n = PyTuple_GET_SIZE(bases);
@@ -580,10 +580,10 @@ int PyType_Ready(PyTypeObject* cls) {
     // and convert arguments that should be C primitives.
     ADD_SLOT_CONV("__getattr__", cls->tp_getattr, -2, JWRAPPER_GETATTR);
     ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR);
-    ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_REPR);
     ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
     ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);
-    ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_STR);
     ADD_SLOT_CONV("__getattr__", cls->tp_getattro, -2, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
     ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
@@ -612,7 +612,7 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
     ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
-    PySequenceMethods* sequences = cls->tp_as_sequence;
+    PySequenceMethods* sequences = native_pointer_to_java(cls->tp_as_sequence);
     if (sequences) {
     	// sequence functions first, so that the number functions take precendence
         ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
@@ -626,7 +626,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
-    PyNumberMethods* numbers = cls->tp_as_number;
+    PyNumberMethods* numbers = native_pointer_to_java(cls->tp_as_number);
     if (numbers) {
         ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
         ADD_SLOT_CONV("__radd__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_R);
@@ -679,7 +679,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
     }
 
-    PyMappingMethods* mappings = cls->tp_as_mapping;
+    PyMappingMethods* mappings = native_pointer_to_java(cls->tp_as_mapping);
     if (mappings) {
         ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
         ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
@@ -687,14 +687,14 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
     }
 
-    PyAsyncMethods* async = cls->tp_as_async;
+    PyAsyncMethods* async = native_pointer_to_java(cls->tp_as_async);
     if (async) {
         ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_DIRECT);
         ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_DIRECT);
         ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_DIRECT);
     }
 
-    PyBufferProcs* buffers = cls->tp_as_buffer;
+    PyBufferProcs* buffers = native_pointer_to_java(cls->tp_as_buffer);
     if (buffers) {
         // TODO ...
     }
@@ -752,7 +752,7 @@ int PyType_Ready(PyTypeObject* cls) {
     }
 
     /* Link into each base class's list of subclasses */
-    bases = cls->tp_bases;
+    bases = native_pointer_to_java(cls->tp_bases);
     n = PyTuple_GET_SIZE(bases);
     for (i = 0; i < n; i++) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);

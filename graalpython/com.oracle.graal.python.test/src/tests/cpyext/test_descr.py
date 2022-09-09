@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -173,7 +173,7 @@ class TestDescrObject(object):
                                 if (PyType_Ready(&B_Type) < 0)
                                     return NULL;
                                     
-                                Py_TYPE(&C_Type) = &B_Type; 
+                                Py_SET_TYPE(&C_Type, &B_Type); 
                                 C_Type.tp_base = &A_Type;''',
                             )
         
@@ -290,7 +290,7 @@ class TestDescrObject(object):
                                 if (PyType_Ready(&E_Type) < 0)
                                     return NULL;
                                     
-                                Py_TYPE(&F_Type) = &E_Type; 
+                                Py_SET_TYPE(&F_Type, &E_Type); 
                                 F_Type.tp_base = &D_Type;''',
                             )
         
