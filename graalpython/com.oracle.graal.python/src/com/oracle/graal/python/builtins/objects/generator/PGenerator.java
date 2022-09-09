@@ -63,7 +63,8 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
-    public final boolean isCoroutine;
+    private final boolean isCoroutine;
+    public boolean isIterableCoroutine = false;
 
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return create(lang, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine);

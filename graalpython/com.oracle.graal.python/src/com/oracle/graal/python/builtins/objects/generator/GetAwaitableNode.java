@@ -10,12 +10,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -24,8 +26,10 @@ public abstract class GetAwaitableNode extends Node {
 
     @Specialization
     public Object doGenerator(PGenerator generator,
-                    @Cached PRaiseNode raise) {
-        if (generator.isCoroutine) {
+                    @Cached PRaiseNode raise,
+                    @Cached ConditionProfile hasCode,
+                    @Cached PythonObjectFactory factory) {
+        if (generator.isCoroutine()) {
             return generator;
         } else {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");

@@ -9,7 +9,7 @@ public class PCoroutineWrapper extends PythonBuiltinObject {
 
     public PCoroutineWrapper(PythonLanguage lang, PGenerator coroutine) {
         super(PythonBuiltinClassType.PCoroutineWrapper, PythonBuiltinClassType.PCoroutineWrapper.getInstanceShape(lang));
-        assert coroutine.isCoroutine;
+        assert coroutine.isCoroutine();
         this.coroutine = coroutine;
     }
 }

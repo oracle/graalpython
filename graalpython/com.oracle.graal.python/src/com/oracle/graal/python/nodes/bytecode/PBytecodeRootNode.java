@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.generator.GetAwaitableNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -2189,7 +2190,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.GET_AWAITABLE: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        GetAwaitableNode getAwait = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_AWAITABLE, GetAwaitableNode.class, NODE_OBJECT_GET_AWAITABLE, useCachedNodes);
+                        GetAwaitableNode getAwait = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_AWAITABLE, GetAwaitableNodeGen.class, NODE_OBJECT_GET_AWAITABLE, useCachedNodes);
                         virtualFrame.setObject(stackTop, getAwait.execute(virtualFrame, virtualFrame.getObject(stackTop)));
                         break;
                     }

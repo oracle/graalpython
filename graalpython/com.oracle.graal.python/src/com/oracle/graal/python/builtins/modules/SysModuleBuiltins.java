@@ -1097,6 +1097,25 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_asyncgen_hooks", parameterNames = {"firstiter", "finalizer"})
+    @GenerateNodeFactory
+    abstract static class SetAsyncgenHooks extends PythonBuiltinNode {
+        @Specialization
+        Object setAsyncgenHooks(Object firstIter, Object finalizer) {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_asyncgen_hooks")
+    @GenerateNodeFactory
+    abstract static class GetAsyncgenHooks extends PythonBuiltinNode {
+        @Specialization
+        Object setAsyncgenHooks() {
+            // TODO: use asyncgen_hooks object
+            return factory().createTuple(new Object[]{PNone.NONE, PNone.NONE});
+        }
+    }
+
     @Builtin(name = J_UNRAISABLEHOOK, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "unraisablehook($module, unraisable, /)\n" +
                     "--\n" +
                     "\n" +

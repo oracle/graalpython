@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -82,9 +83,12 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
         assert generatorFunction != null;
         if (rootNode.getCodeUnit().isGenerator()) {
-            return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+            PGenerator generator = factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+            // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have to pass the information to the generator
+            // .gi_code.co_flags will still be wrong, but at least await will work correctly
+            generator.isIterableCoroutine = (generatorFunction.getCode().getFlags() & 0x100) != 0;
+            return generator;
         } else if (rootNode.getCodeUnit().isCoroutine()) {
-            // TODO populate
             return factory.createCoroutine(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
             // TODO populate

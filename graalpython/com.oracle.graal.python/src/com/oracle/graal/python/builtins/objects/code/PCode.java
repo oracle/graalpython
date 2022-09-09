@@ -56,12 +56,18 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes;
+import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -366,6 +372,14 @@ public final class PCode extends PythonBuiltinObject {
             return ((PBytecodeRootNode) rootNode).getCodeUnit();
         }
         return null;
+    }
+
+    private static int getFlags(int flags, CodeUnit codeUnit) {
+        flags |= codeUnit.isCoroutine() ? CO_COROUTINE : 0;
+        flags |= codeUnit.isGenerator() ? CO_GENERATOR : 0;
+        flags |= codeUnit.takesVarArgs() ? CO_VARARGS : 0;
+        flags |= codeUnit.takesVarKeywordArgs() ? CO_VARKEYWORDS : 0;
+        return flags;
     }
 
     RootNode getRootNode() {
