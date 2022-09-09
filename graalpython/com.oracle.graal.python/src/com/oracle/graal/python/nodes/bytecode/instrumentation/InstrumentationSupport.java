@@ -52,9 +52,24 @@ import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.nodes.Node;
 
+/**
+ * The bytecode interpreter has no AST nodes therefore Truffle AST instrumentation doesn't directly
+ * work. We work around that by lazily creating a fake non-executable AST with a list of statement
+ * nodes. We keep track of line changes in the bytecode loop and notify the probe nodes manually. We
+ * also insert bytecode helper nodes into the statement nodes so that asking the location of a call
+ * node obtained from a frame works.
+ *
+ * @see InstrumentationRoot
+ */
 public final class InstrumentationSupport extends Node {
     final CodeUnit code;
     @Children InstrumentedBytecodeStatement[] lineToNode;
+    /*
+     * When instrumentation is active, this array is used instead of PBytecodeRootNode#adoptedNodes
+     * to hold helper nodes. The actual helper nodes are adopted by the statement nodes in
+     * lineToNode, so this must not be annotated as @Children. When materializing, we cannot reuse
+     * existing nodes from adoptedNodes due to possible race conditions.
+     */
     @CompilationFinal(dimensions = 1) public Node[] bciToHelperNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {

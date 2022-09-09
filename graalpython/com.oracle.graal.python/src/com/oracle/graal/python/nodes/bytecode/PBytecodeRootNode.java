@@ -508,6 +508,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     @CompilationFinal(dimensions = 1) private byte[] variableTypes;
 
+    /*
+     * When instrumentation is in use, InstrumentationSupport#bciToHelper node is used instead of
+     * this array. Use getChildNodes() to get the right array.
+     */
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();

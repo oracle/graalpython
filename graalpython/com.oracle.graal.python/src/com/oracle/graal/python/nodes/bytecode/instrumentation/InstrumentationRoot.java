@@ -45,6 +45,12 @@ import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
+/**
+ * Takes care of lazily materializing the instrumentation nodes when requested. Also its wrapper is
+ * notified of entering and exiting the function.
+ *
+ * @see InstrumentationSupport
+ */
 @GenerateWrapper
 public abstract class InstrumentationRoot extends InstrumentedBytecodeNode {
     public static InstrumentationRoot create() {

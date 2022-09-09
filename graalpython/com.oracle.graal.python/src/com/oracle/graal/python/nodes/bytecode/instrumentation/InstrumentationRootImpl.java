@@ -48,6 +48,10 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.source.SourceSection;
 
+/**
+ * @see InstrumentationRoot
+ * @see InstrumentationSupport
+ */
 class InstrumentationRootImpl extends InstrumentationRoot {
 
     @Child private volatile InstrumentationSupport instrumentationSupport;
