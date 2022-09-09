@@ -77,6 +77,8 @@ def get_module_name(package_name):
         'python-dateutil': 'dateutil',
         'websocket-client': 'websocket',
         'attrs': 'attr',
+        'scikit-learn': 'sklearn',
+        'scikit_learn': 'sklearn',
     }
     module_name = non_standard_packages.get(package_name, package_name)
     return module_name.replace('-', '_')
