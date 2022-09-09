@@ -41,9 +41,9 @@
 package com.oracle.graal.python.test.runtime;
 
 import org.junit.Before;
-import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
+import org.junit.Ignore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -57,7 +57,7 @@ public class ProfileTests {
         PythonTests.skipOnLegacyASTInterpreter();
     }
 
-    @Test
+    @Ignore("due to GR-40923")
     public void profileYield() {
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
@@ -72,7 +72,7 @@ public class ProfileTests {
                         "<module>> return None\n", source);
     }
 
-    @Test
+    @Ignore("due to GR-40923")
     public void profileException() {
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
