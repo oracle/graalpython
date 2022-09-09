@@ -63,19 +63,19 @@ import com.oracle.truffle.api.nodes.Node;
  */
 public final class InstrumentationSupport extends Node {
     final CodeUnit code;
-    @Children InstrumentedBytecodeStatement[] lineToNode;
+    @Children InstrumentedBytecodeStatement[] statements;
     /*
      * When instrumentation is active, this array is used instead of PBytecodeRootNode#adoptedNodes
      * to hold helper nodes. The actual helper nodes are adopted by the statement nodes in
-     * lineToNode, so this must not be annotated as @Children. When materializing, we cannot reuse
-     * existing nodes from adoptedNodes due to possible race conditions.
+     * statements array, so this must not be annotated as @Children. When materializing, we cannot
+     * reuse existing nodes from adoptedNodes due to possible race conditions.
      */
     @CompilationFinal(dimensions = 1) public Node[] bciToHelperNode;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
         assert rootNode.getSource() != null && rootNode.getSource().hasCharacters();
         code = rootNode.getCodeUnit();
-        lineToNode = new InstrumentedBytecodeStatement[code.endLine + 1];
+        statements = new InstrumentedBytecodeStatement[code.endLine - code.startLine + 1];
         bciToHelperNode = new Node[code.code.length];
         boolean[] loadedBreakpoint = new boolean[1];
         code.iterateBytecode((bci, op, oparg, followingArgs) -> {
@@ -90,22 +90,35 @@ public final class InstrumentationSupport extends Node {
             }
             int line = code.bciToLine(bci);
             if (line >= 0) {
-                if (lineToNode[line] == null) {
-                    InstrumentedBytecodeStatement statement = InstrumentedBytecodeStatement.create();
+                InstrumentedBytecodeStatement statement = getStatement(line);
+                if (statement == null) {
+                    statement = InstrumentedBytecodeStatement.create();
                     statement.setSourceSection(rootNode.getSource().createSection(line));
-                    lineToNode[line] = statement;
+                    setStatement(line, statement);
                 }
-                lineToNode[line].coversBci(bci, op.length());
+                statement.coversBci(bci, op.length());
                 if (setBreakpoint) {
-                    lineToNode[line].setContainsBreakpoint();
+                    statement.setContainsBreakpoint();
                 }
             }
         });
     }
 
+    private InstrumentedBytecodeStatement getStatement(int line) {
+        return statements[getStatementIndex(line)];
+    }
+
+    private void setStatement(int line, InstrumentedBytecodeStatement statement) {
+        statements[getStatementIndex(line)] = statement;
+    }
+
+    private int getStatementIndex(int line) {
+        return line - code.startLine;
+    }
+
     private InstrumentableNode.WrapperNode getWrapperAtLine(int line) {
-        if (line >= 0 && line < lineToNode.length) {
-            InstrumentableNode node = lineToNode[line];
+        if (line >= 0) {
+            InstrumentableNode node = getStatement(line);
             if (node instanceof InstrumentableNode.WrapperNode) {
                 return (InstrumentableNode.WrapperNode) node;
             }
@@ -167,7 +180,7 @@ public final class InstrumentationSupport extends Node {
 
     public void insertHelperNode(Node node, int bci) {
         int line = code.bciToLine(bci);
-        lineToNode[line].insertHelperNode(node, bci);
+        getStatement(line).insertHelperNode(node, bci);
         bciToHelperNode[bci] = node;
     }
 }
