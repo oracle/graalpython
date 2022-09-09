@@ -4,8 +4,8 @@ Disassembly of <module>:
   1:22  -   1:24        5 LOAD_BYTE_O                       10
   1:16  -   1:25        7 CALL_FUNCTION                     1
   1:0   -   1:40        9 GET_ITER
-  1:0   -   1:40       10 CALL_FUNCTION                     1
-  1:0   -   1:40       12 RETURN_VALUE
+  1:0   -   1:40       10 CALL_COMPREHENSION
+  1:0   -   1:40       11 RETURN_VALUE
 
 Disassembly of <setcomp>:
   1:0   -   1:40        0 COLLECTION_FROM_STACK             0    (set)

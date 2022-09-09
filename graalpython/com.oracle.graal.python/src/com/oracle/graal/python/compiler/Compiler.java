@@ -44,6 +44,7 @@ import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.BUILD_SLICE;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_COMPREHENSION;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_KW;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_VARARGS;
@@ -1446,7 +1447,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             makeClosure(code, 0);
             generators[0].iter.accept(this);
             addOp(GET_ITER);
-            addOp(CALL_FUNCTION, 1);
+            addOp(CALL_COMPREHENSION);
             return null;
         } finally {
             setLocation(savedLocation);

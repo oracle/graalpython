@@ -400,6 +400,17 @@ public enum OpCodes {
      */
     CALL_FUNCTION(1, (oparg, followingArgs, withJump) -> oparg + 1, 1),
     /**
+     * Calls a comprehension function with a single iterator argument. Comprehension functions have
+     * to always have the same call target at given calls site. The instruction makes use of this
+     * fact and bypasses function object inline caching which would otherwise slow down warmup since
+     * comprehensions functions are always created anew and thus the cache would always miss.
+     *
+     * Pops: iterator, then the function
+     *
+     * Pushes: call result
+     */
+    CALL_COMPREHENSION(0, 2, 1),
+    /**
      * Calls a callable using an arguments array and keywords array.
      *
      * Pops: keyword args ({@code PKeyword[]}), then args ({@code Object[]}), then callable

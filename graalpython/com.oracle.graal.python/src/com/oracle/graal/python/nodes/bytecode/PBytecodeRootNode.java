@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
@@ -142,6 +143,8 @@ import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationSup
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
+import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
+import com.oracle.graal.python.nodes.call.CallTargetInvokeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -1984,6 +1987,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeCallFunction(virtualFrame, stackTop, beginBci, oparg, localNodes, useCachedNodes, mutableData, profilingEnabled);
+                        break;
+                    }
+                    case OpCodesConstants.CALL_COMPREHENSION: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        stackTop = bytecodeCallComprehension(virtualFrame, stackTop, beginBci, localNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_FUNCTION_VARARGS: {
@@ -4535,6 +4543,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 break;
             }
         }
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeCallComprehension(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, MutableLoopData mutableData, boolean profilingEnabled) {
+        PFunction func = (PFunction) virtualFrame.getObject(stackTop - 1);
+        CallTargetInvokeNode callNode = insertChildNode(localNodes, bci, CallTargetInvokeNodeGen.class, () -> CallTargetInvokeNode.create(func));
+
+        Object result;
+        profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+        try {
+            Object[] arguments = PArguments.create(1);
+            PArguments.setArgument(arguments, 0, virtualFrame.getObject(stackTop));
+            result = callNode.execute(virtualFrame, func, func.getGlobals(), func.getClosure(), arguments);
+            profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+        } catch (PException pe) {
+            profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+            throw pe;
+        }
+
+        virtualFrame.setObject(stackTop--, null);
+        virtualFrame.setObject(stackTop, result);
         return stackTop;
     }
 

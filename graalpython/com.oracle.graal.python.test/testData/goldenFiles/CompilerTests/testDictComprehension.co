@@ -4,8 +4,8 @@ Disassembly of <module>:
   1:26  -   1:28        5 LOAD_BYTE_O                       10
   1:20  -   1:29        7 CALL_FUNCTION                     1
   1:0   -   1:30        9 GET_ITER
-  1:0   -   1:30       10 CALL_FUNCTION                     1
-  1:0   -   1:30       12 RETURN_VALUE
+  1:0   -   1:30       10 CALL_COMPREHENSION
+  1:0   -   1:30       11 RETURN_VALUE
 
 Disassembly of <dictcomp>:
   1:0   -   1:30        0 COLLECTION_FROM_STACK             0    (dict)
