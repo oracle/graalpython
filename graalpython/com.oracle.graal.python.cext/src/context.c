@@ -39,19 +39,37 @@
  * SOFTWARE.
  */
 
-#include "Python.h"
+#include "capi.h"
 
+UPCALL_ID(PyContextVar_New);
+PyObject *
+PyContextVar_New(const char *name, PyObject *def)
+{
+    if (name == NULL) {
+        return NULL;
+    }
+    return UPCALL_CEXT_O(_jls_PyContextVar_New, polyglot_from_string(name, SRC_CS), native_to_java(def));
+}
+
+typedef PyObject *(*contextvar_get_fun_t)(PyObject *, PyObject *, void *);
+UPCALL_TYPED_ID(PyContextVar_Get, contextvar_get_fun_t);
 int
 PyContextVar_Get(PyObject *var, PyObject *default_value, PyObject **value)
 {
-    PyErr_SetString(PyExc_SystemError, "PyContextVar_Get not implemented");
-    return -1;
+    static void *error_marker = &marker_struct;
+    PyObject *res = _jls_PyContextVar_Get(native_to_java(var), native_to_java(default_value), error_marker);
+    if ((void *)res == error_marker) {
+        *value = NULL;
+        return -1;
+    }
+    *value = res;
+    return 0;
 }
 
+UPCALL_ID(PyContextVar_Set);
 PyObject *
 PyContextVar_Set(PyObject *var, PyObject *value)
 {
-    PyErr_SetString(PyExc_SystemError, "PyContextVar_Set not implemented");
-    return NULL;
+    return UPCALL_CEXT_O(_jls_PyContextVar_Set, native_to_java(var), native_to_java(value));
 }
 
