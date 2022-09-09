@@ -72,10 +72,24 @@ public final class InstrumentationSupport extends Node {
      */
     @CompilationFinal(dimensions = 1) public Node[] bciToHelperNode;
 
+    final int startLine;
+
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
         assert rootNode.getSource() != null && rootNode.getSource().hasCharacters();
         code = rootNode.getCodeUnit();
-        statements = new InstrumentedBytecodeStatement[code.endLine - code.startLine + 1];
+        /*
+         * TODO GR-40896 this search for min/max line shouldn't be necessary, but the parser doesn't
+         * provide the correct location for f-strings (may be outside of the range of the function's
+         * location).
+         */
+        int minLine = code.startLine;
+        int maxLine = code.endLine;
+        for (int bci = 0; bci < code.code.length; bci++) {
+            minLine = Math.min(minLine, code.bciToLine(bci));
+            maxLine = Math.max(maxLine, code.bciToLine(bci));
+        }
+        startLine = minLine;
+        statements = new InstrumentedBytecodeStatement[maxLine - minLine + 1];
         bciToHelperNode = new Node[code.code.length];
         boolean[] loadedBreakpoint = new boolean[1];
         code.iterateBytecode((bci, op, oparg, followingArgs) -> {
@@ -113,7 +127,7 @@ public final class InstrumentationSupport extends Node {
     }
 
     private int getStatementIndex(int line) {
-        return line - code.startLine;
+        return line - startLine;
     }
 
     private InstrumentableNode.WrapperNode getWrapperAtLine(int line) {
