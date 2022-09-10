@@ -542,7 +542,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
-        newBuilder.addSlot(FrameSlotKind.Static, null, null);
+        // TODO we should use a static slot when GR-40849 and GR-40742 are fixed
+        newBuilder.addSlot(FrameSlotKind.Int, null, null);
         if (co.isGeneratorOrCoroutine()) {
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
@@ -2443,7 +2444,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static void setCurrentBci(VirtualFrame virtualFrame, int bciSlot, int bci) {
-        virtualFrame.setIntStatic(bciSlot, bci);
+        virtualFrame.setInt(bciSlot, bci);
     }
 
     private boolean bytecodePopCondition(VirtualFrame virtualFrame, int stackTop, Node[] localNodes, int bci, boolean useCachedNodes) {

@@ -59,12 +59,12 @@ public final class FrameInfo {
         return rootNode;
     }
 
-    public int bciToLine(int bci) {
-        return rootNode.bciToLine(bci);
-    }
-
     public int getBci(Frame frame) {
-        return frame.getIntStatic(rootNode.bcioffset);
+        if (frame.isInt(rootNode.bcioffset)) {
+            return frame.getInt(rootNode.bcioffset);
+        } else {
+            return -1;
+        }
     }
 
     public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
@@ -74,10 +74,6 @@ public final class FrameInfo {
             return generatorFrame.getObject(stackTop);
         }
         return null;
-    }
-
-    public int getLineno(Frame frame) {
-        return bciToLine(getBci(frame));
     }
 
     public int getVariableCount() {
