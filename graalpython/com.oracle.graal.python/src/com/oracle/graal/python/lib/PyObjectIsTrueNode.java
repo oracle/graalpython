@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -80,7 +79,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectIsTrueNode extends PNodeWithContext {
-    @BytecodeInterpreterSwitch
     public abstract boolean execute(Frame frame, Object object);
 
     protected abstract Object executeObject(Frame frame, Object object);
