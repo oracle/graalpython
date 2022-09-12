@@ -223,7 +223,7 @@ class CAPIDependency:
         if src_archive:
             shutil.copytree(src_archive, tempdir)
         else:
-            xit("FATAL: Please set the environment variable %s to the location of the source archive of %s" % (src_archive_var, lib_name))
+            xit("FATAL: Please set the environment variable %s to the location of the source archive of %s" % (self.src_var, self.lib_name))
         return tempdir
 
     def conftest(self):
@@ -588,7 +588,7 @@ def build(capi_home):
         build_nativelibsupport(capi_home,
                                 subdir="lzma",
                                 libname="liblzmasupport",
-                                deps=[LZMADepedency("lzma", "xz==5.2.5", "XZ-5.2.5")],
+                                deps=[LZMADepedency("lzma", "xz==5.2.6", "XZ-5.2.6")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
