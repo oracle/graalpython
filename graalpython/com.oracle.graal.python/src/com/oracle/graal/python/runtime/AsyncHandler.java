@@ -145,6 +145,10 @@ public class AsyncHandler {
                     if (!alreadyTracing) {
                         threadState.tracingStart(PythonContext.TraceEvent.DISABLED);
                     }
+                    boolean alreadyProfiling = threadState.isProfiling();
+                    if (!alreadyProfiling) {
+                        threadState.profilingStart();
+                    }
                     debugger.disableStepping();
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
@@ -159,6 +163,9 @@ public class AsyncHandler {
                         debugger.restoreStepping();
                         if (!alreadyTracing) {
                             threadState.tracingStop();
+                        }
+                        if (!alreadyProfiling) {
+                            threadState.profilingStop();
                         }
                     }
                 }

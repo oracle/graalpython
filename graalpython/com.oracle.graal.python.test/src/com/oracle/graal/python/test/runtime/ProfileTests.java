@@ -40,15 +40,14 @@
  */
 package com.oracle.graal.python.test.runtime;
 
+import org.junit.Assert;
 import org.junit.Before;
 
 import com.oracle.graal.python.test.PythonTests;
-import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
-import static org.junit.Assert.assertEquals;
 
 public class ProfileTests {
 
@@ -57,7 +56,7 @@ public class ProfileTests {
         PythonTests.skipOnLegacyASTInterpreter();
     }
 
-    @Ignore("due to GR-40923")
+    @Test
     public void profileYield() {
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
@@ -72,7 +71,7 @@ public class ProfileTests {
                         "<module>> return None\n", source);
     }
 
-    @Ignore("due to GR-40923")
+    @Test
     public void profileException() {
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
@@ -91,6 +90,6 @@ public class ProfileTests {
         final PrintStream printStream = new PrintStream(byteArray);
         PythonTests.runScript(new String[0], code, printStream, System.err);
         String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(expected, result.replaceAll(".*code ", ""));
+        Assert.assertEquals(expected, result.replaceAll(".*code ", ""));
     }
 }
