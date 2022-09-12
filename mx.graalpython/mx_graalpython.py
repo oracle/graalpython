@@ -816,7 +816,9 @@ def get_venv_env(env_dir):
     return env
 
 
-def prepare_graalpy_venv(python_binary, packages=None, env_path=None):
+def prepare_graalpy_venv(python_binary, packages=None, env_path=None, args=None):
+    if args is None:
+        args = []
     if packages is None:
         packages = []
     if isinstance(packages, dict):
@@ -826,7 +828,8 @@ def prepare_graalpy_venv(python_binary, packages=None, env_path=None):
     mx.log("using graalpython venv: {}".format(env_dir))
     mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
     mx.log("installing the following packages: {}".format(", ".join(packages)))
-    mx.run(["graalpy", "-m", "ginstall", "install", ",".join(packages)], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    mx.run(["graalpy", "-m", "ginstall"] + args + ["install", ",".join(packages)], nonZeroIsFatal=True,
+           env=get_venv_env(env_dir))
     return env_dir
 
 
@@ -836,8 +839,10 @@ def run_with_venv(cmd, env_dir, **kwargs):
     mx.run(cmd, **kwargs)
 
 
-def run_ginstall(python_binary):
-    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES)
+def run_ginstall(python_binary, args=None):
+    if args is None:
+        args = []
+    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES, args=args)
     import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
     run_with_venv(["graalpy", "-c", import_packages], env_dir, nonZeroIsFatal=True)
 
@@ -972,7 +977,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
         if task:
-            run_ginstall(python_gvm_with_assertions())
+            run_ginstall(python_gvm_with_assertions(), args=["--quiet"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
