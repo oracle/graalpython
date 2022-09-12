@@ -193,7 +193,8 @@ public final class PythonContext extends Python3Core {
         CALL("call"),
         EXCEPTION("exception"),
         LINE("line"),
-        RETURN("return");
+        RETURN("return"),
+        DISABLED("");
 
         public final TruffleString pythonName;
 

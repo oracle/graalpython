@@ -2349,6 +2349,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (threadState.isTracing()) {
             return;
         }
+        assert event != PythonContext.TraceEvent.DISABLED;
         threadState.tracingStart(event);
         PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : threadState.getTraceFun();
