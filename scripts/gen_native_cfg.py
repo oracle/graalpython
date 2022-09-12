@@ -183,6 +183,7 @@ constant_defs = '''
   x W_OK
   x X_OK
   x F_OK
+  x EX_OK
 
 [rtld]
   x RTLD_LAZY

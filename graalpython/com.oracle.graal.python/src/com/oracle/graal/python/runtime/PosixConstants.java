@@ -125,6 +125,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant W_OK;
     public static final MandatoryIntConstant X_OK;
     public static final MandatoryIntConstant F_OK;
+    public static final MandatoryIntConstant EX_OK;
     public static final MandatoryIntConstant RTLD_LAZY;
     public static final MandatoryIntConstant RTLD_NOW;
     public static final MandatoryIntConstant RTLD_GLOBAL;
@@ -349,6 +350,7 @@ public final class PosixConstants {
         W_OK = reg.createMandatoryInt("W_OK");
         X_OK = reg.createMandatoryInt("X_OK");
         F_OK = reg.createMandatoryInt("F_OK");
+        EX_OK = reg.createMandatoryInt("EX_OK");
         RTLD_LAZY = reg.createMandatoryInt("RTLD_LAZY");
         RTLD_NOW = reg.createMandatoryInt("RTLD_NOW");
         RTLD_GLOBAL = reg.createMandatoryInt("RTLD_GLOBAL");
@@ -486,7 +488,7 @@ public final class PosixConstants {
         flockType = new IntConstant[]{F_RDLCK, F_WRLCK, F_UNLCK};
         direntType = new IntConstant[]{DT_UNKNOWN, DT_FIFO, DT_CHR, DT_DIR, DT_BLK, DT_REG, DT_LNK, DT_SOCK, DT_WHT};
         waitOptions = new IntConstant[]{WNOHANG, WUNTRACED};
-        accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK};
+        accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK, EX_OK};
         rtld = new IntConstant[]{RTLD_LAZY, RTLD_NOW, RTLD_GLOBAL, RTLD_LOCAL};
         socketFamily = new IntConstant[]{AF_UNSPEC, AF_INET, AF_INET6, AF_PACKET, AF_UNIX};
         socketType = new IntConstant[]{SOCK_DGRAM, SOCK_STREAM};

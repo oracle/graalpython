@@ -115,6 +115,7 @@ class PosixConstantsDarwin {
         constants.put("W_OK", 0x00000002);
         constants.put("X_OK", 0x00000001);
         constants.put("F_OK", 0x00000000);
+        constants.put("EX_OK", 0x00000000);
         constants.put("RTLD_LAZY", 0x00000001);
         constants.put("RTLD_NOW", 0x00000002);
         constants.put("RTLD_GLOBAL", 0x00000008);
