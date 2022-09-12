@@ -593,8 +593,8 @@ public abstract class PGuards {
 
     /**
      * Tests if the class of this Python object is a builtin class. This method is supposed to be
-     * used for builtin types that do not support __class__ assignment at all, so we can safely
-     * read the initialPythonClass field and assume that is the current class as well.
+     * used for builtin types that do not support __class__ assignment at all, so we can safely read
+     * the initialPythonClass field and assume that is the current class as well.
      */
     public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
         Object clazz = object.getInitialPythonClass();

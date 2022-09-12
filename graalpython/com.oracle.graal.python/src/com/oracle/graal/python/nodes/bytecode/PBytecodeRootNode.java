@@ -2382,8 +2382,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, MutableLoopData mutableData, boolean isGeneratorOrCoroutine, final int bciSlot, final int beginBci,
-                    Throwable e, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
+    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, MutableLoopData mutableData,
+                    boolean isGeneratorOrCoroutine, final int bciSlot, final int beginBci, Throwable e, PException pe,
+                    boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
         if (isGeneratorOrCoroutine) {
