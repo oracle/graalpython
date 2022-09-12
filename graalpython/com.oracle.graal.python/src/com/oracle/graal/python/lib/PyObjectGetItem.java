@@ -105,7 +105,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         if (getItem != PNone.NO_VALUE) {
             return callGetItem.executeObject(frame, getItem, object, key);
         }
-        Object item = getItemClass.execute(frame, type, key);
+        Object item = getItemClass.execute(frame, object, key);
         if (item != PNone.NO_VALUE) {
             return item;
         }
