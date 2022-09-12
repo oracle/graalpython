@@ -174,6 +174,7 @@ static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, j
         (*jniEnv)->SetIntField(jniEnv, hpyContext, jniField_nextHandle, next_handle+1);
     }
     (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
     /* TODO(fa): update native data pointer cache here (if specified) */
     return boxHandle(next_handle);
 }
@@ -185,6 +186,7 @@ static jobject get_object_for_hpy_handle(jobject hpyContext, uint64_t bits) {
         return NULL;
     }
     jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_handles, (jsize)unboxHandle(bits));
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
     if (element == NULL) {
         LOGS("handle delegate is NULL")
     }
@@ -198,6 +200,7 @@ static jobject get_object_for_hpy_global(jobject hpyContext, uint64_t bits) {
         return NULL;
     }
     jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_globals, (jsize)unboxHandle(bits));
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_globals);
     if (element == NULL) {
         LOGS("globals element is NULL")
         return NULL;
@@ -300,6 +303,7 @@ static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
         }
 
         uint64_t new_handle = get_hpy_handle_for_object(ctx, hpyContext, element, false);
+        (*jniEnv)->DeleteLocalRef(jniEnv, element);
         if (new_handle) {
             load_global_native_data_pointer(ctx, bits, new_handle);
             return toPtr(new_handle);
