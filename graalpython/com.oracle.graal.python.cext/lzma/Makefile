@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
@@ -63,12 +63,12 @@ ifeq ($(shell uname -s), Darwin)
 LIB_NAME=liblzma.5.dylib
 LIB_LINK=-Wl,-install_name -Wl,@rpath/$(LIB_NAME)
 SYM_LIB1=liblzma.dylib
-SYM_LIB2=liblzma.5.2.5.dylib
+SYM_LIB2=liblzma.5.2.6.dylib
 else
 LIB_NAME=liblzma.so.5
 LIB_LINK=-Wl,-soname -Wl,$(LIB_NAME)
 SYM_LIB1=liblzma.so
-SYM_LIB2=liblzma.so.5.2.5
+SYM_LIB2=liblzma.so.5.2.6
 endif
 
 CC=clang

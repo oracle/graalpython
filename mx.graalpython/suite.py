@@ -107,12 +107,12 @@ suite = {
                 "version": "1.8",
             },
         },
-        "XZ-5.2.5": {
+        "XZ-5.2.6": {
             "urls": [
-                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.5.tar.gz",
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.6.tar.gz",
             ],
             "packedResource": True,
-            "sha1": "fa2ae4db119f639a01b02f99f1ba671ece2828eb",
+            "sha1": "1b1acd2e62203a7abceee6f573f1a96cdf5fbc8f",
         },
         "BOUNCYCASTLE-PROVIDER": {
             "sha1": "46a080368d38b428d237a59458f9bc915222894d",
@@ -454,14 +454,14 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
-                "XZ-5.2.5",
+                "XZ-5.2.6",
                 "BZIP2",
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "ARCH": "<arch>",
                 "OS": "<os>",
-                "XZ-5.2.5": "<path:XZ-5.2.5>",
+                "XZ-5.2.6": "<path:XZ-5.2.6>",
                 "BZIP2": "<path:BZIP2>",
             },
         },
