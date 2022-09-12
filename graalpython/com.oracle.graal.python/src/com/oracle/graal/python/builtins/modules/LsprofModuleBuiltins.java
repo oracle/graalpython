@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -320,7 +321,7 @@ class ProfilerBuiltins extends PythonBuiltins {
             int selfHitCount = node.getPayload().getSelfHitCount();
             long hitCount = (long) otherHitCount + selfHitCount;
             Object[] profilerEntry = new Object[]{
-                            rootName,
+                            toTruffleStringUncached(rootName),
                             hitCount,
                             0,
                             otherHitCount * avgSampleTime,

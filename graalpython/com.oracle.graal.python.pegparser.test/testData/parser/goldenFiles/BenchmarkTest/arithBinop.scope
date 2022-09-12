@@ -1,0 +1,28 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      __benchmark__: [DefLocal, Local]
+      docompute: [DefLocal, Local]
+      measure: [DefLocal, Local]
+    Scope docompute Function
+        Varnames: num
+        Symbols:
+            i: [DefLocal, Use, Local]
+            j: [DefLocal, Use, Local]
+            num: [DefParam, Use, Local]
+            range: [Use, GlobalImplicit]
+            sum_: [DefLocal, Use, Local]
+    Scope measure Function
+        Varnames: num
+        Symbols:
+            docompute: [Use, GlobalImplicit]
+            num: [DefParam, Use, Local]
+            print: [Use, GlobalImplicit]
+            range: [Use, GlobalImplicit]
+            run: [DefLocal, Local]
+            sum_: [DefLocal, Use, Local]
+    Scope __benchmark__ Function
+        Varnames: num
+        Symbols:
+            measure: [Use, GlobalImplicit]
+            num: [DefParam, Use, Local]

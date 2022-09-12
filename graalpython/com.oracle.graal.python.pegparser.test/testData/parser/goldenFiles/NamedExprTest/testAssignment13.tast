@@ -1,0 +1,14 @@
+Module[0, 29]
+    Assign[0, 29]
+        LHS: Name[0, 6] Value: "length" Store
+        RHS: 
+            Call[9, 29]
+                Target: Name[9, 12] Value: "len"
+                Args:
+                    NamedExpr[13, 28]
+                        Target: Name[13, 18] Value: "lines" Store
+                        Value: 
+                            List[22, 28]
+                                Values:
+                                    LONG[23, 24] Value: 1
+                                    LONG[26, 27] Value: 2

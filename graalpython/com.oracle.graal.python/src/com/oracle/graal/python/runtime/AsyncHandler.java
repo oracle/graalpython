@@ -122,6 +122,8 @@ public class AsyncHandler {
         @Override
         public final void execute(PythonContext context) {
             Debugger debugger = null;
+            PythonContext.PythonThreadState threadState = null;
+            PythonLanguage language = context.getLanguage();
             do {
                 Object callable = callable();
                 if (callable != null) {
@@ -136,6 +138,13 @@ public class AsyncHandler {
                     if (debugger == null) {
                         debugger = Debugger.find(context.getEnv());
                     }
+                    if (threadState == null) {
+                        threadState = context.getThreadState(language);
+                    }
+                    boolean alreadyTracing = threadState.isTracing();
+                    if (!alreadyTracing) {
+                        threadState.tracingStart(PythonContext.TraceEvent.DISABLED);
+                    }
                     debugger.disableStepping();
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
@@ -148,6 +157,9 @@ public class AsyncHandler {
                         ExceptionUtils.printPythonLikeStackTrace(e);
                     } finally {
                         debugger.restoreStepping();
+                        if (!alreadyTracing) {
+                            threadState.tracingStop();
+                        }
                     }
                 }
             } while (proceed());

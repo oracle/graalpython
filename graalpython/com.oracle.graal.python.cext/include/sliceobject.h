@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,9 +11,10 @@ extern "C" {
 
 /* The unique ellipsis object "..." */
 
-PyAPI_DATA(PyObject) _Py_EllipsisObject; /* Don't use this directly */
+PyAPI_DATA(PyObject*) _Py_EllipsisObjectReference; /* Don't use this directly */
 
-#define Py_Ellipsis (&_Py_EllipsisObject)
+#define _Py_EllipsisObject (*_Py_EllipsisObjectReference)
+#define Py_Ellipsis (_Py_EllipsisObjectReference)
 
 /* Slice object interface */
 

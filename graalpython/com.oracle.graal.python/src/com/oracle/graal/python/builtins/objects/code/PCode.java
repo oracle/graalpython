@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -633,7 +634,12 @@ public final class PCode extends PythonBuiltinObject {
             Object[] array = new Object[strings.length];
             System.arraycopy(strings, 0, array, 0, strings.length);
             return factory.createTuple(array);
+        } else if (o instanceof Object[]) {
+            Object[] objects = (Object[]) o;
+            return factory.createTuple(objects.clone());
         }
+        // Ensure no conversion is missing
+        assert !IsForeignObjectNode.getUncached().execute(o);
         return o;
     }
 

@@ -1210,7 +1210,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
-                // TODO _PyAST_Validate
                 Source source = createFakeSource();
                 RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null);
                 return wrapRootCallTarget(rootCallTarget);

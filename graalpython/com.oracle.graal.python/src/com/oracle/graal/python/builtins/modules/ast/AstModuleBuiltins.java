@@ -147,7 +147,10 @@ public final class AstModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     public static ModTy obj2sst(PythonContext context, Object obj) {
-        return new Obj2Sst(getAstState(context)).obj2ModTy(obj);
+        // TODO PyAST_obj2mod
+        ModTy mod = new Obj2Sst(getAstState(context)).obj2ModTy(obj);
+        Validator.validateMod(mod);
+        return mod;
     }
 
     @TruffleBoundary

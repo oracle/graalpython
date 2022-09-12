@@ -184,11 +184,12 @@ int PyDict_Update(PyObject *a, PyObject *b) {
 }
 
 PyObject* _PyObject_GenericGetDict(PyObject* obj) {
+	obj = native_pointer_to_java(obj);
     PyObject** dictptr = _PyObject_GetDictPtr(obj);
     if (dictptr == NULL) {
         return NULL;
     }
-    PyObject* dict = *dictptr;
+    PyObject* dict = native_pointer_to_java(*dictptr);
     if (dict == NULL) {
         *dictptr = dict = PyDict_New();
     }
@@ -205,6 +206,7 @@ PyObject* PyObject_GenericGetDict(PyObject* obj, void* context) {
 }
 
 PyObject** _PyObject_GetDictPtr(PyObject* obj) {
+	obj = native_pointer_to_java(obj);
     Py_ssize_t dictoffset;
 
     // relies on the fact that 'tp_dictoffset' is in sync with the corresponding managed class !

@@ -83,7 +83,6 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -237,6 +236,7 @@ import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
 import com.oracle.graal.python.lib.PyLongAsDoubleNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
@@ -1313,7 +1313,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long getHPyDebugContext() throws ApiInitException {
         if (hPyDebugContext == 0) {
             CompilerDirectives.transferToInterpreter();
-            if (!getContext().getEnv().isNativeAccessAllowed()) {
+            if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
                 throw new ApiInitException(null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
             }
             try {
@@ -1333,7 +1333,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     public PythonModule getHPyDebugModule() throws ImportException {
-        if (!getContext().getEnv().isNativeAccessAllowed()) {
+        if (!getContext().getEnv().isNativeAccessAllowed() || getContext().getLanguage().getEngineOption(PythonOptions.HPyBackend) != HPyBackendMode.JNI) {
             throw new ImportException(null, null, null, ErrorMessages.HPY_DEBUG_MODE_NOT_AVAILABLE);
         }
 

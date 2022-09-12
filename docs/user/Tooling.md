@@ -39,7 +39,7 @@ For example, it does not currently track calls, only line counts and called func
 The `_lsprof` built-in module has been implemented using the GraalVM `cpusampler` tool.
 Not all profiling features are currently supported, but basic profiling works:
 ```shell
-graalpy -m cProfile -s sort -m ginstall --help
+graalpy -m cProfile -s calls -m ginstall --help
 ```
 
 The interactive exploration of a stats output file also works:
@@ -49,4 +49,25 @@ graalpy -m pstats ginstall.profile
 ginstall.profile%
 callers
 [...]
+```
+
+The profile module works as well:
+```shell
+graalpy -m profile -s calls -m ginstall --help
+```
+or
+```shell
+>>> import profile
+>>> profile.run('l = []; l.append(1)')
+         5 function calls in 0.002 seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 :0(_setprofile)
+        1    0.000    0.000    0.000    0.000 :0(append)
+        1    0.000    0.000    0.001    0.001 :0(exec)
+        1    0.000    0.000    0.000    0.000 <string>:1(<module>)
+        1    0.001    0.001    0.002    0.002 profile:0(l = []; l.append(1))
+        0    0.000             0.000          profile:0(profiler)
 ```

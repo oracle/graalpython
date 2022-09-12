@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -301,7 +301,8 @@ to other extension modules, so that extension modules can use the\n\
 Python import mechanism to link to one another.\n\
 ");
 
-PyTypeObject PyCapsule_Type = {
+
+PyTypeObject PyCapsule_Type_Impl = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "PyCapsule",                /*tp_name*/
     sizeof(PyCapsule),          /*tp_basicsize*/
@@ -326,4 +327,9 @@ PyTypeObject PyCapsule_Type = {
     PyCapsule_Type__doc__       /*tp_doc*/
 };
 
+PyTypeObject* PyCapsule_TypeReference = &PyCapsule_Type_Impl;
+
+PyTypeObject* getPyCapsuleTypeReference() {
+	return &PyCapsule_Type;
+}
 

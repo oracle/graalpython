@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,7 +11,7 @@
 
 #define PY_SSIZE_T_CLEAN
 
-#include "Python.h"
+#include "capi.h"
 #include "structmember.h"
 #include <ctype.h>
 
@@ -1285,6 +1285,7 @@ align(Py_ssize_t size, char c, const formatdef *e)
 static int
 prepare_s(PyStructObject *self)
 {
+	self = native_pointer_to_java(self);
     const formatdef *f;
     const formatdef *e;
     formatcode *codes;
@@ -1294,9 +1295,10 @@ prepare_s(PyStructObject *self)
     char c;
     Py_ssize_t size, len, num, itemsize;
     size_t ncodes;
+    PyObject* self_format = native_pointer_to_java(self->s_format);
 
-    fmt = PyBytes_AS_STRING(self->s_format);
-    if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self->s_format)) {
+    fmt = PyBytes_AS_STRING(self_format);
+    if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self_format)) {
         PyErr_SetString(StructError, "embedded null character");
         return -1;
     }
@@ -1611,7 +1613,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
                      buffer->len);
         return NULL;
     }
-    return s_unpack_internal(self, (char*)buffer->buf + offset);
+    return s_unpack_internal(self, (char*)native_pointer_to_java(buffer->buf) + offset);
 }
 
 
@@ -2084,7 +2086,10 @@ PyTypeObject PyStructType = {
 /* ---- Standalone functions  ---- */
 
 #define MAXCACHE 100
-static PyObject *cache = NULL;
+/* Please note: the name of the cache needs to be prefixed because this file
+   includes 'capi.h' which defines a global variable with name 'cache'. */
+#define STRUCT_CACHE _cpython_struct_cache
+static PyObject *STRUCT_CACHE = NULL;
 
 static int
 cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
@@ -2097,13 +2102,13 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
         return 1;
     }
 
-    if (cache == NULL) {
-        cache = PyDict_New();
-        if (cache == NULL)
+    if (STRUCT_CACHE == NULL) {
+        STRUCT_CACHE = PyDict_New();
+        if (STRUCT_CACHE == NULL)
             return 0;
     }
 
-    s_object = PyDict_GetItemWithError(cache, fmt);
+    s_object = PyDict_GetItemWithError(STRUCT_CACHE, fmt);
     if (s_object != NULL) {
         Py_INCREF(s_object);
         *ptr = (PyStructObject *)s_object;
@@ -2115,10 +2120,10 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
 
     s_object = PyObject_CallFunctionObjArgs((PyObject *)(&PyStructType), fmt, NULL);
     if (s_object != NULL) {
-        if (PyDict_GET_SIZE(cache) >= MAXCACHE)
-            PyDict_Clear(cache);
+        if (PyDict_GET_SIZE(STRUCT_CACHE) >= MAXCACHE)
+            PyDict_Clear(STRUCT_CACHE);
         /* Attempt to cache the result */
-        if (PyDict_SetItem(cache, fmt, s_object) == -1)
+        if (PyDict_SetItem(STRUCT_CACHE, fmt, s_object) == -1)
             PyErr_Clear();
         *ptr = (PyStructObject *)s_object;
         return Py_CLEANUP_SUPPORTED;
@@ -2136,7 +2141,7 @@ static PyObject *
 _clearcache_impl(PyObject *module)
 /*[clinic end generated code: output=ce4fb8a7bf7cb523 input=463eaae04bab3211]*/
 {
-    Py_CLEAR(cache);
+    Py_CLEAR(STRUCT_CACHE);
     Py_RETURN_NONE;
 }
 
@@ -2344,7 +2349,7 @@ PyInit__cpython_struct(void)
     if (m == NULL)
         return NULL;
 
-    Py_TYPE(&PyStructType) = &PyType_Type;
+    Py_SET_TYPE(&PyStructType, &PyType_Type);
     if (PyType_Ready(&PyStructType) < 0)
         return NULL;
 

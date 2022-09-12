@@ -138,6 +138,7 @@ static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t s
 POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
 
 PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
+	unicode = native_pointer_to_java(unicode);
     PyObject *self;
     Py_ssize_t length, char_size;
     int share_wstr, share_utf8;
@@ -487,7 +488,7 @@ PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
 
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 	// CPython assumes latin1 when decoding an UCS1 array
-	return polyglot_from_string((const char *) u, "ISO-8859-1");
+	return to_sulong(polyglot_from_string((const char *) u, "ISO-8859-1"));
 }
 
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
@@ -688,4 +689,18 @@ int PyUnicode_Contains(PyObject *str, PyObject *substr) {
 UPCALL_ID(PyUnicode_Split)
 PyObject* PyUnicode_Split(PyObject *s, PyObject *sep, Py_ssize_t maxsplit) {
     return UPCALL_CEXT_O(_jls_PyUnicode_Split, native_to_java(s), native_to_java(sep), maxsplit);
+}
+
+// taken from CPython "Objects/unicodeobject.c"
+PyObject *
+PyUnicode_DecodeLatin1(const char *s,
+                       Py_ssize_t size,
+                       const char *errors)
+{
+    /* Latin-1 is equivalent to the first 256 ordinals in Unicode. */
+    return _PyUnicode_FromUCS1((const unsigned char*)s, size);
+}
+
+int _PyUnicode_EqualToASCIIId(PyObject *left, _Py_Identifier *right) {
+    return _PyUnicode_EqualToASCIIString(left, right->string);
 }

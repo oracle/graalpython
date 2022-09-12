@@ -40,7 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_CONSTANT;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_VALUE;
+import static com.oracle.graal.python.nodes.ErrorMessages.AST_IDENTIFIER_MUST_BE_OF_TYPE_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_SOME_SORT_OF_S_BUT_GOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIELD_S_IS_REQUIRED_FOR_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INTEGER_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.REQUIRED_FIELD_S_MISSING_FROM_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FIELD_S_CHANGED_SIZE_DURING_ITERATION;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FIELD_S_MUST_BE_A_LIST_NOT_P;
@@ -52,11 +57,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
@@ -78,50 +85,64 @@ abstract class Obj2SstBase {
     }
 
     <T> T lookupAndConvert(Object obj, TruffleString attrName, TruffleString nodeName, Conversion<T> conversion, boolean required) {
-        Object tmp = PyObjectLookupAttr.getUncached().execute(null, obj, attrName);
+        Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (required) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            if (!required) {
+                return null;
             }
-            return null;
+            if (tmp == PNone.NO_VALUE) {
+                throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            }
+            // In CPython, None values for required attributes are not checked here, but converted
+            // to C NULL and later checked in _PyAST_* constructor. This is not convenient for us,
+            // since our SST nodes are in the pegparser project which does not have access to Python
+            // exceptions. So we handle PNone.NONE here, but there is one exception - None is a
+            // valid value for the required field ExprTy.Constant.value.
+            if (!(nodeName == T_C_CONSTANT && attrName == T_F_VALUE)) {
+                throw raiseValueError(FIELD_S_IS_REQUIRED_FOR_S, attrName, nodeName);
+            }
         }
         // Py_EnterRecursiveCall(" while traversing '%s' node")
         return conversion.convert(tmp);
     }
 
     int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
-        Object tmp = PyObjectLookupAttr.getUncached().execute(null, obj, attrName);
+        Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (required) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
-            } else {
+            if (!required) {
                 return 0;
             }
+            if (tmp == PNone.NO_VALUE) {
+                throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            }
+            // PNone.NONE is handled by obj2int() (produces a different error message)
         }
         // Py_EnterRecursiveCall(" while traversing '%s' node")
         return obj2int(tmp);
     }
 
     boolean lookupAndConvertBoolean(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
-        Object tmp = PyObjectLookupAttr.getUncached().execute(null, obj, attrName);
+        Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (required) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
-            } else {
+            if (!required) {
                 return false;
             }
+            if (tmp == PNone.NO_VALUE) {
+                throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            }
+            // PNone.NONE is handled by obj2boolean() (produces a different error message)
         }
         // Py_EnterRecursiveCall(" while traversing '%s' node")
         return obj2boolean(tmp);
     }
 
     <T> T[] lookupAndConvertSequence(Object obj, TruffleString attrName, TruffleString nodeName, Conversion<T> conversion, IntFunction<T[]> arrayFactory) {
-        Object tmp = PyObjectLookupAttr.getUncached().execute(null, obj, attrName);
+        Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
         }
         if (!(tmp instanceof PList)) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, S_FIELD_S_MUST_BE_A_LIST_NOT_P, nodeName, attrName, tmp);
+            throw raiseTypeError(S_FIELD_S_MUST_BE_A_LIST_NOT_P, nodeName, attrName, tmp);
         }
         SequenceStorage seq = ((PList) tmp).getSequenceStorage();
         T[] result = arrayFactory.apply(seq.length());
@@ -130,20 +151,22 @@ abstract class Obj2SstBase {
             // Py_EnterRecursiveCall(" while traversing '%s' node")
             result[i] = conversion.convert(tmp);
             if (result.length != seq.length()) {
-                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, S_FIELD_S_CHANGED_SIZE_DURING_ITERATION, nodeName, attrName);
+                throw raiseTypeError(S_FIELD_S_CHANGED_SIZE_DURING_ITERATION, nodeName, attrName);
             }
         }
         return result;
     }
 
     static boolean isInstanceOf(Object o, PythonAbstractClass cls) {
-        Object check = PyObjectLookupAttr.getUncached().execute(null, cls, SpecialMethodNames.T___INSTANCECHECK__);
+        Object check = lookupAttr(cls, SpecialMethodNames.T___INSTANCECHECK__);
         Object result = CallNode.getUncached().execute(check, o);
         return CastToJavaBooleanNode.getUncached().execute(result);
     }
 
     int obj2int(Object o) {
-        // TODO PyLong_Check
+        if (!PyLongCheckNode.getUncached().execute(o)) {
+            throw raiseValueError(INVALID_INTEGER_VALUE, repr(o));
+        }
         return PyLongAsIntNode.getUncached().execute(null, o);
     }
 
@@ -160,11 +183,14 @@ abstract class Obj2SstBase {
     }
 
     String obj2identifier(Object obj) {
-        // TODO if (!PyUnicode_CheckExact(obj) && obj != Py_None) {
         if (obj == PNone.NONE) {
             return null;
         }
-        return CastToJavaStringNode.getUncached().execute(obj);
+        try {
+            return CastToJavaStringNode.getUncached().execute(obj);
+        } catch (CannotCastException e) {
+            throw raiseTypeError(AST_IDENTIFIER_MUST_BE_OF_TYPE_STR);
+        }
     }
 
     ConstantValue obj2ConstantValue(Object obj) {
@@ -173,7 +199,26 @@ abstract class Obj2SstBase {
     }
 
     static PException unexpectedNodeType(TruffleString expected, Object obj) {
-        TruffleString repr = PyObjectReprAsTruffleStringNode.getUncached().execute(null, obj);
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, EXPECTED_SOME_SORT_OF_S_BUT_GOT_S, expected, repr);
+        throw raiseTypeError(EXPECTED_SOME_SORT_OF_S_BUT_GOT_S, expected, repr(obj));
+    }
+
+    private static Object lookupAttr(Object o, TruffleString attrName) {
+        return PyObjectLookupAttr.getUncached().execute(null, o, attrName);
+    }
+
+    private static TruffleString repr(Object o) {
+        return PyObjectReprAsTruffleStringNode.getUncached().execute(null, o);
+    }
+
+    private static PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+        throw PRaiseNode.getUncached().raise(type, format, arguments);
+    }
+
+    private static PException raiseTypeError(TruffleString format, Object... arguments) {
+        throw raise(PythonBuiltinClassType.TypeError, format, arguments);
+    }
+
+    private static PException raiseValueError(TruffleString format, Object... arguments) {
+        throw raise(PythonBuiltinClassType.ValueError, format, arguments);
     }
 }

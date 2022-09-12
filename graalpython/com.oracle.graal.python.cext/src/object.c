@@ -119,17 +119,28 @@ static PyNumberMethods none_as_number = {
 
 PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
-PyObject _Py_NoneStruct = {
-  _PyObject_EXTRA_INIT
-  1, &_PyNone_Type
-};
-
 PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
-PyObject _Py_NotImplementedStruct = {
-    _PyObject_EXTRA_INIT
-    1, &_PyNotImplemented_Type
-};
+Py_ssize_t _Py_REFCNT(PyObject *obj) {
+    return obj->ob_refcnt;
+}
+
+void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
+    obj->ob_refcnt = cnt;
+}
+
+struct _typeobject* _Py_TYPE(PyObject *a) {
+    return a->ob_type;
+}
+Py_ssize_t _Py_SIZE(PyVarObject *a) {
+    return a->ob_size;
+}
+void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
+    a->ob_type = b;
+}
+void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
+    a->ob_size = b;
+}
 
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
@@ -163,6 +174,9 @@ PyObject* PyObject_Repr(PyObject* o) {
 
 // taken from CPython "Objects/call.c"
 PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs) {
+	callable = native_pointer_to_java(callable);
+	tuple = native_pointer_to_java(tuple);
+	kwargs = native_pointer_to_java(kwargs);
     /* get vectorcallfunc as in _PyVectorcall_Function, but without
      * the _Py_TPFLAGS_HAVE_VECTORCALL check */
     Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
@@ -335,6 +349,7 @@ int PyObject_AsFileDescriptor(PyObject* obj) {
 // Taken from CPython
 int PyObject_Print(PyObject *op, FILE *fp, int flags)
 {
+	op = native_pointer_to_java(op);
     int ret = 0;
     clearerr(fp); /* Clear any previous error condition */
     if (op == NULL) {
@@ -378,7 +393,7 @@ int PyObject_Print(PyObject *op, FILE *fp, int flags)
             else {
                 PyErr_Format(PyExc_TypeError,
                              "str() or repr() returned '%.100s'",
-                             s->ob_type->tp_name);
+                             Py_TYPE(s)->tp_name);
                 ret = -1;
             }
             Py_XDECREF(s);
@@ -396,6 +411,7 @@ int PyObject_Print(PyObject *op, FILE *fp, int flags)
 
 // taken from CPython "Objects/object.c"
 PyObject * PyObject_GetAttrString(PyObject *v, const char *name) {
+	v = native_pointer_to_java(v);
     PyObject *w, *res;
 
     if (Py_TYPE(v)->tp_getattr != NULL) {
@@ -412,6 +428,7 @@ PyObject * PyObject_GetAttrString(PyObject *v, const char *name) {
 
 // taken from CPython "Objects/object.c"
 int PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w) {
+	v = native_pointer_to_java(v);
     PyObject *s;
     int res;
     PyTypeObject *type = Py_TYPE(v);
@@ -442,6 +459,8 @@ int PyObject_HasAttrString(PyObject* obj, const char* attr) {
    uninitialized type which means that a managed attribute lookup won't work. */
 // taken from CPython "Objects/object.c"
 PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
+	v = native_pointer_to_java(v);
+	name = native_pointer_to_java(name);
     PyTypeObject *tp = Py_TYPE(v);
 
     if (!PyUnicode_Check(name)) {
@@ -469,12 +488,14 @@ PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
 // taken from CPython "Objects/object.c"
 int _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
 {
+	v = native_pointer_to_java(v);
+	name = native_pointer_to_java(name);
     PyTypeObject *tp = Py_TYPE(v);
 
     if (!PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError,
                      "attribute name must be string, not '%.200s'",
-                     name->ob_type->tp_name);
+					 Py_TYPE(name)->tp_name);
         *result = NULL;
         return -1;
     }
@@ -530,6 +551,7 @@ int _PyObject_LookupAttrId(PyObject *v, _Py_Identifier *name, PyObject **result)
 
 UPCALL_ID(PyObject_GenericGetAttr);
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
+	obj = native_pointer_to_java(obj);
     PyTypeObject *tp = Py_TYPE(obj);
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
     	return NULL;
@@ -541,13 +563,15 @@ PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
    unitialized type which means that a managed attribute lookup won't work. */
 // taken from CPython "Objects/object.c"
 int PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value) {
+	v = native_pointer_to_java(v);
+	name = native_pointer_to_java(name);
     PyTypeObject *tp = Py_TYPE(v);
     int err;
 
     if (!PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError,
                      "attribute name must be string, not '%.200s'",
-                     name->ob_type->tp_name);
+					 Py_TYPE(name)->tp_name);
         return -1;
     }
 
@@ -594,6 +618,7 @@ int _PyObject_SetAttrId(PyObject *v, _Py_Identifier *name, PyObject *w)
 
 UPCALL_ID(PyObject_GenericSetAttr);
 int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
+	obj = native_pointer_to_java(obj);
     PyTypeObject *tp = Py_TYPE(obj);
     if (tp->tp_dict == NULL && PyType_Ready(tp) < 0) {
         return -1;
@@ -683,10 +708,11 @@ void Py_DecRef(PyObject *o) {
 }
 
 PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
+	op = native_pointer_to_java(op);
     if (op == NULL) {
         return PyErr_NoMemory();
     }
-    Py_TYPE(op) = tp;
+    Py_SET_TYPE(op, tp);
     /* TOOD(fa): properly set HEAPTYPE flag */
     /*
     if (PyType_GetFlags(tp) & Py_TPFLAGS_HEAPTYPE) {
@@ -700,12 +726,13 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
 
 // taken from CPython "Objects/object.c"
 PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
+	op = native_pointer_to_java(op);
     if (op == NULL) {
         return (PyVarObject *) PyErr_NoMemory();
     }
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
-    Py_TYPE(op) = tp;
+    Py_SET_TYPE(op, tp);
     _Py_NewReference((PyObject *)op);
     return op;
 }
@@ -749,6 +776,7 @@ PyObject * _PyObject_NextNotImplemented(PyObject *self) {
 void
 _Py_Dealloc(PyObject *op)
 {
+	op = native_pointer_to_java(op);
     destructor dealloc = Py_TYPE(op)->tp_dealloc;
 #ifdef Py_TRACE_REFS
     _Py_ForgetReference(op);
@@ -769,6 +797,7 @@ _PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
     PyObject *key, *value;
     PyObject *kwnames;
 
+    kwargs = native_pointer_to_java(kwargs);
     assert(nargs >= 0);
     assert(kwargs == NULL || PyDict_CheckExact(kwargs));
 
@@ -807,8 +836,8 @@ _PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
        to change its size. It's a deliberate choice for speed, this function is
        called in the performance critical hot code. */
     while (PyDict_Next(kwargs, &pos, &key, &value)) {
-        Py_INCREF(key);
-        Py_INCREF(value);
+        Py_INCREF(native_pointer_to_java(key));
+        Py_INCREF(native_pointer_to_java(value));
         PyTuple_SET_ITEM(kwnames, i, key);
         kwstack[i] = value;
         i++;

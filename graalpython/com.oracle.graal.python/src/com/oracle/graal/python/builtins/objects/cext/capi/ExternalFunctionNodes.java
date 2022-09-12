@@ -215,7 +215,9 @@ public abstract class ExternalFunctionNodes {
         OBJOBJPROC(39, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
         OBJOBJARGPROC(40, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
         NEW(41),
-        MP_DELITEM(42, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create);
+        MP_DELITEM(42, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        TP_STR(43),
+        TP_REPR(44);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -272,6 +274,8 @@ public abstract class ExternalFunctionNodes {
                 case UNARYFUNC:
                 case BINARYFUNC:
                 case BINARYFUNC_L:
+                case TP_STR:
+                case TP_REPR:
                     /*
                      * If no conversion is requested, this means we directly call a managed function
                      * (without argument conversion). Null indicates this

@@ -26,7 +26,6 @@ from .support import HPyTest
 
 
 class TestContextVar(HPyTest):
-    @pytest.mark.skip(reason="GR-40178")
     def test_ContextVar_basics(self):
         mod = self.make_module("""
             HPyDef_METH(create_ctxvar, "create_ctxvar", create_ctxvar_impl, HPyFunc_O)

@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltinsFactory;
@@ -131,6 +133,7 @@ import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.ListFromStac
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromStackNode;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.TupleFromStackNodeGen;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -539,7 +542,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // stack
         newBuilder.addSlots(co.stacksize, FrameSlotKind.Illegal);
         // BCI filled when unwinding the stack or when pausing generators
-        newBuilder.addSlot(FrameSlotKind.Static, null, null);
+        // TODO we should use a static slot when GR-40849 and GR-40742 are fixed
+        newBuilder.addSlot(FrameSlotKind.Int, null, null);
         if (co.isGeneratorOrCoroutine()) {
             // stackTop saved when pausing a generator
             newBuilder.addSlot(FrameSlotKind.Int, null, null);
@@ -1138,7 +1142,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         final PythonLanguage language = PythonLanguage.get(this);
-        final Assumption noTrace = language.noTracingAssumption;
+        final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
 
         /*
          * We use an object as a workaround for not being able to specify which local variables are
@@ -1162,21 +1166,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(bci);
         CompilerAsserts.partialEvaluationConstant(stackTop);
 
-        boolean tracingEnabled = isTracingEnabled(noTrace, mutableData);
+        boolean tracingEnabled = isTracingEnabled(noTraceOrProfile, mutableData);
+        boolean profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
+
         // if we are simply continuing to run an OSR loop after the replacement, tracing an
         // extra CALL event would be incorrect
-        if (tracingEnabled && !fromOSR) {
-            traceCall(virtualFrame, initialBci, mutableData);
+        if (!fromOSR) {
+            traceOrProfileCall(virtualFrame, initialBci, mutableData, tracingEnabled, profilingEnabled);
         }
 
         int oparg = 0;
         while (true) {
             final byte bc = localBC[bci];
             final int beginBci = bci;
-            tracingEnabled = isTracingEnabled(noTrace, mutableData);
+            tracingEnabled = isTracingEnabled(noTraceOrProfile, mutableData);
             if (tracingEnabled) {
                 traceLine(virtualFrame, mutableData, localBC, bci);
             }
+            profilingEnabled = isProfilingEnabled(noTraceOrProfile, mutableData);
 
             CompilerAsserts.partialEvaluationConstant(bc);
             CompilerAsserts.partialEvaluationConstant(bci);
@@ -1633,9 +1640,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             LoopNode.reportLoopCount(this, mutableData.loopCount);
                         }
                         Object value = virtualFrame.getObject(stackTop);
-                        if (tracingEnabled) {
-                            traceReturn(virtualFrame, mutableData, value);
-                        }
+                        traceOrProfileReturn(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
+
                         if (isGeneratorOrCoroutine) {
                             throw new GeneratorReturnException(value);
                         } else {
@@ -1953,29 +1959,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.CALL_METHOD: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         int argcount = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeCallMethod(virtualFrame, stackTop, beginBci, argcount, localNodes, useCachedNodes);
+                        stackTop = bytecodeCallMethod(virtualFrame, stackTop, beginBci, argcount, localNodes, useCachedNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_METHOD_VARARGS: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeCallMethodVarargs(virtualFrame, stackTop, beginBci, localNames, oparg, localNodes, useCachedNodes);
+                        bytecodeCallMethodVarargs(virtualFrame, stackTop, beginBci, localNames, oparg, localNodes, useCachedNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_FUNCTION: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeCallFunction(virtualFrame, stackTop, beginBci, oparg, localNodes, useCachedNodes);
+                        stackTop = bytecodeCallFunction(virtualFrame, stackTop, beginBci, oparg, localNodes, useCachedNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_FUNCTION_VARARGS: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        stackTop = bytecodeCallFunctionVarargs(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
+                        stackTop = bytecodeCallFunctionVarargs(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.CALL_FUNCTION_KW: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        stackTop = bytecodeCallFunctionKw(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
+                        stackTop = bytecodeCallFunctionKw(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes, mutableData, profilingEnabled);
                         break;
                     }
                     case OpCodesConstants.MAKE_FUNCTION: {
@@ -2074,9 +2080,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             // Clear slots that were popped (if any)
                             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
                         }
-                        if (tracingEnabled) {
-                            traceYield(virtualFrame, mutableData, value);
-                        }
+                        traceOrProfileYield(virtualFrame, mutableData, value, tracingEnabled, profilingEnabled);
                         return new GeneratorYieldResult(bci + 1, stackTop, value);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
@@ -2161,7 +2165,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                 }
 
-                tracingEnabled = isTracingEnabled(noTrace, mutableData);
+                tracingEnabled = isTracingEnabled(noTraceOrProfile, mutableData);
                 if (tracingEnabled && pe != null && !mutableData.getThreadState(this).isTracing()) {
                     traceException(virtualFrame, mutableData, bci, pe);
                 }
@@ -2194,9 +2198,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
                         LoopNode.reportLoopCount(this, mutableData.loopCount);
                     }
-                    if (tracingEnabled) {
-                        traceReturn(virtualFrame, mutableData, PNone.NONE);
-                    }
+                    traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
                     if (e == pe) {
                         throw pe;
                     } else if (pe != null) {
@@ -2234,16 +2236,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return !noTrace.isValid() && mutableData.getThreadState(this).getTraceFun() != null;
     }
 
-    @InliningCutoff
-    private void traceYield(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value) {
-        invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN,
-                        mutableData.getReturnLine(), true);
+    private boolean isProfilingEnabled(Assumption noTracing, MutableLoopData mutableData) {
+        return !noTracing.isValid() && mutableData.getThreadState(this).getProfileFun() != null;
     }
 
-    @InliningCutoff
-    private void traceReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value) {
-        invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN,
-                        mutableData.getReturnLine(), true);
+    private void traceOrProfileYield(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, boolean tracingEnabled, boolean profilingEnabled) {
+        if (tracingEnabled) {
+            invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN, mutableData.getReturnLine(), true);
+        }
+        if (profilingEnabled) {
+            invokeProfileFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.ProfileEvent.RETURN);
+        }
+    }
+
+    private void traceOrProfileReturn(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, boolean tracingEnabled, boolean profilingEnabled) {
+        if (tracingEnabled) {
+            invokeTraceFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.RETURN, mutableData.getReturnLine(), true);
+        }
+        if (profilingEnabled) {
+            invokeProfileFunction(virtualFrame, value, mutableData.getThreadState(this), mutableData, PythonContext.ProfileEvent.RETURN);
+        }
     }
 
     @InliningCutoff
@@ -2260,10 +2272,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    @InliningCutoff
-    private void traceCall(VirtualFrame virtualFrame, int initialBci, MutableLoopData mutableData) {
-        invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.CALL,
-                        initialBci == 0 ? getFirstLineno() : (mutableData.setPastLine(bciToLine(initialBci))), false);
+    private void traceOrProfileCall(VirtualFrame virtualFrame, int initialBci, MutableLoopData mutableData, boolean tracingEnabled, boolean profilingEnabled) {
+        if (tracingEnabled) {
+            invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.CALL,
+                            initialBci == 0 ? getFirstLineno() : (mutableData.setPastLine(bciToLine(initialBci))), false);
+        }
+        if (profilingEnabled) {
+            invokeProfileFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.ProfileEvent.CALL);
+        }
     }
 
     @InliningCutoff
@@ -2327,11 +2343,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return pyFrame;
     }
 
+    @InliningCutoff
     private void invokeTraceFunction(VirtualFrame virtualFrame, Object arg, PythonContext.PythonThreadState threadState, MutableLoopData mutableData,
                     PythonContext.TraceEvent event, int line, boolean useLocalFn) {
         if (threadState.isTracing()) {
             return;
         }
+        assert event != PythonContext.TraceEvent.DISABLED;
         threadState.tracingStart(event);
         PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : threadState.getTraceFun();
@@ -2358,6 +2376,53 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    private void profileCEvent(VirtualFrame virtualFrame, Object callable, PythonContext.ProfileEvent event, MutableLoopData mutableData, boolean profilingEnabled) {
+        if (profilingEnabled) {
+            profileCEvent(virtualFrame, callable, event, mutableData);
+        }
+    }
+
+    @InliningCutoff
+    private void profileCEvent(VirtualFrame virtualFrame, Object callable, PythonContext.ProfileEvent event, MutableLoopData mutableData) {
+        PythonContext.PythonThreadState threadState = mutableData.getThreadState(this);
+        if (isBuiltin(callable)) {
+            invokeProfileFunction(virtualFrame, callable, threadState, mutableData, event);
+        } else if (callable instanceof BoundDescriptor && isBuiltin(((BoundDescriptor) callable).descriptor)) {
+            invokeProfileFunction(virtualFrame, ((BoundDescriptor) callable).descriptor, threadState, mutableData, event);
+        }
+    }
+
+    private static boolean isBuiltin(Object fun) {
+        return fun instanceof PBuiltinFunction || fun instanceof PBuiltinMethod;
+    }
+
+    @InliningCutoff
+    private void invokeProfileFunction(VirtualFrame virtualFrame, Object arg, PythonContext.PythonThreadState threadState, MutableLoopData mutableData, PythonContext.ProfileEvent event) {
+        if (threadState.isProfiling()) {
+            return;
+        }
+
+        threadState.profilingStart();
+        PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
+        Object profileFun = threadState.getProfileFun();
+
+        if (profileFun == null) {
+            threadState.profilingStop();
+            return;
+        }
+
+        try {
+            Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
+            Object realResult = result == PNone.NONE ? null : result;
+            pyFrame.setLocalTraceFun(realResult);
+        } catch (Throwable e) {
+            threadState.setProfileFun(null, PythonLanguage.get(this));
+            throw e;
+        } finally {
+            threadState.profilingStop();
+        }
+    }
+
     @ExplodeLoop
     private void unboxVariables(Frame localFrame) {
         /*
@@ -2380,7 +2445,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static void setCurrentBci(VirtualFrame virtualFrame, int bciSlot, int bci) {
-        virtualFrame.setIntStatic(bciSlot, bci);
+        virtualFrame.setInt(bciSlot, bci);
     }
 
     private boolean bytecodePopCondition(VirtualFrame virtualFrame, int stackTop, Node[] localNodes, int bci, boolean useCachedNodes) {
@@ -3995,35 +4060,70 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
-    private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
+    private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData,
+                    boolean profilingEnabled) {
         int stackTop = initialStackTop;
         CallNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
         Object callable = virtualFrame.getObject(stackTop - 2);
         Object[] args = (Object[]) virtualFrame.getObject(stackTop - 1);
-        virtualFrame.setObject(stackTop - 2, callNode.execute(virtualFrame, callable, args, (PKeyword[]) virtualFrame.getObject(stackTop)));
+
+        Object result;
+        profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+        try {
+            result = callNode.execute(virtualFrame, callable, args, (PKeyword[]) virtualFrame.getObject(stackTop));
+            profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+        } catch (PException pe) {
+            profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+            throw pe;
+        }
+
+        virtualFrame.setObject(stackTop - 2, result);
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop--, null);
         return stackTop;
     }
 
-    private int bytecodeCallFunctionVarargs(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
+    private int bytecodeCallFunctionVarargs(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         int stackTop = initialStackTop;
         CallNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
         Object callable = virtualFrame.getObject(stackTop - 1);
         Object[] args = (Object[]) virtualFrame.getObject(stackTop);
-        virtualFrame.setObject(stackTop - 1, callNode.execute(virtualFrame, callable, args, PKeyword.EMPTY_KEYWORDS));
+
+        Object result;
+        profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+        try {
+            result = callNode.execute(virtualFrame, callable, args, PKeyword.EMPTY_KEYWORDS);
+            profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+        } catch (PException pe) {
+            profileCEvent(virtualFrame, callable, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+            throw pe;
+        }
+
+        virtualFrame.setObject(stackTop - 1, result);
         virtualFrame.setObject(stackTop--, null);
         return stackTop;
     }
 
-    private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, int stackTop, int bci, TruffleString[] localNames, int oparg, Node[] localNodes, boolean useCachedNodes) {
+    private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, int stackTop, int bci, TruffleString[] localNames, int oparg, Node[] localNodes, boolean useCachedNodes,
+                    MutableLoopData mutableData, boolean profilingEnabled) {
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, PyObjectGetMethodNodeGen.class, NODE_OBJECT_GET_METHOD, useCachedNodes);
         Object[] args = (Object[]) virtualFrame.getObject(stackTop);
         TruffleString methodName = localNames[oparg];
         Object rcvr = args[0];
         Object func = getMethodNode.execute(virtualFrame, rcvr, methodName);
         CallNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
-        virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, args, PKeyword.EMPTY_KEYWORDS));
+
+        Object result;
+        profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+        try {
+            result = callNode.execute(virtualFrame, func, args, PKeyword.EMPTY_KEYWORDS);
+            profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+        } catch (PException pe) {
+            profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+            throw pe;
+        }
+
+        virtualFrame.setObject(stackTop, result);
     }
 
     private int bytecodeLoadName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
@@ -4033,18 +4133,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeCallFunction(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, Node[] localNodes, boolean useCachedNodes) {
+    private int bytecodeCallFunction(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         Object func = virtualFrame.getObject(stackTop - oparg);
+        Object result;
         switch (oparg) {
             case 0: {
                 CallNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
-                Object result = callNode.execute(virtualFrame, func, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.execute(virtualFrame, func, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
                 virtualFrame.setObject(stackTop, result);
                 break;
             }
             case 1: {
                 CallUnaryMethodNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL_UNARY_METHOD, CallUnaryMethodNodeGen.class, NODE_CALL_UNARY_METHOD, useCachedNodes);
-                Object result = callNode.executeObject(virtualFrame, func, virtualFrame.getObject(stackTop));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.executeObject(virtualFrame, func, virtualFrame.getObject(stackTop));
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, result);
                 break;
@@ -4055,7 +4174,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 virtualFrame.setObject(stackTop--, null);
                 Object arg0 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
-                virtualFrame.setObject(stackTop, callNode.executeObject(virtualFrame, func, arg0, arg1));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.executeObject(virtualFrame, func, arg0, arg1);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
+                virtualFrame.setObject(stackTop, result);
                 break;
             }
             case 3: {
@@ -4066,7 +4195,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 virtualFrame.setObject(stackTop--, null);
                 Object arg0 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
-                virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, arg0, arg1, arg2));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.execute(virtualFrame, func, arg0, arg1, arg2);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
+                virtualFrame.setObject(stackTop, result);
                 break;
             }
             case 4: {
@@ -4079,7 +4218,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 virtualFrame.setObject(stackTop--, null);
                 Object arg0 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
-                virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, arg0, arg1, arg2, arg3));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.execute(virtualFrame, func, arg0, arg1, arg2, arg3);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
+                virtualFrame.setObject(stackTop, result);
                 break;
             }
         }
@@ -4095,21 +4244,41 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private int bytecodeCallMethod(VirtualFrame virtualFrame, int stackTop, int bci, int argcount, Node[] localNodes, boolean useCachedNodes) {
+    private int bytecodeCallMethod(VirtualFrame virtualFrame, int stackTop, int bci, int argcount, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         Object func = virtualFrame.getObject(stackTop - argcount);
         Object rcvr = virtualFrame.getObject(stackTop - argcount - 1);
+
+        Object result;
 
         switch (argcount) {
             case 0: {
                 CallUnaryMethodNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL_UNARY_METHOD, CallUnaryMethodNodeGen.class, NODE_CALL_UNARY_METHOD, useCachedNodes);
-                Object result = callNode.executeObject(virtualFrame, func, rcvr);
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.executeObject(virtualFrame, func, rcvr);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, result);
                 break;
             }
             case 1: {
                 CallBinaryMethodNode callNode = insertChildNode(localNodes, bci + 1, UNCACHED_CALL_BINARY_METHOD, CallBinaryMethodNodeGen.class, NODE_CALL_BINARY_METHOD, useCachedNodes);
-                Object result = callNode.executeObject(virtualFrame, func, rcvr, virtualFrame.getObject(stackTop));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.executeObject(virtualFrame, func, rcvr, virtualFrame.getObject(stackTop));
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop, result);
@@ -4122,7 +4291,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 Object arg0 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
-                virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, rcvr, arg0, arg1));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.execute(virtualFrame, func, rcvr, arg0, arg1);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+
+                virtualFrame.setObject(stackTop, result);
+
                 break;
             }
             case 3: {
@@ -4135,7 +4315,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 Object arg0 = virtualFrame.getObject(stackTop);
                 virtualFrame.setObject(stackTop--, null);
                 virtualFrame.setObject(stackTop--, null);
-                virtualFrame.setObject(stackTop, callNode.execute(virtualFrame, func, rcvr, arg0, arg1, arg2));
+
+                profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_CALL, mutableData, profilingEnabled);
+                try {
+                    result = callNode.execute(virtualFrame, func, rcvr, arg0, arg1, arg2);
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_RETURN, mutableData, profilingEnabled);
+                } catch (PException pe) {
+                    profileCEvent(virtualFrame, func, PythonContext.ProfileEvent.C_EXCEPTION, mutableData, profilingEnabled);
+                    throw pe;
+                }
+                virtualFrame.setObject(stackTop, result);
                 break;
             }
         }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1460,7 +1460,7 @@ PyInit__cpython_unicodedata(void)
 {
     PyObject *m, *v;
 
-    Py_TYPE(&UCD_Type) = &PyType_Type;
+    Py_SET_TYPE(&UCD_Type, &PyType_Type);
 
     m = PyModule_Create(&unicodedatamodule);
     if (!m)

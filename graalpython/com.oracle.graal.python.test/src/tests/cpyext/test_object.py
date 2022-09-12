@@ -211,7 +211,7 @@ class TestObject(object):
                                 if (PyType_Ready(&TestBase_Type) < 0)
                                     return NULL;
                                     
-                                Py_TYPE(&AcceptableBaseTypeType) = &TestBase_Type; 
+                                Py_SET_TYPE(&AcceptableBaseTypeType, &TestBase_Type); 
                                 AcceptableBaseTypeType.tp_base = &PyType_Type;''',
                              )
         class Foo(AcceptableBaseType):
