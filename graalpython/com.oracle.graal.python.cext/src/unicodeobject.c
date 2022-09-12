@@ -701,3 +701,6 @@ PyUnicode_DecodeLatin1(const char *s,
     return _PyUnicode_FromUCS1((const unsigned char*)s, size);
 }
 
+int _PyUnicode_EqualToASCIIId(PyObject *left, _Py_Identifier *right) {
+    return _PyUnicode_EqualToASCIIString(left, right->string);
+}

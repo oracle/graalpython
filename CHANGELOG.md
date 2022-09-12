@@ -9,6 +9,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * New parser generated from CPython's new PEG grammar definition. It brings better compatibility and enables us to implement the `ast` module.
 * Added support for tracing API (`sys.settrace`) which makes `pdb` and related tools work on GraalPy.
 * Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
+* Added support for Flask - https://pypi.org/project/Flask/
 
 ## Version 22.2.0
 * Updated to HPy version 0.0.4, which adds support for the finished HPy port of Kiwi, and the in-progress ports of Matplotlib and NumPy.

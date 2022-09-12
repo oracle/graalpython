@@ -249,3 +249,10 @@ def gen():
         if type(const) == types.CodeType:
             code = const
     assert "this is fun" in code.co_consts
+
+
+def test_consts_do_not_leak_java_types():
+    codestr = "['root']"
+    code = compile(codestr, '<test>', 'exec')
+    for const in code.co_consts:
+        assert isinstance(const, (str, tuple)) or const is None
