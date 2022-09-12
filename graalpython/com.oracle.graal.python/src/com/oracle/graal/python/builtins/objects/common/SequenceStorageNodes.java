@@ -441,13 +441,10 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
-        @Child private PRaiseNode raiseNode;
-        private final TruffleString keyTypeErrorMessage;
         private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
             super(normalizeIndexNode);
-            this.keyTypeErrorMessage = keyTypeErrorMessage;
             this.factoryMethod = factoryMethod;
         }
 
@@ -499,11 +496,6 @@ public abstract class SequenceStorageNodes {
             throw new IllegalStateException();
         }
 
-        @Fallback
-        protected Object doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, Object key) {
-            throw ensureRaiseNode().raise(TypeError, keyTypeErrorMessage, key);
-        }
-
         private GetItemScalarNode getGetItemScalarNode() {
             if (getItemScalarNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -520,44 +512,20 @@ public abstract class SequenceStorageNodes {
             return getItemSliceNode;
         }
 
-        private PRaiseNode ensureRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
         public static GetItemNode createNotNormalized() {
-            return GetItemNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
+            return GetItemNodeGen.create(null, null);
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode) {
-            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
+            return GetItemNodeGen.create(normalizeIndexNode, null);
         }
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
-        }
-
-        public static GetItemNode createNotNormalized(TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(null, keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
-            return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, factoryMethod);
+            return GetItemNodeGen.create(NormalizeIndexNode.create(), null);
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
-            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, factoryMethod);
+            return GetItemNodeGen.create(normalizeIndexNode, factoryMethod);
         }
 
     }
