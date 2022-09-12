@@ -3191,10 +3191,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return true;
     }
 
-    void onInvalidHandle(@SuppressWarnings("unused") int id) {
-        // nothing to do in the universal context
-    }
-
     private static final class HandleStack {
         private int[] handles;
         private int top = 0;
