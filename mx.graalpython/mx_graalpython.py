@@ -828,8 +828,8 @@ def prepare_graalpy_venv(python_binary, packages=None, env_path=None, args=None)
     mx.log("using graalpython venv: {}".format(env_dir))
     mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
     mx.log("installing the following packages: {}".format(", ".join(packages)))
-    mx.run(["graalpy", "-m", "ginstall"] + args + ["install", ",".join(packages)], nonZeroIsFatal=True,
-           env=get_venv_env(env_dir))
+    for p in packages:
+        mx.run(["graalpy", "-m", "ginstall"] + args + ["install", p], nonZeroIsFatal=True, env=get_venv_env(env_dir))
     return env_dir
 
 
