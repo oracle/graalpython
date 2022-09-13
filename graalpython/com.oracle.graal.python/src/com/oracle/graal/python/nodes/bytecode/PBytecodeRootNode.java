@@ -301,6 +301,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SetupWithNode> NODE_SETUP_WITH = SetupWithNode::create;
     private static final ExitWithNode UNCACHED_EXIT_WITH_NODE = ExitWithNode.getUncached();
     private static final NodeSupplier<ExitWithNode> NODE_EXIT_WITH = ExitWithNode::create;
+    private static final SetupAwithNode UNCACHED_SETUP_AWITH_NODE = SetupAwithNode.getUncached();
+    private static final NodeSupplier<SetupAwithNode> NODE_SETUP_AWITH = SetupAwithNode::create;
+    private static final GetAExitCoroNode UNCACHED_GET_AEXIT_CORO_NODE = GetAExitCoroNode.getUncached();
+    private static final NodeSupplier<GetAExitCoroNode> NODE_GET_AEXIT_CORO = GetAExitCoroNode::create;
+    private static final ExitAWithNode UNCACHED_EXIT_AWITH_NODE = ExitAWithNode.getUncached();
+    private static final NodeSupplier<ExitAWithNode> NODE_EXIT_AWITH = ExitAWithNode::create;
     private static final ImportFromNode UNCACHED_IMPORT_FROM = ImportFromNode.getUncached();
     private static final NodeSupplier<ImportFromNode> NODE_IMPORT_FROM = ImportFromNode::create;
     private static final ExecutePositionalStarargsNode UNCACHED_EXECUTE_STARARGS = ExecutePositionalStarargsNode.getUncached();
@@ -2136,6 +2142,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.EXIT_WITH: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         stackTop = bytecodeExitWith(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.SETUP_AWITH: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        SetupAwithNode setupAwithNode = insertChildNode(localNodes, beginBci, UNCACHED_SETUP_AWITH_NODE, SetupAwithNodeGen.class, NODE_SETUP_AWITH, useCachedNodes);
+                        stackTop = setupAwithNode.execute(virtualFrame, stackTop);
+                        break;
+                    }
+                    case OpCodesConstants.GET_AEXIT_CORO: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        GetAExitCoroNode getAExitCoroNode = insertChildNode(localNodes, beginBci, UNCACHED_GET_AEXIT_CORO_NODE, GetAExitCoroNodeGen.class, NODE_GET_AEXIT_CORO, useCachedNodes);
+                        stackTop = getAExitCoroNode.execute(virtualFrame, stackTop);
+                        break;
+                    }
+                    case OpCodesConstants.EXIT_AWITH: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        ExitAWithNode exitAWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_AWITH_NODE, ExitAWithNodeGen.class, NODE_EXIT_AWITH, useCachedNodes);
+                        stackTop = exitAWithNode.execute(virtualFrame, stackTop);
                         break;
                     }
                     case OpCodesConstants.PUSH_EXC_INFO: {

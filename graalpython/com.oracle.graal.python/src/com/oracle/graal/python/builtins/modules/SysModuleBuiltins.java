@@ -1116,6 +1116,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_coroutine_origin_tracking_depth")
+    @GenerateNodeFactory
+    abstract static class GetCoroOriginTrackingDepth extends PythonBuiltinNode {
+
+        @Specialization
+        Object getCoroDepth() {
+            // TODO: Implement
+            return 0;
+        }
+    }
+
+    @Builtin(name = "set_coroutine_origin_tracking_depth", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SetCoroOriginTrackingDepth extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object setCoroDepth(Object newValue) {
+            // TODO: Implement
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = J_UNRAISABLEHOOK, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "unraisablehook($module, unraisable, /)\n" +
                     "--\n" +
                     "\n" +

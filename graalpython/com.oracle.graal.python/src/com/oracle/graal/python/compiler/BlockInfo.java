@@ -132,6 +132,15 @@ class BlockInfo {
         }
     }
 
+    static class AsyncWith extends AbstractExceptionHandler {
+        final StmtTy.AsyncWith node;
+
+        public AsyncWith(Block tryBlock, Block exceptionHandler, StmtTy.AsyncWith node) {
+            super(tryBlock, exceptionHandler);
+            this.node = node;
+        }
+    }
+
     static class TryFinally extends AbstractExceptionHandler {
         final StmtTy[] body;
 

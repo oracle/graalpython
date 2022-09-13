@@ -723,6 +723,29 @@ public enum OpCodes {
      * Pops: exception or {@code None}, then maybe-bound {@code __exit__}, then the context manager
      */
     EXIT_WITH(0, 3, 0),
+    /**
+     * Enter a context manager and save data for its exit
+     *
+     * Pops: the context manager
+     *
+     * Pushes: the context manager, then the maybe-bound async function {@code __aexit__}, then the
+     * awaitable returned by {@code __aenter__}
+     */
+    SETUP_AWITH(0, 1, 3),
+    /**
+     * Run the exit handler of a context manager
+     *
+     * Pops: exception or {@code None}, then maybe-bound {@code __aexit__}, then the context manager
+     *
+     * Pushes: the exception or {@code None}, then the awaitable returned by {@code __aexit__}
+     */
+    GET_AEXIT_CORO(0, 3, 2),
+    /**
+     * Reraise the exception passed to {@code __aexit__} if appropriate
+     *
+     * Pops: The result of awaiting {@code __aexit__}, then the exception
+     */
+    EXIT_AWITH(0, 2, 0),
 
     /*
      * Quickened bytecodes
