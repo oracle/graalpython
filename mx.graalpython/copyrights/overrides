@@ -118,6 +118,7 @@ graalpython/com.oracle.graal.python.cext/include/cpython/fileobject.h,python.cop
 graalpython/com.oracle.graal.python.cext/include/cpython/initconfig.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/objimpl.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/cpython/osmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pyerrors.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pymem.h,python.copyright
