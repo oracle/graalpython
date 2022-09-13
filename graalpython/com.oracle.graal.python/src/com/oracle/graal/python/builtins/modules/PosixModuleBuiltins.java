@@ -80,6 +80,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2130,27 +2131,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     // Can be used as an equivalent of PyOS_FSPath()
     public abstract static class FspathNode extends PythonUnaryBuiltinNode {
-
-        @Specialization(guards = "isPath(value)")
-        static Object doTrivial(Object value) {
-            return value;
-        }
-
-        @Specialization(guards = "!isPath(value)")
-        Object callFspath(VirtualFrame frame, Object value,
-                        @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath) {
-            Object pathObject = callFSPath.executeObject(frame, value);
-            if (isPath(pathObject)) {
-                return pathObject;
-            } else if (pathObject == PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, value);
-            } else {
-                throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
-            }
-        }
-
-        protected static boolean isPath(Object obj) {
-            return PGuards.isString(obj) || obj instanceof PBytes;
+        @Specialization
+        static Object doTrivial(VirtualFrame frame, Object value,
+                        @Cached PyOSFSPathNode fsPathNode) {
+            return fsPathNode.execute(frame, value);
         }
     }
 
@@ -2243,14 +2227,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!checkEmpty")
         static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
-                        @Cached FspathNode fspathNode,
+                        @Cached PyOSFSPathNode fspathNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.execute(frame, obj));
         }
 
         @Specialization(guards = "checkEmpty")
         Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
-                        @Cached FspathNode fspathNode,
+                        @Cached PyOSFSPathNode fspathNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             Object stringOrBytes = fspathNode.execute(frame, obj);
@@ -2415,7 +2399,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class FsConverterNode extends ArgumentCastNodeWithRaise {
         @Specialization
         static PBytes convert(VirtualFrame frame, Object value,
-                        @Cached FspathNode fspathNode,
+                        @Cached PyOSFSPathNode fspathNode,
                         @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
             return stringOrBytesToBytesNode.execute(fspathNode.execute(frame, value));
         }
