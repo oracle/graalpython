@@ -105,6 +105,8 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDelItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetIterNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -175,8 +177,6 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
@@ -274,7 +274,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
     private static final NodeSupplier<PyObjectIsTrueNode> NODE_OBJECT_IS_TRUE = PyObjectIsTrueNode::create;
     private static final PyObjectIsTrueNode UNCACHED_OBJECT_IS_TRUE = PyObjectIsTrueNode.getUncached();
-    private static final NodeSupplier<GetItemNode> NODE_GET_ITEM = GetItemNode::create;
+    private static final NodeSupplier<PyObjectGetItem> NODE_GET_ITEM = PyObjectGetItem::create;
     private static final ExceptMatchNode UNCACHED_EXCEPT_MATCH = ExceptMatchNode.getUncached();
     private static final NodeSupplier<ExceptMatchNode> NODE_EXCEPT_MATCH = ExceptMatchNode::create;
     private static final SetupWithNode UNCACHED_SETUP_WITH_NODE = SetupWithNode.getUncached();
@@ -885,7 +885,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     continue;
                 }
             }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeVariableStores(i);
             variableTypes[i] = QuickeningTypes.OBJECT;
             localFrame.setObject(i, arg);
@@ -1361,7 +1360,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.NOP:
                         break;
                     case OpCodesConstants.LOAD_FAST: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bytecodeLoadFastAdaptive(virtualFrame, localFrame, ++stackTop, localBC, bci++, oparg, inCompiledCode);
                         break;
@@ -1444,7 +1442,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.STORE_FAST: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bytecodeStoreFastAdaptive(virtualFrame, localFrame, stackTop--, bci++, localBC, oparg, inCompiledCode);
                         break;
@@ -1536,7 +1533,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop++;
                         break;
                     case OpCodesConstants.UNARY_OP: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         bytecodeUnaryOpAdaptive(virtualFrame, stackTop, bci++, localBC, localNodes);
                         break;
                     }
@@ -1576,7 +1572,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.BINARY_OP: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         int op = Byte.toUnsignedInt(localBC[bci + 1]);
                         bytecodeBinaryOpAdaptive(virtualFrame, stackTop--, localBC, bci++, localNodes, op, useCachedNodes);
                         break;
@@ -1742,21 +1737,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         oparg = 0;
                         continue;
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if (virtualFrame.isBoolean(stackTop)) {
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_B;
-                        } else {
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
-                        }
+                        bytecodePopAndJumpIfFalse(virtualFrame, bci, stackTop);
                         continue;
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_TRUE: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if (virtualFrame.isBoolean(stackTop)) {
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_B;
-                        } else {
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
-                        }
+                        bytecodePopAndJumpIfTrue(virtualFrame, bci, stackTop);
                         continue;
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE_O: {
@@ -1785,9 +1770,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_FALSE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            generalizeInputs(bci);
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
+                            generalizePopAndJumpIfFalseB(bci);
                             continue;
                         }
                         if (profileCondition(!virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
@@ -1802,9 +1785,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.POP_AND_JUMP_IF_TRUE_B: {
                         if (!virtualFrame.isBoolean(stackTop)) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            generalizeInputs(bci);
-                            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
+                            generalizePopAndJumpIfTrueB(bci);
                             continue;
                         }
                         if (profileCondition(virtualFrame.getBoolean(stackTop--), localBC, bci, useCachedNodes)) {
@@ -1900,12 +1881,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.FOR_ITER: {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                            bytecode[bci] = OpCodesConstants.FOR_ITER_I;
-                        } else {
-                            bytecode[bci] = OpCodesConstants.FOR_ITER_O;
-                        }
+                        bytecodeForIter(bci);
                         continue;
                     }
                     case OpCodesConstants.FOR_ITER_O: {
@@ -1931,12 +1907,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         try {
                             cont = node.execute(virtualFrame, virtualFrame.getObject(stackTop), stackTop + 1);
                         } catch (QuickeningGeneralizeException e) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            if (e.type == QuickeningTypes.OBJECT) {
-                                bytecode[bci] = OpCodesConstants.FOR_ITER_O;
-                            } else {
-                                throw CompilerDirectives.shouldNotReachHere("invalid type");
-                            }
+                            generalizeForIterI(bci, e);
                         }
                         if (cont) {
                             stackTop++;
@@ -2140,8 +2111,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         continue;
                     }
                     default:
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.fromOpCode(bc));
+                        throw raiseUnkownBytecodeError(bc);
                 }
                 // prepare next loop
                 oparg = 0;
@@ -2172,40 +2142,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
                 int targetIndex = findHandler(beginBci);
                 CompilerAsserts.partialEvaluationConstant(targetIndex);
-                if (pe != null) {
-                    if (mutableData.localException != null) {
-                        ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
-                    } else {
-                        if (getCaughtExceptionNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
-                        }
-                        PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
-                        if (exceptionState != null) {
-                            ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
-                        }
-                    }
-                }
+                chainPythonExceptions(virtualFrame, mutableData, pe);
                 if (targetIndex == -1) {
-                    // For tracebacks
-                    setCurrentBci(virtualFrame, bciSlot, beginBci);
-                    if (isGeneratorOrCoroutine) {
-                        if (localFrame != virtualFrame) {
-                            // Unwind the generator frame stack
-                            clearFrameSlots(localFrame, stackoffset, initialStackTop);
-                        }
-                    }
-                    if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
-                        LoopNode.reportLoopCount(this, mutableData.loopCount);
-                    }
-                    traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
-                    if (e == pe) {
-                        throw pe;
-                    } else if (pe != null) {
-                        throw pe.getExceptionForReraise();
-                    } else {
-                        throw e;
-                    }
+                    reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, mutableData, isGeneratorOrCoroutine, bciSlot, beginBci, e, pe, tracingEnabled, profilingEnabled);
+                    throw e;
                 } else {
                     if (pe != null) {
                         pe.setCatchingFrameReference(virtualFrame, this, beginBci);
@@ -2213,8 +2153,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     int stackSizeOnEntry = exceptionHandlerRanges[targetIndex + 1];
                     stackTop = unwindBlock(virtualFrame, stackTop, stackSizeOnEntry + stackoffset);
                     // handler range encodes the stack size, not the top of stack. so the stackTop
-                    // is
-                    // to be replaced with the exception
+                    // is to be replaced with the exception
                     virtualFrame.setObject(stackTop, isInteropException ? e : pe);
                     bci = exceptionHandlerRanges[targetIndex];
                     oparg = 0;
@@ -2325,7 +2264,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private int bytecodeBinarySubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
-        GetItemNode getItemNode = insertChildNode(localNodes, bci, GetItemNodeGen.class, NODE_GET_ITEM);
+        PyObjectGetItem getItemNode = insertChildNode(localNodes, bci, PyObjectGetItemNodeGen.class, NODE_GET_ITEM);
         Object slice = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop, getItemNode.execute(virtualFrame, virtualFrame.getObject(stackTop), slice));
@@ -2444,10 +2383,89 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @InliningCutoff
+    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, MutableLoopData mutableData,
+                    boolean isGeneratorOrCoroutine, final int bciSlot, final int beginBci, Throwable e, PException pe,
+                    boolean tracingEnabled, boolean profilingEnabled) {
+        // For tracebacks
+        setCurrentBci(virtualFrame, bciSlot, beginBci);
+        if (isGeneratorOrCoroutine) {
+            if (localFrame != virtualFrame) {
+                // Unwind the generator frame stack
+                clearFrameSlots(localFrame, stackoffset, initialStackTop);
+            }
+        }
+        if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
+            LoopNode.reportLoopCount(this, mutableData.loopCount);
+        }
+        traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
+        if (e == pe) {
+            throw pe;
+        } else if (pe != null) {
+            throw pe.getExceptionForReraise();
+        } else {
+            return;
+        }
+    }
+
+    @InliningCutoff
+    private void chainPythonExceptions(VirtualFrame virtualFrame, MutableLoopData mutableData, PException pe) {
+        if (pe != null) {
+            if (mutableData.localException != null) {
+                ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
+            } else {
+                if (getCaughtExceptionNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
+                }
+                PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
+                if (exceptionState != null) {
+                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                }
+            }
+        }
+    }
+
+    private PException raiseUnkownBytecodeError(final byte bc) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.fromOpCode(bc));
+    }
+
+    private void generalizeForIterI(int bci, QuickeningGeneralizeException e) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (e.type == QuickeningTypes.OBJECT) {
+            bytecode[bci] = OpCodesConstants.FOR_ITER_O;
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("invalid type");
+        }
+    }
+
+    private void bytecodeForIter(int bci) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
+            bytecode[bci] = OpCodesConstants.FOR_ITER_I;
+        } else {
+            bytecode[bci] = OpCodesConstants.FOR_ITER_O;
+        }
+    }
+
+    private void generalizePopAndJumpIfTrueB(int bci) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        generalizeInputs(bci);
+        bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
+    }
+
+    private void generalizePopAndJumpIfFalseB(int bci) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        generalizeInputs(bci);
+        bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
+    }
+
     private static void setCurrentBci(VirtualFrame virtualFrame, int bciSlot, int bci) {
         virtualFrame.setInt(bciSlot, bci);
     }
 
+    @BytecodeInterpreterSwitch
     private boolean bytecodePopCondition(VirtualFrame virtualFrame, int stackTop, Node[] localNodes, int bci, boolean useCachedNodes) {
         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, bci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
         Object cond;
@@ -2455,15 +2473,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             cond = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
             // This should only happen when quickened concurrently in multi-context mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            generalizeInputs(bci);
-            cond = virtualFrame.getValue(stackTop);
+            cond = generalizePopCondition(virtualFrame, stackTop, bci);
         }
         virtualFrame.setObject(stackTop, null);
         return isTrue.execute(virtualFrame, cond);
     }
 
+    private Object generalizePopCondition(VirtualFrame virtualFrame, int stackTop, int bci) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        generalizeInputs(bci);
+        return virtualFrame.getValue(stackTop);
+    }
+
     private void bytecodeBinaryOpAdaptive(VirtualFrame virtualFrame, int stackTop, byte[] localBC, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         if (virtualFrame.isObject(stackTop) && virtualFrame.isObject(stackTop - 1)) {
             localBC[bci] = OpCodesConstants.BINARY_OP_OO_O;
             bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
@@ -2577,7 +2600,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getInt(stackTop);
             left = virtualFrame.getInt(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, adoptedNodes, op);
             return;
         }
@@ -2615,7 +2637,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getInt(stackTop);
             left = virtualFrame.getInt(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, localNodes, op);
             return;
         }
@@ -2706,7 +2727,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getInt(stackTop);
             left = virtualFrame.getInt(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, adoptedNodes, op);
             return;
         }
@@ -2717,9 +2737,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     try {
                         result = Math.addExact(left, right);
                     } catch (ArithmeticException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
+                        generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, op);
                         return;
                     }
                     break;
@@ -2728,9 +2746,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     try {
                         result = Math.subtractExact(left, right);
                     } catch (ArithmeticException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
+                        generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, op);
                         return;
                     }
                     break;
@@ -2739,18 +2755,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     try {
                         result = Math.multiplyExact(left, right);
                     } catch (ArithmeticException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
+                        generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, op);
                         return;
                     }
                     break;
                 case BinaryOpsConstants.FLOORDIV:
                 case BinaryOpsConstants.INPLACE_FLOORDIV:
                     if (left == Integer.MIN_VALUE && right == -1) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
+                        generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, op);
                         return;
                     }
                     if (right == 0) {
@@ -2790,9 +2802,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_II_I");
             }
         } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
-            bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
+            generalizeBinaryOpIIIOverflow(virtualFrame, stackTop, bci, op);
             return;
         }
         virtualFrame.setInt(stackTop - 1, result);
@@ -2805,7 +2815,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getDouble(stackTop);
             left = virtualFrame.getDouble(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, adoptedNodes, op);
             return;
         }
@@ -2843,7 +2852,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getDouble(stackTop);
             left = virtualFrame.getDouble(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, adoptedNodes, op);
             return;
         }
@@ -2880,7 +2888,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getInt(stackTop);
             left = virtualFrame.getInt(stackTop - 1);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeBinaryOp(virtualFrame, stackTop, bci, localNodes, op);
             return;
         }
@@ -2933,11 +2940,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void generalizeBinaryOp(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         virtualFrame.setObject(stackTop, virtualFrame.getValue(stackTop));
         virtualFrame.setObject(stackTop - 1, virtualFrame.getValue(stackTop - 1));
         generalizeInputs(bci);
         bytecode[bci] = OpCodesConstants.BINARY_OP_OO_O;
         bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
+    }
+
+    private void generalizeBinaryOpIIIOverflow(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
+        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, adoptedNodes, op);
     }
 
     @BytecodeInterpreterSwitch
@@ -2949,11 +2963,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             right = virtualFrame.getObject(stackTop);
             left = virtualFrame.getObject(stackTop - 1);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            generalizeInputs(bci);
-            right = virtualFrame.getValue(stackTop);
+            right = generalizePopCondition(virtualFrame, stackTop, bci);
             left = virtualFrame.getValue(stackTop - 1);
         }
         virtualFrame.setObject(stackTop, null);
@@ -2962,6 +2972,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeUnaryOpAdaptive(VirtualFrame virtualFrame, int stackTop, int bci, byte[] localBC, Node[] localNodes) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         int op = Byte.toUnsignedInt(localBC[bci + 1]);
         if (virtualFrame.isObject(stackTop)) {
             localBC[bci] = OpCodesConstants.UNARY_OP_O_O;
@@ -3021,7 +3032,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isInt(stackTop)) {
             value = virtualFrame.getInt(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3052,7 +3062,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isInt(stackTop)) {
             value = virtualFrame.getInt(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3083,7 +3092,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isDouble(stackTop)) {
             value = virtualFrame.getDouble(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3104,7 +3112,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isDouble(stackTop)) {
             value = virtualFrame.getDouble(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3131,7 +3138,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isBoolean(stackTop)) {
             value = virtualFrame.getBoolean(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3148,7 +3154,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (virtualFrame.isBoolean(stackTop)) {
             value = virtualFrame.getBoolean(stackTop);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeUnaryOp(virtualFrame, stackTop, bci, op);
             return;
         }
@@ -3160,6 +3165,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void generalizeUnaryOp(VirtualFrame virtualFrame, int stackTop, int bci, int op) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         virtualFrame.setObject(stackTop, virtualFrame.getValue(stackTop));
         generalizeInputs(bci);
         bytecode[bci] = OpCodesConstants.UNARY_OP_O_O;
@@ -3184,6 +3190,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void bytecodeStoreFastAdaptive(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, byte[] localBC, int index, boolean inCompiledCode) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         byte stackType = stackSlotTypeToTypeId(virtualFrame, stackTop);
         byte itemType = stackType;
         boolean unboxInIntepreter = (variableShouldUnbox[index] & itemType) != 0;
@@ -3299,23 +3306,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         throw CompilerDirectives.shouldNotReachHere("Unexpected variable type: " + itemType);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isInt(stackTop)) {
             localFrame.setInt(index, virtualFrame.getInt(stackTop));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastUnboxI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3323,25 +3329,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localFrame.setInt(index, (int) object);
             virtualFrame.setObject(stackTop, null);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastBoxedI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
         if (!(object instanceof Integer)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3353,23 +3355,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, null);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isLong(stackTop)) {
             localFrame.setLong(index, virtualFrame.getLong(stackTop));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastUnboxL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3377,25 +3378,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localFrame.setLong(index, (long) object);
             virtualFrame.setObject(stackTop, null);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastBoxedL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
         if (!(object instanceof Long)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3407,23 +3404,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, null);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isDouble(stackTop)) {
             localFrame.setDouble(index, virtualFrame.getDouble(stackTop));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastUnboxD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3431,25 +3427,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localFrame.setDouble(index, (double) object);
             virtualFrame.setObject(stackTop, null);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastBoxedD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
         if (!(object instanceof Double)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3461,23 +3453,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, null);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         if (virtualFrame.isBoolean(stackTop)) {
             localFrame.setBoolean(index, virtualFrame.getBoolean(stackTop));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastUnboxB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3485,24 +3476,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             localFrame.setBoolean(index, (boolean) object);
             virtualFrame.setObject(stackTop, null);
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastBoxedB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
         if (!(object instanceof Boolean)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeStoreFast(virtualFrame, localFrame, stackTop, bci, index);
             return;
         }
@@ -3515,6 +3503,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void generalizeStoreFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         virtualFrame.setObject(index, virtualFrame.getValue(index));
         generalizeInputs(index);
         bytecode[bci] = OpCodesConstants.STORE_FAST_O;
@@ -3522,14 +3511,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         bytecodeStoreFastO(virtualFrame, localFrame, stackTop, index);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeStoreFastO(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int index) {
         Object object;
         try {
             object = virtualFrame.getObject(stackTop);
         } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context
-            // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // This should only happen when quickened concurrently in multi-context mode
             generalizeVariableStores(index);
             object = virtualFrame.getValue(stackTop);
         }
@@ -3537,7 +3525,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, null);
     }
 
+    @InliningCutoff
     private void bytecodeLoadFastAdaptive(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, boolean inCompiledCode) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         if (localFrame.isObject(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_O;
             bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
@@ -3578,20 +3568,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadFastIBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         if (localFrame.isInt(index)) {
             virtualFrame.setObject(stackTop, localFrame.getInt(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadFastI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         if (localFrame.isInt(index)) {
             virtualFrame.setInt(stackTop, localFrame.getInt(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
@@ -3600,7 +3590,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (localFrame.isLong(index)) {
             virtualFrame.setObject(stackTop, localFrame.getLong(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
@@ -3609,7 +3598,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (localFrame.isLong(index)) {
             virtualFrame.setLong(stackTop, localFrame.getLong(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
@@ -3618,7 +3606,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (localFrame.isDouble(index)) {
             virtualFrame.setObject(stackTop, localFrame.getDouble(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
@@ -3627,35 +3614,36 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (localFrame.isDouble(index)) {
             virtualFrame.setDouble(stackTop, localFrame.getDouble(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadFastBBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         if (localFrame.isBoolean(index)) {
             virtualFrame.setObject(stackTop, localFrame.getBoolean(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadFastB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         if (localFrame.isBoolean(index)) {
             virtualFrame.setBoolean(stackTop, localFrame.getBoolean(index));
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
         }
     }
 
     private void generalizeLoadFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeVariableStores(index);
         bytecode[bci] = OpCodesConstants.LOAD_FAST_O;
         bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, inCompiledCode);
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadFastO(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, boolean inCompiledCode) {
         Object value;
         try {
@@ -3678,15 +3666,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } catch (FrameSlotTypeException e) {
             // This should only happen when quickened concurrently in multi-context
             // mode
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            generalizeVariableStores(index);
-            value = localFrame.getValue(index);
+            value = generalizeBytecodeLoadFastO(localFrame, index);
         }
         if (value == null) {
-            PRaiseNode raiseNode = insertChildNode(adoptedNodes, bci, PRaiseNodeGen.class, NODE_RAISE);
-            throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
+            throw raiseVarReferencedBeforeAssignment(bci, index);
         }
         virtualFrame.setObject(stackTop, value);
+    }
+
+    @InliningCutoff
+    private PException raiseVarReferencedBeforeAssignment(int bci, int index) {
+        PRaiseNode raiseNode = insertChildNode(adoptedNodes, bci, PRaiseNodeGen.class, NODE_RAISE);
+        throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
+    }
+
+    private Object generalizeBytecodeLoadFastO(Frame localFrame, int index) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        generalizeVariableStores(index);
+        return localFrame.getValue(index);
     }
 
     private static byte stackSlotTypeToTypeId(VirtualFrame virtualFrame, int stackTop) {
@@ -3709,7 +3706,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void generalizeVariableStores(int index) {
-        CompilerAsserts.neverPartOfCompilation();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         variableTypes[index] = QuickeningTypes.OBJECT;
         if (generalizeVarsMap != null) {
             if (generalizeVarsMap[index] != null) {
@@ -3728,6 +3725,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @InliningCutoff
     protected PException wrapJavaExceptionIfApplicable(Throwable e) {
         if (e instanceof AbstractTruffleException) {
             return null;
@@ -3820,6 +3818,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         cell.clearRef();
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeStoreDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int oparg, int celloffset) {
         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
         Object value = virtualFrame.getObject(stackTop);
@@ -3828,6 +3827,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
         TruffleString varName;
         boolean isCellVar;
@@ -3848,6 +3848,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
         PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
         Object value = cell.getRef();
@@ -3858,6 +3859,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeClosureFromStack(VirtualFrame virtualFrame, int stackTop, int oparg) {
         PCell[] closure = new PCell[oparg];
         moveFromStack(virtualFrame, stackTop - oparg + 1, stackTop + 1, closure);
@@ -3889,6 +3891,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadAttr(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         PyObjectGetAttr getAttr = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_ATTR, PyObjectGetAttrNodeGen.class, NODE_OBJECT_GET_ATTR, useCachedNodes);
         TruffleString varname = localNames[oparg];
@@ -3905,12 +3908,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
             }
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeVariableStores(oparg);
         }
         localFrame.setObject(oparg, null);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeLoadGlobal(VirtualFrame virtualFrame, Object globals, int stackTop, int bci, TruffleString localName, Node[] localNodes, boolean useCachedNodes) {
         ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, bci, UNCACHED_READ_GLOBAL_OR_BUILTIN, ReadGlobalOrBuiltinNodeGen.class, NODE_READ_GLOBAL_OR_BUILTIN, localName, useCachedNodes);
         virtualFrame.setObject(++stackTop, read.read(virtualFrame, globals, localName));
@@ -3923,6 +3926,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         deleteGlobalNode.executeWithGlobals(virtualFrame, globals);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeStoreGlobal(VirtualFrame virtualFrame, Object globals, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         TruffleString varname = localNames[oparg];
         WriteGlobalNode writeGlobalNode = insertChildNode(localNodes, bci, UNCACHED_WRITE_GLOBAL, WriteGlobalNodeGen.class, NODE_WRITE_GLOBAL, varname, useCachedNodes);
@@ -3940,6 +3944,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeStoreAttr(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames, boolean useCachedNodes) {
         PyObjectSetAttr callNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_SET_ATTR, PyObjectSetAttrNodeGen.class, NODE_OBJECT_SET_ATTR, useCachedNodes);
         TruffleString varname = localNames[oparg];
@@ -3972,6 +3977,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeStoreSubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
         PyObjectSetItem setItem = insertChildNode(localNodes, bci, UNCACHED_OBJECT_SET_ITEM, PyObjectSetItemNodeGen.class, NODE_OBJECT_SET_ITEM, useCachedNodes);
         Object index = virtualFrame.getObject(stackTop);
@@ -3984,6 +3990,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeBuildSlice(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes, boolean useCachedNodes) {
         Object step;
         if (count == 3) {
@@ -4002,6 +4009,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeLoadConstCollection(VirtualFrame virtualFrame, int stackTop, Object array, int typeAndKind) {
         Object result;
         SequenceStorage storage;
@@ -4060,6 +4068,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCallFunctionKw(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData,
                     boolean profilingEnabled) {
         int stackTop = initialStackTop;
@@ -4083,6 +4092,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCallFunctionVarargs(VirtualFrame virtualFrame, int initialStackTop, int bci, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         int stackTop = initialStackTop;
         CallNode callNode = insertChildNode(localNodes, bci, UNCACHED_CALL, CallNodeGen.class, NODE_CALL, useCachedNodes);
@@ -4104,6 +4114,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeCallMethodVarargs(VirtualFrame virtualFrame, int stackTop, int bci, TruffleString[] localNames, int oparg, Node[] localNodes, boolean useCachedNodes,
                     MutableLoopData mutableData, boolean profilingEnabled) {
         PyObjectGetMethod getMethodNode = insertChildNode(localNodes, bci, UNCACHED_OBJECT_GET_METHOD, PyObjectGetMethodNodeGen.class, NODE_OBJECT_GET_METHOD, useCachedNodes);
@@ -4126,6 +4137,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeLoadName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, Node[] localNodes, TruffleString[] localNames) {
         int stackTop = initialStackTop;
         ReadNameNode readNameNode = insertChildNode(localNodes, bci, ReadNameNodeGen.class, NODE_READ_NAME, localNames[oparg]);
@@ -4133,6 +4145,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCallFunction(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         Object func = virtualFrame.getObject(stackTop - oparg);
         Object result;
@@ -4235,6 +4248,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeLoadMethod(VirtualFrame virtualFrame, int stackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         Object rcvr = virtualFrame.getObject(stackTop);
         TruffleString methodName = localNames[oparg];
@@ -4244,6 +4258,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCallMethod(VirtualFrame virtualFrame, int stackTop, int bci, int argcount, Node[] localNodes, boolean useCachedNodes, MutableLoopData mutableData, boolean profilingEnabled) {
         Object func = virtualFrame.getObject(stackTop - argcount);
         Object rcvr = virtualFrame.getObject(stackTop - argcount - 1);
@@ -4331,6 +4346,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeStoreName(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
         Object value = virtualFrame.getObject(stackTop);
@@ -4340,6 +4356,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private PException bytecodeRaiseVarargs(VirtualFrame virtualFrame, int stackTop, int bci, int count, Node[] localNodes) {
         RaiseNode raiseNode = insertChildNode(localNodes, bci, RaiseNodeGen.class, NODE_RAISENODE);
         Object cause;
@@ -4360,6 +4377,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         throw CompilerDirectives.shouldNotReachHere();
     }
 
+    @InliningCutoff
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
         PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
         if (oparg < cellvars.length) {
@@ -4370,6 +4388,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @InliningCutoff
     private int bytecodeImportName(VirtualFrame virtualFrame, Object globals, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         CastToJavaIntExactNode castNode = insertChildNode(localNodes, bci, UNCACHED_CAST_TO_JAVA_INT_EXACT, CastToJavaIntExactNodeGen.class, NODE_CAST_TO_JAVA_INT_EXACT, useCachedNodes);
         TruffleString modname = localNames[oparg];
@@ -4383,6 +4402,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private int bytecodeImportFrom(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         TruffleString importName = localNames[oparg];
@@ -4393,6 +4413,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @InliningCutoff
     private int bytecodeImportStar(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
         int stackTop = initialStackTop;
         TruffleString importName = localNames[oparg];
@@ -4474,6 +4495,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCollectionFromStack(VirtualFrame virtualFrame, int type, int count, int oldStackTop, Node[] localNodes, int nodeIndex, boolean useCachedNodes) {
         int stackTop = oldStackTop;
         Object res = null;
@@ -4532,6 +4554,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeCollectionFromCollection(VirtualFrame virtualFrame, int type, int stackTop, Node[] localNodes, int nodeIndex, boolean useCachedNodes) {
         Object sourceCollection = virtualFrame.getObject(stackTop);
         Object result;
@@ -4577,6 +4600,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeCollectionAddCollection(VirtualFrame virtualFrame, int type, int initialStackTop, Node[] localNodes, int nodeIndex, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         Object collection1 = virtualFrame.getObject(stackTop - 1);
@@ -4634,6 +4658,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeAddToCollection(VirtualFrame virtualFrame, int initialStackTop, int nodeIndex, Node[] localNodes, int depth, int type, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         Object collection = virtualFrame.getObject(stackTop - depth);
@@ -4665,24 +4690,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
+    @BytecodeInterpreterSwitch
     private void bytecodeTupleFromList(VirtualFrame virtualFrame, int stackTop) {
         PList list = (PList) virtualFrame.getObject(stackTop);
         Object result = factory.createTuple(list.getSequenceStorage());
         virtualFrame.setObject(stackTop, result);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeUnpackSequence(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int count, boolean useCachedNodes) {
         UnpackSequenceNode unpackNode = insertChildNode(localNodes, bci, UNCACHED_UNPACK_SEQUENCE, UnpackSequenceNodeGen.class, NODE_UNPACK_SEQUENCE, useCachedNodes);
         Object collection = virtualFrame.getObject(stackTop);
         return unpackNode.execute(virtualFrame, stackTop - 1, collection, count);
     }
 
+    @BytecodeInterpreterSwitch
     private int bytecodeUnpackEx(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int countBefore, int countAfter, boolean useCachedNodes) {
         UnpackExNode unpackNode = insertChildNode(localNodes, bci, UNCACHED_UNPACK_EX, UnpackExNodeGen.class, NODE_UNPACK_EX, useCachedNodes);
         Object collection = virtualFrame.getObject(stackTop);
         return unpackNode.execute(virtualFrame, stackTop - 1, collection, countBefore, countAfter);
     }
 
+    @InliningCutoff
     @ExplodeLoop
     private int findHandler(int bci) {
         CompilerAsserts.partialEvaluationConstant(bci);
@@ -4699,6 +4728,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return -1;
     }
 
+    @InliningCutoff
     @ExplodeLoop
     private static int unwindBlock(VirtualFrame virtualFrame, int stackTop, int stackTopBeforeBlock) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
@@ -4818,6 +4848,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public void triggerDeferredDeprecationWarnings() {
         if (parserErrorCallback != null) {
             parserErrorCallback.triggerDeprecationWarnings();
+        }
+    }
+
+    private void bytecodePopAndJumpIfFalse(VirtualFrame virtualFrame, int bci, int stackTop) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (virtualFrame.isBoolean(stackTop)) {
+            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_B;
+        } else {
+            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_FALSE_O;
+        }
+    }
+
+    private void bytecodePopAndJumpIfTrue(VirtualFrame virtualFrame, int bci, int stackTop) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (virtualFrame.isBoolean(stackTop)) {
+            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_B;
+        } else {
+            bytecode[bci] = OpCodesConstants.POP_AND_JUMP_IF_TRUE_O;
         }
     }
 }

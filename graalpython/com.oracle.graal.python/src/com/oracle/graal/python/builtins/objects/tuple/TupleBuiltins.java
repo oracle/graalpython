@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
@@ -50,7 +48,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -78,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -85,6 +83,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -100,6 +99,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -256,32 +256,48 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        private static final TruffleString TYPE_ERROR_MESSAGE = cat(T_TUPLE, T_SPACE, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
-        @Specialization(guards = "!isPSlice(key)")
-        Object doPTuple(VirtualFrame frame, PTuple tuple, Object key,
+        @Specialization(guards = {"index >= 0", "index < tuple.getSequenceStorage().length()"})
+        static Object doInBounds(PTuple tuple, int index,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            return getItemNode.execute(tuple.getSequenceStorage(), index);
+        }
+
+        @InliningCutoff
+        @Specialization(guards = "indexCheck.execute(key)", limit = "1")
+        static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheck,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
+        @InliningCutoff
         @Specialization
-        Object doPTuple(VirtualFrame frame, PTuple tuple, PSlice key,
+        static Object doSlice(VirtualFrame frame, PTuple tuple, PSlice key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
+        @InliningCutoff
         @Specialization
-        Object doNative(PythonNativeObject tuple, long key,
+        static Object doNative(PythonNativeObject tuple, long key,
                         @Cached PCallCapiFunction callSetItem,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
         }
 
+        @SuppressWarnings("unused")
+        @InliningCutoff
+        @Fallback
+        static Object doError(VirtualFrame frame, Object tuple, Object key,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", key);
+        }
+
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), TYPE_ERROR_MESSAGE, (s, f) -> f.createTuple(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
         }
     }
 

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -75,6 +76,7 @@ public abstract class PyObjectGetAttr extends Node {
         return getAttrNode.execute(frame, receiver);
     }
 
+    @InliningCutoff
     @Specialization(replaces = "getFixedAttr")
     static Object getDynamicAttr(Frame frame, Object receiver, Object name,
                     @Cached GetClassNode getClass,

@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -104,6 +106,7 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -582,8 +585,19 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
+    @InliningCutoff
     public static boolean cannotBeOverridden(Object object, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(object);
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    /**
+     * Tests if the class of this Python object is a builtin class. This method is supposed to be
+     * used for builtin types that do not support __class__ assignment at all, so we can safely read
+     * the initialPythonClass field and assume that is the current class as well.
+     */
+    public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
+        Object clazz = object.getInitialPythonClass();
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
@@ -618,5 +632,16 @@ public abstract class PGuards {
 
     public static boolean isAscii(TruffleString str, TruffleString.GetCodeRangeNode getCodeRangeNode) {
         return getCodeRangeNode.execute(str, TS_ENCODING) == CodeRange.ASCII;
+    }
+
+    @InliningCutoff
+    public static boolean isIndexOrSlice(PyIndexCheckNode indexCheckNode, Object key) {
+        return indexCheckNode.execute(key) || isPSlice(key);
+    }
+
+    @InliningCutoff
+    public static boolean isNativeWrapper(PythonAbstractObject object) {
+        Object wrapper = object.getNativeWrapper();
+        return wrapper != null && PythonNativeWrapperLibrary.getUncached().isNative(wrapper);
     }
 }

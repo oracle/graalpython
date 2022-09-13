@@ -58,8 +58,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -72,30 +72,29 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class PyObjectGetItem extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object, Object key);
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
     Object doList(VirtualFrame frame, PList object, Object key,
-                    @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached ListBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
     Object doTuple(VirtualFrame frame, PTuple object, Object key,
-                    @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached TupleBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    @InliningCutoff // TODO: inline this probably?
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
     Object doDict(VirtualFrame frame, PDict object, Object key,
-                    @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached DictBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
+    @InliningCutoff // no point inlining the complex case
     @Specialization(replaces = {"doList", "doTuple", "doDict"})
     Object doGeneric(VirtualFrame frame, Object object, Object key,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
                     @Cached CallBinaryMethodNode callGetItem,
                     @Cached PyObjectGetItemClass getItemClass,
@@ -105,7 +104,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         if (getItem != PNone.NO_VALUE) {
             return callGetItem.executeObject(frame, getItem, object, key);
         }
-        Object item = getItemClass.execute(frame, type, key);
+        Object item = getItemClass.execute(frame, object, key);
         if (item != PNone.NO_VALUE) {
             return item;
         }
@@ -129,6 +128,10 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
             }
             return PNone.NO_VALUE;
         }
+    }
+
+    public static PyObjectGetItem create() {
+        return PyObjectGetItemNodeGen.create();
     }
 
     public static PyObjectGetItem getUncached() {

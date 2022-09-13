@@ -118,6 +118,7 @@ MICRO_BENCHMARKS_SMALL = {
     'boolean-logic-sized': ITER_6 + WARMUP_2 + ['10'],
     'builtin-len-tuple-sized': ITER_6 + WARMUP_2 + ['10_000_000'],
     'builtin-len': ITER_6 + WARMUP_2 + ['2_500_000'],
+    'bytecode-benchmark': ITER_6 + WARMUP_2 + ['500'],
     'class-access': ITER_6 + WARMUP_2 + ['40'],
     'call-method-polymorphic': ITER_6 + WARMUP_2 + ['10'],
     'for-range': ITER_6 + WARMUP_2 + WARMUP_2 + ['50'],

@@ -156,6 +156,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -278,6 +279,7 @@ public abstract class SequenceStorageNodes {
         protected static final int MAX_SEQUENCE_STORAGES = 9;
         protected static final int MAX_ARRAY_STORAGES = 7;
 
+        @InliningCutoff
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
         }
@@ -312,30 +314,37 @@ public abstract class SequenceStorageNodes {
             return lenNode.execute(left) == 0;
         }
 
+        @InliningCutoff
         protected static boolean isBoolean(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Boolean;
         }
 
+        @InliningCutoff
         protected static boolean isByte(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Byte;
         }
 
+        @InliningCutoff
         protected static boolean isByteLike(GetElementType getElementTypeNode, SequenceStorage s) {
             return isByte(getElementTypeNode, s) || isInt(getElementTypeNode, s) || isLong(getElementTypeNode, s);
         }
 
+        @InliningCutoff
         protected static boolean isInt(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Int;
         }
 
+        @InliningCutoff
         protected static boolean isLong(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Long;
         }
 
+        @InliningCutoff
         protected static boolean isDouble(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Double;
         }
 
+        @InliningCutoff
         protected static boolean isObject(GetElementType getElementTypeNode, SequenceStorage s) {
             return getElementTypeNode.execute(s) == ListStorageType.Generic;
         }
@@ -432,13 +441,10 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
-        @Child private PRaiseNode raiseNode;
-        private final TruffleString keyTypeErrorMessage;
         private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
             super(normalizeIndexNode);
-            this.keyTypeErrorMessage = keyTypeErrorMessage;
             this.factoryMethod = factoryMethod;
         }
 
@@ -462,16 +468,19 @@ public abstract class SequenceStorageNodes {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization
         protected Object doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx) {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization(guards = "!isPSlice(idx)")
         protected Object doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx) {
             return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
+        @InliningCutoff
         @Specialization
         protected Object doSlice(VirtualFrame frame, SequenceStorage storage, PSlice slice,
                         @Cached LenNode lenNode,
@@ -485,11 +494,6 @@ public abstract class SequenceStorageNodes {
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
-        }
-
-        @Fallback
-        protected Object doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, Object key) {
-            throw ensureRaiseNode().raise(TypeError, keyTypeErrorMessage, key);
         }
 
         private GetItemScalarNode getGetItemScalarNode() {
@@ -508,44 +512,20 @@ public abstract class SequenceStorageNodes {
             return getItemSliceNode;
         }
 
-        private PRaiseNode ensureRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
         public static GetItemNode createNotNormalized() {
-            return GetItemNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
+            return GetItemNodeGen.create(null, null);
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode) {
-            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
+            return GetItemNodeGen.create(normalizeIndexNode, null);
         }
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, null);
-        }
-
-        public static GetItemNode createNotNormalized(TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(null, keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(TruffleString keyTypeErrorMessage) {
-            return GetItemNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage, null);
-        }
-
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, TruffleString keyTypeErrorMessage, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
-            return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage, factoryMethod);
+            return GetItemNodeGen.create(NormalizeIndexNode.create(), null);
         }
 
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
-            return GetItemNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, factoryMethod);
+            return GetItemNodeGen.create(normalizeIndexNode, factoryMethod);
         }
 
     }
@@ -681,6 +661,19 @@ public abstract class SequenceStorageNodes {
         protected static Object doMro(MroSequenceStorage storage, int idx) {
             return storage.getItemNormalized(idx);
         }
+
+        @InliningCutoff
+        @Specialization
+        protected static Object doNative(NativeSequenceStorage storage, int idx,
+                        @Cached GetNativeItemScalarNode getItem) {
+            return getItem.execute(storage, idx);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    protected abstract static class GetNativeItemScalarNode extends Node {
+        public abstract Object execute(NativeSequenceStorage s, int idx);
 
         @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected static Object doNativeObject(NativeSequenceStorage storage, int idx,
@@ -1134,7 +1127,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
+    @ImportStatic({SequenceStorageBaseNode.class, PGuards.class})
     public abstract static class SetItemScalarNode extends Node {
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
@@ -1151,9 +1144,10 @@ public abstract class SequenceStorageNodes {
             storage.setByteItemNormalized(idx, value);
         }
 
+        @InliningCutoff
         @Specialization(replaces = "doByteSimple")
         protected static void doByte(ByteSequenceStorage storage, int idx, Object value,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Cached CastToByteNode castToByteNode) {
             // TODO: clean this up, we really might need a frame
             storage.setByteItemNormalized(idx, castToByteNode.execute(null, value));
         }
@@ -1168,6 +1162,7 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, PInt.intValueExact(value));
         }
 
+        @InliningCutoff
         @Specialization(replaces = "doIntL")
         protected static void doIntLOvf(IntSequenceStorage storage, int idx, long value) {
             try {
@@ -1177,7 +1172,8 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!value.isNative()")
+        @InliningCutoff
+        @Specialization(guards = "!isNativeWrapper(value)")
         protected static void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setIntItemNormalized(idx, value.intValueExact());
@@ -1196,7 +1192,8 @@ public abstract class SequenceStorageNodes {
             storage.setLongItemNormalized(idx, value);
         }
 
-        @Specialization(guards = "!value.isNative()")
+        @InliningCutoff
+        @Specialization(guards = "!isNativeWrapper(value)")
         protected static void doLong(LongSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setLongItemNormalized(idx, value.longValueExact());
@@ -1215,11 +1212,34 @@ public abstract class SequenceStorageNodes {
             storage.setItemNormalized(idx, value);
         }
 
+        @InliningCutoff
+        @Specialization
+        protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
+                        @Cached SetNativeItemScalarNode setItem) {
+            setItem.execute(storage, idx, value);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static void doError(SequenceStorage s, int idx, Object item) {
+            throw new SequenceStoreException(item);
+        }
+
+        public static SetItemScalarNode create() {
+            return SetItemScalarNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    protected abstract static class SetNativeItemScalarNode extends Node {
+        public abstract void execute(NativeSequenceStorage s, int idx, Object value);
+
         @Specialization(guards = "isByteStorage(storage)")
         protected static void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Cached CastToByteNode castToByteNode) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
@@ -1239,21 +1259,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static void doError(SequenceStorage s, int idx, Object item) {
-            throw new SequenceStoreException(item);
-        }
-
         private static Object verifyValue(NativeSequenceStorage storage, Object item, VerifyNativeItemNode verifyNativeItemNode) {
             if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
                 return item;
             }
             throw new SequenceStoreException(item);
-        }
-
-        public static SetItemScalarNode create() {
-            return SetItemScalarNodeGen.create();
         }
     }
 

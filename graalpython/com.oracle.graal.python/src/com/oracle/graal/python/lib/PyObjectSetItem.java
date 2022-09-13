@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,13 +43,17 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -62,10 +66,17 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent to use for PyObject_SetItem.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
+@ImportStatic({SpecialMethodSlot.class, PGuards.class})
 public abstract class PyObjectSetItem extends Node {
     public abstract void execute(Frame frame, Object container, Object index, Object item);
 
+    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    void doList(VirtualFrame frame, PList object, Object key, Object value,
+                    @Cached ListBuiltins.SetItemNode setItemNode) {
+        setItemNode.execute(frame, object, key, value);
+    }
+
+    @InliningCutoff
     @Specialization
     void doWithFrame(VirtualFrame frame, Object primary, Object index, Object value,
                     @Cached GetClassNode getClassNode,
@@ -79,7 +90,8 @@ public abstract class PyObjectSetItem extends Node {
         callSetitem.execute(frame, setitem, primary, index, value);
     }
 
-    @Specialization(replaces = "doWithFrame")
+    @InliningCutoff
+    @Specialization(replaces = {"doWithFrame", "doList"})
     void doGeneric(Object primary, Object index, Object value,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "SetItem") LookupCallableSlotInMRONode lookupSetitem,

@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -130,6 +131,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -139,6 +141,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -395,10 +398,26 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
         @Child private GetClassNode getDescClassNode;
 
+        protected static int tsLen(TruffleString ts) {
+            CompilerAsserts.neverPartOfCompilation();
+            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING);
+        }
+
+        // Shortcut, only useful for interpreter performance, but doesn't hurt peak
+        @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
+        protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
+                        @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
+            Object type = getClassNode.execute(object);
+            Object descr = lookup.execute(type);
+            return fullLookup(frame, object, cachedKey, type, descr);
+        }
+
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
-                        @Cached GetClassNode getClassNode,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             TruffleString key;
             try {
@@ -409,6 +428,10 @@ public class ObjectBuiltins extends PythonBuiltins {
 
             Object type = getClassNode.execute(object);
             Object descr = lookup.execute(type, key);
+            return fullLookup(frame, object, key, type, descr);
+        }
+
+        private Object fullLookup(VirtualFrame frame, Object object, TruffleString key, Object type, Object descr) {
             Object dataDescClass = null;
             boolean hasDescr = descr != PNone.NO_VALUE;
             if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
