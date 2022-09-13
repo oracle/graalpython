@@ -56,10 +56,13 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -76,8 +79,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMembe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -121,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -134,7 +140,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -187,6 +192,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class GraalHPyNodes {
@@ -1428,8 +1434,8 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == GLOBAL"})
-        static GraalHPyHandle doGlobal(GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
-            return hpyContext.createGlobal(object, id);
+        static GraalHPyHandle doGlobal(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object, int id, @SuppressWarnings("unused") int type) {
+            return GraalHPyHandle.createGlobal(object, id);
         }
 
         @Specialization(guards = {"!isNoValue(object)", "type == FIELD"})
@@ -1944,15 +1950,14 @@ public class GraalHPyNodes {
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
-                        @Cached ReadAttributeFromObjectNode readHPyIsPureNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
-                        @Cached TruffleString.EqualNode eqNode,
                         @Cached PRaiseNode raiseNode) {
 
             try {
                 // the name as given by the specification
-                TruffleString specName = castToTruffleStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(typeSpec, "name")));
+                Object tpName = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRDUP, ptrLib.readMember(typeSpec, "name"));
+                TruffleString specName = castToTruffleStringNode.execute(fromCharPointerNode.execute(tpName));
 
                 // extract module and type name
                 TruffleString[] names = splitName(specName, indexOfCodepointNode, substringNode, lengthNode);
@@ -1997,10 +2002,12 @@ public class GraalHPyNodes {
                     Object sizeObj = getMetaSizeNode.execute(metatype, NativeMember.TP_BASICSIZE);
                     metaBasicSize = CastToJavaLongExactNode.getUncached().execute(sizeObj);
                 }
-                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
-                if (destroyFunc != null) {
-                    context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                if (metaBasicSize != 0) {
+                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, metaBasicSize, 1L);
+                    newType.setHPyNativeSpace(dataPtr);
+                    if (destroyFunc != null) {
+                        context.createHandleReference(newType, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                    }
                 }
 
                 // determine and set the correct module attribute
@@ -2024,6 +2031,7 @@ public class GraalHPyNodes {
                 newType.basicSize = basicSize;
                 newType.flags = flags;
                 newType.itemSize = itemSize;
+                newType.tpName = tpName;
                 newType.makeStaticBase(dylib);
 
                 boolean seenNew = false;
@@ -2274,25 +2282,62 @@ public class GraalHPyNodes {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
+    public abstract static class HPyTypeGetNameNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(guards = "clazz.tpName != null")
+        static Object doPythonClass(PythonClass clazz) {
+            return clazz.tpName;
+        }
+
+        @Fallback
+        static Object doOther(Object type,
+                        @Cached GetNameNode getName,
+                        @Cached ReadAttributeFromObjectNode readHPyFlagsNode,
+                        @Cached ReadAttributeFromObjectNode readModuleNameNode,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleString baseName = getName.execute(type);
+            TruffleString name;
+            if (readHPyFlagsNode.execute(type, GraalHPyDef.TYPE_HPY_FLAGS) != PNone.NO_VALUE) {
+                // Types that originated from HPy: although they are ordinary managed
+                // PythonClasses, the name should have "cext semantics", i.e., contain the
+                // module if it was specified in the HPyType_Spec
+                Object moduleName = readModuleNameNode.execute(type, SpecialAttributeNames.T___MODULE__);
+                if (moduleName instanceof TruffleString) {
+                    TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                    appendNode.execute(sb, (TruffleString) moduleName);
+                    appendNode.execute(sb, T_DOT);
+                    appendNode.execute(sb, baseName);
+                    name = toStringNode.execute(sb);
+                } else {
+                    name = baseName;
+                }
+            } else {
+                name = baseName;
+            }
+            byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, name, T_STRICT);
+            return new CByteArrayWrapper(result);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
     public abstract static class HPyGetNativeSpacePointerNode extends Node {
 
         public abstract Object execute(Object object);
 
         @Specialization
-        static Object doPythonHPyObject(PythonHPyObject object) {
+        static Object doPythonObject(PythonObject object) {
             return object.getHPyNativeSpace();
         }
 
-        @Specialization(guards = "!isHPyObject(object)")
-        static Object doPythonHPyObject(PythonObject object,
-                        @Cached ReadAttributeFromDynamicObjectNode readNativeSpaceNode) {
-            return readNativeSpaceNode.execute(object.getStorage(), GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
-        }
-
         @Fallback
-        static Object doOther(Object object,
-                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
-            return readNativeSpaceNode.execute(object, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+        Object doOther(@SuppressWarnings("unused") Object object) {
+            // TODO(fa): this should be a backend-specific value
+            return PythonContext.get(this).getNativeNull();
         }
     }
 

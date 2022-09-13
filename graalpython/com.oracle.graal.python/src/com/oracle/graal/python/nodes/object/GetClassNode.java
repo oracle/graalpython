@@ -86,6 +86,14 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     public abstract Object execute(Object object);
 
+    public final Object execute(@SuppressWarnings("unused") int i) {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    public final Object execute(@SuppressWarnings("unused") double d) {
+        return PythonBuiltinClassType.PFloat;
+    }
+
     /*
      * Many nodes already specialize on Python[Abstract]Object subclasses, like PTuple. Add
      * shortcuts that avoid interpreter overhead of testing the object for all the primitive types

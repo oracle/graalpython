@@ -40,20 +40,14 @@
  */
 
 #include "hpy_jni.h"
+#include "hpy_log.h"
+#include "hpy_native_cache.h"
 
 #include <wchar.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-
-#ifndef NDEBUG
-#define LOG(FORMAT, ...) printf("%-15s (%s:%d): %s " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__);
-#define LOGS(FORMAT) printf("%-15s (%s:%d): " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__);
-#else
-#define LOG(FORMAT, ...)
-#define LOGS(FORMAT)
-#endif
 
 //*************************
 // JNI upcalls
@@ -65,6 +59,15 @@
 #include "hpy/runtime/ctx_funcs.h"
 
 static JNIEnv* jniEnv;
+
+#define ALL_FIELDS \
+    FIELD(hpyHandleTable, CLASS_HPYCONTEXT, SIG_JOBJECTARRAY) \
+    FIELD(hpyGlobalsTable, CLASS_HPYCONTEXT, SIG_JOBJECTARRAY) \
+    FIELD(nextHandle, CLASS_HPYCONTEXT, SIG_INT)
+
+#define FIELD(name, clazz, jniSig) static jfieldID jniField_ ## name;
+ALL_FIELDS
+#undef FIELD
 
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
@@ -83,6 +86,7 @@ static JNIEnv* jniEnv;
     UPCALL(SetItem, SIG_HPY SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
     UPCALL(TypeCheck, SIG_HPY SIG_HPY, SIG_INT) \
+    UPCALL(TypeCheckG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
     UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
@@ -95,7 +99,16 @@ static JNIEnv* jniEnv;
     UPCALL(GlobalLoad, SIG_HPYGLOBAL, SIG_HPY) \
     UPCALL(GlobalStore, SIG_PTR SIG_HPY, SIG_SIZE_T) \
     UPCALL(FieldLoad, SIG_HPY SIG_HPYFIELD, SIG_HPY) \
-    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T)
+    UPCALL(FieldStore, SIG_HPY SIG_PTR SIG_HPY, SIG_SIZE_T) \
+    UPCALL(Type, SIG_HPY, SIG_HPY) \
+    UPCALL(TypeGetName, SIG_HPY, SIG_HPY) \
+    UPCALL(ContextVarGet, SIG_HPY SIG_HPY SIG_HPY, SIG_HPY) \
+    UPCALL(Is, SIG_HPY SIG_HPY, SIG_INT) \
+    UPCALL(IsG, SIG_HPY SIG_HPYGLOBAL, SIG_INT) \
+    UPCALL(CapsuleNew, SIG_PTR SIG_PTR SIG_PTR, SIG_HPY) \
+    UPCALL(CapsuleGet, SIG_HPY SIG_INT SIG_PTR, SIG_PTR) \
+    UPCALL(GetAttrs, SIG_HPY SIG_STRING, SIG_HPY)
+
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -116,12 +129,84 @@ static jmethodID jniMethod_hpy_debug_get_context;
 
 #define HPY_UP(_h) ((jlong)((_h)._i))
 #define PTR_UP jlong
+#define INT_UP jint
 #define LONG_UP jlong
 #define DOUBLE_UP jdouble
 #define SIZE_T_UP jlong
 #define TRACKER_UP(_h) ((jlong)((_h)._i))
 
 #define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
+
+#define MAX_UNCLOSED_HANDLES 32
+static int32_t unclosedHandleTop = 0;
+static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
+
+static inline jsize get_handle_table_size(HPyContext *ctx) {
+    return HANDLE_TABLE_SIZE(ctx->_private);
+}
+
+static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, jobject element, bool update_native_cache) {
+    /* TODO(fa): for now, we fall back to the upcall */
+    if (update_native_cache) {
+        return 0;
+    }
+
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
+    if (hpy_handles == NULL) {
+        LOGS("hpy handle table is NULL")
+        return 0;
+    }
+
+    /* try to reuse a closed handle from our native list */
+    jsize next_handle;
+    if (unclosedHandleTop > 0) {
+        uint64_t recycled = toBits(unclosedHandles[--unclosedHandleTop]);
+        LOG("%llu", recycled)
+        assert(recycled < INT32_MAX);
+        next_handle = (jsize) recycled;
+    } else {
+        next_handle = (*jniEnv)->GetIntField(jniEnv, hpyContext, jniField_nextHandle);
+        LOG("%d", next_handle)
+        jsize s = get_handle_table_size(ctx);
+        if (next_handle >= s) {
+            return 0;
+        }
+        (*jniEnv)->SetIntField(jniEnv, hpyContext, jniField_nextHandle, next_handle+1);
+    }
+    (*jniEnv)->SetObjectArrayElement(jniEnv, hpy_handles, next_handle, element);
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
+    /* TODO(fa): update native data pointer cache here (if specified) */
+    return boxHandle(next_handle);
+}
+
+static jobject get_object_for_hpy_handle(jobject hpyContext, uint64_t bits) {
+    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
+    if (hpy_handles == NULL) {
+        LOGS("hpy handle table is NULL")
+        return NULL;
+    }
+    jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_handles, (jsize)unboxHandle(bits));
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
+    if (element == NULL) {
+        LOGS("handle delegate is NULL")
+    }
+    return element;
+}
+
+static jobject get_object_for_hpy_global(jobject hpyContext, uint64_t bits) {
+    jobject hpy_globals = (*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyGlobalsTable);
+    if (hpy_globals == NULL) {
+        LOGS("hpy globals is NULL")
+        return NULL;
+    }
+    jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_globals, (jsize)unboxHandle(bits));
+    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_globals);
+    if (element == NULL) {
+        LOGS("globals element is NULL")
+        return NULL;
+    }
+    return element;
+}
 
 
 static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h) {
@@ -180,6 +265,10 @@ static int ctx_TypeCheck_jni(HPyContext *ctx, HPy obj, HPy type) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheck, HPY_UP(obj), HPY_UP(type));
 }
 
+static int ctx_TypeCheck_g_jni(HPyContext *ctx, HPy obj, HPyGlobal type) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), TypeCheckG, HPY_UP(obj), HPY_UP(type));
+}
+
 static int ctx_ListCheck_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ListCheck, HPY_UP(obj));
 }
@@ -204,8 +293,25 @@ static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
-static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal h) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GlobalLoad, HPY_UP(h));
+static HPy ctx_Global_Load_jni(HPyContext *ctx, HPyGlobal global) {
+    long bits = toBits(global);
+    if (bits && isBoxedHandle(bits)) {
+        jobject hpyContext = CONTEXT_INSTANCE(ctx);
+        jobject element = get_object_for_hpy_global(hpyContext, bits);
+        if (element == NULL) {
+            return HPy_NULL;
+        }
+
+        uint64_t new_handle = get_hpy_handle_for_object(ctx, hpyContext, element, false);
+        (*jniEnv)->DeleteLocalRef(jniEnv, element);
+        if (new_handle) {
+            load_global_native_data_pointer(ctx, bits, new_handle);
+            return toPtr(new_handle);
+        }
+        return DO_UPCALL_HPY(hpyContext, GlobalLoad, bits);
+    } else {
+        return toPtr(bits);
+    }
 }
 
 static void ctx_Global_Store_jni(HPyContext *ctx, HPyGlobal *h, HPy v) {
@@ -229,7 +335,7 @@ static const char* getBoxedPrimitiveName(uint64_t bits) {
     return "float";
 }
 
-int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
+static int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) {
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
@@ -243,7 +349,7 @@ int ctx_SetItem_s_jni(HPyContext *ctx, HPy target, const char *name, HPy value) 
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItems, target, jname, value);
 }
 
-HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
+static HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     uint64_t bits = toBits(target);
     if (!isBoxedHandle(bits)) {
         const size_t buffer_size = 128;
@@ -255,6 +361,48 @@ HPy ctx_GetItem_s_jni(HPyContext *ctx, HPy target, const char *name) {
     jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItems, target, jname);
 }
+
+static HPy ctx_GetAttr_s_jni(HPyContext *ctx, HPy target, const char *name) {
+    jstring jname = (*jniEnv)->NewStringUTF(jniEnv, name);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetAttrs, target, jname);
+}
+
+static HPy ctx_Type_jni(HPyContext *ctx, HPy obj) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Type, HPY_UP(obj));
+}
+
+static const char *ctx_TypeGetName_jni(HPyContext *ctx, HPy obj) {
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), TypeGetName, HPY_UP(obj));
+}
+
+static int ctx_ContextVar_Get_jni(HPyContext *ctx, HPy var, HPy def, HPy *result) {
+    /* This uses 'h_Ellipsis' as an error marker assuming that it is rather uncertain that this will be a valid return
+       value. If 'h_Ellipsis' is returned, this indicates an error and we explicitly check for an error then. */
+    HPy err_marker = ctx->h_Ellipsis;
+    HPy r = DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ContextVarGet, HPY_UP(var), HPY_UP(def), HPY_UP(err_marker));
+    if (toBits(r) == toBits(err_marker) && HPyErr_Occurred(ctx)) {
+        return -1;
+    }
+    *result = r;
+    return 0;
+}
+
+static int ctx_Is_jni(HPyContext *ctx, HPy a, HPy b) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), Is, HPY_UP(a), HPY_UP(b));
+}
+
+static int ctx_Is_g_jni(HPyContext *ctx, HPy a, HPyGlobal b) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), IsG, HPY_UP(a), HPY_UP(b));
+}
+
+static HPy ctx_Capsule_New_jni(HPyContext *ctx, void *pointer, const char *name, HPyCapsule_Destructor destructor) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), CapsuleNew, (PTR_UP)pointer, (PTR_UP)name, (PTR_UP)destructor);
+}
+
+static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key key, const char *name) {
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), CapsuleGet, HPY_UP(capsule), (INT_UP)key, (PTR_UP)name);
+}
+
 
 //*************************
 // BOXING
@@ -279,6 +427,7 @@ static HPy (*original_Long)(HPyContext *ctx, HPy h);
 static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
 static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
 static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
+static long long (*original_Long_AsLongLong)(HPyContext *ctx, HPy h);
 static unsigned long (*original_Long_AsUnsignedLong)(HPyContext *ctx, HPy h);
 static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
 static HPy (*original_Long_FromLong)(HPyContext *ctx, long l);
@@ -296,7 +445,7 @@ static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
 static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
 static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
 static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
-static HPy (*original_Type)(HPyContext *, HPy);
+static HPy (*original_Type)(HPyContext *ctx, HPy obj);
 
 static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
     long bitsA = toBits(a);
@@ -314,11 +463,12 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
             return 0;
         }
         // This code assumes that space[x] != NULL <=> objects pointed by x has native struct
-        void** space = (void**)ctx->_private;
-        if (space[unboxedA] == NULL && space[unboxedB] == NULL) {
+        void *dataA = get_handle_native_data_pointer(ctx, unboxedA);
+        void *dataB = get_handle_native_data_pointer(ctx, unboxedB);
+        if (dataA == NULL && dataB == NULL) {
             return original_Is(ctx, a, b);
         }
-        return space[unboxedA] == space[unboxedB];
+        return dataA == dataB;
     } else {
         return 0;
     }
@@ -327,8 +477,7 @@ static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
 static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
-        void** space = (void**)ctx->_private;
-        return space[unboxHandle(bits)];
+        return get_handle_native_data_pointer(ctx, bits);
     } else {
         return NULL;
     }
@@ -366,6 +515,15 @@ static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
         return unboxInt(bits);
     } else {
         return original_Long_AsLong(ctx, h);
+    }
+}
+
+static long long augment_Long_AsLongLong(HPyContext *ctx, HPy h) {
+    uint64_t bits = toBits(h);
+    if (isBoxedInt(bits)) {
+        return (long long) unboxInt(bits);
+    } else {
+        return original_Long_AsLongLong(ctx, h);
     }
 }
 
@@ -421,10 +579,6 @@ static HPy augment_Long_FromUnsignedLongLong(HPyContext *ctx, unsigned long long
     }
 }
 
-#define MAX_UNCLOSED_HANDLES 32
-static int32_t unclosedHandleTop = 0;
-static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
-
 static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (!bits) {
@@ -467,19 +621,9 @@ static int augment_Number_Check(HPyContext *ctx, HPy obj) {
 static int augment_TypeCheck(HPyContext *ctx, HPy obj, HPy type) {
     uint64_t bits = toBits(obj);
     if (isBoxedInt(bits)) {
-        if (toBits(type) == toBits(ctx->h_LongType)) {
-            return true;
-        }
-        if (toBits(type) == toBits(ctx->h_FloatType)) {
-            return false;
-        }
+        return toBits(type) == toBits(ctx->h_LongType) || toBits(type) == toBits(ctx->h_BaseObjectType);
     } else if (isBoxedDouble(bits)) {
-        if (toBits(type) == toBits(ctx->h_FloatType)) {
-            return true;
-        }
-        if (toBits(type) == toBits(ctx->h_LongType)) {
-            return false;
-        }
+        return toBits(type) == toBits(ctx->h_FloatType) || toBits(type) == toBits(ctx->h_BaseObjectType);
     }
     return original_TypeCheck(ctx, obj, type);
 }
@@ -592,14 +736,16 @@ void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_fi
     }
 }
 
-HPy augment_Type(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
+HPy augment_Type(HPyContext *ctx, HPy obj) {
+    long bits = toBits(obj);
     if (isBoxedInt(bits)) {
-        return ctx->h_LongType;
-    } else if (isBoxedDouble(bits)) {
-        return ctx->h_FloatType;
+        return augment_Dup(ctx, ctx->h_LongType);
+    } else if (isBoxedDouble(bits))
+        return augment_Dup(ctx, ctx->h_FloatType);
+    if (bits && isBoxedHandle(bits)) {
+        return original_Type(ctx, obj);
     } else {
-        return original_Type(ctx, h);
+        return toPtr(bits);
     }
 }
 
@@ -618,6 +764,8 @@ void initDirectFastPaths(HPyContext *context) {
     AUGMENT(Float_AsDouble);
 
     AUGMENT(Long_AsLong);
+
+    AUGMENT(Long_AsLongLong);
 
     AUGMENT(Long_AsUnsignedLong);
 
@@ -692,6 +840,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Dup = ctx_Dup_jni;
     context->ctx_Number_Check = ctx_NumberCheck_jni;
     context->ctx_TypeCheck = ctx_TypeCheck_jni;
+    context->ctx_TypeCheck_g = ctx_TypeCheck_g_jni;
     context->ctx_List_Check = ctx_ListCheck_jni;
 
     context->ctx_Length = ctx_Length_jni;
@@ -724,9 +873,20 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
     context->ctx_SetItem_s = ctx_SetItem_s_jni;
     context->ctx_GetItem_s = ctx_GetItem_s_jni;
+    context->ctx_Type = ctx_Type_jni;
+    context->ctx_Type_GetName = ctx_TypeGetName_jni;
+
+    context->ctx_ContextVar_Get = ctx_ContextVar_Get_jni;
+    context->ctx_Is = ctx_Is_jni;
+    context->ctx_Is_g = ctx_Is_g_jni;
+    context->ctx_Capsule_New = ctx_Capsule_New_jni;
+    context->ctx_Capsule_Get = ctx_Capsule_Get_jni;
+    context->ctx_GetAttr_s = ctx_GetAttr_s_jni;
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
+
+#define CLASS_HPYCONTEXT clazz
 
 #define SIG_HPY "J"
 #define SIG_HPYFIELD "J"
@@ -742,6 +902,17 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_JCHARARRAY "[C"
 #define SIG_JLONGARRAY "[J"
 #define SIG_STRING "Ljava/lang/String;"
+#define SIG_JOBJECTARRAY "[Ljava/lang/Object;"
+
+#define FIELD(name, clazz, jniSig) \
+    jniField_ ## name = (*env)->GetFieldID(env, clazz, #name, jniSig); \
+    if (jniField_ ## name == NULL) { \
+        LOGS("ERROR: jni field " #name " not found found !\n"); \
+        return 1; \
+    }
+
+ALL_FIELDS
+#undef FIELD
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
@@ -797,6 +968,13 @@ HPyContext * hpy_debug_get_ctx(HPyContext *uctx)
     }
     return dctx;
 }
+
+// helper functions
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_strcmp(JNIEnv *env, jclass clazz, jlong s1, jlong s2) {
+    return (jint) strcmp((const char *)s1, (const char *)s2);
+}
+
 // helper functions for fast HPy downcalls:
 
 JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executePrimitive1(JNIEnv *env, jclass clazz, jlong target, jlong arg1) {

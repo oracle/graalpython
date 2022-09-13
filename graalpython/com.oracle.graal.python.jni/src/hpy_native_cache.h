@@ -39,47 +39,62 @@
  * SOFTWARE.
  */
 
-#include <hpy.h>
-#include <jni.h>
-#include <stdint.h>
+/*
+ * HPy native cache implementation.
+ * Currently, the native cache is an array of uint64_t values.
+ * Layout:
+ * -----------------------------------------------------------------------
+ * | n | hptr_0 | hptr_1 | ... | hptr_n | gptr_0 | gptr_1 | ... | gptr_m |
+ * -----------------------------------------------------------------------
+ * 'n' is the current size of the handle table.
+ * 'hptr_0' is the native data pointer of the object associated with HPy handle 0.
+ * 'gptr_0' is the native data pointer of the object associated with HPy global 0.
+ */
 
-#include "debug_internal.h"
-#include "ctx_tracker.h"
 
-//*************************
-// BOXING
+#ifndef SRC_HPY_NATIVE_CACHE_H_
+#define SRC_HPY_NATIVE_CACHE_H_
 
-#define NAN_BOXING_BASE (0x0007000000000000llu)
-#define NAN_BOXING_MASK (0xFFFF000000000000llu)
-#define NAN_BOXING_INT (0x0001000000000000llu)
-#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
-#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
-#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+#include "hpy_jni.h"
+#include "hpy_log.h"
 
-// Some singleton Python objects are guaranteed to be always represented by
-// those handles, so that we do not have to upcall to unambiguously check if
-// a handle represents one of those
-#define SINGLETON_HANDLES_MAX (3)
+#define HANDLE_MIRROR_OFFSET 1
+#define HANDLE_DATAPTR_INDEX(bits) (HANDLE_MIRROR_OFFSET + unboxHandle(bits))
+#define GLOBAL_DATAPTR_INDEX(n_ht, bits) (HANDLE_MIRROR_OFFSET + n_ht + unboxHandle(bits))
+#define HANDLE_TABLE_SIZE(cache_ptr) (((uint64_t *)cache_ptr)[0])
 
-#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
-#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
-#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+/*
+ * Get the native data pointer of an object denoted by a handle from the native
+ * cache.
+ */
+static inline void *
+get_handle_native_data_pointer(HPyContext *ctx, uint64_t bits) {
+    void** space = (void**)ctx->_private;
+    return space[HANDLE_DATAPTR_INDEX(bits)];
+}
 
-#define unboxHandle(value) (value)
-#define boxHandle(handle) (handle)
 
-#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
-#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
-#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
-#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+/*
+ * Get the native data pointer of an object denoted by an HPyGlobal from the
+ * native cache.
+ */
+static inline void *
+get_global_native_data_pointer(HPyContext *ctx, uint64_t bits) {
+    void** space = (void**)ctx->_private;
+    return space[GLOBAL_DATAPTR_INDEX(HANDLE_TABLE_SIZE(space), bits)];
+}
 
-#define toBits(ptr) ((uint64_t) ((ptr)._i))
-#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+/*
+ * Load the native data pointer of an object denoted by an HPyGlobal into the
+ * native cache.
+ */
+static inline void
+load_global_native_data_pointer(HPyContext *ctx, uint64_t g_bits, uint64_t h_bits) {
+    void** space = (void**)ctx->_private;
+    uint64_t n_handle_table = (uint64_t)space[0];
+    void *g_data_ptr = space[GLOBAL_DATAPTR_INDEX(n_handle_table, g_bits)];
+    LOG("%llu %llu %p", g_bits, h_bits, g_data_ptr)
+    space[HANDLE_DATAPTR_INDEX(h_bits)] = g_data_ptr;
+}
 
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal);
-
-_HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
-
-_HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
-
-_HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);
+#endif /* SRC_HPY_NATIVE_CACHE_H_ */

@@ -129,7 +129,6 @@ public abstract class GraalHPyDef {
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
     public static final HiddenKey TYPE_HPY_IS_PURE = new HiddenKey("hpy_is_pure");
-    public static final HiddenKey OBJECT_HPY_NATIVE_SPACE = new HiddenKey("hpy_native_space");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;

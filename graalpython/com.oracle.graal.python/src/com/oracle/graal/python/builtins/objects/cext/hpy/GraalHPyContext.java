@@ -42,6 +42,8 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
@@ -90,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -97,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.CapsuleKey;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBinaryArithmetic;
@@ -197,6 +201,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeSubstring;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -204,12 +209,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTypeGetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -229,6 +236,7 @@ import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
 import com.oracle.graal.python.lib.PyLongAsDoubleNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
@@ -248,6 +256,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -312,7 +321,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
-    private static final long SIZEOF_LONG = java.lang.Long.BYTES;
+    static final long SIZEOF_LONG = java.lang.Long.BYTES;
 
     private static final TruffleString T_NAME = tsLiteral("HPy Universal ABI (GraalVM backend)");
 
@@ -648,11 +657,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_NEW(tsLiteral("ctx_New"), signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE(tsLiteral("ctx_Type")),
         CTX_TYPECHECK(tsLiteral("ctx_TypeCheck"), signature(Long, HPy, HPy)),
+        CTX_TYPECHECK_G(tsLiteral("ctx_TypeCheck_g"), signature(Long, HPy, HPyGlobal)),
         CTX_SETTYPE(tsLiteral("ctx_SetType")),
         CTX_TYPE_ISSUBTYPE(tsLiteral("ctx_Type_IsSubtype")),
         CTX_TYPE_GETNAME(tsLiteral("ctx_Type_GetName")),
         CTX_TYPE_CHECKSLOT(tsLiteral("ctx_Type_CheckSlot")),
         CTX_IS(tsLiteral("ctx_Is")),
+        CTX_IS_G(tsLiteral("ctx_Is_g"), signature(Long, HPy, HPyGlobal)),
         CTX_TYPE_GENERIC_NEW(tsLiteral("ctx_Type_GenericNew"), signature(HPy, HPy)),
         CTX_FLOAT_FROMDOUBLE(tsLiteral("ctx_Float_FromDouble"), signature(HPy, Double)),
         CTX_FLOAT_ASDOUBLE(tsLiteral("ctx_Float_AsDouble"), signature(Double, HPy)),
@@ -905,7 +916,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private Object[] hpyHandleTable;
     private int nextHandle = 1;
 
-    private GraalHPyHandle[] hpyGlobalsTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    private Object[] hpyGlobalsTable = new Object[]{GraalHPyHandle.NULL_HANDLE_DELEGATE};
     private final HandleStack freeStack = new HandleStack(16);
     private long hPyDebugContext;
     private long nativePointer;
@@ -1403,7 +1414,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private static long castLong(Object value) throws CannotCastException {
+    /**
+     * Expects an object that can be casted (without coercion) to a native pointer (i.e. a
+     * {@code void *}; represented as Java {@code long}). This will throw a
+     * {@link CannotCastException} if that is not possible
+     */
+    private static long expectPointer(Object value) throws CannotCastException {
         if (value instanceof Long) {
             return (long) value;
         }
@@ -1416,6 +1432,30 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
         throw CannotCastException.INSTANCE;
+    }
+
+    /**
+     * Coerces an object to a native pointer (i.e. a {@code void *}; represented as Java
+     * {@code long}). This is similar to {@link #expectPointer(Object)} but will send
+     * {@link InteropLibrary#toNative(Object)} if the object is not a pointer already. The method
+     * will throw a {@link CannotCastException} if coercion is not possible.
+     */
+    private static long coerceToPointer(Object value) throws CannotCastException {
+        if (value == null) {
+            return 0;
+        }
+        if (value instanceof Long) {
+            return (long) value;
+        }
+        InteropLibrary interopLibrary = InteropLibrary.getUncached(value);
+        if (!interopLibrary.isPointer(value)) {
+            interopLibrary.toNative(value);
+        }
+        try {
+            return interopLibrary.asPointer(value);
+        } catch (UnsupportedMessageException e) {
+            throw CannotCastException.INSTANCE;
+        }
     }
 
     private static Object evalNFI(PythonContext context, String source, String name) {
@@ -1439,7 +1479,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             if (!getContext().getEnv().isNativeAccessAllowed()) {
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            nativePointer = castLong(PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this)));
+            nativePointer = expectPointer(PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this)));
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
@@ -1453,10 +1493,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                  */
                 if (useNativeFastPaths) {
                     PythonContext context = getContext();
-                    InteropLibrary interop = InteropLibrary.getUncached();
                     SignatureLibrary signatures = SignatureLibrary.getUncached();
                     try {
                         Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.J_PYTHON_JNI_LIBRARY_NAME);
+                        InteropLibrary interop = InteropLibrary.getUncached(rlib);
 
                         Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
                         Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
@@ -1470,8 +1510,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                          * initialize it.
                          */
                         allocateNativeSpacePointersMirror();
-
-                        interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -1513,6 +1551,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
     }
+
+    /* HPy universal mode: JNI helper functions */
+
+    @TruffleBoundary
+    public static native int strcmp(long s1, long s2);
 
     /* HPy universal mode: JNI trampoline declarations */
 
@@ -1678,7 +1721,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         UpcallFieldLoad,
         UpcallFieldStore,
         UpcallGlobalLoad,
-        UpcallGlobalStore;
+        UpcallGlobalStore,
+        UpcallType,
+        UpcallTypeGetName,
+        UpcallContextVarGet,
+        UpcallGetAttrS;
 
         @CompilationFinal(dimensions = 1) private static final Counter[] VALUES = values();
     }
@@ -1756,24 +1803,21 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public long ctxAsStruct(long handle) {
         increment(Counter.UpcallCast);
-
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
-        return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
+        try {
+            return expectPointer(HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver));
+        } catch (CannotCastException e) {
+            return 0;
+        }
     }
 
     // Note: assumes that receiverHandle is not a boxed primitive value
     @SuppressWarnings("try")
-    public final int ctxSetItems(long receiverHandle, String name, long valueHandle) {
+    public int ctxSetItems(long receiverHandle, String name, long valueHandle) {
         increment(Counter.UpcallSetItemS);
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(receiverHandle));
-        Object value;
-        if (GraalHPyBoxing.isBoxedHandle(valueHandle)) {
-            value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(valueHandle));
-        } else if (GraalHPyBoxing.isBoxedInt(valueHandle)) {
-            value = GraalHPyBoxing.unboxInt(valueHandle);
-        } else if (GraalHPyBoxing.isBoxedDouble(valueHandle)) {
-            value = GraalHPyBoxing.unboxDouble(valueHandle);
-        } else {
+        Object value = bitsAsPythonObject(valueHandle);
+        if (value == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
             HPyRaiseNode.raiseIntUncached(this, -1, SystemError, ErrorMessages.HPY_UNEXPECTED_HPY_NULL);
             return -1;
         }
@@ -2086,8 +2130,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public int ctxTypeCheck(long handle, long typeHandle) {
-        increment(Counter.UpcallTypeCheck);
+    private int typeCheck(long handle, Object type) {
         Object receiver;
         if (GraalHPyBoxing.isBoxedDouble(handle)) {
             receiver = PythonBuiltinClassType.PFloat;
@@ -2096,7 +2139,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             receiver = GetClassNode.getUncached().execute(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
         }
-        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
 
         if (receiver == type) {
             return 1;
@@ -2127,6 +2169,18 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             return 0;
         }
+    }
+
+    public int ctxTypeCheck(long bits, long typeBits) {
+        increment(Counter.UpcallTypeCheck);
+        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeBits));
+        return typeCheck(bits, type);
+    }
+
+    public int ctxTypeCheckG(long bits, long typeGlobalBits) {
+        increment(Counter.UpcallTypeCheck);
+        Object type = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(typeGlobalBits));
+        return typeCheck(bits, type);
     }
 
     public long ctxLength(long handle) {
@@ -2233,7 +2287,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long ctxFieldLoad(long bits, long idx) {
         increment(Counter.UpcallFieldLoad);
         Object owner = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
-        Object referent = ((PythonObject) owner).getHpyFields()[(int) idx - 1];
+        // HPyField index is always non-zero because zero means: uninitialized
+        assert idx > 0;
+        Object referent = ((PythonObject) owner).getHPyData()[(int) idx];
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(referent));
     }
 
@@ -2241,39 +2297,181 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         increment(Counter.UpcallFieldStore);
         PythonObject owner = (PythonObject) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
         Object referent = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(value));
-
-        Object[] hpyFields = owner.getHpyFields();
-        if (idx == 0) {
-            if (hpyFields == null) {
-                idx = 1;
-                hpyFields = new Object[]{referent};
-            } else {
-                idx = hpyFields.length + 1;
-                hpyFields = PythonUtils.arrayCopyOf(hpyFields, (int) idx);
-                hpyFields[(int) idx - 1] = referent;
-            }
-            owner.setHpyFields(hpyFields);
-        } else {
-            hpyFields[(int) idx - 1] = referent;
-        }
-        return idx;
+        return GraalHPyFieldStore.assign(owner, referent, (int) idx);
     }
 
     public long ctxGlobalLoad(long bits) {
         increment(Counter.UpcallGlobalLoad);
         assert GraalHPyBoxing.isBoxedHandle(bits);
-        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getDelegate()));
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits))));
     }
 
     public long ctxGlobalStore(long bits, long v) {
         increment(Counter.UpcallGlobalStore);
-        Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v));
-        int idx = 0;
-        if (bits > 0) {
-            idx = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bits)).getGlobalId();
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return createGlobal(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(v)), GraalHPyBoxing.unboxHandle(bits));
+    }
+
+    public long ctxType(long bits) {
+        increment(Counter.UpcallType);
+        Object clazz;
+        if (GraalHPyBoxing.isBoxedHandle(bits)) {
+            clazz = GetClassNode.getUncached().execute(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits)));
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+            clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxInt(bits));
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+            clazz = GetClassNode.getUncached().execute(GraalHPyBoxing.unboxDouble(bits));
+        } else {
+            assert false;
+            clazz = null;
         }
-        GraalHPyHandle newHandle = createGlobal(value, idx);
-        return newHandle.getGlobalId();
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(clazz));
+    }
+
+    public long ctxTypeGetName(long bits) {
+        increment(Counter.UpcallTypeGetName);
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        Object clazz = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+        Object tpName = HPyTypeGetNameNodeGen.getUncached().execute(clazz);
+        try {
+            return coerceToPointer(tpName);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    public long ctxContextVarGet(long varBits, long defBits, long errBits) {
+        increment(Counter.UpcallContextVarGet);
+        assert GraalHPyBoxing.isBoxedHandle(varBits);
+        Object var = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(varBits));
+        if (!(var instanceof PContextVar)) {
+            try {
+                throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            }
+            return errBits;
+        }
+        PythonContext ctx = getContext();
+        PythonLanguage lang = ctx.getLanguage();
+        Object def = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(defBits));
+        Object res = GraalHPyContextVarGet.getObject(ctx.getThreadState(lang), (PContextVar) var, def);
+        if (res == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
+            return 0;
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(res));
+    }
+
+    public int ctxIs(long aBits, long bBits) {
+        Object a = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
+        Object b = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bBits));
+        try {
+            return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return -1;
+        }
+    }
+
+    public int ctxIsG(long aBits, long bBits) {
+        Object a = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(aBits));
+        Object b = getObjectForHPyGlobal(GraalHPyBoxing.unboxHandle(bBits));
+        try {
+            return PInt.intValue(IsNodeGen.getUncached().execute(a, b));
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return -1;
+        }
+    }
+
+    public long ctxCapsuleNew(long pointer, long name, long destructor) {
+        PyCapsule result = new PyCapsule();
+        if (pointer == 0) {
+            return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleNew.NULL_PTR_ERROR);
+        }
+        result.setPointer(pointer);
+        if (name != 0) {
+            result.setName(name);
+        }
+        if (destructor != 0) {
+            result.setDestructor(destructor);
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
+    }
+
+    static boolean capsuleNameMatches(long name1, long name2) {
+        // additional shortcut (compared to CPython) to avoid a unnecessary downcalls
+        if (name1 == name2) {
+            return true;
+        }
+        /*
+         * If one of them is NULL, then both need to be NULL. However, at this point we have
+         * invariant 'name1 != name2' because of the above shortcut.
+         */
+        if (name1 == 0 || name2 == 0) {
+            return false;
+        }
+        return strcmp(name1, name2) == 0;
+    }
+
+    public long ctxCapsuleGet(long capsuleBits, int key, long namePtr) {
+        Object capsule = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(capsuleBits));
+        try {
+            if (!(capsule instanceof PyCapsule) || ((PyCapsule) capsule).getPointer() == null) {
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleGet.getErrorMessage(key));
+            }
+            GraalHPyCapsuleGet.isLegalCapsule(capsule, key, PRaiseNode.getUncached());
+            PyCapsule pyCapsule = (PyCapsule) capsule;
+            Object result;
+            switch (key) {
+                case CapsuleKey.Pointer:
+                    if (!capsuleNameMatches(namePtr, coerceToPointer(pyCapsule.getName()))) {
+                        return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleGet.INCORRECT_NAME);
+                    }
+                    result = pyCapsule.getPointer();
+                    break;
+                case CapsuleKey.Context:
+                    result = pyCapsule.getContext();
+                    break;
+                case CapsuleKey.Name:
+                    result = pyCapsule.getName();
+                    break;
+                case CapsuleKey.Destructor:
+                    result = pyCapsule.getDestructor();
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid key");
+            }
+            return coerceToPointer(result);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    public long ctxGetAttrs(long receiverHandle, String name) {
+        increment(Counter.UpcallGetAttrS);
+        Object receiver = bitsAsPythonObject(receiverHandle);
+        TruffleString tsName = toTruffleStringUncached(name);
+        Object result;
+        try {
+            result = PyObjectGetAttr.getUncached().execute(null, receiver, tsName);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNode.executeUncached(this, e);
+            return 0;
+        }
+        return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
+    }
+
+    private Object bitsAsPythonObject(long bits) {
+        if (GraalHPyBoxing.isBoxedNullHandle(bits)) {
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
+        } else if (GraalHPyBoxing.isBoxedInt(bits)) {
+            return GraalHPyBoxing.unboxInt(bits);
+        } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+        assert GraalHPyBoxing.isBoxedHandle(bits);
+        return getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
     }
 
     @ExportMessage
@@ -2500,7 +2698,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
+        members[HPyContextMember.CTX_TYPECHECK_G.ordinal()] = new GraalHPyTypeCheck(true);
         members[HPyContextMember.CTX_IS.ordinal()] = new GraalHPyIs();
+        members[HPyContextMember.CTX_IS_G.ordinal()] = new GraalHPyIs(true);
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         GraalHPyCast graalHPyCast = new GraalHPyCast();
         members[HPyContextMember.CTX_AS_STRUCT.ordinal()] = graalHPyCast;
@@ -2765,7 +2965,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return GraalHPyHandle.createField(delegate, idx);
     }
 
-    public GraalHPyHandle createGlobal(Object delegate, int idx) {
+    public int createGlobal(Object delegate, int idx) {
         assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when creating global";
         final int newIdx;
         if (idx <= 0) {
@@ -2773,12 +2973,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             newIdx = idx;
         }
-        GraalHPyHandle h = GraalHPyHandle.createGlobal(delegate, newIdx);
-        hpyGlobalsTable[newIdx] = h;
+        hpyGlobalsTable[newIdx] = delegate;
+        if (useNativeFastPaths && isPointer()) {
+            mirrorGlobalNativeSpacePointerToNative(delegate, newIdx);
+        }
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("allocating HPy global %d (object: %s)", newIdx, delegate));
         }
-        return h;
+        return newIdx;
     }
 
     private int allocateHPyGlobal() {
@@ -2795,7 +2997,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             int newSize = Math.max(16, hpyGlobalsTable.length * 2);
             LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
             hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
-            // TODO: (tfel) mirror these to native as we do for handles? not sure if it pays
+            if (useNativeFastPaths && isPointer()) {
+                reallocateNativeSpacePointersMirror(hpyHandleTable.length, handle);
+            }
         }
         return handle;
     }
@@ -2807,11 +3011,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private int resizeHandleTable() {
         CompilerAsserts.neverPartOfCompilation();
         assert nextHandle == hpyHandleTable.length;
+        int oldSize = hpyHandleTable.length;
         int newSize = Math.max(16, hpyHandleTable.length * 2);
         LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
         hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
         if (useNativeFastPaths && isPointer()) {
-            reallocateNativeSpacePointersMirror();
+            reallocateNativeSpacePointersMirror(oldSize, hpyGlobalsTable.length);
         }
         return nextHandle++;
     }
@@ -2888,20 +3093,43 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private void mirrorNativeSpacePointerToNative(Object delegate, int handleID) {
         assert isPointer();
         assert useNativeFastPaths;
-        Object nativeSpace = HPyGetNativeSpacePointerNodeGen.getUncached().execute(delegate);
-        try {
-            long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
-            unsafe.putLong(nativeSpacePointers + handleID * SIZEOF_LONG, l);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere();
+        long l;
+        if (delegate instanceof PythonObject) {
+            Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
+            try {
+                l = nativeSpace instanceof Long ? ((long) nativeSpace) : InteropLibrary.getUncached().asPointer(nativeSpace);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } else {
+            l = 0;
         }
+        GraalHPyNativeCache.putHandleNativeSpacePointer(nativeSpacePointers, handleID, l);
     }
 
     @TruffleBoundary
-    private void reallocateNativeSpacePointersMirror() {
+    private void mirrorGlobalNativeSpacePointerToNative(Object delegate, int globalID) {
         assert isPointer();
         assert useNativeFastPaths;
-        nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * SIZEOF_LONG);
+        long l;
+        if (delegate instanceof PythonObject) {
+            Object nativeSpace = HPyGetNativeSpacePointerNode.doPythonObject((PythonObject) delegate);
+            try {
+                l = nativeSpace instanceof Long ? ((long) nativeSpace) : InteropLibrary.getUncached().asPointer(nativeSpace);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } else {
+            l = 0;
+        }
+        GraalHPyNativeCache.putGlobalNativeSpacePointer(nativeSpacePointers, hpyHandleTable.length, globalID, l);
+    }
+
+    @TruffleBoundary
+    private void reallocateNativeSpacePointersMirror(int oldHandleTabelSize, int oldGlobalsTableSize) {
+        assert isPointer();
+        assert useNativeFastPaths;
+        nativeSpacePointers = GraalHPyNativeCache.reallocateNativeCache(nativeSpacePointers, oldHandleTabelSize, hpyHandleTable.length, oldGlobalsTableSize, hpyGlobalsTable.length);
         try {
             InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -2918,9 +3146,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      */
     @TruffleBoundary
     private void allocateNativeSpacePointersMirror() {
-        long arraySize = hpyHandleTable.length * SIZEOF_LONG;
-        long arrayPtr = unsafe.allocateMemory(arraySize);
-        unsafe.setMemory(arrayPtr, arraySize, (byte) 0);
+        long arrayPtr = GraalHPyNativeCache.allocateNativeCache(hpyHandleTable.length, hpyGlobalsTable.length);
 
         // publish pointer value (needed for initialization)
         nativeSpacePointers = arrayPtr;
@@ -2947,7 +3173,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return hpyHandleTable[handle];
     }
 
-    public GraalHPyHandle getObjectForHPyGlobal(int handle) {
+    public Object getObjectForHPyGlobal(int handle) {
         assert !GilNode.getUncached().acquire(PythonContext.get(null)) : "Gil not held when resolving object from global";
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyGlobalsTable[handle];
@@ -2966,10 +3192,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
         return true;
-    }
-
-    void onInvalidHandle(@SuppressWarnings("unused") int id) {
-        // nothing to do in the universal context
     }
 
     private static final class HandleStack {

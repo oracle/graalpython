@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.object.Shape;
+#ifndef SRC_HPY_LOG_H_
+#define SRC_HPY_LOG_H_
 
-public final class PythonHPyObject extends PythonObject {
+#ifndef NDEBUG
+#define LOG(FORMAT, ...) do { printf("%-15s (%s:%d): %s " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__); fflush(stdout); } while(0);
+#define LOGS(FORMAT) do { printf("%-15s (%s:%d): " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__); fflush(stdout); } while(0);
+#else
+#define LOG(FORMAT, ...)
+#define LOGS(FORMAT)
+#endif
 
-    public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
-        super(pythonClass, instanceShape);
-        if (hpyNativeSpace != null) {
-            this.setHPyData(new Object[]{hpyNativeSpace});
-        }
-    }
-}
+#endif /* SRC_HPY_LOG_H_ */

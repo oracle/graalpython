@@ -371,6 +371,11 @@ HPyAPI_FUNC int HPy_TypeCheck(HPyContext *ctx, HPy h_obj, HPy h_type)
     return ctx_TypeCheck(ctx, h_obj, h_type);
 }
 
+HPyAPI_FUNC int HPy_TypeCheck_g(HPyContext *ctx, HPy h_obj, HPyGlobal g_type)
+{
+    return ctx_TypeCheck_g(ctx, h_obj, g_type);
+}
+
 HPyAPI_FUNC int HPyType_IsSubtype(HPyContext *ctx, HPy h_sub, HPy h_type)
 {
     return ctx_Type_IsSubtype(ctx, h_sub, h_type);
