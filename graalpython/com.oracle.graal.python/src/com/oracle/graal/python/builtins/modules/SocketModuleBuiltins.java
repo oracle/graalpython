@@ -167,6 +167,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("SOL_TCP", 6);
         addBuiltinConstant("SOL_UDP", 17);
 
+        addConstant(PosixConstants.SOMAXCONN);
+
         addConstants(PosixConstants.socketType);
         addConstants(PosixConstants.socketFamily);
         addConstants(PosixConstants.socketOptions);

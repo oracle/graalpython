@@ -111,6 +111,8 @@ constant_defs = '''
 * i SEEK_DATA
 * i SEEK_HOLE
 
+  i SOMAXCONN
+
 [openFlags]
   x O_ACCMODE
   x O_RDONLY
@@ -195,6 +197,8 @@ constant_defs = '''
   i AF_UNSPEC
   i AF_INET
   i AF_INET6
+* i AF_PACKET
+  i AF_UNIX
 
 [socketType]
   i SOCK_DGRAM

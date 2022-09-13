@@ -70,6 +70,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant SEEK_END;
     public static final OptionalIntConstant SEEK_DATA;
     public static final OptionalIntConstant SEEK_HOLE;
+    public static final MandatoryIntConstant SOMAXCONN;
     public static final MandatoryIntConstant O_ACCMODE;
     public static final MandatoryIntConstant O_RDONLY;
     public static final MandatoryIntConstant O_WRONLY;
@@ -295,6 +296,7 @@ public final class PosixConstants {
         SEEK_END = reg.createMandatoryInt("SEEK_END");
         SEEK_DATA = reg.createOptionalInt("SEEK_DATA");
         SEEK_HOLE = reg.createOptionalInt("SEEK_HOLE");
+        SOMAXCONN = reg.createMandatoryInt("SOMAXCONN");
         O_ACCMODE = reg.createMandatoryInt("O_ACCMODE");
         O_RDONLY = reg.createMandatoryInt("O_RDONLY");
         O_WRONLY = reg.createMandatoryInt("O_WRONLY");
