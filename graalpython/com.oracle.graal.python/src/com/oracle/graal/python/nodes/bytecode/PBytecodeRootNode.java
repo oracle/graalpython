@@ -2450,6 +2450,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         });
     }
 
+    public Node createInstrumentationMaterializationForwarder() {
+        return new InstrumentationMaterializationForwarder(instrumentationRoot);
+    }
+
     @InliningCutoff // Used only to print expressions in interactive mode
     private int bytecodePrintExpr(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes, int bciSlot, int beginBci) {
         setCurrentBci(virtualFrame, bciSlot, bci);
