@@ -2356,6 +2356,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         PythonLanguage lang = ctx.getLanguage();
         Object def = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(defBits));
         Object res = GraalHPyContextVarGet.getObject(ctx.getThreadState(lang), (PContextVar) var, def);
+        if (res == GraalHPyHandle.NULL_HANDLE_DELEGATE) {
+            return 0;
+        }
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(res));
     }
 
