@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -115,6 +115,7 @@ class PosixConstantsDarwin {
         constants.put("W_OK", 0x00000002);
         constants.put("X_OK", 0x00000001);
         constants.put("F_OK", 0x00000000);
+        constants.put("EX_OK", 0x00000000);
         constants.put("RTLD_LAZY", 0x00000001);
         constants.put("RTLD_NOW", 0x00000002);
         constants.put("RTLD_GLOBAL", 0x00000008);
