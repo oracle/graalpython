@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
@@ -50,7 +48,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
