@@ -77,10 +77,10 @@ public abstract class PyObjectSetItem extends Node {
     }
 
     @InliningCutoff
-    @Specialization
-    void doWithFrame(VirtualFrame frame, Object primary, Object index, Object value,
+    @Specialization(replaces = "doList")
+    void doWithFrame(Frame frame, Object primary, Object index, Object value,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
+                    @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetitem,
                     @Cached PRaiseNode raise,
                     @Cached CallTernaryMethodNode callSetitem) {
         Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
@@ -88,20 +88,6 @@ public abstract class PyObjectSetItem extends Node {
             throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
         }
         callSetitem.execute(frame, setitem, primary, index, value);
-    }
-
-    @InliningCutoff
-    @Specialization(replaces = {"doWithFrame", "doList"})
-    void doGeneric(Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "SetItem") LookupCallableSlotInMRONode lookupSetitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(getClassNode.execute(primary));
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
-        }
-        callSetitem.execute(null, setitem, primary, index, value);
     }
 
     public static PyObjectSetItem create() {
