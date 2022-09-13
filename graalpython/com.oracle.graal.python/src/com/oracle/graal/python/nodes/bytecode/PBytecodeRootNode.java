@@ -922,6 +922,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     continue;
                 }
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             generalizeVariableStores(i);
             variableTypes[i] = QuickeningTypes.OBJECT;
             localFrame.setObject(i, arg);
@@ -2095,7 +2096,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         continue;
                     }
                     default:
-                        throw raiseUnkownBytecodeError(bc);
+                        throw raiseUnknownBytecodeError(bc);
                 }
                 // prepare next loop
                 oparg = 0;
@@ -2715,7 +2716,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private PException raiseUnkownBytecodeError(final byte bc) {
+    private PException raiseUnknownBytecodeError(final byte bc) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.fromOpCode(bc));
     }
