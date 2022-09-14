@@ -405,11 +405,17 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
                     ["hg", "up", "-C", self.VERSION], cwd=join(workdir, "benchmarks")
                 )
 
-            # workaround for pypy's benchmarks script issue
+            # workaround for pypy's benchmarks script issues
             with open(join(workdir, "benchmarks", "nullpython.py")) as f:
                 content = f.read()
             content = content.replace("/usr/bin/python", "/usr/bin/env python")
             with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
+                f.write(content)
+
+            with open(join(workdir, "benchmarks", "benchmarks.py")) as f:
+                content = f.read()
+            content = content.replace('float(line.split(b" ")[0])', 'float(line.split()[0])')
+            with open(join(workdir, "benchmarks", "benchmarks.py"), "w") as f:
                 f.write(content)
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
