@@ -1,3 +1,16 @@
+diff --git a/asv/benchmark.py b/asv/benchmark.py
+index 6411894..05f0678 100644
+--- a/asv/benchmark.py
++++ b/asv/benchmark.py
+@@ -535,6 +535,8 @@ def run(self, *param):
+         if warmup_time < 0:
+             if '__pypy__' in sys.modules:
+                 warmup_time = 1.0
++            elif '__graalpython__' in sys.modules:
++                warmup_time = 5.0
+             else:
+                 # Transient effects exist also on CPython, e.g. from
+                 # OS scheduling
 diff --git a/asv/benchmarks.py b/asv/benchmarks.py
 index 6411894..05f0678 100644
 --- a/asv/benchmarks.py
