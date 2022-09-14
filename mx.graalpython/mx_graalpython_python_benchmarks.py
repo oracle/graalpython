@@ -54,6 +54,66 @@ from os.path import join, abspath, exists
 SUITE = None
 python_vm_registry = None
 
+DEFAULT_NUMPY_BENCHMARKS = [
+    "bench_app",
+    "bench_core",
+    # "bench_function_base",
+    "bench_indexing",
+    # "bench_io",
+    "bench_linalg",
+    # "bench_ma",
+    # "bench_random",
+    "bench_reduce",
+    # "bench_shape_base",
+    # "bench_ufunc",
+]
+
+DEFAULT_PYPERFORMANCE_BENCHMARKS = [
+    # "2to3",
+    # "chameleon",
+    "chaos",
+    # "crypto_pyaes",
+    # "django_template",
+    # "dulwich_log",
+    "fannkuch",
+    "float",
+    "go",
+    "hexiom",
+    # "html5lib",
+    "json_dumps",
+    "json_loads",
+    "logging",
+    # "mako",
+    "meteor_contest",
+    "nbody",
+    "nqueens",
+    "pathlib",
+    "pickle",
+    "pickle_dict",
+    "pickle_list",
+    "pickle_pure_python",
+    "pidigits",
+    "pyflate",
+    "regex_compile",
+    "regex_dna",
+    "regex_effbot",
+    "regex_v8",
+    "richards",
+    "scimark",
+    "spectral_norm",
+    # "sqlalchemy_declarative",
+    # "sqlalchemy_imperative",
+    # "sqlite_synth",
+    "sympy",
+    "telco",
+    "tornado_http",
+    "unpack_sequence",
+    "unpickle",
+    "unpickle_list",
+    "unpickle_pure_python",
+    "xml_etree",
+]
+
 
 class PyPerfJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by PyPerf and creates a measurement result."""
@@ -343,7 +403,7 @@ class PyPerformanceSuite(
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", ",".join(DEFAULT_PYPERFORMANCE_BENCHMARKS)]
         retcode = mx.run(
             [
                 join(vm_venv, "bin", "pyperformance"),
@@ -414,7 +474,9 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
 
             with open(join(workdir, "benchmarks", "benchmarks.py")) as f:
                 content = f.read()
-            content = content.replace('float(line.split(b" ")[0])', 'float(line.split()[0])')
+            content = content.replace(
+                'float(line.split(b" ")[0])', "float(line.split()[0])"
+            )
             with open(join(workdir, "benchmarks", "benchmarks.py"), "w") as f:
                 f.write(content)
 
@@ -520,7 +582,7 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
         if benchmarks:
             bms = ["-b", "|".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", "|".join(DEFAULT_NUMPY_BENCHMARKS)]
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -550,6 +612,7 @@ def register_python_benchmarks():
     global python_vm_registry, SUITE
 
     from mx_graalpython_benchmark import python_vm_registry as vm_registry
+
     python_vm_registry = vm_registry
 
     SUITE = mx.suite("graalpython")
