@@ -735,6 +735,9 @@ public enum OpCodes {
     BINARY_OP_DD_B(BINARY_OP, QuickeningTypes.DOUBLE, QuickeningTypes.BOOLEAN, BINARY_OP_DD_O),
     FOR_ITER_O(FOR_ITER, 0, QuickeningTypes.OBJECT),
     FOR_ITER_I(FOR_ITER, 0, QuickeningTypes.INT, FOR_ITER_O),
+    BINARY_SUBSCR_SEQ_O_O(BINARY_SUBSCR, QuickeningTypes.OBJECT, QuickeningTypes.OBJECT),
+    BINARY_SUBSCR_SEQ_I_O(BINARY_SUBSCR, QuickeningTypes.INT, QuickeningTypes.OBJECT),
+    // TODO BINARY_SUBSCR_SEQ_I_I, I_D
     POP_AND_JUMP_IF_FALSE_O(POP_AND_JUMP_IF_FALSE, QuickeningTypes.OBJECT, 0),
     POP_AND_JUMP_IF_FALSE_B(POP_AND_JUMP_IF_FALSE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_FALSE_O),
     POP_AND_JUMP_IF_TRUE_O(POP_AND_JUMP_IF_TRUE, QuickeningTypes.OBJECT, 0),
