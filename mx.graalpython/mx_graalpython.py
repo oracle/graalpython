@@ -2044,6 +2044,13 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
     def newestOutput(self):
         return None
 
+    def needsBuild(self, newestInput):
+        if self.args.force:
+            return True, 'forced build'
+        if not os.path.exists(self.subject.get_output_root()):
+            return True, 'inexisting output dir'
+        return False, 'unimplemented'
+
     def clean(self, forBuild=False):
         if forBuild == "reallyForBuild":
             try:
@@ -2093,8 +2100,12 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         result = 0
         if not forBuild:
             try:
-                shutil.rmtree(self._dev_headers_dir())
-            except BaseException:
+                mx.logv('Cleaning {0}...'.format(self._dev_headers_dir()))
+                shutil.rmtree(self._dev_headers_dir(), ignore_errors=True)
+                mx.logv('Cleaning {0}...'.format(self.subject.get_output_root()))
+                shutil.rmtree(self.subject.get_output_root(), ignore_errors=True)
+            except BaseException as e:
+                mx.logv('Error while cleaning: {0}'.format(e))
                 result = 1
         return max(result, super().clean(forBuild=forBuild))
 
