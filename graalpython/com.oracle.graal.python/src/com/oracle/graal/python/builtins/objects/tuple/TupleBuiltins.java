@@ -177,7 +177,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
-                Object object = getItemNode.execute(frame, tupleStore, i);
+                Object object = getItemNode.execute(tupleStore, i);
                 if (eqNode.execute(frame, value, object)) {
                     count++;
                 }
@@ -230,12 +230,12 @@ public class TupleBuiltins extends PythonBuiltins {
                 TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
                 appendStringNode.execute(buf, T_LPAREN);
                 for (int i = 0; i < len - 1; i++) {
-                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
+                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(tupleStore, i), reprNode));
                     appendStringNode.execute(buf, T_COMMA_SPACE);
                 }
 
                 if (len > 0) {
-                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
+                    appendStringNode.execute(buf, toString(frame, getItemNode.execute(tupleStore, len - 1), reprNode));
                 }
 
                 if (len == 1) {
@@ -258,9 +258,9 @@ public class TupleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
-        @Specialization(guards = {"index >= 0", "index < tuple.getSequenceStorage().length()"})
+        @Specialization
         static Object doInBounds(PTuple tuple, int index,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(tuple.getSequenceStorage(), index);
         }
 
@@ -523,7 +523,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long multiplier = 0xf4243;
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
-                Object item = getItemNode.execute(frame, tupleStore, i);
+                Object item = getItemNode.execute(tupleStore, i);
                 long tmp = hashNode.execute(frame, item);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;

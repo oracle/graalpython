@@ -400,7 +400,7 @@ public abstract class SequenceStorageNodes {
             return intIdx;
         }
 
-        protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, int idx, SequenceStorage store) {
+        protected final int normalizeIndex(int idx, SequenceStorage store) {
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(idx, getStoreLength(store));
             }
@@ -450,17 +450,17 @@ public abstract class SequenceStorageNodes {
 
         public abstract Object execute(VirtualFrame frame, SequenceStorage s, Object key);
 
-        public abstract Object execute(VirtualFrame frame, SequenceStorage s, int key);
+        public final Object execute(SequenceStorage s, int key) {
+            return doScalarInt(s, key);
+        }
 
-        public abstract Object execute(VirtualFrame frame, SequenceStorage s, long key);
-
-        public abstract int executeInt(VirtualFrame frame, SequenceStorage s, int key);
-
-        public abstract long executeLong(VirtualFrame frame, SequenceStorage s, long key);
+        public final int executeInt(SequenceStorage s, int key) {
+            return getGetItemScalarNode().executeInt(s, normalizeIndex(key, s));
+        }
 
         @Specialization
-        protected Object doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
+        protected Object doScalarInt(SequenceStorage storage, int idx) {
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization
@@ -987,10 +987,10 @@ public abstract class SequenceStorageNodes {
         public abstract SequenceStorage executeLong(VirtualFrame frame, SequenceStorage s, long key, Object value);
 
         @Specialization
-        protected SequenceStorage doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx, Object value,
+        protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
-            int normalized = normalizeIndex(frame, idx, storage);
+            int normalized = normalizeIndex(idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -3258,8 +3258,8 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(VirtualFrame frame, SequenceStorage s, long index);
 
         @Specialization
-        protected void doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx) {
-            getDeleteItemNode().execute(storage, normalizeIndex(frame, idx, storage));
+        protected void doScalarInt(SequenceStorage storage, int idx) {
+            getDeleteItemNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization

@@ -1953,7 +1953,7 @@ public abstract class TypeNodes {
 
                 for (int i = 0; i < slotlen; i++) {
                     TruffleString slotName;
-                    Object element = getSlotItemNode().execute(frame, slotsStorage, i);
+                    Object element = getSlotItemNode().execute(slotsStorage, i);
                     // Check valid slot name
                     if (element instanceof TruffleString) {
                         slotName = (TruffleString) element;
@@ -2243,7 +2243,7 @@ public abstract class TypeNodes {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
                 // types
-                TruffleString slotName = (TruffleString) getSlotItemNode().execute(null, slotList, i);
+                TruffleString slotName = (TruffleString) getSlotItemNode().execute(slotList, i);
                 if ((add_dict && T___DICT__.equalsUncached(slotName, TS_ENCODING)) || (add_weak && T___WEAKREF__.equalsUncached(slotName, TS_ENCODING))) {
                     continue;
                 }

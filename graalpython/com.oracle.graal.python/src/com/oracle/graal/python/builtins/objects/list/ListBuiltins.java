@@ -189,7 +189,7 @@ public class ListBuiltins extends PythonBuiltins {
                     } else {
                         appendStringNode.execute(buf, T_COMMA_SPACE);
                     }
-                    Object value = getItem.execute(frame, storage, index);
+                    Object value = getItem.execute(storage, index);
                     appendStringNode.execute(buf, reprNode.execute(frame, value));
                 }
                 appendStringNode.execute(buf, T_RBRACKET);
@@ -342,9 +342,9 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"index >= 0", "index < self.getSequenceStorage().length()"})
+        @Specialization
         protected Object doInBounds(PList self, int index,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(self.getSequenceStorage(), index);
         }
 
@@ -615,7 +615,7 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage listStore = list.getSequenceStorage();
             int len = lenNode.execute(listStore);
             for (int i = 0; i < len; i++) {
-                Object object = getItemNode.execute(frame, listStore, i);
+                Object object = getItemNode.execute(listStore, i);
                 if (eqNode.execute(frame, object, value)) {
                     deleteNode.execute(frame, listStore, i);
                     return PNone.NONE;
@@ -636,7 +636,7 @@ public class ListBuiltins extends PythonBuiltins {
         public Object popLast(VirtualFrame frame, PList list, @SuppressWarnings("unused") PNone none,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
             SequenceStorage store = list.getSequenceStorage();
-            Object ret = getGetItemNode().execute(frame, store, -1);
+            Object ret = getGetItemNode().execute(store, -1);
             deleteNode.execute(frame, store, -1);
             return ret;
         }
@@ -832,7 +832,7 @@ public class ListBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
-                Object object = getItemNode.execute(frame, s, i);
+                Object object = getItemNode.execute(s, i);
                 if (eqNode.execute(frame, value, object)) {
                     count++;
                 }

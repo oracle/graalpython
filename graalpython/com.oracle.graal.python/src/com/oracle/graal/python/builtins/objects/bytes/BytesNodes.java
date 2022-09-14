@@ -430,7 +430,7 @@ public abstract class BytesNodes {
             int len = getLenNode().execute(storage);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
-                Object item = getGetItemNode().execute(frame, storage, i);
+                Object item = getGetItemNode().execute(storage, i);
                 bytes[i] = getCastToByteNode().execute(frame, item);
             }
             return bytes;
@@ -524,15 +524,15 @@ public abstract class BytesNodes {
         public abstract int execute(VirtualFrame frame, PBytesLike left, PBytesLike right);
 
         @Specialization
-        static int cmp(VirtualFrame frame, PBytesLike left, PBytesLike right,
+        static int cmp(PBytesLike left, PBytesLike right,
                         @Cached SequenceStorageNodes.GetItemNode getLeftItemNode,
                         @Cached SequenceStorageNodes.GetItemNode getRightItemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             int llen = lenNode.execute(left.getSequenceStorage());
             int rlen = lenNode.execute(right.getSequenceStorage());
             for (int i = 0; i < Math.min(llen, rlen); i++) {
-                int a = getLeftItemNode.executeInt(frame, left.getSequenceStorage(), i);
-                int b = getRightItemNode.executeInt(frame, right.getSequenceStorage(), i);
+                int a = getLeftItemNode.executeInt(left.getSequenceStorage(), i);
+                int b = getRightItemNode.executeInt(right.getSequenceStorage(), i);
                 if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
                     return (a & 0xFF) - (b & 0xFF);

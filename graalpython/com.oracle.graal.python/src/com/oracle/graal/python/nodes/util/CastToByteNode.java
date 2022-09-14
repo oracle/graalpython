@@ -145,11 +145,11 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization
-    protected byte doBytes(VirtualFrame frame, PBytesLike value,
+    protected byte doBytes(PBytesLike value,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode) {
         // Workaround GR-26346
         if (coerce) {
-            return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
+            return doIntOvf(getItemNode.executeInt(value.getSequenceStorage(), 0));
         } else {
             return doError(value);
         }

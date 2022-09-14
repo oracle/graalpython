@@ -158,7 +158,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
     abstract static class PyTupleGetItem extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doPTuple(VirtualFrame frame, PTuple tuple, long key,
+        Object doPTuple(PTuple tuple, long key,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
@@ -166,7 +166,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
             if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
                 throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
-            return getItemNode.execute(frame, sequenceStorage, key);
+            return getItemNode.execute(sequenceStorage, (int) key);
         }
 
         @Fallback

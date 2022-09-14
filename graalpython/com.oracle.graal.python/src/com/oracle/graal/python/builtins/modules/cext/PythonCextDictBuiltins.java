@@ -672,7 +672,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                 int size = lenNode.execute(keysStorage);
                 loopProfile.profileCounted(size);
                 for (int i = 0; loopProfile.inject(i < size); i++) {
-                    Object key = getKeyNode.execute(frame, keysStorage, i);
+                    Object key = getKeyNode.execute(keysStorage, i);
                     if (!libA.hasKey(aStorage, key)) {
                         noKeyProfile.enter();
                         Object value = getValueNode.execute(frame, b, key);

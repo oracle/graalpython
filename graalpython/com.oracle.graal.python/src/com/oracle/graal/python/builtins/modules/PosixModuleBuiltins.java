@@ -1505,8 +1505,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw timesTupleError();
             }
             long[] timespec = new long[4];
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 0), timespec, 0);
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 1), timespec, 2);
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 1), timespec, 2);
             return timespec;
         }
     }
@@ -2350,8 +2350,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
-            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 0));
-            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 1));
+            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(storage, 0));
+            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(storage, 1));
         }
     }
 

@@ -127,7 +127,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
         } else {
             for (int i = 0; i < slots.length; i++) {
-                Object value = getItemNode.execute(frame, sequenceStorage, i);
+                Object value = getItemNode.execute(sequenceStorage, i);
                 slots[i].executeObject(frame, value);
             }
         }
@@ -215,7 +215,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
                 writeSlots(frame, storage, getItemNode, slots, starredIndex);
                 final int starredLength = cachedLength - (slots.length - 1);
                 CompilerAsserts.partialEvaluationConstant(starredLength);
-                Object[] array = consumeStarredItems(frame, storage, starredLength, getItemNode, starredIndex);
+                Object[] array = consumeStarredItems(storage, starredLength, getItemNode, starredIndex);
                 assert starredLength == array.length;
                 slots[starredIndex].executeObject(frame, factory().createList(array));
                 performAssignmentsAfterStar(frame, storage, starredIndex + starredLength, getItemNode, slots, starredIndex);
@@ -237,11 +237,11 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
                 Object[] array = new Object[starredLength];
                 int pos = starredIndex;
                 for (int i = 0; i < starredLength; i++) {
-                    array[i] = getItemNode.execute(frame, storage, pos++);
+                    array[i] = getItemNode.execute(storage, pos++);
                 }
                 slots[starredIndex].executeObject(frame, factory().createList(array));
                 for (int i = starredIndex + 1; i < slots.length; i++) {
-                    Object value = getItemNode.execute(frame, storage, pos++);
+                    Object value = getItemNode.execute(storage, pos++);
                     slots[i].executeObject(frame, value);
                 }
             }
@@ -250,17 +250,17 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         @ExplodeLoop
         private static void writeSlots(VirtualFrame frame, SequenceStorage storage, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
             for (int i = 0; i < starredIndex; i++) {
-                Object value = getItemNode.execute(frame, storage, i);
+                Object value = getItemNode.execute(storage, i);
                 slots[i].executeObject(frame, value);
             }
         }
 
         @ExplodeLoop
-        private static Object[] consumeStarredItems(VirtualFrame frame, SequenceStorage sequenceStorage, int starredLength, SequenceStorageNodes.GetItemNode getItemNode, int starredIndex) {
+        private static Object[] consumeStarredItems(SequenceStorage sequenceStorage, int starredLength, SequenceStorageNodes.GetItemNode getItemNode, int starredIndex) {
             Object[] array = new Object[starredLength];
             CompilerAsserts.partialEvaluationConstant(starredLength);
             for (int i = 0; i < starredLength; i++) {
-                array[i] = getItemNode.execute(frame, sequenceStorage, starredIndex + i);
+                array[i] = getItemNode.execute(sequenceStorage, starredIndex + i);
             }
             return array;
         }
@@ -269,7 +269,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         private static void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots,
                         int starredIndex) {
             for (int i = starredIndex + 1, pos = startPos; i < slots.length; i++, pos++) {
-                Object value = getItemNode.execute(frame, sequenceStorage, pos);
+                Object value = getItemNode.execute(sequenceStorage, pos);
                 slots[i].executeObject(frame, value);
             }
         }

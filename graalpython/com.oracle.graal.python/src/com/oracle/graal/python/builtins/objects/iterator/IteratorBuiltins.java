@@ -235,13 +235,13 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        Object next(VirtualFrame frame, PSequenceIterator self,
+        Object next(PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = getStorage.execute(self.getPSequence());
             if (self.getIndex() < lenNode.execute(s)) {
-                return getItemNode.execute(frame, s, self.index++);
+                return getItemNode.execute(s, self.index++);
             }
             return stopIteration(self);
         }

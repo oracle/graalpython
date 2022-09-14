@@ -1851,7 +1851,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public long ord(VirtualFrame frame, PBytesLike chr,
+        public long ord(PBytesLike chr,
                         @Cached CastToJavaLongExactNode castNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -1859,7 +1859,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (len != 1) {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
-            return castNode.execute(getItemNode.execute(frame, chr.getSequenceStorage(), 0));
+            return castNode.execute(getItemNode.execute(chr.getSequenceStorage(), 0));
         }
 
         @Specialization(guards = {"!isString(obj)", "!isBytes(obj)"})

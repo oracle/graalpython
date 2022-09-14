@@ -469,7 +469,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
             self.checkCanResize(this);
             SequenceStorage store = self.getSequenceStorage();
-            Object ret = getItemNode.execute(frame, store, -1);
+            Object ret = getItemNode.execute(store, -1);
             deleteNode.execute(frame, store, -1);
             return ret;
         }
