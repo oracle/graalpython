@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -126,3 +126,13 @@ class TestSubprocess(unittest.TestCase):
         finally:
             p.kill()
             p.wait()
+
+    def test_java_asserts(self):
+        import sys
+        if sys.implementation.name == "graalpy":
+            import subprocess, __graalpython__
+            if __graalpython__.java_assert():
+                result = subprocess.run([sys.executable, "-c", "import __graalpython__; __graalpython__.java_assert()"])
+            else:
+                result = subprocess.run([sys.executable, "-c", "import __graalpython__; not __graalpython__.java_assert()"])
+            assert result.returncode == 0

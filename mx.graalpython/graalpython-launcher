@@ -1,4 +1,4 @@
 DISABLE_INSTALLABLES=true
 DYNAMIC_IMPORTS=/vm,/substratevm
-NATIVE_IMAGES=graalpy
+NATIVE_IMAGES=lib:pythonvm
 NO_LICENSES=true

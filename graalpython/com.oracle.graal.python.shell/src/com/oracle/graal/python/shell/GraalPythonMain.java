@@ -331,6 +331,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
+        if (!ImageInfo.inImageCode()) {
+            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.equals("-ea")) {
+                    addRelaunchArg("--vm.ea");
+                    break;
+                }
+            }
+        }
+
         // According to CPython if no arguments are given, they contain an empty string.
         if (programArgs.isEmpty()) {
             programArgs.add("");
