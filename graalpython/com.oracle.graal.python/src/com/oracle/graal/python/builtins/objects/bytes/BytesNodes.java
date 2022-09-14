@@ -531,8 +531,8 @@ public abstract class BytesNodes {
             int llen = lenNode.execute(left.getSequenceStorage());
             int rlen = lenNode.execute(right.getSequenceStorage());
             for (int i = 0; i < Math.min(llen, rlen); i++) {
-                int a = getLeftItemNode.executeInt(left.getSequenceStorage(), i);
-                int b = getRightItemNode.executeInt(right.getSequenceStorage(), i);
+                int a = getLeftItemNode.executeKnownInt(left.getSequenceStorage(), i);
+                int b = getRightItemNode.executeKnownInt(right.getSequenceStorage(), i);
                 if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
                     return (a & 0xFF) - (b & 0xFF);

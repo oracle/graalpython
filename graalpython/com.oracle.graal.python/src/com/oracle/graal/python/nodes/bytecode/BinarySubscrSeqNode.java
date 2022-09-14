@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public class BinarySubscrSeqNode extends Node {
     @Child SequenceNodes.GetSequenceStorageNode getSequenceStorageNode = SequenceNodes.GetSequenceStorageNode.create();
@@ -52,6 +53,14 @@ public class BinarySubscrSeqNode extends Node {
 
     public final Object execute(Object sequence, int index) {
         return getItemNode.execute(getSequenceStorageNode.execute(sequence), index);
+    }
+
+    public final int executeInt(Object sequence, int index) throws UnexpectedResultException {
+        return getItemNode.executeInt(getSequenceStorageNode.execute(sequence), index);
+    }
+
+    public final double executeDouble(Object sequence, int index) throws UnexpectedResultException {
+        return getItemNode.executeDouble(getSequenceStorageNode.execute(sequence), index);
     }
 
     public static BinarySubscrSeqNode create() {

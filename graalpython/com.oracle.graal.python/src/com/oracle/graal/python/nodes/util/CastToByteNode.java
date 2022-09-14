@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -149,7 +149,7 @@ public abstract class CastToByteNode extends Node {
                     @Cached SequenceStorageNodes.GetItemNode getItemNode) {
         // Workaround GR-26346
         if (coerce) {
-            return doIntOvf(getItemNode.executeInt(value.getSequenceStorage(), 0));
+            return doIntOvf(getItemNode.executeKnownInt(value.getSequenceStorage(), 0));
         } else {
             return doError(value);
         }

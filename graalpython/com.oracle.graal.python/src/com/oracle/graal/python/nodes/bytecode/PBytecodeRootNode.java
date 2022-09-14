@@ -1673,8 +1673,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.BINARY_SUBSCR: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
                         stackTop = bytecodeBinarySubscrAdaptive(virtualFrame, stackTop, bci, localNodes, bciSlot);
+                        break;
+                    }
+                    case OpCodesConstants.BINARY_SUBSCR_SEQ_I_I: {
+                        stackTop = bytecodeBinarySubscrSeqII(virtualFrame, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.BINARY_SUBSCR_SEQ_I_D: {
+                        stackTop = bytecodeBinarySubscrSeqID(virtualFrame, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.BINARY_SUBSCR_SEQ_I_O: {
@@ -2580,7 +2587,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (virtualFrame.isInt(stackTop) && BinarySubscrSeqNode.accepts(virtualFrame.getObject(stackTop - 1))) {
             bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_O;
-            return bytecodeBinarySubscrSeqIO(virtualFrame, stackTop, bci, localNodes);
+            stackTop = bytecodeBinarySubscrSeqIO(virtualFrame, stackTop, bci, localNodes);
+            if (outputCanQuicken[bci] != 0) {
+                Object result = virtualFrame.getObject(stackTop);
+                if (result instanceof Integer && (outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
+                    bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_I;
+                    virtualFrame.setInt(stackTop, (Integer) result);
+                } else if (result instanceof Double && (outputCanQuicken[bci] & QuickeningTypes.DOUBLE) != 0) {
+                    bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_D;
+                    virtualFrame.setDouble(stackTop, (Double) result);
+                }
+            }
+            return stackTop;
         }
         if (!virtualFrame.isObject(stackTop)) {
             generalizeInputs(bci);
@@ -2619,6 +2637,52 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop, node.execute(sequence, index));
         return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeBinarySubscrSeqII(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        if (!virtualFrame.isInt(stackTop)) {
+            return generalizeBinarySubscr(virtualFrame, stackTop, bci, localNodes);
+        }
+        int index = virtualFrame.getInt(stackTop);
+        Object sequence = virtualFrame.getObject(stackTop - 1);
+        if (!BinarySubscrSeqNode.accepts(sequence)) {
+            return generalizeBinarySubscr(virtualFrame, stackTop, bci, localNodes);
+        }
+        BinarySubscrSeqNode node = insertChildNode(localNodes, bci, BinarySubscrSeqNode.class, NODE_BINARY_SUBSCR_SEQ);
+        virtualFrame.setObject(stackTop--, null);
+        try {
+            virtualFrame.setInt(stackTop, node.executeInt(sequence, index));
+        } catch (UnexpectedResultException e) {
+            generalizeBinarySubscrSeq(virtualFrame, stackTop, bci, e);
+        }
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeBinarySubscrSeqID(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        if (!virtualFrame.isInt(stackTop)) {
+            return generalizeBinarySubscr(virtualFrame, stackTop, bci, localNodes);
+        }
+        int index = virtualFrame.getInt(stackTop);
+        Object sequence = virtualFrame.getObject(stackTop - 1);
+        if (!BinarySubscrSeqNode.accepts(sequence)) {
+            return generalizeBinarySubscr(virtualFrame, stackTop, bci, localNodes);
+        }
+        BinarySubscrSeqNode node = insertChildNode(localNodes, bci, BinarySubscrSeqNode.class, NODE_BINARY_SUBSCR_SEQ);
+        virtualFrame.setObject(stackTop--, null);
+        try {
+            virtualFrame.setDouble(stackTop, node.executeDouble(sequence, index));
+        } catch (UnexpectedResultException e) {
+            generalizeBinarySubscrSeq(virtualFrame, stackTop, bci, e);
+        }
+        return stackTop;
+    }
+
+    private void generalizeBinarySubscrSeq(VirtualFrame virtualFrame, int stackTop, int bci, UnexpectedResultException e) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        virtualFrame.setObject(stackTop, e.getResult());
+        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_O;
     }
 
     private int generalizeBinarySubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
