@@ -206,7 +206,7 @@ class AsvJsonRule(mx_benchmark.Rule):
                 param_combinations = itertools.product(*result[param_idx])
                 for run_idx, params in enumerate(param_combinations):
                     value = result[peak_idx][run_idx]
-                    if math.isnan(value):
+                    if not value or math.isnan(value):
                         continue
                     r.append(
                         {
