@@ -1036,11 +1036,15 @@ public final class PythonContext extends Python3Core {
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData(isChildContext() ? childContextData.parentCtx : this);
-
-        Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
+        Builder builder = data.parentCtx.env.newInnerContextBuilder().//
+                        forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
+                        inheritAllAccess(true).//
+                        initializeCreatorContext(true).//
+                        // TODO always force java posix in spawned: test_multiprocessing_spawn fails
+                        // with that. Gives "OSError: [Errno 9] Bad file number"
+                        // option("python.PosixModuleBackend", "java").//
+                        config(PythonContext.CHILD_CONTEXT_DATA, data);
         Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
-
-        // TODO always force java posix in spawned
         long tid = thread.getId();
         getSharedMultiprocessingData().putChildContextThread(tid, thread);
         getSharedMultiprocessingData().putChildContextData(tid, data);
@@ -1066,6 +1070,11 @@ public final class PythonContext extends Python3Core {
     }
 
     private static class ChildContextThread implements Runnable {
+        private static final TruffleLogger MULTIPROCESSING_LOGGER = PythonLanguage.getLogger(ChildContextThread.class);
+        private static final Source MULTIPROCESSING_SOURCE = Source.newBuilder(PythonLanguage.ID,
+                        "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
+                        "<spawned-child-context>").internal(true).build();
+
         private final int fd;
         private final ChildContextData data;
         private final Builder builder;
@@ -1081,18 +1090,14 @@ public final class PythonContext extends Python3Core {
         @Override
         public void run() {
             try {
-                LOGGER.fine("starting spawned child context");
-                Source source = Source.newBuilder(PythonLanguage.ID,
-                                "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
-                                "<spawned-child-context>").internal(true).build();
-                CallTarget ct;
+                MULTIPROCESSING_LOGGER.fine("starting spawned child context");
                 TruffleContext ctx = builder.build();
                 data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
-                ct = PythonContext.get(null).getEnv().parsePublic(source);
+                CallTarget ct = PythonContext.get(null).getEnv().parsePublic(MULTIPROCESSING_SOURCE, "fd", "sentinel");
                 try {
                     data.running.countDown();
-                    Object res = ct.call();
+                    Object res = ct.call(fd, sentinel);
                     int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
                     data.setExitCode(exitCode);
                 } finally {
@@ -1100,9 +1105,9 @@ public final class PythonContext extends Python3Core {
                     if (data.compareAndSetExiting(false, true)) {
                         try {
                             ctx.close();
-                            LOGGER.log(Level.FINE, "closed spawned child context");
+                            MULTIPROCESSING_LOGGER.log(Level.FINE, "closed spawned child context");
                         } catch (Throwable t) {
-                            LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
+                            MULTIPROCESSING_LOGGER.log(Level.FINE, "exception while closing spawned child context", t);
                         }
                     }
                     data.parentCtx.sharedMultiprocessingData.closePipe(sentinel);

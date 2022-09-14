@@ -144,8 +144,7 @@ def spawn_truffleprocess(fd, parent_sentinel):
         self = reduction.pickle.load(bytesIO)
     finally:
         del process.current_process()._inheriting
-    exitcode = self._bootstrap(parent_sentinel)    
-    sys.exit(exitcode)
+    return self._bootstrap(parent_sentinel)
 # End Truffle change
 
 def _check_not_importing_main():
