@@ -316,7 +316,9 @@ class PyPyVm(mx_benchmark.Vm):
         return join(home, "bin", "pypy3")
 
     def run(self, cwd, args):
-        return mx.run([self.interpreter()] + args, cwd=cwd)
+        env = os.environ.copy()
+        env["PYPY_GC_MAX"] = "8GB"
+        return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
 
 
 class Python3Vm(mx_benchmark.Vm):
@@ -409,7 +411,7 @@ class PyPerformanceSuite(
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH",
+                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX",
                 "-m",
                 "-o",
                 json_file,
@@ -620,7 +622,7 @@ def register_python_benchmarks():
     python_vm_registry.add_vm(PyPyVm())
     python_vm_registry.add_vm(Python3Vm())
     for config_name, options, priority in [
-        ("launcher", [], 5),
+        ("launcher", ["--vm.Xmx8G"], 5),
     ]:
         python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
