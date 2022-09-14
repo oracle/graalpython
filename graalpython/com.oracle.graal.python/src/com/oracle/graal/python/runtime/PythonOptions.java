@@ -313,6 +313,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Enables using bytecode interpreter instead of legacy AST interpreter.") //
     public static final OptionKey<Boolean> EnableBytecodeInterpreter = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, help = "Makes bytecode instrumentation node materialization eager instead of lazy.") //
+    public static final OptionKey<Boolean> EagerlyMaterializeInstrumentationNodes = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

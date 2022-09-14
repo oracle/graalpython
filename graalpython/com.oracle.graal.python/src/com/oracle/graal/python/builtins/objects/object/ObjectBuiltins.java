@@ -404,9 +404,10 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         // Shortcut, only useful for interpreter performance, but doesn't hurt peak
-        @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
+        @Specialization(guards = {"keyObj == cachedKey", "cachedKeyLen < 32"}, limit = "1")
         protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
+                        @SuppressWarnings("unused") @Cached("tsLen(cachedKey)") int cachedKeyLen,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             Object type = getClassNode.execute(object);

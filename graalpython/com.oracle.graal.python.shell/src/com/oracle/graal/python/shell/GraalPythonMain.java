@@ -104,8 +104,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     boolean useASTInterpreter = false;
 
-    private String toolInstrumentWarning = null;
-
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
             GraalPythonMain.startupNanoTime = System.nanoTime();
@@ -201,11 +199,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             useASTInterpreter = true;
                             continue;
                         default:
-                            if (argStartsWith(arg, "--agentscript", "--coverage", "--cpusampler", "--cputracer", "--dap",
-                                            "--heap.", "--heapmonitor", "--insight", "--inspect", "--lsp", "--memtracer", "--sandbox.")) {
-                                useASTInterpreter = true;
-                                toolInstrumentWarning = "WARNING: Switching to AST interpreter due to instruments option " + arg;
-                            } else if (arg.startsWith("--llvm.") ||
+                            if (arg.startsWith("--llvm.") ||
                                             matchesPythonOption(arg, "CoreHome") ||
                                             matchesPythonOption(arg, "StdLibHome") ||
                                             matchesPythonOption(arg, "CAPI") ||
@@ -597,6 +591,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         contextBuilder.option("python.WarnOptions", warnOptions);
+        contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }
@@ -627,10 +622,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PyCachePrefix", "/dev/null");
             contextBuilder.option("python.EnableBytecodeInterpreter", "false");
             contextBuilder.option("python.DisableFrozenModules", "true");
-            if (toolInstrumentWarning != null) {
-                System.out.println(toolInstrumentWarning);
-                toolInstrumentWarning = null;
-            }
         } else {
             contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
             if (cachePrefix != null) {
@@ -688,15 +679,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static boolean matchesPythonOption(String arg, String key) {
         assert !key.startsWith("python.");
         return arg.startsWith("--python." + key) || arg.startsWith("--" + key);
-    }
-
-    private static boolean argStartsWith(String arg, String... tools) {
-        for (String t : tools) {
-            if (arg.startsWith(t)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String getContextOptionIfSetViaCommandLine(String key) {

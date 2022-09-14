@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_BYTE_I                       1                                      can quicken
-000004         2 LOAD_BYTE_I                       1                                      can quicken
-000000         4 BINARY_OP                         0    (ADD)                             generalizes: 2, 0
-000000         6 RETURN_VALUE
+  1:0   -   1:1         0 LOAD_BYTE_I                       1                                      can quicken
+  1:4   -   1:5         2 LOAD_BYTE_I                       1                                      can quicken
+  1:0   -   1:5         4 BINARY_OP                         0    (ADD)                             generalizes: 2, 0
+  1:0   -   1:5         6 RETURN_VALUE

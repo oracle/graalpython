@@ -1,44 +1,44 @@
 Disassembly of <module>:
-000000         0 MAKE_FUNCTION                     0    (foo)
-000000         3 STORE_NAME                        0    (foo)
-000000         5 LOAD_NONE
-000000         6 RETURN_VALUE
+  1:0   -  10:25        0 MAKE_FUNCTION                     0    (foo)
+  1:0   -  10:25        3 STORE_NAME                        0    (foo)
+  1:0   -  10:25        5 LOAD_NONE
+  1:0   -  10:25        6 RETURN_VALUE
 
 Disassembly of foo:
-000027         0 LOAD_FAST                         0    (obj)
-000018         2 GET_ITER
-000018   >>    3 FOR_ITER                          13   (to 16)                           can quicken
-000022         5 STORE_FAST                        1    (x)                               generalizes: 3
-000040         7 LOAD_GLOBAL                       0    (print)
-000046         9 LOAD_FAST                         1    (x)
-000040        11 CALL_FUNCTION                     1
-000040        13 POP_TOP
-000040        14 JUMP_BACKWARD                     11   (to 3)
-000083   >>   16 LOAD_GLOBAL                       0    (print)
-000089        18 LOAD_STRING                       1    ('try')
-000083        20 CALL_FUNCTION                     1
-000083        22 POP_TOP
-000083        23 JUMP_FORWARD                      11   (to 34)
-000083        25 PUSH_EXC_INFO                                                           (exc handler 16 - 25; stack: 0)
-000125        26 LOAD_GLOBAL                       0    (print)
-000131        28 LOAD_STRING                       2    ('finally1')
-000125        30 CALL_FUNCTION                     1
-000125        32 POP_TOP
-000125        33 END_EXC_HANDLER                                                         (exc handler 26 - 33; stack: 1)
-000125   >>   34 LOAD_GLOBAL                       0    (print)
-000131        36 LOAD_STRING                       2    ('finally1')
-000125        38 CALL_FUNCTION                     1
-000125        40 POP_TOP
-000125        41 JUMP_FORWARD                      11   (to 52)
-000125        43 PUSH_EXC_INFO                                                           (exc handler 25 - 26; stack: 0 | exc handler 33 - 43; stack: 0)
-000164        44 LOAD_GLOBAL                       0    (print)
-000170        46 LOAD_STRING                       3    ('finally2')
-000164        48 CALL_FUNCTION                     1
-000164        50 POP_TOP
-000164        51 END_EXC_HANDLER                                                         (exc handler 44 - 51; stack: 1)
-000164   >>   52 LOAD_GLOBAL                       0    (print)
-000170        54 LOAD_STRING                       3    ('finally2')
-000164        56 CALL_FUNCTION                     1
-000164        58 POP_TOP
-000164        59 LOAD_NONE
-000164        60 RETURN_VALUE
+  2:13  -   2:16        0 LOAD_FAST                         0    (obj)
+  2:4   -   3:16        2 GET_ITER
+  2:4   -   3:16  >>    3 FOR_ITER                          13   (to 16)                           can quicken
+  2:8   -   2:9         5 STORE_FAST                        1    (x)                               generalizes: 3
+  3:8   -   3:13        7 LOAD_GLOBAL                       0    (print)
+  3:14  -   3:15        9 LOAD_FAST                         1    (x)
+  3:8   -   3:16       11 CALL_FUNCTION                     1
+  3:8   -   3:16       13 POP_TOP
+  3:8   -   3:16       14 JUMP_BACKWARD                     11   (to 3)
+  6:12  -   6:17  >>   16 LOAD_GLOBAL                       0    (print)
+  6:18  -   6:23       18 LOAD_STRING                       1    ('try')
+  6:12  -   6:24       20 CALL_FUNCTION                     1
+  6:12  -   6:24       22 POP_TOP
+  6:12  -   6:24       23 JUMP_FORWARD                      11   (to 34)
+  6:12  -   6:24       25 PUSH_EXC_INFO                                                           (exc handler 16 - 25; stack: 0)
+  8:12  -   8:17       26 LOAD_GLOBAL                       0    (print)
+  8:18  -   8:28       28 LOAD_STRING                       2    ('finally1')
+  8:12  -   8:29       30 CALL_FUNCTION                     1
+  8:12  -   8:29       32 POP_TOP
+  8:12  -   8:29       33 END_EXC_HANDLER                                                         (exc handler 26 - 33; stack: 1)
+  8:12  -   8:17  >>   34 LOAD_GLOBAL                       0    (print)
+  8:18  -   8:28       36 LOAD_STRING                       2    ('finally1')
+  8:12  -   8:29       38 CALL_FUNCTION                     1
+  8:12  -   8:29       40 POP_TOP
+  8:12  -   8:29       41 JUMP_FORWARD                      11   (to 52)
+  8:12  -   8:29       43 PUSH_EXC_INFO                                                           (exc handler 25 - 26; stack: 0 | exc handler 33 - 43; stack: 0)
+ 10:8   -  10:13       44 LOAD_GLOBAL                       0    (print)
+ 10:14  -  10:24       46 LOAD_STRING                       3    ('finally2')
+ 10:8   -  10:25       48 CALL_FUNCTION                     1
+ 10:8   -  10:25       50 POP_TOP
+ 10:8   -  10:25       51 END_EXC_HANDLER                                                         (exc handler 44 - 51; stack: 1)
+ 10:8   -  10:13  >>   52 LOAD_GLOBAL                       0    (print)
+ 10:14  -  10:24       54 LOAD_STRING                       3    ('finally2')
+ 10:8   -  10:25       56 CALL_FUNCTION                     1
+ 10:8   -  10:25       58 POP_TOP
+ 10:8   -  10:25       59 LOAD_NONE
+ 10:8   -  10:25       60 RETURN_VALUE

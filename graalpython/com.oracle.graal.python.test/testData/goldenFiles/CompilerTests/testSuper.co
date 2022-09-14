@@ -1,57 +1,57 @@
 Disassembly of <module>:
-000000         0 LOAD_BUILD_CLASS
-000000         1 MAKE_FUNCTION                     0    (Foo)
-000000         4 LOAD_STRING                       0    ('Foo')
-000000         6 COLLECTION_FROM_STACK             2    (Object[])
-000000         8 CALL_FUNCTION_VARARGS
-000000         9 STORE_NAME                        0    (Foo)
-000051        11 LOAD_BUILD_CLASS
-000051        12 MAKE_FUNCTION                     0    (Bar)
-000051        15 LOAD_STRING                       2    ('Bar')
-000061        17 LOAD_NAME                         0    (Foo)
-000051        19 COLLECTION_FROM_STACK             3    (Object[])
-000051        21 CALL_FUNCTION_VARARGS
-000051        22 STORE_NAME                        1    (Bar)
-000051        24 LOAD_NONE
-000051        25 RETURN_VALUE
+  1:0   -   3:20        0 LOAD_BUILD_CLASS
+  1:0   -   3:20        1 MAKE_FUNCTION                     0    (Foo)
+  1:0   -   3:20        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   3:20        6 COLLECTION_FROM_STACK             2    (Object[])
+  1:0   -   3:20        8 CALL_FUNCTION_VARARGS
+  1:0   -   3:20        9 STORE_NAME                        0    (Foo)
+  4:0   -   6:21       11 LOAD_BUILD_CLASS
+  4:0   -   6:21       12 MAKE_FUNCTION                     0    (Bar)
+  4:0   -   6:21       15 LOAD_STRING                       2    ('Bar')
+  4:10  -   4:13       17 LOAD_NAME                         0    (Foo)
+  4:0   -   6:21       19 COLLECTION_FROM_STACK             3    (Object[])
+  4:0   -   6:21       21 CALL_FUNCTION_VARARGS
+  4:0   -   6:21       22 STORE_NAME                        1    (Bar)
+  4:0   -   6:21       24 LOAD_NONE
+  4:0   -   6:21       25 RETURN_VALUE
 
 Disassembly of Foo:
-000000         0 LOAD_NAME                         0    (__name__)
-000000         2 STORE_NAME                        1    (__module__)
-000000         4 LOAD_STRING                       0    ('Foo')
-000000         6 STORE_NAME                        2    (__qualname__)
-000015         8 MAKE_FUNCTION                     0    (Foo.boo)
-000015        11 STORE_NAME                        3    (boo)
-000015        13 LOAD_NONE
-000015        14 RETURN_VALUE
+  1:0   -   3:20        0 LOAD_NAME                         0    (__name__)
+  1:0   -   3:20        2 STORE_NAME                        1    (__module__)
+  1:0   -   3:20        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   3:20        6 STORE_NAME                        2    (__qualname__)
+  2:4   -   3:20        8 MAKE_FUNCTION                     0    (Foo.boo)
+  2:4   -   3:20       11 STORE_NAME                        3    (boo)
+  2:4   -   3:20       13 LOAD_NONE
+  2:4   -   3:20       14 RETURN_VALUE
 
 Disassembly of Foo.boo:
-000038         0 LOAD_GLOBAL                       0    (print)
-000044         2 LOAD_STRING                       1    ('boo')
-000038         4 CALL_FUNCTION                     1
-000038         6 POP_TOP
-000038         7 LOAD_NONE
-000038         8 RETURN_VALUE
+  3:8   -   3:13        0 LOAD_GLOBAL                       0    (print)
+  3:14  -   3:19        2 LOAD_STRING                       1    ('boo')
+  3:8   -   3:20        4 CALL_FUNCTION                     1
+  3:8   -   3:20        6 POP_TOP
+  3:8   -   3:20        7 LOAD_NONE
+  3:8   -   3:20        8 RETURN_VALUE
 
 Disassembly of Bar:
-000051         0 LOAD_NAME                         0    (__name__)
-000051         2 STORE_NAME                        1    (__module__)
-000051         4 LOAD_STRING                       0    ('Bar')
-000051         6 STORE_NAME                        2    (__qualname__)
-000071         8 LOAD_CLOSURE                      0    (__class__)
-000071        10 CLOSURE_FROM_STACK                1
-000071        12 MAKE_FUNCTION                     8    (Bar.boo)
-000071        15 STORE_NAME                        3    (boo)
-000071        17 LOAD_CLOSURE                      0    (__class__)
-000071        19 DUP_TOP
-000071        20 STORE_NAME                        4    (__classcell__)
-000071        22 RETURN_VALUE
+  4:0   -   6:21        0 LOAD_NAME                         0    (__name__)
+  4:0   -   6:21        2 STORE_NAME                        1    (__module__)
+  4:0   -   6:21        4 LOAD_STRING                       0    ('Bar')
+  4:0   -   6:21        6 STORE_NAME                        2    (__qualname__)
+  5:4   -   6:21        8 LOAD_CLOSURE                      0    (__class__)
+  5:4   -   6:21       10 CLOSURE_FROM_STACK                1
+  5:4   -   6:21       12 MAKE_FUNCTION                     8    (Bar.boo)
+  5:4   -   6:21       15 STORE_NAME                        3    (boo)
+  5:4   -   6:21       17 LOAD_CLOSURE                      0    (__class__)
+  5:4   -   6:21       19 DUP_TOP
+  5:4   -   6:21       20 STORE_NAME                        4    (__classcell__)
+  5:4   -   6:21       22 RETURN_VALUE
 
 Disassembly of Bar.boo:
-000094         0 LOAD_GLOBAL                       0    (super)
-000094         2 CALL_FUNCTION                     0
-000094         4 LOAD_METHOD                       1    (boo)
-000094         6 CALL_METHOD                       0
-000094         8 POP_TOP
-000094         9 LOAD_NONE
-000094        10 RETURN_VALUE
+  6:8   -   6:13        0 LOAD_GLOBAL                       0    (super)
+  6:8   -   6:15        2 CALL_FUNCTION                     0
+  6:8   -   6:21        4 LOAD_METHOD                       1    (boo)
+  6:8   -   6:21        6 CALL_METHOD                       0
+  6:8   -   6:21        8 POP_TOP
+  6:8   -   6:21        9 LOAD_NONE
+  6:8   -   6:21       10 RETURN_VALUE

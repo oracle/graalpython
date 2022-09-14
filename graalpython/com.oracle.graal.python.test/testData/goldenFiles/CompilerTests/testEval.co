@@ -1,3 +1,3 @@
 Disassembly of <module>:
-000000         0 LOAD_BYTE_O                       1
-000000         2 RETURN_VALUE
+  1:0   -   1:1         0 LOAD_BYTE_O                       1
+  1:0   -   1:1         2 RETURN_VALUE

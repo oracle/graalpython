@@ -1,42 +1,42 @@
 Disassembly of <module>:
-000000         0 LOAD_NAME                         0    (print)
-000006         2 LOAD_BYTE_O                       1
-000009         4 LOAD_BYTE_O                       2
-000012         6 LOAD_BYTE_O                       3
-000015         8 LOAD_BYTE_O                       4
-000018        10 LOAD_BYTE_O                       5
-000021        12 LOAD_BYTE_O                       6
-000024        14 LOAD_BYTE_O                       7
-000027        16 LOAD_BYTE_O                       8
-000030        18 LOAD_BYTE_O                       9
-000033        20 LOAD_BYTE_O                       10
-000037        22 LOAD_BYTE_O                       11
-000041        24 LOAD_BYTE_O                       12
-000045        26 LOAD_BYTE_O                       13
-000049        28 LOAD_BYTE_O                       14
-000053        30 LOAD_BYTE_O                       15
-000057        32 LOAD_BYTE_O                       16
-000061        34 LOAD_BYTE_O                       17
-000065        36 LOAD_BYTE_O                       18
-000069        38 LOAD_BYTE_O                       19
-000073        40 LOAD_BYTE_O                       20
-000077        42 LOAD_BYTE_O                       21
-000081        44 LOAD_BYTE_O                       22
-000085        46 LOAD_BYTE_O                       23
-000089        48 LOAD_BYTE_O                       24
-000093        50 LOAD_BYTE_O                       25
-000097        52 LOAD_BYTE_O                       26
-000101        54 LOAD_BYTE_O                       27
-000105        56 LOAD_BYTE_O                       28
-000109        58 LOAD_BYTE_O                       29
-000113        60 LOAD_BYTE_O                       30
-000117        62 LOAD_BYTE_O                       31
-000000        64 COLLECTION_FROM_STACK             31   (Object[])
-000121        66 LOAD_BYTE_O                       32
-000125        68 LOAD_BYTE_O                       33
-000129        70 LOAD_BYTE_O                       34
-000133        72 LOAD_BYTE_O                       35
-000137        74 LOAD_BYTE_O                       36
-000000        76 COLLECTION_ADD_STACK              5    (Object[])
-000000        78 CALL_FUNCTION_VARARGS
-000000        79 RETURN_VALUE
+  1:0   -   1:5         0 LOAD_NAME                         0    (print)
+  1:6   -   1:7         2 LOAD_BYTE_O                       1
+  1:9   -   1:10        4 LOAD_BYTE_O                       2
+  1:12  -   1:13        6 LOAD_BYTE_O                       3
+  1:15  -   1:16        8 LOAD_BYTE_O                       4
+  1:18  -   1:19       10 LOAD_BYTE_O                       5
+  1:21  -   1:22       12 LOAD_BYTE_O                       6
+  1:24  -   1:25       14 LOAD_BYTE_O                       7
+  1:27  -   1:28       16 LOAD_BYTE_O                       8
+  1:30  -   1:31       18 LOAD_BYTE_O                       9
+  1:33  -   1:35       20 LOAD_BYTE_O                       10
+  1:37  -   1:39       22 LOAD_BYTE_O                       11
+  1:41  -   1:43       24 LOAD_BYTE_O                       12
+  1:45  -   1:47       26 LOAD_BYTE_O                       13
+  1:49  -   1:51       28 LOAD_BYTE_O                       14
+  1:53  -   1:55       30 LOAD_BYTE_O                       15
+  1:57  -   1:59       32 LOAD_BYTE_O                       16
+  1:61  -   1:63       34 LOAD_BYTE_O                       17
+  1:65  -   1:67       36 LOAD_BYTE_O                       18
+  1:69  -   1:71       38 LOAD_BYTE_O                       19
+  1:73  -   1:75       40 LOAD_BYTE_O                       20
+  1:77  -   1:79       42 LOAD_BYTE_O                       21
+  1:81  -   1:83       44 LOAD_BYTE_O                       22
+  1:85  -   1:87       46 LOAD_BYTE_O                       23
+  1:89  -   1:91       48 LOAD_BYTE_O                       24
+  1:93  -   1:95       50 LOAD_BYTE_O                       25
+  1:97  -   1:99       52 LOAD_BYTE_O                       26
+  1:101 -   1:103      54 LOAD_BYTE_O                       27
+  1:105 -   1:107      56 LOAD_BYTE_O                       28
+  1:109 -   1:111      58 LOAD_BYTE_O                       29
+  1:113 -   1:115      60 LOAD_BYTE_O                       30
+  1:117 -   1:119      62 LOAD_BYTE_O                       31
+  1:0   -   1:140      64 COLLECTION_FROM_STACK             31   (Object[])
+  1:121 -   1:123      66 LOAD_BYTE_O                       32
+  1:125 -   1:127      68 LOAD_BYTE_O                       33
+  1:129 -   1:131      70 LOAD_BYTE_O                       34
+  1:133 -   1:135      72 LOAD_BYTE_O                       35
+  1:137 -   1:139      74 LOAD_BYTE_O                       36
+  1:0   -   1:140      76 COLLECTION_ADD_STACK              5    (Object[])
+  1:0   -   1:140      78 CALL_FUNCTION_VARARGS
+  1:0   -   1:140      79 RETURN_VALUE

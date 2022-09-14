@@ -51,6 +51,10 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -70,32 +74,37 @@ public final class CodeUnit {
 
     public final int stacksize;
 
-    public final byte[] code;
-    public final byte[] srcOffsetTable;
+    @CompilationFinal(dimensions = 1) public final byte[] code;
+    @CompilationFinal(dimensions = 1) public final byte[] srcOffsetTable;
     public final int flags;
 
-    public final TruffleString[] names;
-    public final TruffleString[] varnames;
-    public final TruffleString[] cellvars;
-    public final TruffleString[] freevars;
-    public final int[] cell2arg;
-    public final int[] arg2cell;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] names;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] varnames;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] cellvars;
+    @CompilationFinal(dimensions = 1) public final TruffleString[] freevars;
+    @CompilationFinal(dimensions = 1) public final int[] cell2arg;
+    @CompilationFinal(dimensions = 1) public final int[] arg2cell;
 
-    public final Object[] constants;
-    public final long[] primitiveConstants;
+    @CompilationFinal(dimensions = 1) public final Object[] constants;
+    @CompilationFinal(dimensions = 1) public final long[] primitiveConstants;
 
-    public final int[] exceptionHandlerRanges;
+    @CompilationFinal(dimensions = 1) public final int[] exceptionHandlerRanges;
 
     public final int conditionProfileCount;
 
-    public final int startOffset;
     public final int startLine;
+    public final int startColumn;
+    public final int endLine;
+    public final int endColumn;
+
+    /* Lazily initialized source map */
+    @CompilationFinal SourceMap sourceMap;
 
     /* Quickening data. See docs in PBytecodeRootNode */
-    public final byte[] outputCanQuicken;
-    public final byte[] variableShouldUnbox;
-    public final int[][] generalizeInputsMap;
-    public final int[][] generalizeVarsMap;
+    @CompilationFinal(dimensions = 1) public final byte[] outputCanQuicken;
+    @CompilationFinal(dimensions = 1) public final byte[] variableShouldUnbox;
+    @CompilationFinal(dimensions = 1) public final int[][] generalizeInputsMap;
+    @CompilationFinal(dimensions = 1) public final int[][] generalizeVarsMap;
 
     public CodeUnit(TruffleString name, TruffleString qualname,
                     int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int stacksize,
@@ -103,7 +112,7 @@ public final class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg,
                     Object[] constants, long[] primitiveConstants,
                     int[] exceptionHandlerRanges, int conditionProfileCount,
-                    int startOffset, int startLine,
+                    int startLine, int startColumn, int endLine, int endColumn,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
         int[] arg2cell;
         this.name = name;
@@ -135,46 +144,40 @@ public final class CodeUnit {
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.conditionProfileCount = conditionProfileCount;
-        this.startOffset = startOffset;
         this.startLine = startLine;
+        this.startColumn = startColumn;
+        this.endLine = endLine;
+        this.endColumn = endColumn;
         this.outputCanQuicken = outputCanQuicken;
         this.variableShouldUnbox = variableShouldUnbox;
         this.generalizeInputsMap = generalizeInputsMap;
         this.generalizeVarsMap = generalizeVarsMap;
     }
 
-    public int bciToSrcOffset(int bci) {
-        int diffIdx = 0;
-        int currentOffset = startOffset;
-
-        int bytecodeNumber = 0;
-        for (int i = 0; i < code.length;) {
-            OpCodes op = OpCodes.fromOpCode(code[i]);
-            if (bci <= i + op.argLength) {
-                break;
-            } else {
-                i += op.length();
-                bytecodeNumber++;
-            }
+    public SourceMap getSourceMap() {
+        if (sourceMap == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            sourceMap = new SourceMap(code, srcOffsetTable, startLine, startColumn);
         }
+        return sourceMap;
+    }
 
-        for (int i = 0; i < srcOffsetTable.length; i++) {
-            byte diff = srcOffsetTable[i];
-            int overflow = 0;
-            while (diff == (byte) 128) {
-                overflow += 127;
-                diff = srcOffsetTable[++i];
-            }
-            if (diff < 0) {
-                overflow = -overflow;
-            }
-            currentOffset += overflow + diff;
-            if (diffIdx == bytecodeNumber) {
-                break;
-            }
-            diffIdx++;
+    public int bciToLine(int bci) {
+        if (bci < 0 || bci >= code.length) {
+            return -1;
         }
-        return currentOffset;
+        return getSourceMap().startLineMap[bci];
+    }
+
+    public int bciToColumn(int bci) {
+        if (bci < 0 || bci >= code.length) {
+            return -1;
+        }
+        return getSourceMap().startColumnMap[bci];
+    }
+
+    public SourceSection getSourceSection(Source source) {
+        return SourceMap.getSourceSection(source, startLine, startColumn, endLine, endColumn);
     }
 
     public boolean takesVarKeywordArgs() {
@@ -242,14 +245,13 @@ public final class CodeUnit {
 
         int bci = 0;
         int oparg = 0;
+        SourceMap map = getSourceMap();
         while (bci < bytecode.length) {
             int bcBCI = bci;
             OpCodes opcode = OpCodes.fromOpCode(bytecode[bci++]);
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
-
-            int offset = bciToSrcOffset(bcBCI);
-            line[0] = String.format("%06d", offset);
+            line[0] = String.format("%3d:%-3d - %3d:%-3d", map.startLineMap[bcBCI], map.startColumnMap[bcBCI], map.endLineMap[bcBCI], map.endColumnMap[bcBCI]);
             if (line[1] == null) {
                 line[1] = "";
             }
@@ -523,5 +525,37 @@ public final class CodeUnit {
                 return "Object";
         }
         throw new IllegalStateException("Unknown type");
+    }
+
+    @FunctionalInterface
+    public interface BytecodeAction {
+        void run(int bci, OpCodes op, int oparg, byte[] followingArgs);
+    }
+
+    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+        int oparg = 0;
+        for (int bci = 0; bci < bytecode.length;) {
+            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+            if (op == OpCodes.EXTENDED_ARG) {
+                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                oparg <<= 8;
+            } else {
+                byte[] followingArgs = null;
+                if (op.argLength > 0) {
+                    oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+                    if (op.argLength > 1) {
+                        followingArgs = new byte[op.argLength - 1];
+                        System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
+                    }
+                }
+                action.run(bci, op, oparg, followingArgs);
+                oparg = 0;
+            }
+            bci += op.length();
+        }
+    }
+
+    public void iterateBytecode(BytecodeAction action) {
+        iterateBytecode(code, action);
     }
 }

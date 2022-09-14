@@ -1,68 +1,68 @@
 Disassembly of <module>:
-000003         0 LOAD_NAME                         0    (__name__)
-000015         2 LOAD_STRING                       0    ('__main__')
-000003         4 BINARY_OP                         12   (EQ)                              can quicken
-000000         6 POP_AND_JUMP_IF_FALSE             127   (to 133)                          generalizes: 4
-000031        10 LOAD_BYTE_O                       0
-000031        12 LOAD_CONST                        1    ([])
-000031        14 IMPORT_NAME                       1    (sys)
-000031        16 STORE_NAME                        1    (sys)
-000054        18 LOAD_NAME                         2    (len)
-000058        20 LOAD_NAME                         1    (sys)
-000058        22 LOAD_ATTR                         3    (argv)
-000054        24 CALL_FUNCTION                     1
-000071        26 LOAD_BYTE_O                       1
-000054        28 BINARY_OP                         12   (EQ)
-000054        30 JUMP_IF_FALSE_OR_POP              15   (to 45)
-000077        34 LOAD_NAME                         1    (sys)
-000077        36 LOAD_ATTR                         3    (argv)
-000086        38 LOAD_BYTE_O                       0
-000077        40 BINARY_SUBSCR
-000092        41 LOAD_STRING                       2    ('java_embedding_bench')
-000077        43 BINARY_OP                         12   (EQ)                              can quicken
-000049   >>   45 UNARY_OP                          0    (NOT)                             can quicken, generalizes: 43
-000046        47 POP_AND_JUMP_IF_FALSE             86   (to 133)                          generalizes: 45
-000125        51 LOAD_BYTE_O                       0
-000125        53 LOAD_CONST                        1    ([])
-000125        55 IMPORT_NAME                       4    (time)
-000125        57 STORE_NAME                        4    (time)
-000153        59 LOAD_NAME                         4    (time)
-000153        61 LOAD_METHOD                       4    (time)
-000153        63 CALL_METHOD                       0
-000145        65 STORE_NAME                        5    (start)
-000176        67 LOAD_NAME                         2    (len)
-000180        69 LOAD_NAME                         1    (sys)
-000180        71 LOAD_ATTR                         3    (argv)
-000176        73 CALL_FUNCTION                     1
-000193        75 LOAD_BYTE_O                       2
-000176        77 BINARY_OP                         17   (GE)                              can quicken
-000173        79 POP_AND_JUMP_IF_FALSE             26   (to 105)                          generalizes: 77
-000214        83 LOAD_NAME                         6    (int)
-000218        85 LOAD_NAME                         1    (sys)
-000218        87 LOAD_ATTR                         3    (argv)
-000227        89 LOAD_BYTE_O                       1
-000218        91 BINARY_SUBSCR
-000214        92 CALL_FUNCTION                     1
-000208        94 STORE_NAME                        7    (num)
-000243        96 LOAD_NAME                         8    (__benchmark__)
-000257        98 LOAD_NAME                         7    (num)
-000243       100 CALL_FUNCTION                     1
-000243       102 POP_TOP
-000243       103 JUMP_FORWARD                      7    (to 110)
-000288   >>  105 LOAD_NAME                         8    (__benchmark__)
-000288       107 CALL_FUNCTION                     0
-000288       109 POP_TOP
-000312   >>  110 LOAD_NAME                         9    (print)
-000318       112 LOAD_STRING                       3    ('%s took %s s')
-000336       114 LOAD_NAME                         10   (__file__)
-000346       116 LOAD_NAME                         4    (time)
-000346       118 LOAD_METHOD                       4    (time)
-000346       120 CALL_METHOD                       0
-000360       122 LOAD_NAME                         5    (start)
-000346       124 BINARY_OP                         2    (SUB)
-000335       126 COLLECTION_FROM_STACK             2    (tuple)
-000318       128 BINARY_OP                         10   (MOD)
-000312       130 CALL_FUNCTION                     1
-000312       132 POP_TOP
-000312   >>  133 LOAD_NONE
-000312       134 RETURN_VALUE
+  1:3   -   1:11        0 LOAD_NAME                         0    (__name__)
+  1:15  -   1:25        2 LOAD_STRING                       0    ('__main__')
+  1:3   -   1:25        4 BINARY_OP                         12   (EQ)                              can quicken
+  1:0   -  11:63        6 POP_AND_JUMP_IF_FALSE             127   (to 133)                          generalizes: 4
+  2:4   -   2:14       10 LOAD_BYTE_O                       0
+  2:4   -   2:14       12 LOAD_CONST                        1    ([])
+  2:4   -   2:14       14 IMPORT_NAME                       1    (sys)
+  2:4   -   2:14       16 STORE_NAME                        1    (sys)
+  3:12  -   3:15       18 LOAD_NAME                         2    (len)
+  3:16  -   3:19       20 LOAD_NAME                         1    (sys)
+  3:16  -   3:19       22 LOAD_ATTR                         3    (argv)
+  3:12  -   3:25       24 CALL_FUNCTION                     1
+  3:29  -   3:30       26 LOAD_BYTE_O                       1
+  3:12  -   3:30       28 BINARY_OP                         12   (EQ)
+  3:12  -   3:72       30 JUMP_IF_FALSE_OR_POP              15   (to 45)
+  3:35  -   3:38       34 LOAD_NAME                         1    (sys)
+  3:35  -   3:38       36 LOAD_ATTR                         3    (argv)
+  3:44  -   3:45       38 LOAD_BYTE_O                       0
+  3:35  -   3:38       40 BINARY_SUBSCR
+  3:50  -   3:72       41 LOAD_STRING                       2    ('java_embedding_bench')
+  3:35  -   3:72       43 BINARY_OP                         12   (EQ)                              can quicken
+  3:7   -   3:73  >>   45 UNARY_OP                          0    (NOT)                             can quicken, generalizes: 43
+  3:4   -  11:63       47 POP_AND_JUMP_IF_FALSE             86   (to 133)                          generalizes: 45
+  4:8   -   4:19       51 LOAD_BYTE_O                       0
+  4:8   -   4:19       53 LOAD_CONST                        1    ([])
+  4:8   -   4:19       55 IMPORT_NAME                       4    (time)
+  4:8   -   4:19       57 STORE_NAME                        4    (time)
+  5:16  -   5:20       59 LOAD_NAME                         4    (time)
+  5:16  -   5:27       61 LOAD_METHOD                       4    (time)
+  5:16  -   5:27       63 CALL_METHOD                       0
+  5:8   -   5:13       65 STORE_NAME                        5    (start)
+  6:11  -   6:14       67 LOAD_NAME                         2    (len)
+  6:15  -   6:18       69 LOAD_NAME                         1    (sys)
+  6:15  -   6:18       71 LOAD_ATTR                         3    (argv)
+  6:11  -   6:24       73 CALL_FUNCTION                     1
+  6:28  -   6:29       75 LOAD_BYTE_O                       2
+  6:11  -   6:29       77 BINARY_OP                         17   (GE)                              can quicken
+  6:8   -  10:27       79 POP_AND_JUMP_IF_FALSE             26   (to 105)                          generalizes: 77
+  7:18  -   7:21       83 LOAD_NAME                         6    (int)
+  7:22  -   7:25       85 LOAD_NAME                         1    (sys)
+  7:22  -   7:25       87 LOAD_ATTR                         3    (argv)
+  7:31  -   7:32       89 LOAD_BYTE_O                       1
+  7:22  -   7:25       91 BINARY_SUBSCR
+  7:18  -   7:34       92 CALL_FUNCTION                     1
+  7:12  -   7:15       94 STORE_NAME                        7    (num)
+  8:12  -   8:25       96 LOAD_NAME                         8    (__benchmark__)
+  8:26  -   8:29       98 LOAD_NAME                         7    (num)
+  8:12  -   8:30      100 CALL_FUNCTION                     1
+  8:12  -   8:30      102 POP_TOP
+  8:12  -   8:30      103 JUMP_FORWARD                      7    (to 110)
+ 10:12  -  10:25  >>  105 LOAD_NAME                         8    (__benchmark__)
+ 10:12  -  10:27      107 CALL_FUNCTION                     0
+ 10:12  -  10:27      109 POP_TOP
+ 11:8   -  11:13  >>  110 LOAD_NAME                         9    (print)
+ 11:14  -  11:28      112 LOAD_STRING                       3    ('%s took %s s')
+ 11:32  -  11:40      114 LOAD_NAME                         10   (__file__)
+ 11:42  -  11:46      116 LOAD_NAME                         4    (time)
+ 11:42  -  11:53      118 LOAD_METHOD                       4    (time)
+ 11:42  -  11:53      120 CALL_METHOD                       0
+ 11:56  -  11:61      122 LOAD_NAME                         5    (start)
+ 11:42  -  11:61      124 BINARY_OP                         2    (SUB)
+ 11:31  -  11:62      126 COLLECTION_FROM_STACK             2    (tuple)
+ 11:14  -  11:62      128 BINARY_OP                         10   (MOD)
+ 11:8   -  11:63      130 CALL_FUNCTION                     1
+ 11:8   -  11:63      132 POP_TOP
+ 11:8   -  11:63  >>  133 LOAD_NONE
+ 11:8   -  11:63      134 RETURN_VALUE

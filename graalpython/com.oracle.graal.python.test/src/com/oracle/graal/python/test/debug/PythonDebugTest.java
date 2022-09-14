@@ -83,7 +83,6 @@ public class PythonDebugTest {
         newBuilder.allowAllAccess(true);
         PythonTests.closeContext();
         tester = new DebuggerTester(newBuilder);
-        PythonTests.skipOnBytecodeInterpreter();
     }
 
     @After
@@ -184,6 +183,29 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testException() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "try:\n" +
+                        "  1 / 0\n" +
+                        "except BaseException as e:\n" +
+                        "  str(e)\n" +
+                        "1", "test_exception.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newExceptionBuilder(true, true).build());
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(2, frame.getSourceSection().getStartLine());
+                assertNotNull(event.getException());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
+        }
+    }
+
+    @Test
     public void testInlineEvaluation() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "y = 4\n" +
@@ -213,6 +235,28 @@ public class PythonDebugTest {
                 event.prepareContinue();
             });
             assertEquals("10", tester.expectDone());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    public void testBreakpointBuiltin() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "def foo():\n" +
+                        "  a = 1\n" +
+                        "  breakpoint()\n" +
+                        "  return 1\n" +
+                        "foo()\n", "test_breakpoint_builtin.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(3, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
         }
     }
 

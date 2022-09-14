@@ -1,10 +1,10 @@
 Disassembly of <module>:
-000000         0 LOAD_NAME                         0    (a)
-000000         2 DUP_TOP
-000000         3 LOAD_ATTR                         1    (b)
-000007         5 LOAD_DOUBLE_O                     0    (12.0)
-000000         7 BINARY_OP                         1    (INPLACE_ADD)
-000000         9 ROT_TWO
-000000        10 STORE_ATTR                        1    (b)
-000000        12 LOAD_NONE
-000000        13 RETURN_VALUE
+  1:0   -   1:1         0 LOAD_NAME                         0    (a)
+  1:0   -   1:1         2 DUP_TOP
+  1:0   -   1:1         3 LOAD_ATTR                         1    (b)
+  1:7   -   1:11        5 LOAD_DOUBLE_O                     0    (12.0)
+  1:0   -   1:11        7 BINARY_OP                         1    (INPLACE_ADD)
+  1:0   -   1:1         9 ROT_TWO
+  1:0   -   1:1        10 STORE_ATTR                        1    (b)
+  1:0   -   1:11       12 LOAD_NONE
+  1:0   -   1:11       13 RETURN_VALUE

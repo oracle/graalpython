@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000001         0 LOAD_BYTE_O                      -2
-000005         2 LOAD_COMPLEX                      0    (3.00000j)
-000000         4 BINARY_OP                         0    (ADD)
-000000         6 RETURN_VALUE
+  1:1   -   1:2         0 LOAD_BYTE_O                      -2
+  1:5   -   1:7         2 LOAD_COMPLEX                      0    (3.00000j)
+  1:0   -   1:7         4 BINARY_OP                         0    (ADD)
+  1:0   -   1:7         6 RETURN_VALUE

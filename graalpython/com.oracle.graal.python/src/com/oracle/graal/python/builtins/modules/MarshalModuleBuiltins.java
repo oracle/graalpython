@@ -1239,14 +1239,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             long[] primitiveConstants = readLongArray();
             int[] exceptionHandlerRanges = readIntArray();
             int conditionProfileCount = readInt();
-            int startOffset = readInt();
             int startLine = readInt();
+            int startColumn = readInt();
+            int endLine = readInt();
+            int endColumn = readInt();
             byte[] outputCanQuicken = readBytes();
             byte[] variableShouldUnbox = readBytes();
             int[][] generalizeInputsMap = readSparseTable();
             int[][] generalizeVarsMap = readSparseTable();
             return new CodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, stacksize, code, srcOffsetTable,
-                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, conditionProfileCount, startOffset, startLine,
+                            flags, names, varnames, cellvars, freevars, cell2arg, constants, primitiveConstants, exceptionHandlerRanges, conditionProfileCount,
+                            startLine, startColumn, endLine, endColumn,
                             outputCanQuicken, variableShouldUnbox, generalizeInputsMap, generalizeVarsMap);
         }
 
@@ -1274,8 +1277,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeLongArray(code.primitiveConstants);
             writeIntArray(code.exceptionHandlerRanges);
             writeInt(code.conditionProfileCount);
-            writeInt(code.startOffset);
             writeInt(code.startLine);
+            writeInt(code.startColumn);
+            writeInt(code.endLine);
+            writeInt(code.endColumn);
             writeBytes(code.outputCanQuicken);
             writeBytes(code.variableShouldUnbox);
             writeSparseTable(code.generalizeInputsMap);

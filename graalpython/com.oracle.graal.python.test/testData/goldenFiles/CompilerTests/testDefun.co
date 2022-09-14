@@ -1,13 +1,13 @@
 Disassembly of <module>:
-000024         0 LOAD_BYTE_O                       5
-000000         2 COLLECTION_FROM_STACK             1    (Object[])
-000000         4 MAKE_FUNCTION                     1    (docompute)
-000000         7 STORE_NAME                        0    (docompute)
-000000         9 LOAD_NONE
-000000        10 RETURN_VALUE
+  1:24  -   1:25        0 LOAD_BYTE_O                       5
+  1:0   -   2:21        2 COLLECTION_FROM_STACK             1    (Object[])
+  1:0   -   2:21        4 MAKE_FUNCTION                     1    (docompute)
+  1:0   -   2:21        7 STORE_NAME                        0    (docompute)
+  1:0   -   2:21        9 LOAD_NONE
+  1:0   -   2:21       10 RETURN_VALUE
 
 Disassembly of docompute:
-000039         0 LOAD_FAST                         0    (num)
-000044         2 LOAD_FAST                         1    (num2)
-000038         4 COLLECTION_FROM_STACK             2    (tuple)
-000031         6 RETURN_VALUE
+  2:11  -   2:14        0 LOAD_FAST                         0    (num)
+  2:16  -   2:20        2 LOAD_FAST                         1    (num2)
+  2:10  -   2:21        4 COLLECTION_FROM_STACK             2    (tuple)
+  2:3   -   2:21        6 RETURN_VALUE

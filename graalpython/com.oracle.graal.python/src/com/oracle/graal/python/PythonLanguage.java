@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -65,10 +66,14 @@ import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
@@ -476,17 +481,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
             boolean internal = shouldMarkSourceInternal(context);
             // The original file path should be passed as the name
-            if (source.getName() != null && !source.getName().isEmpty()) {
-                String path = source.getName();
-                if (path.startsWith(FROZEN_FILENAME_PREFIX) && path.endsWith(FROZEN_FILENAME_SUFFIX)) {
-                    String id = path.substring(FROZEN_FILENAME_PREFIX.length(), path.length() - FROZEN_FILENAME_SUFFIX.length());
-                    String fs = context.getEnv().getFileNameSeparator();
-                    path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
+            String name = source.getName();
+            if (name != null && !name.isEmpty()) {
+                Source textSource = tryLoadSource(context, code, internal, name);
+                if (textSource == null) {
+                    if (name.startsWith(FROZEN_FILENAME_PREFIX) && name.endsWith(FROZEN_FILENAME_SUFFIX)) {
+                        String id = name.substring(FROZEN_FILENAME_PREFIX.length(), name.length() - FROZEN_FILENAME_SUFFIX.length());
+                        String fs = context.getEnv().getFileNameSeparator();
+                        String path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
+                        textSource = tryLoadSource(context, code, internal, path);
+                        if (textSource == null) {
+                            path = context.getStdlibHome() + fs + id.replace(".", fs) + fs + "__init__.py";
+                            textSource = tryLoadSource(context, code, internal, path);
+                        }
+                    }
                 }
-                try {
-                    source = Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
-                } catch (IOException | SecurityException | UnsupportedOperationException e) {
-                    // Proceed with binary source
+                if (textSource != null) {
+                    source = textSource;
                 }
             }
             if (internal && !source.isInternal()) {
@@ -508,6 +519,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
+        try {
+            return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
+        } catch (IOException | SecurityException | UnsupportedOperationException e) {
+            return null;
+        }
     }
 
     public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
@@ -615,6 +634,34 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    private ExecutableNode parseForBytecodeInterpreter(InlineParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        RootCallTarget callTarget = parseForBytecodeInterpreter(context, request.getSource(), InputType.EVAL, false, 0, false, null);
+        return new ExecutableNode(this) {
+            @Child private GilNode gilNode = GilNode.create();
+            @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
+            @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
+            @Child private ReadLocalsNode readLocalsNode = ReadLocalsNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                Object[] arguments = PArguments.create();
+                // escape?
+                PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
+                Object locals = readLocalsNode.execute(frame, pFrame);
+                PArguments.setCustomLocals(arguments, locals);
+                PArguments.setSpecialArgument(arguments, locals);
+                PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    return invokeNode.execute(callTarget, arguments);
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
+            }
+        };
+    }
+
     private RootNode doParse(PythonContext context, Source source, int optimize) {
         ParserMode mode;
         if (source.isInteractive()) {
@@ -695,6 +742,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
+        RootNode rootNode = request.getLocation().getRootNode();
+        if (rootNode instanceof PBytecodeGeneratorRootNode) {
+            rootNode = ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
+        }
+        if (rootNode instanceof PBytecodeRootNode) {
+            return parseForBytecodeInterpreter(request);
+        }
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {

@@ -1,8 +1,8 @@
 Disassembly of <module>:
-000000         0 LOAD_NAME                         0    (a)
-000000         2 JUMP_IF_FALSE_OR_POP              6    (to 8)
-000006         6 LOAD_NAME                         1    (b)
-000000   >>    8 JUMP_IF_TRUE_OR_POP               8    (to 16)
-000015        12 LOAD_NAME                         2    (c)
-000011        14 UNARY_OP                          0    (NOT)
-000000   >>   16 RETURN_VALUE
+  1:0   -   1:1         0 LOAD_NAME                         0    (a)
+  1:0   -   1:7         2 JUMP_IF_FALSE_OR_POP              6    (to 8)
+  1:6   -   1:7         6 LOAD_NAME                         1    (b)
+  1:0   -   1:16  >>    8 JUMP_IF_TRUE_OR_POP               8    (to 16)
+  1:15  -   1:16       12 LOAD_NAME                         2    (c)
+  1:11  -   1:16       14 UNARY_OP                          0    (NOT)
+  1:0   -   1:16  >>   16 RETURN_VALUE

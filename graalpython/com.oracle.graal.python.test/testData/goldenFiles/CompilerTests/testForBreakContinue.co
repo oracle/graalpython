@@ -1,22 +1,22 @@
 Disassembly of <module>:
-000009         0 LOAD_NAME                         0    (range)
-000015         2 LOAD_BYTE_O                       10
-000009         4 CALL_FUNCTION                     1
-000000         6 GET_ITER
-000000   >>    7 FOR_ITER                          23   (to 30)
-000004         9 STORE_NAME                        1    (i)
-000025        11 LOAD_NAME                         1    (i)
-000030        13 LOAD_BYTE_O                       3
-000025        15 BINARY_OP                         12   (EQ)                              can quicken
-000022        17 POP_AND_JUMP_IF_FALSE             9    (to 26)                           generalizes: 15
-000037        21 POP_TOP
-000037        22 JUMP_FORWARD                      15   (to 37)
-000037        24 JUMP_FORWARD                      4    (to 28)
-000055   >>   26 JUMP_BACKWARD                     19   (to 7)
-000055   >>   28 JUMP_BACKWARD                     21   (to 7)
-000072   >>   30 LOAD_NAME                         2    (print)
-000078        32 LOAD_STRING                       0    ('else')
-000072        34 CALL_FUNCTION                     1
-000072        36 POP_TOP
-000072   >>   37 LOAD_NONE
-000072        38 RETURN_VALUE
+  1:9   -   1:14        0 LOAD_NAME                         0    (range)
+  1:15  -   1:17        2 LOAD_BYTE_O                       10
+  1:9   -   1:18        4 CALL_FUNCTION                     1
+  1:0   -   7:15        6 GET_ITER
+  1:0   -   7:15  >>    7 FOR_ITER                          23   (to 30)
+  1:4   -   1:5         9 STORE_NAME                        1    (i)
+  2:5   -   2:6        11 LOAD_NAME                         1    (i)
+  2:10  -   2:11       13 LOAD_BYTE_O                       3
+  2:5   -   2:11       15 BINARY_OP                         12   (EQ)                              can quicken
+  2:2   -   5:12       17 POP_AND_JUMP_IF_FALSE             9    (to 26)                           generalizes: 15
+  3:4   -   3:9        21 POP_TOP
+  3:4   -   3:9        22 JUMP_FORWARD                      15   (to 37)
+  3:4   -   3:9        24 JUMP_FORWARD                      4    (to 28)
+  5:4   -   5:12  >>   26 JUMP_BACKWARD                     19   (to 7)
+  5:4   -   5:12  >>   28 JUMP_BACKWARD                     21   (to 7)
+  7:2   -   7:7   >>   30 LOAD_NAME                         2    (print)
+  7:8   -   7:14       32 LOAD_STRING                       0    ('else')
+  7:2   -   7:15       34 CALL_FUNCTION                     1
+  7:2   -   7:15       36 POP_TOP
+  7:2   -   7:15  >>   37 LOAD_NONE
+  7:2   -   7:15       38 RETURN_VALUE

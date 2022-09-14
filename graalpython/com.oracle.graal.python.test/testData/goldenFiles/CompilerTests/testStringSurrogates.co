@@ -1,5 +1,5 @@
 Disassembly of <module>:
-000000         0 LOAD_STRING                       0    ('𐐀')
-000016         2 LOAD_STRING                       1    ('\ud801\udc00')
-000000         4 BINARY_OP                         13   (NE)
-000000         6 RETURN_VALUE
+  1:0   -   1:12        0 LOAD_STRING                       0    ('𐐀')
+  1:16  -   1:30        2 LOAD_STRING                       1    ('\ud801\udc00')
+  1:0   -   1:30        4 BINARY_OP                         13   (NE)
+  1:0   -   1:30        6 RETURN_VALUE

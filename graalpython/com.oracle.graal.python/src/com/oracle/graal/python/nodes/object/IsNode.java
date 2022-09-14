@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -216,7 +217,6 @@ public abstract class IsNode extends Node implements BinaryOp {
             RootCallTarget leftCt = getCt.execute(left);
             RootCallTarget rightCt = getCt.execute(right);
             if (leftCt != null && rightCt != null) {
-                // TODO: handle splitting, i.e., cloned root nodes
                 RootNode leftRootNode = leftCt.getRootNode();
                 RootNode rightRootNode = rightCt.getRootNode();
                 if (leftRootNode instanceof GeneratorFunctionRootNode) {
@@ -228,6 +228,11 @@ public abstract class IsNode extends Node implements BinaryOp {
                     rightRootNode = ((GeneratorFunctionRootNode) rightRootNode).getFunctionRootNode();
                 } else if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     rightRootNode = ((PBytecodeGeneratorFunctionRootNode) rightRootNode).getBytecodeRootNode();
+                }
+                if (PythonContext.get(getCt).getOption(PythonOptions.EnableBytecodeInterpreter)) {
+                    if (leftRootNode instanceof PBytecodeRootNode && rightRootNode instanceof PBytecodeRootNode) {
+                        return ((PBytecodeRootNode) leftRootNode).getCodeUnit() == ((PBytecodeRootNode) rightRootNode).getCodeUnit();
+                    }
                 }
                 return leftRootNode == rightRootNode;
             } else {

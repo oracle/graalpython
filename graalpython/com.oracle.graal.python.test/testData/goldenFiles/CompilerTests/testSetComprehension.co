@@ -1,26 +1,26 @@
 Disassembly of <module>:
-000000         0 MAKE_FUNCTION                     0    (<setcomp>)
-000016         3 LOAD_NAME                         0    (range)
-000022         5 LOAD_BYTE_O                       10
-000016         7 CALL_FUNCTION                     1
-000000         9 GET_ITER
-000000        10 CALL_FUNCTION                     1
-000000        12 RETURN_VALUE
+  1:0   -   1:40        0 MAKE_FUNCTION                     0    (<setcomp>)
+  1:16  -   1:21        3 LOAD_NAME                         0    (range)
+  1:22  -   1:24        5 LOAD_BYTE_O                       10
+  1:16  -   1:25        7 CALL_FUNCTION                     1
+  1:0   -   1:40        9 GET_ITER
+  1:0   -   1:40       10 CALL_FUNCTION                     1
+  1:0   -   1:40       12 RETURN_VALUE
 
 Disassembly of <setcomp>:
-000000         0 COLLECTION_FROM_STACK             0    (set)
-000000         2 LOAD_FAST                         0    (.0)
-000000   >>    4 FOR_ITER                          28   (to 32)                           can quicken
-000011         6 STORE_FAST                        1    (x)                               generalizes: 4
-000029         8 LOAD_FAST                         1    (x)                               can quicken
-000033        10 LOAD_BYTE_I                       2                                      can quicken
-000029        12 BINARY_OP                         10   (MOD)                             can quicken, generalizes: 10, 8
-000038        14 LOAD_BYTE_I                       0                                      can quicken
-000029        16 BINARY_OP                         12   (EQ)                              can quicken, generalizes: 14, 12
-000000        18 POP_AND_JUMP_IF_FALSE             12   (to 30)                           generalizes: 16
-000001        22 LOAD_FAST                         1    (x)                               can quicken
-000005        24 LOAD_BYTE_I                       2                                      can quicken
-000001        26 BINARY_OP                         4    (MUL)                             generalizes: 24, 22
-000000        28 ADD_TO_COLLECTION                 2    (set)
-000000   >>   30 JUMP_BACKWARD                     26   (to 4)
-000000   >>   32 RETURN_VALUE
+  1:0   -   1:40        0 COLLECTION_FROM_STACK             0    (set)
+  1:0   -   1:40        2 LOAD_FAST                         0    (.0)
+  1:0   -   1:40  >>    4 FOR_ITER                          28   (to 32)                           can quicken
+  1:11  -   1:12        6 STORE_FAST                        1    (x)                               generalizes: 4
+  1:29  -   1:30        8 LOAD_FAST                         1    (x)                               can quicken
+  1:33  -   1:34       10 LOAD_BYTE_I                       2                                      can quicken
+  1:29  -   1:34       12 BINARY_OP                         10   (MOD)                             can quicken, generalizes: 10, 8
+  1:38  -   1:39       14 LOAD_BYTE_I                       0                                      can quicken
+  1:29  -   1:39       16 BINARY_OP                         12   (EQ)                              can quicken, generalizes: 14, 12
+  1:0   -   1:40       18 POP_AND_JUMP_IF_FALSE             12   (to 30)                           generalizes: 16
+  1:1   -   1:2        22 LOAD_FAST                         1    (x)                               can quicken
+  1:5   -   1:6        24 LOAD_BYTE_I                       2                                      can quicken
+  1:1   -   1:6        26 BINARY_OP                         4    (MUL)                             generalizes: 24, 22
+  1:0   -   1:40       28 ADD_TO_COLLECTION                 2    (set)
+  1:0   -   1:40  >>   30 JUMP_BACKWARD                     26   (to 4)
+  1:0   -   1:40  >>   32 RETURN_VALUE

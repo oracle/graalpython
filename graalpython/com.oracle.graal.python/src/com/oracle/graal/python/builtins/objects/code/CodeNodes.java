@@ -148,11 +148,11 @@ public abstract class CodeNodes {
                                 code.srcOffsetTable, code.flags, code.names, code.varnames,
                                 cellvars != null ? cellvars : code.cellvars, freevars != null ? freevars : code.freevars,
                                 code.cell2arg, code.constants, code.primitiveConstants, code.exceptionHandlerRanges, code.conditionProfileCount,
-                                code.startOffset, code.startLine,
+                                code.startLine, code.startColumn, code.endLine, code.endColumn,
                                 code.outputCanQuicken, code.variableShouldUnbox,
                                 code.generalizeInputsMap, code.generalizeVarsMap);
             }
-            RootNode rootNode = PBytecodeRootNode.create(language, code, null);
+            RootNode rootNode = PBytecodeRootNode.create(language, code, PythonUtils.createFakeSource());
             if (code.isGeneratorOrCoroutine()) {
                 rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
             }

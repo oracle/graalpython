@@ -180,7 +180,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 25;
+    public static final int BYTECODE_VERSION = 26;
 
     private final ErrorCallback errorCallback;
 
@@ -869,7 +869,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                  */
                 StmtTy lastStatement = stmts[stmts.length - 1];
                 if (returnValue && lastStatement instanceof StmtTy.Expr) {
-                    ((StmtTy.Expr) lastStatement).value.accept(this);
+                    ExprTy value = ((StmtTy.Expr) lastStatement).value;
+                    value.accept(this);
+                    setLocation(value);
                     addOp(RETURN_VALUE);
                     return;
                 } else {
