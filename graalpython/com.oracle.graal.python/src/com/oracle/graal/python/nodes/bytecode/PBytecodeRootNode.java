@@ -72,6 +72,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -350,6 +352,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<IntBuiltins.LShiftNode> NODE_INT_LSHIFT = IntBuiltins.LShiftNode::create;
     private static final NodeSupplier<IntBuiltins.RShiftNode> NODE_INT_RSHIFT = IntBuiltins.RShiftNode::create;
     private static final NodeSupplier<IntBuiltins.NegNode> NODE_INT_NEG = IntBuiltins.NegNode::create;
+    private static final NodeSupplier<IntBuiltins.PowNode> NODE_INT_POW = IntBuiltins.PowNode::create;
+    private static final NodeSupplier<FloatBuiltins.PowNode> NODE_FLOAT_POW = FloatBuiltins.PowNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -2811,6 +2815,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_OR:
                 case BinaryOpsConstants.XOR:
                 case BinaryOpsConstants.INPLACE_XOR:
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
                     if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_II_I;
                         bytecodeBinaryOpIII(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
@@ -2840,10 +2846,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, localNodes, op);
                     }
                     return;
-                case BinaryOpsConstants.POW:
-                case BinaryOpsConstants.INPLACE_POW:
-                    // TODO we should add at least a long version of pow
-                    break;
             }
         } else if (virtualFrame.isDouble(stackTop) && virtualFrame.isDouble(stackTop - 1)) {
             switch (op) {
@@ -2855,6 +2857,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_MUL:
                 case BinaryOpsConstants.TRUEDIV:
                 case BinaryOpsConstants.INPLACE_TRUEDIV:
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
                     if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
                         localBC[bci] = OpCodesConstants.BINARY_OP_DD_D;
                         bytecodeBinaryOpDDD(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
@@ -2877,10 +2881,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeBinaryOpDDO(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     }
                     return;
-                case BinaryOpsConstants.POW:
-                case BinaryOpsConstants.INPLACE_POW:
-                    // TODO
-                    break;
             }
         }
         // TODO other types
@@ -2979,6 +2979,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.INPLACE_RSHIFT:
                 IntBuiltins.RShiftNode rShiftNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.RShiftNodeFactory.RShiftNodeGen.class, NODE_INT_RSHIFT);
                 result = rShiftNode.execute(left, right);
+                break;
+            case BinaryOpsConstants.POW:
+            case BinaryOpsConstants.INPLACE_POW:
+                IntBuiltins.PowNode powNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.PowNodeFactory.PowNodeGen.class, NODE_INT_POW);
+                result = powNode.execute(left, right);
                 break;
             case BinaryOpsConstants.AND:
             case BinaryOpsConstants.INPLACE_AND:
@@ -3096,6 +3101,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_XOR:
                     result = left ^ right;
                     break;
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
+                    IntBuiltins.PowNode powNode = insertChildNode(localNodes, bci, IntBuiltinsFactory.PowNodeFactory.PowNodeGen.class, NODE_INT_POW);
+                    result = powNode.executeInt(left, right);
+                    break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_II_I");
             }
@@ -3116,29 +3126,39 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeBinaryOp(virtualFrame, stackTop, bci, localNodes, op);
             return;
         }
-        switch (op) {
-            case BinaryOpsConstants.ADD:
-            case BinaryOpsConstants.INPLACE_ADD:
-                result = left + right;
-                break;
-            case BinaryOpsConstants.SUB:
-            case BinaryOpsConstants.INPLACE_SUB:
-                result = left - right;
-                break;
-            case BinaryOpsConstants.MUL:
-            case BinaryOpsConstants.INPLACE_MUL:
-                result = left * right;
-                break;
-            case BinaryOpsConstants.TRUEDIV:
-            case BinaryOpsConstants.INPLACE_TRUEDIV:
-                if (right == 0.0) {
-                    PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
-                    throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-                }
-                result = left / right;
-                break;
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_DD_D");
+        try {
+            switch (op) {
+                case BinaryOpsConstants.ADD:
+                case BinaryOpsConstants.INPLACE_ADD:
+                    result = left + right;
+                    break;
+                case BinaryOpsConstants.SUB:
+                case BinaryOpsConstants.INPLACE_SUB:
+                    result = left - right;
+                    break;
+                case BinaryOpsConstants.MUL:
+                case BinaryOpsConstants.INPLACE_MUL:
+                    result = left * right;
+                    break;
+                case BinaryOpsConstants.TRUEDIV:
+                case BinaryOpsConstants.INPLACE_TRUEDIV:
+                    if (right == 0.0) {
+                        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+                        throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                    }
+                    result = left / right;
+                    break;
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
+                    FloatBuiltins.PowNode powNode = insertChildNode(localNodes, bci, FloatBuiltinsFactory.PowNodeFactory.PowNodeGen.class, NODE_FLOAT_POW);
+                    result = powNode.executeDouble(left, right);
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("Invalid operation for BINARY_OP_DD_D");
+            }
+        } catch (UnexpectedResultException e) {
+            generalizeBinaryOpDDDOverflow(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
+            return;
         }
         virtualFrame.setDouble(stackTop - 1, result);
     }
@@ -3211,6 +3231,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 result = left / right;
                 break;
+            case BinaryOpsConstants.POW:
+            case BinaryOpsConstants.INPLACE_POW:
+                FloatBuiltins.PowNode powNode = insertChildNode(localNodes, bci, FloatBuiltinsFactory.PowNodeFactory.PowNodeGen.class, NODE_FLOAT_POW);
+                result = powNode.execute(left, right);
+                break;
             case BinaryOpsConstants.IS:
             case BinaryOpsConstants.EQ:
                 result = left == right;
@@ -3250,6 +3275,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerDirectives.transferToInterpreterAndInvalidate();
         bytecode[bci] = OpCodesConstants.BINARY_OP_II_O;
         bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, localNodes, op);
+    }
+
+    private void generalizeBinaryOpDDDOverflow(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        bytecode[bci] = OpCodesConstants.BINARY_OP_DD_O;
+        bytecodeBinaryOpDDO(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
     }
 
     @BytecodeInterpreterSwitch
