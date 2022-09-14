@@ -254,6 +254,8 @@ public final class PosixConstants {
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN6;
     public static final MandatoryIntConstant SIZEOF_STRUCT_IN_ADDR;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+    public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 
     public static final IntConstant[] openFlags;
     public static final IntConstant[] fileType;
@@ -481,6 +483,9 @@ public final class PosixConstants {
         SIZEOF_STRUCT_SOCKADDR_IN6 = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN6");
         SIZEOF_STRUCT_IN_ADDR = reg.createMandatoryInt("SIZEOF_STRUCT_IN_ADDR");
         OFFSETOF_STRUCT_IN_ADDR_S_ADDR = reg.createMandatoryInt("OFFSETOF_STRUCT_IN_ADDR_S_ADDR");
+        OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH");
+        SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
+
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC, O_TMPFILE};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};

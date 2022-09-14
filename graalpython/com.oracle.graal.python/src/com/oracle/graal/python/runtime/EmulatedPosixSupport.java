@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICSERV;
@@ -206,6 +207,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -3144,6 +3146,11 @@ public final class EmulatedPosixSupport extends PosixResources {
         static UniversalSockAddr inet6(EmulatedPosixSupport receiver, Inet6SockAddr src) {
             return EmulatedUniversalSockAddrImpl.inet6(src.getAddress(), src.getScopeId(), src.getPort());
         }
+
+        @Specialization
+        static UniversalSockAddr unix(EmulatedPosixSupport receiver, UnixSockAddr src) {
+            throw new UnsupportedPosixFeatureException("AF_UNIX cannot be emulated");
+        }
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)
@@ -3186,6 +3193,13 @@ public final class EmulatedPosixSupport extends PosixResources {
             byte[] ipv4 = ((Inet4Address) sa).getAddress();
             byte[] ipv6 = mapIPv4toIPv6(ipv4);
             return new Inet6SockAddr(socketAddress.getPort(), ipv6, 0, 0);
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        UnixSockAddr asUnixSockAddr() {
+            assert getFamily() != AF_UNIX.value;
+            throw new IllegalArgumentException("Only AF_UNIX socket address can be converted to Unix4SockAddr");
         }
 
         static EmulatedUniversalSockAddrImpl inet4(byte[] address, int port) {
