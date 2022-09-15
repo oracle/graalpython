@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.shell;
 
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -73,8 +75,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static final String LANGUAGE_ID = "python";
 
-    // provided by GraalVM bash launchers, ignored in native image mode
-    protected static final String J_BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    private static final String J_PYENVCFG = "pyvenv.cfg";
 
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
@@ -101,6 +102,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
+    private String execName;
 
     boolean useASTInterpreter = false;
 
@@ -398,18 +400,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.err.println(string);
     }
 
-    private static String getLauncherExecName() {
-        if (ImageInfo.inImageCode()) {
-            String binPathName = null;
-            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
-                binPathName = calculateProgramFullPath(ProcessProperties.getArgumentVectorProgramName());
-            }
-            if (binPathName != null) {
-                return binPathName;
-            }
-            return ProcessProperties.getExecutableName();
+    protected String getLauncherExecName() {
+        if (execName != null) {
+            return execName;
         }
-        return GraalPythonMain.J_BASH_LAUNCHER_EXEC_NAME;
+        execName = getProgramName();
+        if (execName == null) {
+            return null;
+        }
+        execName = calculateProgramFullPath(execName);
+        return execName;
     }
 
     /**
@@ -578,10 +578,21 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (executable != null) {
             contextBuilder.option("python.ExecutableList", executable);
         } else {
-            contextBuilder.option("python.Executable", getExecutable());
+            executable = getExecutable();
+            contextBuilder.option("python.Executable", executable);
             // The unlikely separator is used because options need to be
             // strings. See PythonOptions.getExecutableList()
             contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+            // We try locating and loading options from pyvenv.cfg according to PEP405 as long as
+            // the user did not explicitly pass some options that would be otherwise loaded from
+            // pyvenv.cfg. Notable usage of this feature is GraalPython venvs which generate a
+            // launcher script that passes those options explicitly without relying on pyvenv.cfg
+            boolean tryVenvCfg = !hasContextOptionSetViaCommandLine("SysPrefix") &&
+                            !hasContextOptionSetViaCommandLine("PythonHome") &&
+                            System.getenv("GRAAL_PYTHONHOME") == null;
+            if (tryVenvCfg) {
+                findAndApplyVenvCfg(contextBuilder, executable);
+            }
         }
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
@@ -676,6 +687,50 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.exit(rc);
     }
 
+    private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {
+        Path binDir = Paths.get(executable).getParent();
+        if (binDir == null) {
+            return;
+        }
+        Path venvCfg = binDir.resolve(J_PYENVCFG);
+        if (!Files.exists(venvCfg)) {
+            Path binParent = binDir.getParent();
+            if (binParent == null) {
+                return;
+            }
+            venvCfg = binParent.resolve(J_PYENVCFG);
+            if (!Files.exists(venvCfg)) {
+                return;
+            }
+        }
+        try (BufferedReader reader = Files.newBufferedReader(venvCfg)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("=", 2);
+                if (parts.length != 2) {
+                    continue;
+                }
+                String name = parts[0].trim();
+                if (name.equals("home")) {
+                    contextBuilder.option("python.PythonHome", parts[1].trim());
+                    String sysPrefix = null;
+                    try {
+                        sysPrefix = venvCfg.getParent().toAbsolutePath().toString();
+                    } catch (IOError | NullPointerException ex) {
+                        // NullPointerException covers the possible null result of getParent()
+                        warn("Could not set the sys.prefix according to the pyvenv.cfg file.");
+                    }
+                    if (sysPrefix != null) {
+                        contextBuilder.option("python.SysPrefix", sysPrefix);
+                    }
+                    break;
+                }
+            }
+        } catch (IOException ex) {
+            throw abort("Could not read the pyvenv.cfg file.", 66);
+        }
+    }
+
     private static boolean matchesPythonOption(String arg, String key) {
         assert !key.startsWith("python.");
         return arg.startsWith("--python." + key) || arg.startsWith("--" + key);
@@ -696,6 +751,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
         return null;
+    }
+
+    private boolean hasContextOptionSetViaCommandLine(String key) {
+        if (System.getProperty("polyglot.python." + key) != null) {
+            return System.getProperty("polyglot.python." + key) != null;
+        }
+        for (String f : givenArguments) {
+            if (matchesPythonOption(f, key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {

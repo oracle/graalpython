@@ -499,6 +499,92 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_toolchain_tools_for_venv")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetToolchainToolsForVenv extends PythonBuiltinNode {
+        private static final class Tool {
+            final String name;
+            final boolean isVariableName;
+            final Object[] targets;
+
+            public Tool(String name, boolean isVariableName, Object[] targets) {
+                this.name = name;
+                this.isVariableName = isVariableName;
+                this.targets = targets;
+            }
+
+            static Tool forVariable(String name, Object... targets) {
+                return new Tool(name, true, targets);
+            }
+
+            static Tool forBinary(String name, Object... targets) {
+                return new Tool(name, true, targets);
+            }
+        }
+
+        static final Tool[] tools = new Tool[]{
+                        Tool.forVariable("AR", tsLiteral("ar")),
+                        Tool.forVariable("RANLIB", tsLiteral("ranlib")),
+                        Tool.forVariable("NM", tsLiteral("nm")),
+                        Tool.forVariable("LD", tsLiteral("ld.lld"), tsLiteral("ld"), tsLiteral("lld")),
+                        Tool.forVariable("CC", tsLiteral("clang"), tsLiteral("cc")),
+                        Tool.forVariable("CXX", tsLiteral("clang++"), tsLiteral("c++")),
+                        Tool.forBinary("llvm-as", tsLiteral("as")),
+                        Tool.forBinary("clang-cl", tsLiteral("cl")),
+                        Tool.forBinary("clang-cpp", tsLiteral("cpp")),
+        };
+
+        @Specialization
+        @TruffleBoundary
+        protected Object getToolPath() {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            List<TruffleFile> toolchainPaths = toolchain.getPaths("PATH");
+            EconomicMapStorage storage = EconomicMapStorage.create(tools.length);
+            for (Tool tool : tools) {
+                String path = null;
+                if (tool.isVariableName) {
+                    TruffleFile toolPath = toolchain.getToolPath(tool.name);
+                    if (toolPath != null) {
+                        path = toolPath.getAbsoluteFile().getPath();
+                    }
+                } else {
+                    for (TruffleFile toolchainPath : toolchainPaths) {
+                        LOGGER.finest(() -> " Testing path " + toolchainPath.getPath() + " for tool " + tool.name);
+                        TruffleFile pathToTest = toolchainPath.resolve(tool.name);
+                        if (pathToTest.exists()) {
+                            path = pathToTest.getAbsoluteFile().getPath();
+                            break;
+                        }
+                    }
+                }
+                if (path != null) {
+                    storage.putUncached(toTruffleStringUncached(path), factory().createTuple(tool.targets));
+                } else {
+                    LOGGER.info("Could not locate tool " + tool.name);
+                }
+            }
+            return factory().createDict(storage);
+        }
+    }
+
+    /*
+     * Internal check used in tests only to check that we are running through managed launcher.
+     */
+    @Builtin(name = "is_managed_launcher")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class IsManagedLauncher extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected boolean isManaged() {
+            // The best approximation for now
+            return !getContext().getEnv().isNativeAccessAllowed() && getContext().getOption(PythonOptions.RunViaLauncher);
+        }
+    }
+
     @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory

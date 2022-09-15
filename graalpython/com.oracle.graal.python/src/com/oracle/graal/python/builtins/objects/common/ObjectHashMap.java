@@ -833,7 +833,7 @@ public final class ObjectHashMap {
      * smaller than the old size if there were many dummy entries. The rehashing also removes the
      * dummy entries.
      */
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     private void rehashAndPut(Object newKey, long newKeyHash, Object newValue) {
         int requiredIndicesSize = usedHashes * GROWTH_RATE;
         // We need the hash table of this size, in order to accommodate "requiredIndicesSize" items
@@ -867,7 +867,7 @@ public final class ObjectHashMap {
         insertNewKey(localIndices, newKey, newKeyHash, newValue);
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     private void compact() {
         // shuffle[X] will tell us by how much value X found in 'indices' should be shuffled to left
         int[] shuffle = new int[hashes.length];
