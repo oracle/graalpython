@@ -43,6 +43,39 @@
 #ifndef CTX_TRACKER_H_
 #define CTX_TRACKER_H_
 
+//*************************
+// BOXING
+
+#define NAN_BOXING_BASE (0x0007000000000000llu)
+#define NAN_BOXING_MASK (0xFFFF000000000000llu)
+#define NAN_BOXING_INT (0x0001000000000000llu)
+#define NAN_BOXING_INT_MASK (0x00000000FFFFFFFFllu)
+#define NAN_BOXING_MAX_HANDLE (0x000000007FFFFFFFllu)
+#define IMMUTABLE_HANDLES (0x0000000000000100llu)
+
+// Some singleton Python objects are guaranteed to be always represented by
+// those handles, so that we do not have to upcall to unambiguously check if
+// a handle represents one of those
+#define SINGLETON_HANDLES_MAX (3)
+
+#define isBoxedDouble(value) ((value) >= NAN_BOXING_BASE)
+#define isBoxedHandle(value) ((value) <= NAN_BOXING_MAX_HANDLE)
+#define isBoxedInt(value) (((value) & NAN_BOXING_MASK) == NAN_BOXING_INT)
+
+#define unboxHandle(value) (value)
+#define boxHandle(handle) (handle)
+
+#define isBoxableInt(value) (INT32_MIN < (value) && (value) < INT32_MAX)
+#define isBoxableUnsignedInt(value) ((value) < INT32_MAX)
+#define unboxInt(value) ((int32_t) ((value) - NAN_BOXING_INT))
+#define boxInt(value) ((((uint64_t) (value)) & NAN_BOXING_INT_MASK) + NAN_BOXING_INT)
+
+#define toBits(ptr) ((uint64_t) ((ptr)._i))
+#define toPtr(ptr) ((HPy) { (HPy_ssize_t) (ptr) })
+
+//*************************
+// native HPyTracker implementation
+
 typedef struct {
     HPy_ssize_t capacity;  // allocated handles
     HPy_ssize_t length;    // used handles
@@ -56,19 +89,23 @@ static inline HPyTracker _hp2ht(_HPyTracker_s *hp) {
     return (HPyTracker) {(HPy_ssize_t) (hp)};
 }
 
+void init_native_fast_paths(HPyContext *context);
+
 _HPy_HIDDEN HPyTracker
-ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity);
+augment_Tracker_New(HPyContext *ctx, HPy_ssize_t capacity);
+
+/* Very much like 'augment_Tracker_Add' but doesn't do special handling for
+   boxed values and immutable handles */
+_HPy_HIDDEN int
+raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
 
 _HPy_HIDDEN int
-raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
-
-_HPy_HIDDEN int
-ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h);
+augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h);
 
 _HPy_HIDDEN void
-ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht);
+augment_Tracker_ForgetAll(HPyContext *ctx, HPyTracker ht);
 
 _HPy_HIDDEN void
-ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht);
+augment_Tracker_Close(HPyContext *ctx, HPyTracker ht);
 
 #endif /* CTX_TRACKER_H_ */

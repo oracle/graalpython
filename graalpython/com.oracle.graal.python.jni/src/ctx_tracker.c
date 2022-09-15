@@ -82,12 +82,12 @@
  */
 
 #include "hpy_jni.h"
-#include "ctx_tracker.h"
+#include "hpy_native_fast_paths.h"
 
 static const HPy_ssize_t HPYTRACKER_INITIAL_CAPACITY = 5;
 
 _HPy_HIDDEN HPyTracker
-ctx_Tracker_New_jni(HPyContext *ctx, HPy_ssize_t capacity)
+augment_Tracker_New(HPyContext *ctx, HPy_ssize_t capacity)
 {
     _HPyTracker_s *hp;
     if (capacity == 0) {
@@ -139,7 +139,7 @@ tracker_resize(HPyContext *ctx, _HPyTracker_s *hp, HPy_ssize_t capacity)
 }
 
 _HPy_HIDDEN int
-raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
+raw_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     _HPyTracker_s *hp =  _ht2hp(ht);
     hp->handles[hp->length++] = h;
@@ -151,24 +151,24 @@ raw_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
 }
 
 _HPy_HIDDEN int
-ctx_Tracker_Add_jni(HPyContext *ctx, HPyTracker ht, HPy h)
+augment_Tracker_Add(HPyContext *ctx, HPyTracker ht, HPy h)
 {
     uint64_t bits = toBits(h);
     if (!isBoxedHandle(bits) || bits < IMMUTABLE_HANDLES) {
         return 0;
     }
-    return raw_Tracker_Add_jni(ctx, ht, h);
+    return raw_Tracker_Add(ctx, ht, h);
 }
 
 _HPy_HIDDEN void
-ctx_Tracker_ForgetAll_jni(HPyContext *ctx, HPyTracker ht)
+augment_Tracker_ForgetAll(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     hp->length = 0;
 }
 
 _HPy_HIDDEN void
-ctx_Tracker_Close_jni(HPyContext *ctx, HPyTracker ht)
+augment_Tracker_Close(HPyContext *ctx, HPyTracker ht)
 {
     _HPyTracker_s *hp = _ht2hp(ht);
     HPy_ssize_t i;

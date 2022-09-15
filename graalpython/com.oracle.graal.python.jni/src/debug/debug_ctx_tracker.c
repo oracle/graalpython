@@ -40,7 +40,7 @@
  */
 
 #include "debug_internal.h"
-#include "../ctx_tracker.h"
+#include "../hpy_native_fast_paths.h"
 
 /* ~~~ debug mode implementation of HPyTracker ~~~
 
@@ -65,18 +65,18 @@
 
 HPyTracker debug_ctx_Tracker_New(HPyContext *dctx, HPy_ssize_t size)
 {
-    return ctx_Tracker_New_jni(dctx, size);
+    return augment_Tracker_New(dctx, size);
 }
 
 _HPy_HIDDEN int
 debug_ctx_Tracker_Add(HPyContext *dctx, HPyTracker ht, DHPy h)
 {
-    return raw_Tracker_Add_jni(dctx, ht, h);
+    return raw_Tracker_Add(dctx, ht, h);
 }
 
 void debug_ctx_Tracker_ForgetAll(HPyContext *dctx, HPyTracker ht)
 {
-    ctx_Tracker_ForgetAll_jni(dctx, ht);
+    augment_Tracker_ForgetAll(dctx, ht);
 }
 
 _HPy_HIDDEN void

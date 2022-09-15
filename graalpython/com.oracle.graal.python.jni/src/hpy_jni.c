@@ -281,9 +281,55 @@ static HPy ctx_TypeGenericNew_jni(HPyContext *ctx, HPy type, _HPyPtr args, HPy_s
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TypeGenericNew, HPY_UP(type));
 }
 
-static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t idx) {
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, (PTR_UP) arr, (SIZE_T_UP) idx);
+#define MAX_UNICODE 0x10ffff
+
+static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *u, HPy_ssize_t size) {
+    if (u == NULL && size != 0) {
+        return HPy_NULL;
+    }
+
+    if (sizeof(wchar_t) != sizeof(uint32_t)) {
+        HPyErr_SetString(ctx, ctx->h_SystemError, "unsupported size of type wchar_t");
+        return HPy_NULL;
+    }
+
+    if (size == -1) {
+        size = wcslen(u);
+    }
+
+    if (size > INT32_MAX) {
+        HPyErr_SetString(ctx, ctx->h_SystemError, "wchar_t array is too large");
+        return HPy_NULL;
+    }
+
+    uint32_t maxchar = 0;
+    wchar_t ch;
+    HPy_ssize_t i;
+    for (i = 0; i < size; i++) {
+        ch = u[i];
+        if (ch > maxchar) {
+            maxchar = ch;
+            if (maxchar > MAX_UNICODE) {
+                HPyErr_SetString(ctx, ctx->h_ValueError, "character is not in range [U+0000; U+10ffff]");
+                return HPy_NULL;
+            }
+        }
+    }
+
+    if (maxchar < UINT16_MAX) {
+        jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
+        jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
+        HPy_ssize_t i;
+        for (i = 0; i < size; i++) {
+            content[i] = (jchar) u[i];
+        }
+        (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromJCharArray, jCharArray);
+    } else {
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, (PTR_UP) u, (SIZE_T_UP) size);
+    }
 }
+
 
 static HPy ctx_DictNew_jni(HPyContext *ctx) {
     return DO_UPCALL_HPY_NOARGS(CONTEXT_INSTANCE(ctx), DictNew);
@@ -403,413 +449,23 @@ static void *ctx_Capsule_Get_jni(HPyContext *ctx, HPy capsule, _HPyCapsule_key k
     return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), CapsuleGet, HPY_UP(capsule), (INT_UP)key, (PTR_UP)name);
 }
 
-
-//*************************
-// BOXING
-
-static double unboxDouble(uint64_t value) {
-    uint64_t doubleBits = value - NAN_BOXING_BASE;
-    return * ((double*) &doubleBits);
-}
-
-static uint64_t boxDouble(double value) {
-    // assumes that value doesn't contain non-standard silent NaNs
-    uint64_t doubleBits = * ((uint64_t*) &value);
-    return doubleBits + NAN_BOXING_BASE;
-}
-
-//*************************
-// direct fast paths that handle certain calls on the native side:
-
-static void *(*original_AsStruct)(HPyContext *ctx, HPy h);
-static HPy (*original_Dup)(HPyContext *ctx, HPy h);
-static HPy (*original_Long)(HPyContext *ctx, HPy h);
-static HPy (*original_Float_FromDouble)(HPyContext *ctx, double v);
-static double (*original_Float_AsDouble)(HPyContext *ctx, HPy h);
-static long (*original_Long_AsLong)(HPyContext *ctx, HPy h);
-static long long (*original_Long_AsLongLong)(HPyContext *ctx, HPy h);
-static unsigned long (*original_Long_AsUnsignedLong)(HPyContext *ctx, HPy h);
-static double (*original_Long_AsDouble)(HPyContext *ctx, HPy h);
-static HPy (*original_Long_FromLong)(HPyContext *ctx, long l);
-static HPy (*original_Long_FromUnsignedLong)(HPyContext *ctx, unsigned long l);
-static HPy (*original_Long_FromLongLong)(HPyContext *ctx, long long l);
-static HPy (*original_Long_FromUnsignedLongLong)(HPyContext *ctx, unsigned long long l);
-static int (*original_List_Check)(HPyContext *ctx, HPy h);
-static int (*original_Number_Check)(HPyContext *ctx, HPy h);
-static int (*original_TypeCheck)(HPyContext *ctx, HPy h, HPy type);
-static void (*original_Close)(HPyContext *ctx, HPy h);
-static HPy (*original_Unicode_FromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
-static HPy (*original_Tuple_FromArray)(HPyContext *ctx, HPy *items, HPy_ssize_t nitems);
-static void (*original_Global_Store)(HPyContext *ctx, HPyGlobal *global, HPy h);
-static HPy (*original_Global_Load)(HPyContext *ctx, HPyGlobal global);
-static void (*original_Field_Store)(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h);
-static HPy (*original_Field_Load)(HPyContext *ctx, HPy source_object, HPyField source_field);
-static int (*original_Is)(HPyContext *ctx, HPy a, HPy b);
-static HPy (*original_Type)(HPyContext *ctx, HPy obj);
-
-static int augment_Is(HPyContext *ctx, HPy a, HPy b) {
-    long bitsA = toBits(a);
-    long bitsB = toBits(b);
-    if (bitsA == bitsB) {
-        return 1;
-    } else if (isBoxedHandle(bitsA) && isBoxedHandle(bitsB)) {
-        // This code assumes that objects pointed by a handle <= SINGLETON_HANDLES_MAX
-        // always get that same handle
-        long unboxedA = unboxHandle(bitsA);
-        long unboxedB = unboxHandle(bitsB);
-        if (unboxedA <= SINGLETON_HANDLES_MAX) {
-            return 0;
-        } else if (unboxedB <= SINGLETON_HANDLES_MAX) {
-            return 0;
-        }
-        // This code assumes that space[x] != NULL <=> objects pointed by x has native struct
-        void *dataA = get_handle_native_data_pointer(ctx, unboxedA);
-        void *dataB = get_handle_native_data_pointer(ctx, unboxedB);
-        if (dataA == NULL && dataB == NULL) {
-            return original_Is(ctx, a, b);
-        }
-        return dataA == dataB;
-    } else {
-        return 0;
-    }
-}
-
-static void *augment_AsStruct(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedHandle(bits)) {
-        return get_handle_native_data_pointer(ctx, bits);
-    } else {
-        return NULL;
-    }
-}
-
-static HPy augment_Long(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedInt(bits)) {
-        return h;
-    } else if (isBoxedDouble(bits)) {
-        double v = unboxDouble(bits);
-        return toPtr(boxInt((int) v));
-    }
-    return original_Long(ctx, h);
-}
-
-static HPy augment_Float_FromDouble(HPyContext *ctx, double v) {
-    return toPtr(boxDouble(v));
-}
-
-static double augment_Float_AsDouble(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedDouble(bits)) {
-        return unboxDouble(bits);
-    } else if (isBoxedInt(bits)) {
-        return unboxInt(bits);
-    } else {
-        return original_Float_AsDouble(ctx, h);
-    }
-}
-
-static long augment_Long_AsLong(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedInt(bits)) {
-        return unboxInt(bits);
-    } else {
-        return original_Long_AsLong(ctx, h);
-    }
-}
-
-static long long augment_Long_AsLongLong(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedInt(bits)) {
-        return (long long) unboxInt(bits);
-    } else {
-        return original_Long_AsLongLong(ctx, h);
-    }
-}
-
-static unsigned long augment_Long_AsUnsignedLong(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedInt(bits)) {
-        int32_t unboxed = unboxInt(bits);
-        if (unboxed >= 0) {
-            return unboxed;
-        }
-    }
-    return original_Long_AsUnsignedLong(ctx, h);
-}
-
-static double augment_Long_AsDouble(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedInt(bits)) {
-        return unboxInt(bits);
-    } else {
-        return original_Long_AsDouble(ctx, h);
-    }
-}
-
-static HPy augment_Long_FromLong(HPyContext *ctx, long l) {
-    if (isBoxableInt(l)) {
-        return toPtr(boxInt((int32_t) l));
-    } else {
-        return original_Long_FromLong(ctx, l);
-    }
-}
-
-static HPy augment_Long_FromUnsignedLong(HPyContext *ctx, unsigned long l) {
-    if (isBoxableUnsignedInt(l)) {
-        return toPtr(boxInt((int32_t) l));
-    } else {
-        return original_Long_FromUnsignedLong(ctx, l);
-    }
-}
-
-static HPy augment_Long_FromLongLong(HPyContext *ctx, long long l) {
-    if (isBoxableInt(l)) {
-        return toPtr(boxInt((int32_t) l));
-    } else {
-        return original_Long_FromLongLong(ctx, l);
-    }
-}
-
-static HPy augment_Long_FromUnsignedLongLong(HPyContext *ctx, unsigned long long l) {
-    if (isBoxableUnsignedInt(l)) {
-        return toPtr(boxInt((int32_t) l));
-    } else {
-        return original_Long_FromUnsignedLongLong(ctx, l);
-    }
-}
-
-static void augment_Close(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (!bits) {
-        return;
-    } else if (isBoxedHandle(bits)) {
-        if (bits < IMMUTABLE_HANDLES) {
-            return;
-        }
-        if (unclosedHandleTop < MAX_UNCLOSED_HANDLES) {
-            unclosedHandles[unclosedHandleTop++] = h;
-        } else {
-            upcallBulkClose(ctx, unclosedHandles, unclosedHandleTop);
-            memset(unclosedHandles, 0, sizeof(uint64_t) * unclosedHandleTop);
-            unclosedHandleTop = 0;
-        }
-    }
-}
-
-static HPy augment_Dup(HPyContext *ctx, HPy h) {
-    uint64_t bits = toBits(h);
-    if (isBoxedHandle(bits)) {
-        if (bits < IMMUTABLE_HANDLES) {
-            return h;
-        }
-        return original_Dup(ctx, h);
-    } else {
-        return h;
-    }
-}
-
-static int augment_Number_Check(HPyContext *ctx, HPy obj) {
-    uint64_t bits = toBits(obj);
-    if (isBoxedDouble(bits) || isBoxedInt(bits)) {
-        return true;
-    } else {
-        return original_Number_Check(ctx, obj);
-    }
-}
-
-static int augment_TypeCheck(HPyContext *ctx, HPy obj, HPy type) {
-    uint64_t bits = toBits(obj);
-    if (isBoxedInt(bits)) {
-        return toBits(type) == toBits(ctx->h_LongType) || toBits(type) == toBits(ctx->h_BaseObjectType);
-    } else if (isBoxedDouble(bits)) {
-        return toBits(type) == toBits(ctx->h_FloatType) || toBits(type) == toBits(ctx->h_BaseObjectType);
-    }
-    return original_TypeCheck(ctx, obj, type);
-}
-
-static int augment_List_Check(HPyContext *ctx, HPy obj) {
-    uint64_t bits = toBits(obj);
-    if (isBoxedHandle(bits)) {
-        return original_List_Check(ctx, obj);
-    } else {
-        return false;
-    }
-}
-
-#define MAX_UNICODE 0x10ffff
-
-static HPy augment_Unicode_FromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ssize_t size) {
-    if (u == NULL && size != 0) {
-        return HPy_NULL;
-    }
-
-    if (sizeof(wchar_t) != sizeof(uint32_t)) {
-        HPyErr_SetString(ctx, ctx->h_SystemError, "unsupported size of type wchar_t");
-        return HPy_NULL;
-    }
-
-    if (size == -1) {
-        size = wcslen(u);
-    }
-
-    if (size > INT32_MAX) {
-        HPyErr_SetString(ctx, ctx->h_SystemError, "wchar_t array is too large");
-        return HPy_NULL;
-    }
-
-    uint32_t maxchar = 0;
-    wchar_t ch;
-    HPy_ssize_t i;
-    for (i = 0; i < size; i++) {
-        ch = u[i];
-        if (ch > maxchar) {
-            maxchar = ch;
-            if (maxchar > MAX_UNICODE) {
-                HPyErr_SetString(ctx, ctx->h_ValueError, "character is not in range [U+0000; U+10ffff]");
-                return HPy_NULL;
-            }
-        }
-    }
-
-    if (maxchar < UINT16_MAX) {
-        jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
-        jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
-        HPy_ssize_t i;
-        for (i = 0; i < size; i++) {
-            content[i] = (jchar) u[i];
-        }
-        (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
-        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromJCharArray, jCharArray);
-    } else {
-        return original_Unicode_FromWideChar(ctx, u, size);
-    }
-}
-
-_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, jboolean steal) {
+_HPy_HIDDEN HPy upcallTupleFromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems, bool steal) {
     jarray jLongArray = (*jniEnv)->NewLongArray(jniEnv, (jsize) nitems);
     (*jniEnv)->SetLongArrayRegion(jniEnv, jLongArray, 0, (jsize) nitems, (const jlong *)items);
-    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, steal);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TupleFromArray, jLongArray, (jboolean) steal);
 }
 
-static HPy augment_Tuple_FromArray(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
-    return upcallTupleFromArray(ctx, items, nitems, JNI_FALSE);
+static HPy ctx_Tuple_FromArray_jni(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
+    return upcallTupleFromArray(ctx, items, nitems, false);
 }
 
 _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems) {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), BulkClose, items, nitems);
 }
 
-HPy augment_Global_Load(HPyContext *ctx, HPyGlobal global) {
-    uint64_t bits = toBits(global);
-    if (bits && isBoxedHandle(bits)) {
-        return original_Global_Load(ctx, global);
-    } else {
-        return toPtr(bits);
-    }
-}
-
-void augment_Global_Store(HPyContext *ctx, HPyGlobal *global, HPy h) {
-    uint64_t bits = toBits(h);
-    if (bits && isBoxedHandle(bits)) {
-        original_Global_Store(ctx, global, h);
-    } else {
-        global->_i = h._i;
-    }
-}
-
-HPy augment_Field_Load(HPyContext *ctx, HPy source_object, HPyField source_field) {
-    uint64_t bits = toBits(source_field);
-    if (bits && isBoxedHandle(bits)) {
-        return original_Field_Load(ctx, source_object, source_field);
-    } else {
-        return toPtr(bits);
-    }
-}
-
-void augment_Field_Store(HPyContext *ctx, HPy target_object, HPyField *target_field, HPy h) {
-    uint64_t bits = toBits(h);
-    if (bits && isBoxedHandle(bits)) {
-        original_Field_Store(ctx, target_object, target_field, h);
-    } else {
-        target_field->_i = h._i;
-    }
-}
-
-HPy augment_Type(HPyContext *ctx, HPy obj) {
-    long bits = toBits(obj);
-    if (isBoxedInt(bits)) {
-        return augment_Dup(ctx, ctx->h_LongType);
-    } else if (isBoxedDouble(bits))
-        return augment_Dup(ctx, ctx->h_FloatType);
-    if (bits && isBoxedHandle(bits)) {
-        return original_Type(ctx, obj);
-    } else {
-        return toPtr(bits);
-    }
-}
-
 void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
-    context->name = "HPy Universal ABI (GraalVM backend, JNI)";
-
-#define AUGMENT(name) \
-    original_ ## name = context->ctx_ ## name;  \
-    context->ctx_ ## name = augment_ ## name;
-
-    AUGMENT(Long);
-
-    AUGMENT(Float_FromDouble);
-
-    AUGMENT(Float_AsDouble);
-
-    AUGMENT(Long_AsLong);
-
-    AUGMENT(Long_AsLongLong);
-
-    AUGMENT(Long_AsUnsignedLong);
-
-    AUGMENT(Long_AsDouble);
-
-    AUGMENT(Long_FromLong);
-
-    AUGMENT(Long_FromUnsignedLong);
-
-    AUGMENT(Long_FromLongLong);
-
-    AUGMENT(Long_FromUnsignedLongLong);
-
-    AUGMENT(Close);
-
-    AUGMENT(AsStruct);
-
-    context->ctx_AsStructLegacy = augment_AsStruct;
-
-    AUGMENT(Dup);
-
-    AUGMENT(Number_Check);
-
-    AUGMENT(TypeCheck);
-
-    AUGMENT(List_Check);
-
-    AUGMENT(Unicode_FromWideChar);
-
-    AUGMENT(Tuple_FromArray);
-
-    AUGMENT(Global_Load);
-
-    AUGMENT(Global_Store);
-
-    AUGMENT(Field_Load);
-
-    AUGMENT(Field_Store);
-
-    AUGMENT(Is);
-
-    AUGMENT(Type);
-
-#undef AUGMENT
+    init_native_fast_paths(context);
 }
 
 void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
@@ -856,10 +512,10 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Dict_New = ctx_DictNew_jni;
     context->ctx_List_New = ctx_ListNew_jni;
 
-    context->ctx_Tracker_New = ctx_Tracker_New_jni;
-    context->ctx_Tracker_Add = ctx_Tracker_Add_jni;
-    context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll_jni;
-    context->ctx_Tracker_Close = ctx_Tracker_Close_jni;
+    context->ctx_Tracker_New = augment_Tracker_New;
+    context->ctx_Tracker_Add = augment_Tracker_Add;
+    context->ctx_Tracker_ForgetAll = augment_Tracker_ForgetAll;
+    context->ctx_Tracker_Close = augment_Tracker_Close;
 
     context->ctx_TupleBuilder_New = ctx_TupleBuilder_New;
     context->ctx_TupleBuilder_Set = ctx_TupleBuilder_Set;

@@ -43,6 +43,7 @@
 #define SRC_HPY_LOG_H_
 
 #ifndef NDEBUG
+#include <stdio.h>
 #define LOG(FORMAT, ...) do { printf("%-15s (%s:%d): %s " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__); fflush(stdout); } while(0);
 #define LOGS(FORMAT) do { printf("%-15s (%s:%d): " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__); fflush(stdout); } while(0);
 #else
