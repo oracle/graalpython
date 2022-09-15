@@ -144,6 +144,7 @@
 #include "pystrtod.h"
 #include "tracemalloc.h"
 #include "genobject.h"
+#include "osmodule.h"
 
 #include "abstract.h"
 

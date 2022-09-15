@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 import sys
+import pathlib
+import os
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 import builtins
 __dir__ = __file__.rpartition("/")[0]
@@ -251,7 +253,7 @@ class TestMisc(CPyExtTestCase):
             return 0;
         }
         #endif
-        
+
         PyObject* primitive_sharing(PyObject* val) {
             Py_ssize_t val_refcnt = Py_REFCNT(val);
             // assume val's refcnt is X > 0
@@ -317,5 +319,26 @@ class TestMisc(CPyExtTestCase):
         argspec="",
         arguments=[],
         callfunction="wrap_PyEval_GetBuiltins",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyOS_FSPath = CPyExtFunction(
+        lambda args: os.fspath(*args),
+        lambda: (
+            (b"bytespath",),
+            ("stringpath",),
+            (pathlib.Path("pathpath"),),
+            (123,),
+            (object(),),
+        ),
+        callfunction="call_PyOS_FSPath",
+        code="""
+        static PyObject* call_PyOS_FSPath(PyObject* value) {
+            return PyOS_FSPath(value);
+        }
+        """,
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* value"],
         cmpfunc=unhandled_error_compare
     )

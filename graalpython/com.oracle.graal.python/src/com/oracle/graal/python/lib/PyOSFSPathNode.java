@@ -96,7 +96,8 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
         }
         Object result = callFSPath.executeObject(frame, fspathMethod, object);
-        if (isJavaString(result) || result instanceof TruffleString || result instanceof PString || result instanceof PBytes) {
+        assert !isJavaString(result);
+        if (result instanceof TruffleString || result instanceof PString || result instanceof PBytes) {
             return result;
         }
         throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);

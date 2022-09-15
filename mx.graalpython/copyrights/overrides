@@ -149,6 +149,7 @@ graalpython/com.oracle.graal.python.cext/include/moduleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/namespaceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/objimpl.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/osmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/patchlevel.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyarena.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pycapsule.h,python.copyright
