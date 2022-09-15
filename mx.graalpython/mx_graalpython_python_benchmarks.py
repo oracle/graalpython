@@ -348,6 +348,16 @@ class GraalPyVm(mx_benchmark.GuestVm):
         name = name.replace("graalvm-ce-python", "graalvm-ce")
         name = name.replace("graalvm-ee-python", "graalvm-ee")
         type(host_vm).name = lambda s: name
+
+        for idx,arg in enumerate(args):
+            if "--vm.Xmx" in arg:
+                mx.log(f"Setting Xmx from {arg}")
+                break
+        else:
+            xmxArg = "--vm.Xmx8G"
+            mx.log(f"Setting Xmx as {xmxArg}")
+            args.insert(0, xmxArg)
+
         return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
 
 
@@ -371,7 +381,17 @@ class PyPyVm(mx_benchmark.Vm):
 
     def run(self, cwd, args):
         env = os.environ.copy()
-        env["PYPY_GC_MAX"] = "8GB"
+        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
+        pypyGcMax = "8GB"
+        for idx,arg in enumerate(args):
+            if m := xmxArg.search(arg):
+                args = args[:idx] + args[idx + 1:]
+                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
+                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
+                break
+        else:
+            mx.log(f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it")
+        env["PYPY_GC_MAX"] = pypyGcMax
         return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
 
 
@@ -395,6 +415,11 @@ class Python3Vm(mx_benchmark.Vm):
         return join(home, "bin", "python")
 
     def run(self, cwd, args):
+        for idx,arg in enumerate(args):
+            if "--vm.Xmx" in arg:
+                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
+                args = args[:idx] + args[idx + 1:]
+                break
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
 
@@ -676,7 +701,7 @@ def register_python_benchmarks():
     python_vm_registry.add_vm(PyPyVm())
     python_vm_registry.add_vm(Python3Vm())
     for config_name, options, priority in [
-        ("launcher", ["--vm.Xmx8G"], 5),
+        ("launcher", [], 5),
     ]:
         python_vm_registry.add_vm(GraalPyVm(config_name, options), SUITE, priority)
 
