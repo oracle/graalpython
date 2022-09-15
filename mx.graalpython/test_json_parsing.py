@@ -170,6 +170,28 @@ class TestJsonBenchmarkParsers(unittest.TestCase):
 
         self.assertEqual(len(results), 100, "should have 2*50 peak values")
 
+    def test_pypy_results_parsing2(self):
+        import mx
+        import mx_graalpython_python_benchmarks
+        from mx_graalpython_python_benchmarks import PyPyJsonRule
+
+        rule = PyPyJsonRule("", "pypy")
+
+        with mock.patch('mx_graalpython_python_benchmarks.open', mock.mock_open(read_data=PYPY_JSON2)):
+            results = rule.parse("ignored")
+
+        for result in results:
+            self.assertEqual(result["bench-suite"], "pypy")
+            self.assertIn(result["benchmark"], ["scimark_fft"])
+            self.assertIn(result["metric.name"], ["time"])
+            self.assertIn(result["metric.unit"], ["s"])
+            self.assertEqual(result["metric.score-function"], "id")
+            self.assertEqual(result["metric.type"], "numeric")
+            self.assertIsInstance(result["metric.value"], float)
+            self.assertIsInstance(result["metric.iteration"], int)
+
+        self.assertEqual(len(results), 1, "just 1 value expected")
+
 
 if __name__ == '__main__':
     unittest.main()

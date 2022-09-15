@@ -308,7 +308,13 @@ class PyPyJsonRule(mx_benchmark.Rule):
 
             for result in js["results"]:
                 name = result[0]
-                values = result[2]["base_times"]
+                if result[1] == "RawResult":
+                    values = result[2]["base_times"]
+                elif result[1] == "SimpleComparisonResult":
+                    values = [result[2]["base_time"]]
+                else:
+                    mx.warn(f"No data found for {name} with {result[1]}")
+                    continue
                 for iteration, value in enumerate(values):
                     r.append(
                         {
