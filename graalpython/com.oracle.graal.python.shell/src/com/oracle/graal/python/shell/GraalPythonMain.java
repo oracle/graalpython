@@ -701,11 +701,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {
         Path binDir = Paths.get(executable).getParent();
+        if (binDir == null) {
+            return;
+        }
         Path venvCfg = binDir.resolve(J_PYENVCFG);
         if (!Files.exists(venvCfg)) {
-            venvCfg = binDir.getParent().resolve(J_PYENVCFG);
+            Path binParent = binDir.getParent();
+            if (binParent == null) {
+                return;
+            }
+            venvCfg = binParent.resolve(J_PYENVCFG);
             if (!Files.exists(venvCfg)) {
-                return; // not found
+                return;
             }
         }
         try (BufferedReader reader = Files.newBufferedReader(venvCfg)) {
@@ -718,11 +725,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 String name = parts[0].trim();
                 if (name.equals("home")) {
                     contextBuilder.option("python.PythonHome", parts[1].trim());
+                    String sysPrefix = null;
                     try {
-                        contextBuilder.option("python.SysPrefix", venvCfg.getParent().toAbsolutePath().toString());
-                    } catch (IOError ex) {
-                        System.err.println();
-                        throw abort("Could not set the home according to the pyvenv.cfg file.", 65);
+                        sysPrefix = venvCfg.getParent().toAbsolutePath().toString();
+                    } catch (IOError | NullPointerException ex) {
+                        // NullPointerException covers the possible null result of getParent()
+                        warn("Could not set the sys.prefix according to the pyvenv.cfg file.");
+                    }
+                    if (sysPrefix != null) {
+                        contextBuilder.option("python.SysPrefix", sysPrefix);
                     }
                     break;
                 }
