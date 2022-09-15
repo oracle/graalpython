@@ -352,13 +352,7 @@ class GraalPyVm(mx_benchmark.GuestVm):
         return self.__class__(self.config_name(), self._options, host_vm)
 
     def run(self, cwd, args):
-        ## patch host-vm name
-        name = self.host_vm.name()
-        name = name.replace("graalvm-ce-python", "graalvm-ce")
-        name = name.replace("graalvm-ee-python", "graalvm-ee")
-        type(host_vm).name = lambda s: name
-
-        for idx,arg in enumerate(args):
+        for idx, arg in enumerate(args):
             if "--vm.Xmx" in arg:
                 mx.log(f"Setting Xmx from {arg}")
                 break
@@ -392,14 +386,16 @@ class PyPyVm(mx_benchmark.Vm):
         env = os.environ.copy()
         xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
         pypyGcMax = "8GB"
-        for idx,arg in enumerate(args):
+        for idx, arg in enumerate(args):
             if m := xmxArg.search(arg):
-                args = args[:idx] + args[idx + 1:]
+                args = args[:idx] + args[idx + 1 :]
                 pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
                 mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
                 break
         else:
-            mx.log(f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it")
+            mx.log(
+                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
+            )
         env["PYPY_GC_MAX"] = pypyGcMax
         return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
 
@@ -424,10 +420,10 @@ class Python3Vm(mx_benchmark.Vm):
         return join(home, "bin", "python")
 
     def run(self, cwd, args):
-        for idx,arg in enumerate(args):
+        for idx, arg in enumerate(args):
             if "--vm.Xmx" in arg:
                 mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
-                args = args[:idx] + args[idx + 1:]
+                args = args[:idx] + args[idx + 1 :]
                 break
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
@@ -447,9 +443,23 @@ class WildcardList:
         )
 
 
-class PyPerformanceSuite(
-    mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite
-):
+class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
+        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
+
+        def _replace_host_vm(old, new):
+            host_vm = dims.get("host-vm")
+            if host_vm and old in host_vm:
+                dims['host-vm'] = host_vm.replace(old, new)
+                mx.logv(f"[DEBUG] replace 'host-vm': '{host_vm}' -> '{dims['host-vm']}'")
+
+        _replace_host_vm('graalvm-ce-python', 'graalvm-ce')
+        _replace_host_vm('graalvm-ee-python', 'graalvm-ee')
+
+        return ret_code, out, dims
+
+
+class PyPerformanceSuite(PySuite):
     VERSION = "1.0.5"
 
     def name(self):
@@ -513,7 +523,7 @@ class PyPerformanceSuite(
         return 0, join(workdir, json_file)
 
 
-class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+class PyPySuite(PySuite):
     VERSION = "0324a252cf1a"
 
     def name(self):
@@ -594,7 +604,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         return 0, join(workdir, json_file)
 
 
-class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+class NumPySuite(PySuite):
     VERSION = "v1.16.4"
     ASV = "0.5.1"
     VIRTUALENV = "20.16.3"
