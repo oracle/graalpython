@@ -343,6 +343,11 @@ class GraalPyVm(mx_benchmark.GuestVm):
         return self.__class__(self.config_name(), self._options, host_vm)
 
     def run(self, cwd, args):
+        ## patch host-vm name
+        name = self.host_vm.name()
+        name = name.replace("graalvm-ce-python", "graalvm-ce")
+        name = name.replace("graalvm-ee-python", "graalvm-ee")
+        type(host_vm).name = lambda s: name
         return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
 
 
