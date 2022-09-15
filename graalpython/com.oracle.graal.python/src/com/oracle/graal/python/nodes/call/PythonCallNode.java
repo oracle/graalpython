@@ -90,30 +90,39 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     private static final TruffleString T_UNKNOWN = tsLiteral("~unknown");
 
-    @Child private CallNode callNode = CallNode.create();
+    @Child
+    private CallNode callNode = CallNode.create();
 
     /*
-     * Either "argument" or "positionalArgument" needs to be non-null (but not both), and
+     * Either "argument" or "positionalArgument" needs to be non-null (but not
+     * both), and
      * "keywordArguments" may be null.
      */
-    @Children protected final ExpressionNode[] argumentNodes;
-    @Child private PositionalArgumentsNode positionalArguments;
-    @Child private KeywordArgumentsNode keywordArguments;
-    @Child private PyObjectFunctionStr pyObjectFunctionStr;
-    @Child private StringNodes.CastToTruffleStringCheckedNode castToStringNode;
+    @Children
+    protected final ExpressionNode[] argumentNodes;
+    @Child
+    private PositionalArgumentsNode positionalArguments;
+    @Child
+    private KeywordArgumentsNode keywordArguments;
+    @Child
+    private PyObjectFunctionStr pyObjectFunctionStr;
+    @Child
+    private StringNodes.CastToTruffleStringCheckedNode castToStringNode;
 
     protected final TruffleString calleeName;
 
     protected abstract ExpressionNode getCalleeNode();
 
-    PythonCallNode(TruffleString calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
+    PythonCallNode(TruffleString calleeName, ExpressionNode[] argumentNodes,
+            PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
         this.calleeName = calleeName;
         this.argumentNodes = argumentNodes;
         this.positionalArguments = positionalArguments;
         this.keywordArguments = keywordArguments;
     }
 
-    public static ExpressionNode create(ExpressionNode calleeNode, ExpressionNode[] argumentNodes, ExpressionNode[] keywords, ExpressionNode starArgs, ExpressionNode kwArgs) {
+    public static ExpressionNode create(ExpressionNode calleeNode, ExpressionNode[] argumentNodes,
+            ExpressionNode[] keywords, ExpressionNode starArgs, ExpressionNode kwArgs) {
         assert !(starArgs instanceof EmptyNode) : "pass null instead";
         assert !(kwArgs instanceof EmptyNode) : "pass null instead";
 
@@ -125,9 +134,11 @@ public abstract class PythonCallNode extends ExpressionNode {
         } else if (calleeNode instanceof ReadNameNode) {
             calleeName = ((ReadNameNode) calleeNode).getAttributeId();
         } else if (calleeNode instanceof GetAttributeNode) {
-            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getKey(), ((GetAttributeNode) calleeNode).getObject());
+            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getKey(),
+                    ((GetAttributeNode) calleeNode).getObject());
         }
-        KeywordArgumentsNode keywordArgumentsNode = kwArgs == null && keywords.length == 0 ? null : KeywordArgumentsNode.create(keywords, kwArgs);
+        KeywordArgumentsNode keywordArgumentsNode = kwArgs == null && keywords.length == 0 ? null
+                : KeywordArgumentsNode.create(keywords, kwArgs);
 
         if (argumentNodes != null && keywordArgumentsNode == null && starArgs == null) {
             switch (argumentNodes.length) {
@@ -147,7 +158,8 @@ public abstract class PythonCallNode extends ExpressionNode {
         if (starArgs == null) {
             return PythonCallNodeGen.create(calleeName, argumentNodes, null, keywordArgumentsNode, getCallableNode);
         } else {
-            return PythonCallNodeGen.create(calleeName, null, PositionalArgumentsNode.create(argumentNodes, starArgs), keywordArgumentsNode, getCallableNode);
+            return PythonCallNodeGen.create(calleeName, null, PositionalArgumentsNode.create(argumentNodes, starArgs),
+                    keywordArgumentsNode, getCallableNode);
         }
     }
 
@@ -156,11 +168,15 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private static final class PythonCallUnary extends ExpressionNode {
-        @Child CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
-        @Child ExpressionNode getCallable;
-        @Child ExpressionNode argumentNode;
+        @Child
+        CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
+        @Child
+        ExpressionNode getCallable;
+        @Child
+        ExpressionNode argumentNode;
 
-        @Child InvokeForeign invokeForeign;
+        @Child
+        InvokeForeign invokeForeign;
 
         PythonCallUnary(ExpressionNode getCallable, ExpressionNode argumentNode) {
             this.getCallable = getCallable;
@@ -176,18 +192,29 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     invokeForeign = insert(InvokeForeignNodeGen.create());
                 }
-                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[]{argument}, PKeyword.EMPTY_KEYWORDS);
+                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[] { argument },
+                        PKeyword.EMPTY_KEYWORDS);
             }
             return callUnary.executeObject(frame, callable, argument);
         }
+
+        @Override
+        public boolean hasTag(Class<? extends Tag> tag) {
+            return isCall(tag) || super.hasTag(tag);
+        }
+
     }
 
     private static final class PythonCallBinary extends ExpressionNode {
-        @Child CallBinaryMethodNode callBinary = CallBinaryMethodNode.create();
-        @Child ExpressionNode getCallable;
-        @Children final ExpressionNode[] argumentNodes;
+        @Child
+        CallBinaryMethodNode callBinary = CallBinaryMethodNode.create();
+        @Child
+        ExpressionNode getCallable;
+        @Children
+        final ExpressionNode[] argumentNodes;
 
-        @Child InvokeForeign invokeForeign;
+        @Child
+        InvokeForeign invokeForeign;
 
         PythonCallBinary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
             this.getCallable = getCallable;
@@ -204,18 +231,29 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     invokeForeign = insert(InvokeForeignNodeGen.create());
                 }
-                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[]{argument1, argument2}, PKeyword.EMPTY_KEYWORDS);
+                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[] { argument1, argument2 },
+                        PKeyword.EMPTY_KEYWORDS);
             }
             return callBinary.executeObject(frame, callable, argument1, argument2);
         }
+
+        @Override
+        public boolean hasTag(Class<? extends Tag> tag) {
+            return isCall(tag) || super.hasTag(tag);
+        }
+
     }
 
     private static final class PythonCallTernary extends ExpressionNode {
-        @Child CallTernaryMethodNode callTernary = CallTernaryMethodNode.create();
-        @Child ExpressionNode getCallable;
-        @Children final ExpressionNode[] argumentNodes;
+        @Child
+        CallTernaryMethodNode callTernary = CallTernaryMethodNode.create();
+        @Child
+        ExpressionNode getCallable;
+        @Children
+        final ExpressionNode[] argumentNodes;
 
-        @Child InvokeForeign invokeForeign;
+        @Child
+        InvokeForeign invokeForeign;
 
         PythonCallTernary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
             this.getCallable = getCallable;
@@ -233,18 +271,29 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     invokeForeign = insert(InvokeForeignNodeGen.create());
                 }
-                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[]{argument1, argument2, argument3}, PKeyword.EMPTY_KEYWORDS);
+                return invokeForeign.execute(frame, (ForeignInvoke) callable,
+                        new Object[] { argument1, argument2, argument3 }, PKeyword.EMPTY_KEYWORDS);
             }
             return callTernary.execute(frame, callable, argument1, argument2, argument3);
         }
+
+        @Override
+        public boolean hasTag(Class<? extends Tag> tag) {
+            return isCall(tag) || super.hasTag(tag);
+        }
+
     }
 
     private static final class PythonCallQuaternary extends ExpressionNode {
-        @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
-        @Child ExpressionNode getCallable;
-        @Children final ExpressionNode[] argumentNodes;
+        @Child
+        CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
+        @Child
+        ExpressionNode getCallable;
+        @Children
+        final ExpressionNode[] argumentNodes;
 
-        @Child InvokeForeign invokeForeign;
+        @Child
+        InvokeForeign invokeForeign;
 
         PythonCallQuaternary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
             this.getCallable = getCallable;
@@ -263,10 +312,17 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     invokeForeign = insert(InvokeForeignNodeGen.create());
                 }
-                return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[]{argument1, argument2, argument3, argument4}, PKeyword.EMPTY_KEYWORDS);
+                return invokeForeign.execute(frame, (ForeignInvoke) callable,
+                        new Object[] { argument1, argument2, argument3, argument4 }, PKeyword.EMPTY_KEYWORDS);
             }
             return callQuaternary.execute(frame, callable, argument1, argument2, argument3, argument4);
         }
+
+        @Override
+        public boolean hasTag(Class<? extends Tag> tag) {
+            return isCall(tag) || super.hasTag(tag);
+        }
+
     }
 
     @NodeChild("object")
@@ -280,14 +336,14 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
         Object getForeignInvoke(Object object,
-                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
+                @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
             return new ForeignInvoke(object, key);
         }
 
         @Specialization(guards = "!isForeignObjectNode.execute(object)", limit = "1")
         static Object getCallAttribute(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @Cached("create(key)") GetAttributeNode getAttributeNode) {
+                @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
+                @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
         }
     }
@@ -312,10 +368,12 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private Object[] evaluateArguments(VirtualFrame frame) {
-        return argumentNodes != null ? PositionalArgumentsNode.evaluateArguments(frame, argumentNodes) : positionalArguments.execute(frame);
+        return argumentNodes != null ? PositionalArgumentsNode.evaluateArguments(frame, argumentNodes)
+                : positionalArguments.execute(frame);
     }
 
-    private PKeyword[] evaluateKeywords(VirtualFrame frame, Object callable, PRaiseNode raise, BranchProfile keywordsError) {
+    private PKeyword[] evaluateKeywords(VirtualFrame frame, Object callable, PRaiseNode raise,
+            BranchProfile keywordsError) {
         PKeyword[] result;
         if (keywordArguments == null) {
             result = PKeyword.EMPTY_KEYWORDS;
@@ -329,12 +387,15 @@ public abstract class PythonCallNode extends ExpressionNode {
                     castToStringNode = insert(StringNodes.CastToTruffleStringCheckedNode.create());
                 }
                 TruffleString functionName = getFunctionName(frame, callable);
-                TruffleString keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
+                TruffleString keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS,
+                        new Object[] { functionName });
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG,
+                        functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
                 TruffleString functionName = getFunctionName(frame, callable);
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, ex.getObject());
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING,
+                        functionName, ex.getObject());
             }
         }
         return result;
@@ -348,24 +409,27 @@ public abstract class PythonCallNode extends ExpressionNode {
         return pyObjectFunctionStr.execute(frame, callable);
     }
 
-    @ImportStatic({PythonOptions.class})
+    @ImportStatic({ PythonOptions.class })
     abstract static class InvokeForeign extends Node {
 
-        @Child private CallNode callNode = CallNode.create();
+        @Child
+        private CallNode callNode = CallNode.create();
 
-        public abstract Object execute(VirtualFrame frame, ForeignInvoke callable, Object[] arguments, PKeyword[] keywords);
+        public abstract Object execute(VirtualFrame frame, ForeignInvoke callable, Object[] arguments,
+                PKeyword[] keywords);
 
         @Specialization
         Object call(VirtualFrame frame, ForeignInvoke callable, Object[] arguments, PKeyword[] keywords,
-                        @Cached PRaiseNode raise,
-                        @Cached PForeignToPTypeNode fromForeign,
-                        @Cached BranchProfile typeError,
-                        @Cached BranchProfile invokeError,
-                        @Cached GetAnyAttributeNode getAttrNode,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
+                @Cached PRaiseNode raise,
+                @Cached PForeignToPTypeNode fromForeign,
+                @Cached BranchProfile typeError,
+                @Cached BranchProfile invokeError,
+                @Cached GetAnyAttributeNode getAttrNode,
+                @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
             try {
-                return fromForeign.executeConvert(interop.invokeMember(callable.receiver, toJavaStringNode.execute(callable.identifier), arguments));
+                return fromForeign.executeConvert(interop.invokeMember(callable.receiver,
+                        toJavaStringNode.execute(callable.identifier), arguments));
             } catch (ArityException | UnsupportedTypeException e) {
                 typeError.enter();
                 throw raise.raise(PythonErrorType.TypeError, e);
@@ -380,9 +444,9 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
-                    @Cached PRaiseNode raise,
-                    @Cached BranchProfile keywordsError,
-                    @Cached InvokeForeign invoke) {
+            @Cached PRaiseNode raise,
+            @Cached BranchProfile keywordsError,
+            @Cached InvokeForeign invoke) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         if (keywords.length != 0) {
@@ -399,19 +463,21 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     protected boolean canDoFastSysExcInfo() {
         if (getParent() instanceof GetItemNode) {
-            return ((GetItemNode) getParent()).getSlice() instanceof IntegerLiteralNode && ((IntegerLiteralNode) ((GetItemNode) getParent()).getSlice()).getValue() == 0;
+            return ((GetItemNode) getParent()).getSlice() instanceof IntegerLiteralNode
+                    && ((IntegerLiteralNode) ((GetItemNode) getParent()).getSlice()).getValue() == 0;
         }
         return false;
     }
 
-    @Specialization(limit = "1", guards = {"callable == callableCached", "isSysExcInfo(nodeClass)", "canDoFastSysExcInfo()"})
+    @Specialization(limit = "1", guards = { "callable == callableCached", "isSysExcInfo(nodeClass)",
+            "canDoFastSysExcInfo()" })
     static Object fastSysExcInfoCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable,
-                    @SuppressWarnings("unused") @Cached("callable") PBuiltinMethod callableCached,
-                    @SuppressWarnings("unused") @Cached("callableCached.getFunction()") PBuiltinFunction func,
-                    @SuppressWarnings("unused") @Cached("func.getNodeClass()") Class<? extends PythonBuiltinBaseNode> nodeClass,
-                    @Cached PythonObjectFactory factory,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+            @SuppressWarnings("unused") @Cached("callable") PBuiltinMethod callableCached,
+            @SuppressWarnings("unused") @Cached("callableCached.getFunction()") PBuiltinFunction func,
+            @SuppressWarnings("unused") @Cached("func.getNodeClass()") Class<? extends PythonBuiltinBaseNode> nodeClass,
+            @Cached PythonObjectFactory factory,
+            @Cached GetClassNode getClassNode,
+            @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
         return SysModuleBuiltins.ExcInfoNode.fast(frame, getClassNode, getCaughtExceptionNode, factory);
     }
 
@@ -421,7 +487,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization(guards = "!isForeignInvoke(callable)")
     Object call(VirtualFrame frame, Object callable, @Cached PRaiseNode raise,
-                    @Cached BranchProfile keywordsError) {
+            @Cached BranchProfile keywordsError) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         return callNode.execute(frame, callable, arguments, keywords);
@@ -437,6 +503,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private boolean isBreakpoint(Class<?> tag) {
-        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equalsUncached(BuiltinNames.T_BREAKPOINT, TS_ENCODING);
+        return tag == DebuggerTags.AlwaysHalt.class
+                && calleeName.equalsUncached(BuiltinNames.T_BREAKPOINT, TS_ENCODING);
     }
 }
