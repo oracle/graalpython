@@ -386,7 +386,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0", limit = "1")
         Object reprNoArgs(@SuppressWarnings("unused") VirtualFrame frame, PBaseException self,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,
@@ -402,7 +402,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return toStringNode.execute(sb);
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1", limit = "1")
         Object reprArgs1(VirtualFrame frame, PBaseException self,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,
@@ -422,7 +422,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return toStringNode.execute(sb);
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1", limit = "1")
         Object reprArgs(VirtualFrame frame, PBaseException self,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,
@@ -448,14 +448,14 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0", limit = "1")
         Object strNoArgs(VirtualFrame frame, PBaseException self,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ArgsNode argsNode) {
             return T_EMPTY_STRING;
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1", limit = "1")
         Object strArgs1(VirtualFrame frame, PBaseException self,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,
@@ -464,7 +464,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return strNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0));
         }
 
-        @Specialization(guards = {"argsLen(frame, self, lenNode, argsNode) > 1"})
+        @Specialization(guards = {"argsLen(frame, self, lenNode, argsNode) > 1"}, limit = "1")
         Object strArgs(VirtualFrame frame, PBaseException self,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @Cached ArgsNode argsNode,

@@ -2575,7 +2575,7 @@ public abstract class SequenceStorageNodes {
     public abstract static class IndexOfNode extends SequenceStorageBaseNode {
         public abstract int execute(VirtualFrame frame, SequenceStorage left, Object item);
 
-        @Specialization(guards = "lenNode.execute(left) == 0")
+        @Specialization(guards = "lenNode.execute(left) == 0", limit = "1")
         @SuppressWarnings("unused")
         static int doEmpty(SequenceStorage left, Object item,
                         @Cached LenNode lenNode) {
