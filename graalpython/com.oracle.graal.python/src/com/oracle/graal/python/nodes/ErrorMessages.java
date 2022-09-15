@@ -1466,4 +1466,5 @@ public abstract class ErrorMessages {
     public static final TruffleString AWAIT_RETURN_COROUTINE = tsLiteral("__await__() returned a coroutine");
 
     public static final TruffleString AWAIT_RETURN_NON_ITER = tsLiteral("__await__() returned non-iterator of type '%s'");
+    public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
 }

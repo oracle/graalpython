@@ -61,6 +61,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
@@ -760,7 +761,11 @@ public abstract class Python3Core {
 
                         // _hpy_universal and _hpy_debug
                         new GraalHPyUniversalModuleBuiltins(),
-                        new GraalHPyDebugModuleBuiltins()));
+                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyDebugModuleBuiltins(),
+
+                        // _asyncio
+                        new AsyncioModuleBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
