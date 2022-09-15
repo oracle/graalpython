@@ -106,6 +106,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -681,7 +682,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(table)")
         PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
@@ -703,7 +704,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
         PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
-                        @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
+                        @Cached.Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);

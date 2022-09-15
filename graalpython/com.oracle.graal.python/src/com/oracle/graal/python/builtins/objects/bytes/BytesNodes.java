@@ -104,6 +104,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -121,9 +123,11 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 public abstract class BytesNodes {
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class CreateBytesNode extends Node {
 
-        public abstract PBytesLike execute(PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
+        public abstract PBytesLike execute(Node node, PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
 
         @Specialization
         static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, byte[] bytes) {
