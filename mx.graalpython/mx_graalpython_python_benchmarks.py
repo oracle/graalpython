@@ -54,6 +54,9 @@ from os.path import join, abspath, exists
 SUITE = None
 python_vm_registry = None
 
+# By default we disabled some benchmarks, both because some don't run and
+# because we want to reduce the total runtime of the suites.
+
 DEFAULT_NUMPY_BENCHMARKS = [
     "bench_app",
     "bench_core",
