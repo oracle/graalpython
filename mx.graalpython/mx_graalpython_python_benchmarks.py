@@ -114,6 +114,55 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     "xml_etree",
 ]
 
+DEFAULT_PYPY_BENCHMARKS = [
+    "ai",
+    # "bm_chameleon",
+    "bm_dulwich_log",
+    "bm_mako",
+    "bm_mdp",
+    "chaos",
+    # "cpython_doc",
+    "crypto_pyaes",
+    "deltablue",
+    "django",
+    "eparse",
+    "fannkuch",
+    "float",
+    "genshi_text",
+    "genshi_xml",
+    "go",
+    "hexiom2",
+    "html5lib",
+    "json_bench",
+    "meteor-contest",
+    "nbody_modified",
+    "nqueens",
+    "pidigits",
+    "pyflate-fast",
+    "pyxl_bench",
+    "raytrace-simple",
+    "richards",
+    "scimark_fft",
+    "scimark_lu",
+    "scimark_montecarlo",
+    "scimark_sor",
+    "scimark_sparsematmult",
+    "spectral-norm",
+    "spitfire2",
+    "spitfire_cstringio2",
+    # "sqlalchemy_declarative",
+    # "sqlalchemy_imperative",
+    # "sqlitesynth",
+    # "sympy_expand",
+    # "sympy_integrate",
+    # "sympy_str",
+    # "sympy_sum",
+    # "telco",
+    # "twisted_names",
+    # "twisted_pb",
+    # "twisted_tcp",
+]
+
 
 class PyPerfJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by PyPerf and creates a measurement result."""
@@ -488,7 +537,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", ",".join(DEFAULT_PYPY_BENCHMARKS)]
         retcode = mx.run(
             [
                 sys.executable,
