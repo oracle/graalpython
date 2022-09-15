@@ -93,7 +93,7 @@ public enum OpCodes {
     /**
      * Performs subscript set operation - {@code a[b] = c}.
      * 
-     * Pops: {@code c}, then {@code b}, then {@code a}
+     * Pops: {@code b}, then {@code a}, then {@code c}
      */
     STORE_SUBSCR(0, 3, 0),
     /**
@@ -739,6 +739,14 @@ public enum OpCodes {
     BINARY_SUBSCR_SEQ_I_O(BINARY_SUBSCR, QuickeningTypes.INT, QuickeningTypes.OBJECT),
     BINARY_SUBSCR_SEQ_I_I(BINARY_SUBSCR, QuickeningTypes.INT, QuickeningTypes.INT, BINARY_SUBSCR_SEQ_I_O),
     BINARY_SUBSCR_SEQ_I_D(BINARY_SUBSCR, QuickeningTypes.INT, QuickeningTypes.DOUBLE, BINARY_SUBSCR_SEQ_I_O),
+    STORE_SUBSCR_OOO(STORE_SUBSCR, QuickeningTypes.OBJECT, 0),
+    /*
+     * The index and collection inputs are handled manually in the compiler, the input type
+     * parameter is used just for the value type.
+     */
+    STORE_SUBSCR_SEQ_IOO(STORE_SUBSCR, QuickeningTypes.OBJECT, 0),
+    STORE_SUBSCR_SEQ_IIO(STORE_SUBSCR, QuickeningTypes.INT, 0),
+    STORE_SUBSCR_SEQ_IDO(STORE_SUBSCR, QuickeningTypes.DOUBLE, 0),
     POP_AND_JUMP_IF_FALSE_O(POP_AND_JUMP_IF_FALSE, QuickeningTypes.OBJECT, 0),
     POP_AND_JUMP_IF_FALSE_B(POP_AND_JUMP_IF_FALSE, QuickeningTypes.BOOLEAN, 0, POP_AND_JUMP_IF_FALSE_O),
     POP_AND_JUMP_IF_TRUE_O(POP_AND_JUMP_IF_TRUE, QuickeningTypes.OBJECT, 0),

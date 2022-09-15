@@ -298,9 +298,25 @@ public class Compiler implements SSTreeVisitor<Void> {
         int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
         byte canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
         List<Instruction> inputs = null;
+        if (insn.opcode == STORE_SUBSCR) {
+            // Asymmetric, needs to be handled separately
+            Instruction index = popQuickeningStack();
+            popQuickeningStack(); // Ignore the collection, it's always object
+            Instruction value = popQuickeningStack();
+            if (index != null && (index.opcode.canQuickenOutputTypes() & QuickeningTypes.INT) != 0) {
+                index.quickenOutput = QuickeningTypes.INT;
+                if (value != null && (value.opcode.canQuickenOutputTypes() & canQuickenInputTypes) != 0) {
+                    value.quickenOutput = canQuickenInputTypes;
+                    insn.quickeningGeneralizeList = List.of(value, index);
+                } else {
+                    insn.quickeningGeneralizeList = List.of(index);
+                }
+            }
+            return;
+        }
         if (consumed > 0) {
             if (canQuickenInputTypes != 0) {
-                inputs = new ArrayList<>();
+                inputs = new ArrayList<>(consumed);
                 for (int i = 0; i < consumed; i++) {
                     Instruction input = popQuickeningStack();
                     if (input == null) {

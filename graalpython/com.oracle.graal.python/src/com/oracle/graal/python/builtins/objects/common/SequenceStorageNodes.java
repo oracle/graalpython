@@ -536,6 +536,13 @@ public abstract class SequenceStorageNodes {
             return GetItemNodeGen.create(normalizeIndexNode, factoryMethod);
         }
 
+        public static SequenceStorageNodes.GetItemNode createForList() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
+        }
+
+        public static SequenceStorageNodes.GetItemNode createForTuple() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
+        }
     }
 
     @GenerateUncached
@@ -990,11 +997,40 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, Object key, Object value);
 
-        public abstract SequenceStorage executeInt(VirtualFrame frame, SequenceStorage s, int key, Object value);
+        protected abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, int key, Object value);
 
-        public abstract SequenceStorage executeLong(VirtualFrame frame, SequenceStorage s, long key, Object value);
+        public final SequenceStorage execute(SequenceStorage s, int key, Object value) {
+            return execute(null, s, key, value);
+        }
+
+        protected abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, int key, int value);
+
+        public final SequenceStorage execute(SequenceStorage s, int key, int value) {
+            return execute(null, s, key, value);
+        }
+
+        protected abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, int key, double value);
+
+        public final SequenceStorage execute(SequenceStorage s, int key, double value) {
+            return execute(null, s, key, value);
+        }
 
         @Specialization
+        protected SequenceStorage doScalarInt(IntSequenceStorage storage, int idx, int value) {
+            int normalized = normalizeIndex(idx, storage);
+            storage.setItemNormalized(normalized, value);
+            return storage;
+        }
+
+        @Specialization
+        protected SequenceStorage doScalarInt(DoubleSequenceStorage storage, int idx, double value) {
+            int normalized = normalizeIndex(idx, storage);
+            storage.setItemNormalized(normalized, value);
+            return storage;
+        }
+
+        @Specialization
+        @InliningCutoff
         protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
@@ -1016,6 +1052,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        @InliningCutoff
         protected SequenceStorage doScalarLong(VirtualFrame frame, SequenceStorage storage, long idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
@@ -1032,6 +1069,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        @InliningCutoff
         protected SequenceStorage doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
@@ -1048,6 +1086,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!isPSlice(idx)")
+        @InliningCutoff
         protected SequenceStorage doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
@@ -1132,6 +1171,9 @@ public abstract class SequenceStorageNodes {
             return SetItemNodeGen.create(NormalizeIndexNode.create(), () -> NoGeneralizationCustomMessageNode.create(invalidItemErrorMessage));
         }
 
+        public static SequenceStorageNodes.SetItemNode createForList() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), ListGeneralizationNode::create);
+        }
     }
 
     @GenerateUncached
@@ -1139,8 +1181,6 @@ public abstract class SequenceStorageNodes {
     public abstract static class SetItemScalarNode extends Node {
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
-
-        public abstract void execute(SequenceStorage s, int idx, byte value);
 
         @Specialization
         protected static void doBoolean(BoolSequenceStorage storage, int idx, boolean value) {

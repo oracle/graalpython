@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -101,6 +100,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -258,9 +258,11 @@ public class TupleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
+        public abstract Object execute(VirtualFrame frame, PTuple tuple, int index);
+
         @Specialization
         static Object doInBounds(PTuple tuple, int index,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(tuple.getSequenceStorage(), index);
         }
 
@@ -268,14 +270,14 @@ public class TupleBuiltins extends PythonBuiltins {
         @Specialization(guards = "indexCheck.execute(key)", limit = "1")
         static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheck,
-                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @InliningCutoff
         @Specialization
         static Object doSlice(VirtualFrame frame, PTuple tuple, PSlice key,
-                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
@@ -294,10 +296,6 @@ public class TupleBuiltins extends PythonBuiltins {
         static Object doError(VirtualFrame frame, Object tuple, Object key,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", key);
-        }
-
-        protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
         }
     }
 
