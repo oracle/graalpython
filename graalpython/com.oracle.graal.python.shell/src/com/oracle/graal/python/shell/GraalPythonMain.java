@@ -75,9 +75,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static final String LANGUAGE_ID = "python";
 
-    // provided by GraalVM thin launcher
-    protected static final String J_BASH_LAUNCHER_EXEC_PROPERTY_NAME = "org.graalvm.launcher.executablename";
-
     private static final String J_PYENVCFG = "pyvenv.cfg";
 
     private static long startupWallClockTime = -1;
