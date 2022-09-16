@@ -213,9 +213,7 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "metric.value": value,
                                 }
                             )
-                        if maxrss := run["metadata"].get(
-                            "mem_max_rss", js["metadata"].get("mem_max_rss", 0)
-                        ):
+                        if maxrss := run["metadata"].get("mem_max_rss", 0):
                             r.append(
                                 {
                                     "bench-suite": self.suiteName,
@@ -295,7 +293,7 @@ class AsvJsonRule(mx_benchmark.Rule):
         return r
 
 
-class PyPyJsonRule(mx_benchmark.Rule):
+class PyPyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
     """Parses a JSON file produced by the Unladen Swallow or PyPy benchmark harness and creates a measurement result."""
 
     def __init__(self, filename: str, suiteName: str):
@@ -321,7 +319,7 @@ class PyPyJsonRule(mx_benchmark.Rule):
                         {
                             "bench-suite": self.suiteName,
                             "benchmark": name,
-                            "metric.name": "time",
+                            "metric.name": "warmup",
                             "metric.unit": "s",
                             "metric.score-function": "id",
                             "metric.better": "lower",
@@ -330,7 +328,7 @@ class PyPyJsonRule(mx_benchmark.Rule):
                             "metric.value": value,
                         }
                     )
-
+        self.addAverageAcrossLatestResults(r)
         return r
 
 
@@ -517,7 +515,6 @@ class PyPerformanceSuite(PySuite):
                 "run",
                 "--inherit-environ",
                 "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX",
-                "-m",
                 "-o",
                 json_file,
                 *bms,
