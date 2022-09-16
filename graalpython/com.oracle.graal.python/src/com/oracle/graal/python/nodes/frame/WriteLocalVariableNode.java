@@ -31,6 +31,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_local")
@@ -89,5 +91,10 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     void writeObject(VirtualFrame frame, Object value) {
         FrameSlotGuards.ensureObjectKind(frame, frameSlot);
         frame.setObject(frameSlot, value);
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.WriteVariableTag.class == tag || super.hasTag(tag);
     }
 }
