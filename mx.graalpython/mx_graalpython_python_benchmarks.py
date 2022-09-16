@@ -44,6 +44,7 @@ import glob
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -53,6 +54,118 @@ from os.path import join, abspath, exists
 
 SUITE = None
 python_vm_registry = None
+
+# By default we disabled some benchmarks, both because some don't run and
+# because we want to reduce the total runtime of the suites.
+
+DEFAULT_NUMPY_BENCHMARKS = [
+    "bench_app",
+    "bench_core",
+    # "bench_function_base",
+    "bench_indexing",
+    # "bench_io",
+    "bench_linalg",
+    # "bench_ma",
+    # "bench_random",
+    "bench_reduce",
+    # "bench_shape_base",
+    # "bench_ufunc",
+]
+
+DEFAULT_PYPERFORMANCE_BENCHMARKS = [
+    # "2to3",
+    # "chameleon",
+    "chaos",
+    # "crypto_pyaes",
+    # "django_template",
+    # "dulwich_log",
+    "fannkuch",
+    "float",
+    "go",
+    "hexiom",
+    # "html5lib",
+    "json_dumps",
+    "json_loads",
+    "logging",
+    # "mako",
+    "meteor_contest",
+    "nbody",
+    "nqueens",
+    "pathlib",
+    "pickle",
+    "pickle_dict",
+    "pickle_list",
+    "pickle_pure_python",
+    "pidigits",
+    "pyflate",
+    "regex_compile",
+    "regex_dna",
+    "regex_effbot",
+    "regex_v8",
+    "richards",
+    "scimark",
+    "spectral_norm",
+    # "sqlalchemy_declarative",
+    # "sqlalchemy_imperative",
+    # "sqlite_synth",
+    "sympy",
+    "telco",
+    "tornado_http",
+    "unpack_sequence",
+    "unpickle",
+    "unpickle_list",
+    "unpickle_pure_python",
+    "xml_etree",
+]
+
+DEFAULT_PYPY_BENCHMARKS = [
+    "ai",
+    # "bm_chameleon",
+    "bm_dulwich_log",
+    "bm_mako",
+    "bm_mdp",
+    "chaos",
+    # "cpython_doc",
+    "crypto_pyaes",
+    "deltablue",
+    "django",
+    "eparse",
+    "fannkuch",
+    "float",
+    "genshi_text",
+    "genshi_xml",
+    "go",
+    "hexiom2",
+    "html5lib",
+    "json_bench",
+    "meteor-contest",
+    "nbody_modified",
+    "nqueens",
+    "pidigits",
+    "pyflate-fast",
+    "pyxl_bench",
+    "raytrace-simple",
+    "richards",
+    "scimark_fft",
+    "scimark_lu",
+    "scimark_montecarlo",
+    "scimark_sor",
+    "scimark_sparsematmult",
+    "spectral-norm",
+    "spitfire2",
+    "spitfire_cstringio2",
+    # "sqlalchemy_declarative",
+    # "sqlalchemy_imperative",
+    # "sqlitesynth",
+    # "sympy_expand",
+    # "sympy_integrate",
+    # "sympy_str",
+    # "sympy_sum",
+    # "telco",
+    # "twisted_names",
+    # "twisted_pb",
+    # "twisted_tcp",
+]
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -100,9 +213,7 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "metric.value": value,
                                 }
                             )
-                        if maxrss := run["metadata"].get(
-                            "mem_max_rss", js["metadata"].get("mem_max_rss", 0)
-                        ):
+                        if maxrss := run["metadata"].get("mem_max_rss", 0):
                             r.append(
                                 {
                                     "bench-suite": self.suiteName,
@@ -146,7 +257,7 @@ class AsvJsonRule(mx_benchmark.Rule):
                 param_combinations = itertools.product(*result[param_idx])
                 for run_idx, params in enumerate(param_combinations):
                     value = result[peak_idx][run_idx]
-                    if math.isnan(value):
+                    if not value or math.isnan(value):
                         continue
                     r.append(
                         {
@@ -182,7 +293,7 @@ class AsvJsonRule(mx_benchmark.Rule):
         return r
 
 
-class PyPyJsonRule(mx_benchmark.Rule):
+class PyPyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
     """Parses a JSON file produced by the Unladen Swallow or PyPy benchmark harness and creates a measurement result."""
 
     def __init__(self, filename: str, suiteName: str):
@@ -196,13 +307,19 @@ class PyPyJsonRule(mx_benchmark.Rule):
 
             for result in js["results"]:
                 name = result[0]
-                values = result[2]["base_times"]
+                if result[1] == "RawResult":
+                    values = result[2]["base_times"]
+                elif result[1] == "SimpleComparisonResult":
+                    values = [result[2]["base_time"]]
+                else:
+                    mx.warn(f"No data found for {name} with {result[1]}")
+                    continue
                 for iteration, value in enumerate(values):
                     r.append(
                         {
                             "bench-suite": self.suiteName,
                             "benchmark": name,
-                            "metric.name": "time",
+                            "metric.name": "warmup",
                             "metric.unit": "s",
                             "metric.score-function": "id",
                             "metric.better": "lower",
@@ -211,7 +328,7 @@ class PyPyJsonRule(mx_benchmark.Rule):
                             "metric.value": value,
                         }
                     )
-
+        self.addAverageAcrossLatestResults(r)
         return r
 
 
@@ -234,6 +351,15 @@ class GraalPyVm(mx_benchmark.GuestVm):
         return self.__class__(self.config_name(), self._options, host_vm)
 
     def run(self, cwd, args):
+        for arg in args:
+            if "--vm.Xmx" in arg:
+                mx.log(f"Setting Xmx from {arg}")
+                break
+        else:
+            xmxArg = "--vm.Xmx8G"
+            mx.log(f"Setting Xmx as {xmxArg}")
+            args.insert(0, xmxArg)
+
         return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
 
 
@@ -256,7 +382,21 @@ class PyPyVm(mx_benchmark.Vm):
         return join(home, "bin", "pypy3")
 
     def run(self, cwd, args):
-        return mx.run([self.interpreter()] + args, cwd=cwd)
+        env = os.environ.copy()
+        xmxArg = re.compile("--vm.Xmx([0-9]+)([kKgGmM])")
+        pypyGcMax = "8GB"
+        for idx, arg in enumerate(args):
+            if m := xmxArg.search(arg):
+                args = args[:idx] + args[idx + 1 :]
+                pypyGcMax = f"{m.group(1)}{m.group(2).upper()}B"
+                mx.log(f"Setting PYPY_GC_MAX={pypyGcMax} via {arg}")
+                break
+        else:
+            mx.log(
+                f"Setting PYPY_GC_MAX={pypyGcMax}, use --vm.Xmx argument to override it"
+            )
+        env["PYPY_GC_MAX"] = pypyGcMax
+        return mx.run([self.interpreter()] + args, cwd=cwd, env=env)
 
 
 class Python3Vm(mx_benchmark.Vm):
@@ -279,6 +419,11 @@ class Python3Vm(mx_benchmark.Vm):
         return join(home, "bin", "python")
 
     def run(self, cwd, args):
+        for idx, arg in enumerate(args):
+            if "--vm.Xmx" in arg:
+                mx.warn(f"Ignoring {arg}, cannot restrict memory on CPython.")
+                args = args[:idx] + args[idx + 1 :]
+                break
         return mx.run([self.interpreter()] + args, cwd=cwd)
 
 
@@ -287,19 +432,39 @@ class WildcardList:
     available, so we just return a wildcard list and assume the caller knows
     what they want to run"""
 
+    def __init__(self, benchmarks=None):
+        self.benchmarks = benchmarks
+
     def __contains__(self, x):
         return True
 
     def __iter__(self):
-        mx.abort(
-            "Cannot iterate over benchmark names in foreign benchmark suites. "
-            + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
-        )
+        if not self.benchmarks:
+            mx.abort(
+                "Cannot iterate over benchmark names in foreign benchmark suites. "
+                + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
+            )
+        else:
+            return iter(self.benchmarks)
 
 
-class PyPerformanceSuite(
-    mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite
-):
+class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+    def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
+        ret_code, out, dims = super().runAndReturnStdOut(benchmarks, bmSuiteArgs)
+
+        def _replace_host_vm(old, new):
+            host_vm = dims.get("host-vm")
+            if host_vm and old in host_vm:
+                dims['host-vm'] = host_vm.replace(old, new)
+                mx.logv(f"[DEBUG] replace 'host-vm': '{host_vm}' -> '{dims['host-vm']}'")
+
+        _replace_host_vm('graalvm-ce-python', 'graalvm-ce')
+        _replace_host_vm('graalvm-ee-python', 'graalvm-ee')
+
+        return ret_code, out, dims
+
+
+class PyPerformanceSuite(PySuite):
     VERSION = "1.0.5"
 
     def name(self):
@@ -312,7 +477,7 @@ class PyPerformanceSuite(
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_PYPERFORMANCE_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [PyPerfJsonRule(output, self.name())]
@@ -343,14 +508,13 @@ class PyPerformanceSuite(
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", ",".join(DEFAULT_PYPERFORMANCE_BENCHMARKS)]
         retcode = mx.run(
             [
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH",
-                "-m",
+                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX",
                 "-o",
                 json_file,
                 *bms,
@@ -363,7 +527,7 @@ class PyPerformanceSuite(
         return 0, join(workdir, json_file)
 
 
-class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+class PyPySuite(PySuite):
     VERSION = "0324a252cf1a"
 
     def name(self):
@@ -376,7 +540,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_PYPY_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [PyPyJsonRule(output, self.name())]
@@ -405,11 +569,19 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
                     ["hg", "up", "-C", self.VERSION], cwd=join(workdir, "benchmarks")
                 )
 
-            # workaround for pypy's benchmarks script issue
+            # workaround for pypy's benchmarks script issues
             with open(join(workdir, "benchmarks", "nullpython.py")) as f:
                 content = f.read()
             content = content.replace("/usr/bin/python", "/usr/bin/env python")
             with open(join(workdir, "benchmarks", "nullpython.py"), "w") as f:
+                f.write(content)
+
+            with open(join(workdir, "benchmarks", "benchmarks.py")) as f:
+                content = f.read()
+            content = content.replace(
+                'float(line.split(b" ")[0])', "float(line.split()[0])"
+            )
+            with open(join(workdir, "benchmarks", "benchmarks.py"), "w") as f:
                 f.write(content)
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
@@ -418,7 +590,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", ",".join(DEFAULT_PYPY_BENCHMARKS)]
         retcode = mx.run(
             [
                 sys.executable,
@@ -436,7 +608,7 @@ class PyPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuit
         return 0, join(workdir, json_file)
 
 
-class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
+class NumPySuite(PySuite):
     VERSION = "v1.16.4"
     ASV = "0.5.1"
     VIRTUALENV = "20.16.3"
@@ -451,7 +623,7 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_NUMPY_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [AsvJsonRule(output, self.name())]
@@ -514,7 +686,7 @@ class NumPySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSui
         if benchmarks:
             bms = ["-b", "|".join(benchmarks)]
         else:
-            bms = []
+            bms = ["-b", "|".join(DEFAULT_NUMPY_BENCHMARKS)]
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -544,6 +716,7 @@ def register_python_benchmarks():
     global python_vm_registry, SUITE
 
     from mx_graalpython_benchmark import python_vm_registry as vm_registry
+
     python_vm_registry = vm_registry
 
     SUITE = mx.suite("graalpython")
