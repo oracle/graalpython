@@ -184,7 +184,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
 import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
-import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
@@ -196,6 +195,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -2976,7 +2976,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void chainPythonExceptions(VirtualFrame virtualFrame, MutableLoopData mutableData, PException pe) {
         if (pe != null) {
             if (mutableData.localException != null) {
-                ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
+                ExceptionUtils.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
             } else {
                 if (getCaughtExceptionNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2984,7 +2984,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
                 if (exceptionState != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                    ExceptionUtils.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
             }
         }

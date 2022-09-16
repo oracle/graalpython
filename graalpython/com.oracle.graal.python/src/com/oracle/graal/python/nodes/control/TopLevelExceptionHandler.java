@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -152,7 +151,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                     PythonContext context = getContext();
                     context.reacquireGilAfterStackOverflow();
                     PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{});
-                    PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
+                    PException pe = ExceptionUtils.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
                 } catch (ThreadDeath e) {
                     // do not handle, result of TruffleContext.closeCancelled()

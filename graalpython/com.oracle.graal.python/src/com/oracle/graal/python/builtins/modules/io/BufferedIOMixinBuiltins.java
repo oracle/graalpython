@@ -77,7 +77,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_S_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNSUPPORTED_WHENCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
+import static com.oracle.graal.python.runtime.exception.ExceptionUtils.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
