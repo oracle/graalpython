@@ -400,7 +400,6 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
         List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
-                        toTruffleStringUncached("type"),
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("bytearray"),

@@ -212,7 +212,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPYTHON_FUNCTION = new PythonFrozenModule("GRAALPYTHON_FUNCTION", "graalpython.function", false);
         private static final PythonFrozenModule GRAALPYTHON_JAVA = new PythonFrozenModule("GRAALPYTHON_JAVA", "graalpython.java", false);
         private static final PythonFrozenModule GRAALPYTHON_PIP_HOOK = new PythonFrozenModule("GRAALPYTHON_PIP_HOOK", "graalpython.pip_hook", false);
-        private static final PythonFrozenModule GRAALPYTHON_TYPE = new PythonFrozenModule("GRAALPYTHON_TYPE", "graalpython.type", false);
         private static final PythonFrozenModule GRAALPYTHON_UNICODEDATA = new PythonFrozenModule("GRAALPYTHON_UNICODEDATA", "graalpython.unicodedata", false);
         private static final PythonFrozenModule GRAALPYTHON_ZIPIMPORT = new PythonFrozenModule("GRAALPYTHON_ZIPIMPORT", "graalpython.zipimport", false);
     }
@@ -569,8 +568,6 @@ public final class FrozenModules {
                 return Map.GRAALPYTHON_JAVA;
             case "graalpython.pip_hook":
                 return Map.GRAALPYTHON_PIP_HOOK;
-            case "graalpython.type":
-                return Map.GRAALPYTHON_TYPE;
             case "graalpython.unicodedata":
                 return Map.GRAALPYTHON_UNICODEDATA;
             case "graalpython.zipimport":
